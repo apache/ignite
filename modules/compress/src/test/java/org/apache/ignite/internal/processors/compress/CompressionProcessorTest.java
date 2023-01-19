@@ -42,7 +42,10 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
 import static org.apache.ignite.configuration.DiskPageCompression.SNAPPY;
@@ -50,42 +53,73 @@ import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
+import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_DEFAULT_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestInnerIO.INNER_IO;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestLeafIO.LEAF_IO;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  */
+@RunWith(Parameterized.class)
 public class CompressionProcessorTest extends GridCommonAbstractTest {
     /** */
-    private static final int ITEM_SIZE = 6; // To fill the whole page.
+    @Parameterized.Parameters(name = "page_size = {0}, block_size = {1}, compression = {2}, level = {3}")
+    public static Iterable<Object[]> testParameters() {
+        List<Object[]> params = new ArrayList<>();
+
+        for (int pageSz = 4 * 1024; pageSz <= MAX_PAGE_SIZE; pageSz *= 2) {
+            for (int blockSize : Arrays.asList(16, 128, 1024, 2048)) {
+                params.add(new Object[] {pageSz, blockSize, SKIP_GARBAGE, 0});
+                params.add(new Object[] {pageSz, blockSize, SNAPPY, 0});
+                params.add(new Object[] {pageSz, blockSize, LZ4, LZ4_MIN_LEVEL});
+                params.add(new Object[] {pageSz, blockSize, LZ4, LZ4_MAX_LEVEL});
+                params.add(new Object[] {pageSz, blockSize, ZSTD, ZSTD_DEFAULT_LEVEL});
+                params.add(new Object[] {pageSz, blockSize, ZSTD, ZSTD_MAX_LEVEL});
+            }
+        }
+
+        return params;
+    }
 
     /** */
-    private int blockSize = 16;
+    @Parameterized.Parameter
+    public int pageSize;
 
     /** */
-    private int pageSize = 4 * 1024;
+    @Parameterized.Parameter(1)
+    public int blockSize;
 
     /** */
-    private DiskPageCompression compression;
+    @Parameterized.Parameter(2)
+    public DiskPageCompression compression;
 
     /** */
-    private int compressLevel;
+    @Parameterized.Parameter(3)
+    public int compressLevel;
 
     /** */
     private CompressionProcessor p;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    /** */
+    private TestInnerIO innerIo;
 
-        PageIO.registerTest(INNER_IO, LEAF_IO);
-    }
+    /** */
+    private TestLeafIO leafIo;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() {
+        /**
+         * 7 is divisor of 8192 - 58, 6 is divisor of 4096 - 58 and 16384 - 58. So an item size should be
+         * 7 for a 8k page and 6 for 4k and 16k pages respectively in order to fill the page fully.
+         * See {@see org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO#getMaxCount}
+         */
+        int itemSize = pageSize == 8192 ? 7 : 6;
+
+        innerIo = new TestInnerIO(itemSize);
+        leafIo = new TestLeafIO(itemSize);
+
+        PageIO.registerTest(innerIo, leafIo);
+
         p = new CompressionProcessorImpl(new GridTestKernalContext(log));
     }
 
@@ -93,772 +127,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testDataPageCompact16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = SKIP_GARBAGE;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageCompact128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = SKIP_GARBAGE;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageCompact1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = SKIP_GARBAGE;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageCompact2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = SKIP_GARBAGE;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageZstd16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageZstd128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageZstd1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageZstd2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageSnappy16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = SNAPPY;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageSnappy128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = SNAPPY;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageSnappy1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = SNAPPY;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageSnappy2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = SNAPPY;
-
-        doTestDataPage();
-    }
-
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Fast16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Fast128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Fast1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Fast2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Slow16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Slow128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Slow1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testDataPageLz4Slow2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestDataPage();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageCompact16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageCompact16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageZstd16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageZstd16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Fast16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Fast16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Slow16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Slow16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageSnappy16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = SNAPPY;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageSnappy16() throws IgniteCheckedException {
-        blockSize = 16;
-        compression = SNAPPY;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageCompact128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageCompact128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageZstd128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageZstd128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Fast128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Fast128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Slow128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Slow128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageSnappy128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = SNAPPY;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageSnappy128() throws IgniteCheckedException {
-        blockSize = 128;
-        compression = SNAPPY;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageCompact1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageCompact1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageZstd1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageZstd1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Fast1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Fast1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Slow1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Slow1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageSnappy1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = SNAPPY;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageSnappy1k() throws IgniteCheckedException {
-        blockSize = 1024;
-        compression = SNAPPY;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageCompact2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageCompact2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = SKIP_GARBAGE;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageZstd2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageZstd2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = ZSTD;
-        compressLevel = ZSTD_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Fast2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Fast2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MIN_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageLz4Slow2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageLz4Slow2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = LZ4;
-        compressLevel = LZ4_MAX_LEVEL;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testInnerPageSnappy2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = SNAPPY;
-
-        doTestBTreePage(INNER_IO);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    @Test
-    public void testLeafPageSnappy2k() throws IgniteCheckedException {
-        blockSize = 2 * 1024;
-        compression = SNAPPY;
-
-        doTestBTreePage(LEAF_IO);
-    }
-
-    /**
-     * @param io Page IO.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doTestBTreePage(BPlusIO<byte[]> io) throws IgniteCheckedException {
-        Random rnd = ThreadLocalRandom.current();
-
-        final byte[][] rows = new byte[3][io.getItemSize()];
-
-        for (int i = 0; i < rows.length; i++)
-            rnd.nextBytes(rows[i]);
-
-        ByteBuffer page = allocateDirectBuffer(pageSize);
-        long pageAddr = bufferAddress(page);
-
-        long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 171717);
-
-        io.initNewPage(pageAddr, pageId, pageSize, null);
-
-        checkIo(io, page);
-
-        Function<ByteBuffer, List<?>> getContents = (buf) -> {
-            long addr = bufferAddress(buf);
-
-            int cnt = io.getCount(addr);
-
-            List<Object> list = new ArrayList<>(cnt);
-
-            for (int i = 0; i < cnt; i++) {
-                if (!io.isLeaf())
-                    list.add(((BPlusInnerIO)io).getLeft(addr, i));
-
-                try {
-                    list.add(new Bytes(io.getLookupRow(null, addr, i)));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IllegalStateException(e);
-                }
-
-                if (!io.isLeaf())
-                    list.add(((BPlusInnerIO)io).getRight(addr, i));
-            }
-
-            return list;
-        };
-
-        // Empty page.
-        checkCompressDecompress(page, getContents, false);
-
-        int cnt = io.getMaxCount(pageAddr, pageSize);
-
-        for (int i = 0; i < cnt; i++) {
-            byte[] row = rows[rnd.nextInt(rows.length)];
-            io.insert(pageAddr, i, row, row, 777_000 + i, false);
-        }
-
-        if (io.isLeaf())
-            assertEquals(pageSize, io.getItemsEnd(pageAddr)); // Page must be full.
-
-        // Full page.
-        checkCompressDecompress(page, getContents, io.isLeaf());
-
-        io.setCount(pageAddr, cnt / 2);
-
-        // Half page.
-        checkCompressDecompress(page, getContents, false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doTestDataPage() throws IgniteCheckedException {
+    public void testDataPage() throws IgniteCheckedException {
         Random rnd = ThreadLocalRandom.current();
 
         final byte[][] rows = new byte[][]{
@@ -926,6 +195,90 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
             io.removeRow(pageAddr, itemIds.get(i), pageSize);
 
         // Half-filled data page.
+        checkCompressDecompress(page, getContents, false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInnerPage() throws IgniteCheckedException {
+        doTestBTreePage(innerIo);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testLeafPage() throws IgniteCheckedException {
+        doTestBTreePage(leafIo);
+    }
+
+    /**
+     * @param io Page IO.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestBTreePage(BPlusIO<byte[]> io) throws IgniteCheckedException {
+        Random rnd = ThreadLocalRandom.current();
+
+        final byte[][] rows = new byte[3][io.getItemSize()];
+
+        for (int i = 0; i < rows.length; i++)
+            rnd.nextBytes(rows[i]);
+
+        ByteBuffer page = allocateDirectBuffer(pageSize);
+        long pageAddr = bufferAddress(page);
+
+        long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 171717);
+
+        io.initNewPage(pageAddr, pageId, pageSize, null);
+
+        checkIo(io, page);
+
+        Function<ByteBuffer, List<?>> getContents = (buf) -> {
+            long addr = bufferAddress(buf);
+
+            int cnt = io.getCount(addr);
+
+            List<Object> list = new ArrayList<>(cnt);
+
+            for (int i = 0; i < cnt; i++) {
+                if (!io.isLeaf())
+                    list.add(((BPlusInnerIO)io).getLeft(addr, i));
+
+                try {
+                    list.add(new Bytes(io.getLookupRow(null, addr, i)));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IllegalStateException(e);
+                }
+
+                if (!io.isLeaf())
+                    list.add(((BPlusInnerIO)io).getRight(addr, i));
+            }
+
+            return list;
+        };
+
+        // Empty page.
+        checkCompressDecompress(page, getContents, false);
+
+        int cnt = io.getMaxCount(pageAddr, pageSize);
+
+        for (int i = 0; i < cnt; i++) {
+            byte[] row = rows[rnd.nextInt(rows.length)];
+            io.insert(pageAddr, i, row, row, 777_000 + i, false);
+        }
+
+        if (io.isLeaf())
+            assertEquals(pageSize, io.getItemsEnd(pageAddr)); // Page must be full.
+
+        // Full page.
+        checkCompressDecompress(page, getContents, io.isLeaf());
+
+        io.setCount(pageAddr, cnt / 2);
+
+        // Half page.
         checkCompressDecompress(page, getContents, false);
     }
 
@@ -1027,13 +380,10 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      */
     static class TestLeafIO extends BPlusLeafIO<byte[]> {
-        /** */
-        static final TestLeafIO LEAF_IO = new TestLeafIO();
-
         /**
          */
-        TestLeafIO() {
-            super(29_501, 1, ITEM_SIZE);
+        TestLeafIO(int itemSz) {
+            super(29_501, 1, itemSz);
         }
 
         /** {@inheritDoc} */
@@ -1056,13 +406,10 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
     /**
      */
     static class TestInnerIO extends BPlusInnerIO<byte[]> {
-        /** */
-        static TestInnerIO INNER_IO = new TestInnerIO();
-
         /**
          */
-        TestInnerIO() {
-            super(29_502, 1, true, ITEM_SIZE);
+        TestInnerIO(int itemSz) {
+            super(29_502, 1, true, itemSz);
         }
 
         /** {@inheritDoc} */
@@ -1082,3 +429,4 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         }
     }
 }
+
