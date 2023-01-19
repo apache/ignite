@@ -80,7 +80,8 @@ The distributed properties listed in the table below allow you to configure CDC 
 [cols="1,3,1",opts="header"]
 |===
 |Property | Description | Default Value
-|`cdc.disabled`| Disables CDC to avoid disk overflow. Useful if the CDC application is down for a long time. | false
+|`cdc.disabled`| Disables CDC in the cluster to avoid disk overflow. Note that cache changes will be lost when CDC
+is disabled. Useful if the CDC application is down for a long time. | false
 |===
 
 == API
