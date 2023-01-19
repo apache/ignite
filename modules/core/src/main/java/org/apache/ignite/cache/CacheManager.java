@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -319,7 +320,7 @@ public class CacheManager implements javax.cache.CacheManager {
                 throw new CacheException("Cache not found: " + cacheName);
 
             if (enabled)
-                registerCacheObject(new CacheMXBeanImpl(cache), cacheName, CACHE_CONFIGURATION);
+                registerCacheObject(new CacheClusterMetricsMXBeanImpl(cache), cacheName, CACHE_CONFIGURATION);
             else
                 unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
 
@@ -344,7 +345,7 @@ public class CacheManager implements javax.cache.CacheManager {
                 throw new CacheException("Cache not found: " + cacheName);
 
             if (enabled)
-                registerCacheObject(new CacheStatisticsMXBeanImpl(cache), cacheName, CACHE_STATISTICS);
+                registerCacheObject(new CacheClusterMetricsMXBeanImpl(cache), cacheName, CACHE_STATISTICS);
             else
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
 
@@ -439,134 +440,5 @@ public class CacheManager implements javax.cache.CacheManager {
             return clazz.cast(ignite);
 
         throw new IllegalArgumentException();
-    }
-
-    /**
-     * Implementation of {@link CacheStatisticsMXBean} to support JCache specification.
-     */
-    private static class CacheStatisticsMXBeanImpl implements CacheStatisticsMXBean {
-        /** Cache. */
-        private final IgniteCache<?, ?> cache;
-
-        /**
-         * Creates MBean;
-         *
-         * @param cache Cache.
-         */
-        private CacheStatisticsMXBeanImpl(IgniteCache<?, ?> cache) {
-            this.cache = cache;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clear() {
-            cache.clearStatistics();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getCacheHits() {
-            return cache.metrics().getCacheHits();
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getCacheHitPercentage() {
-            return cache.metrics().getCacheHitPercentage();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getCacheMisses() {
-            return cache.metrics().getCacheMisses();
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getCacheMissPercentage() {
-            return cache.metrics().getCacheMissPercentage();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getCacheGets() {
-            return cache.metrics().getCacheGets();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getCachePuts() {
-            return cache.metrics().getCachePuts();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getCacheRemovals() {
-            return cache.metrics().getCacheRemovals();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getCacheEvictions() {
-            return cache.metrics().getCacheEvictions();
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getAverageGetTime() {
-            return cache.metrics().getAverageGetTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getAveragePutTime() {
-            return cache.metrics().getAveragePutTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public float getAverageRemoveTime() {
-            return cache.metrics().getAverageRemoveTime();
-        }
-    }
-
-    /**
-     * Implementation of {@link CacheMXBean} to support JCache specification.
-     */
-    private static class CacheMXBeanImpl implements CacheMXBean {
-        /** Cache. */
-        private final IgniteCache<?, ?> cache;
-
-        /**
-         * Creates MBean;
-         *
-         * @param cache Cache.
-         */
-        private CacheMXBeanImpl(IgniteCache<?, ?> cache) {
-            this.cache = cache;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getKeyType() {
-            return cache.metrics().getKeyType();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getValueType() {
-            return cache.metrics().getValueType();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isReadThrough() {
-            return cache.metrics().isReadThrough();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isWriteThrough() {
-            return cache.metrics().isWriteThrough();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isStoreByValue() {
-            return cache.metrics().isStoreByValue();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isStatisticsEnabled() {
-            return cache.metrics().isStatisticsEnabled();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isManagementEnabled() {
-            return cache.metrics().isManagementEnabled();
-        }
     }
 }
