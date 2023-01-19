@@ -60,6 +60,9 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             Ignite ignite = prepareCluster();
 
             int i = 42;
+
+            putAndCheck(i, false); // No chances to compress integer.
+
             String str = "Test string";
 
             putAndCheck(str, false); // Too short string.
