@@ -95,7 +95,8 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutTest {
             IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
             // Wait for consistent cut started.
-            GridTestUtils.waitForCondition(() -> snp(grid(0)).consistentCutId() != null, getTestTimeout(), 10);
+            assertTrue(GridTestUtils
+                .waitForCondition(() -> snp(grid(0)).consistentCutId() != null, getTestTimeout(), 10));
 
             UUID failCutId = shouldFail ? snp(grid(0)).consistentCutId() : null;
 

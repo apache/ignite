@@ -126,14 +126,14 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     /** */
     protected void awaitSnapshotResourcesCleaned() {
         try {
-            GridTestUtils.waitForCondition(() -> {
-                boolean ready = true;
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                for (Ignite g: G.allGrids()) {
+                    if (snp((IgniteEx)g).currentCreateRequest() != null)
+                        return false;
+                }
 
-                for (Ignite g: G.allGrids())
-                    ready &= snp((IgniteEx)g).currentCreateRequest() == null;
-
-                return ready;
-            }, 10);
+                return true;
+            }, getTestTimeout(), 10));
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteException(e);
@@ -166,7 +166,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         // Transaction ID -> (cutId, nodeIdx).
         Map<GridCacheVersion, T2<UUID, Integer>> txMap = new HashMap<>();
 
-        // Includes incomplete state also.
+        // +1 - includes incomplete state also.
         for (int cutId = 0; cutId < cuts + 1; cutId++) {
             for (int nodeIdx = 0; nodeIdx < nodes(); nodeIdx++) {
                 // Skip if the latest cut is completed.

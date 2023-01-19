@@ -262,7 +262,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         stopLoadLatch.countDown();
 
-        f.get();
+        f.get(getTestTimeout());
 
         checkWalsConsistency(txCnt.get(), CUTS);
     }

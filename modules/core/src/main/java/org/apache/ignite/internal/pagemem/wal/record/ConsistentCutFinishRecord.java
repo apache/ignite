@@ -39,13 +39,13 @@ public class ConsistentCutFinishRecord extends WALRecord {
 
     /**
      * Set of transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
-     * to include to the BEFORE side of Consistent Cut.
+     * to include into the Consistent Cut.
      */
     @GridToStringInclude
     private final Set<GridCacheVersion> included;
 
     /**
-     * Set of transactions committed before {@link ConsistentCutStartRecord} to exclude from the AFTER side of Consistent Cut.
+     * Set of transactions committed before {@link ConsistentCutStartRecord} to exclude from the Consistent Cut.
      */
     @GridToStringInclude
     private final Set<GridCacheVersion> excluded;
@@ -83,7 +83,7 @@ public class ConsistentCutFinishRecord extends WALRecord {
      * @return Size in bytes.
      */
     public int dataSize() {
-        int size = 16 + 4 + 4;  // ID, before and after tx count.
+        int size = 16 + 4 + 4;  // ID, included and excluded tx count.
 
         for (GridCacheVersion v: included)
             size += CacheVersionIO.size(v, false);

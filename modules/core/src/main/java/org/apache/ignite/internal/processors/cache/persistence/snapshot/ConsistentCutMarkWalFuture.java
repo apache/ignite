@@ -45,10 +45,10 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
- * Consistent Cut is a distributed algorithm that defines two set of transactions - BEFORE and AFTER cut - on baseline nodes.
- * It guarantees that every transaction was included into BEFORE on one node also included into the BEFORE on every other node
- * participated in the transaction. It means that Ignite nodes can safely recover themselves to the consistent BEFORE
- * state without any coordination with each other.
+ * Consistent Cut is a distributed algorithm that goal is to define a specific set of transactions. It guarantees that
+ * every transaction was included into the set on one node also included into the same set on every other node participated
+ * in the transaction. It means that Ignite nodes can safely recover themselves to the consistent state by applying
+ * transactions from this set.
  */
 class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
     /** Cache context. */
@@ -60,11 +60,11 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Set of checked transactions belong to the BEFORE set. */
+    /** Set of checked transactions included into the Consistent Cut. */
     @GridToStringInclude
     private final Set<GridCacheVersion> included = ConcurrentHashMap.newKeySet();
 
-    /** Set of checked transactions belong to the AFTER set. */
+    /** Set of checked transactions excluded from the Consistent Cut. */
     @GridToStringInclude
     private final Set<GridCacheVersion> excluded = ConcurrentHashMap.newKeySet();
 

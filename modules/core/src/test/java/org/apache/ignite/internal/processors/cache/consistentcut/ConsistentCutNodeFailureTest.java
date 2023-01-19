@@ -85,14 +85,14 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
-        GridTestUtils.waitForCondition(() -> {
-            boolean allNodeStartedCut = true;
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (int i = 0; i < nodes(); i++) {
+                if (snp(grid(i)).consistentCutId() == null)
+                    return false;
+            }
 
-            for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= snp(grid(i)).consistentCutId() != null;
-
-            return allNodeStartedCut;
-        }, getTestTimeout(), 10);
+            return true;
+        }, getTestTimeout(), 10));
 
         UUID brokenCutId = snp(grid(0)).consistentCutId();
 
