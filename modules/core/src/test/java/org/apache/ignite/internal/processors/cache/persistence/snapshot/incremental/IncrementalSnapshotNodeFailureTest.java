@@ -147,10 +147,10 @@ public class IncrementalSnapshotNodeFailureTest extends AbstractIncrementalSnaps
             Ignite g = grid(nodes());
 
             try (Transaction tx = g.transactions().txStart()) {
-                for (int j = 0; j < 10; j++) {
+                for (int i = 0; i < nodes(); i++) {
                     IgniteCache<Integer, Integer> cache = g.cache(CACHE);
 
-                    cache.put(j, j);
+                    cache.put(TransactionTestCase.key((IgniteEx)g, CACHE, i, (i + 1) % nodes()), 0);
                 }
 
                 tx.commit();
