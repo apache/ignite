@@ -457,7 +457,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
-            this::processLocalSnapshotEndStageResult);
+            this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
@@ -4148,7 +4148,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             UUID processId,
             SnapshotOperationRequest req
         ) {
-            super(processId, START_SNAPSHOT, req);
+            super(processId, START_SNAPSHOT, req, false);
 
             needExchange = !req.incremental();
         }

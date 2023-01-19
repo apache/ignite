@@ -145,9 +145,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         // 9. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
 
-        // TODO: remove after IGNITE-18573.
-        while (snp(grid(nodes())).consistentCutId() != null);
-
         clear();
     }
 
