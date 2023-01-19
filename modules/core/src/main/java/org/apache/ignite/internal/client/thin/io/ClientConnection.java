@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin.io;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -33,6 +34,11 @@ public interface ClientConnection extends AutoCloseable {
      * @param onDone Callback to be invoked when asynchronous send operation completes.
      */
     void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException;
+
+    /**
+     * Gets remote server address.
+     */
+    InetSocketAddress getAddress();
 
     /**
      * Closes the connection.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin.io.gridnioserver;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -68,6 +69,11 @@ class GridNioClientConnection implements ClientConnection {
             ses.send(msg).listen(f -> onDone.run());
         else
             ses.sendNoFuture(msg, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public InetSocketAddress getAddress() {
+        return ses.remoteAddress();
     }
 
     /** {@inheritDoc} */
