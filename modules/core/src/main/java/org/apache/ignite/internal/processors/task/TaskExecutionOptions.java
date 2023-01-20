@@ -28,13 +28,13 @@ public class TaskExecutionOptions {
     private String name;
 
     /** */
-    private Long timeout;
+    private long timeout;
 
     /** */
     private String execName;
 
     /** */
-    Byte pool;
+    private Byte pool;
 
     /** */
     private Collection<ClusterNode> projection;
@@ -68,8 +68,8 @@ public class TaskExecutionOptions {
     }
 
     /** */
-    public Optional<Long> timeout() {
-        return Optional.ofNullable(timeout);
+    public long timeout() {
+        return timeout;
     }
 
     /** */

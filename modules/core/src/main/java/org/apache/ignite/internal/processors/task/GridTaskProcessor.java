@@ -543,7 +543,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (!opts.isAuthenticationDisabled())
             ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
 
-        long timeout0 = opts.timeout().orElse(Long.MAX_VALUE);
+        assert opts.timeout() >= 0;
+
+        long timeout0 = opts.timeout() == 0 ? Long.MAX_VALUE : opts.timeout();
 
         long startTime = U.currentTimeMillis();
 
