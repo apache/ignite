@@ -116,7 +116,7 @@ public class CacheObjectTransformer {
 
             assert offset == OVERHEAD : offset; // Correct while VER == 0;
 
-            restored = spi.restore(bytes, offset);
+            restored = spi.restore(bytes, offset, bytes.length - offset);
         }
         else
             throw new IllegalStateException("Unknown version " + ver);

@@ -44,8 +44,9 @@ public interface CacheObjectTransformerSpi extends IgniteSpi {
      * Restores the data.
      *
      * @param bytes  Byte array ending with the transformed data.
-     * @param offset Transformed data offset.
+     * @param offset Data offset.
+     * @param length Data length.
      * @return Byte array contains the restored data.
      */
-    public byte[] restore(byte[] bytes, int offset);
+    public byte[] restore(byte[] bytes, int offset, int length);
 }

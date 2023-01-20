@@ -112,8 +112,8 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
     protected abstract ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public byte[] restore(byte[] bytes, int offset) {
-        ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset);
+    @Override public byte[] restore(byte[] bytes, int offset, int length) {
+        ByteBuffer src = sourceByteBuffer(bytes, offset, length);
         ByteBuffer restored = restore(src);
 
         if (restored.isDirect()) {
