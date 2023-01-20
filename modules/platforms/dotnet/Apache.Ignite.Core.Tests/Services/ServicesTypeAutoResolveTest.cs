@@ -25,6 +25,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Net;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
@@ -287,6 +289,143 @@ namespace Apache.Ignite.Core.Tests.Services
 
             if (_useBinaryArray)
                 Assert.AreEqual(typeof(User[]), users2.GetType());
+
+            svc.putValsForCache();
+
+            Assert.AreEqual("1", _grid1.GetCache<int, V9>("V9").Get(1).Name);
+
+            var v10 = _grid1.GetCache<int, V10>("V10").GetAll(new List<int> {1, 2});
+
+            Assert.AreEqual(2, v10.Count);
+
+            foreach (var entry in v10)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            Assert.AreEqual("1", _grid1.GetCache<int, V11>("V11").GetAsync(1).Result.Name);
+
+            var v12 = _grid1.GetCache<int, V12>("V12").GetAllAsync(new List<int> {1, 2}).Result;
+
+            Assert.AreEqual(2, v12.Count);
+
+            foreach (var entry in v12)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            var v13 = _grid1.GetCache<int, V13>("V13").Query(new ScanQuery<int, V13>()).GetAll();
+
+            Assert.AreEqual(2, v13.Count);
+
+            foreach (var entry in v13)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            var v14 = _grid1.GetCache<int, V14>("V14").Query(new ScanQuery<int, V14>());
+
+            foreach (var entry in v14)
+            {
+                if (entry.Key == 1)
+                    Assert.AreEqual("1", entry.Value.Name);
+                else
+                    Assert.AreEqual("2", entry.Value.Name);
+            }
+
+            var v15 = _grid1.GetCache<int, V15>("V15")
+                .Query(new ScanQuery<int, V15>(new CacheEntryFilter())).GetAll();
+
+            Assert.AreEqual(1, v15.Count);
+
+            foreach (var entry in v15)
+            {
+                Assert.AreEqual("1", entry.Value.Name);
+            }
+
+            var v16 = _grid1.GetCache<int, V16>("V16").Query(new SqlFieldsQuery("SELECT _KEY, _VAL FROM V16"));
+
+            var cnt = 0;
+
+            foreach (var entry in v16)
+            {
+                cnt++;
+                if ((int) entry[0] == 1)
+                    Assert.AreEqual("1", ((V16) entry[1]).Name);
+                else
+                    Assert.AreEqual("2", ((V16) entry[1]).Name);
+            }
+
+            Assert.AreEqual(2, cnt);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestMessagingJavaService()
+        {
+            // Deploy Java service.
+            var javaSvcName = TestUtils.DeployJavaService(_grid1);
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(javaSvcName, true);
+
+            var msgng = _grid1.GetMessaging();
+
+            var rcvd = new List<V5>();
+
+            var lsnr = new MessageListener<V5>((guid, v) =>
+            {
+                rcvd.Add(v);
+
+                return true;
+            });
+
+            try
+            {
+                msgng.LocalListen(lsnr, "test-topic");
+
+                svc.testSendMessage();
+
+                TestUtils.WaitForTrueCondition(() => rcvd.Count == 3, timeout: 2500);
+
+                Assert.IsNotNull(rcvd.Find(v => v.Name == "1"));
+                Assert.IsNotNull(rcvd.Find(v => v.Name == "2"));
+                Assert.IsNotNull(rcvd.Find(v => v.Name == "3"));
+            }
+            finally
+            {
+                msgng.StopLocalListen(lsnr, "test-topic");
+            }
+
+            svc.startReceiveMessage();
+
+            msgng.Send(new V6 {Name = "Sarah Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "John Connor"}, "test-topic-2");
+            msgng.Send(new V6 {Name = "Kyle Reese"}, "test-topic-2");
+
+            msgng.SendAll(new[]
+            {
+                new V7 {Name = "V7-1"},
+                new V7 {Name = "V7-2"},
+                new V7 {Name = "V7-3"}
+            }, "test-topic-3");
+
+            msgng.SendOrdered(new V8 {Name = "V8"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V9"}, "test-topic-4");
+            msgng.SendOrdered(new V8 {Name = "V10"}, "test-topic-4");
+
+            Assert.IsTrue(svc.testMessagesReceived());
         }
 
         /// <summary>
@@ -372,6 +511,18 @@ namespace Apache.Ignite.Core.Tests.Services
         public ServicesTypeAutoResolveTestBinaryArrays() : base(true)
         {
             // No-op.
+        }
+    }
+
+    /// <summary>
+    /// Cache entry filter.
+    /// </summary>
+    class CacheEntryFilter : ICacheEntryFilter<int, V15>
+    {
+        /** <inheritDoc /> */
+        public bool Invoke(ICacheEntry<int, V15> entry)
+        {
+            return entry.Value.Name.Equals("1");
         }
     }
 }
