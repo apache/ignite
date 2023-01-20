@@ -132,10 +132,11 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             if (type == CompressionType.DISABLED)
                 throw new IgniteCheckedException("Disabled.");
 
-            int locOverhead = 4; // Compression type, Integer.
+            int locOverhead = 8; // Compression type + length.
             int totalOverhead = CacheObjectTransformerSpi.OVERHEAD + locOverhead;
 
-            int lim = original.remaining() - totalOverhead;
+            int origSize = original.remaining();
+            int lim = origSize - totalOverhead;
 
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not profitable.");
@@ -144,17 +145,17 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
             switch (type) {
                 case ZSTD:
-                    maxCompLen = (int)Zstd.compressBound(original.remaining());
+                    maxCompLen = (int)Zstd.compressBound(origSize);
 
                     break;
 
                 case LZ4:
-                    maxCompLen = lz4Compressor.maxCompressedLength(original.remaining());
+                    maxCompLen = lz4Compressor.maxCompressedLength(origSize);
 
                     break;
 
                 case SNAPPY:
-                    maxCompLen = Snappy.maxCompressedLength(original.remaining());
+                    maxCompLen = Snappy.maxCompressedLength(origSize);
 
                     break;
 
@@ -164,9 +165,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
             ByteBuffer compressed = byteBuffer(locOverhead + maxCompLen);
 
-            compressed.putInt(type.ordinal());
-
-            assertEquals(locOverhead, compressed.position());
+            compressed.position(locOverhead);
 
             int size;
 
@@ -203,6 +202,13 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                     throw new UnsupportedOperationException();
             }
 
+            compressed.putInt(type.ordinal());
+            compressed.putInt(origSize);
+
+            assertEquals(locOverhead, compressed.position());
+
+            compressed.rewind();
+
             if (size >= lim) // Limiting to gain compression profit.
                 throw new IgniteCheckedException("Compression is not profitable.");
 
@@ -210,10 +216,13 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer restore(ByteBuffer transformed, int length) {
+        @Override protected ByteBuffer restore(ByteBuffer transformed) {
+            CompressionType type = CompressionType.values()[transformed.getInt()];
+            int length = transformed.getInt();
+
             ByteBuffer restored = byteBuffer(length);
 
-            switch (CompressionType.values()[transformed.getInt()]) {
+            switch (type) {
                 case ZSTD:
                     Zstd.decompress(restored, transformed);
 

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
@@ -29,9 +27,6 @@ import static org.apache.ignite.spi.transform.CacheObjectTransformerSpi.OVERHEAD
 
 /** */
 public class CacheObjectTransformer {
-    /** Header buffer. */
-    private static final ThreadLocalDirectByteBuffer hdrBuf = new ThreadLocalDirectByteBuffer();
-
     /** Version. */
     private static final byte VER = 0;
 
@@ -67,14 +62,8 @@ public class CacheObjectTransformer {
 
             byte[] transformed = spi.transform(bytes, offset, length);
 
-            ByteBuffer hdr = hdrBuf.get(OVERHEAD);
-
-            hdr.put(TRANSFORMED);
-            hdr.put(VER);
-            hdr.putInt(bytes.length);
-            hdr.flip();
-
-            hdr.get(transformed, 0, hdr.remaining());
+            transformed[0] = TRANSFORMED;
+            transformed[1] = VER;
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
@@ -115,22 +104,19 @@ public class CacheObjectTransformer {
 
         CacheObjectTransformerSpi spi = spi(ctx);
 
-        ByteBuffer hdr = ByteBuffer.wrap(bytes);
-
-        byte transformed = hdr.get();
-        byte ver = hdr.get();
+        byte transformed = bytes[0];
+        byte ver = bytes[1];
 
         assert transformed == TRANSFORMED;
 
         byte[] restored;
 
         if (ver == 0) {
-            int length = hdr.getInt();
-            int offset = 1 /*transformed*/ + 1 /*ver*/ + 4 /*length*/;
+            int offset = 1 /*transformed*/ + 1 /*ver*/;
 
             assert offset == OVERHEAD : offset; // Correct while VER == 0;
 
-            restored = spi.restore(bytes, offset, length);
+            restored = spi.restore(bytes, offset);
         }
         else
             throw new IllegalStateException("Unknown version " + ver);

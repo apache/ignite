@@ -112,14 +112,12 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
     protected abstract ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public byte[] restore(byte[] bytes, int offset, int length) {
+    @Override public byte[] restore(byte[] bytes, int offset) {
         ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset);
-        ByteBuffer restored = restore(src, length);
-
-        assert restored.remaining() == length : "expected=" + length + ", actual=" + restored.remaining();
+        ByteBuffer restored = restore(src);
 
         if (restored.isDirect()) {
-            byte[] res = new byte[length];
+            byte[] res = new byte[restored.remaining()];
 
             restored.get(res);
 
@@ -133,10 +131,9 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
      * Restores the data.
      *
      * @param transformed Transformed data.
-     * @param length Original data length.
      * @return Restored data.
      */
-    protected abstract ByteBuffer restore(ByteBuffer transformed, int length);
+    protected abstract ByteBuffer restore(ByteBuffer transformed);
 
     /**
      * Returns {@code true} when direct byte buffers are required.
