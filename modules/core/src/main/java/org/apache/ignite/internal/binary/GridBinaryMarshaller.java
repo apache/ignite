@@ -40,10 +40,10 @@ public class GridBinaryMarshaller {
     public static final ThreadLocal<Boolean> USE_CACHE = ThreadLocal.withInitial(() -> Boolean.TRUE);
 
     /** */
-    public static final byte OPTM_MARSH = -2;
+    public static final byte TRANSFORMED = -3;
 
     /** */
-    public static final byte TRANSFORMED = -1;
+    public static final byte OPTM_MARSH = -2;
 
     /** */
     public static final byte BYTE = 1;
