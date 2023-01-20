@@ -133,7 +133,7 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
                 }
 
                 return true;
-            }, getTestTimeout(), 10));
+            }, getTestTimeout(), 0));
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteException(e);

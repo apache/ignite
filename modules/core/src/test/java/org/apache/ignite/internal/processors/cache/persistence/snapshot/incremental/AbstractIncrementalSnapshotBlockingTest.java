@@ -113,6 +113,8 @@ public abstract class AbstractIncrementalSnapshotBlockingTest extends AbstractIn
     protected void run(Runnable tx, int txBlkNodeIdx, int snpBlkNodeIdx) throws Exception {
         caseNum++;
 
+        awaitSnapshotResourcesCleaned();
+
         // 1. Block transaction.
         blockTx(grid(txBlkNodeIdx));
 
@@ -188,7 +190,7 @@ public abstract class AbstractIncrementalSnapshotBlockingTest extends AbstractIn
     }
 
     /** */
-    protected void clear() {
+    private void clear() {
         for (int n = 0; n < nodes(); n++)
             BlockingWALManager.walMgr(grid(n)).clear();
     }

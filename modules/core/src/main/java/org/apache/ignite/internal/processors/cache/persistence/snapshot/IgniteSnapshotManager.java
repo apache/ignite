@@ -904,6 +904,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param id Incremental snapshot ID.
      */
     public void handleIncrementalSnapshotId(UUID id) {
+        // TODO: IGNITE-18599 handle if `id != incSnpId`.
         if (incSnpId != null)
             return;
 
@@ -4148,7 +4149,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             UUID processId,
             SnapshotOperationRequest req
         ) {
-            super(processId, START_SNAPSHOT, req, false);
+            super(processId, START_SNAPSHOT, req, req.incremental());
 
             needExchange = !req.incremental();
         }
