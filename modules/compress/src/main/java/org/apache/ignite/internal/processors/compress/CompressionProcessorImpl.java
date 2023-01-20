@@ -52,7 +52,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalNativeOrderDirectByteBuffer(MAX_PAGE_SIZE);
 
     /** A bit more than max page size, extra space is required by compressors. */
-    private final ThreadLocalDirectByteBuffer compressBuf = new ThreadLocalNativeOrderDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE));
+    private final ThreadLocalDirectByteBuffer compressBuf =
+        new ThreadLocalNativeOrderDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE));
 
     /**
      * @param ctx Kernal context.
