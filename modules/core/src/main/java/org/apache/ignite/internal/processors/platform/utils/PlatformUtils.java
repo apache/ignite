@@ -63,7 +63,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectTransformer;
+import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -1416,8 +1416,8 @@ public class PlatformUtils {
             return (T)obj;
 
         return isKey ?
-            (T)new KeyCacheObjectImpl(obj, CacheObjectTransformer.transformIfNecessary(objWithBytes.bytes, ctx), -1) :
-            (T)new CacheObjectImpl(obj, CacheObjectTransformer.transformIfNecessary(objWithBytes.bytes, ctx));
+            (T)new KeyCacheObjectImpl(obj, CacheObjectTransformerUtils.transformIfNecessary(objWithBytes.bytes, ctx), -1) :
+            (T)new CacheObjectImpl(obj, CacheObjectTransformerUtils.transformIfNecessary(objWithBytes.bytes, ctx));
     }
 
     /**

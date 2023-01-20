@@ -29,8 +29,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
-import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
-import org.apache.ignite.spi.transform.CacheObjectTransformerSpiAdapter;
+import org.apache.ignite.spi.transform.CacheObjectTransformer;
+import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.xerial.snappy.Snappy;
 
 /**
@@ -53,15 +53,14 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        CompressionTransformerSpi.zstdCnt.set(0);
-        CompressionTransformerSpi.lz4Cnt.set(0);
-        CompressionTransformerSpi.snapCnt.set(0);
+        CompressionTransformer.zstdCnt.set(0);
+        CompressionTransformer.lz4Cnt.set(0);
+        CompressionTransformer.snapCnt.set(0);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectTransformerSpi(new CompressionTransformerSpi());
+        return super.getConfiguration(igniteInstanceName).setCacheObjectTransformer(new CompressionTransformer());
     }
 
     /**
@@ -100,7 +99,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static class CompressionTransformerSpi extends CacheObjectTransformerSpiAdapter {
+    protected static class CompressionTransformer extends CacheObjectTransformerAdapter {
         /** Comptession type. */
         protected static volatile CompressionType type = CompressionType.defaultType();
 
@@ -133,7 +132,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 throw new IgniteCheckedException("Disabled.");
 
             int locOverhead = 8; // Compression type + length.
-            int totalOverhead = CacheObjectTransformerSpi.OVERHEAD + locOverhead;
+            int totalOverhead = CacheObjectTransformer.OVERHEAD + locOverhead;
 
             int origSize = original.remaining();
             int lim = origSize - totalOverhead;

@@ -22,34 +22,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 @IgniteExperimental
-public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter implements CacheObjectTransformerSpi {
+public abstract class CacheObjectTransformerAdapter implements CacheObjectTransformer {
     /** Source byte buffer. */
     private final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer();
 
     /** Destination byte buffer. */
     private final ThreadLocalDirectByteBuffer dstBuf = new ThreadLocalDirectByteBuffer();
-
-    /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        startStopwatch();
-
-        if (log.isDebugEnabled())
-            log.debug(startInfo());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStop() throws IgniteSpiException {
-        if (log.isDebugEnabled())
-            log.debug(stopInfo());
-    }
 
     /** */
     private ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length) {

@@ -19,13 +19,12 @@ package org.apache.ignite.spi.transform;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteExperimental;
-import org.apache.ignite.spi.IgniteSpi;
 
 /**
- * SPI provides cache object's bytes transformation (eg. encryption, compression, etc).
+ * Provides cache object's bytes transformation (eg. encryption, compression, etc).
  */
 @IgniteExperimental
-public interface CacheObjectTransformerSpi extends IgniteSpi {
+public interface CacheObjectTransformer {
     /** Additional space required to store the transformed data. */
     public int OVERHEAD = 2;
 

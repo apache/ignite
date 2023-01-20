@@ -86,7 +86,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
-import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
+import org.apache.ignite.spi.transform.CacheObjectTransformer;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -418,7 +418,7 @@ public class IgniteConfiguration {
     private FailoverSpi[] failSpi;
 
     /** Cache object transform spi. */
-    private CacheObjectTransformerSpi cacheObjTransSpi;
+    private CacheObjectTransformer cacheObjTrans;
 
     /** Load balancing SPI. */
     private LoadBalancingSpi[] loadBalancingSpi;
@@ -645,7 +645,7 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        cacheObjTransSpi = cfg.getCacheObjectTransformerSpi();
+        cacheObjTrans = cfg.getCacheObjectTransformer();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
@@ -2256,24 +2256,24 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return fully configured cache object's transformer SPI implementation.
+     * Should return fully configured cache object's transformer implementation.
      *
-     * @return Grid cache object transformer SPI implementation or {@code null}.
+     * @return Grid cache object transformer implementation or {@code null}.
      */
-    public CacheObjectTransformerSpi getCacheObjectTransformerSpi() {
-        return cacheObjTransSpi;
+    @IgniteExperimental
+    public CacheObjectTransformer getCacheObjectTransformer() {
+        return cacheObjTrans;
     }
 
     /**
-     * Sets fully configured instance of {@link CacheObjectTransformerSpi}.
+     * Sets fully configured instance of {@link CacheObjectTransformer}.
      *
-     * @param cacheObjTransSpi Fully configured instance of {@link CacheObjectTransformerSpi} or
-     * {@code null} if no SPI provided.
+     * @param cacheObjTrans Fully configured instance of {@link CacheObjectTransformer}.
      * @return {@code this} for chaining.
-     * @see IgniteConfiguration#getCacheObjectTransformerSpi()
      */
-    public IgniteConfiguration setCacheObjectTransformerSpi(CacheObjectTransformerSpi cacheObjTransSpi) {
-        this.cacheObjTransSpi = cacheObjTransSpi;
+    @IgniteExperimental
+    public IgniteConfiguration setCacheObjectTransformer(CacheObjectTransformer cacheObjTrans) {
+        this.cacheObjTrans = cacheObjTrans;
 
         return this;
     }

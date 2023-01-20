@@ -166,11 +166,11 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             Function<Integer, Object> kGen = reversed ? valGen : keyGen;
             Function<Integer, Object> vGen = reversed ? keyGen : valGen;
 
-            CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.DISABLED;
+            CompressionTransformer.type = CompressionTransformer.CompressionType.DISABLED;
 
             raw = doTest(cnt, kGen, vGen); // Compresson disabled.
 
-            CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.defaultType();
+            CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();
 
             compressed = doTest(cnt, kGen, vGen); // Compression enabled.
 

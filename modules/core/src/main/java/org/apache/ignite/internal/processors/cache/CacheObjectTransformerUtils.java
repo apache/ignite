@@ -19,24 +19,24 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
+import org.apache.ignite.spi.transform.CacheObjectTransformer;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
-import static org.apache.ignite.spi.transform.CacheObjectTransformerSpi.OVERHEAD;
+import static org.apache.ignite.spi.transform.CacheObjectTransformer.OVERHEAD;
 
 /** */
-public class CacheObjectTransformer {
+public class CacheObjectTransformerUtils {
     /** Version. */
     private static final byte VER = 0;
 
     /***/
-    private static CacheObjectTransformerSpi spi(CacheObjectValueContext ctx) {
-        return ctx.kernalContext().config().getCacheObjectTransformerSpi();
+    private static CacheObjectTransformer transformer(CacheObjectValueContext ctx) {
+        return ctx.kernalContext().config().getCacheObjectTransformer();
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerSpi} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformer} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -46,7 +46,7 @@ public class CacheObjectTransformer {
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerSpi} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformer} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -55,12 +55,12 @@ public class CacheObjectTransformer {
         assert bytes[offset] != TRANSFORMED;
 
         try {
-            CacheObjectTransformerSpi spi = spi(ctx);
+            CacheObjectTransformer transformer = transformer(ctx);
 
-            if (spi == null)
+            if (transformer == null)
                 return bytes;
 
-            byte[] transformed = spi.transform(bytes, offset, length);
+            byte[] transformed = transformer.transform(bytes, offset, length);
 
             transformed[0] = TRANSFORMED;
             transformed[1] = VER;
@@ -102,7 +102,7 @@ public class CacheObjectTransformer {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectTransformerSpi spi = spi(ctx);
+        CacheObjectTransformer transformer = transformer(ctx);
 
         byte transformed = bytes[0];
         byte ver = bytes[1];
@@ -116,7 +116,7 @@ public class CacheObjectTransformer {
 
             assert offset == OVERHEAD : offset; // Correct while VER == 0;
 
-            restored = spi.restore(bytes, offset, bytes.length - offset);
+            restored = transformer.restore(bytes, offset, bytes.length - offset);
         }
         else
             throw new IllegalStateException("Unknown version " + ver);

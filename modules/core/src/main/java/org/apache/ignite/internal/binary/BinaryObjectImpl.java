@@ -38,7 +38,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectTransformer;
+import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -252,7 +252,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Array.
      */
     private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
-        return CacheObjectTransformer.restoreIfNecessary(valBytes, ctx);
+        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
     }
 
     /**
@@ -260,7 +260,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
         byte[] bytes =
-            CacheObjectTransformer.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
+            CacheObjectTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
 
         if (bytes == arr && !detached()) // Was not transformed, but starts not from 0.
             return detachArray();

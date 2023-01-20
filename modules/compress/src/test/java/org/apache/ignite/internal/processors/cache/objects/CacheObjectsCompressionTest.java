@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.objects.AbstractCacheObjectsCompressionTest.CompressionTransformerSpi.CompressionType;
+import static org.apache.ignite.internal.processors.cache.objects.AbstractCacheObjectsCompressionTest.CompressionTransformer.CompressionType;
 
 /**
  *
@@ -55,7 +55,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
     @Test
     public void testCompression() throws Exception {
         try {
-            CompressionTransformerSpi.type = type;
+            CompressionTransformer.type = type;
 
             Ignite ignite = prepareCluster();
 
@@ -117,7 +117,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             putAndCheck(builder.build(), false); // Too short wrapped string.
         }
         finally {
-            CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.defaultType();  // Restoring default.
+            CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
         }
     }
 
