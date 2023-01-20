@@ -1182,7 +1182,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return ctx.kernalContext().task().execute(
                 new ClearTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), keys, near),
                 null,
-                options().withProjection(srvNodes)
+                options(srvNodes)
             );
         }
         else
@@ -1214,7 +1214,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             Collections.singleton(name()),
             part,
             new PartitionPreloadJob(ctx.name(), part),
-            options().withProjection(grp.nodes())
+            options(grp.nodes())
         );
     }
 
@@ -3824,10 +3824,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return ctx.closures().callAsync(
             BROADCAST,
             new LoadKeysCallable<>(ctx.name(), keys, update, plc, keepBinary),
-            options()
-                .withNoFailover()
-                .withProjection(nodes)
-                .withSystemPoolMapping()
+            options(nodes)
+                .withFailoverDisabled()
+                .asSystemTask()
         );
     }
 
@@ -3950,7 +3949,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<?> fut = ctx.kernalContext().closure().callAsync(
             BROADCAST,
             Collections.singletonList(new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
-            options().withProjection(nodes));
+            options(nodes));
 
         return fut;
     }
@@ -3988,7 +3987,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return ctx.kernalContext().task().execute(
             new SizeTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes),
             null,
-            options().withProjection(nodes)
+            options(nodes)
         );
     }
 
@@ -4010,7 +4009,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return ctx.kernalContext().task().execute(
             new SizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes),
             null,
-            options().withProjection(nodes)
+            options(nodes)
         );
     }
 
@@ -4040,7 +4039,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return ctx.kernalContext().task().execute(
             new PartitionSizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes, part),
             null,
-            options().withProjection(nodes)
+            options(nodes)
         );
     }
 

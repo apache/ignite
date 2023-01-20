@@ -18,7 +18,14 @@
 package org.apache.ignite.internal.processors.compute;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.RunnableX;
@@ -29,10 +36,16 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest.ComputationType.CALLABLE;
+import static org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest.ComputationType.CLOSURE;
+import static org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest.ComputationType.RUNNABLE;
+import static org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest.ComputationType.TASK;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
@@ -75,81 +88,66 @@ public class TaskOptionsPropagationTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testTaskExecutioOptionsReset() throws Exception {
-        checkCallable(IgniteCompute::call);
-        checkCallable((c, t) -> c.callAsync(t).get());
+    public void testTaskExecutionOptionsReset() throws Exception {
+        check(TASK, (c, t) -> c.execute((ComputeTask)t, null));
+        check(TASK, (c, t) -> c.executeAsync((ComputeTask)t, null).get());
 
-        checkCallable((c, t) -> c.call((toList(t))));
-        checkCallable((c, t) -> c.callAsync(toList(t)).get());
+        check(CALLABLE, (c, t) -> c.call((IgniteCallable<Void>)t));
+        check(CALLABLE, (c, t) -> c.callAsync((IgniteCallable<Void>)t).get());
 
-        checkCallable((c, t) -> c.call(toList(t), new TestReducer()));
-        checkCallable((c, t) -> c.callAsync(toList(t), new TestReducer()).get());
+        check(CALLABLE, (c, t) -> c.call((toList((IgniteCallable<Void>)t))));
+        check(CALLABLE, (c, t) -> c.callAsync(toList((IgniteCallable<Void>)t)).get());
 
-        checkRunnable(IgniteCompute::run);
-        checkRunnable((c, t) -> c.runAsync(t).get());
+        check(CALLABLE, (c, t) -> c.call(toList((IgniteCallable<Void>)t), new TestReducer()));
+        check(CALLABLE, (c, t) -> c.callAsync(toList((IgniteCallable<Void>)t), new TestReducer()).get());
 
-        checkRunnable((c, t) -> c.run(toList(t)));
-        checkRunnable((c, t) -> c.runAsync(toList(t)).get());
+        check(RUNNABLE, (c, t) -> c.run((IgniteRunnable)t));
+        check(RUNNABLE, (c, t) -> c.runAsync((IgniteRunnable)t).get());
 
-        checkRunnable(IgniteCompute::broadcast);
-        checkRunnable((c, t) -> c.broadcastAsync(t).get());
+        check(RUNNABLE, (c, t) -> c.run(toList((IgniteRunnable)t)));
+        check(RUNNABLE, (c, t) -> c.runAsync(toList((IgniteRunnable)t)).get());
 
-        checkCallable(IgniteCompute::broadcast);
-        checkCallable((c, t) -> c.broadcastAsync(t).get());
+        check(RUNNABLE, (c, t) -> c.broadcast((IgniteRunnable)t));
+        check(RUNNABLE, (c, t) -> c.broadcastAsync((IgniteRunnable)t).get());
 
-        checkClosure((c, t) -> c.broadcast(t, null));
-        checkClosure((c, t) -> c.broadcastAsync(t, null).get());
+        check(CALLABLE, (c, t) -> c.broadcast((IgniteCallable<Void>)t));
+        check(CALLABLE, (c, t) -> c.broadcastAsync((IgniteCallable<Void>)t).get());
 
-        checkClosure((c, t) -> c.apply(t, (Void)null));
-        checkClosure((c, t) -> c.applyAsync(t, (Void)null).get());
+        check(CLOSURE, ((c, t) -> c.broadcast((IgniteClosure<Void, Void>)t, null)));
+        check(CLOSURE, (c, t) -> c.broadcastAsync((IgniteClosure<Void, Void>)t, null).get());
 
-        checkClosure((c, t) -> c.apply(t, singletonList(null), new TestReducer()));
-        checkClosure((c, t) -> c.applyAsync(t, singletonList(null), new TestReducer()).get());
+        check(CLOSURE, (c, t) -> c.apply((IgniteClosure<Void, Void>)t, (Void)null));
+        check(CLOSURE, (c, t) -> c.applyAsync((IgniteClosure<Void, Void>)t, (Void)null).get());
 
-        checkRunnable((c, t) -> c.affinityRun(DEFAULT_CACHE_NAME, "key", t));
-        checkRunnable((c, t) -> c.affinityRunAsync(DEFAULT_CACHE_NAME, "key", t).get());
+        check(CLOSURE, (c, t) -> c.apply((IgniteClosure<Void, Void>)t, singletonList(null), new TestReducer()));
+        check(CLOSURE, (c, t) -> c.applyAsync((IgniteClosure<Void, Void>)t, singletonList(null), new TestReducer()).get());
 
-        checkRunnable((c, t) -> c.affinityRun(singletonList(DEFAULT_CACHE_NAME), "key", t));
-        checkRunnable((c, t) -> c.affinityRunAsync(singletonList(DEFAULT_CACHE_NAME), "key", t).get());
+        check(RUNNABLE, (c, t) -> c.affinityRun(DEFAULT_CACHE_NAME, "key", (IgniteRunnable)t));
+        check(RUNNABLE, (c, t) -> c.affinityRunAsync(DEFAULT_CACHE_NAME, "key", (IgniteRunnable)t).get());
 
-        checkRunnable((c, t) -> c.affinityRun(singletonList(DEFAULT_CACHE_NAME), 0, t));
-        checkRunnable((c, t) -> c.affinityRunAsync(singletonList(DEFAULT_CACHE_NAME), 0, t).get());
+        check(RUNNABLE, (c, t) -> c.affinityRun(singletonList(DEFAULT_CACHE_NAME), "key", (IgniteRunnable)t));
+        check(RUNNABLE, (c, t) -> c.affinityRunAsync(singletonList(DEFAULT_CACHE_NAME), "key", (IgniteRunnable)t).get());
 
-        checkCallable((c, t) -> c.affinityCall(DEFAULT_CACHE_NAME, "key", t));
-        checkCallable((c, t) -> c.affinityCallAsync(DEFAULT_CACHE_NAME, "key", t).get());
+        check(RUNNABLE, (c, t) -> c.affinityRun(singletonList(DEFAULT_CACHE_NAME), 0, (IgniteRunnable)t));
+        check(RUNNABLE, (c, t) -> c.affinityRunAsync(singletonList(DEFAULT_CACHE_NAME), 0, (IgniteRunnable)t).get());
 
-        checkCallable((c, t) -> c.affinityCall(singletonList(DEFAULT_CACHE_NAME), "key", t));
-        checkCallable((c, t) -> c.affinityCallAsync(singletonList(DEFAULT_CACHE_NAME), "key", t).get());
+        check(CALLABLE, (c, t) -> c.affinityCall(DEFAULT_CACHE_NAME, "key", (IgniteCallable<Void>)t));
+        check(CALLABLE, (c, t) -> c.affinityCallAsync(DEFAULT_CACHE_NAME, "key", (IgniteCallable<Void>)t).get());
 
-        checkCallable((c, t) -> c.affinityCall(singletonList(DEFAULT_CACHE_NAME), 0, t));
-        checkCallable((c, t) -> c.affinityCallAsync(singletonList(DEFAULT_CACHE_NAME), 0, t).get());
+        check(CALLABLE, (c, t) -> c.affinityCall(singletonList(DEFAULT_CACHE_NAME), "key", (IgniteCallable<Void>)t));
+        check(CALLABLE, (c, t) -> c.affinityCallAsync(singletonList(DEFAULT_CACHE_NAME), "key", (IgniteCallable<Void>)t).get());
+
+        check(CALLABLE, (c, t) -> c.affinityCall(singletonList(DEFAULT_CACHE_NAME), 0, (IgniteCallable<Void>)t));
+        check(CALLABLE, (c, t) -> c.affinityCallAsync(singletonList(DEFAULT_CACHE_NAME), 0, (IgniteCallable<Void>)t).get());
     }
 
     /** */
-    public void checkCallable(ConsumerX<IgniteCallable<Void>> consumer) throws Exception {
-        consumer.accept(grid().compute().withName(TEST_TASK_NAME), new TestCallable(TEST_TASK_NAME));
-        consumer.accept(grid().compute(), new TestCallable(TestCallable.class.getName()));
+    public void check(ComputationType type, ConsumerX<Object> consumer) throws Exception {
+        consumer.accept(grid().compute().withName(TEST_TASK_NAME), getComputationObject(type, TEST_TASK_NAME));
+        consumer.accept(grid().compute(), getComputationObject(type, null));
 
         assertThrows(() -> consumer.accept(grid().compute().withName(TEST_TASK_NAME), null));
-        consumer.accept(grid().compute(), new TestCallable(TestCallable.class.getName()));
-    }
-
-    /** */
-    public void checkRunnable(ConsumerX<IgniteRunnable> consumer) throws Exception {
-        consumer.accept(grid().compute().withName(TEST_TASK_NAME), new TestRunnable(TEST_TASK_NAME));
-        consumer.accept(grid().compute(), new TestRunnable(TestRunnable.class.getName()));
-
-        assertThrows(() -> consumer.accept(grid().compute().withName(TEST_TASK_NAME), null));
-        consumer.accept(grid().compute(), new TestRunnable(TestRunnable.class.getName()));
-    }
-
-    /** */
-    public void checkClosure(ConsumerX<IgniteClosure<Void, Void>> consumer) throws Exception {
-        consumer.accept(grid().compute().withName(TEST_TASK_NAME), new TestClosure(TEST_TASK_NAME));
-        consumer.accept(grid().compute(), new TestClosure(TestClosure.class.getName()));
-
-        assertThrows(() -> consumer.accept(grid().compute().withName(TEST_TASK_NAME), null));
-        consumer.accept(grid().compute(), new TestClosure(TestClosure.class.getName()));
+        consumer.accept(grid().compute(), getComputationObject(type, null));
     }
 
     /** */
@@ -196,6 +194,50 @@ public class TaskOptionsPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private static class TestTask extends ComputeTaskAdapter<Void, Void> {
+        /** */
+        private final String name;
+
+        /** */
+        public TestTask(String name) {
+            this.name = name == null ? getClass().getName() : name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List<ClusterNode> subgrid,
+            @Nullable Void arg
+        ) throws IgniteException {
+            return singletonMap(new TestJob(name), subgrid.iterator().next());
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Void reduce(List list) throws IgniteException {
+            return null;
+        }
+
+        /** */
+        private static class TestJob extends TaskNameChecker implements ComputeJob {
+            /** */
+            public TestJob(String expName) {
+                super(expName);
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object execute() throws IgniteException {
+                checkName();
+
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                // No-op.
+            }
+        }
+    }
+
+    /** */
     private static class TaskNameChecker {
         /** */
         @TaskSessionResource
@@ -206,7 +248,7 @@ public class TaskOptionsPropagationTest extends GridCommonAbstractTest {
 
         /** */
         public TaskNameChecker(String expName) {
-            this.expName = expName;
+            this.expName = expName == null ? getClass().getName() : expName;
         }
 
         /** */
@@ -243,5 +285,31 @@ public class TaskOptionsPropagationTest extends GridCommonAbstractTest {
     private interface ConsumerX<T> {
         /** */
         void accept(IgniteCompute c, T t) throws Exception;
+    }
+
+    /** */
+    private Object getComputationObject(ComputationType type, String name) {
+        switch (type) {
+            case TASK: return new TestTask(name);
+            case CLOSURE: return new TestClosure(name);
+            case CALLABLE: return new TestCallable(name);
+            case RUNNABLE: return new TestRunnable(name);
+            default: throw new IllegalStateException();
+        }
+    }
+
+    /** */
+    enum ComputationType {
+        /** */
+        TASK,
+
+        /** */
+        CALLABLE,
+
+        /** */
+        RUNNABLE,
+
+        /** */
+        CLOSURE
     }
 }

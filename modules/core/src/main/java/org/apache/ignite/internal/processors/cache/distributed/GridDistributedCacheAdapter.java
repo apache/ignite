@@ -187,7 +187,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     retry = !ctx.kernalContext().task().execute(
                         new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary),
                         null,
-                        options().withProjection(nodes)
+                        options(nodes)
                     ).get();
                 }
             }
@@ -229,7 +229,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
                 new RemoveAllTask(ctx.name(), topVer, skipStore, keepBinary),
                 null,
-                options().withProjection(nodes)
+                options(nodes)
             );
 
             rmvAll.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {

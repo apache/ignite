@@ -70,9 +70,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** Default task execution options. */
     private final ThreadLocal<TaskExecutionOptions> opts = ThreadLocal.withInitial(() ->
-        TaskExecutionOptions.options()
-            .withProjection(prj.nodes())
-            .withExecutor(execName)
+        TaskExecutionOptions.options(prj.nodes()).withExecutor(execName)
     );
 
     /**
@@ -1018,7 +1016,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            opts.get().withNoFailover();
+            opts.get().withFailoverDisabled();
         }
         finally {
             unguard();
@@ -1032,7 +1030,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            opts.get().withNoResultCaching();
+            opts.get().withResultCacheDisabled();
         }
         finally {
             unguard();

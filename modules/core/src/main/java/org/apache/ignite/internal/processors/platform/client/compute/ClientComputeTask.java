@@ -104,10 +104,10 @@ class ClientComputeTask implements ClientCloseableResource {
             .withTimeout(timeout);
 
         if ((flags & NO_FAILOVER_FLAG_MASK) != 0)
-            opts.withNoFailover();
+            opts.withFailoverDisabled();
 
         if ((flags & NO_RESULT_CACHE_FLAG_MASK) != 0)
-            opts.withNoResultCaching();
+            opts.withResultCacheDisabled();
 
         taskFut = task.execute(taskName, arg, opts);
 

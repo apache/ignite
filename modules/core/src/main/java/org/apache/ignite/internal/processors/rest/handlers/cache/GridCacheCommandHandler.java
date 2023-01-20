@@ -765,9 +765,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return ctx.closure().callAsync(
                 BALANCE,
                 new FlaggedCacheOperationCallable(cacheName, cacheFlags, op, key),
-                options()
-                    .withNoFailover()
-                    .withProjection(prj.nodes())
+                options(prj.nodes()).withFailoverDisabled()
             );
         }
     }
@@ -801,9 +799,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return ctx.closure().callAsync(
                 BALANCE,
                 new CacheOperationCallable(cacheName, op, key),
-                options()
-                    .withNoFailover()
-                    .withProjection(prj.nodes())
+                options(prj.nodes()).withFailoverDisabled()
             );
         }
     }

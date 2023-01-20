@@ -222,12 +222,11 @@ public class GridServiceProxy<T> implements Serializable {
                         return unmarshalResult(ctx.closure().callAsync(
                                 GridClosureCallMode.BROADCAST,
                                 new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, callAttrs),
-                                options()
+                                options(Collections.singleton(node))
                                     .withPool(SERVICE_POOL)
-                                    .withNoFailover()
-                                    .withProjection(Collections.singleton(node))
+                                    .withFailoverDisabled()
                                     .withTimeout(waitTimeout)
-                                    .withAuthenticationSkipped()
+                                    .withAuthenticationDisabled()
                             ).get());
                     }
                 }

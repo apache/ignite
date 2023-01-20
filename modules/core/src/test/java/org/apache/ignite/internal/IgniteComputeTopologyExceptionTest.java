@@ -92,9 +92,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            options()
-                .withNoFailover()
-                .withProjection(nodes)
+            options(nodes).withFailoverDisabled()
         );
 
         try {

@@ -478,10 +478,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 cctx.closures().callAsync(
                     BROADCAST,
                     new BlockSetCallable(cctx.name(), id),
-                    options()
-                        .withNoFailover()
-                        .withProjection(nodes)
-                        .withSystemPoolMapping()
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
                 ).get();
 
                 // Separated cache will be destroyed after the set is blocked.
@@ -511,10 +510,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 cctx.closures().callAsync(
                     BROADCAST,
                     new RemoveSetDataCallable(cctx.name(), id, topVer),
-                    options()
-                        .withNoFailover()
-                        .withProjection(affNodes)
-                        .withSystemPoolMapping()
+                    options(affNodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
                 ).get();
             }
             catch (IgniteCheckedException e) {

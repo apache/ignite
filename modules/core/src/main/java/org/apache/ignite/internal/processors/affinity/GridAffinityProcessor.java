@@ -611,10 +611,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             .callAsync(
                 BROADCAST,
                 affinityJob(cacheName, topVer),
-                options()
-                    .withNoFailover()
-                    .withProjection(F.asList(n))
-                    .withSystemPoolMapping()
+                options(F.asList(n))
+                    .withFailoverDisabled()
+                    .asSystemTask()
             );
 
         return fut.chain(

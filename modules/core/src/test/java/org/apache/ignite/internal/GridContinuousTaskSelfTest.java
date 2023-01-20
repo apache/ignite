@@ -216,7 +216,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                         return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
                     }
                 },
-                options().withProjection(ign.cluster().nodes())
+                options(ign.cluster().nodes())
             );
 
             assertEquals("DONE", fut.get(3000));

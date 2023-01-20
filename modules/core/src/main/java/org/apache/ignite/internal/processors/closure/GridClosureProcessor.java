@@ -353,7 +353,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     ) {
         assert mode != null;
 
-        if (F.isEmpty(jobs) && opts.isNoFailover())
+        if (F.isEmpty(jobs) && opts.isFailoverDisabled())
             return new GridFinishedFuture<>();
 
         assert !F.isEmpty(jobs);
@@ -458,7 +458,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     ) {
         assert mode != null;
 
-        if (job == null && opts.isNoFailover())
+        if (job == null && opts.isFailoverDisabled())
             return new GridFinishedFuture<>();
 
         assert job != null;

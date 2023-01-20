@@ -320,9 +320,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
         boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
 
-        resCache = !(noResCacheAnnotation || opts.isNoResultCaching());
+        resCache = !(noResCacheAnnotation || opts.isResultCacheDisabled());
 
-        this.noFailover = opts.isNoFailover();
+        this.noFailover = opts.isFailoverDisabled();
 
         if (task instanceof AffinityTask) {
             AffinityTask affTask = (AffinityTask)task;

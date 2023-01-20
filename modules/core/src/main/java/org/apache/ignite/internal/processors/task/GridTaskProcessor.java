@@ -540,10 +540,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 
-        if (!opts.isAuthenticationSkipped())
+        if (!opts.isAuthenticationDisabled())
             ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
 
-        long timeout0 = opts.timeout() == 0 ? Long.MAX_VALUE : opts.timeout();
+        long timeout0 = opts.timeout().orElse(Long.MAX_VALUE);
 
         long startTime = U.currentTimeMillis();
 
@@ -686,7 +686,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             emptyMap(),
             fullSup,
             internal,
-            opts.executorName(),
+            opts.executor(),
             ctx.security().enabled() ? ctx.security().securityContext().subject().login() : null
         );
 
@@ -745,7 +745,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
                         try {
                             // Start task execution in another thread.
-                            if (opts.isSystemPoolMapping())
+                            if (opts.isSystemTask())
                                 ctx.pools().getSystemExecutorService().execute(taskWorker);
                             else
                                 ctx.pools().getExecutorService().execute(taskWorker);

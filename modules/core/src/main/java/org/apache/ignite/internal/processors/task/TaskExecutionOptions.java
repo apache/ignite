@@ -28,16 +28,13 @@ public class TaskExecutionOptions {
     private String name;
 
     /** */
-    private long timeout;
+    private Long timeout;
 
     /** */
     private String execName;
 
     /** */
-    private boolean isNoFailover;
-
-    /** */
-    private boolean isNoResultCaching;
+    Byte pool;
 
     /** */
     private Collection<ClusterNode> projection;
@@ -46,13 +43,19 @@ public class TaskExecutionOptions {
     private IgnitePredicate<ClusterNode> projectionPredicate;
 
     /** */
-    private boolean isSysPoolMapping;
+    private boolean isFailoverDisabled;
 
     /** */
-    private boolean isAuthSkipped;
+    private boolean isResultCacheDisabled;
 
     /** */
-    private Byte pool;
+    private boolean isSysTask;
+
+    /** */
+    private boolean isAuthDisabled;
+
+    /** */
+    private TaskExecutionOptions() {}
 
     /** */
     public static TaskExecutionOptions options() {
@@ -60,8 +63,13 @@ public class TaskExecutionOptions {
     }
 
     /** */
-    public long timeout() {
-        return timeout;
+    public static TaskExecutionOptions options(Collection<ClusterNode> projection) {
+        return new TaskExecutionOptions().withProjection(projection);
+    }
+
+    /** */
+    public Optional<Long> timeout() {
+        return Optional.ofNullable(timeout);
     }
 
     /** */
@@ -108,7 +116,7 @@ public class TaskExecutionOptions {
     }
 
     /** */
-    public String executorName() {
+    public String executor() {
         return execName;
     }
 
@@ -132,49 +140,49 @@ public class TaskExecutionOptions {
     }
 
     /** */
-    public boolean isNoFailover() {
-        return isNoFailover;
+    public boolean isFailoverDisabled() {
+        return isFailoverDisabled;
     }
 
     /** */
-    public TaskExecutionOptions withNoFailover() {
-        isNoFailover = true;
+    public TaskExecutionOptions withFailoverDisabled() {
+        isFailoverDisabled = true;
 
         return this;
     }
 
     /** */
-    public boolean isNoResultCaching() {
-        return isNoResultCaching;
+    public boolean isResultCacheDisabled() {
+        return isResultCacheDisabled;
     }
 
     /** */
-    public TaskExecutionOptions withNoResultCaching() {
-        isNoResultCaching = true;
+    public TaskExecutionOptions withResultCacheDisabled() {
+        isResultCacheDisabled = true;
 
         return this;
     }
 
     /** */
-    public boolean isSystemPoolMapping() {
-        return isSysPoolMapping;
+    public boolean isSystemTask() {
+        return isSysTask;
     }
 
     /** */
-    public TaskExecutionOptions withSystemPoolMapping() {
-        isSysPoolMapping = true;
+    public TaskExecutionOptions asSystemTask() {
+        isSysTask = true;
 
         return this;
     }
 
     /** */
-    public boolean isAuthenticationSkipped() {
-        return isAuthSkipped;
+    public boolean isAuthenticationDisabled() {
+        return isAuthDisabled;
     }
 
     /** */
-    public TaskExecutionOptions withAuthenticationSkipped() {
-        isAuthSkipped = true;
+    public TaskExecutionOptions withAuthenticationDisabled() {
+        isAuthDisabled = true;
 
         return this;
     }

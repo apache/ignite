@@ -1873,10 +1873,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 rmtFut = cctx.closures().callAsync(
                     BROADCAST,
                     Collections.singleton(job),
-                    options()
-                        .withNoFailover()
-                        .withProjection(nodes)
-                        .withSystemPoolMapping()
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
                 );
 
             // Get local metadata.
@@ -1980,10 +1979,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 rmtFut = cctx.closures().callAsync(
                     BROADCAST,
                     Collections.singleton(job),
-                    options()
-                        .withNoFailover()
-                        .withProjection(nodes)
-                        .withSystemPoolMapping()
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
                 );
             }
 
