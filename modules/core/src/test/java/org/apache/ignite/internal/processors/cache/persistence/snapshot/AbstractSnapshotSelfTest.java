@@ -70,11 +70,17 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -82,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -668,9 +675,53 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
         File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
-        return incSnpDir.exists()
+        boolean exists = incSnpDir.exists()
             && incSnpDir.isDirectory()
             && new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)).exists();
+
+        if (exists) {
+            checkIncrementalSnapshotWalRecords(node, incSnpDir, incIdx);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** */
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir, int incIdx) {
+        try {
+            IncrementalSnapshotMetadata incSnpMeta = snp(node)
+                .readFromFile(new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)));
+
+            WALIterator it = new IgniteWalIteratorFactory(log).iterator(
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpDir));
+
+            boolean started = false;
+            boolean finished = false;
+
+            for (IgniteBiTuple<WALPointer, WALRecord> entry: it) {
+                assertFalse("IncrementalSnapshotFinishRecord must be the last record in snapshot", finished);
+
+                WALRecord rec = entry.getValue();
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD) {
+                    if (((IncrementalSnapshotStartRecord)rec).id().equals(incSnpMeta.requestId()))
+                        started = true;
+                }
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
+                    if (((IncrementalSnapshotFinishRecord)rec).id().equals(incSnpMeta.requestId()))
+                        finished = true;
+                }
+            }
+
+            assertTrue(started);
+            assertTrue(finished);
+        }
+        catch (IOException | IgniteCheckedException | IllegalArgumentException e) {
+            assert false : "Unexpected exception while checking segments: " + e;
+        }
     }
 
     /**

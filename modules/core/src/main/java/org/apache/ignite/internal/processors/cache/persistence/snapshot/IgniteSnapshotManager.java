@@ -113,8 +113,7 @@ import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
-import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -144,6 +143,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -162,6 +162,7 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -213,6 +214,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -247,6 +249,7 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  * These major actions available:
  * <ul>
  *     <li>Create snapshot of the whole cluster cache groups by triggering PME to achieve consistency.</li>
+ *     <li>Create incremental snapshot of transactional cache groups by using Consistent Cut algorithm.</li>
  * </ul>
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
@@ -422,6 +425,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Manager to receive responses of remote snapshot requests. */
     private final SequentialRemoteSnapshotManager snpRmtMgr;
 
+    /** Incremental snapshot ID. */
+    private volatile UUID incSnpId;
+
+    /**
+     * While incremental snapshot is running every node wraps outgoing transaction messages into {@link IncrementalSnapshotAwareMessage}.
+     * Nodes start wrapping messages from the moment snapshot started on the node, and finsihes after all baseline
+     * nodes completed {@link #markWalFut}. This future completes after last {@link IncrementalSnapshotAwareMessage} was sent.
+     */
+    private volatile GridFutureAdapter<?> wrapMsgsFut;
+
+    /** Future that completes after {@link IncrementalSnapshotFinishRecord} was written. */
+    private volatile @Nullable IncrementalSnapshotMarkWalFuture markWalFut;
+
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
@@ -441,7 +457,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
-            this::processLocalSnapshotEndStageResult);
+            this::processLocalSnapshotEndStageResult, (reqId, req) -> new InitMessage<>(reqId, END_SNAPSHOT, req, true));
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
@@ -821,6 +837,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         clusterSnpReq = req;
 
+        if (req.incremental())
+            handleIncrementalSnapshotId(req.requestId());
+
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
@@ -880,6 +899,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Handles received incremental snapshot ID from remote node.
+     *
+     * @param id Incremental snapshot ID.
+     */
+    public void handleIncrementalSnapshotId(UUID id) {
+        // TODO: IGNITE-18599 handle if `id != incSnpId`.
+        if (incSnpId != null)
+            return;
+
+        synchronized (snpOpMux) {
+            if (incSnpId != null) {
+                if (!incSnpId.equals(id))
+                    U.warn(log, "Received incremental snapshot ID differs from current [rcvId=" + id + ", currId=" + incSnpId + ']');
+
+                return;
+            }
+
+            wrapMsgsFut = new GridFutureAdapter<>();
+
+            cctx.tm().txMessageTransformer((msg, tx) -> new IncrementalSnapshotAwareMessage(msg, id, tx == null ? null : tx.incSnpId()));
+
+            markWalFut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
+                    ? new IncrementalSnapshotMarkWalFuture(cctx, id) : null;
+
+            incSnpId = id;
+        }
+
+        if (markWalFut != null)
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(markWalFut::init);
+    }
+
+    /**
      * @param req Request on snapshot creation.
      * @param meta Full snapshot metadata.
      * @return Future which will be completed when a snapshot has been started.
@@ -889,7 +940,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata meta
     ) {
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
-        WALPointer lowPtr, highPtr;
+        WALPointer lowPtr;
 
         if (req.incrementIndex() == 1)
             lowPtr = meta.snapshotRecordPointer();
@@ -908,27 +959,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new GridFinishedFuture<>(e);
             }
 
-            lowPtr = prevIncSnpMeta.cutPointer();
+            lowPtr = prevIncSnpMeta.incSnpPointer();
         }
-
-        cctx.database().checkpointReadLock();
-
-        try {
-            highPtr = cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()));
-
-            // Dummy way to forcefully switch to the next segment.
-            // TODO: Must be replaced with the actual ConsistentCut logging.
-            cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
-
-        // For now, forcefully rollover to the next WAL segments to make segments waiting possible.
-        assert cctx.wal().currentSegment() >= highPtr.index() : "Rollover must be invoked.";
 
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
@@ -940,7 +972,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             tmpWorkDir,
             ioFactory,
             lowPtr,
-            highPtr
+            markWalFut
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -953,7 +985,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
-                highPtr
+                markWalFut.result()
             );
 
             storeSnapshotMeta(
@@ -1088,10 +1120,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+        SnapshotOperationRequest snpReq = clusterSnpReq;
+
+        if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental()) {
+            cctx.tm().txMessageTransformer(null);
+
+            GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
+
+            for (IgniteInternalTx tx: cctx.tm().activeTransactions())
+                activeTxsFut.add(tx.finishFuture());
+
+            activeTxsFut.markInitialized();
+
+            activeTxsFut.listen(f -> wrapMsgsFut.onDone());
+        }
+
         if (cctx.kernalContext().clientNode())
             return;
-
-        SnapshotOperationRequest snpReq = clusterSnpReq;
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
@@ -1229,35 +1274,42 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()) || cctx.kernalContext().clientNode())
+        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        try {
-            if (req.error() != null) {
-                snpReq.error(req.error());
+        IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
 
-                if (req.incremental())
-                    U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
-                else
-                    deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+        return prepFut.chain(r -> {
+            if (cctx.kernalContext().clientNode())
+                return null;
+
+            try {
+                if (req.error() != null) {
+                    snpReq.error(req.error());
+
+                    if (req.incremental())
+                        U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
+                    else
+                        deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+                }
+                else if (!F.isEmpty(req.warnings())) {
+                    // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
+                    if (!isLocalNodeCoordinator(cctx.discovery()))
+                        snpReq.warnings(req.warnings());
+
+                    snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
+
+                    storeWarnings(snpReq);
+                }
+
+                removeLastMetaStorageKey();
             }
-            else if (!F.isEmpty(req.warnings())) {
-                // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
-                if (!isLocalNodeCoordinator(cctx.discovery()))
-                    snpReq.warnings(req.warnings());
-
-                snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
-
-                storeWarnings(snpReq);
+            catch (Exception e) {
+                throw F.wrap(e);
             }
 
-            removeLastMetaStorageKey();
-        }
-        catch (Exception e) {
-            return new GridFinishedFuture<>(e);
-        }
-
-        return new GridFinishedFuture<>(new SnapshotOperationResponse());
+            return new SnapshotOperationResponse();
+        }, cctx.kernalContext().pools().getSnapshotExecutorService());
     }
 
     /**
@@ -1315,6 +1367,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());
         endFail.removeAll(res.keySet());
+
+        if (snpReq.incremental()) {
+            wrapMsgsFut = null;
+            markWalFut = null;
+
+            incSnpId = null;
+        }
 
         clusterSnpReq = null;
 
@@ -1816,7 +1875,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Read metadata.
      * @param <T> Type of metadata.
      */
-    private <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
+    <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
         if (!smf.exists())
             throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
@@ -2371,8 +2430,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Registers a local snapshot task.
+     *
      * @param task Snapshot operation task to be executed.
-     * @return Snapshot operation task which should be registered on checkpoint to run.
+     * @return Snapshot operation task which should be registered.
      */
     private AbstractSnapshotFutureTask<?> registerTask(String rqId, AbstractSnapshotFutureTask<?> task) {
         if (!busyLock.enterBusy()) {
@@ -2764,6 +2825,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Snapshot handlers. */
     protected SnapshotHandlers handlers() {
         return handlers;
+    }
+
+    /** @return Current incremental snapshot ID. */
+    public @Nullable UUID incrementalSnapshotId() {
+        return incSnpId;
     }
 
     /** Snapshot operation handlers. */
@@ -4072,6 +4138,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private final boolean needExchange;
+
         /**
          * @param processId Unique process id.
          * @param req Snapshot initial request.
@@ -4080,12 +4149,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             UUID processId,
             SnapshotOperationRequest req
         ) {
-            super(processId, START_SNAPSHOT, req, false);
+            super(processId, START_SNAPSHOT, req, req.incremental());
+
+            needExchange = !req.incremental();
         }
 
         /** {@inheritDoc} */
         @Override public boolean needExchange() {
-            return true;
+            return needExchange;
         }
 
         /** {@inheritDoc} */

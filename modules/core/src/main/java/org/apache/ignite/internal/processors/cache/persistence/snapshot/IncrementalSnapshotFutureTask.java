@@ -28,9 +28,11 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -59,12 +61,12 @@ class IncrementalSnapshotFutureTask
     /**
      * Pointer to the previous snapshot record.
      * In case first increment snapshot will point to the {@link ClusterSnapshotRecord}.
-     * For second and subsequent incements on the previous consistent cut record.
+     * For second and subsequent incements on the previous {@link IncrementalSnapshotFinishRecord}.
      */
     private final WALPointer lowPtr;
 
-    /** Current consistent cut WAL pointer. */
-    private final WALPointer highPtr;
+    /** Future that completes with WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
+    private final IgniteInternalFuture<WALPointer> highPtrFut;
 
     /** */
     public IncrementalSnapshotFutureTask(
@@ -77,7 +79,7 @@ class IncrementalSnapshotFutureTask
         File tmpWorkDir,
         FileIOFactory ioFactory,
         WALPointer lowPtr,
-        WALPointer highPtr
+        IgniteInternalFuture<WALPointer> highPtrFut
     ) {
         super(
             cctx,
@@ -109,7 +111,7 @@ class IncrementalSnapshotFutureTask
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
         this.lowPtr = lowPtr;
-        this.highPtr = highPtr;
+        this.highPtrFut = highPtrFut;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -130,9 +132,15 @@ class IncrementalSnapshotFutureTask
                 return false;
             }
 
-            cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
+            highPtrFut.chain(fut -> {
+                if (fut.error() != null) {
+                    onDone(fut.error());
+
+                    return null;
+                }
+
                 try {
-                    copyWal(incSnpDir);
+                    copyWal(incSnpDir, fut.result());
 
                     File snpMarshallerDir = MarshallerContextImpl.mappingFileStoreWorkDir(incSnpDir.getAbsolutePath());
 
@@ -157,7 +165,9 @@ class IncrementalSnapshotFutureTask
                 catch (Throwable e) {
                     onDone(e);
                 }
-            });
+
+                return null;
+            }, cctx.kernalContext().pools().getSnapshotExecutorService());
 
             return true;
         }
@@ -170,10 +180,11 @@ class IncrementalSnapshotFutureTask
      * Copies WAL segments to the incremental snapshot directory.
      *
      * @param incSnpDir Incremental snapshot directory.
+     * @param highPtr High WAL pointer to copy.
      * @throws IgniteInterruptedCheckedException If failed.
      * @throws IOException If failed.
      */
-    private void copyWal(File incSnpDir) throws IgniteInterruptedCheckedException, IOException {
+    private void copyWal(File incSnpDir, WALPointer highPtr) throws IgniteInterruptedCheckedException, IOException {
         // First increment must include low segment, because full snapshot knows nothing about WAL.
         // All other begins from the next segment because lowPtr already saved inside previous increment.
         long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);

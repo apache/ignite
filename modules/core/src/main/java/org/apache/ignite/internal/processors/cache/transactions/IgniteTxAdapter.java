@@ -267,6 +267,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
 
+    /** Incremental snapshot ID. */
+    private @Nullable UUID incSnpId;
+
+    /** {@inheritDoc} */
+    @Override public UUID incSnpId() {
+        return incSnpId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incSnpId(UUID id) {
+        incSnpId = id;
+    }
+
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
 
@@ -2082,6 +2095,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public MvccSnapshot mvccSnapshot() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID incSnpId() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void incSnpId(UUID id) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
