@@ -51,8 +51,8 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** Max page size. */
     private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalNativeOrderDirectByteBuffer(MAX_PAGE_SIZE);
 
-    /** A bit more than max page size. */
-    private final ThreadLocalDirectByteBuffer compressBuf = new ThreadLocalNativeOrderDirectByteBuffer(MAX_PAGE_SIZE + 1024);
+    /** A bit more than max page size, extra space is required by compressors. */
+    private final ThreadLocalDirectByteBuffer compressBuf = new ThreadLocalNativeOrderDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE));
 
     /**
      * @param ctx Kernal context.
@@ -411,6 +411,15 @@ public class CompressionProcessorImpl extends CompressionProcessor {
         }
 
         setCompressionInfo(page, DiskPageCompression.DISABLED, 0, 0);
+    }
+
+    /** */
+    private static int maxCompressedBufferSize(int baseSz) {
+        int lz4Sz = Lz4.fastCompressor.maxCompressedLength(baseSz);
+        int zstdSz = (int)Zstd.compressBound(baseSz);
+        int snappySz = Snappy.maxCompressedLength(baseSz);
+
+        return Math.max(Math.max(lz4Sz, zstdSz), snappySz);
     }
 
     /** */
