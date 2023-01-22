@@ -73,6 +73,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  *
@@ -474,11 +475,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             Collection<ClusterNode> nodes = cctx.discovery().nodes(topVer);
 
             try {
-                cctx.closures().callAsyncNoFailover(BROADCAST,
+                cctx.closures().callAsync(
+                    BROADCAST,
                     new BlockSetCallable(cctx.name(), id),
-                    nodes,
-                    true,
-                    0, false).get();
+                    options(nodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
+                ).get();
 
                 // Separated cache will be destroyed after the set is blocked.
                 if (separated)
@@ -504,11 +507,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
             try {
-                cctx.closures().callAsyncNoFailover(BROADCAST,
+                cctx.closures().callAsync(
+                    BROADCAST,
                     new RemoveSetDataCallable(cctx.name(), id, topVer),
-                    affNodes,
-                    true,
-                    0, false).get();
+                    options(affNodes)
+                        .withFailoverDisabled()
+                        .asSystemTask()
+                ).get();
             }
             catch (IgniteCheckedException e) {
                 if (e.hasCause(ClusterTopologyCheckedException.class)) {
