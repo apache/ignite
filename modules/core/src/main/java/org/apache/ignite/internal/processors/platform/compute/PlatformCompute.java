@@ -46,8 +46,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
-
 /**
  * Interop compute.
  */
@@ -290,8 +288,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
             else
                 ((PlatformBalancingMultiClosureTask)task).jobs(jobs);
         }
-
-        platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, computeForPlatform.clusterGroup().nodes());
 
         return executeNative0(task);
     }
