@@ -139,12 +139,12 @@ public class TaskOptionsPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public <T> void check(Class<T> cls, ComputationConsumer<T> consumer) throws Exception {
-        consumer.accept(grid().compute().withName(TEST_TASK_NAME), getComputationObject(cls, TEST_TASK_NAME));
-        consumer.accept(grid().compute(), getComputationObject(cls, null));
+    public <T> void check(Class<T> taskCls, ComputationConsumer<T> consumer) throws Exception {
+        consumer.accept(grid().compute().withName(TEST_TASK_NAME), getComputationObject(taskCls, TEST_TASK_NAME));
+        consumer.accept(grid().compute(), getComputationObject(taskCls, null));
 
         assertThrows(() -> consumer.accept(grid().compute().withName(TEST_TASK_NAME), null));
-        consumer.accept(grid().compute(), getComputationObject(cls, null));
+        consumer.accept(grid().compute(), getComputationObject(taskCls, null));
     }
 
     /** */
@@ -284,14 +284,14 @@ public class TaskOptionsPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private <T> T getComputationObject(Class<T> cls, String name) {
-        if (ComputeTask.class.equals(cls))
+    private <T> T getComputationObject(Class<T> taskCls, String name) {
+        if (ComputeTask.class.equals(taskCls))
             return (T)new TestTask(name);
-        else if (IgniteClosure.class.equals(cls))
+        else if (IgniteClosure.class.equals(taskCls))
             return (T)new TestClosure(name);
-        else if (IgniteCallable.class.equals(cls))
+        else if (IgniteCallable.class.equals(taskCls))
             return (T)new TestCallable(name);
-        else if (IgniteRunnable.class.equals(cls))
+        else if (IgniteRunnable.class.equals(taskCls))
             return (T)new TestRunnable(name);
         else
             throw new IllegalStateException();

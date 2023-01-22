@@ -352,15 +352,16 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         TaskExecutionOptions opts
     ) {
         assert mode != null;
-
-        if (F.isEmpty(jobs) && opts.isFailoverDisabled())
-            return new GridFinishedFuture<>();
+        assert opts.isFailoverDisabled() || !F.isEmpty(jobs);
 
         assert !F.isEmpty(jobs);
 
         busyLock.readLock();
 
         try {
+            if (F.isEmpty(jobs) && opts.isFailoverDisabled())
+                return new GridFinishedFuture<>();
+
             if (F.isEmpty(opts.projection()))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T6.class, U.emptyTopologyException());
 
@@ -457,15 +458,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         TaskExecutionOptions opts
     ) {
         assert mode != null;
-
-        if (job == null && opts.isFailoverDisabled())
-            return new GridFinishedFuture<>();
-
-        assert job != null;
+        assert opts.isFailoverDisabled() || job != null;
 
         busyLock.readLock();
 
         try {
+            if (job == null && opts.isFailoverDisabled())
+                return new GridFinishedFuture<>();
+
             if (F.isEmpty(opts.projection()))
                 return ComputeTaskInternalFuture.finishedFuture(ctx, T7.class, U.emptyTopologyException());
 
