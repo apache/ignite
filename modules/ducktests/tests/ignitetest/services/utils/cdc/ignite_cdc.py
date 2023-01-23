@@ -78,7 +78,9 @@ class IgniteCdcUtility:
     def __form_cmd(self, cmd):
         envs = self.cluster.spec.envs()
 
-        return f"{envs_to_exports(envs)} bash " + self.cluster.script(f"{self.BASE_COMMAND} {cmd}")
+        envs["CDC_JVM_OPTS"] = f"\"{' '.join(self.cluster.spec.jvm_opts)}\""
+
+        return f"{envs_to_exports(envs)} bash " + self.cluster.script(cmd)
 
     @staticmethod
     def __parse_output(raw_output):
