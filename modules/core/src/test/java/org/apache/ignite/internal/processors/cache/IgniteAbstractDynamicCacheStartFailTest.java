@@ -897,9 +897,13 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         }
     }
 
-    /** 'MXBean'-named interface to register mx bean at dynamic cache creation to simulate failure. */
+    /**
+     * 'MXBean'-named interface to register mx bean at dynamic cache creation to simulate failure.
+     *
+     * @see GridCacheProcessor#registerMbean(Object, String, boolean)
+     */
     public interface UUIDMXBean {
-
+        // No-op.
     }
 
     /**
