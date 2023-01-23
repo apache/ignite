@@ -59,7 +59,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
 
         return new IndexQueryContext(
             res.cacheFilter(),
-            createNotNullRowFilter(idx),
+            createNotNullRowFilter(idx, true),
             res.mvccSnapshot()
         );
     }
