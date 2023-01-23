@@ -396,9 +396,9 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> jcacheDft = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> jcacheName = grid().cache(CACHE_NAME);
 
-        jcacheDft.localMxBean().clear();
+        jcacheDft.clearStatistics();
 
-        jcacheName.localMxBean().clear();
+        jcacheName.clearStatistics();
 
         jcacheDft.put("key1", "val");
         jcacheDft.put("key2", "val");

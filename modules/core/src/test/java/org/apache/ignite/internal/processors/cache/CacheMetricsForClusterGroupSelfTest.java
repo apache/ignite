@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotEquals;
+
 /**
  * Test for cluster wide cache metrics.
  */
@@ -248,7 +250,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             }, expectNonZero);
 
             assertEquals(metrics.getCacheGets(), sumGets);
-            assertEquals(cache.mxBean().getCacheGets(), sumGets);
 
             long sumPuts = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
                 @Override public Long apply(CacheMetrics input) {
@@ -257,7 +258,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             }, expectNonZero);
 
             assertEquals(metrics.getCachePuts(), sumPuts);
-            assertEquals(cache.mxBean().getCachePuts(), sumPuts);
 
             long sumHits = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
                 @Override public Long apply(CacheMetrics input) {
@@ -266,7 +266,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             }, expectNonZero);
 
             assertEquals(metrics.getCacheHits(), sumHits);
-            assertEquals(cache.mxBean().getCacheHits(), sumHits);
 
             if (expectNonZero) {
                 long sumHeapEntries = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
@@ -277,9 +276,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
                 }, true);
 
                 assertEquals(metrics.getHeapEntriesCount(), sumHeapEntries);
-                assertEquals(cache.mxBean().getHeapEntriesCount(), sumHeapEntries);
             }
-
         }
     }
 
@@ -298,16 +295,13 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             assertEquals(clusterMetrics.name(), locMetrics.name());
 
             assertEquals(0L, clusterMetrics.getCacheGets());
-            assertEquals(0L, cache.mxBean().getCacheGets());
-            assertEquals(locMetrics.getCacheGets(), cache.localMxBean().getCacheGets());
+            assertNotEquals(0L, locMetrics.getCacheGets());
 
             assertEquals(0L, clusterMetrics.getCachePuts());
-            assertEquals(0L, cache.mxBean().getCachePuts());
-            assertEquals(locMetrics.getCachePuts(), cache.localMxBean().getCachePuts());
+            assertNotEquals(0L, locMetrics.getCachePuts());
 
             assertEquals(0L, clusterMetrics.getCacheHits());
-            assertEquals(0L, cache.mxBean().getCacheHits());
-            assertEquals(locMetrics.getCacheHits(), cache.localMxBean().getCacheHits());
+            assertNotEquals(0L, locMetrics.getCacheHits());
         }
     }
 
