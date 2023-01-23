@@ -444,7 +444,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.active(true).");
+                "join the cluster. To activate the cluster call Ignite.cluster().state(ClusterState.ACTIVE).");
         }
     }
 
@@ -793,7 +793,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Initial user set and initial user operation (received on join) are processed here.
      */
     private void onLocalJoin() {
-        if (ctx.isDaemon() || ctx.clientDisconnected() || coordinator() == null)
+        if (ctx.clientDisconnected() || coordinator() == null)
             return;
 
         if (F.eq(coordinator().id(), ctx.localNodeId())) {
@@ -890,7 +890,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @return {@code true} if node holds user information. Otherwise returns {@code false}.
      */
     private static boolean isNodeHoldsUsers(ClusterNode n) {
-        return !n.isClient() && !n.isDaemon();
+        return !n.isClient();
     }
 
     /**

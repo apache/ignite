@@ -141,6 +141,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
@@ -182,7 +183,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -195,6 +195,7 @@ import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
@@ -267,9 +268,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private final boolean keepStaticCacheConfiguration = IgniteSystemProperties.getBoolean(
         IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION);
-
-    /** MBean group for cache group metrics */
-    private static final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
     /**
      * Initial timeout (in milliseconds) for output the progress of restoring partitions status.
@@ -559,16 +557,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Object obj : grp.configuredUserObjects())
             cleanup(cfg, obj, false);
 
-        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
-            try {
-                ctx.config().getMBeanServer().unregisterMBean(U.makeMBeanName(ctx.igniteInstanceName(),
-                    CACHE_GRP_METRICS_MBEAN_GRP, grp.cacheOrGroupName()));
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
-            }
-        }
-
         grp.metrics().remove(destroy);
 
         grp.removeIOStatistic(destroy);
@@ -623,7 +611,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        if (!ctx.isDaemon() && (!CU.isPersistenceEnabled(ctx.config())) || ctx.config().isClientMode()) {
+        if (!CU.isPersistenceEnabled(ctx.config()) || ctx.config().isClientMode()) {
             CacheJoinNodeDiscoveryData data = locCfgMgr.restoreCacheConfigurations();
 
             if (data != null)
@@ -693,9 +681,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         AffinityTopologyVersion joinVer;
 
         try {
@@ -1286,7 +1271,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
-        CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
@@ -1326,7 +1310,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * Managers in starting order!
              * ===========================
              */
-            compressMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1444,7 +1427,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * Managers in starting order!
                  * ===========================
                  */
-                compressMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,
@@ -2497,6 +2479,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
+        CompressionHandler compressHandler = CompressionHandler.create(ctx, cfg);
+
+        if (log.isInfoEnabled() && compressHandler.compressionEnabled()) {
+            log.info("Disk page compression is enabled [cacheGrp=" + CU.cacheOrGroupName(cfg) +
+                ", compression=" + compressHandler.diskPageCompression() + ", level=" +
+                compressHandler.diskPageCompressionLevel() + "]");
+        }
+
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
@@ -2510,7 +2500,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchTopVer,
             persistenceEnabled,
             desc.walEnabled(),
-            recoveryMode
+            recoveryMode,
+            compressHandler
         );
 
         for (Object obj : grp.configuredUserObjects())
@@ -2521,16 +2512,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.start();
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
-
-        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
-            try {
-                U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
-                    grp.cacheOrGroupName(), new CacheGroupMetricsMXBeanImpl(grp), CacheGroupMetricsMXBean.class);
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to register MBean for cache group: " + grp.name(), e);
-            }
-        }
 
         assert old == null : old.name();
 
@@ -3066,7 +3047,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 
-        IgniteSnapshotManager snapshotMgr = new IgniteSnapshotManager(ctx);
+        IgniteSnapshotManager snapshotMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
+
+        if (snapshotMgr == null)
+            snapshotMgr = new IgniteSnapshotManager(ctx);
+
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
         if (snpMgr == null)

@@ -40,6 +40,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -1131,8 +1132,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         G.allGrids().stream()
             .filter(g -> !g.cluster().node().isClient())
             .findAny()
-            .filter(g -> !g.cluster().active())
-            .ifPresent(g -> g.cluster().active(true));
+            .filter(g -> !g.cluster().state().active())
+            .ifPresent(g -> g.cluster().state(ClusterState.ACTIVE));
 
         awaitPartitionMapExchange();
     }

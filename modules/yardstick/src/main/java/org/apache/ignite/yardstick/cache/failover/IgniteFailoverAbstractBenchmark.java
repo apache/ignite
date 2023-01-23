@@ -107,7 +107,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                             Collections.shuffle(ids);
 
-                            println("Waiting for partitioned map exchage of all nodes");
+                            println("Waiting for partitioned map exchange of all nodes");
 
                             ignite.compute().broadcastAsync(new AwaitPartitionMapExchangeTask())
                                 .get(args.cacheOperationTimeoutMillis());
@@ -158,7 +158,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     }
 
     /**
-     * Awaits for partitiona map exchage.
+     * Awaits for partitiona map exchange.
      *
      * @param ignite Ignite.
      * @throws Exception If failed.

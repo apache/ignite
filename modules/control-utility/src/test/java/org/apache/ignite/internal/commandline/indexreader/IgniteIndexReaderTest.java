@@ -32,17 +32,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Handler;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -50,6 +50,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -237,8 +238,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
         IgniteClusterEx cluster = node.cluster();
 
-        if (!cluster.active())
-            cluster.active(true);
+        if (!cluster.state().active())
+            cluster.state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> qryCache = node.cache(QUERY_CACHE_NAME);
 
@@ -284,7 +285,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        Logger log = createTestLogger();
+        IgniteLogger log = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
             @Override ScanContext createContext(
@@ -723,7 +724,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      * @param workDir Work directory.
      * @param cacheGrp Cache group name.
      * @param idxs Indexes to check.
-     * @param checkParts Whether to check cache data tree in partitions..
+     * @param checkParts Whether to check cache data tree in partitions.
      * @return Index reader output.
      * @throws IgniteCheckedException If failed.
      */
@@ -735,7 +736,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     ) throws IgniteCheckedException {
         testOut.reset();
 
-        Logger logger = createTestLogger();
+        IgniteLogger logger = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(
             PAGE_SIZE,
@@ -755,8 +756,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.readIndex();
         }
 
-        // Flush all Logger handlers to make log data available to test.
-        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+        if (logger instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)logger).flush();
 
         return testOut.toString();
     }

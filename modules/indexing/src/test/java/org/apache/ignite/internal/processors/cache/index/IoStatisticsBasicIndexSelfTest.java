@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -140,7 +141,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         startGrid();
 
-        grid().cluster().active(true);
+        grid().cluster().state(ClusterState.ACTIVE);
 
         populateCache();
 
@@ -167,7 +168,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         startGrid();
 
-        grid().cluster().active(true);
+        grid().cluster().state(ClusterState.ACTIVE);
 
         populateCache();
 
@@ -185,7 +186,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         startGrid();
 
-        grid().cluster().active(true);
+        grid().cluster().state(ClusterState.ACTIVE);
 
         execute(grid(), "CREATE TABLE t(id int, name varchar, primary key (id))");
 

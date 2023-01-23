@@ -769,7 +769,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertEquals(node.order(), view.nodeOrder());
         assertEquals(node.version().toString(), view.version());
         assertEquals(isLoc, view.isLocal());
-        assertEquals(node.isDaemon(), view.isDaemon());
         assertEquals(node.isClient(), view.isClient());
     }
 
@@ -1814,7 +1813,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )))) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
                 .database();

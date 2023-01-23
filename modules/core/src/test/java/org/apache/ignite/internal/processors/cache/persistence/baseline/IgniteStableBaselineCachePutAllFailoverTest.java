@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -91,7 +92,7 @@ public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFail
 
         startGrids(GRIDS_COUNT);
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         startGrid(OUT_OF_BASELINE_GRID_ID);
 

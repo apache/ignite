@@ -19,8 +19,8 @@ package org.apache.ignite.internal.commandline.encryption;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -48,7 +48,7 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
     private VisorReencryptionRateTaskArg taskArg;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             VisorCacheGroupEncryptionTaskResult<Double> res = executeTaskByNameOnNode(
                 client,
@@ -93,8 +93,8 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
             return null;
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -124,7 +124,7 @@ public class ReencryptionRateCommand extends AbstractCommand<VisorReencryptionRa
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(log, "View/change re-encryption rate limit:", ENCRYPTION,
             singletonMap("new_limit", "Decimal value to change re-encryption rate limit (MB/s)."),
             REENCRYPTION_RATE.toString(), optional("new_limit"));

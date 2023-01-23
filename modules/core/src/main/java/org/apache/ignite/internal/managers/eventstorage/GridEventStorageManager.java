@@ -96,9 +96,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
-    /** Is local node daemon? */
-    private final boolean isDaemon;
-
     /** Recordable events arrays length. */
     private final int len;
 
@@ -140,8 +137,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         super(ctx, ctx.config().getEventStorageSpi());
 
         marsh = ctx.config().getMarshaller();
-
-        isDaemon = ctx.isDaemon();
 
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
@@ -345,8 +340,8 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     U.gridEventName(type));
             }
 
-            // Override user recordable settings for daemon node.
-            if ((isDaemon || isUserRecordable(type)) && !isHiddenEvent(type)) {
+            // Override user recordable settings.
+            if (isUserRecordable(type) && !isHiddenEvent(type)) {
                 try {
                     getSpi().record(evt);
                 }

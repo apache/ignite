@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
@@ -41,11 +40,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -1196,6 +1197,9 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     @Test
     public void testNonSqlCache() throws Exception {
+        // Static index includes only '_KEY' column and does not contain primary key fields.
+        extraIdxKeyFields = singletonList(F.t(KEY_FIELD_NAME, true));
+
         final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
 
         dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true, 0);
@@ -1317,7 +1321,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         CacheConfiguration staticCacheCfg = cacheConfiguration().setName(STATIC_CACHE_NAME);
 
-        ((QueryEntity)staticCacheCfg.getQueryEntities().iterator().next()).setIndexes(Collections.singletonList(index(
+        ((QueryEntity)staticCacheCfg.getQueryEntities().iterator().next()).setIndexes(singletonList(index(
             IDX_NAME_1, field(FIELD_NAME_1)
         )));
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.memory;
 
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -30,17 +29,16 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DATA_REGION_METRICS;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.DATA_STORAGE_METRICS;
 
 /**
- * Command handler for {@link DataStorageMetrics} or a collection of {@link DataRegionMetrics}
+ * Command handler for a collection of {@link DataRegionMetrics}
  */
 public class MemoryMetricsCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Supported commands.
      */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
-        DATA_STORAGE_METRICS, DATA_REGION_METRICS);
+        DATA_REGION_METRICS);
 
     /**
      * @param ctx Context.
@@ -66,12 +64,6 @@ public class MemoryMetricsCommandHandler extends GridRestCommandHandlerAdapter {
         switch (cmd) {
             case DATA_REGION_METRICS:
                 return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().dataRegionMetrics()));
-
-            case DATA_STORAGE_METRICS:
-                if (ctx.config().getDataStorageConfiguration().isMetricsEnabled())
-                    return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().dataStorageMetrics()));
-                else
-                    return new GridFinishedFuture<>(new GridRestResponse("Storage metrics are not enabled"));
 
             default:
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, "Unknown command"));

@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -50,6 +51,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -62,13 +64,14 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
         DataRegionConfiguration drCfg = new DataRegionConfiguration()
+            .setMetricsEnabled(true)
             .setPersistenceEnabled(true);
 
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setMetricsEnabled(true)
             .setPageSize(MAX_PAGE_SIZE)
+            .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 
@@ -88,7 +91,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     @Override protected void doTestPageCompression() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "test";
 
@@ -121,8 +124,10 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         Thread.sleep(100); // Wait for metrics update.
 
-        long storeSize = ignite.dataStorageMetrics().getStorageSize();
-        long sparseStoreSize = ignite.dataStorageMetrics().getSparseStorageSize();
+        MetricRegistry pMetrics = ignite.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+
+        long storeSize = pMetrics.<LongMetric>findMetric("StorageSize").value();
+        long sparseStoreSize = pMetrics.<LongMetric>findMetric("SparseStorageSize").value();
 
         assertTrue("storeSize: " + storeSize, storeSize > 0);
 
@@ -183,7 +188,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     public void _testCompressionRatio() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "test";
 

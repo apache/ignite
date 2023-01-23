@@ -49,13 +49,17 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** Filters. */
     private final RexNode cond;
 
+    /** Allow NULL values. */
+    private final boolean allowNulls;
+
     /** */
     public IgniteHashIndexSpool(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode input,
         List<RexNode> searchRow,
-        RexNode cond
+        RexNode cond,
+        boolean allowNulls
     ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
 
@@ -63,6 +67,7 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
 
         this.searchRow = searchRow;
         this.cond = cond;
+        this.allowNulls = allowNulls;
 
         keys = ImmutableBitSet.of(RexUtils.notNullKeys(searchRow));
     }
@@ -77,7 +82,8 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInputs().get(0),
             input.getExpressionList("searchRow"),
-            input.getExpression("condition")
+            input.getExpression("condition"),
+            input.getBoolean("allowNulls", false)
         );
     }
 
@@ -88,12 +94,12 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), searchRow, cond);
+        return new IgniteHashIndexSpool(cluster, getTraitSet(), inputs.get(0), searchRow, cond, allowNulls);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteHashIndexSpool(getCluster(), traitSet, input, searchRow, cond);
+        return new IgniteHashIndexSpool(getCluster(), traitSet, input, searchRow, cond, allowNulls);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +113,8 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
 
         return writer
             .item("searchRow", searchRow)
-            .item("condition", cond);
+            .item("condition", cond)
+            .item("allowNulls", allowNulls);
     }
 
     /** {@inheritDoc} */
@@ -140,5 +147,10 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
     /** */
     public RexNode condition() {
         return cond;
+    }
+
+    /** */
+    public boolean allowNulls() {
+        return allowNulls;
     }
 }

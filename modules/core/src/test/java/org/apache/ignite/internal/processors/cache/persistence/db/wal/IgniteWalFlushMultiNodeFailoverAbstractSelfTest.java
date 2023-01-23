@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -177,7 +178,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         Ignite ig = startGrids(gridCount());
 
         ig.cluster().baselineAutoAdjustEnabled(false);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
@@ -234,7 +235,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         Ignite grid0 = startGrids(gridCount() + 1);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         cache = grid0.cache(DEFAULT_CACHE_NAME);
 

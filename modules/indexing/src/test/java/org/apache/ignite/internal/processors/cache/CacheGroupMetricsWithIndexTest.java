@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -133,7 +134,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -148,7 +149,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
@@ -159,9 +160,9 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
         for (File indexBin : idxBinFiles)
             U.delete(indexBin);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
@@ -181,7 +182,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         Ignite ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -201,7 +202,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -243,7 +244,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -274,7 +275,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(0);
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
@@ -304,7 +305,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
@@ -326,7 +327,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         stopGrid(1);
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -350,7 +351,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(1);
 
-        metrics = cacheGroupMetrics(1, GROUP_NAME).get2();
+        metrics = cacheGroupMetrics(1, GROUP_NAME);
 
         final LongMetric idxBuildCntPartitionsLeft1 = metrics.findMetric("IndexBuildCountPartitionsLeft");
 

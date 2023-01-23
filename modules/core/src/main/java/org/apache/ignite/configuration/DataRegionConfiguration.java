@@ -22,7 +22,6 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
-import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -378,7 +377,7 @@ public final class DataRegionConfiguration implements Serializable {
 
     /**
      * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
+     * at runtime via memory metrics "name=io.dataregion.{data_region_name}" mx bean.
      *
      * @return Metrics enabled flag.
      */
@@ -388,7 +387,7 @@ public final class DataRegionConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics "name=io.dataregion.{data_region_name}" mx bean.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.

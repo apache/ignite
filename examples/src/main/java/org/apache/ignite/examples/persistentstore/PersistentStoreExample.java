@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.datagrid.CacheQueryExample;
 import org.apache.ignite.examples.model.Organization;
@@ -63,7 +64,7 @@ public class PersistentStoreExample {
         try (Ignite ignite = Ignition.start("examples/config/persistentstore/example-persistent-store.xml")) {
             // Activate the cluster. Required to do if the persistent store is enabled because you might need
             // to wait while all the nodes, that store a subset of data on disk, join the cluster.
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             CacheConfiguration<Long, Organization> cacheCfg = new CacheConfiguration<>(ORG_CACHE);
 

@@ -49,20 +49,25 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     private final ImmutableBitSet keys;
 
     /** Rows. */
-    private HashMap<GroupKey, List<Row>> rows;
+    private final HashMap<GroupKey, List<Row>> rows;
+
+    /** Allow NULL values. */
+    private final boolean allowNulls;
 
     /**
      *
      */
     public RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        ImmutableBitSet keys
+        ImmutableBitSet keys,
+        boolean allowNulls
     ) {
         this.ectx = ectx;
 
         assert !F.isEmpty(keys);
 
         this.keys = keys;
+        this.allowNulls = allowNulls;
         rows = new HashMap<>();
     }
 
@@ -95,7 +100,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         for (Integer field : keys) {
             Object fieldVal = ectx.rowHandler().get(field, r);
 
-            if (fieldVal == null)
+            if (fieldVal == null && !allowNulls)
                 return NULL_KEY;
 
             b.add(fieldVal);

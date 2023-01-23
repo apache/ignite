@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -86,7 +86,7 @@ public class MetadataRemoveCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(MetadataMarshalled res, Logger log) {
+    @Override protected void printResult(MetadataMarshalled res, IgniteLogger log) {
         if (res.metadata() == null)
             throw new IllegalArgumentException("Failed to remove binary type, type not found: " + arg());
 
@@ -99,8 +99,8 @@ public class MetadataRemoveCommand
             os.write(res.metadataMarshalled());
         }
         catch (IOException e) {
-            log.severe("Cannot store removed type '" + m.typeName() + "' to: " + outFile);
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Cannot store removed type '" + m.typeName() + "' to: " + outFile);
+            log.error(CommandLogger.errorMessage(e));
 
             return;
         }

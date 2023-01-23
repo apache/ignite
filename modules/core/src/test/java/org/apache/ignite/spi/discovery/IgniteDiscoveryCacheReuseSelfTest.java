@@ -82,7 +82,7 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
             assertEquals(v2, discoCache2.version());
 
             String[] props = new String[] {
-                "state", "loc", "rmtNodes", "allNodes", "srvNodes", "daemonNodes", "rmtNodesWithCaches",
+                "state", "loc", "rmtNodes", "allNodes", "srvNodes", "rmtNodesWithCaches",
                 "allCacheNodes", "allCacheNodes", "cacheGrpAffNodes", "nodeMap", "minNodeVer"
             };
 

@@ -31,7 +31,6 @@ import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -39,6 +38,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -204,7 +203,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     public void testPersistenceMetrics() throws Exception {
         final IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         try {
             IgniteCache<Object, Object> cache = ig.cache("cache");
@@ -236,12 +235,12 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertTrue(waitForCondition(new PAX() {
                 @Override public boolean applyx() {
-                    DataStorageMetrics pMetrics = ig.dataStorageMetrics();
+                    MetricRegistry pMetrics = ig.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
                     assertNotNull(pMetrics);
 
-                    return pMetrics.getLastCheckpointTotalPagesNumber() != 0 &&
-                        pMetrics.getLastCheckpointDataPagesNumber() != 0;
+                    return pMetrics.<LongMetric>findMetric("LastCheckpointTotalPagesNumber").value() != 0 &&
+                        pMetrics.<LongMetric>findMetric("LastCheckpointDataPagesNumber").value() != 0;
                 }
             }, 10_000));
 
@@ -391,9 +390,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         long exp = walMgr(n).lastWritePointer().fileOffset() - HEADER_RECORD_SIZE;
 
-        assertEquals(exp, dbMgr(n).persistentStoreMetrics().getWalWrittenBytes());
-        assertEquals(exp, dsMetricsMXBean(n).getWalWrittenBytes());
-        assertEquals(exp, ((LongAdderMetric)dsMetricRegistry(n).findMetric("WalWrittenBytes")).value());
+        assertEquals(exp, dsMetricRegistry(n).<LongAdderMetric>findMetric("WalWrittenBytes").value());
     }
 
     /**
@@ -540,9 +537,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         if (router.hasArchive())
             totalSize += walMgr.totalSize(walFiles(router.getWalArchiveDir()));
 
-        assertEquals(totalSize, dbMgr(igniteEx).persistentStoreMetrics().getWalTotalSize());
-        assertEquals(totalSize, dsMetricsMXBean(igniteEx).getWalTotalSize());
-        assertEquals(totalSize, ((LongGauge)dsMetricRegistry(igniteEx).findMetric("WalTotalSize")).value());
+        assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
     }
 
     /**
@@ -620,16 +615,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Getting data storage MXBean.
-     *
-     * @param n Node.
-     * @return MXBean.
-     */
-    private DataStorageMetricsMXBean dsMetricsMXBean(IgniteEx n) {
-        return getMxBean(n.name(), "Persistent Store", "DataStorageMetrics", DataStorageMetricsMXBean.class);
-    }
-
-    /**
      * Check that the metric of the total size compressed segment is working correctly.
      *
      * @param n Node.
@@ -638,8 +623,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         long exp = Arrays.stream(walMgr(n).walArchiveFiles()).filter(FileDescriptor::isCompressed)
             .mapToLong(fd -> fd.file().length()).sum();
 
-        assertEquals(exp, dbMgr(n).persistentStoreMetrics().getWalCompressedBytes());
-        assertEquals(exp, dsMetricsMXBean(n).getWalCompressedBytes());
-        assertEquals(exp, ((LongAdderMetric)dsMetricRegistry(n).findMetric("WalCompressedBytes")).value());
+        assertEquals(exp, dsMetricRegistry(n).<LongAdderMetric>findMetric("WalCompressedBytes").value());
     }
 }

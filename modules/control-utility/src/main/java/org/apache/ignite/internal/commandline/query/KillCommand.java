@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.query;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -28,6 +28,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
@@ -53,8 +54,10 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.CLIENT;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN;
@@ -84,7 +87,7 @@ public class KillCommand extends AbstractCommand<Object> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             return executeTaskByNameOnNode(
                 client,
@@ -95,8 +98,8 @@ public class KillCommand extends AbstractCommand<Object> {
             );
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -212,13 +215,30 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 break;
 
+            case CLIENT:
+                taskName = VisorClientConnectionDropTask.class.getName();
+
+                String argVal = argIter.nextArg("connection id");
+
+                taskArgs = "ALL".equals(argVal) ? null : Long.parseLong(argVal);
+
+                if ("--node-id".equals(argIter.peekNextArg())) {
+                    argIter.nextArg("--node-id");
+
+                    nodeId = UUID.fromString(argIter.nextArg("node_id"));
+                }
+                else
+                    nodeId = BROADCAST_UUID;
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
             COMPUTE.toString(), "session_id");
 
@@ -246,6 +266,15 @@ public class KillCommand extends AbstractCommand<Object> {
 
         usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
             "origin_node_id", "routine_id");
+
+        params.clear();
+
+        params.put("connection_id", "Connection identifier or ALL.");
+        params.put("--node-id node_id", "Node id to drop connection from.");
+
+        usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString(),
+            "connection_id",
+            optional("--node-id node_id"));
 
         usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
             SNAPSHOT.toString(), "snapshot_name");

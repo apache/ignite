@@ -65,7 +65,7 @@ public class IgniteLaunchInModularEnvTest {
 
         Ignite ignite = Ignition.start(cfg);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "CACHE";
         ignite.getOrCreateCache(cacheName).put("key", "value");

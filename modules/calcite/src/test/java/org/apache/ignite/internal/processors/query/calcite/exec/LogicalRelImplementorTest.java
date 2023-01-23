@@ -44,9 +44,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -126,10 +129,11 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null,
             null,
             ArrayRowHandler.INSTANCE,
+            NoOpMemoryTracker.INSTANCE,
             null
         ) {
             @Override public ColocationGroup group(long srcId) {
-                return ColocationGroup.forNodes(Collections.singletonList(nodeId));
+                return ColocationGroup.forNodes(Collections.emptyList());
             }
         };
 
@@ -147,12 +151,60 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests Index take-first execution plan is changed to Sort-Limit/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexFirstRewriter() {
+        checkIndexFirstOrLastRewriter(true);
+    }
+
+    /**
+     * Tests Index take-last execution plan is changed to Sort-Limit/Scan when index is unavailable.
+     */
+    @Test
+    public void testIndexLastRewriter() {
+        checkIndexFirstOrLastRewriter(false);
+    }
+
+    /**
+     * Tests Index take-last or take-first execution plan is changed to Sort-limit/Scan when index is unavailable.
+     */
+    private void checkIndexFirstOrLastRewriter(boolean first) {
+        int idxColumn = 2;
+
+        tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, idxColumn);
+
+        IgniteIndexBound idxScan = new IgniteIndexBound(
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
+            cluster,
+            cluster.traitSet(),
+            QueryUtils.PRIMARY_KEY_INDEX,
+            first,
+            ImmutableBitSet.of(idxColumn)
+        );
+
+        Node<?> node = relImplementor.visit(idxScan);
+
+        assertTrue(node instanceof ScanNode);
+        assertNull(node.sources());
+
+        tbl.markIndexRebuildInProgress(true);
+
+        node = relImplementor.visit(idxScan);
+
+        assertTrue(node instanceof SortNode);
+        assertEquals(1, (int)U.field(node, "limit"));
+        assertTrue(node.sources() != null && node.sources().size() == 1);
+        assertTrue(node.sources().get(0) instanceof ScanNode);
+    }
+
+    /**
      * Tests IndexCount execution plan is changed to Collect/Scan when index is unavailable.
      */
     @Test
     public void testIndexCountRewriter() {
         IgniteIndexCount idxCnt = new IgniteIndexCount(cluster, cluster.traitSet(),
-            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX);
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX, false);
 
         checkCollectNode(relImplementor.visit(idxCnt));
 

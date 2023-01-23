@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -99,7 +100,7 @@ public class CheckpointListenerForRegionTest extends GridCommonAbstractTest {
         //given: One started node with default cache.
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache = ignite0.cache(DEFAULT_CACHE_NAME);
 

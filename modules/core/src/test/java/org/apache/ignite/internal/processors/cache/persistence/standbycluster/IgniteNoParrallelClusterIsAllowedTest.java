@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -33,15 +34,15 @@ public class IgniteNoParrallelClusterIsAllowedTest extends IgniteChangeGlobalSta
 
         tryToStartBackupClusterWhatShouldFail();
 
-        primary(0).cluster().active(true);
+        primary(0).cluster().state(ClusterState.ACTIVE);
 
         tryToStartBackupClusterWhatShouldFail();
 
-        primary(0).cluster().active(false);
+        primary(0).cluster().state(ClusterState.INACTIVE);
 
         tryToStartBackupClusterWhatShouldFail();
 
-        primary(0).cluster().active(true);
+        primary(0).cluster().state(ClusterState.ACTIVE);
 
         tryToStartBackupClusterWhatShouldFail();
 

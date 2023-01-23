@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(IgniteGetId)
     BOOST_REQUIRE(id1 != Guid() && id2 != Guid() && id1 != id2);
 }
 
-BOOST_AUTO_TEST_CASE(IgniteIsClientDaemonLocal)
+BOOST_AUTO_TEST_CASE(IgniteIsClientLocal)
 {
     IgniteCluster cluster = server.GetCluster();
 
@@ -211,16 +211,14 @@ BOOST_AUTO_TEST_CASE(IgniteIsClientDaemonLocal)
     BOOST_REQUIRE(nodes.size() == 2);
 
     bool isClient = nodes[0].IsClient();
-    bool isDaemon = nodes[0].IsDaemon();
     bool isLocal = nodes[0].IsLocal();
 
-    BOOST_REQUIRE(!isClient && !isDaemon && isLocal);
+    BOOST_REQUIRE(!isClient && isLocal);
 
     isClient = nodes[1].IsClient();
-    isDaemon = nodes[1].IsDaemon();
     isLocal = nodes[1].IsLocal();
 
-    BOOST_REQUIRE(isClient && !isDaemon && !isLocal);
+    BOOST_REQUIRE(isClient && !isLocal);
 }
 
 BOOST_AUTO_TEST_CASE(IgniteGetOrder)

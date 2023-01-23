@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -59,13 +60,18 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -88,6 +94,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheGroupName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
@@ -131,6 +138,9 @@ public class SnapshotRestoreProcess {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** */
+    private final ThreadLocal<ByteBuffer> locBuff;
+
     /** Future to be completed when the cache restore process is complete (this future will be returned to the user). */
     private volatile ClusterSnapshotFuture fut;
 
@@ -142,11 +152,14 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param ctx Kernal context.
+     * @param locBuff Thread local page buffer.
      */
-    public SnapshotRestoreProcess(GridKernalContext ctx) {
+    public SnapshotRestoreProcess(GridKernalContext ctx, ThreadLocal<ByteBuffer> locBuff) {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
+
+        this.locBuff = locBuff;
 
         prepareRestoreProc = new DistributedProcess<>(
             ctx, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, this::prepare, this::finishPrepare);
@@ -217,7 +230,7 @@ public class SnapshotRestoreProcess {
 
         try {
             if (ctx.clientNode())
-                throw new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation.");
+                throw new IgniteException(OP_REJECT_MSG + "Client nodes can not perform this operation.");
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
@@ -688,6 +701,7 @@ public class SnapshotRestoreProcess {
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
+        boolean skipCompressCheck = false;
         for (SnapshotMetadata meta : metas) {
             for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
@@ -695,6 +709,28 @@ public class SnapshotRestoreProcess {
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
+
+                if (!skipCompressCheck && meta.isGroupWithCompresion(CU.cacheId(grpName))) {
+                    try {
+                        File path = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+
+                        ctx.compress().checkPageCompressionSupported(path.toPath(), meta.pageSize());
+                    }
+                    catch (Exception e) {
+                        String grpWithCompr = req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
+                            .collect(Collectors.joining(", "));
+
+                        String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
+                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                            "disk page compression is disabled. To restore these groups please " +
+                            "start Ignite with configured disk page compression";
+
+                        throw new IgniteCheckedException(msg);
+                    }
+                    finally {
+                        skipCompressCheck = true;
+                    }
+                }
 
                 File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
@@ -773,6 +809,12 @@ public class SnapshotRestoreProcess {
 
                     opCtx0.dirs.add(((FilePageStoreManager)ctx.cache().context().pageStore()).cacheWorkDir(cacheData.config()));
                 }
+            }
+
+            if (!F.isEmpty(e.getValue().metas)) {
+                e.getValue().metas.stream().filter(SnapshotMetadata::hasCompressedGroups)
+                    .forEach(meta -> meta.cacheGroupIds().stream().filter(meta::isGroupWithCompresion)
+                        .forEach(opCtx0::addCompressedGroup));
             }
 
             opCtx0.metasPerNode.put(e.getKey(), new ArrayList<>(e.getValue().metas));
@@ -949,11 +991,7 @@ public class SnapshotRestoreProcess {
                             .contains(partFut.partId);
 
                         if (doCopy) {
-                            copyLocalAsync(ctx.cache().context().snapshotMgr(),
-                                opCtx0,
-                                snpCacheDir,
-                                tmpCacheDir,
-                                partFut);
+                            copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, partFut);
                         }
 
                         return doCopy;
@@ -976,11 +1014,7 @@ public class SnapshotRestoreProcess {
                             allParts.computeIfAbsent(grpId, g -> new HashSet<>())
                                 .add(idxFut = new PartitionRestoreFuture(INDEX_PARTITION, opCtx0.processedParts));
 
-                            copyLocalAsync(ctx.cache().context().snapshotMgr(),
-                                opCtx0,
-                                snpCacheDir,
-                                tmpCacheDir,
-                                idxFut);
+                            copyLocalAsync(opCtx0, snpCacheDir, tmpCacheDir, idxFut);
                         }
                     }
                 }
@@ -1006,7 +1040,7 @@ public class SnapshotRestoreProcess {
                         "[reqId=" + reqId +
                         ", snapshot=" + opCtx0.snpName +
                         ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> partitionsMapToCompactString(e.getValue()))) + ']');
+                            e -> partitionsMapToString(e.getValue()))) + ']');
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -1036,7 +1070,27 @@ public class SnapshotRestoreProcess {
 
                                 assert partFut != null : snpFile.getAbsolutePath();
 
-                                partFut.complete(snpFile.toPath());
+                                if (!opCtx0.isGroupCompressed(grpId)) {
+                                    partFut.complete(snpFile.toPath());
+
+                                    return;
+                                }
+
+                                CompletableFuture.runAsync(
+                                    () -> {
+                                        try {
+                                            punchHole(grpId, partId, snpFile);
+
+                                            partFut.complete(snpFile.toPath());
+                                        }
+                                        catch (Throwable t0) {
+                                            opCtx0.errHnd.accept(t0);
+
+                                            completeListExceptionally(rmtAwaitParts, t0);
+                                        }
+                                    },
+                                    snpMgr.snapshotExecutorService()
+                                );
                             });
                 }
             }
@@ -1319,13 +1373,11 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * @param mgr Ignite snapshot manager.
      * @param opCtx Snapshot operation context.
      * @param srcDir Snapshot directory to copy from.
      * @param targetDir Destination directory to copy to.
      */
-    private static void copyLocalAsync(
-        IgniteSnapshotManager mgr,
+    private void copyLocalAsync(
         SnapshotRestoreContext opCtx,
         File srcDir,
         File targetDir,
@@ -1333,8 +1385,11 @@ public class SnapshotRestoreProcess {
     ) {
         File snpFile = new File(srcDir, FilePageStoreManager.getPartitionFileName(partFut.partId));
         Path partFile = Paths.get(targetDir.getAbsolutePath(), FilePageStoreManager.getPartitionFileName(partFut.partId));
+        int grpId = groupIdFromTmpDir(targetDir);
 
-        CompletableFuture.supplyAsync(() -> {
+        IgniteSnapshotManager snapMgr = ctx.cache().context().snapshotMgr();
+
+        CompletableFuture<Path> copyPartFut = CompletableFuture.supplyAsync(() -> {
             if (opCtx.stopChecker.getAsBoolean())
                 throw new IgniteInterruptedException("The operation has been stopped on copy file: " + snpFile.getAbsolutePath());
 
@@ -1346,17 +1401,72 @@ public class SnapshotRestoreProcess {
                     ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
             }
 
-            IgniteSnapshotManager.copy(mgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
+            IgniteSnapshotManager.copy(snapMgr.ioFactory(), snpFile, partFile.toFile(), snpFile.length());
 
             return partFile;
-        }, mgr.snapshotExecutorService())
-            .whenComplete((r, t) -> opCtx.errHnd.accept(t))
+        }, snapMgr.snapshotExecutorService());
+
+        if (opCtx.isGroupCompressed(grpId)) {
+            copyPartFut = copyPartFut.thenComposeAsync(
+                p -> {
+                    CompletableFuture<Path> result = new CompletableFuture<>();
+                    try {
+                        punchHole(grpId, partFut.partId, partFile.toFile());
+
+                        result.complete(partFile);
+                    }
+                    catch (Throwable t) {
+                        result.completeExceptionally(t);
+                    }
+                    return result;
+                },
+                snapMgr.snapshotExecutorService()
+            );
+        }
+
+        copyPartFut.whenComplete((r, t) -> opCtx.errHnd.accept(t))
             .whenComplete((r, t) -> {
                 if (t == null)
                     partFut.complete(partFile);
                 else
                     partFut.completeExceptionally(t);
             });
+    }
+
+    /** */
+    private void punchHole(int grpId, int partId, File partFile) throws Exception {
+        FilePageStoreManager storeMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
+        FileVersionCheckingFactory factory = storeMgr.getPageStoreFactory(grpId, null);
+
+        try (FilePageStore pageStore = (FilePageStore)factory.createPageStore(getTypeByPartId(partId), partFile, val -> {})) {
+            pageStore.init();
+
+            ByteBuffer buf = locBuff.get();
+
+            long pageId = PageIdUtils.pageId(partId, (byte)0, 0);
+
+            for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
+                if (opCtx.stopChecker.getAsBoolean()) {
+                    throw new IgniteInterruptedException("The operation has been stopped while punching holes in file: "
+                        + partFile.getAbsolutePath());
+                }
+
+                if (Thread.interrupted())
+                    throw new IgniteInterruptedException("Thread has been interrupted: " + Thread.currentThread().getName());
+
+                buf.clear();
+
+                pageStore.read(pageId, buf, true);
+
+                if (PageIO.getCompressionType(buf) == CompressionProcessor.UNCOMPRESSED_PAGE)
+                    continue;
+
+                int comprPageSz = PageIO.getCompressedSize(buf);
+
+                if (comprPageSz < pageStore.getPageSize())
+                    pageStore.punchHole(pageId, comprPageSz);
+            }
+        }
     }
 
     /**
@@ -1372,10 +1482,10 @@ public class SnapshotRestoreProcess {
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
-    private static String partitionsMapToCompactString(Map<Integer, Set<Integer>> map) {
+    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.compact(e.getValue())))
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 
@@ -1416,6 +1526,9 @@ public class SnapshotRestoreProcess {
         /** Stop condition checker. */
         private final BooleanSupplier stopChecker = () -> err.get() != null;
 
+        /** Compressed groups. */
+        private final Set<Integer> comprGrps = new HashSet<>();
+
         /** Cache ID to configuration mapping. */
         private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
 
@@ -1449,7 +1562,11 @@ public class SnapshotRestoreProcess {
          * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
          * @param cfgs Cache ID to configuration mapping.
          */
-        protected SnapshotRestoreContext(SnapshotOperationRequest req, DiscoCache discoCache, Map<Integer, StoredCacheData> cfgs) {
+        protected SnapshotRestoreContext(
+            SnapshotOperationRequest req,
+            DiscoCache discoCache,
+            Map<Integer, StoredCacheData> cfgs
+        ) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             snpPath = req.snapshotPath();
@@ -1465,6 +1582,16 @@ public class SnapshotRestoreProcess {
          */
         public Collection<UUID> nodes() {
             return F.transform(discoCache.aliveBaselineNodes(), F.node2id());
+        }
+
+        /** */
+        public boolean isGroupCompressed(int grpId) {
+            return comprGrps.contains(grpId);
+        }
+
+        /** */
+        void addCompressedGroup(int grpId) {
+            comprGrps.add(grpId);
         }
     }
 

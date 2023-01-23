@@ -28,6 +28,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -58,6 +60,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -67,11 +70,17 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -79,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -94,6 +104,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -114,7 +126,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Default snapshot name. */
-    protected static final String SNAPSHOT_NAME = "testSnapshot";
+    public static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
@@ -124,6 +136,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Timeout in milliseconds to await for snapshot operation being completed. */
     protected static final long TIMEOUT = 15_000;
+
+    /** */
+    protected static final DiskPageCompression DISK_PAGE_COMPRESSION =
+        IgniteSystemProperties.getEnum(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, DiskPageCompression.DISABLED);
+
+    /** */
+    protected static final int PAGE_SIZE =
+        IgniteSystemProperties.getInteger(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
 
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
@@ -153,7 +173,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption={0}")
-    public static Iterable<Boolean> encryptionParams() {
+    public static Collection<Boolean> encryptionParams() {
+        if (DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED)
+            return Collections.singletonList(false);
+
         return Arrays.asList(false, true);
     }
 
@@ -172,10 +195,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
+                    .setMaxSize(512L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
-                .setPageSize(DFLT_PAGE_SIZE)
+                .setPageSize(PAGE_SIZE)
                 .setWalCompactionEnabled(true))
             .setClusterStateOnStart(INACTIVE)
             .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
@@ -652,9 +675,53 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
         File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
-        return incSnpDir.exists()
+        boolean exists = incSnpDir.exists()
             && incSnpDir.isDirectory()
             && new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)).exists();
+
+        if (exists) {
+            checkIncrementalSnapshotWalRecords(node, incSnpDir, incIdx);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** */
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir, int incIdx) {
+        try {
+            IncrementalSnapshotMetadata incSnpMeta = snp(node)
+                .readFromFile(new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)));
+
+            WALIterator it = new IgniteWalIteratorFactory(log).iterator(
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpDir));
+
+            boolean started = false;
+            boolean finished = false;
+
+            for (IgniteBiTuple<WALPointer, WALRecord> entry: it) {
+                assertFalse("IncrementalSnapshotFinishRecord must be the last record in snapshot", finished);
+
+                WALRecord rec = entry.getValue();
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD) {
+                    if (((IncrementalSnapshotStartRecord)rec).id().equals(incSnpMeta.requestId()))
+                        started = true;
+                }
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
+                    if (((IncrementalSnapshotFinishRecord)rec).id().equals(incSnpMeta.requestId()))
+                        finished = true;
+                }
+            }
+
+            assertTrue(started);
+            assertTrue(finished);
+        }
+        catch (IOException | IgniteCheckedException | IllegalArgumentException e) {
+            assert false : "Unexpected exception while checking segments: " + e;
+        }
     }
 
     /**

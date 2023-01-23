@@ -424,7 +424,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /**
      * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
-     * the cluster topology has not changed). All client and daemon nodes will be filtered out of the resulting
+     * the cluster topology has not changed). All client nodes will be filtered out of the resulting
      * baseline.
      *
      * @param topVer Topology version to set.
@@ -557,7 +557,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             Collection<BaselineNode> target = new ArrayList<>(top.size());
 
             for (ClusterNode node : top) {
-                if (!node.isClient() && !node.isDaemon())
+                if (!node.isClient())
                     target.add(node);
             }
 
@@ -731,7 +731,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteCheckedException(
-                "Can not change cluster tag on inactive cluster. To activate the cluster call Ignite.active(true)."
+                "Can not change cluster tag on inactive cluster. To activate the cluster call " +
+                    "Ignite.cluster().state(ClusterState.ACTIVE)."
             );
         }
 

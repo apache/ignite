@@ -461,8 +461,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         dataBag.addGridCommonData(DiscoveryDataExchangeType.QUERY_PROC.ordinal(), proposals);
 
-        // We should send inline index sizes information only to server nodes, but we can't distinguish easily daemon
-        // node from server node.
+        // We should send inline index sizes information only to server nodes.
         if (!dataBag.isJoiningNodeClient()) {
             HashMap<String, Serializable> nodeSpecificMap = new HashMap<>();
 

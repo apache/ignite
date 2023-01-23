@@ -311,7 +311,6 @@ The NODES view contains information about the cluster nodes.
 |CONSISTENT_ID |VARCHAR |Node's consistent ID.
 |HOSTNAMES |VARCHAR |The host names of the node.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
-|IS_DAEMON |BOOLEAN |Indicates whether the node is a daemon node.
 |NODE_ID |UUID |Node ID.
 |NODE_ORDER |INT |Node order within the topology.
 |VERSION |VARCHAR |Node version.
@@ -476,7 +475,7 @@ This view exposes information about currently running SQL queries.
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
 |===
 
-== SQL_QUERIES_HISTORY
+== SQL_QUERY_HISTORY
 
 [{table_opts}]
 |===

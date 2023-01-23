@@ -42,9 +42,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;
 
-    /** Daemon node flag. */
-    private boolean daemon;
-
     /**
      * @return Config URL to use in test.
      */
@@ -57,8 +54,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
-
-        cfg.setDaemon(daemon);
 
         return cfg;
     }
@@ -162,33 +157,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
                 },
                 SQLException.class,
                 "Failed to establish connection with node (is it a server node?): " + clientId
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDaemonNodeId() throws Exception {
-        daemon = true;
-
-        IgniteEx daemon = startGrid(GRID_CNT);
-
-        UUID daemonId = daemon.localNode().id();
-
-        final String url = CFG_URL_PREFIX + "nodeId=" + daemonId + '@' + configURL();
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
-                    }
-                }
-            },
-            SQLException.class,
-            "Failed to establish connection with node (is it a server node?): " + daemonId
         );
     }
 

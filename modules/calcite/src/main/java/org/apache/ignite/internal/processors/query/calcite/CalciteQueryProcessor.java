@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +46,8 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -95,6 +98,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -201,6 +205,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final QueryRegistry qryReg;
 
     /** */
+    private final CalciteQueryEngineConfiguration cfg;
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -221,6 +228,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
+
+        QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+
+        if (F.isEmpty(qryEnginesCfg))
+            cfg = new CalciteQueryEngineConfiguration();
+        else {
+            cfg = (CalciteQueryEngineConfiguration)Arrays.stream(qryEnginesCfg)
+                .filter(c -> c instanceof CalciteQueryEngineConfiguration)
+                .findAny()
+                .orElse(new CalciteQueryEngineConfiguration());
+        }
     }
 
     /**
@@ -289,6 +307,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public PrepareServiceImpl prepareService() {
         return prepareSvc;
+    }
+
+    /** */
+    public ExecutionService<Object[]> executionService() {
+        return executionSvc;
     }
 
     /** {@inheritDoc} */
@@ -401,23 +424,24 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         List<RootQuery<Object[]>> qrys = new ArrayList<>(batchedParams.size());
 
-        Function<RootQuery<Object[]>, QueryPlan> planSupplier = new Function<RootQuery<Object[]>, QueryPlan>() {
-            private QueryPlan plan;
+        BiFunction<RootQuery<Object[]>, Object[], QueryPlan> planSupplier =
+            new BiFunction<RootQuery<Object[]>, Object[], QueryPlan>() {
+                private QueryPlan plan;
 
-            @Override public QueryPlan apply(RootQuery<Object[]> qry) {
-                if (plan == null) {
-                    plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql), () ->
-                        prepareSvc.prepareSingle(qryNode, qry.planningContext())
-                    );
+                @Override public QueryPlan apply(RootQuery<Object[]> qry, Object[] params) {
+                    if (plan == null) {
+                        plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params), () ->
+                            prepareSvc.prepareSingle(qryNode, qry.planningContext())
+                        );
+                    }
+
+                    return plan;
                 }
-
-                return plan;
-            }
-        };
+            };
 
         for (final Object[] batch: batchedParams) {
             FieldsQueryCursor<List<?>> cur = processQuery(qryCtx, qry ->
-                executionSvc.executePlan(qry, planSupplier.apply(qry)), schema.getName(), sql, qrys, batch);
+                executionSvc.executePlan(qry, planSupplier.apply(qry, batch)), schema.getName(), sql, qrys, batch);
 
             cursors.add(cur);
         }
@@ -437,7 +461,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params));
 
         if (plan != null) {
             return Collections.singletonList(
@@ -455,7 +479,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 QueryPlan plan0;
                 if (qryList.size() == 1) {
                     plan0 = queryPlanCache().queryPlan(
-                        new CacheKey(schema.getName(), sql), // Use source SQL to avoid redundant parsing next time.
+                        // Use source SQL to avoid redundant parsing next time.
+                        new CacheKey(schema.getName(), sql, null, params),
                         () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }
@@ -568,5 +593,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public QueryRegistry queryRegistry() {
         return qryReg;
+    }
+
+    /** */
+    public CalciteQueryEngineConfiguration config() {
+        return cfg;
     }
 }

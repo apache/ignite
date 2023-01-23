@@ -26,14 +26,14 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Handler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -49,6 +49,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.IdleVerify;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -57,6 +58,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -89,9 +92,6 @@ import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
-
-    /** */
-    protected static final String DAEMON_NODE_NAME_PREFIX = "daemon";
 
     /** Option is used for auto confirmation. */
     protected static final String CMD_AUTO_CONFIRMATION = "--yes";
@@ -166,8 +166,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        File logDir = JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory());
+
         // Clean idle_verify log files.
-        for (File f : new File(".").listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : logDir.listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
         GridClientFactory.stopAll(false);
@@ -204,13 +206,31 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /**
      * @return Logger.
      */
-    public static Logger createTestLogger() {
-        Logger log = CommandHandler.initLogger(null);
+    public static IgniteLogger createTestLogger() {
+        JavaLogger logger = new JavaLogger(initLogger(null), false);
 
-        // Adding logging to console.
-        log.addHandler(CommandHandler.setupStreamHandler());
+        logger.addConsoleAppender(true);
 
-        return log;
+        return logger;
+    }
+
+    /**
+     * Initialises JULs logger with basic settings
+     * @param loggerName logger name. If {@code null} anonymous logger is returned.
+     * @return logger
+     */
+    public static Logger initLogger(@Nullable String loggerName) {
+        Logger result;
+
+        if (loggerName == null)
+            result = Logger.getAnonymousLogger();
+        else
+            result = Logger.getLogger(loggerName);
+
+        result.setLevel(Level.INFO);
+        result.setUseParentHandlers(false);
+
+        return result;
     }
 
     /** */
@@ -252,8 +272,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
-
-        cfg.setDaemon(igniteInstanceName.startsWith(DAEMON_NODE_NAME_PREFIX));
 
         cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION); // Extend if necessary.
 
@@ -330,8 +348,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        Logger logger = U.field(hnd, "logger");
-        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+        U.<IgniteLoggerEx>field(hnd, "logger").flush();
 
         return exitCode;
     }

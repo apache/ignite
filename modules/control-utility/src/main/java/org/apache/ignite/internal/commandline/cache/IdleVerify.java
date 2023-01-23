@@ -28,11 +28,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -57,6 +57,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 
 import static java.lang.String.format;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -81,7 +82,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
             "caches/cache groups on an idle cluster and print out the differences, if any. " +
@@ -191,7 +192,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
 
@@ -212,7 +213,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
             if (args.dump())
                 cacheIdleVerifyDump(client, clientCfg, logger);
             else if (idleVerifyV2)
-                cacheIdleVerifyV2(client, clientCfg);
+                cacheIdleVerifyV2(client, clientCfg, logger);
             else
                 legacyCacheIdleVerify(client, clientCfg, logger);
         }
@@ -300,7 +301,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     private void cacheIdleVerifyDump(
         GridClient client,
         GridClientConfiguration clientCfg,
-        Logger logger
+        IgniteLogger logger
     ) throws GridClientException {
         VisorIdleVerifyDumpTaskArg arg = new VisorIdleVerifyDumpTaskArg(
             args.caches(),
@@ -319,10 +320,12 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     /**
      * @param client Client.
      * @param clientCfg Client configuration.
+     * @param logger Logger to use.
      */
     private void cacheIdleVerifyV2(
         GridClient client,
-        GridClientConfiguration clientCfg
+        GridClientConfiguration clientCfg,
+        IgniteLogger logger
     ) throws GridClientException {
         VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(
             args.caches(),
@@ -334,32 +337,31 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
 
         IdleVerifyResultV2 res = executeTask(client, VisorIdleVerifyTaskV2.class, taskArg, clientCfg);
 
-        logParsedArgs(taskArg, System.out::print);
-        res.print(System.out::print, false);
+        logParsedArgs(taskArg, logger::info);
 
-        if (F.isEmpty(res.exceptions()))
+        StringBuilder sb = new StringBuilder();
+        res.print(sb::append, false);
+        logger.info(sb.toString());
+
+        if (F.isEmpty(res.exceptions()) && !res.hasConflicts())
             return;
 
         try {
-            File f = new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), "", false),
+            File f = new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()),
                 IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
             try (PrintWriter pw = new PrintWriter(f)) {
                 res.print(pw::print, true);
                 pw.flush();
 
-                System.out.println("See log for additional information. " + f.getAbsolutePath());
+                logger.info("See log for additional information. " + f.getAbsolutePath());
             }
             catch (FileNotFoundException e) {
-                System.err.println("Can't write exceptions to file " + f.getAbsolutePath() + " " + e.getMessage());
-
-                e.printStackTrace();
+                logger.error("Can't write exceptions to file " + f.getAbsolutePath(), e);
             }
         }
         catch (IgniteCheckedException e) {
-            System.err.println("Can't find work directory. " + e.getMessage());
-
-            e.printStackTrace();
+            logger.error("Can't find work directory. " + e.getMessage(), e);
         }
     }
 
@@ -370,7 +372,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     private void legacyCacheIdleVerify(
         GridClient client,
         GridClientConfiguration clientCfg,
-        Logger logger
+        IgniteLogger logger
     ) throws GridClientException {
         VisorIdleVerifyTaskResult res = executeTask(
             client,

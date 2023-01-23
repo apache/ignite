@@ -30,6 +30,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -123,7 +124,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
         try {
             Ignite ig0 = startGrids(4);
 
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
             Collection<IgniteFuture> cancelFutures = new ArrayList<>(NUM_TASKS);
 

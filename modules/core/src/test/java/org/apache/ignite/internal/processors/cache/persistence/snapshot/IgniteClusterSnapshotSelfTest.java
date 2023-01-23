@@ -49,6 +49,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1134,6 +1135,31 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
+    public void testClusterSnapshotFromNonBaseline() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        IgniteEx nonBaseLineNode = startGrid(G.allGrids().size());
+
+        // Yet another non-baseline.
+        startGrid(G.allGrids().size());
+
+        snp(nonBaseLineNode).createSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
+
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testClusterSnapshotFromClient() throws Exception {
         startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
         IgniteEx clnt = startClientGrid(2);
@@ -1193,9 +1219,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotInProgressCancelled() throws Exception {
-        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
-        IgniteEx startCli = startClientGrid(1);
-        IgniteEx killCli = startClientGrid(2);
+        IgniteEx srv = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(3);
+        IgniteEx killCli = startClientGrid(4);
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
             snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
@@ -1216,6 +1242,38 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx snpIg = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClientHandlesSnapshotFailOnStartStage() throws Exception {
+        int grids = 2;
+
+        Ignite ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        Ignite cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
+            .setCacheConfiguration(dfltCacheCfg))
+            .setFailureHandler(new StopNodeFailureHandler()));
+
+        TestRecordingCommunicationSpi failNodeSpi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        failNodeSpi.blockMessages((n, msg) ->
+            msg instanceof SingleNodeMessage
+                && ((SingleNodeMessage<?>)msg).type() == DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal());
+
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        failNodeSpi.waitForBlocked(1, 10_000L);
+
+        grid(1).close();
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            ClusterTopologyException.class,
+            "Snapshot operation interrupted, because baseline node left the cluster");
+
+        // Check that client node is alive.
+        assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
     }
 
     /**

@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
@@ -192,32 +191,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
                 singleton(cluster.forNode(newYoungestNode).node()),
                 cluster.nodes().stream().filter(youngest.predicate()::apply).collect(Collectors.toSet())
             );
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testForDaemons() throws Exception {
-        assertEquals(4, ignite.cluster().nodes().size());
-
-        ClusterGroup daemons = ignite.cluster().forDaemons();
-        ClusterGroup srvs = ignite.cluster().forServers();
-
-        assertEquals(0, daemons.nodes().size());
-        assertEquals(2, srvs.nodes().size());
-
-        Ignition.setDaemon(true);
-
-        try (Ignite g = startGrid(NODES_CNT)) {
-            Ignition.setDaemon(false);
-
-            try (Ignite g1 = startGrid(NODES_CNT + 1)) {
-                assertEquals(1, ignite.cluster().forDaemons().nodes().size());
-                assertEquals(3, srvs.nodes().size());
-                assertEquals(1, daemons.nodes().size());
-            }
         }
     }
 
@@ -439,7 +412,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         assertEquals(0, emptyGrp.forCacheNodes("cacheName").nodes().size());
         assertEquals(0, emptyGrp.forClientNodes("cacheName").nodes().size());
         assertEquals(0, emptyGrp.forClients().nodes().size());
-        assertEquals(0, emptyGrp.forDaemons().nodes().size());
         assertEquals(0, emptyGrp.forDataNodes("cacheName").nodes().size());
         assertEquals(0, emptyGrp.forRandom().nodes().size());
         assertEquals(0, emptyGrp.forRemotes().nodes().size());
