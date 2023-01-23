@@ -1,0 +1,41 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+{% import 'ssl_params_macro.j2' as ssl_params_util %}
+
+{% macro apply(config, service) %}
+    <bean class="org.apache.ignite.configuration.ClientConfiguration" id="thin.client.cfg">
+        <property name="addresses">
+            <list>
+                <value>{{ config.addresses }}</value>
+            </list>
+        </property>
+
+        {% if config.username %}
+        <property name="userName" value="{{ config.username }}"/>
+        <property name="userPassword" value="{{ config.password }}"/>
+        {% endif %}
+
+        {% if config.ssl_params %}
+        <property name="sslMode" value="REQUIRED"/>
+        <property name="sslClientCertificateKeyStorePath" value="{{ config.ssl_params.key_store_path }}"/>
+        <property name="sslClientCertificateKeyStorePassword" value="{{ config.ssl_params.key_store_password }}"/>
+        <property name="sslTrustCertificateKeyStorePath" value="{{ config.ssl_params.trust_store_path }}"/>
+        <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
+        {% endif %}
+    </bean>
+{% endmacro %}
