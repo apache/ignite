@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
@@ -2167,8 +2166,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ", walArchive=" + persistenceCfg.getWalArchivePath() + "]");
         }
 
-        CacheStripedExecutor exec = new CacheStripedExecutor(
-            cctx.kernalContext().pools().getStripedExecutorService());
+        CacheStripedExecutor exec = new CacheStripedExecutor(cctx.kernalContext().pools().getStripedExecutorService());
 
         long start = U.currentTimeMillis();
 
@@ -2212,11 +2210,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     catch (Throwable t) {
                                         U.error(log, "Failed to apply page snapshot. rec=[" + pageSnapshot + ']');
 
-                                        exec.onError((t instanceof IgniteCheckedException) ?
-                                            (IgniteCheckedException)t :
-                                            new IgniteCheckedException("Failed to apply page snapshot", t));
+                                        exec.onError(
+                                            (t instanceof IgniteCheckedException) ?
+                                                (IgniteCheckedException)t :
+                                                new IgniteCheckedException("Failed to apply page snapshot", t));
                                     }
-                                }, exec, groupId, partId
+                                }, groupId, partId, exec
                             );
                         }
 
@@ -2247,7 +2246,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             new IgniteCheckedException("Failed to cancel or wait partition destroy", t));
                                 }
                             }
-                        }, exec, groupId, partId);
+                        }, groupId, partId, exec);
                     }
 
                         break;
@@ -2263,7 +2262,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             pageMem.invalidate(groupId, partId);
 
                             schedulePartitionDestroy(groupId, partId);
-                        }, exec, groupId, partId);
+                        }, groupId, partId, exec);
 
                     }
                         break;
@@ -2292,7 +2291,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             (IgniteCheckedException)t :
                                             new IgniteCheckedException("Failed to apply page delta", t));
                                 }
-                            }, exec, groupId, partId);
+                            }, groupId, partId, exec);
                         }
                 }
             }
@@ -2318,26 +2317,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 log.info("Finished applying memory changes [changesApplied=" + applied +
                     ", time=" + (U.currentTimeMillis() - start) + " ms]");
 
-            finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr,
-                cctx.kernalContext().pools().getStripedExecutorService());
+            finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr, exec.executor());
         }
 
         return restoreBinaryState;
     }
 
     /**
-     * @param exec Striped executor.
      * @param consumer Runnable task.
      * @param grpId Group Id.
      * @param partId Partition Id.
+     * @param exec Striped executor.
      */
     public void stripedApplyPage(
         Consumer<PageMemoryEx> consumer,
-        CacheStripedExecutor exec,
         int grpId,
-        int partId
+        int partId,
+        CacheStripedExecutor exec
     ) throws IgniteCheckedException {
         assert consumer != null;
+        assert exec != null;
 
         PageMemoryEx pageMem = getPageMemoryForCacheGroup(grpId);
 
@@ -2558,12 +2557,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = U.currentTimeMillis();
 
-        LongAdder applied = new LongAdder();
-
-        CacheStripedExecutor exec = new CacheStripedExecutor(
-            cctx.kernalContext().pools().getStripedExecutorService());
+        AtomicLong applied = new AtomicLong();
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
+
+        CacheStripedExecutor exec = new CacheStripedExecutor(cctx.kernalContext().pools().getStripedExecutorService());
 
         Map<GroupPartitionId, Integer> partitionRecoveryStates = new HashMap<>();
 
@@ -2663,7 +2661,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     exec.onError(e);
                                 }
 
-                                applied.increment();
+                                applied.incrementAndGet();
                             }, cacheDesc.groupId(), dataEntry.partitionId());
                         }
 
@@ -2712,7 +2710,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 exec.onError(e);
                             }
 
-                        }, exec, pageDelta.groupId(), partId(pageDelta.pageId()));
+                        }, pageDelta.groupId(), partId(pageDelta.pageId()), exec);
 
                         break;
 

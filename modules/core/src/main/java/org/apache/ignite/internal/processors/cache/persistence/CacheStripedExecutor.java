@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -28,18 +28,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointReadWriteLock.CHECKPOINT_LOCK_HOLD_COUNT;
 
-/**
- * Wrapper over {@link StripedExecutor}. Cache operations are grouped by IgniteCache group and partition.
- */
+/** Wrapper over {@link StripedExecutor}, that groups submitted tasks by cache group and partition. */
 public class CacheStripedExecutor {
-    /** It is used for CAS updates of {@link #error}. */
-    private static final AtomicReferenceFieldUpdater<CacheStripedExecutor, IgniteCheckedException> ERROR =
-        AtomicReferenceFieldUpdater.newUpdater(CacheStripedExecutor.class, IgniteCheckedException.class, "error");
-
     /** Error appeared during submitted task execution. */
-    private volatile IgniteCheckedException error;
+    private final AtomicReference<IgniteCheckedException> error = new AtomicReference<>();
 
-    /** Delegate executor. */
+    /** Delegate striped executor. */
     private final StripedExecutor exec;
 
     /** Limit number of concurrent tasks submitted to the executor. Helps to avoid OOM error. */
@@ -103,24 +97,25 @@ public class CacheStripedExecutor {
         }
 
         // Checking error after all task applied.
-        IgniteCheckedException error = ERROR.get(this);
+        IgniteCheckedException err = error.get();
 
-        if (error != null)
-            throw error;
+        if (err != null)
+            throw err;
     }
 
-    /**
-     * @return {@code true} if any of submitted tasks failed.
-     */
+    /** @return {@code true} if any of submitted tasks failed. */
     public boolean error() {
-        return ERROR.get(this) != null;
+        return error.get() != null;
     }
 
-    /**
-     * @param e Error appeared during submitted task execution.
-     */
+    /** @param e Error appeared during submitted task execution. */
     public void onError(IgniteCheckedException e) {
-        ERROR.compareAndSet(this, null, e);
+        error.compareAndSet(null, e);
+    }
+
+    /** @return Underlying striped executor. */
+    public StripedExecutor executor() {
+        return exec;
     }
 
     /**
