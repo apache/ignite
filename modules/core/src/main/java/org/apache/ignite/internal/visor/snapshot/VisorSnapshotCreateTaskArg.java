@@ -47,7 +47,7 @@ public class VisorSnapshotCreateTaskArg extends VisorSnapshotCheckTaskArg {
      * @param inc Incremental snapshot flag.
      */
     public VisorSnapshotCreateTaskArg(String snpName, String snpPath, boolean sync, boolean inc) {
-        super(snpName, snpPath);
+        super(snpName, snpPath, -1);
 
         this.sync = sync;
         this.inc = inc;

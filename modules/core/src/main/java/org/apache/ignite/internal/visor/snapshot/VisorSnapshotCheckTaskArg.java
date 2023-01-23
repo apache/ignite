@@ -37,6 +37,9 @@ public class VisorSnapshotCheckTaskArg extends IgniteDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
+    /** Increment index. */
+    private Integer incIdx;
+
     /** Default constructor. */
     public VisorSnapshotCheckTaskArg() {
         // No-op.
@@ -46,9 +49,10 @@ public class VisorSnapshotCheckTaskArg extends IgniteDataTransferObject {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      */
-    public VisorSnapshotCheckTaskArg(String snpName, String snpPath) {
+    public VisorSnapshotCheckTaskArg(String snpName, String snpPath, Integer incIdx) {
         this.snpName = snpName;
         this.snpPath = snpPath;
+        this.incIdx = incIdx;
     }
 
     /** @return Snapshot name. */
@@ -61,16 +65,29 @@ public class VisorSnapshotCheckTaskArg extends IgniteDataTransferObject {
         return snpPath;
     }
 
+    /** @return Increment index. */
+    public Integer incrementIndex() {
+        return incIdx;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
         U.writeString(out, snpPath);
+
+        out.writeBoolean(incIdx != null);
+
+        if (incIdx != null)
+            out.writeInt(incIdx);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
         snpPath = U.readString(in);
+
+        if (in.readBoolean())
+            incIdx = in.readInt();
     }
 
     /** {@inheritDoc} */

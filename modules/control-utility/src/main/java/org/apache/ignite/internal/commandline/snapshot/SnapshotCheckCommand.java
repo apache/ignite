@@ -29,6 +29,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCheckCommandOption.INCREMENTAL;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCheckCommandOption.SOURCE;
 
 /**
@@ -44,6 +45,7 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
         String snpPath = null;
+        Integer incIdx = null;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
@@ -65,9 +67,15 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
 
                 snpPath = argIter.nextArg(errMsg);
             }
+            else if (option == INCREMENTAL) {
+                if (incIdx != null)
+                    throw new IllegalArgumentException(INCREMENTAL.argName() + " arg specified twice.");
+
+                incIdx = argIter.nextIntArg("Increment index");
+            }
         }
 
-        cmdArg = new VisorSnapshotCheckTaskArg(snpName, snpPath);
+        cmdArg = new VisorSnapshotCheckTaskArg(snpName, snpPath, incIdx);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +85,7 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
         params.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
 
         usage(log, "Check snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
-            optional(SOURCE.argName(), SOURCE.arg()));
+            optional(SOURCE.argName(), SOURCE.arg()), optional(INCREMENTAL.argName(), INCREMENTAL.arg()));
     }
 
     /** {@inheritDoc} */

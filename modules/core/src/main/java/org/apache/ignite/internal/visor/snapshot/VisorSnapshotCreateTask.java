@@ -67,6 +67,13 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
 
             String msgOperId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
 
+            if (arg.incremental()) {
+                msgOperId += ", incremental=true";
+
+                if (snpFut != null && snpFut.requestId() != null)
+                    msgOperId += ", incrementIndex=" + snpFut.incrementIndex();
+            }
+
             return "Snapshot create operation " + (arg.sync() ? "completed successfully" : "started") +
                 " [name=" + arg.snapshotName() + msgOperId + ']';
         }

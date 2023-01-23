@@ -2047,7 +2047,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
+                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, incIdx);
 
                 clusterSnpFut = snpFut0;
                 lastSeenSnpFut = snpFut0;
@@ -4182,6 +4182,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         final String name;
 
+        /** Increment index. */
+        final int incIdx;
+
         /** Snapshot start time. */
         final long startTime;
 
@@ -4199,6 +4202,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             rqId = null;
             name = "";
+            incIdx = -1;
             startTime = 0;
             endTime = 0;
         }
@@ -4211,6 +4215,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             onDone(err);
 
             this.name = name;
+            incIdx = -1;
             startTime = U.currentTimeMillis();
             endTime = 0;
             rqId = null;
@@ -4219,10 +4224,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param rqId Unique snapshot request id.
          * @param name Snapshot name.
+         * @param incIdx Increment index.
          */
-        public ClusterSnapshotFuture(UUID rqId, String name) {
+        public ClusterSnapshotFuture(UUID rqId, String name, int incIdx) {
             this.rqId = rqId;
             this.name = name;
+            this.incIdx = incIdx;
             startTime = U.currentTimeMillis();
         }
 
@@ -4236,6 +4243,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** @return Request ID. */
         public UUID requestId() {
             return rqId;
+        }
+
+        /** @return Increment index. */
+        public int incrementIndex() {
+            return incIdx;
         }
     }
 
