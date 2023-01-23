@@ -417,7 +417,7 @@ public class IgniteConfiguration {
     /** Failover SPI. */
     private FailoverSpi[] failSpi;
 
-    /** Cache object transform spi. */
+    /** Cache object transformer. */
     private CacheObjectTransformer cacheObjTrans;
 
     /** Load balancing SPI. */
