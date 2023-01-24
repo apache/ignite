@@ -275,7 +275,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
       node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
 
   Configure metric:
-    control.(sh|bat) --metric [--configure-histogram name newBounds] [--configure-hitrate name newRateTimeInterval]
+    control.(sh|bat) --metric (--configure-histogram name newBounds)|(--configure-hitrate name newRateTimeInterval)
 
     Parameters:
       name                 - Name of the metric which value should be configured.

@@ -36,7 +36,9 @@ import org.apache.ignite.internal.visor.metric.VisorMetricTaskArg;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
+import static org.apache.ignite.internal.commandline.CommandLogger.grouped;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
@@ -174,9 +176,13 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
         params.put("newBounds", "Comma-separated list of longs to configure histogram.");
         params.put("newRateTimeInterval", "Rate time interval of hitrate.");
 
-        usage(log, "Configure metric:", METRIC, params,
-            optional(CONFIGURE_HISTOGRAM, "name", "newBounds"),
-            optional(CONFIGURE_HITRATE, "name", "newRateTimeInterval"));
+        usage(
+            log,
+            "Configure metric:", METRIC,
+            params,
+            or(grouped(CONFIGURE_HISTOGRAM, "name", "newBounds"),
+                grouped(CONFIGURE_HITRATE, "name", "newRateTimeInterval"))
+        );
     }
 
     /** {@inheritDoc} */
