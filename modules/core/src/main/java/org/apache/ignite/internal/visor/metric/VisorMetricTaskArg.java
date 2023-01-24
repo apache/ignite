@@ -78,7 +78,6 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
         U.writeString(out, name);
         U.writeLongArray(out, bounds);
         out.writeLong(rateTimeInternal);
-
     }
 
     /** {@inheritDoc} */
