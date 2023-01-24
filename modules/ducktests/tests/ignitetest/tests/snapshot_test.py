@@ -87,7 +87,7 @@ class SnapshotTest(IgniteTest):
 
         nodes.stop()
         nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
-        nodes.start()
+        nodes.start(clean=False)
 
         control_utility.activate()
         control_utility.validate_indexes()
