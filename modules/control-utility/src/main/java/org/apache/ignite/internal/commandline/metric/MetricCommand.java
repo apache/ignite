@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.commandline.metric;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
@@ -38,6 +38,8 @@ import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
+import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.printTable;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
@@ -75,7 +77,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
                 printTable(asList("metric", "value"), asList(STRING, STRING), data, log);
             }
-            else
+            else if (arg().bounds() == null && arg().rateTimeInternal() < 0)
                 log.info("No metric with specified name was found [name=" + taskArg.name() + "]");
 
             return res;
@@ -93,6 +95,8 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
         nodeId = null;
 
         String metricName = null;
+        Object val = null;
+        boolean configureHistgoram = false;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("Failed to read command argument.");
@@ -112,6 +116,25 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
                         " 123e4567-e89b-42d3-a456-556642440000", e);
                 }
             }
+            else if (cmdArg == CONFIGURE_HISTOGRAM || cmdArg == CONFIGURE_HITRATE) {
+                if (metricName != null) {
+                    throw new IllegalArgumentException(
+                        "One of " + CONFIGURE_HISTOGRAM + ", " + CONFIGURE_HITRATE + " must be specified"
+                    );
+                }
+
+                configureHistgoram = cmdArg == CONFIGURE_HISTOGRAM;
+                metricName = argIter.nextArg("Name of metric to configure expected");
+
+                if (configureHistgoram)
+                    val = argIter.nextStringSet("Comma-separated histogram bounds expected").stream().mapToLong(Long::parseLong).toArray();
+                else {
+                    val = argIter.nextNonNegativeLongArg("Hitrate time interval");
+
+                    if ((long)val == 0)
+                        throw new IllegalArgumentException("Positive value expected");
+                }
+            }
             else {
                 if (metricName != null)
                     throw new IllegalArgumentException("Multiple metric(metric registry) names are not supported.");
@@ -123,7 +146,11 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
         if (metricName == null)
             throw new IllegalArgumentException("The name of a metric(metric registry) is expected.");
 
-        taskArg = new VisorMetricTaskArg(metricName);
+        taskArg = new VisorMetricTaskArg(
+            metricName,
+            val != null && configureHistgoram ? (long[])val : null,
+            val != null && !configureHistgoram ? (Long)val : -1
+        );
     }
 
     /** {@inheritDoc} */
@@ -133,14 +160,19 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
-        Map<String, String> params = new HashMap<>();
+        Map<String, String> params = new TreeMap<>();
 
-        params.put("node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
-        params.put("name", "Name of the metric which value should be printed." +
+        params.put("name", "Name of the metric which value should be printed or configured." +
             " If name of the metric registry is specified, value of all its metrics will be printed.");
+        params.put("node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
+        params.put("bounds", "Comma-separated list of longs to configure histogram.");
+        params.put("rateTimeInterval", "Rate time interval of hitrate.");
 
-        usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
-            "name");
+        usage(log, "Print value or configure metric:", METRIC, params,
+            optional(NODE_ID, "node_id"),
+            optional(CONFIGURE_HISTOGRAM, "name", "bounds"),
+            optional(CONFIGURE_HITRATE, "name", "rateTimeInterval"),
+            optional("name"));
     }
 
     /** {@inheritDoc} */
