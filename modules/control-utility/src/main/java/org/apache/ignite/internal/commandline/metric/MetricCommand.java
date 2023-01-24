@@ -99,7 +99,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
         String metricName = null;
         Object val = null;
-        boolean configureHistgoram = false;
+        boolean configureHistogram = false;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg("Failed to read command argument.");
@@ -126,10 +126,10 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
                     );
                 }
 
-                configureHistgoram = cmdArg == CONFIGURE_HISTOGRAM;
+                configureHistogram = cmdArg == CONFIGURE_HISTOGRAM;
                 metricName = argIter.nextArg("Name of metric to configure expected");
 
-                if (configureHistgoram) {
+                if (configureHistogram) {
                     val = Arrays.stream(argIter.nextArg("Comma-separated histogram bounds expected").split(","))
                         .mapToLong(Long::parseLong)
                         .toArray();
@@ -157,8 +157,8 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
         taskArg = new VisorMetricTaskArg(
             metricName,
-            val != null && configureHistgoram ? (long[])val : null,
-            val != null && !configureHistgoram ? (Long)val : -1
+            val != null && configureHistogram ? (long[])val : null,
+            val != null && !configureHistogram ? (Long)val : -1
         );
     }
 
