@@ -737,6 +737,17 @@ This view exposes the contents of the metastorage cache.
 |VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
 |===
 
+== DISTRIBUTED_METASTORAGE
+
+This view exposes the contents of the distributed metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
 == DS_QUEUES
 
 This view exposes the list of `IgniteQueue`.

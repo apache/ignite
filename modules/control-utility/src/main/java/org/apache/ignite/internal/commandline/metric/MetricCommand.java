@@ -31,6 +31,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 import org.apache.ignite.internal.visor.metric.VisorMetricTaskArg;
 
@@ -128,8 +129,14 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
                 configureHistgoram = cmdArg == CONFIGURE_HISTOGRAM;
                 metricName = argIter.nextArg("Name of metric to configure expected");
 
-                if (configureHistgoram)
-                    val = argIter.nextStringSet("Comma-separated histogram bounds expected").stream().mapToLong(Long::parseLong).toArray();
+                if (configureHistgoram) {
+                    val = Arrays.stream(argIter.nextArg("Comma-separated histogram bounds expected").split(","))
+                        .mapToLong(Long::parseLong)
+                        .toArray();
+
+                    if (!F.isSorted((long[])val))
+                        throw new IllegalArgumentException("Bounds must be sorted");
+                }
                 else {
                     val = argIter.nextNonNegativeLongArg("Hitrate time interval");
 

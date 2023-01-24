@@ -154,6 +154,25 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "1,not_a_number"),
             "Check arguments. For input string: \"not_a_number\""
         );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "3,2,1"),
+            "Bounds must be sorted"
+        );
+
+        assertContains(
+            log,
+            executeCommand(
+                EXIT_CODE_INVALID_ARGUMENTS,
+                CMD_METRIC,
+                CONFIGURE_HISTOGRAM.argName(),
+                "some.metric",
+                "1,2,3",
+                CONFIGURE_HITRATE.argName()
+            ),
+            "One of " + CONFIGURE_HISTOGRAM.argName() + ", " + CONFIGURE_HITRATE.argName() + " must be specified"
+        );
     }
 
     /** Tests configuration of histgoram metric. */
