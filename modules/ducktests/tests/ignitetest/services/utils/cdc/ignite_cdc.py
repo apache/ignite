@@ -20,9 +20,10 @@ This module contains Ignite CDC utility (ignite-cdc.sh) wrapper.
 import signal
 
 from ignitetest.services.utils.ignite_spec import envs_to_exports
+from ignitetest.services.utils.jvm_utils import JvmProcessMixin
 
 
-class IgniteCdcUtility:
+class IgniteCdcUtility(JvmProcessMixin):
     """
     Ignite CDC utility (ignite-cdc.sh) wrapper.
     """
@@ -58,7 +59,7 @@ class IgniteCdcUtility:
         def __stop(node):
             self.logger.info(f"{self.__service_node_id(node)}: stopping {self.BASE_COMMAND}")
 
-            pids = self.__pids(node)
+            pids = self.pids(node, self.JAVA_CLASS)
 
             for pid in pids:
                 node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
@@ -69,11 +70,6 @@ class IgniteCdcUtility:
 
     def __service_node_id(self, node):
         return f"{self.cluster.service_id} node {self.cluster.idx(node)} on {node.account.hostname}"
-
-    def __pids(self, node):
-        cmd = "pgrep -ax java | awk '/%s/ {print $1}'" % self.JAVA_CLASS
-
-        return [int(pid) for pid in node.account.ssh_capture(cmd, allow_fail=True)]
 
     def __form_cmd(self, cmd):
         envs = self.cluster.spec.envs()
