@@ -78,8 +78,8 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
 
                     return null;
                 }
-                else if (arg.rateTimeInternal() > 0) {
-                    mmgr.configureHitRate(arg.name(), arg.rateTimeInternal());
+                else if (arg.rateTimeInterval() > 0) {
+                    mmgr.configureHitRate(arg.name(), arg.rateTimeInterval());
 
                     return null;
                 }

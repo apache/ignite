@@ -69,7 +69,7 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
     }
 
     /** @return New rate time internal. */
-    public long rateTimeInternal() {
+    public long rateTimeInterval() {
         return rateTimeInternal;
     }
 

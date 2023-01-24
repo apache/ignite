@@ -80,7 +80,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
                 printTable(asList("metric", "value"), asList(STRING, STRING), data, log);
             }
-            else if (arg().bounds() == null && arg().rateTimeInternal() < 0)
+            else if (arg().bounds() == null && arg().rateTimeInterval() < 0)
                 log.info("No metric with specified name was found [name=" + taskArg.name() + "]");
 
             return res;
