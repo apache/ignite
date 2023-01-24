@@ -44,7 +44,7 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
      * @see org.apache.ignite.internal.processors.metric.impl.HitRateMetric#reset(long)
      * @see org.apache.ignite.mxbean.MetricsMxBean#configureHitRateMetric(String, long)
      */
-    private long rateTimeInternal;
+    private long rateTimeInterval;
 
     /** Default constructor. */
     public VisorMetricTaskArg() {
@@ -55,7 +55,7 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
     public VisorMetricTaskArg(String name, long[] bounds, long rateTimeInterval) {
         this.name = name;
         this.bounds = bounds;
-        this.rateTimeInternal = rateTimeInterval;
+        this.rateTimeInterval = rateTimeInterval;
     }
 
     /** @return Name of a particular metric or metric registry. */
@@ -70,21 +70,21 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
 
     /** @return New rate time internal. */
     public long rateTimeInterval() {
-        return rateTimeInternal;
+        return rateTimeInterval;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeLongArray(out, bounds);
-        out.writeLong(rateTimeInternal);
+        out.writeLong(rateTimeInterval);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         bounds = U.readLongArray(in);
-        rateTimeInternal = in.readLong();
+        rateTimeInterval = in.readLong();
     }
 
     /** {@inheritDoc} */
