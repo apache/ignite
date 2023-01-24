@@ -162,17 +162,21 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
     @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new TreeMap<>();
 
-        params.put("name", "Name of the metric which value should be printed or configured." +
-            " If name of the metric registry is specified, value of all its metrics will be printed.");
         params.put("node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
-        params.put("bounds", "Comma-separated list of longs to configure histogram.");
-        params.put("rateTimeInterval", "Rate time interval of hitrate.");
+        params.put("name", "Name of the metric which value should be printed." +
+            " If name of the metric registry is specified, value of all its metrics will be printed.");
 
-        usage(log, "Print value or configure metric:", METRIC, params,
-            optional(NODE_ID, "node_id"),
-            optional(CONFIGURE_HISTOGRAM, "name", "bounds"),
-            optional(CONFIGURE_HITRATE, "name", "rateTimeInterval"),
-            optional("name"));
+        usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
+            "name");
+
+        params.remove("node_id");
+        params.put("name", "Name of the metric which value should be configured.");
+        params.put("newBounds", "Comma-separated list of longs to configure histogram.");
+        params.put("newRateTimeInterval", "Rate time interval of hitrate.");
+
+        usage(log, "Configure metric:", METRIC, params,
+            optional(CONFIGURE_HISTOGRAM, "name", "newBounds"),
+            optional(CONFIGURE_HITRATE, "name", "newRateTimeInterval"));
     }
 
     /** {@inheritDoc} */
