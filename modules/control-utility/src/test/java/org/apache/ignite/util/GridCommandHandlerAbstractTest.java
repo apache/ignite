@@ -315,6 +315,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     }
 
     /**
+     * Executes command and checks its exit code.
+     *
+     * @param expExitCode Expected exit code.
+     * @param args Command lines arguments.
+     * @return Result of command execution.
+     */
+    protected String executeCommand(int expExitCode, String... args) {
+        int res = execute(args);
+
+        assertEquals(expExitCode, res);
+
+        return testOut.toString();
+    }
+
+    /**
      * Before command executed {@link #testOut} reset.
      *
      * @param args Arguments.

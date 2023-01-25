@@ -62,6 +62,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -788,6 +790,20 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class,
             "Found missed segments. Some events are missed.");
+
+        ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+
+        cnsmr.data.clear();
+
+        cdc = createCdc(cnsmr, getConfiguration(ign.name()));
+
+        IgniteInternalFuture<?> f = runAsync(cdc);
+
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        assertFalse(f.isDone());
+
+        f.cancel();
     }
 
     /** */
