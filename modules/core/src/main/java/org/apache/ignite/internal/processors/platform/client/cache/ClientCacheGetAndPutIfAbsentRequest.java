@@ -38,6 +38,8 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        calcAwarenessMetrics(ctx);
+
         Object res = cache(ctx).getAndPutIfAbsent(key(), val());
 
         return new ClientObjectResponse(requestId(), res);

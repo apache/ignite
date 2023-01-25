@@ -38,6 +38,8 @@ public class ClientCacheRemoveKeyRequest extends ClientCacheKeyRequest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        calcAwarenessMetrics(ctx);
+
         boolean val = cache(ctx).remove(key());
 
         return new ClientBooleanResponse(requestId(), val);
