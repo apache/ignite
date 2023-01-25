@@ -573,6 +573,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grp.removeIOStatistic(destroy);
 
+        if(destroy)sharedCtx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+
         sharedCtx.evict().cleanupRemovedGroup(grp.groupId());
     }
 
