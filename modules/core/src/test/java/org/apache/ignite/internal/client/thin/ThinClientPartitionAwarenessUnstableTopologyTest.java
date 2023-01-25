@@ -60,7 +60,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         awaitChannelsInit(3);
 
-        assertOpOnChannel(dfltCh, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
+        assertOpOnChannel(null, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
 
         Integer key = primaryKey(grid(3).cache(PART_CACHE_NAME));
 
@@ -68,9 +68,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         cache.put(key, 0);
 
-        // Cache partitions are requested from default channel, since it's first (and currently the only) channel
-        // which detects new topology.
-        assertOpOnChannel(dfltCh, ClientOperation.CACHE_PARTITIONS);
+        assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
 
         assertOpOnChannel(channels[3], ClientOperation.CACHE_PUT);
 
@@ -98,8 +96,8 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         awaitPartitionMapExchange();
 
-        // Next request will also detect topology change.
-        initDefaultChannel();
+        // Detect topology change.
+        detectTopologyChange();
 
         // Test partition awareness after node join.
         testPartitionAwareness(true);
@@ -119,8 +117,8 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         // Test partition awareness before connection to node lost.
         testPartitionAwareness(true);
 
-        // Choose node to disconnect (not default node).
-        int disconnectNodeIdx = dfltCh == channels[0] ? 1 : 0;
+        // Choose node to disconnect.
+        int disconnectNodeIdx = 0;
 
         // Drop all thin connections from the node.
         getMxBean(grid(disconnectNodeIdx).name(), "Clients",
@@ -137,8 +135,8 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         cache.put(key, 0);
 
-        // Request goes to default channel, since affinity node is disconnected.
-        assertOpOnChannel(dfltCh, ClientOperation.CACHE_PUT);
+        // Request goes to the connected channel, since affinity node is disconnected.
+        assertOpOnChannel(channels[1], ClientOperation.CACHE_PUT);
 
         cache.put(key, 0);
 
@@ -175,7 +173,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         // Send any request to failover.
         client.cache(REPL_CACHE_NAME).put(0, 0);
 
-        initDefaultChannel();
+        detectTopologyChange();
 
         awaitChannelsInit(0, 1);
 
@@ -197,7 +195,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
             clientCache.put(i, i);
 
             if (partReq) {
-                assertOpOnChannel(dfltCh, ClientOperation.CACHE_PARTITIONS);
+                assertOpOnChannel(null, ClientOperation.CACHE_PARTITIONS);
 
                 partReq = false;
             }

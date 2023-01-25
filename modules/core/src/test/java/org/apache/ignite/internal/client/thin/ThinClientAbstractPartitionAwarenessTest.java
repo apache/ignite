@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
@@ -82,9 +83,6 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
     /** Operations queue. */
     protected final Queue<T2<TestTcpClientChannel, ClientOperation>> opsQueue = new ConcurrentLinkedQueue<>();
-
-    /** Default channel. */
-    protected TestTcpClientChannel dfltCh;
 
     /** Client instance. */
     protected IgniteClient client;
@@ -143,7 +141,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
     /**
      * Checks that operation goes through specified channel.
      */
-    protected void assertOpOnChannel(TestTcpClientChannel expCh, ClientOperation expOp) {
+    protected void assertOpOnChannel(@Nullable TestTcpClientChannel expCh, ClientOperation expOp) {
         T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
 
         assertNotNull("Unexpected (null) next operation [expCh=" + expCh + ", expOp=" + expOp + ']', nextChOp);
@@ -151,8 +149,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         assertEquals("Unexpected operation on channel [expCh=" + expCh + ", expOp=" + expOp +
                 ", nextOpCh=" + nextChOp + ']', expOp, nextChOp.get2());
 
-        assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
-            ", nextOpCh=" + nextChOp + ']', expCh, nextChOp.get1());
+        if (expCh != null) {
+            assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
+                ", nextOpCh=" + nextChOp + ']', expCh, nextChOp.get1());
+        }
     }
 
     /**
@@ -175,7 +175,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 return channels[i];
         }
 
-        return dfltCh;
+        return null;
     }
 
     /**
@@ -212,25 +212,19 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
         awaitChannelsInit(chIdxs);
 
-        initDefaultChannel();
+        opsQueue.clear();
     }
 
     /**
-     *
+     * Trigger client to detect topology change.
      */
-    protected void initDefaultChannel() {
+    protected void detectTopologyChange() {
         opsQueue.clear();
 
-        // Send non-affinity request to determine default channel.
+        // Send non-affinity request to detect topology change.
         client.getOrCreateCache(REPL_CACHE_NAME);
 
-        T2<TestTcpClientChannel, ClientOperation> nextChOp = opsQueue.poll();
-
-        assertNotNull(nextChOp);
-
-        assertEquals(nextChOp.get2(), ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
-
-        dfltCh = nextChOp.get1();
+        assertOpOnChannel(null, ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME);
     }
 
     /**
