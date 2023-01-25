@@ -27,6 +27,7 @@ import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.metric.MetricCommandArg;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
@@ -34,6 +35,8 @@ import static java.util.regex.Pattern.quote;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
+import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
+import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
@@ -112,6 +115,107 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         assertContains(log, executeCommand(EXIT_CODE_OK, CMD_METRIC, "nonexistent.metric"),
             "No metric with specified name was found [name=nonexistent.metric]");
+    }
+
+    /** Tests command error output in case of invalid arguments for configure command. */
+    @Test
+    public void testInvalidConfigureMetricParameter() {
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName()),
+            "Name of metric to configure expected");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE.argName()),
+            "Name of metric to configure expected");
+
+        assertContains(log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric"),
+            "Comma-separated histogram bounds expected"
+        );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE.argName(), "some.metric"),
+            "Hitrate time interval"
+        );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "not_a_number"),
+            "Check arguments. For input string: \"not_a_number\""
+        );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE.argName(), "some.metric", "not_a_number"),
+            "Check arguments. Invalid value for Hitrate time interval: not_a_number"
+        );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "1,not_a_number"),
+            "Check arguments. For input string: \"not_a_number\""
+        );
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), "some.metric", "3,2,1"),
+            "Bounds must be sorted"
+        );
+
+        assertContains(
+            log,
+            executeCommand(
+                EXIT_CODE_INVALID_ARGUMENTS,
+                CMD_METRIC,
+                CONFIGURE_HISTOGRAM.argName(),
+                "some.metric",
+                "1,2,3",
+                CONFIGURE_HITRATE.argName()
+            ),
+            "One of " + CONFIGURE_HISTOGRAM.argName() + ", " + CONFIGURE_HITRATE.argName() + " must be specified"
+        );
+    }
+
+    /** Tests configuration of histgoram metric. */
+    @Test
+    public void testConfigureHistogram() {
+        String mregName = "configure-registry";
+
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+
+        long[] bounds = new long[] {50, 500};
+
+        HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
+
+        bounds = histogram.bounds();
+
+        assertEquals(2, bounds.length);
+        assertEquals(50, bounds[0]);
+        assertEquals(500, bounds[1]);
+
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HISTOGRAM.argName(), histogram.name(), "1,2,3");
+
+        bounds = histogram.bounds();
+
+        assertEquals(3, bounds.length);
+        assertEquals(1, bounds[0]);
+        assertEquals(2, bounds[1]);
+        assertEquals(3, bounds[2]);
+    }
+
+    /** Tests configuration of hitrate metric. */
+    @Test
+    public void testConfigureHitrate() {
+        String mregName = "configure-registry";
+
+        MetricRegistry mreg = ignite0.context().metric().registry(mregName);
+
+        HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
+
+        assertEquals(500, hitrate.rateTimeInterval());
+
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HITRATE.argName(), hitrate.name(), "100");
+
+        assertEquals(100, hitrate.rateTimeInterval());
     }
 
     /** */

@@ -274,6 +274,14 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
       name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
       node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
 
+  Configure metric:
+    control.(sh|bat) --metric (--configure-histogram name newBounds)|(--configure-hitrate name newRateTimeInterval)
+
+    Parameters:
+      name                 - Name of the metric which value should be configured.
+      newBounds            - Comma-separated list of longs to configure histogram.
+      newRateTimeInterval  - Rate time interval of hitrate.
+
   Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence
 

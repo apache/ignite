@@ -364,7 +364,7 @@ Register name: `io.dataregion.{data_region_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
-|AllocationRate | long|    Allocation rate (pages per second) averaged across rateTimeInternal.
+|AllocationRate | long|    Allocation rate (pages per second) averaged across rateTimeInterval.
 |CheckpointBufferSize |    long |    Checkpoint buffer size in bytes.
 |DirtyPages |  long|    Number of pages in memory not yet synchronized with persistent storage.
 |EmptyDataPages|  long|    Calculates empty data pages count for region. It counts only totally free pages that can be reused (e. g. pages that are contained in reuse bucket of free list).
