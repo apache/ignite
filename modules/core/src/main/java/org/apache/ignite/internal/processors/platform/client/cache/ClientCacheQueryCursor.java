@@ -28,6 +28,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
  * Base query cursor holder.
   */
 abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
+    /** Is awaraness */
+    private boolean awareness;
+
     /** Cursor. */
     private final QueryCursor<T> cursor;
 
@@ -48,11 +51,13 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
 
     /**
      * Ctor.
-     *  @param cursor Cursor.
+     *
+     * @param cursor   Cursor.
      * @param pageSize Page size.
-     * @param ctx Context.
+     * @param ctx      Context.
+     * @param awareness Awareness.
      */
-    ClientCacheQueryCursor(QueryCursor<T> cursor, int pageSize, ClientConnectionContext ctx) {
+    ClientCacheQueryCursor(QueryCursor<T> cursor, int pageSize, ClientConnectionContext ctx, boolean awareness) {
         assert cursor != null;
         assert pageSize > 0;
         assert ctx != null;
@@ -60,6 +65,7 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
         this.cursor = cursor;
         this.pageSize = pageSize;
         this.ctx = ctx;
+        this.awareness = awareness;
     }
 
     /**
@@ -79,6 +85,11 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
             writeEntry(writer, e);
 
             cnt++;
+
+            if (awareness)
+                ctx.kernalContext().sqlListener().onAwarenessHit();
+            else
+                ctx.kernalContext().sqlListener().onAwarenessMiss();
         }
 
         writer.writeInt(cntPos, cnt);
