@@ -898,6 +898,26 @@ io.dataregion.default.PagesReplaceAge             0
 io.dataregion.default.PhysicalMemoryPages         0
 Command [METRIC] finished with code: 0
 
+== Metric configure command
+
+The metrics command configure bounds of histogram metrics or rate time interval of hitrate metric.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --metric --configure-histogram histogram-metric-name 1,2,3
+control.sh --metric --configure-hitrate hitrate-metric-name 1000
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --metric --configure-histogram histogram-metric-name 1,2,3
+control.bat --metric --configure-hitrate hitrate-metric-name 1000
+----
+--
+
 == Indexes Management
 
 The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
