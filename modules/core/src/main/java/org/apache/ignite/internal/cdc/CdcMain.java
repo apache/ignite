@@ -442,7 +442,10 @@ public class CdcMain implements Runnable {
                         .peek(p -> {
                             long nextSgmnt = segmentIndex(p);
 
-                            assert lastSgmnt.get() == -1 || nextSgmnt - lastSgmnt.get() == 1;
+                            if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
+                                throw new IgniteException("Found missed segments. Some events are missed. " +
+                                    "[lastSegment=" + lastSgmnt.get() + ", nextSegment=" + nextSgmnt + ']');
+                            }
 
                             lastSgmnt.set(nextSgmnt);
                         })
