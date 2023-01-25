@@ -49,8 +49,10 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -689,6 +691,39 @@ public class CdcSelfTest extends AbstractCdcTest {
         fut.cancel();
 
         assertTrue(cnsmr.stopped());
+    }
+
+    /** */
+    @Test
+    public void testDisable() throws Exception {
+        IgniteEx ign = startGrid(0);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        addData(cache, 0, 1);
+
+        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+
+        assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+
+        DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
+
+        disabled.propagate(true);
+
+        addData(cache, 0, 1);
+
+        Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+
+        assertEquals(1, walCdcDir.list().length);
+
+        disabled.propagate(false);
+
+        addData(cache, 0, 1);
+
+        assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
     }
 
     /** */

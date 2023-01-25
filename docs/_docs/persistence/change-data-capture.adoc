@@ -73,6 +73,17 @@ CDC is configured in the same way as the Ignite node - via the spring XML file:
 | `metricExporterSpi` | Array of SPI's to export CDC metrics. See link:monitoring-metrics/new-metrics-system#_metric_exporters[metrics] documentation, also. | null
 |===
 
+=== Distributed properties
+
+The distributed properties listed in the table below allow you to configure CDC at runtime:
+
+[cols="1,3,1",opts="header"]
+|===
+|Property | Description | Default Value
+|`cdc.disabled`| Disables CDC in the cluster to avoid disk overflow. Note that cache changes will be lost when CDC
+is disabled. Useful if the CDC application is down for a long time. | false
+|===
+
 == API
 
 === `org.apache.ignite.cdc.CdcEvent`
