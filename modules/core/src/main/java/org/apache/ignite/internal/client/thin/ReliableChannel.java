@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +31,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
@@ -116,6 +119,9 @@ final class ReliableChannel implements AutoCloseable {
 
     /** Cache addresses returned by {@code ThinClientAddressFinder}. */
     private volatile String[] prevHostAddrs;
+
+    /** Open channels counter. */
+    private final AtomicInteger channelsCnt = new AtomicInteger();
 
     /**
      * Constructor.
@@ -721,8 +727,18 @@ final class ReliableChannel implements AutoCloseable {
                 dfltChannelIdx = reinitHolders.size() - 1;
         }
 
-        if (dfltChannelIdx == -1)
-            dfltChannelIdx = 0;
+        if (dfltChannelIdx == -1) {
+            // If holder is not specified get the random holder from the range of holders with the same port.
+            reinitHolders.sort(Comparator.comparingInt(h -> h.getAddress().getPort()));
+
+            int limit = 0;
+            int port = reinitHolders.get(0).getAddress().getPort();
+
+            while (limit + 1 < reinitHolders.size() && reinitHolders.get(limit + 1).getAddress().getPort() == port)
+                limit++;
+
+            dfltChannelIdx = ThreadLocalRandom.current().nextInt(limit + 1);
+        }
 
         curChannelsGuard.writeLock().lock();
 
@@ -803,7 +819,21 @@ final class ReliableChannel implements AutoCloseable {
                 curChannelsGuard.readLock().lock();
 
                 try {
-                    hld = channels.get(curChIdx);
+                    if (!partitionAwarenessEnabled || channelsCnt.get() <= 1 || attempt != 0)
+                        hld = channels.get(curChIdx);
+                    else {
+                        // Make first attempt with the random open channel.
+                        int idx = ThreadLocalRandom.current().nextInt(channels.size());
+                        int idx0 = idx;
+
+                        do {
+                            hld = channels.get(idx);
+
+                            if (++idx == channels.size())
+                                idx = 0;
+                        }
+                        while (hld.ch == null && idx != idx0);
+                    }
                 }
                 finally {
                     curChannelsGuard.readLock().unlock();
@@ -1010,6 +1040,8 @@ final class ReliableChannel implements AutoCloseable {
                     }
 
                     ch = channel;
+
+                    channelsCnt.incrementAndGet();
                 }
             }
 
@@ -1024,6 +1056,8 @@ final class ReliableChannel implements AutoCloseable {
                 U.closeQuiet(ch);
 
                 ch = null;
+
+                channelsCnt.decrementAndGet();
             }
         }
 
@@ -1055,7 +1089,7 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * Get holders reference. For test purposes.ClientOperation
+     * Get holders reference. For test purposes.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") // For tests.
     List<ClientChannelHolder> getChannelHolders() {
@@ -1068,6 +1102,13 @@ final class ReliableChannel implements AutoCloseable {
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") // For tests.
     Map<UUID, ClientChannelHolder> getNodeChannels() {
         return nodeChannels;
+    }
+
+    /**
+     * Get index of current (default) channel holder. For test purposes.
+     */
+    int getCurrentChannelIndex() {
+        return curChIdx;
     }
 
     /**

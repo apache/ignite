@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client.thin;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -57,6 +57,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientTransaction;
+import org.apache.ignite.client.Comparers;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.LocalIgniteCluster;
+import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -66,15 +76,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
-import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -828,8 +835,11 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
      */
     @Test
     public void testTransactions() throws Exception {
-        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
-             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        int clusterSize = 3;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(clusterSize);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().toArray(new String[clusterSize])))
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
                 .setName("cache")
@@ -937,13 +947,10 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             cache.put(1, "value5");
 
             // Test failover.
-            ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-                ClientListenerProcessor.class, ClientProcessorMXBean.class);
-
             try (ClientTransaction tx = client.transactions().txStart()) {
                 cache.put(1, "value6");
 
-                mxBean.dropAllConnections();
+                ((TcpClientTransactions.TcpClientTransaction)tx).clientChannel().close();
 
                 try {
                     cache.put(1, "value7");
@@ -1157,31 +1164,6 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
                 assertEquals("value23", cache.get(0));
             }
 
-            // Test active transactions limit.
-            int txLimit = ignite.configuration().getClientConnectorConfiguration().getThinClientConfiguration()
-                .getMaxActiveTxPerConnection();
-
-            List<ClientTransaction> txs = new ArrayList<>(txLimit);
-
-            for (int i = 0; i < txLimit; i++) {
-                Thread t = new Thread(() -> txs.add(client.transactions().txStart()));
-
-                t.start();
-
-                t.join();
-            }
-
-            try (ClientTransaction ignored = client.transactions().txStart()) {
-                fail();
-            }
-            catch (ClientException e) {
-                ClientServerError cause = (ClientServerError)e.getCause();
-                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, cause.getCode());
-            }
-
-            for (ClientTransaction tx : txs)
-                tx.close();
-
             // Test that new transaction can be started after commit of the previous one without closing.
             ClientTransaction tx = client.transactions().txStart();
             tx.commit();
@@ -1204,9 +1186,47 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
      * Test transactions.
      */
     @Test
-    public void testTransactionsAsync() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+    public void testTransactionsLimit() throws Exception {
+        try (IgniteEx ignite = (IgniteEx)Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            // Test active transactions limit.
+            int txLimit = ignite.configuration().getClientConnectorConfiguration()
+                .getThinClientConfiguration().getMaxActiveTxPerConnection();
+
+            List<ClientTransaction> txs = new ArrayList<>(txLimit);
+
+            for (int i = 0; i < txLimit; i++) {
+                Thread t = new Thread(() -> txs.add(client.transactions().txStart()));
+
+                t.start();
+
+                t.join();
+            }
+
+            try (ClientTransaction ignored = client.transactions().txStart()) {
+                fail();
+            }
+            catch (ClientException e) {
+                ClientServerError cause = (ClientServerError)e.getCause();
+                assertEquals(ClientStatus.TX_LIMIT_EXCEEDED, cause.getCode());
+            }
+
+            for (ClientTransaction tx : txs)
+                tx.close();
+        }
+    }
+
+    /**
+     * Test transactions.
+     */
+    @Test
+    public void testTransactionsAsync() throws Exception {
+        int clusterSize = 3;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(clusterSize);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().toArray(new String[clusterSize])))
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
                     .setName("cache")
@@ -1240,6 +1260,21 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             }
 
             assertEquals("value2", cache.get(1));
+
+            // Test multi-key operations.
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                cache.putAllAsync(F.asMap(1, "value3", 2, "value3")).get();
+
+                assertEquals(F.asMap(1, "value3", 2, "value3"),
+                    cache.getAllAsync(new HashSet<>(F.asList(1, 2))).get());
+
+                cache.removeAllAsync(new HashSet<>(F.asList(1, 2))).get();
+
+                assertFalse(cache.containsKeysAsync(new HashSet<>(F.asList(1, 2))).get());
+            }
+
+            assertEquals("value2", cache.get(1));
+            assertFalse(cache.containsKey(2));
         }
     }
 
