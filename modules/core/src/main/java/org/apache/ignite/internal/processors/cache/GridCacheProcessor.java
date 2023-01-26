@@ -556,7 +556,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grp.removeIOStatistic(destroy);
 
-        if(destroy) sharedCtx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+        if (destroy)sharedCtx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
         sharedCtx.evict().cleanupRemovedGroup(grp.groupId());
     }
@@ -3633,7 +3633,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param after Closure to execute after encryption keys would be generated.
      */
     private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(int keyCnt,
-                                                                                   GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> after) {
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> after) {
         IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
