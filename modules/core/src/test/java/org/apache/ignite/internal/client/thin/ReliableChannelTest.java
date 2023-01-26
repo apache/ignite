@@ -19,11 +19,12 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -99,27 +100,25 @@ public class ReliableChannelTest {
      */
     @Test
     public void testDefaultChannelBalancing() {
-        assertEquals(BitSet.valueOf(new byte[] {7}), // 7 = set of {0, 1, 2}
-            usedDefaultChannels("127.0.0.1:10800..10809", "127.0.0.2", "127.0.0.3:10800"));
+        assertEquals(new HashSet<>(F.asList("127.0.0.2:10800", "127.0.0.3:10800", "127.0.0.4:10800")),
+            usedDefaultChannels("127.0.0.1:10801..10809", "127.0.0.2", "127.0.0.3:10800", "127.0.0.4:10800..10809"));
 
-        assertEquals(BitSet.valueOf(new byte[] {15}), // 15 = set of {0, 1, 2, 3}
+        assertEquals(new HashSet<>(F.asList("127.0.0.1:10800", "127.0.0.2:10800", "127.0.0.3:10800", "127.0.0.4:10800")),
             usedDefaultChannels("127.0.0.1:10800", "127.0.0.2:10800", "127.0.0.3:10800", "127.0.0.4:10800"));
     }
 
     /** */
-    private BitSet usedDefaultChannels(String... addrs) {
+    private Set<String> usedDefaultChannels(String... addrs) {
         ClientConfiguration ccfg = new ClientConfiguration().setAddresses(addrs);
 
-        BitSet usedChannels = new BitSet();
+        Set<String> usedChannels = new HashSet<>();
 
         for (int i = 0; i < 100; i++) {
             ReliableChannel rc = new ReliableChannel(chFactory, ccfg, null);
 
             rc.channelsInit();
 
-            assertEquals(10800, rc.getChannelHolders().get(rc.getCurrentChannelIndex()).getAddress().getPort());
-
-            usedChannels.set(rc.getCurrentChannelIndex());
+            usedChannels.add(rc.getChannelHolders().get(rc.getCurrentChannelIndex()).getAddress().toString());
         }
 
         return usedChannels;
