@@ -1323,13 +1323,21 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return toCacheObject0(obj, userObj);
         }
 
-        if (obj == null || obj instanceof CacheObject)
+        if (obj == null || obj instanceof CacheObject) {
+            if (obj instanceof BinaryObjectImpl)
+                ((BinaryObjectImpl)obj).prepareMarshal(ctx);
+
             return (CacheObject)obj;
+        }
 
         obj = toBinary(obj, failIfUnregistered);
 
-        if (obj instanceof CacheObject)
+        if (obj instanceof CacheObject) {
+            if (obj instanceof BinaryObjectImpl)
+                ((BinaryObjectImpl)obj).prepareMarshal(ctx);
+
             return (CacheObject)obj;
+        }
 
         return toCacheObject0(obj, userObj);
     }
