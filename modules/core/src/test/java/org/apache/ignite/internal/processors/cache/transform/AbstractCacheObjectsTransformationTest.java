@@ -17,22 +17,27 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -112,19 +117,19 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected void putAndCheck(Object obj, boolean transformableKey, boolean transformableVal, boolean reversed) {
-        boolean binarizableVal = !(obj instanceof String || obj instanceof Integer || obj instanceof Object[] ||
-            obj instanceof int[] || obj instanceof Collection);
+    protected void putAndCheck(Object val, boolean transformableKey, boolean transformableVal, boolean reversed) {
+        boolean binarizableVal = !(val instanceof String || val instanceof Integer || val instanceof Object[] ||
+            val instanceof int[] || val instanceof Collection);
 
-        boolean binarizableColVal = (obj instanceof Object[] && !(obj instanceof String[] || obj instanceof int[])) ||
-            (obj instanceof Collection && !(
-                ((Iterable<?>)obj).iterator().next() instanceof String ||
-                    ((Iterable<?>)obj).iterator().next() instanceof Integer)
+        boolean binarizableColVal = (val instanceof Object[] && !(val instanceof String[] || val instanceof int[])) ||
+            (val instanceof Collection && !(
+                ((Iterable<?>)val).iterator().next() instanceof String ||
+                    ((Iterable<?>)val).iterator().next() instanceof Integer)
             );
 
-        boolean binaryVal = obj instanceof BinaryObject;
-        boolean binaryColVal = obj instanceof BinaryObject[] ||
-            (obj instanceof Collection && ((Iterable<?>)obj).iterator().next() instanceof BinaryObject);
+        boolean binaryVal = val instanceof BinaryObject;
+        boolean binaryColVal = val instanceof BinaryObject[] ||
+            (val instanceof Collection && ((Iterable<?>)val).iterator().next() instanceof BinaryObject);
 
         if (binaryVal)
             assertTrue(binarizableVal);
@@ -139,28 +144,20 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
-        Object k = reversed ? obj : ++key;
-        Object v = reversed ? ++key : obj;
+        Object k = reversed ? val : ++key;
+        Object v = reversed ? ++key : val;
 
         cache.put(k, v);
 
-        checkPut(
-            cache,
-            k,
-            reversed && binarizableVal,
-            !reversed && binarizableVal,
-            reversed ? transformableVal : transformableKey,
-            reversed ? transformableKey : transformableVal);
+        checkPut(!reversed && binarizableVal, reversed ? transformableKey : transformableVal);
 
         checkGet(
             k,
             v,
             !reversed && binaryVal,
             !reversed && binaryColVal,
-            reversed && binarizableVal,
             !reversed && binarizableVal,
             !reversed && binarizableColVal,
-            reversed ? transformableVal : transformableKey,
             reversed ? transformableKey : transformableVal);
     }
 
@@ -168,25 +165,11 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
      *
      */
     private void checkPut(
-        IgniteCache<Object, Object> cache,
-        Object key,
-        boolean binarizableKey,
         boolean binarizableVal,
-        boolean transformableKey,
         boolean transformableVal) {
-        int transformed = (transformableKey ? 1 : 0) + (transformableVal ? 1 : 0); // Key + Value.
-        int transformCancelled = (transformableKey ? 0 : 1) + (transformableVal ? 0 : 1); // Key + Value.
-        int restored = transformableKey ? NODES : 0; // Key must be restored at each node,
-
-        // As well as binary value (since binary array is required (e.g. to wait for proper Metadata)).
-        restored += transformableVal && binarizableVal ? NODES : 0;
-
-        // Additional double key restoration on originating node when key is a mutable non-binarizable object, like arrays.
-        // See UserKeyCacheObjectImpl#prepareForCache() for details.
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL &&
-            transformableKey && !binarizableKey &&
-            !grid(0).context().cacheObjects().immutable(key))
-            restored += 2;
+        int transformed = transformableVal ? 1 : 0;
+        int transformCancelled = transformableVal ? 0 : 1;
+        int restored = transformableVal && binarizableVal ? NODES : 0; // Binary array is required (e.g. to wait for proper Metadata)
 
         checkEvents(transformed, transformCancelled, restored);
     }
@@ -199,10 +182,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         Object expVal,
         boolean binaryExpVal,
         boolean binaryColExpVal,
-        boolean binarizableKey,
         boolean binarizableVal,
         boolean binarizableColVal,
-        boolean transformableKey,
         boolean transformableVal) {
         for (Ignite node : G.allGrids()) {
             for (boolean keepBinary : new boolean[] {true, false})
@@ -212,10 +193,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
                     expVal,
                     binaryExpVal,
                     binaryColExpVal,
-                    binarizableKey,
                     binarizableVal,
                     binarizableColVal,
-                    transformableKey,
                     transformableVal,
                     keepBinary);
         }
@@ -230,10 +209,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         Object expVal,
         boolean binaryExpVal,
         boolean binaryColExpVal,
-        boolean binarizableKey,
         boolean binarizableVal,
         boolean binarizableColVal,
-        boolean transformableKey,
         boolean transformableVal,
         boolean keepBinary) {
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
@@ -253,14 +230,9 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         assertEqualsArraysAware(expVal, obj);
 
-        int transformed = transformableKey ? 1 : 0; // Key transformed.
-        int transformCancelled = transformableKey ? 0 : 1; // Key transformation cancelled.
+        int transformed = 0;
+        int transformCancelled = 0;
         int restored = transformableVal ? 1 : 0; // Value restored.
-
-        // Additional key restoration on originating node when key is a mutable non-binarizable object, like arrays.
-        // See UserKeyCacheObjectImpl#prepareForCache() for details.
-        if (transformableKey && !binarizableKey && !grid(0).context().cacheObjects().immutable(key))
-            restored += 4;
 
         checkEvents(transformed, transformCancelled, restored);
     }
@@ -393,6 +365,69 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(str, list, i);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static final class ControllableCacheObjectTransformer extends CacheObjectTransformerAdapter {
+        /** Shift. */
+        private static volatile int shift;
+
+        /** Transformation counter. */
+        public static final Map<Integer, AtomicInteger> tCntr = new ConcurrentHashMap<>();
+
+        /** Restoration counter. */
+        public static final Map<Integer, AtomicInteger> rCntr = new ConcurrentHashMap<>();
+
+        /**
+         *
+         */
+        public static void transformationShift(int shift) {
+            ControllableCacheObjectTransformer.shift = shift;
+        }
+
+        /**
+         *
+         */
+        public static boolean failOnTransformation() {
+            return shift == 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
+            if (failOnTransformation())
+                throw new IgniteCheckedException("Failed.");
+
+            tCntr.computeIfAbsent(shift, key -> new AtomicInteger()).incrementAndGet();
+
+            ByteBuffer transformed = byteBuffer(original.remaining() + 4);
+
+            transformed.putInt(shift);
+
+            while (original.hasRemaining())
+                transformed.put((byte)(original.get() + shift));
+
+            transformed.flip();
+
+            return transformed;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected ByteBuffer restore(ByteBuffer transformed) {
+            ByteBuffer restored = byteBuffer(transformed.remaining() - 4);
+
+            int origShift = transformed.getInt();
+
+            rCntr.computeIfAbsent(origShift, key -> new AtomicInteger()).incrementAndGet();
+
+            while (transformed.hasRemaining())
+                restored.put((byte)(transformed.get() - origShift));
+
+            restored.flip();
+
+            return restored;
         }
     }
 }

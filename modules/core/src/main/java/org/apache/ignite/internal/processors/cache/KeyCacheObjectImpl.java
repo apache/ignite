@@ -49,7 +49,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      * @param part Partition.
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes, int part) {
-        assert val != null || valBytes != null;
+        assert val != null;
 
         this.val = val;
         this.valBytes = valBytes;
@@ -77,7 +77,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = valueBytesFromValue(ctx);
+            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
 
         return valBytes;
     }
@@ -186,7 +186,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = valueBytesFromValue(ctx);
+            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
@@ -194,14 +194,12 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         if (val == null) {
             assert valBytes != null;
 
-            val = valueFromValueBytes(ctx, ldr);
+            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        assert val != null;
-
         if (!(obj instanceof KeyCacheObjectImpl))
             return false;
 

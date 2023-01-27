@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.objects;
+package org.apache.ignite.internal.processors.cache.transform;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.objects.AbstractCacheObjectsCompressionTest.CompressionTransformer.CompressionType;
+import static org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsCompressionTest.CompressionTransformer.CompressionType;
 
 /**
  *
@@ -124,7 +124,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
     /**
      *
      */
-    private void putAndCheck(Object obj, boolean compressible) {
-        putAndCheck(obj, false, compressible, false);
+    private void putAndCheck(Object val, boolean compressible) {
+        putAndCheck(val, false /*no chances to compress integer*/, compressible, false);
     }
 }

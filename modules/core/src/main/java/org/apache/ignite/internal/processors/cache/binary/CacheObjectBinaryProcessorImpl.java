@@ -1276,8 +1276,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (key instanceof BinaryObjectImpl) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
-
-                ((BinaryObjectImpl)key).prepareMarshal(ctx);
             }
             else if (key.partition() == -1)
                 // Assume others KeyCacheObjects can not be reused for another cache.
@@ -1290,8 +1288,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (obj instanceof BinaryObjectImpl) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
-
-            ((BinaryObjectImpl)obj).prepareMarshal(ctx);
 
             return (KeyCacheObject)obj;
         }
@@ -1327,21 +1323,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return toCacheObject0(obj, userObj);
         }
 
-        if (obj == null || obj instanceof CacheObject) {
-            if (obj instanceof BinaryObjectImpl)
-                ((BinaryObjectImpl)obj).prepareMarshal(ctx);
-
+        if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
-        }
 
         obj = toBinary(obj, failIfUnregistered);
 
-        if (obj instanceof CacheObject) {
-            if (obj instanceof BinaryObjectImpl)
-                ((BinaryObjectImpl)obj).prepareMarshal(ctx);
-
+        if (obj instanceof CacheObject)
             return (CacheObject)obj;
-        }
 
         return toCacheObject0(obj, userObj);
     }
@@ -1411,17 +1399,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         throws IgniteCheckedException {
         switch (type) {
             case BinaryObjectImpl.TYPE_BINARY:
-                return new BinaryObjectImpl(binaryContext(), bytes, ctx);
+                return new BinaryObjectImpl(binaryContext(), bytes, 0);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                KeyCacheObjectImpl key = new KeyCacheObjectImpl(null, bytes, -1);
-
-                key.finishUnmarshal(ctx, null);
-
-                return key;
+                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);

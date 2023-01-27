@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,8 +53,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectTransformer(new ControllableCacheObjectTransformer());
+        return super.getConfiguration(igniteInstanceName).setCacheObjectTransformer(new ControllableCacheObjectTransformer());
     }
 
 
@@ -75,7 +71,12 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
      */
     @Test
     public void testTransformable() throws Exception {
+        ControllableCacheObjectTransformer.transformationShift(42);
+
+        assertFalse(ControllableCacheObjectTransformer.failOnTransformation());
+
         doTest();
+
     }
 
     /**
@@ -83,14 +84,11 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
      */
     @Test
     public void testUntransformable() throws Exception {
-        try {
-            ControllableCacheObjectTransformer.fail = true;
+        ControllableCacheObjectTransformer.transformationShift(0); // Fail on transformation.
 
-            doTest();
-        }
-        finally {
-            ControllableCacheObjectTransformer.fail = false;
-        }
+        assertTrue(ControllableCacheObjectTransformer.failOnTransformation());
+
+        doTest();
     }
 
     /**
@@ -157,52 +155,14 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     }
 
     /**
-     * @param obj Object.
+     * @param val Value.
      */
-    private void putAndCheck(Object obj) {
+    private void putAndCheck(Object val) {
         for (boolean reversed : new boolean[] {true, false})
             putAndCheck(
-                obj,
-                !ControllableCacheObjectTransformer.fail,
-                !ControllableCacheObjectTransformer.fail,
+                val,
+                !ControllableCacheObjectTransformer.failOnTransformation(),
+                !ControllableCacheObjectTransformer.failOnTransformation(),
                 reversed);
-    }
-
-    /**
-     *
-     */
-    private static final class ControllableCacheObjectTransformer extends CacheObjectTransformerAdapter {
-        /** Shift. */
-        private static final int SHIFT = 42;
-
-        /** Fail. */
-        private static volatile boolean fail;
-
-        /** {@inheritDoc} */
-        @Override protected ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
-            if (fail)
-                throw new IgniteCheckedException("Failed.");
-
-            ByteBuffer transformed = byteBuffer(original.remaining()); // Same capacity is required.
-
-            while (original.hasRemaining())
-                transformed.put((byte)(original.get() + SHIFT));
-
-            transformed.flip();
-
-            return transformed;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = byteBuffer(transformed.remaining()); // Same size.
-
-            while (transformed.hasRemaining())
-                restored.put((byte)(transformed.get() - SHIFT));
-
-            restored.flip();
-
-            return restored;
-        }
     }
 }

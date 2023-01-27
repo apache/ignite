@@ -142,7 +142,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (this.part == part)
             return this;
 
-        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start, valBytes);
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start, arr);
 
         cp.part = part;
 
@@ -157,6 +157,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @Override public void partition(int part) {
         this.part = part;
+
+        valBytes = arr;
     }
 
     /** {@inheritDoc} */
@@ -244,8 +246,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public void prepareMarshal(CacheObjectValueContext ctx) {
         assert arr != null || valBytes != null;
 
-        if (valBytes == null)
+        if (valBytes == null) {
+            assert part == -1; // Keys should never be transformed.
+
             valBytes = valueBytesFromArray(ctx);
+        }
     }
 
     /**

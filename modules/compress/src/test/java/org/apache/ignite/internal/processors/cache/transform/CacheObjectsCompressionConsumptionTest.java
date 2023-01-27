@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.objects;
+package org.apache.ignite.internal.processors.cache.transform;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -161,18 +161,13 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             Consumption raw;
             Consumption compressed;
 
-            boolean reversed = i % 2 != 0; // Value instead of key and vice versa.
-
-            Function<Integer, Object> kGen = reversed ? valGen : keyGen;
-            Function<Integer, Object> vGen = reversed ? keyGen : valGen;
-
             CompressionTransformer.type = CompressionTransformer.CompressionType.DISABLED;
 
-            raw = doTest(cnt, kGen, vGen); // Compresson disabled.
+            raw = doTest(cnt, keyGen, valGen); // Compresson disabled.
 
             CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();
 
-            compressed = doTest(cnt, kGen, vGen); // Compression enabled.
+            compressed = doTest(cnt, keyGen, valGen); // Compression enabled.
 
             assertTrue("Network, raw=" + raw.net + ", compressed=" + compressed.net, raw.net > compressed.net);
             assertTrue("Memory, raw=" + raw.mem + ", compressed=" + compressed.mem, raw.mem > compressed.mem);
