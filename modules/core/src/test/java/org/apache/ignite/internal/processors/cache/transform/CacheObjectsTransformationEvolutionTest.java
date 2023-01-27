@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transform;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -89,9 +88,10 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
      * @throws Exception If failed.
      */
     private void doTest(Function<Integer, Object> kvGen) throws Exception {
-        Ignite ignite = prepareCluster();
+        prepareCluster();
 
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(AbstractCacheObjectsTransformationTest.CACHE_NAME);
+        IgniteCache<Object, Object> cache =
+            primaryNode(0/*any*/, CACHE_NAME).getOrCreateCache(AbstractCacheObjectsTransformationTest.CACHE_NAME);
 
         int cnt = 1000;
 
@@ -171,6 +171,34 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             tCnt += cnt; // Put on primary.
             totalCnt += cnt;
         }
+
+        // Value replace
+        for (int i = 0; i < cnt; i++) {
+            for (int shift : shifts) {
+                ControllableCacheObjectTransformer.transformationShift(-shift);
+
+                Object kv = kvGen.apply(++key);
+
+                cache.put(kv, kv);
+
+                ControllableCacheObjectTransformer.transformationShift(shift);
+
+                Object kv2 = kvGen.apply(key); // Brandnew kv to guarantee transtormation.
+
+                assertEquals(kv, kv2);
+
+                assertTrue(cache.replace(kv2, kv2, -42)); // Replacing kv via kv2 (same object, but different bytes).
+
+                assertTrue(cache.replace(kv, kvGen.apply(key)));
+            }
+        }
+
+        tCnt += cnt * 3; // 3 values at replace required to be marshalled.
+
+        if (binarizable || binary) // Binary array is required at backups at put (e.g. to wait for proper Metadata)
+            rCnt += (NODES - 1) * cnt * 2; // Double replace on backups.
+
+        totalCnt += cnt;
 
         for (int shift : shifts) {
             if (shift != 0)
