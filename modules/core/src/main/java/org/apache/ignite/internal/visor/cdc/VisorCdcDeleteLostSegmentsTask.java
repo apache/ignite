@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -44,6 +45,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
 /**
  * Task to delete lost segment CDC links.
  */
+@GridInternal
 public class VisorCdcDeleteLostSegmentsTask extends VisorOneNodeTask<Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
