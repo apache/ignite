@@ -131,11 +131,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-        if (connCtx != null) {
+        if (connCtx != null)
             connCtx.onDisconnected();
-
-            metrics.onDisconnect(connCtx.clientType());
-        }
 
         if (log.isDebugEnabled()) {
             if (e == null)

@@ -42,9 +42,6 @@ public class ClientListenerMetrics {
     /** Number of successfully established sessions. */
     public static final String METRIC_ACEPTED = "AcceptedSessions";
 
-    /** Number of active sessions. */
-    public static final String METRIC_ACTIVE = "ActiveSessions";
-
     /** Rejected by timeout. */
     private final IntMetricImpl rejectedTimeout;
 
@@ -56,9 +53,6 @@ public class ClientListenerMetrics {
 
     /** Connections accepted. */
     private final IntMetricImpl[] accepted;
-
-    /** Number of active connections. */
-    private final IntMetricImpl[] active;
 
     /**
      * @param ctx Kernal context.
@@ -76,7 +70,6 @@ public class ClientListenerMetrics {
 
         final byte[] supportedClients = { ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT };
         accepted = new IntMetricImpl[supportedClients.length];
-        active = new IntMetricImpl[supportedClients.length];
 
         for (byte clientType : supportedClients) {
             String clientLabel = clientTypeLabel(clientType);
@@ -84,9 +77,6 @@ public class ClientListenerMetrics {
             String labelAccepted = MetricUtils.metricName(clientLabel, METRIC_ACEPTED);
             accepted[clientType] = mreg.intMetric(labelAccepted,
                     "Number of successfully established sessions for the client type.");
-
-            String labelActive = MetricUtils.metricName(clientLabel, METRIC_ACTIVE);
-            active[clientType] = mreg.intMetric(labelActive, "Number of active sessions for the client type.");
         }
     }
 
@@ -120,16 +110,6 @@ public class ClientListenerMetrics {
      */
     public void onHandshakeAccept(byte clientType) {
         accepted[clientType].increment();
-        active[clientType].increment();
-    }
-
-    /**
-     * Callback invoked when client is disconnected.
-     *
-     * @param clientType Client type.
-     */
-    public void onDisconnect(byte clientType) {
-        active[clientType].add(-1);
     }
 
     /**
@@ -137,7 +117,7 @@ public class ClientListenerMetrics {
      * @param clientType Client type.
      * @return Label for a client.
      */
-    private String clientTypeLabel(byte clientType) {
+    public static String clientTypeLabel(byte clientType) {
         switch (clientType) {
             case ODBC_CLIENT:
                 return "odbc";
