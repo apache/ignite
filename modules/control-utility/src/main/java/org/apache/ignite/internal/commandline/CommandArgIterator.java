@@ -152,7 +152,7 @@ public class CommandArgIterator {
 
     /** @return UUID value. */
     public UUID nextUuidArg(String argName) {
-        String str = nextArg("Expecting " + argName);
+        String str = nextArg("Expecting " + argName + " command argument.");
 
         try {
             return UUID.fromString(str);

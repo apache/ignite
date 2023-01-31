@@ -107,7 +107,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
             MetricCommandArg cmdArg = CommandArgUtils.of(arg, MetricCommandArg.class);
 
             if (cmdArg == NODE_ID)
-                nodeId = argIter.nextUuidArg("ID of the node from which metric values should be obtained");
+                nodeId = argIter.nextUuidArg(NODE_ID.argName());
             else if (cmdArg == CONFIGURE_HISTOGRAM || cmdArg == CONFIGURE_HITRATE) {
                 if (metricName != null) {
                     throw new IllegalArgumentException(

@@ -97,7 +97,7 @@ public class CdcCommand extends AbstractCommand<String> {
             String opt = argIter.nextArg("Failed to read command argument.");
 
             if (NODE_ID.equalsIgnoreCase(opt))
-                nodeId = argIter.nextUuidArg("node ID argument");
+                nodeId = argIter.nextUuidArg(NODE_ID);
         }
     }
 

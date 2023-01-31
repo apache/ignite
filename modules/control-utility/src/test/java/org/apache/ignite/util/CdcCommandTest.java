@@ -115,11 +115,11 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID),
-            "Failed to parse node ID argument command argument.");
+            "Failed to parse " + NODE_ID + " command argument.");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
-            "Failed to parse node ID argument command argument.");
+            "Failed to parse " + NODE_ID + " command argument.");
     }
 
     /** */
