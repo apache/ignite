@@ -33,13 +33,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
-import org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.junit.Test;
@@ -111,15 +108,15 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testIndexRebuildingMetric() throws Exception {
-        IgniteEx n = startGrid(0);
+        IgniteEx ig0 = startGrid(0);
 
-        n.cluster().state(ClusterState.ACTIVE);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         String cacheName1 = "cache1";
         String cacheName2 = "cache2";
 
-        IgniteCache<KeyClass, ValueClass> cache1 = n.getOrCreateCache(cacheConfiguration(cacheName1));
-        IgniteCache<KeyClass, ValueClass> cache2 = n.getOrCreateCache(cacheConfiguration(cacheName2));
+        IgniteCache<KeyClass, ValueClass> cache1 = ig0.getOrCreateCache(cacheConfiguration(cacheName1));
+        IgniteCache<KeyClass, ValueClass> cache2 = ig0.getOrCreateCache(cacheConfiguration(cacheName2));
 
         int entryCnt1 = 100;
         int entryCnt2 = 200;
@@ -140,7 +137,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
-        n = startGrid(0);
+        IgniteEx n = startGrid(0);
 
         BooleanMetric idxRebuildInProgress1 = indexRebuildMetric(n, cacheName1, "IsIndexRebuildInProgress");
         BooleanMetric idxRebuildInProgress2 = indexRebuildMetric(n, cacheName2, "IsIndexRebuildInProgress");
@@ -151,50 +148,42 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         CacheMetrics cacheMetrics1 = cacheMetrics(n, cacheName1);
         CacheMetrics cacheMetrics2 = cacheMetrics(n, cacheName2);
 
-        CacheMetricsMXBean cacheMetricsMXBean1 = cacheMetricsMXBean(n, cacheName1, CacheLocalMetricsMXBeanImpl.class);
-        CacheMetricsMXBean cacheMetricsMXBean2 = cacheMetricsMXBean(n, cacheName2, CacheLocalMetricsMXBeanImpl.class);
-
-        CacheMetricsMXBean cacheClusterMetricsMXBean1 =
-            cacheMetricsMXBean(n, cacheName1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean cacheClusterMetricsMXBean2 =
-            cacheMetricsMXBean(n, cacheName2, CacheClusterMetricsMXBeanImpl.class);
-
         n.cluster().state(ClusterState.ACTIVE);
 
         BooleanSupplier[] idxRebuildProgressCache1 = {
             idxRebuildInProgress1::value,
             cacheMetrics1::isIndexRebuildInProgress,
-            cacheMetricsMXBean1::isIndexRebuildInProgress
+            () -> n.cache(cacheName1).localMetrics().isIndexRebuildInProgress()
         };
 
         BooleanSupplier[] idxRebuildProgressCache2 = {
             idxRebuildInProgress2::value,
             cacheMetrics2::isIndexRebuildInProgress,
-            cacheMetricsMXBean2::isIndexRebuildInProgress
+            () -> n.cache(cacheName2).localMetrics().isIndexRebuildInProgress()
         };
 
         // It must always be false, because metric is only per node.
         BooleanSupplier[] idxRebuildProgressCluster = {
-            cacheClusterMetricsMXBean1::isIndexRebuildInProgress,
-            cacheClusterMetricsMXBean2::isIndexRebuildInProgress
+            () -> n.cache(cacheName1).metrics().isIndexRebuildInProgress(),
+            () -> n.cache(cacheName2).metrics().isIndexRebuildInProgress()
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache1 = {
             idxRebuildKeyProcessed1::value,
             cacheMetrics1::getIndexRebuildKeysProcessed,
-            cacheMetricsMXBean1::getIndexRebuildKeysProcessed,
+            () -> n.cache(cacheName1).localMetrics().getIndexRebuildKeysProcessed()
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache2 = {
             idxRebuildKeyProcessed2::value,
             cacheMetrics2::getIndexRebuildKeysProcessed,
-            cacheMetricsMXBean2::getIndexRebuildKeysProcessed,
+            () -> n.cache(cacheName2).localMetrics().getIndexRebuildKeysProcessed()
         };
 
         // It must always be 0, because metric is only per node.
         LongSupplier[] idxRebuildKeyProcessedCluster = {
-            cacheClusterMetricsMXBean1::getIndexRebuildKeysProcessed,
-            cacheClusterMetricsMXBean2::getIndexRebuildKeysProcessed
+            () -> n.cache(cacheName1).metrics().getIndexRebuildKeysProcessed(),
+            () -> n.cache(cacheName2).metrics().getIndexRebuildKeysProcessed()
         };
 
         assertEquals(true, idxRebuildProgressCache1);
@@ -256,26 +245,6 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         requireNonNull(cacheName);
 
         return node.context().cache().cacheGroup(CU.cacheId(cacheName)).singleCacheContext().cache().metrics0();
-    }
-
-    /**
-     * Get cache metrics MXBean.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @param cls Cache metrics MXBean implementation.
-     * @return Cache metrics MXBean.
-     */
-    private <T extends CacheMetricsMXBean> T cacheMetricsMXBean(
-        IgniteEx n,
-        String cacheName,
-        Class<? super T> cls
-    ) {
-        requireNonNull(n);
-        requireNonNull(cacheName);
-        requireNonNull(cls);
-
-        return (T)getMxBean(n.name(), cacheName, cls.getName(), CacheMetricsMXBean.class);
     }
 
     /**

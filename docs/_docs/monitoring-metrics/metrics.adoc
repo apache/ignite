@@ -233,12 +233,7 @@ link:data-rebalancing[Rebalancing] is the process of moving partitions between t
 If you have multiple caches, they will be rebalanced sequentially.
 There are several metrics that you can use to monitor the progress of the rebalancing process for a specific cache.
 
-Mbean's Object Name: ::
-+
---
-----
-group=<cache name>,name=org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl
-----
+In the new metric system, link:monitoring-metrics/new-metrics#caches[Cache metrics]:
 [{table_opts}]
 |===
 | Attribute | Type | Description | Scope
@@ -297,36 +292,7 @@ ver=8.7.5#20190520-sha1:d159cd7a, isClient=false]
 
 == Monitoring Caches
 
-Cache-related metrics. For each cache, Ignite will create two JMX MBeans that will expose the metrics specific to the cache. One MBean shows cluster-wide information about the cache, such as the total number of entries in the cache. The other MBean shows local information about the cache, such as the number of entries of the cache that are located on the local node.
-
-
-Global Cache Mbean's Object Name: ::
-+
---
-....
-group=<Cache_Name>,name="org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl"`
-....
-
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| CacheSize | long | The total number of entries in the cache across all nodes. | Global
-|===
---
-
-Local Cache Mbean's Object Name: ::
-+
---
-----
-group=<Cache Name>,name="org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl"
-----
-
-[{table_opts}]
-|===
-| Attribute | Type | Description | Scope
-| CacheSize | long | The number of entries of the cache that are stored on the local node. | Node
-|===
---
+See the new metric system, link:monitoring-metrics/new-metrics#caches[Cache metrics].
 
 === Monitoring Build and Rebuild Indexes
 
@@ -338,11 +304,9 @@ To get an estimate on how long it takes to rebuild cache indexes, you can use on
 Note that the `IndexBuildCountPartitionsLeft` metric allows to estimate only an approximate number of indexes left to rebuild.
 For a more accurate estimate, use the `IndexRebuildKeyProcessed` cache metric:
 
-* Use `org.apache.ignite.mxbean.CacheMetricsMXBean#isIndexRebuildInProgress` to know whether the indexes are being rebuilt for the cache.
-Note that presently only the `org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl#isIndexRebuildInProgress` local metric is available.
+* Use `isIndexRebuildInProgress` to know whether the indexes are being rebuilt for the cache.
 
-* Use `org.apache.ignite.mxbean.CacheMetricsMXBean#getIndexRebuildKeysProcessed` to know the number of keys with rebuilt indexes. If the rebuilding is in progress, it gives a number of keys with indexes being rebuilt at the current moment. Otherwise, it gives a total number of the of keys with rebuilt indexes. The values are reset before the start of each rebuilding.
-Note that presently only the `org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl#getIndexRebuildKeysProcessed` local metric is available.
+* Use `IndexRebuildKeysProcessed` to know the number of keys with rebuilt indexes. If the rebuilding is in progress, it gives a number of keys with indexes being rebuilt at the current moment. Otherwise, it gives a total number of the of keys with rebuilt indexes. The values are reset before the start of each rebuilding.
 
 == Monitoring Transactions
 Note that if a transaction spans multiple nodes (i.e., if the keys that are changed as a result of the transaction execution are located on multiple nodes), the counters will increase on each node. For example, the 'TransactionsCommittedNumber' counter will increase on each node where the keys affected by the transaction are stored.

@@ -475,7 +475,7 @@ This view exposes information about currently running SQL queries.
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
 |===
 
-== SQL_QUERY_HISTORY
+== SQL_QUERIES_HISTORY
 
 [{table_opts}]
 |===
@@ -729,6 +729,17 @@ This view exposes information about all available binary types.
 == METASTORAGE
 
 This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
+== DISTRIBUTED_METASTORAGE
+
+This view exposes the contents of the distributed metastorage cache.
 
 [{table_opts}]
 |===
