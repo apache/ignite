@@ -213,7 +213,7 @@ class IncrementalSnapshotFutureTask
             Path segLink = incSnpDir.toPath().resolve(seg.getName());
 
             if (log.isDebugEnabled())
-                log.debug("Creating segment link [path=" + segLink.toAbsolutePath() + ']');
+                log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
 
             Files.createLink(segLink, seg.toPath());
         }

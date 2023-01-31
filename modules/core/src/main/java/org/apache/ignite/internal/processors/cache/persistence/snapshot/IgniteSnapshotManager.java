@@ -2144,11 +2144,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future which will be completed when restore operation finished.
      */
-    public IgniteFutureImpl<Void> restoreSnapshot(
-        String name,
-        @Nullable String snpPath,
-        @Nullable Collection<String> grpNames
-    ) {
+    public IgniteFutureImpl<Void> restoreSnapshot(String name, @Nullable String snpPath, @Nullable Collection<String> grpNames) {
         return restoreSnapshot(name, snpPath, grpNames, 0);
     }
 

@@ -322,7 +322,7 @@ public class SnapshotRestoreProcess {
         });
 
         String msg = "Cluster-wide snapshot restore operation started [reqId=" + fut0.rqId + ", snpName=" + snpName +
-            (cacheGrpNames == null ? "" : ", caches=" + cacheGrpNames) + (incIdx > 0 ? ", incrementalIndex=" + incIdx : "") + ']';
+            (cacheGrpNames == null ? "" : ", caches=" + cacheGrpNames) + (incIdx > 0 ? ", incIdx=" + incIdx : "") + ']';
 
         if (log.isInfoEnabled())
             log.info(msg);
@@ -1283,25 +1283,13 @@ public class SnapshotRestoreProcess {
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        List<String> stopCaches = new ArrayList<>();
+        Collection<String> stopCaches = opCtx0.cfgs.values()
+            .stream()
+            .map(c -> c.config().getName())
+            .collect(Collectors.toSet());
 
-        for (StoredCacheData cacheCfg: opCtx0.cfgs.values()) {
-            if (ctx.cache().cacheDescriptor(cacheCfg.cacheId()) != null)
-                stopCaches.add(cacheCfg.config().getName());
-        }
-
-        if (stopCaches.isEmpty()) {
-            if (log.isInfoEnabled())
-                log.info("No caches to stop for the snapshot rollback [reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ']');
-
-            return new GridFinishedFuture<>();
-        }
-
-        if (log.isInfoEnabled()) {
-            log.info("Stopping caches after failed restoring " +
-                "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName +
-                ", caches=" + stopCaches + ']');
-        }
+        if (log.isInfoEnabled())
+            log.info("Stopping caches [reqId=" + opCtx0.reqId + ", snp=" + opCtx0.snpName + ", caches=" + stopCaches + ']');
 
         // Skip deleting cache files as they will be removed during rollback.
         return ctx.cache().dynamicDestroyCaches(stopCaches, false, false)
@@ -1372,7 +1360,7 @@ public class SnapshotRestoreProcess {
                     });
 
                 if (cp == null)
-                    res.onDone(new IgniteCheckedException("Node is stopping"));
+                    res.onDone(new IgniteCheckedException("Node is stopping."));
             }
             catch (Throwable e) {
                 res.onDone(e);
@@ -1403,6 +1391,9 @@ public class SnapshotRestoreProcess {
             .requestId();
 
         IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(segments[segments.length - 1], incSnpId);
+
+        if (incSnpFinRec == null)
+            throw new IgniteCheckedException("System WAL records for incremental snapshot wasn't found [id=" + incSnpId + ']');
 
         CacheStripedExecutor exec = new CacheStripedExecutor(ctx.pools().getStripedExecutorService());
 
@@ -1483,6 +1474,7 @@ public class SnapshotRestoreProcess {
 
         exec.awaitApplyComplete();
 
+        // Close partition counter gaps that can exists due to some transactions excluded from incremental snapshot.
         for (int cacheId: cacheIds) {
             GridCacheContext<?, ?> cacheCtx = ctx.cache().context().cacheContext(cacheId);
 
@@ -1499,7 +1491,7 @@ public class SnapshotRestoreProcess {
         }
     }
 
-    /** */
+    /** @return {@link IncrementalSnapshotFinishRecord} for specified snapshot, or {@code null} if not found. */
     private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(File segment, UUID incSnpId) throws IgniteCheckedException {
         try (WALIterator it = walIter(log, segment)) {
             while (it.hasNext()) {
@@ -1514,7 +1506,7 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        throw new IgniteCheckedException("IncrementalSnapshotFinishRecord wasn't found for incremental snapshot [id=" + incSnpId + ']');
+        return null;
     }
 
     /** @return WAL segments to restore for specified incremental index since the base snapshot. */
