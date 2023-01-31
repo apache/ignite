@@ -226,12 +226,12 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
         tCnt += cnt * 2; // 3 (at tx) or 2 (at atomic) values at replace required to be marshalled.
 
-        if (mode != CacheAtomicityMode.ATOMIC || binarizable || binary) // TODO check binary transfrormation need
-            tCnt += cnt; // Atomic operation compares previous value without transformaton.
+        if (mode != CacheAtomicityMode.ATOMIC)
+            tCnt += cnt; // Atomic operation compares with previous values without transformaton.
 
         if (binarizable || binary) { // Binary array is required at backups at put (e.g. to wait for proper Metadata)
             if (mode == CacheAtomicityMode.TRANSACTIONAL)
-                rCnt += (NODES - 1) * cnt * 2; // Double replace on backups (restoration of transfered binary objects).
+                rCnt += (NODES - 1) * cnt * 2; // Double replace on backups (restoration of both transfered binary objects).
             else
                 rCnt += (NODES - 1) * cnt; // Previous value will not be transfered to backups.
         }

@@ -222,10 +222,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        if (detached())
-            return this;
+        BinaryObjectImpl res = detached() ? this : detach();
 
-        return detach();
+        res.prepareMarshal(ctx);
+
+        return res;
     }
 
     /** {@inheritDoc} */
