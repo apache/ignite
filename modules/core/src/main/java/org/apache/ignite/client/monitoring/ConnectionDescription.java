@@ -53,7 +53,7 @@ public class ConnectionDescription {
      *
      * @return Local network address or {@code null} if non-socket communication is used.
      */
-    @Nullable InetSocketAddress localAddress() {
+    @Nullable public InetSocketAddress localAddress() {
         return locAddr;
     }
 

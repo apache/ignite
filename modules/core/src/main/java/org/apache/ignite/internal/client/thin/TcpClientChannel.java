@@ -51,7 +51,6 @@ import org.apache.ignite.client.ClientReconnectedException;
 import org.apache.ignite.client.monitoring.AuthenticationFailEvent;
 import org.apache.ignite.client.monitoring.ConnectionClosedEvent;
 import org.apache.ignite.client.monitoring.ConnectionDescription;
-import org.apache.ignite.client.monitoring.ConnectionLostEvent;
 import org.apache.ignite.client.monitoring.HandshakeFailEvent;
 import org.apache.ignite.client.monitoring.HandshakeStartEvent;
 import org.apache.ignite.client.monitoring.HandshakeSuccessEvent;
@@ -242,10 +241,10 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
      */
     private void close(Exception cause) {
         if (closed.compareAndSet(false, true)) {
-            if (cause != null)
-                eventListener.onConnectionLost(new ConnectionLostEvent(connDesc, cause));
-            else
-                eventListener.onConnectionClosed(new ConnectionClosedEvent(connDesc));
+            // Skip notification if handshake is not successful or completed.
+            ConnectionDescription connDesc0 = connDesc;
+            if (connDesc0 != null)
+                eventListener.onConnectionClosed(new ConnectionClosedEvent(connDesc0, cause));
 
             if (heartbeatTimer != null)
                 heartbeatTimer.cancel();
@@ -307,14 +306,20 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private ClientRequestFuture send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
         throws ClientException {
         long id = reqId.getAndIncrement();
+        long startTimeNanos = System.nanoTime();
 
         PayloadOutputChannel payloadCh = new PayloadOutputChannel(this);
 
         try {
-            if (closed())
-                throw new ClientConnectionException("Channel is closed");
+            if (closed()) {
+                ClientConnectionException err = new ClientConnectionException("Channel is closed");
 
-            ClientRequestFuture fut = new ClientRequestFuture(id, op);
+                eventListener.onQueryFail(new QueryFailEvent(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err));
+
+                throw err;
+            }
+
+            ClientRequestFuture fut = new ClientRequestFuture(id, op, startTimeNanos);
 
             pendingReqs.put(id, fut);
 
@@ -340,6 +345,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             // Potential double-close is handled in PayloadOutputChannel.
             payloadCh.close();
+
+            eventListener.onQueryFail(new QueryFailEvent(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, t));
 
             throw t;
         }
@@ -758,8 +765,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 else
                     err = new ClientConnectionException(e.getMessage(), e);
 
-                eventListener.onConnectionLost(new ConnectionLostEvent(
+                eventListener.onHandshakeFail(new HandshakeFailEvent(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
+                    startTime - System.nanoTime(),
                     err
                 ));
 
@@ -896,7 +904,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** */
     private static class ClientRequestFuture extends GridFutureAdapter<ByteBuffer> {
         /** */
-        final long startTimeNanos = System.nanoTime();
+        final long startTimeNanos;
 
         /** */
         final long requestId;
@@ -906,8 +914,14 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         /** */
         ClientRequestFuture(long requestId, ClientOperation op) {
+            this(requestId, op, System.nanoTime());
+        }
+
+        /** */
+        ClientRequestFuture(long requestId, ClientOperation op, long startTimeNanos) {
             this.requestId = requestId;
             operation = op;
+            this.startTimeNanos = startTimeNanos;
         }
     }
 

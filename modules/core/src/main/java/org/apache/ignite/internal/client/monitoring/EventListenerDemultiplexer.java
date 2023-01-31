@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.monitoring.AuthenticationFailEvent;
 import org.apache.ignite.client.monitoring.ConnectionClosedEvent;
 import org.apache.ignite.client.monitoring.ConnectionEventListener;
-import org.apache.ignite.client.monitoring.ConnectionLostEvent;
 import org.apache.ignite.client.monitoring.HandshakeFailEvent;
 import org.apache.ignite.client.monitoring.HandshakeStartEvent;
 import org.apache.ignite.client.monitoring.HandshakeSuccessEvent;
@@ -139,11 +138,6 @@ public class EventListenerDemultiplexer implements QueryEventListener, Connectio
     /** {@inheritDoc} */
     @Override public void onAuthenticationFail(AuthenticationFailEvent event) {
         executeForEach(connEventListeners, l -> l.onAuthenticationFail(event));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onConnectionLost(ConnectionLostEvent event) {
-        executeForEach(connEventListeners, l -> l.onConnectionLost(event));
     }
 
     /** {@inheritDoc} */

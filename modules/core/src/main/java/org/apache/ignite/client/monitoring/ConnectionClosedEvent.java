@@ -17,12 +17,32 @@
 
 package org.apache.ignite.client.monitoring;
 
+import org.jetbrains.annotations.Nullable;
+
 /** */
 public class ConnectionClosedEvent extends ConnectionEvent {
+    /** */
+    private final Throwable throwable;
+
     /**
      * @param conn Connection description.
+     * @param throwable Throwable that caused the failure if any.
      */
-    public ConnectionClosedEvent(ConnectionDescription conn) {
+    public ConnectionClosedEvent(
+        ConnectionDescription conn,
+        Throwable throwable
+    ) {
         super(conn);
+
+        this.throwable = throwable;
+    }
+
+    /**
+     * Get a cause of the failure if any.
+     *
+     * @return A cause of the failure if any.
+     */
+    @Nullable public Throwable throwable() {
+        return throwable;
     }
 }
