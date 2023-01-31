@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,7 +30,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -53,6 +53,14 @@ public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
     @Parameterized.Parameter()
     public boolean historical;
 
+    /** Cache recreate. */
+    @Parameterized.Parameter(value = 1)
+    public boolean cacheRecreate;
+
+    /** Limited WAL. */
+    @Parameterized.Parameter(value = 2)
+    public boolean limitedWal;
+
     /** Full rebalancing happened flag. */
     private final AtomicBoolean fullRebalancingHappened = new AtomicBoolean(false);
 
@@ -62,12 +70,17 @@ public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
     /**
      * @return List of versions pairs to test.
      */
-    @Parameterized.Parameters(name = "historical = {0}")
+    @Parameterized.Parameters(name = "historical = {0}, cacheRecreate={1}, limitedWal = {2}")
     public static Collection<Object[]> testData() {
         List<Object[]> res = new ArrayList<>();
 
-        res.add(new Object[] {true});
-        res.add(new Object[] {false});
+        res.add(new Object[] {true, false, false});
+        res.add(new Object[] {false, false, false});
+        res.add(new Object[] {true, true, false});
+
+        // Case when earliest checkpoint in the WAL history contains information for the initial cache (before the drop)
+        // and update counters in it greater than the actual update counters for the existing cache.
+        res.add(new Object[] {true, true, true});
 
         return res;
     }
@@ -79,18 +92,20 @@ public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
         cfg.setConsistentId(name);
 
         cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                        .setPersistenceEnabled(true)
-                )
+                new DataStorageConfiguration()
+                        .setDefaultDataRegionConfiguration(
+                                new DataRegionConfiguration()
+                                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                                        .setPersistenceEnabled(true)
+                        )
         );
 
-        cfg.setCacheConfiguration(new CacheConfiguration()
-            .setAffinity(new RendezvousAffinityFunction(false, 8))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
+        if (limitedWal)
+            cfg.getDataStorageConfiguration()
+                    .setWalSegmentSize(512 * 1024)
+                    .setMaxWalArchiveSize(5 * 1024 * 1024);
+
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
@@ -113,6 +128,16 @@ public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(spi);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<Integer, Integer> cacheConfiguration() {
+        return new CacheConfiguration<Integer, Integer>()
+                .setAffinity(new RendezvousAffinityFunction(false, 8))
+                .setBackups(1)
+                .setName(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -142,12 +167,23 @@ public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPutRemoveReorderingConsistency() throws Exception {
+    public void testHistoricalRebalanceHeuristics() throws Exception {
         IgniteEx grid = startGrids(2);
 
         grid.cluster().state(ClusterState.ACTIVE);
 
-        IgniteInternalCache<Integer, Integer> cache = grid.cachex(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
+
+        if (cacheRecreate) {
+            for (int i = 0; i < INITIAL_KEYS * 2; i++)
+                cache.put(i, i);
+
+            cache.destroy();
+
+            cache = grid.getOrCreateCache(cacheConfiguration());
+
+            forceCheckpoint();
+        }
 
         for (int i = 0; i < INITIAL_KEYS; i++)
             cache.put(i, i);
