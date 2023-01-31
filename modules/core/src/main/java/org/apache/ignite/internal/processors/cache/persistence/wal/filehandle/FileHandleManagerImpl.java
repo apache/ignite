@@ -562,8 +562,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
 
                 hdl.written += hdl.fileIO.writeFully(buf);
 
-                metrics.onWalBytesWritten(size);
-
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {

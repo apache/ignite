@@ -733,14 +733,6 @@ public class DataStorageMetricsImpl {
         walLoggingRate.increment();
 
         walWrittenBytes.add(size);
-    }
-
-    /**
-     * @param size Size written.
-     */
-    public void onWalBytesWritten(int size) {
-        if (!metricsEnabled)
-            return;
 
         walWritingRate.add(size);
     }
