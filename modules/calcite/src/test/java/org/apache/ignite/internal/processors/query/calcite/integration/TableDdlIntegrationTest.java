@@ -282,6 +282,21 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Create table using reserved word
+     */
+    @Test
+    public void createTableUseReservedWord() {
+        assertThrows("create table table (id int primary key, val varchar)", IgniteSQLException.class,
+            "Failed to parse query. Encountered \"table table\"");
+
+        sql("create table \"table\" (id int primary key, val varchar)");
+
+        sql("insert into \"table\" (id, val) values (0, '1')");
+
+        assertQuery("select * from \"table\" ").returns(0, "1").check();
+    }
+
+    /**
      * Creates a table without a primary key and then insert a few rows.
      */
     @Test
