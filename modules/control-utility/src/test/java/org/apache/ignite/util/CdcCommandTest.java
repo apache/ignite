@@ -114,16 +114,12 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             "Unexpected command: unexpected_command");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS),
-            "Expected node ID option: " + NODE_ID);
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID),
-            "Failed to parse " + NODE_ID + " command argument.");
+            "Failed to parse node ID argument command argument.");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
-            "Failed to parse " + NODE_ID + " command argument.");
+            "Failed to parse node ID argument command argument.");
     }
 
     /** */
@@ -159,52 +155,39 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testDeleteLostSegmentLinks() throws Exception {
-        archiveSegment();
+        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), true);
+    }
 
-        cdcDisabled.propagate(true);
-        archiveSegment();
-        cdcDisabled.propagate(false);
-
-        archiveSegment();
-
-        checkSegmentLinks(F.asList(0L, 2L), F.asList(2L));
+    /** */
+    @Test
+    public void testDeleteLostSegmentLinksOneNode() throws Exception {
+        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), false);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksMultipleGaps() throws Exception {
-        archiveSegment();
-
-        cdcDisabled.propagate(true);
-        archiveSegment();
-        archiveSegment();
-        cdcDisabled.propagate(false);
-
-        archiveSegment();
-
-        cdcDisabled.propagate(true);
-        archiveSegment();
-        cdcDisabled.propagate(false);
-
-        archiveSegment();
-
-        checkSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L));
+        checkDeleteLostSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L), true);
     }
 
     /** */
-    private void checkSegmentLinks(List<Long> expBefore, List<Long> expAfter) {
-        checkFiles(srv0, expBefore);
-        checkFiles(srv1, expBefore);
+    private void checkDeleteLostSegmentLinks(List<Long> expBefore, List<Long> expAfter, boolean allNodes) throws Exception {
+        archiveSegmentLinks(expBefore);
 
-        executeCommand(EXIT_CODE_OK,
-            CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString());
+        checkLinks(srv0, expBefore);
+        checkLinks(srv1, expBefore);
 
-        checkFiles(srv0, expAfter);
-        checkFiles(srv1, expBefore); // The command executed for srv0 only.
+        String[] args = allNodes ? new String[] {CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS} :
+            new String[] {CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString()};
+
+        executeCommand(EXIT_CODE_OK, args);
+
+        checkLinks(srv0, expAfter);
+        checkLinks(srv1, allNodes ? expAfter : expBefore);
     }
 
     /** */
-    private void checkFiles(IgniteEx srv, List<Long> expLinks) {
+    private void checkLinks(IgniteEx srv, List<Long> expLinks) {
         FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)srv.context().cache().context().wal(true);
 
         File[] links = wal0.walCdcDirectory().listFiles(WAL_SEGMENT_FILE_FILTER);
@@ -212,6 +195,15 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         assertEquals(expLinks.size(), links.length);
         Arrays.stream(links).map(File::toPath).map(CdcMain::segmentIndex)
             .allMatch(expLinks::contains);
+    }
+
+    /** Archive given segments links with possible gaps. */
+    private void archiveSegmentLinks(List<Long> idxs) throws Exception {
+        for (long idx = 0; idx <= idxs.stream().mapToLong(v -> v).max().getAsLong(); idx++) {
+            cdcDisabled.propagate(!idxs.contains(idx));
+
+            archiveSegment();
+        }
     }
 
     /** */

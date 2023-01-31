@@ -23,20 +23,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cdc.CdcConsumerState.WAL_STATE_FILE_NAME;
 import static org.apache.ignite.internal.cdc.CdcMain.STATE_DIR;
@@ -46,13 +49,25 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * Task to delete lost segment CDC links.
  */
 @GridInternal
-public class VisorCdcDeleteLostSegmentsTask extends VisorOneNodeTask<Void, Void> {
+public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<Void, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<Void, Void> job(Void arg) {
         return new VisorCdcDeleteLostSegmentsJob(arg, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) throws IgniteException {
+        for (ComputeJobResult res : results) {
+            if (res.getException() != null) {
+                throw new IgniteException("Failed to delete lost segment CDC links on a node " +
+                    "[nodeId=" + res.getNode().id() + ']', res.getException());
+            }
+        }
+
+        return null;
     }
 
     /** */

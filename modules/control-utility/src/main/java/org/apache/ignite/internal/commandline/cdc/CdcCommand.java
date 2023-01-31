@@ -17,14 +17,21 @@
 
 package org.apache.ignite.internal.commandline.cdc;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.CDC;
@@ -56,6 +63,13 @@ public class CdcCommand extends AbstractCommand<String> {
                 clientCfg
             );
 
+            Collection<UUID> nodeIds = nodeId != null ? Collections.singletonList(nodeId) :
+                client.compute().nodes(node -> !node.isClient()).stream().map(GridClientNode::nodeId)
+                    .collect(Collectors.toSet());
+
+            client.compute().execute(VisorCdcDeleteLostSegmentsTask.class.getName(),
+                new VisorTaskArgument<>(nodeIds, false));
+
             String res = "Lost segment CDC links successfully removed.";
 
             log.info(res);
@@ -82,20 +96,9 @@ public class CdcCommand extends AbstractCommand<String> {
         while (argIter.hasNextSubArg()) {
             String opt = argIter.nextArg("Failed to read command argument.");
 
-            if (NODE_ID.equalsIgnoreCase(opt)) {
-                try {
-                    nodeId = UUID.fromString(argIter.nextArg("Expected node ID argument."));
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Failed to parse " + NODE_ID + " command argument." +
-                        " String representation of \"java.util.UUID\" is exepected. For example:" +
-                        " 123e4567-e89b-42d3-a456-556642440000", e);
-                }
-            }
+            if (NODE_ID.equalsIgnoreCase(opt))
+                nodeId = argIter.nextUuidArg("node ID argument");
         }
-
-        if (nodeId == null)
-            throw new IllegalArgumentException("Expected node ID option: " + NODE_ID);
     }
 
     /** {@inheritDoc} */
@@ -110,8 +113,13 @@ public class CdcCommand extends AbstractCommand<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        usage(logger, "Delete lost segment links on a node:", CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, "node_id",
-            optional(CMD_AUTO_CONFIRMATION));
+        Map<String, String> params = new LinkedHashMap<>();
+
+        params.put("node_id", "ID of the node to delete lost segment links from. If not set, the command will affect " +
+            "all server nodes.");
+
+        usage(logger, "Delete lost segment CDC links:", CDC, params, DELETE_LOST_SEGMENT_LINKS,
+            optional(NODE_ID, "node_id"), optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */

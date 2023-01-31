@@ -154,7 +154,10 @@ The link:tools/control-script[Control Script] script provides the ability to del
 
 [source,shell]
 ----
-# Delete lost segment links on a node.
+# Delete lost segment CDC links in the cluster.
+control.sh|bat --cdc delete_lost_segment_links
+
+# Delete lost segment CDC links on a node.
 control.sh|bat --cdc delete_lost_segment_links --node-id node_id
 ----
 
