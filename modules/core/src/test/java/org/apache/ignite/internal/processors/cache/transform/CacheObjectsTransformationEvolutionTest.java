@@ -17,18 +17,50 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Checks transformation algorithm change.
  */
+@RunWith(Parameterized.class)
 public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObjectsTransformationTest {
+    /** Atomicity mode. */
+    @Parameterized.Parameter
+    public CacheAtomicityMode mode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "mode={0}")
+    public static Collection<?> parameters() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (CacheAtomicityMode mode : new CacheAtomicityMode[] {CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC})
+            res.add(new Object[] {mode});
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = super.cacheConfiguration();
+
+        cfg.setAtomicityMode(mode);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setCacheObjectTransformer(new ControllableCacheObjectTransformer());
@@ -101,10 +133,12 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
         int[] shifts = new int[] {-3, 0/*disabled*/, 7, 42};
 
-        boolean binarizable = false;
-        boolean binary = false;
-
         ThreadLocalRandom rdm = ThreadLocalRandom.current();
+
+        Object obj = kvGen.apply(0);
+
+        boolean binarizable = obj instanceof BinarizableData;
+        boolean binary = obj instanceof BinaryObject;
 
         // Regular put, brandnew value.
         for (int i = 0; i < cnt; i++) {
@@ -112,9 +146,6 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
                 ControllableCacheObjectTransformer.transformationShift(shift);
 
                 Object kv = kvGen.apply(++key);
-
-                binarizable = kv instanceof BinarizableData;
-                binary = kv instanceof BinaryObject;
 
                 cache.put(kv, kv);
             }
@@ -172,7 +203,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             totalCnt += cnt;
         }
 
-        // Value replace
+        // Value replace.
         for (int i = 0; i < cnt; i++) {
             for (int shift : shifts) {
                 ControllableCacheObjectTransformer.transformationShift(-shift);
@@ -193,13 +224,21 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             }
         }
 
-        tCnt += cnt * 3; // 3 values at replace required to be marshalled.
+        tCnt += cnt * 2; // 3 (at tx) or 2 (at atomic) values at replace required to be marshalled.
 
-        if (binarizable || binary) // Binary array is required at backups at put (e.g. to wait for proper Metadata)
-            rCnt += (NODES - 1) * cnt * 2; // Double replace on backups.
+        if (mode != CacheAtomicityMode.ATOMIC || binarizable || binary) // TODO check binary transfrormation need
+            tCnt += cnt; // Atomic operation compares previous value without transformaton.
+
+        if (binarizable || binary) { // Binary array is required at backups at put (e.g. to wait for proper Metadata)
+            if (mode == CacheAtomicityMode.TRANSACTIONAL)
+                rCnt += (NODES - 1) * cnt * 2; // Double replace on backups (restoration of transfered binary objects).
+            else
+                rCnt += (NODES - 1) * cnt; // Previous value will not be transfered to backups.
+        }
 
         totalCnt += cnt;
 
+        // Checking.
         for (int shift : shifts) {
             if (shift != 0)
                 assertEquals(tCnt, ControllableCacheObjectTransformer.tCntr.get(shift).get());
@@ -218,6 +257,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         if (binary)
             cache = cache.withKeepBinary();
 
+        // Get (hits/misses).
         while (key > 0) {
             ControllableCacheObjectTransformer.transformationShift(rdm.nextInt()); // Random transformation.
 
@@ -234,6 +274,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             }
         }
 
+        // Checking.
         for (int shift : shifts) {
             assertNull(ControllableCacheObjectTransformer.tCntr.get(shift)); // No key transformations at used shifts.
             assertEquals(0, ControllableCacheObjectTransformer.tCntr.size()); // No key transformations at all.
