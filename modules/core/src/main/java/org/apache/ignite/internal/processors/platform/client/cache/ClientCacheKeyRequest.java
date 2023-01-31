@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 
 /**
@@ -45,5 +47,26 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
      */
     public Object key() {
         return key;
+    }
+
+    /**
+     * Calculation of awarenes metrics
+     */
+    protected void calcAwarenessMetrics(ClientConnectionContext ctx) {
+        if (!isTransactional()) {
+            String cacheName = cacheDescriptor(ctx).cacheName();
+
+            try {
+                Affinity<Object> aff = ctx.kernalContext().affinity().affinityProxy(cacheName);
+
+                if (aff.isPrimary(ctx.kernalContext().discovery().localNode(), key))
+                    ctx.kernalContext().sqlListener().onAwarenessHit();
+                else
+                    ctx.kernalContext().sqlListener().onAwarenessMiss();
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+        }
     }
 }

@@ -149,7 +149,7 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
         try {
             QueryCursor cur = cache.query(qry);
 
-            ClientCacheEntryQueryCursor cliCur = new ClientCacheEntryQueryCursor(cur, pageSize, ctx);
+            ClientCacheEntryQueryCursor cliCur = new ClientCacheEntryQueryCursor(cur, pageSize, ctx, false);
 
             long cursorId = ctx.resources().put(cliCur);
 

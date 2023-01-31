@@ -39,6 +39,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -84,6 +86,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = true;
 
+    /** Awaraness hit metric name */
+    public static final String AWARENESS_HIT = "AwaranessHit";
+
+    /** Awaraness miss metric name */
+    public static final String AWARENESS_MISS = "AwaranessMiss";
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -96,11 +104,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Thin client distributed configuration. */
     private DistributedThinClientConfiguration distrThinCfg;
 
+    /** Awareness hit. */
+    private final AtomicLongMetric awarenessHit;
+
+    /** Awareness miss. */
+    private final AtomicLongMetric awarenessMiss;
+
     /**
      * @param ctx Kernal context.
      */
     public ClientListenerProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+        awarenessHit = mreg.longMetric(AWARENESS_HIT, "AwarenessHit count.");
+        awarenessMiss = mreg.longMetric(AWARENESS_MISS, "AwarenessMiss count.");
     }
 
     /** {@inheritDoc} */
@@ -545,6 +563,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /** Update awareness hit. */
+    public void onAwarenessHit() {
+        awarenessHit.increment();
+    }
+
+    /** Update awareness miss. */
+    public void onAwarenessMiss() {
+        awarenessMiss.increment();
     }
 
     /**

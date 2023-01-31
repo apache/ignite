@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.GridKernalContext;
@@ -82,12 +84,25 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
             .setPartition(part)
             .setFilter(createFilter(ctx.kernalContext(), filterObj, filterPlatform));
 
+        boolean awaraness = false;
+        if (part != null) {
+            try {
+                Affinity<Object> aff = ctx.kernalContext().affinity().affinityProxy(cache.getName());
+                int[] primaryParts = aff.primaryPartitions(ctx.kernalContext().discovery().localNode());
+                if (Arrays.stream(primaryParts).anyMatch(part::equals))
+                    awaraness = true;
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+        }
+
         ctx.incrementCursors();
 
         try {
             QueryCursor cur = cache.query(qry);
 
-            ClientCacheEntryQueryCursor cliCur = new ClientCacheEntryQueryCursor(cur, pageSize, ctx);
+            ClientCacheEntryQueryCursor cliCur = new ClientCacheEntryQueryCursor(cur, pageSize, ctx, awaraness);
 
             long cursorId = ctx.resources().put(cliCur);
 
