@@ -246,11 +246,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Override public void prepareMarshal(CacheObjectValueContext ctx) {
         assert arr != null || valBytes != null;
 
-        if (valBytes == null) {
-            assert part == -1; // Keys should never be transformed.
-
+        if (valBytes == null)
             valBytes = valueBytesFromArray(ctx);
-        }
     }
 
     /**
@@ -264,6 +261,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Value bytes.
      */
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
+        assert part == -1; // Keys should never be transformed.
+
         byte[] bytes =
             CacheObjectTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
 
