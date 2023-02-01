@@ -525,9 +525,9 @@ public class CdcMain implements Runnable {
                 walState = null;
             }
 
-            boolean interrupted = Thread.interrupted();
+            boolean interrupted;
 
-            while (iter.hasNext() && !interrupted) {
+            do {
                 boolean commit = consumer.onRecords(iter);
 
                 if (commit) {
@@ -560,7 +560,7 @@ public class CdcMain implements Runnable {
                 }
 
                 interrupted = Thread.interrupted();
-            }
+            } while (iter.hasNext() && !interrupted);
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");

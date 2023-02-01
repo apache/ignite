@@ -89,9 +89,6 @@ public class CdcSelfTest extends AbstractCdcTest {
     public static final String TX_CACHE_NAME = "tx-cache";
 
     /** */
-    public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
-
-    /** */
     @Parameterized.Parameter
     public boolean specificConsistentId;
 

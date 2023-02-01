@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cdc;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -245,9 +246,16 @@ public class WalRecordsConsumer<K, V> {
 
         /** @return Current state. */
         T2<WALPointer, Integer> state() {
-            return hasNext() ?
-                new T2<>(curRec.get1(), entryIdx) :
-                new T2<>(curRec.get1().next(), 0);
+            if (hasNext())
+                return new T2<>(curRec.get1(), entryIdx);
+            else if (curRec != null)
+                return new T2<>(curRec.get1().next(), 0);
+
+            Optional<WALPointer> ptr = walIter.lastRead();
+
+            assert ptr.isPresent();
+
+            return new T2<>(ptr.get().next(), 0);
         }
 
         /** Initialize state. */
