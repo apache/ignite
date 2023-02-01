@@ -145,6 +145,7 @@ IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in c
 == Handling skipped segments
 
 The CDC can be disabled manually or by configured directory maximum size. In this case a hard link creation will be skipped.
+So when enabled there will be gap between segments: `0000000000000002.bin`, `0000000000000010.bin`, `0000000000000011.bin`, for example.
 
 WARNING: All changes in skipped segments will be lost!
 

@@ -103,7 +103,9 @@ public class CdcCommand extends AbstractCommand<String> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will delete lost segment CDC links. Cache events from these segments will be lost.";
+        return "Warning: The command will fix WAL segments gap in case CDC link creation was stopped by distributed " +
+            "property or excess of maximum CDC directory size. Gap will be fixed by deletion of WAL segments " +
+            "previous to the gap.";
     }
 
     /** {@inheritDoc} */
