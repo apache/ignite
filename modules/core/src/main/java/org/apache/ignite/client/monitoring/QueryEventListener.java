@@ -17,8 +17,10 @@
 
 package org.apache.ignite.client.monitoring;
 
+import java.util.EventListener;
+
 /** */
-public interface QueryEventListener {
+public interface QueryEventListener extends EventListener {
     /**
      * @param event Query start event.
      */

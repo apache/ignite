@@ -38,6 +38,7 @@ import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStable
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
 import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.monitoring.IgniteClientConnectionEventListenerTest;
+import org.apache.ignite.internal.client.thin.monitoring.IgniteClientQueryEventListenerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -82,7 +83,8 @@ import org.junit.runners.Suite;
     IgniteSetTest.class,
     DataReplicationOperationsTest.class,
     MetadataRegistrationTest.class,
-    IgniteClientConnectionEventListenerTest.class
+    IgniteClientConnectionEventListenerTest.class,
+    IgniteClientQueryEventListenerTest.class
 })
 public class ClientTestSuite {
     // No-op.

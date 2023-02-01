@@ -18,7 +18,7 @@
 package org.apache.ignite.client.monitoring;
 
 /** */
-abstract class QueryEvent {
+public abstract class QueryEvent {
     /** */
     private final ConnectionDescription conn;
 
