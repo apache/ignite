@@ -517,15 +517,16 @@ public class CdcMain implements Runnable {
                 walState = null;
             }
 
-            boolean interrupted = Thread.interrupted();
+            boolean interrupted = false;
 
-            while (iter.hasNext() && !interrupted) {
+            do {
                 boolean commit = consumer.onRecords(iter);
 
                 if (commit) {
                     T2<WALPointer, Integer> curState = iter.state();
 
-                    assert curState != null;
+                    if (curState == null)
+                        continue;
 
                     if (log.isDebugEnabled())
                         log.debug("Saving state [curState=" + curState + ']');
@@ -552,7 +553,7 @@ public class CdcMain implements Runnable {
                 }
 
                 interrupted = Thread.interrupted();
-            }
+            } while (iter.hasNext() && !interrupted);
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
