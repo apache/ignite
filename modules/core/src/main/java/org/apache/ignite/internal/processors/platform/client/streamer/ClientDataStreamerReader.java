@@ -17,31 +17,36 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
 /**
- * Base class for streamer requests.
+ * Data streamer deserialization helpers.
  */
-abstract class ClientDataStreamerRequest extends ClientRequest {
+class ClientDataStreamerReader {
     /**
-     * Constructor.
+     * Reads an entry.
      *
      * @param reader Data reader.
+     * @return Streamer entry.
      */
-    protected ClientDataStreamerRequest(BinaryRawReader reader) {
-        super(reader);
-    }
+    public static Collection<DataStreamerEntry> read(BinaryReaderExImpl reader) {
+        int entriesCnt = reader.readInt();
 
-    /**
-     * Returns invalid node state response.
-     *
-     * @return Invalid node state response.
-     */
-    protected ClientResponse getInvalidNodeStateResponse() {
-        return new ClientResponse(requestId(), ClientStatus.INVALID_NODE_STATE,
-                "Data streamer has been closed because node is stopping.");
+        if (entriesCnt == 0)
+            return null;
+
+        Collection<DataStreamerEntry> entries = new ArrayList<>(entriesCnt);
+
+        for (int i = 0; i < entriesCnt; i++) {
+            entries.add(new DataStreamerEntry(readCacheObject(reader, true),
+                    readCacheObject(reader, false)));
+        }
+
+        return entries;
     }
 }

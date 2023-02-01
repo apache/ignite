@@ -540,7 +540,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheRemoveAllRequest(reader);
 
             case OP_CACHE_PUT_ALL_CONFLICT:
-                return new ClientCachePutAllConflictRequest(reader);
+                return new ClientCachePutAllConflictRequest(reader, ctx);
 
             case OP_CACHE_REMOVE_ALL_CONFLICT:
                 return new ClientCacheRemoveAllConflictRequest(reader);

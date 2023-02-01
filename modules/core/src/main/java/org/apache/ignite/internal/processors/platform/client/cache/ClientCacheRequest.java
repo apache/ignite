@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
@@ -134,18 +132,6 @@ public class ClientCacheRequest extends ClientRequest {
             cache = cache.withExpiryPolicy(expiryPolicy);
         
         return cache;
-    }
-
-    /**
-     * Gets the cache object value context.
-     *
-     * @param ctx Context.
-     * @return Cache object value context.
-     */
-    protected CacheObjectValueContext cacheObjectContext(ClientConnectionContext ctx) throws IgniteCheckedException {
-        DynamicCacheDescriptor desc = cacheDescriptor(ctx);
-
-        return desc.cacheObjectContext(ctx.kernalContext().cacheObjects());
     }
 
     /**

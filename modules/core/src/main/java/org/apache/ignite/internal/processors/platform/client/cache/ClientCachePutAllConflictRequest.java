@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
@@ -33,13 +30,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_CALCULATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_NOT_CHANGED;
-import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.ObjectWithBytes;
-import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.buildCacheObject;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
 /**
@@ -47,50 +41,39 @@ import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils
  */
 public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
     /** */
-    private final Collection<T3<ObjectWithBytes, ObjectWithBytes, GridCacheVersion>> entries;
+    private final Map<KeyCacheObject, GridCacheDrInfo> map;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
+     * @param ctx Connection context.
      */
-    public ClientCachePutAllConflictRequest(BinaryReaderExImpl reader) {
+    public ClientCachePutAllConflictRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
         super(reader);
+
+        boolean expPlc = cachex(ctx).configuration().getExpiryPolicyFactory() != null;
 
         int cnt = reader.readInt();
 
-        entries = new ArrayList<>(cnt);
+        map = new LinkedHashMap<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
-            ObjectWithBytes key = readCacheObject(reader);
-            ObjectWithBytes val = readCacheObject(reader);
+            KeyCacheObject key = readCacheObject(reader, true);
+            CacheObject val = readCacheObject(reader, false);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
 
-            entries.add(new T3<>(key, val, ver));
+            GridCacheDrInfo info = expPlc ?
+                new GridCacheDrExpirationInfo(val, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE) :
+                new GridCacheDrInfo(val, ver);
+
+            map.put(key, info);
         }
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        boolean expPlc = cachex(ctx).configuration().getExpiryPolicyFactory() != null;
-
-        Map<KeyCacheObject, GridCacheDrInfo> map = new LinkedHashMap<>(entries.size());
-
         try {
-            CacheObjectValueContext cotx = cacheObjectContext(ctx);
-
-            for (T3<ObjectWithBytes, ObjectWithBytes, GridCacheVersion> t3 : entries) {
-                KeyCacheObject key = buildCacheObject(cotx, t3.get1(), true);
-                CacheObject val = buildCacheObject(cotx, t3.get2(), false);
-                GridCacheVersion ver = t3.get3();
-
-                GridCacheDrInfo info = expPlc ?
-                    new GridCacheDrExpirationInfo(val, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE) :
-                    new GridCacheDrInfo(val, ver);
-
-                map.put(key, info);
-            }
-
             cachex(ctx).putAllConflict(map);
         }
         catch (IgniteCheckedException e) {

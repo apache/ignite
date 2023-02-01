@@ -51,7 +51,6 @@ import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -63,8 +62,6 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -1375,8 +1372,9 @@ public class PlatformUtils {
      * Read cache object from the stream as raw bytes to avoid marshalling.
      *
      * @param reader Reader.
+     * @param isKey {@code True} if object is a key.
      */
-    public static ObjectWithBytes readCacheObject(BinaryReaderExImpl reader) {
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();
@@ -1386,58 +1384,16 @@ public class PlatformUtils {
         if (obj == null)
             return null;
 
+        if (obj instanceof CacheObject)
+            return (T)obj;
+
         int pos1 = in.position();
 
         in.position(pos0);
 
         byte[] objBytes = in.readByteArray(pos1 - pos0);
 
-        return new ObjectWithBytes(obj, objBytes);
-    }
-
-    /**
-     * Build cache object keeping its bytes to avoid marshalling.
-     *
-     * @param ctx Context.
-     * @param objWithBytes Object with bytes.
-     * @param isKey {@code True} if object is a key.
-     */
-    public static <T extends CacheObject> T buildCacheObject(CacheObjectValueContext ctx, ObjectWithBytes objWithBytes,
-        boolean isKey) {
-        if (objWithBytes == null)
-            return null;
-
-        Object obj = objWithBytes.obj;
-
-        if (obj instanceof BinaryObjectImpl)
-            ((BinaryObjectImpl)obj).prepareMarshal(ctx);
-
-        if (obj instanceof CacheObject)
-            return (T)obj;
-
-        return isKey ?
-            (T)new KeyCacheObjectImpl(obj, CacheObjectTransformerUtils.transformIfNecessary(objWithBytes.bytes, ctx), -1) :
-            (T)new CacheObjectImpl(obj, CacheObjectTransformerUtils.transformIfNecessary(objWithBytes.bytes, ctx));
-    }
-
-    /**
-     *
-     */
-    public static final class ObjectWithBytes {
-        /** Object. */
-        Object obj;
-
-        /** Bytes. */
-        byte[] bytes;
-
-        /**
-         * @param obj Object.
-         * @param bytes Bytes.
-         */
-        public ObjectWithBytes(Object obj, byte[] bytes) {
-            this.obj = obj;
-            this.bytes = bytes;
-        }
+        return isKey ? (T)new KeyCacheObjectImpl(obj, objBytes, -1) : (T)new CacheObjectImpl(obj, objBytes);
     }
 
     /**
