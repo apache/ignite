@@ -67,15 +67,11 @@ public class CacheObjectTransformerUtils {
             transformed[1] = VER;
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-                byte[] bytes0 = new byte[length];
-
-                U.arrayCopy(bytes, offset, bytes0, 0, length);
-
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformed",
                         EVT_CACHE_OBJECT_TRANSFORMED,
-                        bytes0,
+                        detachIfNecessary(bytes, offset, length),
                         transformed,
                         false));
             }
@@ -84,21 +80,31 @@ public class CacheObjectTransformerUtils {
         }
         catch (IgniteCheckedException ex) { // Can not be transformed.
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-                byte[] bytes0 = new byte[length];
-
-                U.arrayCopy(bytes, offset, bytes0, 0, length);
-
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformation was cancelled. " + ex.getMessage(),
                         EVT_CACHE_OBJECT_TRANSFORMED,
-                        bytes0,
+                        detachIfNecessary(bytes, offset, length),
                         null,
                         false));
             }
 
             return bytes;
         }
+    }
+
+    /**
+     *
+     */
+    private static byte[] detachIfNecessary(byte[] bytes, int offset, int length) {
+        if (offset == 0 && length == bytes.length)
+            return bytes;
+
+        byte[] res = new byte[length];
+
+        U.arrayCopy(bytes, offset, res, 0, length);
+
+        return res;
     }
 
     /**
