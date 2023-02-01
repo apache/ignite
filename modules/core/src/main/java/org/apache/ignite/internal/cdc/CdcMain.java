@@ -525,7 +525,7 @@ public class CdcMain implements Runnable {
                 walState = null;
             }
 
-            boolean interrupted;
+            boolean interrupted = false;
 
             do {
                 boolean commit = consumer.onRecords(iter);
@@ -533,7 +533,8 @@ public class CdcMain implements Runnable {
                 if (commit) {
                     T2<WALPointer, Integer> curState = iter.state();
 
-                    assert curState != null;
+                    if (curState == null)
+                        continue;
 
                     if (log.isDebugEnabled())
                         log.debug("Saving state [curState=" + curState + ']');

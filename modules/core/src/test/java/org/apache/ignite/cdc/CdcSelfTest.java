@@ -154,7 +154,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Read one record per call.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                super.onEvents(Collections.singleton(evts.next()).iterator());
+                if (evts.hasNext())
+                    super.onEvents(Collections.singleton(evts.next()).iterator());
 
                 return false;
             }
@@ -167,7 +168,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Read one record per call and commit.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                super.onEvents(Collections.singleton(evts.next()).iterator());
+                if (evts.hasNext())
+                    super.onEvents(Collections.singleton(evts.next()).iterator());
 
                 return true;
             }
@@ -272,10 +274,11 @@ public class CdcSelfTest extends AbstractCdcTest {
 
             CdcConsumer cnsmr = new CdcConsumer() {
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!evts.hasNext())
+                        return true;
+
                     if (!firstEvt.get())
                         throw new RuntimeException("Expected fail.");
-
-                    assertTrue(evts.hasNext());
 
                     data.add((Integer)evts.next().key());
 
@@ -360,6 +363,9 @@ public class CdcSelfTest extends AbstractCdcTest {
                 boolean oneConsumed;
 
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!evts.hasNext())
+                        return true;
+
                     // Fail application after one event read AND state committed.
                     if (oneConsumed)
                         throw new RuntimeException(errMsg);
