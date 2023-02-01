@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.increme
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,12 +81,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
@@ -667,40 +662,6 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         assertFalse(readRepairCheckFailed.get());
     }
 
-    /** Prepare for snapshot restoring - restart grids, with clean persistence. */
-    private void restartWithCleanPersistence() throws Exception {
-        stopAllGrids();
-
-        assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), "cp").toFile()));
-
-        deleteNodesDirs(DFLT_STORE_DIR, DFLT_BINARY_METADATA_PATH, DFLT_WAL_PATH, DFLT_WAL_ARCHIVE_PATH);
-
-        startGrids(nodes());
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
-
-        // Caches are configured with IgniteConiguration, need to destroy them before restoring snapshot.
-        grid(0).destroyCaches(F.asList(CACHE, CACHE2));
-
-        for (int i = 0; i < nodes(); i++) {
-            String nodeFolder = U.maskForFileName(getTestIgniteInstanceName(i));
-
-            Path path = Paths.get(U.defaultWorkDirectory(), DFLT_STORE_DIR, nodeFolder);
-
-            GridTestUtils.waitForCondition(() -> !path.toFile().exists(), 1_000, 10);
-        }
-    }
-
-    /** */
-    private void deleteNodesDirs(String... dirs) throws IgniteCheckedException {
-        for (int i = 0; i < nodes(); i++) {
-            String nodeFolder = U.maskForFileName(getTestIgniteInstanceName(i));
-
-            for (String dir: dirs)
-                assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), dir, nodeFolder).toFile()));
-        }
-    }
-
     /** */
     private void runTxAsync(Ignite txCrdNode, @Nullable Map<Integer, Integer> data) throws Exception {
         multithreadedAsync(() -> {
@@ -812,6 +773,11 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
             WalTestUtils.corruptWalSegmentFile(new FileDescriptor(incSegs[0]), corruptPtr);
         }
+    }
+
+    /** */
+    private void restartWithCleanPersistence() throws Exception {
+        restartWithCleanPersistence(F.asList(CACHE, CACHE2));
     }
 
     /** {@inheritDoc} */

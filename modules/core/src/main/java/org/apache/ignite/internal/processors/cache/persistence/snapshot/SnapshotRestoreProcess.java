@@ -1613,9 +1613,10 @@ public class SnapshotRestoreProcess {
      * @param segments WAL segments.
      * @return Iterator over WAL segments.
      */
-    public static WALIterator walIter(IgniteLogger log, File... segments) throws IgniteCheckedException {
+    public WALIterator walIter(IgniteLogger log, File... segments) throws IgniteCheckedException {
         return new IgniteWalIteratorFactory(log)
             .iterator(new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .sharedContext(ctx.cache().context())
                 .filesOrDirs(segments));
     }
 
