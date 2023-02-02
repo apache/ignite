@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.systemview;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 
 /**
  * Responsibility of this class it to recursively iterate {@link IgniteConfiguration} object
@@ -46,7 +48,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
     /** */
-    private final List<String> addPkgs;
+    private final List<String> pkgs;
 
     /** */
     private final Queue<GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String>> iters = new LinkedList<>();
@@ -57,7 +59,12 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
         String addPkgsProp = IgniteSystemProperties.getString(IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES);
 
-        addPkgs = F.isEmpty(addPkgsProp) ? Collections.emptyList() : Arrays.asList(addPkgsProp.split(","));
+        pkgs = new ArrayList<>(F.isEmpty(addPkgsProp)
+            ? Collections.emptyList()
+            : Arrays.asList(addPkgsProp.split(","))
+        );
+
+        pkgs.add(IGNITE_PKG);
 
         addToQueue(cfg, "");
     }
@@ -145,7 +152,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         if (isArray)
             cls = cls.getComponentType();
 
-        if (!cls.getName().startsWith("org.apache.ignite.") || inAditionalPackage(cls.getName()))
+        if (!checkPkg(cls.getName()))
             return false;
 
         if (isArray) {
@@ -206,8 +213,8 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     }
 
     /** */
-    private boolean inAditionalPackage(String name) {
-        for (String pkg : addPkgs) {
+    private boolean checkPkg(String name) {
+        for (String pkg : pkgs) {
             if (name.startsWith(pkg))
                 return true;
         }

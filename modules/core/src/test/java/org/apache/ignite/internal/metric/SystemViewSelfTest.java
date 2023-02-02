@@ -2352,7 +2352,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             ignite.context().systemView()
                 .<ConfigurationView>view(CFG_VIEW)
                 .forEach(view -> {
-                    System.out.println(view.name() + " = " + view.value());
                     viewContent.put(view.name(), view.value());
                 });
 
