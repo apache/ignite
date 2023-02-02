@@ -198,7 +198,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
 
-                registerClientMetrics(mreg, CLI_TYPES);
+                registerClientMetrics(mreg);
 
                 ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
                     new ClientConnectionViewWalker(),
@@ -213,13 +213,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * @param mreg Metric registry.
-     * @param cliTypes Types of the clients for which metrics should be registered.
-     */
-    private void registerClientMetrics(MetricRegistry mreg, byte... cliTypes) {
-        for (int i = 0; i < cliTypes.length; i++) {
-            byte cliType = cliTypes[i];
+    /** @param mreg Metric registry. */
+    private void registerClientMetrics(MetricRegistry mreg) {
+        for (int i = 0; i < CLI_TYPES.length; i++) {
+            byte cliType = CLI_TYPES[i];
 
             String cliTypeName = clientTypeLabel(cliType);
 
