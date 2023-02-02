@@ -32,14 +32,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWalker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
@@ -50,6 +53,13 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
+
+    /** Name of the configuration system view. */
+    public static final String CFG_VIEW = "configuration";
+
+    /** Description of the configuration system view. */
+    public static final String CFG_VIEW_DESC = "Node configuration";
+
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 
@@ -65,6 +75,15 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        registerInnerCollectionView(
+            CFG_VIEW,
+            CFG_VIEW_DESC,
+            new ConfigurationViewWalker(),
+            singleton(ctx.config()),
+            IgniteConfigurationIterable::new,
+            (cfg, arr) -> new ConfigurationView(arr[0], arr[1])
+        );
+
         for (SystemViewExporterSpi spi : getSpis())
             spi.setSystemViewRegistry(this);
 
