@@ -135,9 +135,6 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
         if (isArray)
             cls = cls.getComponentType();
 
-        if (!cls.getName().startsWith("org.apache.ignite"))
-            return false;
-
         if (isArray) {
             int length = Array.getLength(val);
 
