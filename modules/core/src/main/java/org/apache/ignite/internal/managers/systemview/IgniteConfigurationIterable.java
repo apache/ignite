@@ -20,43 +20,40 @@ package org.apache.ignite.internal.managers.systemview;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Responsibility of this class it to recursively iterate {@link IgniteConfiguration} object
  * and expose all properties in for of String pairs.
  */
-public class IgniteConfigurationIterable implements Iterable<String[]> {
+public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
     /** */
     private final Queue<GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String>> iters = new LinkedList<>();
-
-    /** */
-    private final Set<Object> visited = new HashSet<>();
 
     /**
      * @param cfg Configuration to iterate.
      */
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
-        addToQueue(IgniteConfiguration.class, cfg, "");
+        addToQueue(cfg, "");
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<String[]> iterator() {
-        return new Iterator<String[]>() {
-            private String[] next;
+    @Override public Iterator<ConfigurationView> iterator() {
+        return new Iterator<ConfigurationView>() {
+            private ConfigurationView next;
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
@@ -75,13 +72,12 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
                 if (!iters.isEmpty()) {
                     GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String> curr = iters.peek();
 
-                    Map.Entry<String, Method> prop = curr.get2().next();
-
                     try {
+                        Map.Entry<String, Method> prop = curr.get2().next();
+
                         Object val = prop.getValue().invoke(curr.get1());
 
                         boolean res = addToQueue(
-                            val == null ? null : val.getClass(),
                             val,
                             (curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey()))
                         );
@@ -91,15 +87,15 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
                         else {
                             String valStr;
 
-                            if (val != null && val.getClass().isArray() && Array.getLength(val) == 0)
-                                valStr = "[]";
+                            if (val != null && val.getClass().isArray())
+                                valStr = S.arrayToString(val);
                             else
                                 valStr = U.toStringSafe(val);
 
-                            next = new String[]{
+                            next = new ConfigurationView(
                                 curr.get3().isEmpty() ? prop.getKey() : (curr.get3() + "." + prop.getKey()),
                                 valStr
-                            };
+                            );
                         }
                     }
                     catch (IllegalAccessException | InvocationTargetException e) {
@@ -109,11 +105,11 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
             }
 
             /** {@inheritDoc} */
-            @Override public String[] next() {
+            @Override public ConfigurationView next() {
                 if (next == null)
                     advance();
 
-                String[] next0 = next;
+                ConfigurationView next0 = next;
 
                 if (next0 == null)
                     throw new NoSuchElementException();
@@ -126,14 +122,19 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
     }
 
     /** */
-    private boolean addToQueue(Class<?> cls, Object val, String prefix) {
-        if (val == null)
+    private boolean addToQueue(Object val, String prefix) {
+        if (val == null || val.getClass().isEnum())
             return false;
+
+        Class<?> cls = val.getClass();
 
         boolean isArray = cls.isArray();
 
         if (isArray)
             cls = cls.getComponentType();
+
+        if (!cls.getName().startsWith("org.apache.ignite"))
+            return false;
 
         if (isArray) {
             int length = Array.getLength(val);
@@ -142,12 +143,12 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
                 return false;
 
             for (int i = 0; i < length; i++) {
-                Object arrI = Array.get(val, i);
-                iters.add(F.t(arrI, classProperties(arrI.getClass()), prefix + '[' + i + ']'));
+                Object el = Array.get(val, i);
+                iters.add(F.t(el, props(el.getClass()), prefix + '[' + i + ']'));
             }
         }
-        else if (visited.add(val))
-            iters.add(F.t(val, classProperties(cls), prefix));
+
+        iters.add(F.t(val, props(val.getClass()), prefix));
 
         return true;
     }
@@ -156,7 +157,7 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
      * @param cls Class to find properties.
      * @return Iterator of object fields.
      */
-    private Iterator<Map.Entry<String, Method>> classProperties(Class<?> cls) {
+    private Iterator<Map.Entry<String, Method>> props(Class<?> cls) {
         Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted
 
         for (; cls != Object.class; cls = cls.getSuperclass()) {

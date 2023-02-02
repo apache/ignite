@@ -36,7 +36,6 @@ import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWa
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
-import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
@@ -79,9 +78,9 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             CFG_VIEW,
             CFG_VIEW_DESC,
             new ConfigurationViewWalker(),
-            singleton(ctx.config()),
-            IgniteConfigurationIterable::new,
-            (cfg, arr) -> new ConfigurationView(arr[0], arr[1])
+            singleton(new IgniteConfigurationIterable(ctx.config())),
+            Function.identity(),
+            (cfg, view) -> view
         );
 
         for (SystemViewExporterSpi spi : getSpis())

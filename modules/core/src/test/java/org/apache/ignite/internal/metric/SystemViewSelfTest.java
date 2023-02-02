@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -72,6 +73,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
@@ -138,6 +140,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
@@ -176,6 +179,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_PO
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
@@ -2323,10 +2327,52 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testConfigurationView() throws Exception {
-        try (IgniteEx ignite = startGrid(0)) {
-            SystemView<ConfigurationView> view = ignite.context().systemView().view(CFG_VIEW);
+        IgniteConfiguration icfg = new IgniteConfiguration();
 
-            view.forEach(v -> System.out.println(v.name() + "=" + v.value()));
+        long expMaxSize = 10 * MB;
+
+        String expName = "my-instance";
+
+        String expDrName = "my-dr";
+
+        icfg.setIgniteInstanceName(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
+        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setLazyMemoryAllocation(false))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(expDrName)
+                    .setMaxSize(expMaxSize)));
+
+        try (IgniteEx ignite = startGrid(icfg)) {
+            Map<String, String> viewContent = new HashMap<>();
+
+            ignite.context().systemView()
+                .<ConfigurationView>view(CFG_VIEW)
+                .forEach(view -> {
+                    System.out.println(view.name() + " = " + view.value());
+                    viewContent.put(view.name(), view.value());
+                });
+
+            assertEquals(expName, viewContent.get("IgniteInstanceName"));
+            assertEquals(
+                "false",
+                viewContent.get("DataStorageConfiguration.DefaultDataRegionConfiguration.LazyMemoryAllocation")
+            );
+            assertEquals(expDrName, viewContent.get("DataStorageConfiguration.DataRegionConfigurations[0].Name"));
+            assertEquals(
+                Long.toString(expMaxSize),
+                viewContent.get("DataStorageConfiguration.DataRegionConfigurations[0].MaxSize")
+            );
+            assertEquals(
+                CacheAtomicityMode.TRANSACTIONAL.name(),
+                viewContent.get("CacheConfiguration[0].AtomicityMode")
+            );
+            assertTrue(viewContent.containsKey("AddressResolver"));
+            assertNull(viewContent.get("AddressResolver"));
+            assertEquals("[" + EVT_CONSISTENCY_VIOLATION + ']', viewContent.get("IncludeEventTypes"));
         }
     }
 
