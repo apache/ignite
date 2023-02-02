@@ -1,22 +1,19 @@
 package org.apache.ignite.internal.managers.systemview;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.Collections;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -27,11 +24,8 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * and expose all properties in for of String pairs.
  */
 public class IgniteConfigurationIterable implements Iterable<String[]> {
-    /** Configuration. */
-    private final IgniteConfiguration cfg;
-
     /** */
-    private final Queue<GridTuple3<Object, Iterator<Field>, String>> iters = new LinkedList<>();
+    private final Queue<GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String>> iters = new LinkedList<>();
 
     /** */
     private final Set<Object> visited = new HashSet<>();
@@ -40,9 +34,7 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
      * @param cfg Configuration to iterate.
      */
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
-        this.cfg = cfg;
-
-        tryAddToQueue(null, cfg, "");
+        addToQueue(IgniteConfiguration.class, cfg, "");
     }
 
     /** {@inheritDoc} */
@@ -65,39 +57,33 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
                     iters.remove();
 
                 if (!iters.isEmpty()) {
-                    GridTuple3<Object, Iterator<Field>, String> curr = iters.peek();
+                    GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String> curr = iters.peek();
 
-                    Field f = curr.get2().next();
+                    Map.Entry<String, Method> prop = curr.get2().next();
 
                     try {
-                        f.setAccessible(true);
+                        Object val = prop.getValue().invoke(curr.get1());
 
-                        Object val = f.get(curr.get1());
-
-                        if (val instanceof IgniteLogger
-                            || val instanceof ClusterNode
-                            || val instanceof IgniteKernal
-                            || val instanceof GridKernalContext
-                            || val instanceof MetricRegistry)
+                        if (val instanceof IgniteLogger)
                             advance();
                         else {
-                            boolean res = tryAddToQueue(
-                                f,
+                            boolean res = addToQueue(
+                                val == null ? null : val.getClass(),
                                 val,
-                                (curr.get3().isEmpty() ? f.getName() : metricName(curr.get3(), f.getName()))
+                                (curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey()))
                             );
 
                             if (res)
                                 advance();
-                            else
+                            else {
                                 next = new String[]{
-                                    curr.get3().isEmpty() ? f.getName() : (curr.get3() + "." + f.getName()),
+                                    curr.get3().isEmpty() ? prop.getKey() : (curr.get3() + "." + prop.getKey()),
                                     U.toStringSafe(val)
                                 };
+                            }
                         }
-
                     }
-                    catch (IllegalAccessException e) {
+                    catch (IllegalAccessException | InvocationTargetException e) {
                         throw new IgniteException(e);
                     }
                 }
@@ -121,33 +107,72 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
     }
 
     /** */
-    private boolean tryAddToQueue(Field f, Object val, String prefix) {
+    private boolean addToQueue(Class<?> cls, Object val, String prefix) {
         if (val == null)
             return false;
 
-        Class<?> clz = f == null ? val.getClass() : f.getType();
+        boolean isArray = cls.isArray();
 
-        if (clz.isArray() || !clz.getName().startsWith("org.apache.ignite"))
+        if (isArray)
+            cls = cls.getComponentType();
+
+        if (!cls.getName().startsWith("org.apache.ignite"))
             return false;
 
-        if (visited.add(val))
-            iters.add(F.t(val, allFieldsIterator(val), prefix));
+        if (isArray) {
+            int length = Array.getLength(val);
+
+            if (length == 0)
+                return false;
+
+            for (int i = 0; i < length; i++) {
+                Object arrI = Array.get(val, i);
+                iters.add(F.t(arrI, classProperties(arrI.getClass()), prefix + '[' + i + ']'));
+            }
+        }
+        else if (visited.add(val))
+            iters.add(F.t(val, classProperties(cls), prefix));
 
         return true;
     }
 
     /**
-     * @param obj Object to iterate fields.
+     * @param cls Class to find properties.
      * @return Iterator of object fields.
      */
-    private Iterator<Field> allFieldsIterator(Object obj) {
-        if (obj == null)
-            return Collections.emptyIterator();
+    private Iterator<Map.Entry<String, Method>> classProperties(Class<?> cls) {
+        Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted
 
-        return F.iterator0(
-            Arrays.asList(obj.getClass().getDeclaredFields()),
-            true,
-            f -> !Modifier.isStatic(f.getModifiers())
-        );
+        for (; cls != Object.class; cls = cls.getSuperclass()) {
+            for (Method mtd : cls.getMethods()) {
+                if (mtd.getName().startsWith("set")) {
+                    String propName = mtd.getName().substring(3);
+
+                    Method getter = methodOrNull(cls, "get" + propName);
+
+                    if (getter == null)
+                        getter = methodOrNull(cls, "is" + propName);
+
+                    if (getter != null && !props.containsKey(propName))
+                        props.put(propName, getter);
+                }
+            }
+        }
+
+        return props.entrySet().iterator();
+    }
+
+    /**
+     * @param cls Class to get method from.
+     * @param name Name of the method.
+     * @return Method if exists, {@code null} otherwise.
+     */
+    private static Method methodOrNull(Class<?> cls, String name) {
+        try {
+            return cls.getMethod(name);
+        }
+        catch (NoSuchMethodException ignore) {
+            return null;
+        }
     }
 }
