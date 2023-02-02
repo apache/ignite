@@ -246,6 +246,16 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
+    public void testJmxMetricsExporterIsEnabledByDefault() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        assertTrue("JmxMetricExporterSpi is expected by default in IgniteConfiguration.",
+            !F.isEmpty(cfg.getMetricExporterSpi()) && cfg.getMetricExporterSpi().length == 1 &&
+                cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+    }
+
+    /** */
+    @Test
     public void testFilterAndExport() throws Exception {
         createAdditionalMetrics(ignite);
 
