@@ -116,7 +116,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(keepBinary());
-        cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {

@@ -171,8 +171,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             cfg.setCacheConfiguration(ccfg);
         }
 
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
-
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         return cfg;

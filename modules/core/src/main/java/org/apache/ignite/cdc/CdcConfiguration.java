@@ -19,8 +19,10 @@ package org.apache.ignite.cdc;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This class defines {@link CdcMain} runtime configuration.
@@ -41,7 +43,7 @@ public class CdcConfiguration {
     private CdcConsumer consumer;
 
     /** Metric exporter SPI. */
-    private MetricExporterSpi[] metricExporterSpi;
+    private MetricExporterSpi[] metricExporterSpi = F.asArray(new JmxMetricExporterSpi());
 
     /** Keep binary flag.<br>Default value {@code true}. */
     private boolean keepBinary = DFLT_KEEP_BINARY;
@@ -75,6 +77,7 @@ public class CdcConfiguration {
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @see CdcConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
      */
     public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
         this.metricExporterSpi = metricExporterSpi;
@@ -84,6 +87,7 @@ public class CdcConfiguration {
      * Gets fully configured metric SPI implementations.
      *
      * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;

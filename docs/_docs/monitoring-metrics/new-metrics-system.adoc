@@ -34,7 +34,7 @@ Each exporter always gives access to all available metrics.
 
 Ignite includes the following exporters:
 
-* JMX
+* JMX (default)
 * SQL Views
 * Log files
 * OpenCensus
@@ -83,6 +83,11 @@ The following sections describe the exporters available in Ignite by default.
 === JMX
 
 `org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi` exposes metrics via JMX beans.
+
+[NOTE]
+====
+This exporter is enabled by default in `IgniteConfiguration`.
+====
 
 [tabs]
 --

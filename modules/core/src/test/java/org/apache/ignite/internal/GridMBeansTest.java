@@ -54,8 +54,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         cfg.setExecutorConfiguration(new ExecutorConfiguration(CUSTOM_EXECUTOR_0),
             new ExecutorConfiguration(CUSTOM_EXECUTOR_1));
 
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
-
         return cfg;
     }
 

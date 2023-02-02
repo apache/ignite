@@ -78,8 +78,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setMetricExporterSpi(new JmxMetricExporterSpi());
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (getTestIgniteInstanceIndex(igniteInstanceName) < DEDICATED_CNT) {
             cfg.setWorkDirectory(Paths.get(U.defaultWorkDirectory(),

@@ -54,6 +54,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -178,6 +179,22 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
+    public void testJmxMetricsExporterIsEnabledByDefault() {
+        IgniteConfiguration igniteCfg = new IgniteConfiguration();
+
+        assertTrue("JmxMetricExporterSpi is expected by default in IgniteConfiguration.",
+            !F.isEmpty(igniteCfg.getMetricExporterSpi()) && igniteCfg.getMetricExporterSpi().length == 1 &&
+                igniteCfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+
+        CdcConfiguration cdcCfg = new CdcConfiguration();
+
+        assertTrue("JmxMetricExporterSpi is expected by default in CdcConfiguration.",
+            !F.isEmpty(cdcCfg.getMetricExporterSpi()) && cdcCfg.getMetricExporterSpi().length == 1 &&
+                cdcCfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+    }
+
+    /** */
+    @Test
     public void testSysJmxMetrics() throws Exception {
         DynamicMBean sysMBean = metricRegistry(ignite.name(), null, SYS_METRICS);
 
@@ -242,16 +259,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         ignite.destroyCache(n);
 
         assertThrowsWithCause(() -> metricRegistry(ignite.name(), CACHE_METRICS, n), IgniteException.class);
-    }
-
-    /** */
-    @Test
-    public void testJmxMetricsExporterIsEnabledByDefault() {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        assertTrue("JmxMetricExporterSpi is expected by default in IgniteConfiguration.",
-            !F.isEmpty(cfg.getMetricExporterSpi()) && cfg.getMetricExporterSpi().length == 1 &&
-                cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
     }
 
     /** */

@@ -54,8 +54,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setMetricExporterSpi(new JmxMetricExporterSpi());
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /** @throws Exception If fails. */

@@ -39,8 +39,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 /**
  * <h2>Overview</h2>
  *
- * Ignite provides this built-in implementation of {@link MetricExporterSpi} it exports metrics as JMX beans. This
- * implementation works by `pull` architecture which means that after the Ignite node start it should respond to
+ * Ignite provides this default built-in implementation of {@link MetricExporterSpi} it exports metrics as JMX beans.
+ * This implementation works by `pull` architecture which means that after the Ignite node start it should respond to
  * incoming user request.
  *
  * <h2>Java Example</h2>

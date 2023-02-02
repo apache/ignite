@@ -63,16 +63,6 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        // JMX metrics exposition to see actual namings and placement of the metrics.
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
-
-        return cfg;
-    }
-
     /** Checks service metrics are enabled / disabled properly. */
     @Test
     public void testServiceMetricsEnabledDisabled() throws Exception {
