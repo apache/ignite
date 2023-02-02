@@ -61,11 +61,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.SUPPORTED_CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
 
 /**
  * Client connector processor.
@@ -200,7 +198,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
 
-                registerClientMetrics(mreg, ODBC_CLIENT, THIN_CLIENT, JDBC_CLIENT);
+                registerClientMetrics(mreg, SUPPORTED_CLI_TYPES);
 
                 ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
                     new ClientConnectionViewWalker(),
