@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIGURATION_VIEW_PACKAGES;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 
@@ -57,11 +57,11 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
      * @param cfg Configuration to iterate.
      */
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
-        String addPkgsProp = IgniteSystemProperties.getString(IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES);
+        String pkgsProp = IgniteSystemProperties.getString(IGNITE_CONFIGURATION_VIEW_PACKAGES);
 
-        pkgs = new ArrayList<>(F.isEmpty(addPkgsProp)
+        pkgs = new ArrayList<>(F.isEmpty(pkgsProp)
             ? Collections.emptyList()
-            : Arrays.asList(addPkgsProp.split(","))
+            : Arrays.asList(pkgsProp.split(","))
         );
 
         pkgs.add(IGNITE_PKG);
