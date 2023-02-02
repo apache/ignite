@@ -16,7 +16,7 @@
 #
 
 cmake_minimum_required(VERSION 3.6)
-project(Ignite.C++ VERSION 14.1.0.22503)
+project(Ignite.C++ VERSION 14.1.1.23064)
 
 set(CMAKE_CXX_STANDARD 98)
 
