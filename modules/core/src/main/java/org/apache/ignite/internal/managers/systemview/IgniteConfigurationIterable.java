@@ -20,19 +20,24 @@ package org.apache.ignite.internal.managers.systemview;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -41,12 +46,19 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
     /** */
+    private final List<String> addPkgs;
+
+    /** */
     private final Queue<GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String>> iters = new LinkedList<>();
 
     /**
      * @param cfg Configuration to iterate.
      */
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
+        String addPkgsProp = IgniteSystemProperties.getString(IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES);
+
+        addPkgs = F.isEmpty(addPkgsProp) ? Collections.emptyList() : Arrays.asList(addPkgsProp.split(","));
+
         addToQueue(cfg, "");
     }
 
@@ -133,7 +145,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         if (isArray)
             cls = cls.getComponentType();
 
-        if (!cls.getName().startsWith("org.apache.ignite"))
+        if (!cls.getName().startsWith("org.apache.ignite.") || inAditionalPackage(cls.getName()))
             return false;
 
         if (isArray) {
@@ -191,5 +203,15 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         catch (NoSuchMethodException ignore) {
             return null;
         }
+    }
+
+    /** */
+    private boolean inAditionalPackage(String name) {
+        for (String pkg : addPkgs) {
+            if (name.startsWith(pkg))
+                return true;
+        }
+
+        return false;
     }
 }

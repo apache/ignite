@@ -2100,6 +2100,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
 
     /**
+     * Comma separated packages list to expose in configuration view.
+     * The default value is null.
+     * @see org.apache.ignite.internal.managers.systemview.GridSystemViewManager#CFG_VIEW
+     * @see org.apache.ignite.spi.systemview.view.ConfigurationView
+     */
+    @SystemProperty(value = "Flag to indicate that disk writes during snapshot process should be in a sequential " +
+        "manner when possible. This generates extra disk space usage", defaults = "" + DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE)
+    @IgniteExperimental
+    public static final String IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES = "IGNITE_CONFIGURATION_VIEW_EXPLORE_PACKAGES";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
