@@ -12,7 +12,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -64,23 +63,26 @@ public class IgniteConfigurationIterable implements Iterable<String[]> {
                     try {
                         Object val = prop.getValue().invoke(curr.get1());
 
-                        if (val instanceof IgniteLogger)
+                        boolean res = addToQueue(
+                            val == null ? null : val.getClass(),
+                            val,
+                            (curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey()))
+                        );
+
+                        if (res)
                             advance();
                         else {
-                            boolean res = addToQueue(
-                                val == null ? null : val.getClass(),
-                                val,
-                                (curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey()))
-                            );
+                            String valStr;
 
-                            if (res)
-                                advance();
-                            else {
-                                next = new String[]{
-                                    curr.get3().isEmpty() ? prop.getKey() : (curr.get3() + "." + prop.getKey()),
-                                    U.toStringSafe(val)
-                                };
-                            }
+                            if (val != null && val.getClass().isArray() && Array.getLength(val) == 0)
+                                valStr = "[]";
+                            else
+                                valStr = U.toStringSafe(val);
+
+                            next = new String[]{
+                                curr.get3().isEmpty() ? prop.getKey() : (curr.get3() + "." + prop.getKey()),
+                                valStr
+                            };
                         }
                     }
                     catch (IllegalAccessException | InvocationTargetException e) {
