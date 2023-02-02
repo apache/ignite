@@ -438,12 +438,12 @@ public class CdcMain implements Runnable {
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
-                        .sorted(Comparator.comparingLong(this::segmentIndex)) // Sort by segment index.
+                        .sorted(Comparator.comparingLong(CdcMain::segmentIndex)) // Sort by segment index.
                         .peek(p -> {
                             long nextSgmnt = segmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
-                                throw new IgniteException("Found missed segments. Some events are missed. " +
+                                throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
                                     "[lastSegment=" + lastSgmnt.get() + ", nextSegment=" + nextSgmnt + ']');
                             }
 
@@ -811,7 +811,7 @@ public class CdcMain implements Runnable {
      * @param segment WAL segment file.
      * @return Segment index.
      */
-    public long segmentIndex(Path segment) {
+    public static long segmentIndex(Path segment) {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));

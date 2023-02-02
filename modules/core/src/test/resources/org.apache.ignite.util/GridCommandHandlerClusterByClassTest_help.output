@@ -343,6 +343,13 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
 
+  [EXPERIMENTAL]
+  Delete lost segment CDC links:
+    control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
+
+    Parameters:
+      node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
