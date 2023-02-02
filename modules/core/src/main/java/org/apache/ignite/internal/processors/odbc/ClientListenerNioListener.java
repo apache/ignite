@@ -62,6 +62,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
 
+    /** Client types. */
+    public static final byte[] CLI_TYPES = {THIN_CLIENT, JDBC_CLIENT, ODBC_CLIENT};
+
     /** Connection handshake timeout task. */
     public static final int CONN_CTX_HANDSHAKE_TIMEOUT_TASK = GridNioSessionMetaKey.nextUniqueKey();
 

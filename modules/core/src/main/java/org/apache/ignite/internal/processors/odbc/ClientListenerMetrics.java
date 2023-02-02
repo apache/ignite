@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
@@ -41,9 +42,6 @@ public class ClientListenerMetrics {
 
     /** Number of successfully established sessions. */
     public static final String METRIC_ACEPTED = "AcceptedSessions";
-
-    /** Supported client types. */
-    public static final byte[] SUPPORTED_CLI_TYPES = {THIN_CLIENT, JDBC_CLIENT, ODBC_CLIENT};
 
     /** Rejected by timeout. */
     private final IntMetricImpl rejectedTimeout;
@@ -71,9 +69,9 @@ public class ClientListenerMetrics {
 
         rejectedTotal = mreg.intMetric(METRIC_REJECTED_TOTAL, "Total number of rejected TCP connections.");
 
-        accepted = new IntMetricImpl[SUPPORTED_CLI_TYPES.length];
+        accepted = new IntMetricImpl[CLI_TYPES.length];
 
-        for (byte clientType : SUPPORTED_CLI_TYPES) {
+        for (byte clientType : CLI_TYPES) {
             String clientLabel = clientTypeLabel(clientType);
 
             String labelAccepted = MetricUtils.metricName(clientLabel, METRIC_ACEPTED);
