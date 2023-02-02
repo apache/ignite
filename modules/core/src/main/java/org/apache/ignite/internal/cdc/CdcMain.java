@@ -443,7 +443,7 @@ public class CdcMain implements Runnable {
                             long nextSgmnt = segmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
-                                throw new IgniteException("Found missed segments. Some events are missed. " +
+                                throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
                                     "[lastSegment=" + lastSgmnt.get() + ", nextSegment=" + nextSgmnt + ']');
                             }
 

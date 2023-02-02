@@ -31,6 +31,7 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 
@@ -104,8 +105,11 @@ public class CdcCommand extends AbstractCommand<String> {
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
         return "Warning: The command will fix WAL segments gap in case CDC link creation was stopped by distributed " +
-            "property or excess of maximum CDC directory size. Gap will be fixed by deletion of WAL segments " +
-            "previous to the gap.";
+            "property or excess of maximum CDC directory size. Gap will be fixed by deletion of WAL segment links" +
+            "previous to the last gap." + U.nl() +
+            "All changes in deleted segment links will be lost!" + U.nl() +
+            "Make sure you need to sync data before restarting the CDC application. You can synchronize caches " +
+            "using snapshot or other methods.";
     }
 
     /** {@inheritDoc} */
