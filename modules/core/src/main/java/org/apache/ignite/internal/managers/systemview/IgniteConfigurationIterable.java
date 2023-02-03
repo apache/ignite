@@ -47,10 +47,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
  * and expose all properties in form of String pairs.
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
-    /** */
+    /** Packages to expose objects from. */
     private final List<String> pkgs;
 
-    /** */
+    /** Iterators queue. */
     private final Queue<GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String>> iters = new LinkedList<>();
 
     /**
@@ -94,28 +94,22 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
                     try {
                         Map.Entry<String, Method> prop = curr.get2().next();
 
+                        String name = curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey());
+
                         Object val = prop.getValue().invoke(curr.get1());
 
-                        boolean res = addToQueue(
-                            val,
-                            (curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey()))
-                        );
-
-                        if (res)
+                        if (addToQueue(val, name)) {
                             advance();
-                        else {
-                            String valStr;
 
-                            if (val != null && val.getClass().isArray())
-                                valStr = S.arrayToString(val);
-                            else
-                                valStr = U.toStringSafe(val);
-
-                            next = new ConfigurationView(
-                                curr.get3().isEmpty() ? prop.getKey() : (curr.get3() + "." + prop.getKey()),
-                                valStr
-                            );
+                            return;
                         }
+
+                        next = new ConfigurationView(
+                            name,
+                            val != null && val.getClass().isArray()
+                                ? S.arrayToString(val)
+                                : U.toStringSafe(val)
+                        );
                     }
                     catch (IllegalAccessException | InvocationTargetException e) {
                         throw new IgniteException(e);
@@ -140,7 +134,12 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         };
     }
 
-    /** */
+    /**
+     * If {@code val} is configuration bean that must be recursively exposed by the view then
+     * it will be added to the {@link #iters} queue.
+     *
+     * @return {@code True} if {@code val} was added to {@link #iters} queue, {@code false} otherwise.
+     */
     private boolean addToQueue(Object val, String prefix) {
         if (val == null || val.getClass().isEnum())
             return false;
@@ -174,10 +173,10 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
     /**
      * @param cls Class to find properties.
-     * @return Iterator of object fields.
+     * @return Iterator of object properties.
      */
     private Iterator<Map.Entry<String, Method>> props(Class<?> cls) {
-        Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted
+        Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted.
 
         for (; cls != Object.class; cls = cls.getSuperclass()) {
             for (Method mtd : cls.getMethods()) {
