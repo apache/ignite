@@ -108,6 +108,8 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
+import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWalker;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
@@ -213,6 +215,7 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
@@ -349,6 +352,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** System line separator. */
     public static final String NL = U.nl();
+
+    /** Name of the configuration system view. */
+    public static final String CFG_VIEW = "configuration";
+
+    /** Description of the configuration system view. */
+    public static final String CFG_VIEW_DESC = "Node configuration";
 
     /**
      * Default interval of checking thread pool state for the starvation. Will be used only if the
@@ -1192,6 +1201,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             ctx.pools().registerMetrics();
 
             registerMetrics();
+
+            registerConfigurationSystemView();
 
             ctx.cluster().registerMetrics();
 
@@ -3438,6 +3449,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
         return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
+    }
+
+    /** Registers configuration system view. */
+    private void registerConfigurationSystemView() {
+        ctx.systemView().registerInnerCollectionView(
+            CFG_VIEW,
+            CFG_VIEW_DESC,
+            new ConfigurationViewWalker(),
+            singleton(ctx.config()),
+            IgniteConfigurationIterable::new,
+            (cfg, view) -> view
+        );
     }
 
     /**
