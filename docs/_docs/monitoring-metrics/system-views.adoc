@@ -331,6 +331,20 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |===
 
+== CONFIGURATION
+
+
+The CONFIGURATION view contains the configuration properties of node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Configuration property name.
+|VALUE |VARCHAR |Configuration property value.
+
+|===
+
 == BASELINE_NODES
 
 
