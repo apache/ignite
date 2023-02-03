@@ -453,6 +453,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
+            "CONFIGURATION",
             "BASELINE_NODES",
             "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
