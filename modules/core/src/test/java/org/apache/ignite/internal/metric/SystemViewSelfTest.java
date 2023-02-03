@@ -2349,11 +2349,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         try (IgniteEx ignite = startGrid(icfg)) {
             Map<String, String> viewContent = new HashMap<>();
 
-            ignite.context().systemView()
-                .<ConfigurationView>view(CFG_VIEW)
-                .forEach(view -> {
-                    viewContent.put(view.name(), view.value());
-                });
+            ignite.context().systemView().<ConfigurationView>view(CFG_VIEW)
+                .forEach(view -> viewContent.put(view.name(), view.value()));
 
             assertEquals(expName, viewContent.get("IgniteInstanceName"));
             assertEquals(
