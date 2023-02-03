@@ -78,8 +78,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             CFG_VIEW,
             CFG_VIEW_DESC,
             new ConfigurationViewWalker(),
-            singleton(new IgniteConfigurationIterable(ctx.config())),
-            Function.identity(),
+            singleton(ctx.config()),
+            IgniteConfigurationIterable::new,
             (cfg, view) -> view
         );
 
