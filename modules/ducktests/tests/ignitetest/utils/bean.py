@@ -48,3 +48,13 @@ class Bean:
 
     class_name: str
     properties: {}
+
+
+class BeanRef:
+    """
+    Helper class to represent property which is a bean reference.
+    """
+    def __init__(self, ref):
+        self.ref = ref
+
+    ref: str

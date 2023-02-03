@@ -1978,21 +1978,29 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             )))) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
+            String histogramName = "my-histogram";
+
+            ignite.context().metric().configureHistogram(histogramName, new long[] { 1, 2, 3});
+
             DistributedMetaStorage dms = ignite.context().distributedMetastorage();
-
-            SystemView<MetastorageView> metaStoreView = ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
-
-            assertNotNull(metaStoreView);
 
             String name = "test-distributed-key";
             String val = "test-distributed-value";
 
             dms.write(name, val);
 
-            MetastorageView testKey = F.find(metaStoreView, null,
-                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
+            assertNotNull(F.find(
+                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                null,
+                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()))
+            );
 
-            assertNotNull(testKey);
+            assertNotNull(F.find(
+                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                null,
+                (IgnitePredicate<? super MetastorageView>)
+                    view -> view.name().endsWith(histogramName) && "[1, 2, 3]".equals(view.value()))
+            );
         }
     }
 

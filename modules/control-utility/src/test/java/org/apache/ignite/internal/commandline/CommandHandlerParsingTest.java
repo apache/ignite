@@ -64,6 +64,7 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.CDC;
 import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY;
@@ -78,6 +79,8 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.commandline.cdc.CdcCommand.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.internal.commandline.cdc.CdcCommand.NODE_ID;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -412,6 +415,8 @@ public class CommandHandlerParsingTest {
                 args = parseArgs(asList(cmdL.text(), "newTagValue"));
             else if (cmdL == WARM_UP)
                 args = parseArgs(asList(cmdL.text(), "--stop"));
+            else if (cmdL == CDC)
+                args = parseArgs(asList(cmdL.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()));
             else
                 args = parseArgs(asList(cmdL.text()));
 
@@ -491,6 +496,15 @@ public class CommandHandlerParsingTest {
 
                 case WARM_UP: {
                     args = parseArgs(asList(cmdL.text(), "--stop", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    break;
+                }
+
+                case CDC: {
+                    args = parseArgs(asList(cmdL.text(), DELETE_LOST_SEGMENT_LINKS,
+                        NODE_ID, UUID.randomUUID().toString(), "--yes"));
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
@@ -1232,6 +1246,7 @@ public class CommandHandlerParsingTest {
             cmd == CommandList.METRIC ||
             cmd == CommandList.DEFRAGMENTATION ||
             cmd == CommandList.PERFORMANCE_STATISTICS ||
-            cmd == CommandList.CONSISTENCY;
+            cmd == CommandList.CONSISTENCY ||
+            cmd == CDC;
     }
 }

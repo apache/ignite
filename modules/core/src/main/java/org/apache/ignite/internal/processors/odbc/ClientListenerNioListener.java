@@ -62,6 +62,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
 
+    /** Client types. */
+    public static final byte[] CLI_TYPES = {ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT};
+
     /** Connection handshake timeout task. */
     public static final int CONN_CTX_HANDSHAKE_TIMEOUT_TASK = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -131,11 +134,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
-        if (connCtx != null) {
+        if (connCtx != null)
             connCtx.onDisconnected();
-
-            metrics.onDisconnect(connCtx.clientType());
-        }
 
         if (log.isDebugEnabled()) {
             if (e == null)

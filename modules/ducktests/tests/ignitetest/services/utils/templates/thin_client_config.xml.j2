@@ -15,30 +15,16 @@
  limitations under the License.
 #}
 
-{% import 'ssl_params_macro.j2' as ssl_params_util %}
+{% import 'client_configuration_macro.j2' as client_configuration %}
+{% import 'misc_macro.j2' as misc_utils %}
 
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="org.apache.ignite.configuration.ClientConfiguration" id="thin.client.cfg">
-        <property name="addresses">
-            <list>
-                <value>{{ config.addresses }}</value>
-            </list>
-        </property>
+       xmlns:util="http://www.springframework.org/schema/util" xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+    {{ client_configuration.apply(config, service) }}
 
-        {% if config.username %}
-        <property name="userName" value="{{ config.username }}"/>
-        <property name="userPassword" value="{{ config.password }}"/>
-        {% endif %}
-
-        {% if config.ssl_params %}
-        <property name="sslMode" value="REQUIRED"/>
-        <property name="sslClientCertificateKeyStorePath" value="{{ config.ssl_params.key_store_path }}"/>
-        <property name="sslClientCertificateKeyStorePassword" value="{{ config.ssl_params.key_store_password }}"/>
-        <property name="sslTrustCertificateKeyStorePath" value="{{ config.ssl_params.trust_store_path }}"/>
-        <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
-        {% endif %}
-    </bean>
+    {{ misc_utils.ext_beans(config) }}
 </beans>
