@@ -333,7 +333,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
-            IgniteException.class, "System WAL records for incremental snapshot wasn't found");
+            IgniteException.class, "System WAL record for incremental snapshot wasn't found");
 
         awaitPartitionMapExchange();
 

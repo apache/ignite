@@ -78,13 +78,13 @@ import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheStripedExecutor;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -99,7 +99,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -1393,36 +1392,44 @@ public class SnapshotRestoreProcess {
         IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(segments[segments.length - 1], incSnpId);
 
         if (incSnpFinRec == null)
-            throw new IgniteCheckedException("System WAL records for incremental snapshot wasn't found [id=" + incSnpId + ']');
+            throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found [id=" + incSnpId + ']');
 
         CacheStripedExecutor exec = new CacheStripedExecutor(ctx.pools().getStripedExecutorService());
-
-        UUID prevIncSnpId = incIdx > 1
-            ? ctx.cache().context().snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
-            : null;
 
         long start = U.currentTimeMillis();
 
         LongAdder applied = new LongAdder();
 
-        try (WALIterator it = walIter(log, segments)) {
-            IgnitePredicate<GridCacheVersion> txVerFilter = null;
+        Set<WALRecord.RecordType> recTypes = new HashSet<>(F.asList(
+            CLUSTER_SNAPSHOT,
+            INCREMENTAL_SNAPSHOT_START_RECORD,
+            INCREMENTAL_SNAPSHOT_FINISH_RECORD,
+            DATA_RECORD_V2));
 
-            // Skips applying WAL until base snapshot record.
+        try (WALIterator it = walIter(log, recTypes, segments)) {
+            boolean snpRecReached = false;
+
+            // Skips applying WAL until base snapshot record has been reached.
             while (it.hasNext()) {
                 WALRecord rec = it.next().getValue();
 
                 if (rec.type() == CLUSTER_SNAPSHOT) {
-                    ClusterSnapshotRecord snpRec = (ClusterSnapshotRecord)rec;
-
-                    if (snpRec.clusterSnapshotName().equals(snpName)) {
-                        if (prevIncSnpId == null)
-                            txVerFilter = txVer -> !incSnpFinRec.excluded().contains(txVer);
+                    if (((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(snpName)) {
+                        snpRecReached = true;
 
                         break;
                     }
                 }
             }
+
+            if (!snpRecReached)
+                throw new IgniteCheckedException("System WAL record for full snapshot wasn't found [snpName=" + snpName + ']');
+
+            UUID prevIncSnpId = incIdx > 1
+                ? ctx.cache().context().snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
+                : null;
+
+            IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null ? null : txVer -> !incSnpFinRec.excluded().contains(txVer);
 
             // Apply incremental snapshots.
             while (it.hasNext()) {
@@ -1443,30 +1450,30 @@ public class SnapshotRestoreProcess {
                 else if (rec.type() == DATA_RECORD_V2) {
                     DataRecord data = (DataRecord)rec;
 
-                    DataEntry entry = data.writeEntries().get(0);
+                    for (DataEntry e: data.writeEntries()) {
+                        if (txVerFilter != null && !txVerFilter.apply(e.nearXidVersion()))
+                            continue;
 
-                    if (txVerFilter == null || txVerFilter.apply(entry.nearXidVersion())) {
-                        for (DataEntry e: data.writeEntries()) {
-                            // That is OK to restore only part of transaction related to a specified cache group,
-                            // because a full snapshot restoring does the same.
-                            if (!cacheIds.contains(e.cacheId()))
-                                continue;
+                        // That is OK to restore only part of transaction related to a specified cache group,
+                        // because a full snapshot restoring does the same.
+                        if (!cacheIds.contains(e.cacheId()))
+                            continue;
 
-                            GridCacheContext<?, ?> cacheCtx = ctx.cache().context().cacheContext(e.cacheId());
+                        GridCacheContext<?, ?> cacheCtx = ctx.cache().context().cacheContext(e.cacheId());
+                        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ctx.cache().context().database();
 
-                            exec.submit(() -> {
-                                try {
-                                    applyDataEntry(cacheCtx, e);
+                        exec.submit(() -> {
+                            try {
+                                applyDataEntry(dbMgr, cacheCtx, e);
 
-                                    applied.increment();
-                                }
-                                catch (IgniteCheckedException err) {
-                                    U.error(log, "Failed to apply data entry, dataEntry=" + e + ", ptr=" + data.position());
+                                applied.increment();
+                            }
+                            catch (IgniteCheckedException err) {
+                                U.error(log, "Failed to apply data entry, dataEntry=" + e + ", ptr=" + data.position());
 
-                                    exec.onError(err);
-                                }
-                            }, cacheCtx.groupId(), e.partitionId());
-                        }
+                                exec.onError(err);
+                            }
+                        }, cacheCtx.groupId(), e.partitionId());
                     }
                 }
             }
@@ -1493,16 +1500,12 @@ public class SnapshotRestoreProcess {
 
     /** @return {@link IncrementalSnapshotFinishRecord} for specified snapshot, or {@code null} if not found. */
     private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(File segment, UUID incSnpId) throws IgniteCheckedException {
-        try (WALIterator it = walIter(log, segment)) {
+        try (WALIterator it = walIter(log, Collections.singleton(INCREMENTAL_SNAPSHOT_FINISH_RECORD), segment)) {
             while (it.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> item = it.next();
+                IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)it.next().getValue();
 
-                if (item.getValue().type() == INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
-                    IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)item.getValue();
-
-                    if (finRec.id().equals(incSnpId))
-                        return finRec;
-                }
+                if (finRec.id().equals(incSnpId))
+                    return finRec;
             }
         }
 
@@ -1562,11 +1565,16 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param dbMgr Database manager.
      * @param cacheCtx Cache context to apply an update.
      * @param dataEntry Data entry to apply.
      * @throws IgniteCheckedException If failed to apply entry.
      */
-    private void applyDataEntry(GridCacheContext<?, ?> cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+    private void applyDataEntry(
+        GridCacheDatabaseSharedManager dbMgr,
+        GridCacheContext<?, ?> cacheCtx,
+        DataEntry dataEntry
+    ) throws IgniteCheckedException {
         int partId = dataEntry.partitionId();
 
         if (partId == -1) {
@@ -1580,42 +1588,20 @@ public class SnapshotRestoreProcess {
 
         assert locPart != null : "Missed local partition " + partId;
 
-        switch (dataEntry.op()) {
-            case CREATE:
-            case UPDATE:
-                cacheCtx.offheap().update(
-                    cacheCtx,
-                    dataEntry.key(),
-                    dataEntry.value(),
-                    dataEntry.writeVersion(),
-                    dataEntry.expireTime(),
-                    locPart,
-                    null);
-
-                cacheCtx.offheap().dataStore(locPart).updateCounter(dataEntry.partitionCounter() - 1, 1);
-
-                break;
-
-            case DELETE:
-                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
-
-                cacheCtx.offheap().dataStore(locPart).updateCounter(dataEntry.partitionCounter() - 1, 1);
-
-                break;
-
-            default:
-                // No-op.
-        }
+        if (dbMgr.applyDataEntry(cacheCtx, locPart, dataEntry))
+            cacheCtx.offheap().dataStore(locPart).updateCounter(dataEntry.partitionCounter() - 1, 1);
     }
 
     /**
      * @param log Ignite logger.
+     * @param types WAL record types to read.
      * @param segments WAL segments.
      * @return Iterator over WAL segments.
      */
-    public WALIterator walIter(IgniteLogger log, File... segments) throws IgniteCheckedException {
+    public WALIterator walIter(IgniteLogger log, Set<WALRecord.RecordType> types, File... segments) throws IgniteCheckedException {
         return new IgniteWalIteratorFactory(log)
             .iterator(new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .filter((recType, recPtr) -> types.contains(recType))
                 .sharedContext(ctx.cache().context())
                 .filesOrDirs(segments));
     }

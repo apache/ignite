@@ -21,8 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
+import javax.cache.Cache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,13 +34,15 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremen
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+
 /** */
 public class IgniteIncrementalSnapshotRestoreWithIndexingTest extends AbstractIncrementalSnapshotTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setCacheConfiguration(null);
+        cfg.setCacheConfiguration();
 
         return cfg;
     }
@@ -58,7 +63,7 @@ public class IgniteIncrementalSnapshotRestoreWithIndexingTest extends AbstractIn
             cacheConfiguration(CACHE)
                 .setAffinity(new RendezvousAffinityFunction(false, 10)));
 
-        sql("create table Account(id int primary key, balance int) WITH \"TEMPLATE=CACHE, VALUE_TYPE=Account\";");
+        sql("create table Account(id int primary key, balance int) WITH \"TEMPLATE=CACHE, VALUE_TYPE=Account, CACHE_NAME=SQL_CACHE\"");
         sql("create index on Account(balance);");
 
         Map<Integer, BinaryObject> expSnpData = new HashMap<>();
@@ -93,6 +98,22 @@ public class IgniteIncrementalSnapshotRestoreWithIndexingTest extends AbstractIn
         for (List<?> e: actData) {
             assertTrue("Missed: " + e, expData.containsKey((Integer)e.get(0)));
             assertEquals(e.toString(), expData.get((Integer)e.get(0)), e.get(1));
+        }
+
+        List<Cache.Entry<Integer, BinaryObject>> idxResAct = grid(0).cache("SQL_CACHE").withKeepBinary().query(
+            new IndexQuery<Integer, BinaryObject>("Account")
+                .setCriteria(gt("balance", 0))
+        ).getAll();
+
+        Map<Integer, BinaryObject> idxResExp = expData.entrySet().stream()
+            .filter((e) -> (int)e.getValue().field("balance") > 0)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        assertEquals(idxResExp.size(), idxResAct.size());
+
+        for (Cache.Entry<Integer, BinaryObject> e: idxResAct) {
+            assertTrue("Missed: " + e, idxResExp.containsKey(e.getKey()));
+            assertEquals(e.toString(), expData.get(e.getKey()), e.getValue());
         }
     }
 
