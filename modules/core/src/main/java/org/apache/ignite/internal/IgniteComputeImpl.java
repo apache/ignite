@@ -69,9 +69,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     private String execName;
 
     /** Default task execution options. */
-    private final ThreadLocal<TaskExecutionOptions> opts = ThreadLocal.withInitial(() ->
-        TaskExecutionOptions.options(prj.nodes()).withExecutor(execName)
-    );
+    private final ThreadLocal<TaskExecutionOptions> opts = ThreadLocal.withInitial(this::defaultTaskExecutionOptions);
 
     /**
      * Required by {@link Externalizable}.
@@ -85,19 +83,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param prj Projection.
      */
     public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj) {
-        this(ctx, prj, false);
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param prj Projection.
-     * @param async Async support flag.
-     */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async) {
-        super(async);
-
-        this.ctx = ctx;
-        this.prj = prj;
+        this(ctx, prj, false, null);
     }
 
     /**
@@ -106,20 +92,30 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param ctx Kernal context.
      * @param prj Projection.
      * @param async Async support flag.
-     * @param execName Custom executor name.
+     * @param opts Task execution options.
      */
-    private IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean async,
-        String execName) {
+    private IgniteComputeImpl(
+        GridKernalContext ctx,
+        ClusterGroupAdapter prj,
+        boolean async,
+        @Nullable TaskExecutionOptions opts
+    ) {
         super(async);
 
         this.ctx = ctx;
         this.prj = prj;
-        this.execName = execName;
+
+        if (opts != null) {
+            this.opts.set(opts);
+
+            // We preserve name of the executor and use it for all tasks invoked through the current compute instance.
+            execName = opts.executor();
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCompute createAsyncInstance() {
-        return new IgniteComputeImpl(ctx, prj, true);
+        return new IgniteComputeImpl(ctx, prj, true, opts.get());
     }
 
     /** {@inheritDoc} */
@@ -1136,6 +1132,16 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
-        return new IgniteComputeImpl(ctx, prj, isAsync(), name);
+        return new IgniteComputeImpl(ctx, prj, isAsync(), TaskExecutionOptions.options(opts.get()).withExecutor(name));
+    }
+
+    /** */
+    private TaskExecutionOptions defaultTaskExecutionOptions() {
+        TaskExecutionOptions opts = TaskExecutionOptions.options(prj.nodes());
+
+        if (execName != null)
+            opts.withExecutor(execName);
+
+        return opts;
     }
 }
