@@ -144,7 +144,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
+        JmxMetricExporterSpi jmxSpi = (JmxMetricExporterSpi)cfg.getMetricExporterSpi()[0];
 
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
