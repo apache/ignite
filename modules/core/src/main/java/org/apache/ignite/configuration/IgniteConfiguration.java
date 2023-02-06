@@ -2471,7 +2471,6 @@ public class IgniteConfiguration {
      * Gets fully configured metric SPI implementations.
      *
      * @return Metric exporter SPI implementations.
-     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
