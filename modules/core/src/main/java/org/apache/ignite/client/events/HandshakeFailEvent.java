@@ -15,26 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 import java.util.concurrent.TimeUnit;
 
 /** */
-public class HandshakeSuccessEvent extends ConnectionEvent {
+public class HandshakeFailEvent extends ConnectionEvent {
     /** */
     private final long elapsedTimeNanos;
+
+    /** */
+    private final Throwable throwable;
 
     /**
      * @param conn Connection description.
      * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     * @param throwable Throwable that caused the failure.
      */
-    public HandshakeSuccessEvent(
+    public HandshakeFailEvent(
         ConnectionDescription conn,
-        long elapsedTimeNanos
+        long elapsedTimeNanos,
+        Throwable throwable
     ) {
         super(conn);
 
         this.elapsedTimeNanos = elapsedTimeNanos;
+        this.throwable = throwable;
     }
 
     /**
@@ -45,5 +51,14 @@ public class HandshakeSuccessEvent extends ConnectionEvent {
      */
     public long elapsedTime(TimeUnit timeUnit) {
         return timeUnit.convert(elapsedTimeNanos, TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * Get a cause of the failure.
+     *
+     * @return a cause of the failure.
+     */
+    public Throwable throwable() {
+        return throwable;
     }
 }

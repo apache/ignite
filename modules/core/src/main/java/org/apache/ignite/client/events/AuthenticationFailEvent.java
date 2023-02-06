@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 /** */
 public class AuthenticationFailEvent extends HandshakeFailEvent {

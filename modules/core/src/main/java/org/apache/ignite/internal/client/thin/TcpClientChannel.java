@@ -48,15 +48,7 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientReconnectedException;
-import org.apache.ignite.client.monitoring.AuthenticationFailEvent;
-import org.apache.ignite.client.monitoring.ConnectionClosedEvent;
-import org.apache.ignite.client.monitoring.ConnectionDescription;
-import org.apache.ignite.client.monitoring.HandshakeFailEvent;
-import org.apache.ignite.client.monitoring.HandshakeStartEvent;
-import org.apache.ignite.client.monitoring.HandshakeSuccessEvent;
-import org.apache.ignite.client.monitoring.QueryFailEvent;
-import org.apache.ignite.client.monitoring.QueryStartEvent;
-import org.apache.ignite.client.monitoring.QuerySuccessEvent;
+import org.apache.ignite.client.events.ConnectionDescription;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -244,7 +236,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             // Skip notification if handshake is not successful or completed.
             ConnectionDescription connDesc0 = connDesc;
             if (connDesc0 != null)
-                eventListener.onConnectionClosed(new ConnectionClosedEvent(connDesc0, cause));
+                eventListener.onConnectionClosed(connDesc0, cause);
 
             if (heartbeatTimer != null)
                 heartbeatTimer.cancel();
@@ -314,7 +306,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (closed()) {
                 ClientConnectionException err = new ClientConnectionException("Channel is closed");
 
-                eventListener.onQueryFail(new QueryFailEvent(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err));
+                eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
                 throw err;
             }
@@ -323,7 +315,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             pendingReqs.put(id, fut);
 
-            eventListener.onQueryStart(new QueryStartEvent(connDesc, id, op.code(), op.name()));
+            eventListener.onRequestStart(connDesc, id, op.code(), op.name());
 
             BinaryOutputStream req = payloadCh.out();
 
@@ -346,7 +338,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             // Potential double-close is handled in PayloadOutputChannel.
             payloadCh.close();
 
-            eventListener.onQueryFail(new QueryFailEvent(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, t));
+            eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, t);
 
             throw t;
         }
@@ -370,8 +362,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             if (payload != null && payloadReader != null)
                 res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-            eventListener.onQuerySuccess(new QuerySuccessEvent(connDesc, requestId, op.code(), op.name(),
-                System.nanoTime() - startTimeNanos));
+            eventListener.onRequestSuccess(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
 
             return res;
         }
@@ -380,8 +371,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             RuntimeException err = convertException(e);
 
-            eventListener.onQueryFail(new QueryFailEvent(connDesc, requestId, op.code(), op.name(),
-                System.nanoTime() - startTimeNanos, err));
+            eventListener.onRequestFail(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
             throw err;
         }
@@ -408,8 +398,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 if (payload != null && payloadReader != null)
                     res = payloadReader.apply(new PayloadInputChannel(this, payload));
 
-                eventListener.onQuerySuccess(new QuerySuccessEvent(connDesc, requestId, op.code(), op.name(),
-                    System.nanoTime() - startTimeNanos));
+                eventListener.onRequestSuccess(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos);
 
                 fut.complete(res);
             }
@@ -418,8 +407,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 RuntimeException err = convertException(t);
 
-                eventListener.onQueryFail(new QueryFailEvent(connDesc, requestId, op.code(), op.name(),
-                    System.nanoTime() - startTimeNanos, err));
+                eventListener.onRequestFail(connDesc, requestId, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
 
                 fut.completeExceptionally(err);
             }
@@ -664,9 +652,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         long requestId = -1L;
         long startTime = System.nanoTime();
 
-        eventListener.onHandshakeStart(new HandshakeStartEvent(
-            new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver, null).toString(), null)
-        ));
+        eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
+            new ProtocolContext(ver, null).toString(), null));
 
         while (true) {
             ClientRequestFuture fut = new ClientRequestFuture(requestId, ClientOperation.HANDSHAKE);
@@ -699,10 +686,10 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                         if (log.isDebugEnabled())
                             log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId + ']');
 
-                        eventListener.onHandshakeSuccess(new HandshakeSuccessEvent(
+                        eventListener.onHandshakeSuccess(
                             new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId),
                             System.nanoTime() - startTime
-                        ));
+                        );
 
                         break;
                     }
@@ -742,9 +729,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                             long elapsedNanos = System.nanoTime() - startTime;
 
                             if (errCode == ClientStatus.AUTH_FAILED)
-                                eventListener.onAuthenticationFail(new AuthenticationFailEvent(connDesc, elapsedNanos, user, resultErr));
+                                eventListener.onAuthenticationFail(connDesc, elapsedNanos, user, resultErr);
                             else
-                                eventListener.onHandshakeFail(new HandshakeFailEvent(connDesc, elapsedNanos, resultErr));
+                                eventListener.onHandshakeFail(connDesc, elapsedNanos, resultErr);
 
                             throw resultErr;
                         }
@@ -765,11 +752,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 else
                     err = new ClientConnectionException(e.getMessage(), e);
 
-                eventListener.onHandshakeFail(new HandshakeFailEvent(
+                eventListener.onHandshakeFail(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
                     startTime - System.nanoTime(),
                     err
-                ));
+                );
 
                 throw err;
             }

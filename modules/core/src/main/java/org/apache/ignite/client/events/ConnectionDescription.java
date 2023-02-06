@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
@@ -33,7 +33,7 @@ public class ConnectionDescription {
     private final UUID srvNodeId;
 
     /** */
-    private String protocol;
+    private final String protocol;
 
     /**
      * @param locAddr Local connection address.

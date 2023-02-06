@@ -15,44 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 import java.util.EventListener;
 
 /** */
-public interface ConnectionEventListener extends EventListener {
+public interface RequestEventListener extends EventListener {
     /**
-     * @param event Handshake start event.
+     * @param event Request start event.
      */
-    default void onHandshakeStart(HandshakeStartEvent event) {
+    default void onRequestStart(RequestStartEvent event) {
         // No-op.
     }
 
     /**
-     * @param event Handshake success event.
+     * @param event Request success event.
      */
-    default void onHandshakeSuccess(HandshakeSuccessEvent event) {
+    default void onRequestSuccess(RequestSuccessEvent event) {
         // No-op.
     }
 
     /**
-     * @param event Handshake fail event.
+     * @param event Request failure event.
      */
-    default void onHandshakeFail(HandshakeFailEvent event) {
-        // No-op.
-    }
-
-    /**
-     * @param event Authentication fail event.
-     */
-    default void onAuthenticationFail(AuthenticationFailEvent event) {
-        // No-op.
-    }
-
-    /**
-     * @param event Connection closed event (without exception).
-     */
-    default void onConnectionClosed(ConnectionClosedEvent event) {
+    default void onRequestFail(RequestFailEvent event) {
         // No-op.
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin.monitoring;
+package org.apache.ignite.internal.client.thin.events;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -30,13 +30,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.monitoring.AuthenticationFailEvent;
-import org.apache.ignite.client.monitoring.ConnectionClosedEvent;
-import org.apache.ignite.client.monitoring.ConnectionEvent;
-import org.apache.ignite.client.monitoring.ConnectionEventListener;
-import org.apache.ignite.client.monitoring.HandshakeFailEvent;
-import org.apache.ignite.client.monitoring.HandshakeStartEvent;
-import org.apache.ignite.client.monitoring.HandshakeSuccessEvent;
+import org.apache.ignite.client.events.AuthenticationFailEvent;
+import org.apache.ignite.client.events.ConnectionClosedEvent;
+import org.apache.ignite.client.events.ConnectionEvent;
+import org.apache.ignite.client.events.ConnectionEventListener;
+import org.apache.ignite.client.events.HandshakeFailEvent;
+import org.apache.ignite.client.events.HandshakeStartEvent;
+import org.apache.ignite.client.events.HandshakeSuccessEvent;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.testframework.GridTestUtils;

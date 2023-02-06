@@ -23,16 +23,17 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.client.monitoring.AuthenticationFailEvent;
-import org.apache.ignite.client.monitoring.ConnectionClosedEvent;
-import org.apache.ignite.client.monitoring.ConnectionEventListener;
-import org.apache.ignite.client.monitoring.HandshakeFailEvent;
-import org.apache.ignite.client.monitoring.HandshakeStartEvent;
-import org.apache.ignite.client.monitoring.HandshakeSuccessEvent;
-import org.apache.ignite.client.monitoring.QueryEventListener;
-import org.apache.ignite.client.monitoring.QueryFailEvent;
-import org.apache.ignite.client.monitoring.QueryStartEvent;
-import org.apache.ignite.client.monitoring.QuerySuccessEvent;
+import org.apache.ignite.client.events.AuthenticationFailEvent;
+import org.apache.ignite.client.events.ConnectionClosedEvent;
+import org.apache.ignite.client.events.ConnectionDescription;
+import org.apache.ignite.client.events.ConnectionEventListener;
+import org.apache.ignite.client.events.HandshakeFailEvent;
+import org.apache.ignite.client.events.HandshakeStartEvent;
+import org.apache.ignite.client.events.HandshakeSuccessEvent;
+import org.apache.ignite.client.events.RequestEventListener;
+import org.apache.ignite.client.events.RequestFailEvent;
+import org.apache.ignite.client.events.RequestStartEvent;
+import org.apache.ignite.client.events.RequestSuccessEvent;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.NullLogger;
@@ -40,12 +41,12 @@ import org.apache.ignite.logger.NullLogger;
 /**
  * Routes events to listeners, specified in the client configuration.
  */
-public class EventListenerDemultiplexer implements QueryEventListener, ConnectionEventListener {
+public class EventListenerDemultiplexer {
     /** Noop listener. */
     private static final EventListenerDemultiplexer NO_OP = new EventListenerDemultiplexer();
 
     /** */
-    final List<QueryEventListener> qryEventListeners;
+    final List<RequestEventListener> qryEventListeners;
 
     /** */
     final List<ConnectionEventListener> connEventListeners;
@@ -62,7 +63,7 @@ public class EventListenerDemultiplexer implements QueryEventListener, Connectio
 
     /** */
     EventListenerDemultiplexer(
-        List<QueryEventListener> qryEventListeners,
+        List<RequestEventListener> qryEventListeners,
         List<ConnectionEventListener> connEventListeners,
         IgniteLogger logger
     ) {
@@ -89,12 +90,12 @@ public class EventListenerDemultiplexer implements QueryEventListener, Connectio
         if (F.isEmpty(cfg.getEventListeners()))
             return NO_OP;
 
-        List<QueryEventListener> qryEventListeners = new ArrayList<>();
+        List<RequestEventListener> qryEventListeners = new ArrayList<>();
         List<ConnectionEventListener> connEventListeners = new ArrayList<>();
 
         for (EventListener l: cfg.getEventListeners()) {
-            if (l instanceof QueryEventListener)
-                qryEventListeners.add((QueryEventListener)l);
+            if (l instanceof RequestEventListener)
+                qryEventListeners.add((RequestEventListener)l);
             else if (l instanceof ConnectionEventListener)
                 connEventListeners.add((ConnectionEventListener)l);
         }
@@ -105,44 +106,95 @@ public class EventListenerDemultiplexer implements QueryEventListener, Connectio
         return new EventListenerDemultiplexer(qryEventListeners, connEventListeners, NullLogger.whenNull(cfg.getLogger()));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onQueryStart(QueryStartEvent event) {
-        executeForEach(qryEventListeners, l -> l.onQueryStart(event));
+    /**
+     * @param conn Connection description.
+     * @param requestId Request id.
+     * @param opCode Operation code.
+     * @param opName Operation name.
+     */
+    public void onRequestStart(ConnectionDescription conn, long requestId, short opCode, String opName) {
+        executeForEach(qryEventListeners, l -> l.onRequestStart(new RequestStartEvent(conn, requestId, opCode, opName)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onQuerySuccess(QuerySuccessEvent event) {
-        executeForEach(qryEventListeners, l -> l.onQuerySuccess(event));
+    /**
+     * @param conn Connection description.
+     * @param requestId Request id.
+     * @param opCode Operation code.
+     * @param opName Operation name.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     */
+    public void onRequestSuccess(
+        ConnectionDescription conn,
+        long requestId,
+        short opCode,
+        String opName,
+        long elapsedTimeNanos
+    ) {
+        executeForEach(qryEventListeners, l ->
+            l.onRequestSuccess(new RequestSuccessEvent(conn, requestId, opCode, opName, elapsedTimeNanos)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onQueryFail(QueryFailEvent event) {
-        executeForEach(qryEventListeners, l -> l.onQueryFail(event));
+    /**
+     * @param conn Connection description.
+     * @param requestId Request id.
+     * @param opCode Operation code.
+     * @param opName Operation name.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     * @param throwable Throwable that caused the failure.
+     */
+    public void onRequestFail(
+        ConnectionDescription conn,
+        long requestId,
+        short opCode,
+        String opName,
+        long elapsedTimeNanos,
+        Throwable throwable
+    ) {
+        executeForEach(qryEventListeners, l ->
+            l.onRequestFail(new RequestFailEvent(conn, requestId, opCode, opName, elapsedTimeNanos, throwable)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onHandshakeStart(HandshakeStartEvent event) {
-        executeForEach(connEventListeners, l -> l.onHandshakeStart(event));
+    /**
+     * @param conn Connection description.
+     */
+    public void onHandshakeStart(ConnectionDescription conn) {
+        executeForEach(connEventListeners, l -> l.onHandshakeStart(new HandshakeStartEvent(conn)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onHandshakeSuccess(HandshakeSuccessEvent event) {
-        executeForEach(connEventListeners, l -> l.onHandshakeSuccess(event));
+    /**
+     * @param conn Connection description.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     */
+    public void onHandshakeSuccess(ConnectionDescription conn, long elapsedTimeNanos) {
+        executeForEach(connEventListeners, l -> l.onHandshakeSuccess(new HandshakeSuccessEvent(conn, elapsedTimeNanos)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onHandshakeFail(HandshakeFailEvent event) {
-        executeForEach(connEventListeners, l -> l.onHandshakeFail(event));
+    /**
+     * @param conn Connection description.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     * @param throwable Throwable that caused the failure.
+     */
+    public void onHandshakeFail(ConnectionDescription conn, long elapsedTimeNanos, Throwable throwable) {
+        executeForEach(connEventListeners, l -> l.onHandshakeFail(new HandshakeFailEvent(conn, elapsedTimeNanos, throwable)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAuthenticationFail(AuthenticationFailEvent event) {
-        executeForEach(connEventListeners, l -> l.onAuthenticationFail(event));
+    /**
+     * @param conn Connection description.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     * @param user User name.
+     * @param throwable Throwable that caused the failure.
+     */
+    public void onAuthenticationFail(ConnectionDescription conn, long elapsedTimeNanos, String user, Throwable throwable) {
+        executeForEach(connEventListeners, l ->
+            l.onAuthenticationFail(new AuthenticationFailEvent(conn, elapsedTimeNanos, user, throwable)));
     }
 
-    /** {@inheritDoc} */
-    @Override public void onConnectionClosed(ConnectionClosedEvent event) {
-        executeForEach(connEventListeners, l -> l.onConnectionClosed(event));
+    /**
+     * @param conn Connection description.
+     * @param throwable Throwable that caused the failure if any.
+     */
+    public void onConnectionClosed(ConnectionDescription conn, Throwable throwable) {
+        executeForEach(connEventListeners, l -> l.onConnectionClosed(new ConnectionClosedEvent(conn, throwable)));
     }
 
     /** */

@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
-
-import java.util.EventListener;
+package org.apache.ignite.client.events;
 
 /** */
-public interface QueryEventListener extends EventListener {
+public abstract class ConnectionEvent {
+    /** */
+    private final ConnectionDescription conn;
+
     /**
-     * @param event Query start event.
+     * @param conn Connection description.
      */
-    default void onQueryStart(QueryStartEvent event) {
-        // No-op.
+    protected ConnectionEvent(ConnectionDescription conn) {
+        this.conn = conn;
     }
 
     /**
-     * @param event Query success event.
+     * @return Connection description.
      */
-    default void onQuerySuccess(QuerySuccessEvent event) {
-        // No-op.
-    }
-
-    /**
-     * @param event Query failure event.
-     */
-    default void onQueryFail(QueryFailEvent event) {
-        // No-op.
+    public ConnectionDescription connectionDescription() {
+        return conn;
     }
 }

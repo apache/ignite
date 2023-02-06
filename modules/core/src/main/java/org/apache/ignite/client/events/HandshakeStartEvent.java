@@ -15,34 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
-
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.client.events;
 
 /** */
-public class ConnectionClosedEvent extends ConnectionEvent {
-    /** */
-    private final Throwable throwable;
-
+public class HandshakeStartEvent extends ConnectionEvent {
     /**
      * @param conn Connection description.
-     * @param throwable Throwable that caused the failure if any.
      */
-    public ConnectionClosedEvent(
-        ConnectionDescription conn,
-        Throwable throwable
-    ) {
+    public HandshakeStartEvent(ConnectionDescription conn) {
         super(conn);
-
-        this.throwable = throwable;
-    }
-
-    /**
-     * Get a cause of the failure if any.
-     *
-     * @return A cause of the failure if any.
-     */
-    @Nullable public Throwable throwable() {
-        return throwable;
     }
 }

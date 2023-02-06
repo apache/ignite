@@ -15,24 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
+
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public abstract class ConnectionEvent {
+public class ConnectionClosedEvent extends ConnectionEvent {
     /** */
-    private final ConnectionDescription conn;
+    private final Throwable throwable;
 
     /**
      * @param conn Connection description.
+     * @param throwable Throwable that caused the failure if any.
      */
-    protected ConnectionEvent(ConnectionDescription conn) {
-        this.conn = conn;
+    public ConnectionClosedEvent(
+        ConnectionDescription conn,
+        Throwable throwable
+    ) {
+        super(conn);
+
+        this.throwable = throwable;
     }
 
     /**
-     * @return Connection description.
+     * Get a cause of the failure if any.
+     *
+     * @return A cause of the failure if any.
      */
-    public ConnectionDescription connectionDescription() {
-        return conn;
+    @Nullable public Throwable throwable() {
+        return throwable;
     }
 }

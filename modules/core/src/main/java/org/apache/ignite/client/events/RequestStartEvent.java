@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 /** */
-public class HandshakeStartEvent extends ConnectionEvent {
+public class RequestStartEvent extends RequestEvent {
     /**
      * @param conn Connection description.
+     * @param requestId Request id.
+     * @param opCode Operation code.
+     * @param opName Operation name.
      */
-    public HandshakeStartEvent(
-        ConnectionDescription conn
-    ) {
-        super(conn);
+    public RequestStartEvent(ConnectionDescription conn, long requestId, short opCode, String opName) {
+        super(conn, requestId, opCode, opName);
     }
 }

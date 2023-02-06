@@ -15,56 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 import java.util.concurrent.TimeUnit;
 
 /** */
-public class QueryFailEvent extends QueryEvent {
+public class RequestSuccessEvent extends RequestEvent {
     /** */
     private final long elapsedTimeNanos;
 
-    /** */
-    private final Throwable throwable;
-
     /**
      * @param conn Connection description.
-     * @param qryId Query id.
+     * @param requestId Request id.
      * @param opCode Operation code.
      * @param opName Operation name.
      * @param elapsedTimeNanos Elapsed time in nanoseconds.
-     * @param throwable Throwable that caused the failure.
      */
-    public QueryFailEvent(
+    public RequestSuccessEvent(
         ConnectionDescription conn,
-        long qryId,
+        long requestId,
         short opCode,
         String opName,
-        long elapsedTimeNanos,
-        Throwable throwable
+        long elapsedTimeNanos
     ) {
-        super(conn, qryId, opCode, opName);
+        super(conn, requestId, opCode, opName);
 
         this.elapsedTimeNanos = elapsedTimeNanos;
-        this.throwable = throwable;
     }
 
     /**
      * Get the elapsed time of the query.
      *
      * @param timeUnit Desired time unit in which to return the elapsed time.
-     * @return the elapsed time.
+     * @return The elapsed time.
      */
     public long elapsedTime(TimeUnit timeUnit) {
         return timeUnit.convert(elapsedTimeNanos, TimeUnit.NANOSECONDS);
-    }
-
-    /**
-     * Get a cause of the failure.
-     *
-     * @return a cause of the failure.
-     */
-    public Throwable throwable() {
-        return throwable;
     }
 }

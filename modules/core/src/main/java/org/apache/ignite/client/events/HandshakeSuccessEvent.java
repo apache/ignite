@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 import java.util.concurrent.TimeUnit;
 
 /** */
-public class QuerySuccessEvent extends QueryEvent {
+public class HandshakeSuccessEvent extends ConnectionEvent {
     /** */
     private final long elapsedTimeNanos;
 
     /**
      * @param conn Connection description.
-     * @param qryId Query id.
-     * @param opCode Operation code.
-     * @param opName Operation name.
      * @param elapsedTimeNanos Elapsed time in nanoseconds.
      */
-    public QuerySuccessEvent(
+    public HandshakeSuccessEvent(
         ConnectionDescription conn,
-        long qryId,
-        short opCode,
-        String opName,
         long elapsedTimeNanos
     ) {
-        super(conn, qryId, opCode, opName);
+        super(conn);
 
         this.elapsedTimeNanos = elapsedTimeNanos;
     }
@@ -47,7 +41,7 @@ public class QuerySuccessEvent extends QueryEvent {
      * Get the elapsed time of the query.
      *
      * @param timeUnit Desired time unit in which to return the elapsed time.
-     * @return The elapsed time.
+     * @return the elapsed time.
      */
     public long elapsedTime(TimeUnit timeUnit) {
         return timeUnit.convert(elapsedTimeNanos, TimeUnit.NANOSECONDS);

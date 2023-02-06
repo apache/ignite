@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.monitoring;
+package org.apache.ignite.client.events;
 
 /** */
-public abstract class QueryEvent {
+public abstract class RequestEvent {
     /** */
     private final ConnectionDescription conn;
 
@@ -37,7 +37,7 @@ public abstract class QueryEvent {
      * @param opCode Operation code.
      * @param opName Operation name.
      */
-    protected QueryEvent(
+    protected RequestEvent(
         ConnectionDescription conn,
         long qryId,
         short opCode,

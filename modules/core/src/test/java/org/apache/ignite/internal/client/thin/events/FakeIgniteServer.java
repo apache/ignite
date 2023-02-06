@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin.monitoring;
+package org.apache.ignite.internal.client.thin.events;
 
 import java.io.IOException;
 import java.net.InetAddress;

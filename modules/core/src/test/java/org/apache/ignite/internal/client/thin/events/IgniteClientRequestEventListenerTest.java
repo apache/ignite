@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin.monitoring;
+package org.apache.ignite.internal.client.thin.events;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.monitoring.ConnectionDescription;
-import org.apache.ignite.client.monitoring.QueryEvent;
-import org.apache.ignite.client.monitoring.QueryEventListener;
-import org.apache.ignite.client.monitoring.QueryFailEvent;
-import org.apache.ignite.client.monitoring.QueryStartEvent;
-import org.apache.ignite.client.monitoring.QuerySuccessEvent;
+import org.apache.ignite.client.events.ConnectionDescription;
+import org.apache.ignite.client.events.RequestEvent;
+import org.apache.ignite.client.events.RequestEventListener;
+import org.apache.ignite.client.events.RequestFailEvent;
+import org.apache.ignite.client.events.RequestStartEvent;
+import org.apache.ignite.client.events.RequestSuccessEvent;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientOperation;
@@ -36,9 +36,9 @@ import org.junit.Test;
 /**
  * Tests query event listeners of a thin client.
  */
-public class IgniteClientQueryEventListenerTest extends AbstractThinClientTest {
+public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest {
     /** */
-    Map<Class<? extends QueryEvent>, QueryEvent> evSet = new ConcurrentHashMap<>();
+    Map<Class<? extends RequestEvent>, RequestEvent> evSet = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -57,18 +57,18 @@ public class IgniteClientQueryEventListenerTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected ClientConfiguration getClientConfiguration() {
         return super.getClientConfiguration()
-            .setEventListeners(new QueryEventListener() {
-                @Override public void onQueryStart(QueryStartEvent event) {
+            .setEventListeners(new RequestEventListener() {
+                @Override public void onRequestStart(RequestStartEvent event) {
                     if (event.operationCode() != ClientOperation.GET_BINARY_CONFIGURATION.code())
                         evSet.put(event.getClass(), event);
                 }
 
-                @Override public void onQuerySuccess(QuerySuccessEvent event) {
+                @Override public void onRequestSuccess(RequestSuccessEvent event) {
                     if (event.operationCode() != ClientOperation.GET_BINARY_CONFIGURATION.code())
                         evSet.put(event.getClass(), event);
                 }
 
-                @Override public void onQueryFail(QueryFailEvent event) {
+                @Override public void onRequestFail(RequestFailEvent event) {
                     if (event.operationCode() != ClientOperation.GET_BINARY_CONFIGURATION.code())
                         evSet.put(event.getClass(), event);
                 }
@@ -84,7 +84,7 @@ public class IgniteClientQueryEventListenerTest extends AbstractThinClientTest {
 
             assertEquals(2, evSet.size());
 
-            QueryStartEvent startEvent = (QueryStartEvent)evSet.get(QueryStartEvent.class);
+            RequestStartEvent startEvent = (RequestStartEvent)evSet.get(RequestStartEvent.class);
 
             assertTrue(startEvent.queryId() >= 0);
 
@@ -96,7 +96,7 @@ public class IgniteClientQueryEventListenerTest extends AbstractThinClientTest {
             assertEquals(ClientOperation.CACHE_GET_NAMES.code(), startEvent.operationCode());
             assertEquals(ClientOperation.CACHE_GET_NAMES.name(), startEvent.operationName());
 
-            QuerySuccessEvent successEvent = (QuerySuccessEvent)evSet.get(QuerySuccessEvent.class);
+            RequestSuccessEvent successEvent = (RequestSuccessEvent)evSet.get(RequestSuccessEvent.class);
             assertEquals(successEvent.queryId(), successEvent.queryId());
 
             connDesc = startEvent.connectionDescription();
@@ -124,7 +124,7 @@ public class IgniteClientQueryEventListenerTest extends AbstractThinClientTest {
         catch (ClientException err) {
             assertEquals(2, evSet.size());
 
-            QueryStartEvent startEvent = (QueryStartEvent)evSet.get(QueryStartEvent.class);
+            RequestStartEvent startEvent = (RequestStartEvent)evSet.get(RequestStartEvent.class);
 
             assertTrue(startEvent.queryId() >= 0);
 
@@ -136,7 +136,7 @@ public class IgniteClientQueryEventListenerTest extends AbstractThinClientTest {
             assertEquals(ClientOperation.CACHE_PUT.code(), startEvent.operationCode());
             assertEquals(ClientOperation.CACHE_PUT.name(), startEvent.operationName());
 
-            QueryFailEvent failEvent = (QueryFailEvent)evSet.get(QueryFailEvent.class);
+            RequestFailEvent failEvent = (RequestFailEvent)evSet.get(RequestFailEvent.class);
             assertEquals(failEvent.queryId(), failEvent.queryId());
 
             connDesc = startEvent.connectionDescription();
