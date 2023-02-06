@@ -109,8 +109,8 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
                     key = row.key(keyIdx);
                 }
 
-                // Range boundaries were already checked for all IN values.
-                return !inVals.contains(key);
+                if (!inVals.contains(key))
+                    return true;
             }
 
             if (low != null && low.key(keyIdx) != null) {
