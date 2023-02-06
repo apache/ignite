@@ -1406,10 +1406,12 @@ public class SnapshotRestoreProcess {
             INCREMENTAL_SNAPSHOT_FINISH_RECORD,
             DATA_RECORD_V2));
 
+        // Create a single WAL iterator for 2 steps: finding ClusterSnapshotRecord and applying incremental snapshots.
+        // TODO: Fix it after resolving https://issues.apache.org/jira/browse/IGNITE-18718.
         try (WALIterator it = walIter(log, recTypes, segments)) {
             boolean snpRecReached = false;
 
-            // Skips applying WAL until base snapshot record has been reached.
+            // Step 1. Skips applying WAL until base snapshot record has been reached.
             while (it.hasNext()) {
                 WALRecord rec = it.next().getValue();
 
@@ -1429,9 +1431,10 @@ public class SnapshotRestoreProcess {
                 ? ctx.cache().context().snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
                 : null;
 
-            IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null ? null : txVer -> !incSnpFinRec.excluded().contains(txVer);
+            IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null
+                ? txVer -> true : txVer -> !incSnpFinRec.excluded().contains(txVer);
 
-            // Apply incremental snapshots.
+            // Step 2. Apply incremental snapshots.
             while (it.hasNext()) {
                 WALRecord rec = it.next().getValue();
 
@@ -1451,12 +1454,9 @@ public class SnapshotRestoreProcess {
                     DataRecord data = (DataRecord)rec;
 
                     for (DataEntry e: data.writeEntries()) {
-                        if (txVerFilter != null && !txVerFilter.apply(e.nearXidVersion()))
-                            continue;
-
                         // That is OK to restore only part of transaction related to a specified cache group,
                         // because a full snapshot restoring does the same.
-                        if (!cacheIds.contains(e.cacheId()))
+                        if (!cacheIds.contains(e.cacheId()) || !txVerFilter.apply(e.nearXidVersion()))
                             continue;
 
                         GridCacheContext<?, ?> cacheCtx = ctx.cache().context().cacheContext(e.cacheId());
