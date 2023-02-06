@@ -2850,6 +2850,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         GridDhtLocalPartition locPart = cacheCtx.topology().forceCreatePartition(partId);
 
+        if (applyDataEntry(cacheCtx, locPart, dataEntry) && dataEntry.partitionCounter() != 0)
+            cacheCtx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
+    }
+
+    /**
+     * Applies data entry.
+     *
+     * @param cacheCtx Cache context.
+     * @param locPart Local partition.
+     * @param dataEntry Data entry.
+     * @return {@code true} if entry has applied, otherwise {@code false}.
+     */
+    public boolean applyDataEntry(
+        GridCacheContext<?, ?> cacheCtx,
+        GridDhtLocalPartition locPart,
+        DataEntry dataEntry
+    ) throws IgniteCheckedException {
         switch (dataEntry.op()) {
             case CREATE:
             case UPDATE:
@@ -2874,10 +2891,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         null);
                 }
 
-                if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
-
-                break;
+                return true;
 
             case DELETE:
                 if (dataEntry instanceof MvccDataEntry) {
@@ -2891,16 +2905,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else
-                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), locPart.id(), locPart);
 
-                if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
-
-                break;
+                return true;
 
             case READ:
                 // do nothing
-                break;
+                return false;
 
             default:
                 throw new IgniteCheckedException("Invalid operation for WAL entry update: " + dataEntry.op());

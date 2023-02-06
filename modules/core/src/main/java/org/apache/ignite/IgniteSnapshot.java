@@ -74,6 +74,19 @@ public interface IgniteSnapshot {
     public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> cacheGroupNames);
 
     /**
+     * Restore cache group(s) from the incremental snapshot.
+     * <p>
+     * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,
+     * they must be destroyed by the user (eg with {@link IgniteCache#destroy()}) before starting this operation.
+     *
+     * @param name Snapshot name.
+     * @param cacheGroupNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
+     * @param incIdx Index of incremental snapshot.
+     * @return Future which will be completed when restore operation finished.
+     */
+    public IgniteFuture<Void> restoreIncrementalSnapshot(String name, @Nullable Collection<String> cacheGroupNames, int incIdx);
+
+    /**
      * Cancel snapshot restore operation.
      *
      * @param name Snapshot name.

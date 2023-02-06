@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremen
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotNoBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotNoBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotNodeFailureTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotSingleBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotSingleBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotTwoBackupMessagesBlockingTest;
@@ -44,7 +45,8 @@ import org.junit.runners.Suite;
     ConcurrentTxsIncrementalSnapshotTest.class,
     IncrementalSnapshotNodeFailureTest.class,
     IncrementalSnapshotTxRecoveryTest.class,
-    IncrementalSnapshotTest.class
+    IncrementalSnapshotTest.class,
+    IncrementalSnapshotRestoreTest.class
 })
 public class IncrementalSnapshotsTestSuite {
 }
