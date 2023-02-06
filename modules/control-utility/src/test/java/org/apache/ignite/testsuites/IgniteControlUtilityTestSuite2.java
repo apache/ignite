@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.util.CacheMetricsCommandTest;
+import org.apache.ignite.util.CdcCommandTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyCountersTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessAtomicTest;
@@ -64,7 +65,9 @@ import org.junit.runners.Suite;
     PerformanceStatisticsCommandTest.class,
     CacheMetricsCommandTest.class,
 
-    IgniteIndexReaderTest.class
+    IgniteIndexReaderTest.class,
+
+    CdcCommandTest.class
 })
 public class IgniteControlUtilityTestSuite2 {
 }

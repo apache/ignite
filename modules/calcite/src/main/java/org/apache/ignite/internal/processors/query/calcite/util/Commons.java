@@ -204,7 +204,7 @@ public final class Commons {
             return parse(new SourceStringReader(qry), parserCfg);
         }
         catch (SqlParseException e) {
-            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
+            throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
 

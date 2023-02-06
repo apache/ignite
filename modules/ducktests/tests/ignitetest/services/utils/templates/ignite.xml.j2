@@ -17,133 +17,16 @@
  limitations under the License.
 #}
 
-{% import 'communication_macro.j2' as communication %}
-{% import 'discovery_macro.j2' as disco_utils %}
-{% import 'cache_macro.j2' as cache_utils %}
-{% import 'datastorage_macro.j2' as datastorage_utils %}
+{% import 'ignite_configuration_macro.j2' as ignite_configuration %}
 {% import 'misc_macro.j2' as misc_utils %}
-{% import 'ssl_params_macro.j2' as ssl_params_util %}
-{% import 'connector_configuration.j2' as connector_configuration_util %}
-{% import 'client_connector_configuration.j2' as client_connector_configuration_util %}
-{% import 'transaction_macro.j2' as transaction_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:util="http://www.springframework.org/schema/util" xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="workDirectory" value="{{ service.work_dir }}" />
-        <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
-                <constructor-arg type="java.lang.String" value="{{ service.config_dir }}/{{ config.log4j_config }}"/>
-            </bean>
-        </property>
 
-        <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
-        <property name="consistentId" value="{{ config.consistent_id }}"/>
-        <property name="igniteInstanceName" value="{{ config.ignite_instance_name }}"/>
-        <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
-        <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
-        <property name="peerClassLoadingEnabled" value="{{ config.peer_class_loading_enabled }}"/>
-        <property name="authenticationEnabled" value="{{ config.auth_enabled | lower }}"/>
-        {% if config.rebalance_thread_pool_size %}
-            <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
-        {% endif %}
-        {% if config.rebalance_batch_size %}
-            <property name="rebalanceBatchSize" value="{{ config.rebalance_batch_size }}"/>
-        {% endif %}
-        {% if config.rebalance_batches_prefetch_count %}
-            <property name="rebalanceBatchesPrefetchCount" value="{{ config.rebalance_batches_prefetch_count }}"/>
-        {% endif %}
-        {% if config.rebalance_throttle %}
-            <property name="rebalanceThrottle" value="{{ config.rebalance_throttle }}"/>
-        {% endif %}
-
-        {% if config.metrics_log_frequency %}
-            <property name="metricsLogFrequency" value="{{ config.metrics_log_frequency }}"/>
-        {% endif %}
-
-        {% if config.metrics_update_frequency %}
-            <property name="metricsUpdateFrequency" value="{{ config.metrics_update_frequency }}"/>
-        {% endif %}
-
-        {% if config.auto_activation_enabled %}
-            <property name="autoActivationEnabled" value="{{ config.auto_activation_enabled }}"/>
-        {% endif %}
-
-        {% if config.metric_exporters | length > 0 %}
-            <property name="metricExporterSpi">
-                <list>
-                {% for exporter in config.metric_exporters %}
-                    {{ misc_utils.bean(exporter) }}
-                {% endfor %}
-                </list>
-            </property>
-        {% endif %}
-
-        {{ misc_utils.cluster_state(config.cluster_state, config.version) }}
-
-        {{ communication.communication_spi(config.communication_spi) }}
-
-        {{ disco_utils.discovery_spi(config.discovery_spi) }}
-
-        {{ datastorage_utils.data_storage(config.data_storage) }}
-
-        {{ cache_utils.cache_configs(config.caches) }}
-
-        {% if config.local_host %}
-            <property name="localHost" value="{{ config.local_host }}"/>
-        {% endif %}
-
-        {% if config.properties %}
-            {{ config.properties }}
-        {% endif %}
-
-        {% if config.ssl_params %}
-            <property name="sslContextFactory">
-                {{ ssl_params_util.ssl_params(config.ssl_params) }}
-            </property>
-        {% endif %}
-
-        {{ connector_configuration_util.connector_configuration(config.connector_configuration) }}
-
-        {{ client_connector_configuration_util.client_connector_configuration(config.client_connector_configuration) }}
-
-        {{ transaction_util.transaction(config.transaction_configuration) }}
-
-        {% if config.binary_configuration %}
-            <property name="binaryConfiguration">
-                <bean class="org.apache.ignite.configuration.BinaryConfiguration">
-                    <property name="compactFooter" value="{{ config.binary_configuration.compact_footer }}"/>
-                </bean>
-            </property>
-        {% endif %}
-
-        {% if config.local_event_listeners %}
-            <property name="localEventListeners" ref="{{ config.local_event_listeners }}"/>
-        {% endif %}
-
-        {% if config.include_event_types | length > 0 %}
-            <property name="includeEventTypes" ref="eventTypes"/>
-        {% endif %}
-
-        {% if config.event_storage_spi %}
-            <property name="eventStorageSpi" ref="{{ config.event_storage_spi }}"/>
-        {% endif %}
-
-        {% if config.sql_schemas | length > 0 %}
-            <property name="sqlSchemas">
-                <list>
-                {% for schema in config.sql_schemas %}
-                    <value>{{ schema }}</value>
-                {% endfor %}
-                </list>
-            </property>
-        {% endif %}
-
-        {{ misc_utils.plugins(config) }}
-    </bean>
+    {{ ignite_configuration.apply(config, service) }}
 
     {{ misc_utils.ext_beans(config) }}
 
