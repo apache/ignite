@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -578,8 +577,11 @@ public class IndexQueryInCriterionTest extends GridCommonAbstractTest {
             for (int fldIdx = 0; fldIdx < fields.length; fldIdx++) {
                 if (lteIdx == fldIdx)
                     crit[fldIdx] = lte(fields[fldIdx].getKey(), fields[fldIdx].getValue());
-                else
-                    crit[fldIdx] = in(fields[fldIdx].getKey(), IntStream.rangeClosed(0, fields[fldIdx].getValue()).boxed().collect(toSet()));
+                else {
+                    crit[fldIdx] = in(
+                        fields[fldIdx].getKey(),
+                        IntStream.rangeClosed(0, fields[fldIdx].getValue()).boxed().collect(toSet()));
+                }
             }
 
             assertExpect(
