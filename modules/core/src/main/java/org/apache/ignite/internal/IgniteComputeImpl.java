@@ -115,7 +115,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override protected IgniteCompute createAsyncInstance() {
-        return new IgniteComputeImpl(ctx, prj, true, opts.get());
+        return new IgniteComputeImpl(ctx, prj, true, TaskExecutionOptions.options(opts.get()));
     }
 
     /** {@inheritDoc} */
