@@ -431,7 +431,8 @@ public class IgniteConfiguration {
     private EncryptionSpi encryptionSpi;
 
     /** Metric exporter SPI. */
-    private MetricExporterSpi[] metricExporterSpi = F.asArray(new JmxMetricExporterSpi());
+    private MetricExporterSpi[] metricExporterSpi = U.IGNITE_MBEANS_DISABLED ? null :
+        F.asArray(new JmxMetricExporterSpi());
 
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
@@ -1358,10 +1359,11 @@ public class IgniteConfiguration {
 
     /**
      * Should return MBean server instance. If not provided, the system will use default
-     * platform MBean server.
+     * platform MBean server unless {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED} is set.
      *
      * @return MBean server instance or {@code null} to make the system create a default one.
      * @see ManagementFactory#getPlatformMBeanServer()
+     * @see IgniteSystemProperties#IGNITE_MBEANS_DISABLED
      */
     public MBeanServer getMBeanServer() {
         return mbeanSrv;

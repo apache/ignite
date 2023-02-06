@@ -26,6 +26,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -90,6 +91,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  *
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
+ * @see IgniteSystemProperties#IGNITE_MBEANS_DISABLED
  */
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */

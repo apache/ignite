@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -43,7 +44,8 @@ public class CdcConfiguration {
     private CdcConsumer consumer;
 
     /** Metric exporter SPI. */
-    private MetricExporterSpi[] metricExporterSpi = F.asArray(new JmxMetricExporterSpi());
+    private MetricExporterSpi[] metricExporterSpi = U.IGNITE_MBEANS_DISABLED ? null :
+        F.asArray(new JmxMetricExporterSpi());
 
     /** Keep binary flag.<br>Default value {@code true}. */
     private boolean keepBinary = DFLT_KEEP_BINARY;
