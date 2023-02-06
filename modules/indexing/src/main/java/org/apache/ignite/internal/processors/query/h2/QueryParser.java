@@ -83,7 +83,7 @@ public class QueryParser {
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
         "^(create|drop)\\s+index|^analyze\\s|^refresh\\sstatistics|^drop\\sstatistics|^alter\\s+table|^copy" +
             "|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
-            "|^kill\\s+(query|scan|continuous|compute|service|transaction)|show|help|grant|revoke",
+            "|^kill\\s+(query|scan|continuous|compute|service|transaction|client)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */

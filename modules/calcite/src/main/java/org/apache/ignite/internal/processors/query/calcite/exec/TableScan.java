@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -257,6 +258,9 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
 
                 if (cur.next()) {
                     CacheDataRow row = cur.get();
+
+                    if (row.expireTime() > 0 && row.expireTime() <= U.currentTimeMillis())
+                        continue;
 
                     if (!desc.match(row))
                         continue;

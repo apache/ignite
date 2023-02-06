@@ -155,7 +155,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     public void testNodeCanJoin() throws Exception {
         startGrid(GRID_0);
 
-        startGrid(GRID_3).cluster().active(true);
+        startGrid(GRID_3).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
@@ -164,7 +164,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         IgniteEx grid0 = startGrid(GRID_0);
         startGrid(GRID_3);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         stopGrid(GRID_3, false);
 
@@ -173,7 +173,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         stopGrid(GRID_0, false);
         IgniteEx grid3 = startGrid(GRID_3);
 
-        grid3.cluster().active(true);
+        grid3.cluster().state(ClusterState.ACTIVE);
 
         createEncryptedCache(grid3, null, cacheName(), null, false);
 
@@ -194,7 +194,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx grid3 = startGrid(GRID_3);
 
-        grid3.cluster().active(true);
+        grid3.cluster().state(ClusterState.ACTIVE);
 
         createEncryptedCache(grid0, grid3, cacheName(), null);
 
@@ -214,7 +214,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx grid3 = startGrid(GRID_3);
 
-        grid3.cluster().active(true);
+        grid3.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx client = startClientGrid(CLIENT);
 
@@ -325,7 +325,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx grid0 = startGrid(GRID_0);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         assertThrowsWithCause(() -> {
             try {
@@ -344,7 +344,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         IgniteEx grid0 = startGrid(GRID_5);
 
-        grid0.cluster().active(true);
+        grid0.cluster().state(ClusterState.ACTIVE);
 
         assertThrowsWithCause(() -> {
             try {

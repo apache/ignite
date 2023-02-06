@@ -361,7 +361,7 @@ public abstract class QueryChecker {
         QueryEngine engine = getEngine();
 
         List<FieldsQueryCursor<List<?>>> explainCursors =
-            engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry);
+            engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry, params);
 
         FieldsQueryCursor<List<?>> explainCursor = explainCursors.get(0);
         List<List<?>> explainRes = explainCursor.getAll();

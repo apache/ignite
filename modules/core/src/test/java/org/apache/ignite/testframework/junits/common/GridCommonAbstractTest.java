@@ -66,6 +66,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -554,8 +555,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
         if (awaitPartMapExchange) {
-            if (!g.active())
-                g.active(true);
+            if (!g.cluster().state().active())
+                g.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
         }

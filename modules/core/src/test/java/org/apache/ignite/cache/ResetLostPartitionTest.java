@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -146,7 +147,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
     private void doRebalanceAfterPartitionsWereLost(boolean reactivateGridBeforeResetPart) throws Exception {
         startGrids(3);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         for (String cacheName : CACHE_NAMES) {
             try (IgniteDataStreamer<Object, Object> st = grid(0).dataStreamer(cacheName)) {
@@ -215,8 +216,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
         }
 
         if (reactivateGridBeforeResetPart) {
-            grid(0).cluster().active(false);
-            grid(0).cluster().active(true);
+            grid(0).cluster().state(ClusterState.INACTIVE);
+            grid(0).cluster().state(ClusterState.ACTIVE);
         }
 
         // Try to reset lost partitions.

@@ -26,12 +26,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.sql.SqlKeyword.CLIENT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
@@ -42,6 +44,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelClientConnection;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -71,6 +74,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_CQ_QRY = KILL + " " + CONTINUOUS;
+
+    /** */
+    public static final String KILL_CLI_QRY = KILL + " " + CLIENT;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -145,6 +151,15 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public void testCancelContinuousQuery() throws Exception {
         doTestCancelContinuousQuery(startCli, srvs, (nodeId, routineId) ->
             execute(killCli, KILL_CQ_QRY + " '" + nodeId.toString() + "'" + " '" + routineId.toString() + "'"));
+    }
+
+    /** */
+    @Test
+    public void testCancelClientConnection() {
+        doTestCancelClientConnection(srvs, (nodeId, connId) -> execute(
+            nodeId == null ? srvs.get(1) : G.ignite(nodeId),
+            KILL_CLI_QRY + " " + (connId == null ? "ALL" : Long.toString(connId))
+        ));
     }
 
     /** */

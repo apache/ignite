@@ -23,6 +23,7 @@ import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -89,7 +90,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
         FailingFileIOFactory.setUnluckyConsistentId(ignite1.localNode().consistentId().toString());
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         final IgniteCache cache = ignite0.cache(DEFAULT_CACHE_NAME);
 

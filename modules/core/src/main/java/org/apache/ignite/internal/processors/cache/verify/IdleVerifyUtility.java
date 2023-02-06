@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -74,6 +75,25 @@ public class IdleVerifyUtility {
         int partId,
         byte pageType
     ) {
+        checkPartitionsPageCrcSum(pageStoreSup, partId, pageType, null);
+    }
+
+    /**
+     * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
+     * and associated with cache group.
+     *
+     * @param pageStoreSup Page store supplier.
+     * @param partId Partition id.
+     * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
+     *      and {@link PageIdAllocator#FLAG_AUX}.
+     * @param pagePostProcessor Page post processor closure.
+     */
+    public static void checkPartitionsPageCrcSum(
+        IgniteThrowableSupplier<FilePageStore> pageStoreSup,
+        int partId,
+        byte pageType,
+        @Nullable BiConsumer<Long, ByteBuffer> pagePostProcessor
+    ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
         FilePageStore pageStore = null;
@@ -89,6 +109,9 @@ public class IdleVerifyUtility {
                 buf.clear();
 
                 pageStore.read(pageId, buf, true, true);
+
+                if (pagePostProcessor != null)
+                    pagePostProcessor.accept(pageId, buf);
             }
         }
         catch (Throwable e) {

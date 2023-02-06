@@ -129,9 +129,9 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTr
             //((IgniteKernal)g).cache(DEFAULT_CACHE_NAME).remove(0);
 
             assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-
-            g.cache(DEFAULT_CACHE_NAME).mxBean().clear();
         }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
 
         assertNull("Value is not null for key: " + 0, cache.get(0));
 

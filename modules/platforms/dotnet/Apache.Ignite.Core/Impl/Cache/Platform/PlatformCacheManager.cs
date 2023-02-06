@@ -117,12 +117,23 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         /// <summary>
         /// Stops platform cache.
         /// </summary>
-        public void Stop(int cacheId)
+        public void Stop(int cacheId, bool destroy)
         {
             IPlatformCache cache;
-            if (_caches.Remove(cacheId, out cache))
+
+            if (destroy)
             {
-                cache.Stop();
+                if (_caches.Remove(cacheId, out cache))
+                {
+                    cache.Stop();
+                }
+            }
+            else
+            {
+                if (_caches.TryGetValue(cacheId, out cache))
+                {
+                    cache.Clear();
+                }
             }
         }
 

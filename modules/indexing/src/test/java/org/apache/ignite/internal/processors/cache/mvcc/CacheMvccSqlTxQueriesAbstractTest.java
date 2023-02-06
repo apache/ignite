@@ -45,6 +45,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -1971,7 +1972,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         Ignite node = startGrid(getConfiguration("grid").setMvccVacuumFrequency(100));
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startClientGrid(getConfiguration("client"));
 

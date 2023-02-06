@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -72,6 +73,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
@@ -107,6 +109,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
@@ -137,6 +140,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.IgniteKernal.CFG_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_ATTRIBUTES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODE_METRICS_SYS_VIEW;
@@ -174,6 +179,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_PO
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
@@ -1813,7 +1819,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )))) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
                 .database();
@@ -1978,21 +1984,29 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             )))) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
+            String histogramName = "my-histogram";
+
+            ignite.context().metric().configureHistogram(histogramName, new long[] { 1, 2, 3});
+
             DistributedMetaStorage dms = ignite.context().distributedMetastorage();
-
-            SystemView<MetastorageView> metaStoreView = ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
-
-            assertNotNull(metaStoreView);
 
             String name = "test-distributed-key";
             String val = "test-distributed-value";
 
             dms.write(name, val);
 
-            MetastorageView testKey = F.find(metaStoreView, null,
-                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()));
+            assertNotNull(F.find(
+                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                null,
+                (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()))
+            );
 
-            assertNotNull(testKey);
+            assertNotNull(F.find(
+                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                null,
+                (IgnitePredicate<? super MetastorageView>)
+                    view -> view.name().endsWith(histogramName) && "[1, 2, 3]".equals(view.value()))
+            );
         }
     }
 
@@ -2307,6 +2321,54 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /** */
+    @Test
+    public void testConfigurationView() throws Exception {
+        IgniteConfiguration icfg = new IgniteConfiguration();
+
+        long expMaxSize = 10 * MB;
+
+        String expName = "my-instance";
+
+        String expDrName = "my-dr";
+
+        icfg.setIgniteInstanceName(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
+        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setLazyMemoryAllocation(false))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(expDrName)
+                    .setMaxSize(expMaxSize)));
+
+        try (IgniteEx ignite = startGrid(icfg)) {
+            Map<String, String> viewContent = new HashMap<>();
+
+            ignite.context().systemView().<ConfigurationView>view(CFG_VIEW)
+                .forEach(view -> viewContent.put(view.name(), view.value()));
+
+            assertEquals(expName, viewContent.get("IgniteInstanceName"));
+            assertEquals(
+                "false",
+                viewContent.get("DataStorageConfiguration.DefaultDataRegionConfiguration.LazyMemoryAllocation")
+            );
+            assertEquals(expDrName, viewContent.get("DataStorageConfiguration.DataRegionConfigurations[0].Name"));
+            assertEquals(
+                Long.toString(expMaxSize),
+                viewContent.get("DataStorageConfiguration.DataRegionConfigurations[0].MaxSize")
+            );
+            assertEquals(
+                CacheAtomicityMode.TRANSACTIONAL.name(),
+                viewContent.get("CacheConfiguration[0].AtomicityMode")
+            );
+            assertTrue(viewContent.containsKey("AddressResolver"));
+            assertNull(viewContent.get("AddressResolver"));
+            assertEquals("[" + EVT_CONSISTENCY_VIOLATION + ']', viewContent.get("IncludeEventTypes"));
         }
     }
 

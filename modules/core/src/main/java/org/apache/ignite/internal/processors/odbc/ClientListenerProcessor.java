@@ -39,6 +39,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
@@ -59,6 +61,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
 /**
@@ -70,6 +74,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** */
     public static final String CLI_CONN_VIEW_DESC = "Client connections";
+
+    /** */
+    public static final String METRIC_ACTIVE = "ActiveSessions";
 
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
@@ -142,6 +149,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 int selectorCnt = cliConnCfg.getSelectorCount();
 
+                MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
@@ -160,7 +169,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
-                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_METRICS))
+                            .metricRegistry(mreg)
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -189,6 +198,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
 
+                registerClientMetrics(mreg);
+
                 ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
                     new ClientConnectionViewWalker(),
                     srv.sessions(),
@@ -199,6 +210,32 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
+        }
+    }
+
+    /** @param mreg Metric registry. */
+    private void registerClientMetrics(MetricRegistry mreg) {
+        for (int i = 0; i < CLI_TYPES.length; i++) {
+            byte cliType = CLI_TYPES[i];
+
+            String cliTypeName = clientTypeLabel(cliType);
+
+            mreg.register(
+                metricName(cliTypeName, METRIC_ACTIVE),
+                () -> {
+                    int res = 0;
+
+                    for (GridNioSession ses : srv.sessions()) {
+                        ClientListenerConnectionContext ctx = ses.meta(CONN_CTX_META_KEY);
+
+                        if (ctx != null && ctx.clientType() == cliType)
+                            ++res;
+                    }
+
+                    return res;
+                },
+                "Number of active sessions for the " + cliTypeName + " client."
+            );
         }
     }
 
@@ -269,7 +306,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             }
 
             @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
-                ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
+                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
                 if (connCtx != null && connCtx.parser() != null && connCtx.handler().isCancellationSupported()) {
                     ClientMessage inMsg;
@@ -567,9 +604,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return MX bean instance.
+     */
+    public ClientProcessorMXBean mxBean() {
+        return new ClientProcessorMXBeanImpl();
+    }
+
+    /**
      * ClientProcessorMXBean interface.
      */
-    private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
+    public class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
         /** {@inheritDoc} */
         @Override public List<String> getConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();
@@ -592,12 +636,17 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void dropAllConnections() {
+            ctx.security().authorize(null, SecurityPermission.ADMIN_OPS);
+
             closeAllSessions();
         }
 
         /** {@inheritDoc} */
         @Override public boolean dropConnection(long id) {
-            assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
+            ctx.security().authorize(null, SecurityPermission.ADMIN_OPS);
+
+            if ((id >> 32) != ctx.discovery().localNode().order())
+                return false;
 
             Collection<? extends GridNioSession> sessions = srv.sessions();
 

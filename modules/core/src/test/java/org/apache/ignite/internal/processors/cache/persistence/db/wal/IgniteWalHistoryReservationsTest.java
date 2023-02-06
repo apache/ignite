@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -136,7 +137,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         stopGrid(initGridCnt);
 
@@ -292,7 +293,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -344,7 +345,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -411,7 +412,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
 
@@ -439,7 +440,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         Ignite ig1 = startGrid(1);
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
@@ -456,7 +457,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         final Ignite ig0 = startGrids(initGridCnt);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache("cache1");
 
@@ -541,7 +542,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         IgniteEx grid = startGrids(2);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = grid.createCache(new CacheConfiguration<>("cache").setBackups(1));
 

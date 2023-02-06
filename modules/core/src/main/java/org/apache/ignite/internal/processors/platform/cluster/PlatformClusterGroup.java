@@ -27,6 +27,7 @@ import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
@@ -459,13 +460,13 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
 
             case OP_SET_ACTIVE: {
-                prj.ignite().active(val == TRUE);
+                prj.ignite().cluster().state(val == TRUE ? ClusterState.ACTIVE : ClusterState.INACTIVE);
 
                 return TRUE;
             }
 
             case OP_IS_ACTIVE: {
-                return prj.ignite().active() ? TRUE : FALSE;
+                return prj.ignite().cluster().state().active() ? TRUE : FALSE;
             }
         }
 

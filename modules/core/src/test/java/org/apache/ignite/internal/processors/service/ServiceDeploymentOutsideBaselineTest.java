@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -231,7 +232,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
         insideNode.cluster().baselineAutoAdjustEnabled(false);
 
         if (persistence)
-            insideNode.cluster().active(true);
+            insideNode.cluster().state(ClusterState.ACTIVE);
         else {
             IgniteCluster cluster = insideNode.cluster();
 
@@ -261,7 +262,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         IgniteCluster cluster = insideNode.cluster();
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         Ignite outsideNode = startGrid(1);
 
@@ -302,7 +303,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         IgniteCluster cluster = insideNode.cluster();
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         stopGrid(1);
 

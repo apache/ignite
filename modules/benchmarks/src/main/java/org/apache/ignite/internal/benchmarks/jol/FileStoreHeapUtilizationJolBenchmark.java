@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -114,7 +115,7 @@ public class FileStoreHeapUtilizationJolBenchmark {
 
         Ignite ignite = Ignition.start(getConfiguration(name));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         long start = System.currentTimeMillis();
 
@@ -133,7 +134,7 @@ public class FileStoreHeapUtilizationJolBenchmark {
 
         GraphLayout layout = GraphLayout.parseInstance(ignite);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         Ignition.stop(name, true);
 
