@@ -403,6 +403,9 @@ public abstract class IgniteUtils {
     /** Length of numbered file name. */
     public static final int NUMBER_FILE_NAME_LENGTH = 16;
 
+    /** Ignite package. */
+    public static final String IGNITE_PKG = "org.apache.ignite.";
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -6874,7 +6877,7 @@ public abstract class IgniteUtils {
     public static String compact(String s) {
         return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.", "o.a.i.");
+            replace(IGNITE_PKG, "o.a.i.");
     }
 
     /**
