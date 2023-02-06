@@ -160,7 +160,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testEmptyFilter() throws Exception {
+    public void testEmptyFilter() {
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.METRICS");
 
         assertNotNull(res);
@@ -169,7 +169,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testDataRegionMetrics() throws Exception {
+    public void testDataRegionMetrics() {
         List<List<?>> res = execute(ignite0,
             "SELECT REPLACE(name, 'io.dataregion.persistent.'), value, description FROM SYS.METRICS");
 
@@ -198,7 +198,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCachesView() throws Exception {
+    public void testCachesView() {
         Set<String> cacheNames = new HashSet<>(asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
@@ -216,7 +216,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testCacheGroupsView() throws Exception {
+    public void testCacheGroupsView() {
         Set<String> grpNames = new HashSet<>(asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
@@ -279,7 +279,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testServices() throws Exception {
+    public void testServices() {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
         srvcCfg.setName("service");
@@ -408,7 +408,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testViews() throws Exception {
+    public void testViews() {
         Set<String> expViews = new TreeSet<>(asList(
             "METRICS",
             "SERVICES",
@@ -420,6 +420,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
+            "CONFIGURATION",
             "BASELINE_NODES",
             "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
