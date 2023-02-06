@@ -671,6 +671,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(ACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Cluster state changed to ACTIVE");
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
+
+        assertContains(log, testOut.toString(), "Cluster state ia already ACTIVE");
     }
 
     /**

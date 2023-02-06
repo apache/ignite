@@ -75,9 +75,15 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            client.state().state(state, forceDeactivation);
+            ClusterState clusterState = client.state().state();
 
-            log.info("Cluster state changed to " + state);
+            if (clusterState == state)
+                log.info("Cluster state ia already " + state);// + '.');
+            else {
+                client.state().state(state, forceDeactivation);
+
+                log.info("Cluster state changed to " + state);// + '.');
+            }
 
             return null;
         }
