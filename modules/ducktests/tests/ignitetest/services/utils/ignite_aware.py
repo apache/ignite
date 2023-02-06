@@ -38,12 +38,13 @@ from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
+from ignitetest.services.utils.jvm_utils import JvmProcessMixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
 
-class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
+class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMixin, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
     """
@@ -150,7 +151,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                (str(node.account), self.shutdown_timeout_sec))
 
     def stop_node(self, node, force_stop=False, **kwargs):
-        pids = self.pids(node)
+        pids = self.pids(node, self.main_java_class)
 
         for pid in pids:
             node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
@@ -221,15 +222,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
-    def pids(self, node):
-        """
-        :param node: Ignite service node.
-        :return: List of service's pids.
-        """
-        cmd = "pgrep -ax java | awk '/%s/ {print $1}'" % self.main_java_class
-
-        return [int(pid) for pid in node.account.ssh_capture(cmd, allow_fail=True)]
-
     def worker(self, idx, node, **kwargs):
         cmd = self.spec.command(node)
 
@@ -242,7 +234,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ignite service node.
         :return: True if node is alive.
         """
-        return len(self.pids(node)) > 0
+        return len(self.pids(node, self.main_java_class)) > 0
 
     def await_event_on_node(self, evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=.1,
                             log_file=None):
@@ -525,7 +517,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Generate thread dump on node.
         :param node: Ignite service node.
         """
-        for pid in self.pids(node):
+        for pid in self.pids(node, self.main_java_class):
             try:
                 node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
             except RemoteCommandError:
@@ -550,7 +542,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         snapshot_db = os.path.join(self.snapshots_dir, snapshot_name, "db")
 
         for node in self.nodes:
-            assert len(self.pids(node)) == 0
+            assert len(self.pids(node, self.main_java_class)) == 0
 
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)

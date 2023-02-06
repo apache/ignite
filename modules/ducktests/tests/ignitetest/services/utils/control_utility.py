@@ -220,6 +220,49 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
+    def start_performance_statistics(self):
+        """
+        Start performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("start")
+
+        assert "Started." in output
+
+        return output
+
+    def stop_performance_statistics(self):
+        """
+        Stop performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("stop")
+
+        assert "Stopped." in output
+
+        return output
+
+    def rotate_performance_statistics(self):
+        """
+        Rotate performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("rotate")
+
+        assert "Rotated." in output
+
+        return output
+
+    def is_performance_statistics_enabled(self):
+        """
+        Check status of performance statistics collecting in the cluster.
+        """
+        output = self.__performance_statistics_cmd("status")
+
+        assert "Enabled." in output or "Disabled." in output
+
+        return "Enabled." in output
+
+    def __performance_statistics_cmd(self, sub_command):
+        return self.__run(f"--performance-statistics {sub_command}")
+
     @staticmethod
     def __tx_command(**kwargs):
         tokens = ["--tx"]

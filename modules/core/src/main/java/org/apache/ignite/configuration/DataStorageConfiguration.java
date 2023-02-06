@@ -164,6 +164,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default change data capture directory. */
     public static final String DFLT_WAL_CDC_PATH = "db/wal/cdc";
 
+    /** Default change data capture directory maximum size. */
+    public static final long DFLT_CDC_WAL_DIRECTORY_MAX_SIZE = 0;
+
     /** Default path (relative to working directory) of binary metadata folder */
     public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
 
@@ -244,6 +247,10 @@ public class DataStorageConfiguration implements Serializable {
     /** Change Data Capture path. */
     @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
+
+    /** Change Data Capture directory size limit. */
+    @IgniteExperimental
+    private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
     /**
      * Metrics enabled flag.
@@ -797,6 +804,32 @@ public class DataStorageConfiguration implements Serializable {
     @IgniteExperimental
     public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
         this.cdcWalPath = cdcWalPath;
+
+        return this;
+    }
+
+    /**
+     * Sets the {@link #getCdcWalPath CDC directory} maximum size in bytes.
+     *
+     * @return CDC directory maximum size in bytes.
+     */
+    @IgniteExperimental
+    public long getCdcWalDirectoryMaxSize() {
+        return cdcWalDirMaxSize;
+    }
+
+    /**
+     * Sets the CDC directory maximum size in bytes. Zero or negative means no limit. Creation of segment CDC link
+     * will be skipped when the total size of CDC files in the {@link #getCdcWalPath directory} exceeds the limit.
+     * The CDC application will log an error due to a gap in wal files sequence. Note that cache changes will be lost.
+     * Default is no limit.
+     *
+     * @param cdcWalDirMaxSize CDC directory maximum size in bytes.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setCdcWalDirectoryMaxSize(long cdcWalDirMaxSize) {
+        this.cdcWalDirMaxSize = cdcWalDirMaxSize;
 
         return this;
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.metric;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -70,6 +71,22 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
             String name = arg.name();
 
             GridMetricManager mmgr = ignite.context().metric();
+
+            try {
+                if (arg.bounds() != null) {
+                    mmgr.configureHistogram(arg.name(), arg.bounds());
+
+                    return null;
+                }
+                else if (arg.rateTimeInterval() > 0) {
+                    mmgr.configureHitRate(arg.name(), arg.rateTimeInterval());
+
+                    return null;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
 
             for (ReadOnlyMetricRegistry mreg : mmgr) {
                 String mregName = mreg.name();

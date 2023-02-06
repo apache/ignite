@@ -96,3 +96,20 @@ def _remove_duplicates(params: dict):
                     del params[param_key]
                 else:
                     duplicates[dup_key] = True
+
+
+class JvmProcessMixin:
+    """
+    Mixin to work with JVM processes
+    """
+    @staticmethod
+    def pids(node, java_class):
+        """
+        Return pids of jvm processes running this java class on service node.
+        :param node: Service node.
+        :param java_class: Java class name
+        :return: List of service's pids.
+        """
+        cmd = "pgrep -ax java | awk '/%s/ {print $1}'" % java_class
+
+        return [int(pid) for pid in node.account.ssh_capture(cmd, allow_fail=True)]
