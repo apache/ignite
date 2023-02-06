@@ -54,8 +54,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  *          .setDefaultDataRegionConfiguration(
  *              new DataRegionConfiguration()
  *                  .setMaxSize(12_000_000)))
- *      .setIgniteInstanceName("jmxExampleInstanceName")
- *      .setMetricExporterSpi(new JmxMetricExporterSpi()));
+ *      .setIgniteInstanceName("jmxExampleInstanceName"));
  *
  *  String igniteInstanceName = ignite.name();
  *  String metricGroup = "io";
