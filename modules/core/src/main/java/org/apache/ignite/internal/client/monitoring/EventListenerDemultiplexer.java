@@ -113,6 +113,9 @@ public class EventListenerDemultiplexer {
      * @param opName Operation name.
      */
     public void onRequestStart(ConnectionDescription conn, long requestId, short opCode, String opName) {
+        if (F.isEmpty(qryEventListeners))
+            return;
+
         executeForEach(qryEventListeners, l -> l.onRequestStart(new RequestStartEvent(conn, requestId, opCode, opName)));
     }
 
@@ -130,6 +133,9 @@ public class EventListenerDemultiplexer {
         String opName,
         long elapsedTimeNanos
     ) {
+        if (F.isEmpty(qryEventListeners))
+            return;
+
         executeForEach(qryEventListeners, l ->
             l.onRequestSuccess(new RequestSuccessEvent(conn, requestId, opCode, opName, elapsedTimeNanos)));
     }
@@ -150,6 +156,9 @@ public class EventListenerDemultiplexer {
         long elapsedTimeNanos,
         Throwable throwable
     ) {
+        if (F.isEmpty(qryEventListeners))
+            return;
+
         executeForEach(qryEventListeners, l ->
             l.onRequestFail(new RequestFailEvent(conn, requestId, opCode, opName, elapsedTimeNanos, throwable)));
     }
@@ -158,6 +167,9 @@ public class EventListenerDemultiplexer {
      * @param conn Connection description.
      */
     public void onHandshakeStart(ConnectionDescription conn) {
+        if (F.isEmpty(connEventListeners))
+            return;
+
         executeForEach(connEventListeners, l -> l.onHandshakeStart(new HandshakeStartEvent(conn)));
     }
 
@@ -166,6 +178,9 @@ public class EventListenerDemultiplexer {
      * @param elapsedTimeNanos Elapsed time in nanoseconds.
      */
     public void onHandshakeSuccess(ConnectionDescription conn, long elapsedTimeNanos) {
+        if (F.isEmpty(connEventListeners))
+            return;
+
         executeForEach(connEventListeners, l -> l.onHandshakeSuccess(new HandshakeSuccessEvent(conn, elapsedTimeNanos)));
     }
 
@@ -175,6 +190,9 @@ public class EventListenerDemultiplexer {
      * @param throwable Throwable that caused the failure.
      */
     public void onHandshakeFail(ConnectionDescription conn, long elapsedTimeNanos, Throwable throwable) {
+        if (F.isEmpty(connEventListeners))
+            return;
+
         executeForEach(connEventListeners, l -> l.onHandshakeFail(new HandshakeFailEvent(conn, elapsedTimeNanos, throwable)));
     }
 
@@ -185,6 +203,9 @@ public class EventListenerDemultiplexer {
      * @param throwable Throwable that caused the failure.
      */
     public void onAuthenticationFail(ConnectionDescription conn, long elapsedTimeNanos, String user, Throwable throwable) {
+        if (F.isEmpty(connEventListeners))
+            return;
+
         executeForEach(connEventListeners, l ->
             l.onAuthenticationFail(new AuthenticationFailEvent(conn, elapsedTimeNanos, user, throwable)));
     }
@@ -194,13 +215,15 @@ public class EventListenerDemultiplexer {
      * @param throwable Throwable that caused the failure if any.
      */
     public void onConnectionClosed(ConnectionDescription conn, Throwable throwable) {
+        if (F.isEmpty(connEventListeners))
+            return;
+
         executeForEach(connEventListeners, l -> l.onConnectionClosed(new ConnectionClosedEvent(conn, throwable)));
     }
 
     /** */
     private <T> void executeForEach(List<T> listeners, Consumer<T> action) {
-        if (F.isEmpty(listeners))
-            return;
+        assert !F.isEmpty(listeners);
 
         for (T listener: listeners) {
             try {

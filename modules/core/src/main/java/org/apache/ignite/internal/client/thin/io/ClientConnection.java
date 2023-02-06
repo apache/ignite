@@ -47,7 +47,7 @@ public interface ClientConnection extends AutoCloseable {
      *
      * @return Address of remote peer or {@code null} if non-socket communication is used.
      */
-    @Nullable public InetSocketAddress remoteAddress();
+    @Nullable InetSocketAddress remoteAddress();
 
     /**
      * Closes the connection.
