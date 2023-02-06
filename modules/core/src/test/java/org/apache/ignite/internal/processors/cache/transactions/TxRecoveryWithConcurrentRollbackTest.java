@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -118,6 +119,55 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+
+    /**
+     * This test validates that no rollback messages are sent for transaction that should be commited (transactions
+     * is prepared on all nodes).
+     */
+    @Test
+    public void testNoTryRollbackConcurrentlyWithCommit() throws Exception {
+        persistence = false;
+        backups = 2;
+
+        int nodes = 3;
+
+        Ignite g = startGrids(nodes);
+
+        g.cluster().state(ACTIVE);
+
+        Ignite cln = startClientGrid(nodes);
+
+        TestRecordingCommunicationSpi.spi(cln).blockMessages((n, msg) -> msg instanceof GridNearTxFinishRequest);
+
+        for (int n = 0; n < nodes; n++) {
+            TestRecordingCommunicationSpi.spi(grid(n)).record((node, msg) ->
+                msg instanceof GridDhtTxFinishRequest && !((GridDistributedTxFinishRequest)msg).commit());
+        }
+
+        multithreadedAsync(() -> {
+            try (Transaction tx = cln.transactions().txStart()) {
+                for (int i = 0; i < 1; i++)
+                    cln.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+                tx.commit();
+            }
+        }, 1, "async-tx");
+
+        TestRecordingCommunicationSpi.spi(cln).waitForBlocked(1);
+
+        stopGrid(nodes);
+
+        for (int n = 0; n < nodes; n++) {
+            final int n0 = n;
+
+            GridTestUtils.waitForCondition(
+                () -> grid(n0).context().cache().context().tm().activeTransactions().isEmpty(),
+                10);
+
+            assertTrue(TestRecordingCommunicationSpi.spi(grid(n)).recordedMessages(true).isEmpty());
+        }
     }
 
     /**

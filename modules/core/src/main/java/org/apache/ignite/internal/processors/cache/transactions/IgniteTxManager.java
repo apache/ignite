@@ -2462,8 +2462,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 // Each node will have counters equals to latest successful transactions counters.
                 cnts.updateCounters().clear();
         }
-
-        tx.rollbackAsync();
+        else
+            tx.rollbackAsync();
     }
 
     /**
