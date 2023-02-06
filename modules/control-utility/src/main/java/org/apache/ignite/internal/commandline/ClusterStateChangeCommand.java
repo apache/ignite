@@ -78,11 +78,11 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
             ClusterState clusterState = client.state().state();
 
             if (clusterState == state)
-                log.info("Cluster state ia already " + state);// + '.');
+                log.info("Cluster state ia already " + state + '.');
             else {
                 client.state().state(state, forceDeactivation);
 
-                log.info("Cluster state changed to " + state);// + '.');
+                log.info("Cluster state changed to " + state + '.');
             }
 
             return null;
