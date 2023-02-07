@@ -44,6 +44,7 @@ import javax.management.MBeanParameterInfo;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import com.google.common.collect.Iterators;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteJdbcThinDriver;
@@ -54,7 +55,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -80,8 +80,12 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigInitializer;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -135,6 +139,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static final String REGISTRY_NAME = "test_registry";
 
+    /** */
+    private boolean presetJmxMetricExported = true;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -144,9 +151,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        JmxMetricExporterSpi jmxSpi = (JmxMetricExporterSpi)cfg.getMetricExporterSpi()[0];
+        if (presetJmxMetricExported) {
+            JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
 
-        jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+            jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+
+            cfg.setMetricExporterSpi(jmxSpi);
+        }
 
         return cfg;
     }
@@ -177,42 +188,42 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testJmxMetricsExporterIsEnabledByDefault() {
-        IgniteConfiguration igniteCfg = new IgniteConfiguration();
+    public void testJmxMetricsExporterIsEnabledByDefault() throws Exception {
+        presetJmxMetricExported = false;
 
-        assertTrue("JmxMetricExporterSpi is expected by default in IgniteConfiguration.",
-            !F.isEmpty(igniteCfg.getMetricExporterSpi()) && igniteCfg.getMetricExporterSpi().length == 1 &&
-                igniteCfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+        IgniteConfiguration cfg = startDedicatedNode();
 
-        CdcConfiguration cdcCfg = new CdcConfiguration();
-
-        assertTrue("JmxMetricExporterSpi is expected by default in CdcConfiguration.",
-            !F.isEmpty(cdcCfg.getMetricExporterSpi()) && cdcCfg.getMetricExporterSpi().length == 1 &&
-                cdcCfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+        try {
+            assertTrue(!F.isEmpty(cfg.getMetricExporterSpi()) && cfg.getMetricExporterSpi().length == 1 &&
+                cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+        }
+        finally {
+            stopGrid(cfg.getIgniteInstanceName());
+        }
     }
 
     /** */
     @Test
     public void testJmxMetricsExporterIsNotEnabledByDefault() throws Exception {
-        boolean mbeansDisabled = U.IGNITE_MBEANS_DISABLED;
+        boolean beansDisabled = U.IGNITE_MBEANS_DISABLED;
 
         try {
             U.IGNITE_MBEANS_DISABLED = true;
 
-            IgniteConfiguration igniteCfg = new IgniteConfiguration();
+            presetJmxMetricExported = false;
 
-            assertTrue("JmxMetricExporterSpi is not expected in IgniteConfiguration when the system property " +
-                "'IGNITE_MBEANS_DISABLED' is set to 'true.", F.isEmpty(igniteCfg.getMetricExporterSpi()) ||
-                stream(igniteCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+            IgniteConfiguration cfg = startDedicatedNode();
 
-            CdcConfiguration cdcCfg = new CdcConfiguration();
-
-            assertTrue("JmxMetricExporterSpi is not expected in CdcConfiguration when the system property " +
-                "'IGNITE_MBEANS_DISABLED' is set to 'true.", F.isEmpty(cdcCfg.getMetricExporterSpi()) ||
-                stream(cdcCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+            try {
+                assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
+                    stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+            }
+            finally {
+                stopGrid(cfg.getIgniteInstanceName());
+            }
         }
         finally {
-            U.IGNITE_MBEANS_DISABLED = mbeansDisabled;
+            U.IGNITE_MBEANS_DISABLED = beansDisabled;
         }
     }
 
@@ -1023,6 +1034,25 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         checkStripeExecutorView(ignite.context().pools().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
+    }
+
+    /** */
+    private IgniteConfiguration startDedicatedNode() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi());
+
+        ((TcpCommunicationConfigInitializer)cfg.getCommunicationSpi()).setLocalPort(TcpCommunicationSpi.DFLT_PORT +
+            TcpCommunicationSpi.DFLT_PORT_RANGE + 1);
+
+        int clusterSize = ignite.cluster().nodes().size();
+
+        Ignite ig = startGrid(cfg);
+
+        assertEquals(1, ig.cluster().nodes().size());
+        assertEquals(clusterSize, ignite.cluster().nodes().size());
+
+        return ig.configuration();
     }
 
     /**

@@ -49,7 +49,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -431,8 +430,7 @@ public class IgniteConfiguration {
     private EncryptionSpi encryptionSpi;
 
     /** Metric exporter SPI. */
-    private MetricExporterSpi[] metricExporterSpi = U.IGNITE_MBEANS_DISABLED ? null :
-        F.asArray(new JmxMetricExporterSpi());
+    private MetricExporterSpi[] metricExporterSpi;
 
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
@@ -1359,7 +1357,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return MBean server instance. If not provided, the system will use default
-     * platform MBean server unless {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED} is set.
+     * platform MBean server unless {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED} is set to {@code true}.
      *
      * @return MBean server instance or {@code null} to make the system create a default one.
      * @see ManagementFactory#getPlatformMBeanServer()
@@ -2441,9 +2439,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}.
+     * Sets fully configured instances of {@link MetricExporterSpi}. If no metrics exporter is passed,
+     * {@link JmxMetricExporterSpi} is used by default unless {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED}
+     * is set to {@code true}.
      *
-     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}. If empty, no default metrics
+     *        exporter is used.
      * @return {@code this} for chaining.
      * @see IgniteConfiguration#getMetricExporterSpi()
      * @see JmxMetricExporterSpi
@@ -2468,9 +2469,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured metric SPI implementations.
+     * Gets fully configured metric SPI implementations. If no metrics exporter is passed to
+     * {@link #setMetricExporterSpi(MetricExporterSpi...)}, {@link JmxMetricExporterSpi} is used by default unless
+     * {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED} is set to {@code true}.
      *
      * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;

@@ -18,12 +18,10 @@
 package org.apache.ignite.cdc;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This class defines {@link CdcMain} runtime configuration.
@@ -44,8 +42,7 @@ public class CdcConfiguration {
     private CdcConsumer consumer;
 
     /** Metric exporter SPI. */
-    private MetricExporterSpi[] metricExporterSpi = U.IGNITE_MBEANS_DISABLED ? null :
-        F.asArray(new JmxMetricExporterSpi());
+    private MetricExporterSpi[] metricExporterSpi;
 
     /** Keep binary flag.<br>Default value {@code true}. */
     private boolean keepBinary = DFLT_KEEP_BINARY;
@@ -77,9 +74,10 @@ public class CdcConfiguration {
     /**
      * Sets fully configured instances of {@link MetricExporterSpi}.
      *
-     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}. If nothig is passed,
+     *        {@link IgniteConfiguration#getMetricExporterSpi()} is used.
      * @see CdcConfiguration#getMetricExporterSpi()
-     * @see JmxMetricExporterSpi
+     * @see IgniteConfiguration#setMetricExporterSpi(MetricExporterSpi...)
      */
     public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
         this.metricExporterSpi = metricExporterSpi;

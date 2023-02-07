@@ -86,7 +86,7 @@ The following sections describe the exporters available in Ignite by default.
 
 [NOTE]
 ====
-This exporter is enabled by default in `IgniteConfiguration`.
+This exporter is enabled by default if nothing is set `IgniteConfiguration.setMetricExporterSpi(...)`.
 ====
 
 [tabs]

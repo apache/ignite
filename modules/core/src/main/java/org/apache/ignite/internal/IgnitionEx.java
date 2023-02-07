@@ -124,6 +124,7 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -1913,7 +1914,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            initializeDefaultMBeanServer(myCfg);
+            initializeDefaultMBeans(myCfg);
 
             Marshaller marsh = myCfg.getMarshaller();
 
@@ -2595,10 +2596,16 @@ public class IgnitionEx {
         }
     }
 
-    /** Initialize default mbean server. */
-    public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
-        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
+    /** Initialize default mbean server and default mbeans. */
+    public static void initializeDefaultMBeans(IgniteConfiguration myCfg) {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
+        if (myCfg.getMBeanServer() == null)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
+
+        if (myCfg.getMetricExporterSpi() == null)
+            myCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
     }
 
     /**

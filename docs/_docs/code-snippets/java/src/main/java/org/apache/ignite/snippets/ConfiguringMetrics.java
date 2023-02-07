@@ -120,11 +120,13 @@ public class ConfiguringMetrics {
         //tag::metrics-filter[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        // Default metric exporter is JmxMetricExporterSpi.
-        JmxMetricExporterSpi jmxExporter = (JmxMetricExporterSpi)cfg.getMetricExporterSpi()[0];
+        // Create configured JMX metrics exporter.
+        JmxMetricExporterSpi jmxExporter = new JmxMetricExporterSpi();
 
         //export cache metrics only
         jmxExporter.setExportFilter(mreg -> mreg.name().startsWith("cache."));
+
+        cfg.setMetricExporterSpi(jmxExporter);
         //end::metrics-filter[]
 
         Ignition.start(cfg).close();
