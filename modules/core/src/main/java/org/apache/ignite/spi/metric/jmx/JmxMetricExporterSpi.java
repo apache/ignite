@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  * @see ReadOnlyMetricManager
  * @see ReadOnlyMetricRegistry
  * @see IgniteSystemProperties#IGNITE_MBEANS_DISABLED
- * @see IgniteConfiguration#setMBeanServer(MBeanServer)
+ * @see IgniteConfiguration#getMBeanServer()
  */
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */
