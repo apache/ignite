@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transform;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCache;
@@ -234,7 +235,58 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             if (mode == CacheAtomicityMode.TRANSACTIONAL)
                 restoreCnt += (NODES - 1) * cnt * 2; // Double replace on backups (restoration of both transfered binary objects).
             else
-                restoreCnt += (NODES - 1) * cnt; // Previous value will not be transfered to backups.
+                restoreCnt += (NODES - 1) * cnt; // Previous value will not be transfered to backups (only generated).
+        }
+
+        totalCnt += cnt;
+
+        // Value replace via Entry Processor.
+        for (int i = 0; i < cnt; i++) {
+            for (int shift : shifts) {
+                ControllableCacheObjectTransformer.transformationShift(-shift);
+
+                Object kv = kvGen.apply(++key);
+
+                cache.put(kv, kv);
+
+                ControllableCacheObjectTransformer.transformationShift(shift);
+
+                Object kv2 = kvGen.apply(key); // Brandnew kv to guarantee transtormation.
+
+                assertEquals(kv, kv2);
+
+                assertEquals(Integer.valueOf(-42),
+                    cache.invoke(kv2, (e, args) -> {
+                        Object val = e.getValue();
+                        Object exp = kv2;
+
+                        if (binary)
+                            exp = ((BinaryObject)exp).deserialize();
+
+                        if (Objects.equals(exp, val))
+                            e.setValue(-42); // Replacing kv via kv2 (same object, but different bytes).
+
+                        return e.getValue();
+                    }));
+
+                Object kv3 = kvGen.apply(key);
+
+                cache.invoke(kv, (e, args) -> {
+                    e.setValue(kv3); // Replacing -42 with generated value.
+
+                    return null;
+                });
+            }
+        }
+
+        if (mode == CacheAtomicityMode.TRANSACTIONAL)
+            transformCnt += NODES * cnt * 2; // [-42, generated], each node.
+        else
+            transformCnt += cnt * 2; // [-42, generated], primary.
+
+        if (binarizable || binary) { // Binary array is required at backups at put (e.g. to wait for proper Metadata)
+            if (mode == CacheAtomicityMode.ATOMIC)
+                restoreCnt += (NODES - 1) * cnt; // kv3 will be restored as a part of the update message at backups.
         }
 
         totalCnt += cnt;
