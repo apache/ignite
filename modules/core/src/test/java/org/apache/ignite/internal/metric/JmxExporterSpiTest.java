@@ -148,8 +148,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
-        cfg.setMetricExporterSpi(jmxSpi);
-
         return cfg;
     }
 
@@ -191,6 +189,35 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue("JmxMetricExporterSpi is expected by default in CdcConfiguration.",
             !F.isEmpty(cdcCfg.getMetricExporterSpi()) && cdcCfg.getMetricExporterSpi().length == 1 &&
                 cdcCfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+    }
+
+    /** */
+    @Test
+    public void testJmxMetricsExporterIsNotEnabledByDefault() throws Exception {
+        boolean mbeansDisabled = U.IGNITE_MBEANS_DISABLED;
+
+        try {
+            U.IGNITE_MBEANS_DISABLED = true;
+
+            IgniteConfiguration igniteCfg = new IgniteConfiguration();
+
+            assertTrue("JmxMetricExporterSpi is expected in IgniteConfiguration when 'IGNITE_MBEANS_DISABLED' " +
+                "is set to 'true.", F.isEmpty(igniteCfg.getMetricExporterSpi()) ||
+                stream(igniteCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+
+            CdcConfiguration cdcCfg = new CdcConfiguration();
+
+            assertTrue("JmxMetricExporterSpi is expected in CdcConfiguration when 'IGNITE_MBEANS_DISABLED' is " +
+                "set to 'true.", F.isEmpty(cdcCfg.getMetricExporterSpi()) ||
+                stream(cdcCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+
+            assertTrue("JmxMetricExporterSpi is expected in IgniteConfiguration when 'IGNITE_MBEANS_DISABLED' " +
+                "is set to 'true.", F.isEmpty(cdcCfg.getMetricExporterSpi()) ||
+                stream(cdcCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+        }
+        finally {
+            U.IGNITE_MBEANS_DISABLED = mbeansDisabled;
+        }
     }
 
     /** */
