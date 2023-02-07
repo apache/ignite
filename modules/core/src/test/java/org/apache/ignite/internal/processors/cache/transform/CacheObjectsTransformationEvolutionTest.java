@@ -165,11 +165,11 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
                 Object kv = kvGen.apply(++key);
 
-                cache.put(-key, kv); // Initial put causes transformation.
+                cache.put(-key, kv); // Initial put causes value transformation.
 
                 ControllableCacheObjectTransformer.transformationShift(shift);
 
-                cache.put(kv, kv); // Checking value shift change && key untransforming (othervice will be null on checking get).
+                cache.put(kv, kv); // Using already transformed value as a key and as a value.
             }
         }
 
@@ -178,7 +178,8 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             totalCnt += cnt;
         }
 
-        if (binarizable) // Will be transformed (and restored!) using the actual shift, while BinaryObject will keep the previous result.
+        if (binarizable)
+            // Will be transformed (and restored!) using the actual shift, while BinaryObject will keep the previous transformation result.
             restoreCnt += (NODES - 1) * cnt; // Put on backups.
 
         // Value got from the cache.
@@ -194,11 +195,11 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
                 ControllableCacheObjectTransformer.transformationShift(shift);
 
-                cache.put(kv0, kv0); // Checking value shift change && key untransforming (othervice will be null on checking get).
+                cache.put(kv0, kv0); // Using the value that has been got from the cache as a key and as a value.
             }
         }
 
-        if (!binary && !binarizable) { // Binary value already marshalled using the previous shift.
+        if (!binary && !binarizable) { // Binary and binarizable (objects) value already marshalled using the previous shift.
             transformCnt += cnt; // Put on primary.
             totalCnt += cnt;
         }
@@ -220,14 +221,14 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
                 assertTrue(cache.replace(kv2, kv2, -42)); // Replacing kv via kv2 (same object, but different bytes).
 
-                assertTrue(cache.replace(kv, kvGen.apply(key)));
+                assertTrue(cache.replace(kv, kvGen.apply(key))); // Replacing -42 with generated value.
             }
         }
 
-        transformCnt += cnt * 2; // 3 (at tx) or 2 (at atomic) values at replace required to be marshalled.
-
-        if (mode != CacheAtomicityMode.ATOMIC)
-            transformCnt += cnt; // Atomic operation compares with previous values without transformaton.
+        if (mode == CacheAtomicityMode.TRANSACTIONAL) // Values at replace required to be marshalled
+            transformCnt += cnt * 3; // [kv2 (as a value), -42, generated].
+        else
+            transformCnt += cnt * 2; // [-42, generated]. Atomic operation compares with previous values without transformaton.
 
         if (binarizable || binary) { // Binary array is required at backups at put (e.g. to wait for proper Metadata)
             if (mode == CacheAtomicityMode.TRANSACTIONAL)
