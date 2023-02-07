@@ -201,18 +201,14 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             IgniteConfiguration igniteCfg = new IgniteConfiguration();
 
-            assertTrue("JmxMetricExporterSpi is expected in IgniteConfiguration when 'IGNITE_MBEANS_DISABLED' " +
-                "is set to 'true.", F.isEmpty(igniteCfg.getMetricExporterSpi()) ||
+            assertTrue("JmxMetricExporterSpi is not expected in IgniteConfiguration when the system property " +
+                "'IGNITE_MBEANS_DISABLED' is set to 'true.", F.isEmpty(igniteCfg.getMetricExporterSpi()) ||
                 stream(igniteCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
 
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
-            assertTrue("JmxMetricExporterSpi is expected in CdcConfiguration when 'IGNITE_MBEANS_DISABLED' is " +
-                "set to 'true.", F.isEmpty(cdcCfg.getMetricExporterSpi()) ||
-                stream(cdcCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
-
-            assertTrue("JmxMetricExporterSpi is expected in IgniteConfiguration when 'IGNITE_MBEANS_DISABLED' " +
-                "is set to 'true.", F.isEmpty(cdcCfg.getMetricExporterSpi()) ||
+            assertTrue("JmxMetricExporterSpi is not expected in CdcConfiguration when the system property " +
+                "'IGNITE_MBEANS_DISABLED' is set to 'true.", F.isEmpty(cdcCfg.getMetricExporterSpi()) ||
                 stream(cdcCfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
         }
         finally {
