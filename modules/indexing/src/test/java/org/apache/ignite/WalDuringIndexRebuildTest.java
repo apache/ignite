@@ -58,6 +58,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_INSERT;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
@@ -169,11 +170,15 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         log.warning(">>>>>> Index rebuild generated " + (walIdxAfter - walIdxBefore) + " segments");
 
-        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes(dirName,
-            (rt, wp) -> wp.compareTo(walPrtBefore) <= 0);
+        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes(
+            dirName,
+            (rt, wp) -> wp.compareTo(walPrtBefore) <= 0
+        );
 
-        Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes(dirName,
-            (rt, wp) -> wp.compareTo(walPrtBefore) > 0);
+        Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes(
+            dirName,
+            (rt, wp) -> wp.compareTo(walPrtBefore) > 0
+        );
 
         log.warning(">>>>>> WalRecords comparison:");
         log.warning(String.format("%-62.60s%-30.28s%-30.28s\n", "Record type", "Data load (before rebuild)",
@@ -189,6 +194,7 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
         checkIdxFileExists(dirName);
 
         assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
+        assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_REPLACE, 0L));
     }
 
     /** @param ignite Ignite. */

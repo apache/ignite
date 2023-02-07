@@ -103,13 +103,13 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * Callback on the start of rebuilding cache indexes.
      * <p/>
      * Registers the start of rebuilding cache indexes, for persistent cache
-     * writes a entry to the MetaStorage so that if a failure occurs,
+     * writes an entry to the MetaStorage so that if a failure occurs,
      * the indexes are automatically rebuilt.
      *
      * @param cacheCtx Cache context.
      * @see #onFinishRebuildIndexes
      */
-    public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
+    public void onStartRebuildIndexes(GridCacheContext<?, ?> cacheCtx) {
         onStartOperation(cacheCtx, true);
     }
 
@@ -117,13 +117,13 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * Callback on the start of building a new cache index.
      * <p/>
      * Registers the start of building a new cache index, for persistent cache
-     * writes a entry to the MetaStorage so that if a failure occurs,
+     * writes an entry to the MetaStorage so that if a failure occurs,
      * the indexes are automatically rebuilt.
      *
      * @param cacheCtx Cache context.
      * @see #onFinishBuildNewIndex
      */
-    public void onStartBuildNewIndex(GridCacheContext cacheCtx) {
+    public void onStartBuildNewIndex(GridCacheContext<?, ?> cacheCtx) {
         onStartOperation(cacheCtx, false);
     }
 
@@ -298,7 +298,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
      * @see #onFinishOperation
      */
-    private void onStartOperation(GridCacheContext cacheCtx, boolean rebuild) {
+    private void onStartOperation(GridCacheContext<?, ?> cacheCtx, boolean rebuild) {
         if (!stopNodeLock.enterBusy())
             throw new IgniteException("Node is stopping.");
 

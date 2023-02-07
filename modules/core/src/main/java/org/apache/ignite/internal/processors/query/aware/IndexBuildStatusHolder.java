@@ -70,7 +70,7 @@ public class IndexBuildStatusHolder {
     }
 
     /**
-     * Callback on the start of of the operation.
+     * Callback on the start of the operation.
      *
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
      * @see #onFinishOperation
