@@ -142,6 +142,35 @@ IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in c
  5. Infinitely wait for the newly available segment and process it.
  6. Stop the consumer in case of a failure or a received stop signal.
 
+== Handling skipped segments
+
+The CDC can be disabled manually or by configured directory maximum size. In this case a hard link creation will be skipped.
+
+WARNING: All changes in skipped segments will be lost!
+
+So when enabled there will be gap between segments: `0000000000000002.wal`, `0000000000000010.wal`, `0000000000000011.wal`, for example.
+In this case `ignite-cdc.sh` will fail with the something like "Found missed segments. Some events are missed. Exiting! [lastSegment=2, nextSegment=10]".
+
+NOTE: Make sure you need to sync data before restarting the CDC application. You can synchronize caches using
+snapshot or other methods.
+
+To fix this error you can run the following link:tools/control-script[Control Script] command:
+
+[source,shell]
+----
+# Delete lost segment CDC links in the cluster.
+control.sh|bat --cdc delete_lost_segment_links
+
+# Delete lost segment CDC links on a node.
+control.sh|bat --cdc delete_lost_segment_links --node-id node_id
+----
+
+The command will remove all segment links before the last gap.
+
+For example, CDC was turned off several times: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`, `0000000000000010.wal`, `0000000000000011.wal`
+Then, after the command is executed, the following segment links will be deleted: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`.
+The application will start from the `0000000000000010.wal` segment after being enabled.
+
 == cdc-ext
 
 Ignite extensions project has link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[cdc-ext] module which provides two way to setup cross cluster replication based on CDC.

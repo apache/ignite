@@ -106,19 +106,8 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
             MetricCommandArg cmdArg = CommandArgUtils.of(arg, MetricCommandArg.class);
 
-            if (cmdArg == NODE_ID) {
-                String nodeIdArg = argIter.nextArg(
-                    "ID of the node from which metric values should be obtained is expected.");
-
-                try {
-                    nodeId = UUID.fromString(nodeIdArg);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Failed to parse " + NODE_ID + " command argument." +
-                        " String representation of \"java.util.UUID\" is exepected. For example:" +
-                        " 123e4567-e89b-42d3-a456-556642440000", e);
-                }
-            }
+            if (cmdArg == NODE_ID)
+                nodeId = argIter.nextUuidArg(NODE_ID.argName());
             else if (cmdArg == CONFIGURE_HISTOGRAM || cmdArg == CONFIGURE_HITRATE) {
                 if (metricName != null) {
                     throw new IllegalArgumentException(
