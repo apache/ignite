@@ -142,7 +142,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     private static final String REGISTRY_NAME = "test_registry";
 
     /** */
-    private boolean presetJmxMetricExported = true;
+    private boolean presetJmxMetricExporter = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -153,7 +153,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
 
-        if (presetJmxMetricExported) {
+        if (presetJmxMetricExporter) {
             JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
 
             jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
@@ -191,7 +191,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testJmxMetricsExporterIsEnabledByDefault() throws Exception {
-        presetJmxMetricExported = false;
+        presetJmxMetricExporter = false;
 
         IgniteConfiguration cfg = startDedicatedNode(null);
 
@@ -212,7 +212,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         try {
             U.IGNITE_MBEANS_DISABLED = true;
 
-            presetJmxMetricExported = false;
+            presetJmxMetricExporter = false;
 
             IgniteConfiguration cfg = startDedicatedNode(null);
 
@@ -1057,6 +1057,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
      * Starts dedicated node.
      *
      * @param cfg Ignite Configuration.
+     * @return Actual configuration of the node started.
      */
     private IgniteConfiguration startDedicatedNode(@Nullable IgniteConfiguration cfg) throws Exception {
         if (cfg == null)

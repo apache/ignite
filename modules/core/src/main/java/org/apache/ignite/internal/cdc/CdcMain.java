@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -68,7 +69,6 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
-import static java.util.Arrays.stream;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -597,7 +597,7 @@ public class CdcMain implements Runnable {
             if (files == null)
                 return;
 
-            Iterator<BinaryType> changedTypes = stream(files)
+            Iterator<BinaryType> changedTypes = Arrays.stream(files)
                 .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
                 .map(f -> {
                     int typeId = BinaryUtils.typeId(f.getName());
@@ -644,7 +644,7 @@ public class CdcMain implements Runnable {
             if (files == null)
                 return;
 
-            Iterator<TypeMapping> changedMappings = stream(files)
+            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
                 .map(f -> {
                     String fileName = f.getName();
 
@@ -694,14 +694,14 @@ public class CdcMain implements Runnable {
 
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
-            Iterator<CdcCacheEvent> cacheEvts = stream(files)
+            Iterator<CdcCacheEvent> cacheEvts = Arrays.stream(files)
                 .filter(f -> f.isDirectory() &&
                     (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
                     !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
                 .filter(File::exists)
                 // Cache group directory can contain several cache data files.
                 // See GridLocalConfigManager#cacheConfigurationFile(CacheConfiguration<?, ?>)
-                .flatMap(cacheDir -> stream(cacheDir.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))))
+                .flatMap(cacheDir -> Arrays.stream(cacheDir.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))))
                 .map(f -> {
                     try {
                         CdcCacheEvent evt = GridLocalConfigManager.readCacheData(
