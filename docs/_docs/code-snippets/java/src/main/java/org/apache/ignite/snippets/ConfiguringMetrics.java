@@ -139,7 +139,7 @@ public class ConfiguringMetrics {
         //tag::disable-default-jmx-exporter[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        // Disable default JMX metric exporter.
+        // Disable default JMX metrics exporter.
         cfg.setMetricExporterSpi(new MetricExporterSpi[0]);
         //end::disable-default-jmx-exporter[]
 
