@@ -128,8 +128,8 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         int cnt = 1000;
 
         int totalCnt = 0;
-        int tCnt = 0;
-        int rCnt = 0;
+        int transformCnt = 0;
+        int restoreCnt = 0;
 
         int[] shifts = new int[] {-3, 0/*disabled*/, 7, 42};
 
@@ -151,10 +151,10 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             }
         }
 
-        tCnt += cnt; // Put on primary.
+        transformCnt += cnt; // Put on primary.
 
         if (binarizable || binary) // Binary array is required at backups at put (e.g. to wait for proper Metadata)
-            rCnt += (NODES - 1) * cnt; // Put on backups.
+            restoreCnt += (NODES - 1) * cnt; // Put on backups.
 
         totalCnt += cnt;
 
@@ -174,12 +174,12 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         }
 
         if (!binary) { // Binary value already marshalled using the previous shift.
-            tCnt += cnt; // Put on primary.
+            transformCnt += cnt; // Put on primary.
             totalCnt += cnt;
         }
 
         if (binarizable) // Will be transformed (and restored!) using the actual shift, while BinaryObject will keep the previous result.
-            rCnt += (NODES - 1) * cnt; // Put on backups.
+            restoreCnt += (NODES - 1) * cnt; // Put on backups.
 
         // Value got from the cache.
         for (int i = 0; i < cnt; i++) {
@@ -199,7 +199,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         }
 
         if (!binary && !binarizable) { // Binary value already marshalled using the previous shift.
-            tCnt += cnt; // Put on primary.
+            transformCnt += cnt; // Put on primary.
             totalCnt += cnt;
         }
 
@@ -224,16 +224,16 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
             }
         }
 
-        tCnt += cnt * 2; // 3 (at tx) or 2 (at atomic) values at replace required to be marshalled.
+        transformCnt += cnt * 2; // 3 (at tx) or 2 (at atomic) values at replace required to be marshalled.
 
         if (mode != CacheAtomicityMode.ATOMIC)
-            tCnt += cnt; // Atomic operation compares with previous values without transformaton.
+            transformCnt += cnt; // Atomic operation compares with previous values without transformaton.
 
         if (binarizable || binary) { // Binary array is required at backups at put (e.g. to wait for proper Metadata)
             if (mode == CacheAtomicityMode.TRANSACTIONAL)
-                rCnt += (NODES - 1) * cnt * 2; // Double replace on backups (restoration of both transfered binary objects).
+                restoreCnt += (NODES - 1) * cnt * 2; // Double replace on backups (restoration of both transfered binary objects).
             else
-                rCnt += (NODES - 1) * cnt; // Previous value will not be transfered to backups.
+                restoreCnt += (NODES - 1) * cnt; // Previous value will not be transfered to backups.
         }
 
         totalCnt += cnt;
@@ -241,12 +241,12 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         // Checking.
         for (int shift : shifts) {
             if (shift != 0)
-                assertEquals(tCnt, ControllableCacheObjectTransformer.tCntr.get(shift).get());
+                assertEquals(transformCnt, ControllableCacheObjectTransformer.tCntr.get(shift).get());
             else
                 assertNull(ControllableCacheObjectTransformer.tCntr.get(shift));
 
-            if (shift != 0 && rCnt > 0)
-                assertEquals(rCnt, ControllableCacheObjectTransformer.rCntr.get(shift).get());
+            if (shift != 0 && restoreCnt > 0)
+                assertEquals(restoreCnt, ControllableCacheObjectTransformer.rCntr.get(shift).get());
             else
                 assertNull(ControllableCacheObjectTransformer.rCntr.get(shift));
         }
