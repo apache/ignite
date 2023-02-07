@@ -36,9 +36,11 @@ public interface ClientConnection extends AutoCloseable {
     void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException;
 
     /**
-     * Gets remote server address.
+     * Gets address of remote peer on this session.
+     *
+     * @return Address of remote peer or {@code null} if non-socket communication is used.
      */
-    InetSocketAddress getAddress();
+    @Nullable InetSocketAddress remoteAddress();
 
     /**
      * Closes the connection.

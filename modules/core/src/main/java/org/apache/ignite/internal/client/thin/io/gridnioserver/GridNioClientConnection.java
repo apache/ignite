@@ -72,7 +72,7 @@ class GridNioClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public InetSocketAddress getAddress() {
+    @Override @Nullable public InetSocketAddress remoteAddress() {
         return ses.remoteAddress();
     }
 

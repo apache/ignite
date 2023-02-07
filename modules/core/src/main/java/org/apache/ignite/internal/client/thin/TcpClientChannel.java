@@ -841,7 +841,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "TcpClientChannel [srvNodeId=" + srvNodeId + ", addr=" + sock.getAddress() + ']';
+        return "TcpClientChannel [srvNodeId=" + srvNodeId + ", addr=" + sock.remoteAddress() + ']';
     }
 
     /**
