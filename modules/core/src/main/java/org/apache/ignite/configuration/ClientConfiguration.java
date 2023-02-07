@@ -527,11 +527,11 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Used with single-key operations API, and it does not work for those operations within explicit transactions
-     * (initiated via org.apache.ignite.client.ClientTransactions#txStart). The functionality maintains
-     * {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} which specify a partition
-     * number to route the query to a particular server node that stores the requested data.
-     *
+     * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
+     * 1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those operations
+     * within explicit transactions {@code ClientTransactions#txStart()}.
+     * 2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a partition number
+     * as a parameter with which the query is routed to a particular server node that stores the requested data.
      * @return A value indicating whether partition awareness should be enabled.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
@@ -546,10 +546,12 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets a value indicating whether partition awareness should be enabled.
      * <p>
-     * Used with single-key operations API, and it does not work for those operations within explicit transactions
-     * (initiated via org.apache.ignite.client.ClientTransactions#txStart). The functionality maintains
-     * {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} which specify a partition
-     * number to route the query to a particular server node that stores the requested data.
+     * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
+     * 1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those operations
+     * within explicit transactions {@code ClientTransactions#txStart()}.
+     * 2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a partition number
+     * as a parameter with which the query is routed to a particular server node that stores the requested data.
+     * @return A value indicating whether partition awareness should be enabled.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
