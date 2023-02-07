@@ -58,6 +58,20 @@ public class TaskExecutionOptions {
     private TaskExecutionOptions() {}
 
     /** */
+    private TaskExecutionOptions(TaskExecutionOptions other) {
+        name = other.name;
+        timeout = other.timeout;
+        execName = other.execName;
+        pool = other.pool;
+        projection = other.projection;
+        projectionPredicate = other.projectionPredicate;
+        isFailoverDisabled = other.isFailoverDisabled;
+        isResultCacheDisabled = other.isResultCacheDisabled;
+        isSysTask = other.isSysTask;
+        isAuthDisabled = other.isAuthDisabled;
+    }
+
+    /** */
     public static TaskExecutionOptions options() {
         return new TaskExecutionOptions();
     }
@@ -65,6 +79,11 @@ public class TaskExecutionOptions {
     /** */
     public static TaskExecutionOptions options(Collection<ClusterNode> projection) {
         return new TaskExecutionOptions().withProjection(projection);
+    }
+
+    /** */
+    public static TaskExecutionOptions options(TaskExecutionOptions other) {
+        return new TaskExecutionOptions(other);
     }
 
     /** */
