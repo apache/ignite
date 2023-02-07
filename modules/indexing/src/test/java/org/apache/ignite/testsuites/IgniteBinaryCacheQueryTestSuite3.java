@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistryTest;
 import org.apache.ignite.internal.cdc.CacheEventsCdcTest;
+import org.apache.ignite.internal.cdc.CdcIndexRebuildTest;
 import org.apache.ignite.internal.cdc.SqlCdcTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
@@ -376,8 +377,8 @@ import org.junit.runners.Suite;
 
     // CDC tests.
     SqlCdcTest.class,
-    CacheEventsCdcTest.class
-
+    CacheEventsCdcTest.class,
+    CdcIndexRebuildTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
 }

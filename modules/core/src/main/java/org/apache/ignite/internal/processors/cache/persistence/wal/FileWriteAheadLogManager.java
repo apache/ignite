@@ -3301,6 +3301,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return len;
     }
 
+    /** @return WAL cdc directory (including consistent ID as subfolder) */
+    @Nullable public File walCdcDirectory() {
+        return walCdcDir;
+    }
+
     /**
      * Check if WAL archive is unlimited.
      *

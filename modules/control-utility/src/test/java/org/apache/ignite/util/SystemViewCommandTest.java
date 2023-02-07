@@ -453,6 +453,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
+            "CONFIGURATION",
             "BASELINE_NODES",
             "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
@@ -1302,20 +1303,5 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         }
 
         return res;
-    }
-
-    /**
-     * Executes command and checks its exit code.
-     *
-     * @param expExitCode Expected exit code.
-     * @param args Command lines arguments.
-     * @return Result of command execution.
-     */
-    private String executeCommand(int expExitCode, String... args) {
-        int res = execute(args);
-
-        assertEquals(expExitCode, res);
-
-        return testOut.toString();
     }
 }

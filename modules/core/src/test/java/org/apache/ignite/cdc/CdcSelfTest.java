@@ -62,6 +62,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -87,9 +89,6 @@ import static org.junit.Assume.assumeTrue;
 public class CdcSelfTest extends AbstractCdcTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
-
-    /** */
-    public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
     /** */
     @Parameterized.Parameter
@@ -157,7 +156,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Read one record per call.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                super.onEvents(Collections.singleton(evts.next()).iterator());
+                if (evts.hasNext())
+                    super.onEvents(Collections.singleton(evts.next()).iterator());
 
                 return false;
             }
@@ -170,7 +170,8 @@ public class CdcSelfTest extends AbstractCdcTest {
         // Read one record per call and commit.
         readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-                super.onEvents(Collections.singleton(evts.next()).iterator());
+                if (evts.hasNext())
+                    super.onEvents(Collections.singleton(evts.next()).iterator());
 
                 return true;
             }
@@ -275,10 +276,11 @@ public class CdcSelfTest extends AbstractCdcTest {
 
             CdcConsumer cnsmr = new CdcConsumer() {
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!evts.hasNext())
+                        return true;
+
                     if (!firstEvt.get())
                         throw new RuntimeException("Expected fail.");
-
-                    assertTrue(evts.hasNext());
 
                     data.add((Integer)evts.next().key());
 
@@ -363,6 +365,9 @@ public class CdcSelfTest extends AbstractCdcTest {
                 boolean oneConsumed;
 
                 @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+                    if (!evts.hasNext())
+                        return true;
+
                     // Fail application after one event read AND state committed.
                     if (oneConsumed)
                         throw new RuntimeException(errMsg);
@@ -788,6 +793,20 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class,
             "Found missed segments. Some events are missed.");
+
+        ign.compute().execute(VisorCdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+
+        cnsmr.data.clear();
+
+        cdc = createCdc(cnsmr, getConfiguration(ign.name()));
+
+        IgniteInternalFuture<?> f = runAsync(cdc);
+
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        assertFalse(f.isDone());
+
+        f.cancel();
     }
 
     /** */
