@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.log.LogExporterSpi;
 import org.junit.jupiter.api.Test;
@@ -128,6 +129,19 @@ public class ConfiguringMetrics {
 
         cfg.setMetricExporterSpi(jmxExporter);
         //end::metrics-filter[]
+
+        Ignition.start(cfg).close();
+    }
+
+    @Test
+    void disableDefaultJmxExporter() {
+
+        //tag::disable-default-jmx-exporter[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // Disable default JMX metric exporter.
+        cfg.setMetricExporterSpi(new MetricExporterSpi[0]);
+        //end::disable-default-jmx-exporter[]
 
         Ignition.start(cfg).close();
     }

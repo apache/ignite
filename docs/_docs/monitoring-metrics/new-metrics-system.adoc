@@ -84,11 +84,6 @@ The following sections describe the exporters available in Ignite by default.
 
 `org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi` exposes metrics via JMX beans.
 
-[NOTE]
-====
-This exporter is enabled by default if nothing is set with `IgniteConfiguration.setMetricExporterSpi(...)`.
-====
-
 [tabs]
 --
 tab:Java[]
@@ -102,6 +97,23 @@ tab:C#/.NET[]
 tab:C++[unsupported]
 --
 
+[NOTE]
+====
+This exporter is enabled by default if nothing is set with `IgniteConfiguration.setMetricExporterSpi(...)`.
+====
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=disable-default-jmx-exporter, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
 
 === SQL View
 
