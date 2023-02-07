@@ -334,7 +334,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 try {
                     List<MetastorageView> data = new ArrayList<>();
 
-                    iterate("", (key, val) -> data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val))));
+                    iterate("", (key, val) -> data.add(new MetastorageView(key, val == null || !val.getClass().isArray()
+                        ? IgniteUtils.toStringSafe(val)
+                        : S.arrayToString(val))));
 
                     return data;
                 }
