@@ -69,7 +69,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     private String execName;
 
     /** Default task execution options. */
-    private final ThreadLocal<TaskExecutionOptions> opts = ThreadLocal.withInitial(this::defaultTaskExecutionOptions);
+    private final ThreadLocal<TaskExecutionOptions> opts = ThreadLocal.withInitial(() -> enrich(TaskExecutionOptions.options()));
 
     /**
      * Required by {@link Externalizable}.
@@ -83,7 +83,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param prj Projection.
      */
     public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj) {
-        this(ctx, prj, false, null);
+        this(ctx, prj, false, null, null);
     }
 
     /**
@@ -92,30 +92,29 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param ctx Kernal context.
      * @param prj Projection.
      * @param async Async support flag.
-     * @param opts Task execution options.
+     * @param execName Custom executor name.
+     * @param opts Optional initial task execution options.
      */
     private IgniteComputeImpl(
         GridKernalContext ctx,
         ClusterGroupAdapter prj,
         boolean async,
+        String execName,
         @Nullable TaskExecutionOptions opts
     ) {
         super(async);
 
         this.ctx = ctx;
         this.prj = prj;
+        this.execName = execName;
 
-        if (opts != null) {
-            this.opts.set(opts);
-
-            // We preserve name of the executor and use it for all tasks invoked through the current compute instance.
-            execName = opts.executor();
-        }
+        if (opts != null)
+            this.opts.set(enrich(TaskExecutionOptions.options(opts)));
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCompute createAsyncInstance() {
-        return new IgniteComputeImpl(ctx, prj, true, TaskExecutionOptions.options(opts.get()));
+        return new IgniteComputeImpl(ctx, prj, true, execName, opts.get());
     }
 
     /** {@inheritDoc} */
@@ -1132,16 +1131,16 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
-        return new IgniteComputeImpl(ctx, prj, isAsync(), TaskExecutionOptions.options(opts.get()).withExecutor(name));
+        return new IgniteComputeImpl(ctx, prj, isAsync(), name, opts.get());
     }
 
-    /** */
-    private TaskExecutionOptions defaultTaskExecutionOptions() {
-        TaskExecutionOptions opts = TaskExecutionOptions.options(prj.nodes());
+    /** Enriches specified task execution options with those that are bounded to the current compute instance. */
+    private TaskExecutionOptions enrich(TaskExecutionOptions opts) {
+        opts.withProjection(prj.nodes());
 
         if (execName != null)
             opts.withExecutor(execName);
-
+        
         return opts;
     }
 }
