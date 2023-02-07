@@ -138,6 +138,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.io.File.separatorChar;
@@ -671,10 +672,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(ACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Cluster state changed to ACTIVE");
-
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
-
-        assertContains(log, testOut.toString(), "Cluster state ia already ACTIVE");
     }
 
     /**
@@ -981,7 +978,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames) throws Exception {
-        log.info(ignite.cluster().state() + " -> " + state);
+        ClusterState curState = ignite.cluster().state();
+
+        log.info(curState + " -> " + state);
 
         CountDownLatch latch = getNewStateLatch(ignite.cluster().state(), state);
 
@@ -994,7 +993,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(state, ignite.cluster().state());
 
-        assertContains(log, testOut.toString(), "Cluster state changed to " + strState);
+        if (state == curState)
+            assertContains(log, testOut.toString(), "Cluster state is already " + strState);
+        else
+            assertContains(log, testOut.toString(), "Cluster state changed to " + strState);
 
         List<IgniteEx> nodes = IntStream.range(0, 2)
             .mapToObj(this::grid)
