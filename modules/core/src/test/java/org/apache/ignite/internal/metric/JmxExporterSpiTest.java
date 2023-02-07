@@ -86,9 +86,11 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigInitializer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Arrays.stream;
@@ -191,7 +193,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     public void testJmxMetricsExporterIsEnabledByDefault() throws Exception {
         presetJmxMetricExported = false;
 
-        IgniteConfiguration cfg = startDedicatedNode();
+        IgniteConfiguration cfg = startDedicatedNode(null);
 
         try {
             assertTrue(!F.isEmpty(cfg.getMetricExporterSpi()) && cfg.getMetricExporterSpi().length == 1 &&
@@ -212,7 +214,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             presetJmxMetricExported = false;
 
-            IgniteConfiguration cfg = startDedicatedNode();
+            IgniteConfiguration cfg = startDedicatedNode(null);
 
             try {
                 assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
@@ -224,6 +226,21 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         }
         finally {
             U.IGNITE_MBEANS_DISABLED = beansDisabled;
+        }
+    }
+
+    /** */
+    @Test
+    public void testJmxMetricsExporterIsDisabled() throws Exception {
+        IgniteConfiguration cfg = startDedicatedNode(getConfiguration(getTestIgniteInstanceName(G.allGrids().size()))
+            .setMetricExporterSpi(new MetricExporterSpi[0]));
+
+        try {
+            assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
+                stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+        }
+        finally {
+            stopGrid(cfg.getIgniteInstanceName());
         }
     }
 
@@ -1036,9 +1053,14 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             "data-streamer");
     }
 
-    /** */
-    private IgniteConfiguration startDedicatedNode() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
+    /**
+     * Starts dedicated node.
+     *
+     * @param cfg Ignite Configuration.
+     */
+    private IgniteConfiguration startDedicatedNode(@Nullable IgniteConfiguration cfg) throws Exception {
+        if (cfg == null)
+            cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
