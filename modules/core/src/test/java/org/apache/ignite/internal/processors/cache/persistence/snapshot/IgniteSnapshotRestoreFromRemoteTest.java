@@ -120,6 +120,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(cmPairedConnections);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(4);
 
         return cfg;
     }
@@ -187,7 +188,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         grid(0).cache(DEFAULT_CACHE_NAME).destroy();
 
-        awaitPartitionMapExchange();;
+        awaitPartitionMapExchange();
 
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);

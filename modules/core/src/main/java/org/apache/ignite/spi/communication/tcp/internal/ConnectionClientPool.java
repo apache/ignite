@@ -57,6 +57,7 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
+import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 
 /**
  * Registry of client connections.
@@ -187,8 +188,10 @@ public class ConnectionClientPool {
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
-        assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
-            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
+        assert connIdx >= 0 : "Negative communication connection index: " + connIdx;
+        assert connIdx > MAX_CONN_PER_NODE || connIdx < cfg.connectionsPerNode() || (cfg.usePairedConnections() &&
+            usePairedConnections(node, attrs.pairedConnection()) && connIdx < cfg.connectionsPerNode() * 2) :
+            "Too high communication connection index: " + connIdx;
 
         if (locNodeSupplier.get().isClient()) {
             if (node.isClient()) {
