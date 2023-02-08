@@ -2438,7 +2438,8 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}.
+     * Sets fully configured instances of {@link MetricExporterSpi}. If no metrics exporter is passed,
+     * {@link JmxMetricExporterSpi} is used by default.
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @return {@code this} for chaining.
@@ -2465,7 +2466,8 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured metric SPI implementations.
+     * Gets fully configured metric SPI implementations. If no metrics exporter is passed to
+     * {@link #setMetricExporterSpi(MetricExporterSpi...)}, {@link JmxMetricExporterSpi} is used by default.
      *
      * @return Metric exporter SPI implementations.
      * @see JmxMetricExporterSpi
