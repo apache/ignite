@@ -299,7 +299,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
-                if (!evt.primary())
+                if (skipBackup() && !evt.primary())
                     return;
 
                 data.computeIfAbsent(
@@ -344,9 +344,19 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
             return true;
         }
 
+        /** */
+        protected boolean skipBackup() {
+            return true;
+        }
+
         /** @return Read keys. */
         public List<T> data(ChangeEventType op, int cacheId) {
-            return data.get(F.t(op, cacheId));
+            return data.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
+        }
+
+        /** */
+        public void clear() {
+            data.clear();
         }
 
         /** */
@@ -407,7 +417,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 String typeName = m.typeName();
 
                 assertFalse(typeName.isEmpty());
-                assertEquals(mapper.typeId(typeName), m.typeId());
+                // Can also be registered by OptimizedMarshaller.
+                assertTrue(m.typeId() == mapper.typeId(typeName) || m.typeId() == typeName.hashCode());
             });
         }
     }

@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cdc.AbstractCdcTest;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cdc.AbstractCdcTest.UserCdcConsumer;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -34,24 +35,32 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.cdc.CdcSubcommands;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.commandline.cdc.CdcCommand.DELETE_LOST_SEGMENT_LINKS;
-import static org.apache.ignite.internal.commandline.cdc.CdcCommand.NODE_ID;
+import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.NODE_ID;
+import static org.apache.ignite.internal.commandline.cdc.FlushCachesCommand.CACHES;
+import static org.apache.ignite.internal.commandline.cdc.FlushCachesCommand.FLUSH_CACHES;
+import static org.apache.ignite.internal.commandline.cdc.FlushCachesCommand.ONLY_PRIMARY;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * CDC command tests.
@@ -102,6 +111,8 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        stopThreads(log);
     }
 
     /** */
@@ -111,7 +122,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), "unexpected_command"),
-            "Unexpected command: unexpected_command");
+            "Invalid argument: unexpected_command. One of " + F.asList(CdcSubcommands.values()) + " is expected.");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID),
@@ -131,7 +142,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         CdcConfiguration cfg = new CdcConfiguration();
 
-        cfg.setConsumer(new AbstractCdcTest.UserCdcConsumer() {
+        cfg.setConsumer(new UserCdcConsumer() {
             @Override public void start(MetricRegistry mreg) {
                 appStarted.countDown();
             }
@@ -221,5 +232,90 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
         latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    /** */
+    @Test
+    public void testParseFlushCaches() {
+        injectTestSystemOut();
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                CommandList.CDC.text(), "unexpected_command"),
+            "Invalid argument: unexpected_command. One of " + F.asList(CdcSubcommands.values()) + " is expected.");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                CommandList.CDC.text(), FLUSH_CACHES),
+            "At least one cache name should be specified.");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                CommandList.CDC.text(), FLUSH_CACHES, CACHES),
+            "At least one cache name should be specified.");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                CommandList.CDC.text(), FLUSH_CACHES, CACHES, ONLY_PRIMARY),
+            "At least one cache name should be specified.");
+    }
+
+    /** */
+    @Test
+    public void testFlushCaches() throws Exception {
+        UserCdcConsumer cnsmr0 = runCdc(srv0);
+        UserCdcConsumer cnsmr1 = runCdc(srv1);
+
+        addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+        checkSize(cnsmr0, KEYS_CNT);
+        checkSize(cnsmr1, KEYS_CNT);
+
+        cnsmr0.clear();
+        cnsmr1.clear();
+
+        executeCommand(EXIT_CODE_OK,
+            CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME, ONLY_PRIMARY);
+
+        checkFlushCaches(srv0, cnsmr0, true);
+        checkFlushCaches(srv1, cnsmr1, true);
+
+        cnsmr0.clear();
+        cnsmr1.clear();
+
+        executeCommand(EXIT_CODE_OK,
+            CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME);
+
+        checkFlushCaches(srv0, cnsmr0, false);
+        checkFlushCaches(srv1, cnsmr1, false);
+    }
+
+    /** */
+    private void checkFlushCaches(Ignite srv, UserCdcConsumer cnsmr, boolean onlyPrimary) throws Exception {
+        int keyCnt = onlyPrimary ? srv.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY) : KEYS_CNT;
+
+        checkSize(cnsmr, keyCnt);
+    }
+
+    /** */
+    private UserCdcConsumer runCdc(Ignite ign) throws Exception {
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+            @Override protected boolean skipBackup() {
+                return false;
+            }
+        };
+
+        CdcConfiguration cfg = new CdcConfiguration();
+
+        cfg.setConsumer(cnsmr);
+        cfg.setKeepBinary(false);
+
+        CdcMain cdc = new CdcMain(getConfiguration(ign.name()), null, cfg);
+
+        GridTestUtils.runAsync(cdc);
+
+        return cnsmr;
+    }
+
+    /** */
+    private void checkSize(UserCdcConsumer cnsmr, int expSize) throws Exception {
+        assertTrue(waitForCondition(() -> expSize == cnsmr.data(UPDATE, CU.cacheId(DEFAULT_CACHE_NAME)).size(),
+            getTestTimeout()));
     }
 }

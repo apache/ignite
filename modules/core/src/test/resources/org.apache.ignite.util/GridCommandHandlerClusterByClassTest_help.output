@@ -348,7 +348,15 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
 
     Parameters:
-      node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+      --node-id node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+
+  [EXPERIMENTAL]
+  Flush caches:
+    control.(sh|bat) --cdc flush_caches --caches cache1,...,cacheN [--only-primary]
+
+    Parameters:
+      --caches cache1,...,cacheN  - specifies a comma-separated list of cache names to be flushed.
+      --only-primary              - flush only primary entries on a nodes.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
