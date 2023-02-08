@@ -107,7 +107,7 @@ public class ConfiguringMetrics {
         //tag::new-metric-framework[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        // Change metric exporter. The default is JmxMetricExporterSpi.
+        // Change metric exporter.
         cfg.setMetricExporterSpi(new LogExporterSpi());
 
         Ignite ignite = Ignition.start(cfg);
@@ -140,7 +140,8 @@ public class ConfiguringMetrics {
         //tag::disable-default-jmx-exporter[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        // Disable default JMX metrics exporter.
+        // Disable default JMX metrics exporter. Also could be disabled with the system property
+        // '-DIGNITE_MBEANS_DISABLED=true' or by setting other metrics exporter.
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         //end::disable-default-jmx-exporter[]
 
