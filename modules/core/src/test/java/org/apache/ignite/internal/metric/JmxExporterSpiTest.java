@@ -196,8 +196,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         IgniteConfiguration cfg = startDedicatedNode(null);
 
         try {
-            assertTrue(!F.isEmpty(cfg.getMetricExporterSpi()) && cfg.getMetricExporterSpi().length == 1 &&
-                cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
+            assertTrue(!F.isEmpty(cfg.getMetricExporterSpi()));
+            assertTrue(cfg.getMetricExporterSpi().length == 1);
+            assertTrue(cfg.getMetricExporterSpi()[0] instanceof JmxMetricExporterSpi);
         }
         finally {
             stopGrid(cfg.getIgniteInstanceName());
@@ -217,8 +218,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             IgniteConfiguration cfg = startDedicatedNode(null);
 
             try {
-                assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
-                    stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
+                assertTrue(stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
             }
             finally {
                 stopGrid(cfg.getIgniteInstanceName());

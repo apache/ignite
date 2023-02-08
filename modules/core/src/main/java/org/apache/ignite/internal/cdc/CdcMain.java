@@ -358,8 +358,9 @@ public class CdcMain implements Runnable {
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
                 else {
-                    cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED ? new NoopMetricExporterSpi() :
-                        new JmxMetricExporterSpi());
+                    cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
+                        ? new NoopMetricExporterSpi()
+                        : new JmxMetricExporterSpi());
                 }
 
                 initializeDefaultMBeanServer(cfg);
