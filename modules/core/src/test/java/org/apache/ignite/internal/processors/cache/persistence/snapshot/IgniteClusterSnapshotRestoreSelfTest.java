@@ -778,6 +778,25 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testUserClassRestored() throws Exception {
+        int nodes = 3;
+        int keysCnt = 1_000;
+
+        valBuilder = Account::new;
+
+        startGridsWithSnapshot(nodes, keysCnt);
+
+        Ignite ign = restartWithCleanPersistence(nodes, Collections.singleton(DEFAULT_CACHE_NAME));
+
+        ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
+
+        assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
      * @param state Cluster state.
      * @param procType The type of distributed process on which communication is blocked.
      * @param exCls Expected exception class.
@@ -862,6 +881,27 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             hnd.accept(file);
 
             return delegate;
+        }
+    }
+
+    /** */
+    public static class Account {
+        /** */
+        private final int id;
+
+        /** */
+        Account(int id) {
+            this.id = id;
+        }
+
+        /** */
+        @Override public int hashCode() {
+            return id;
+        }
+
+        /** */
+        @Override public boolean equals(Object obj) {
+            return id == ((Account)obj).id;
         }
     }
 }
