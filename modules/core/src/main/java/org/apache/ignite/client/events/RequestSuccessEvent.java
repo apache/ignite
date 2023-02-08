@@ -44,7 +44,7 @@ public class RequestSuccessEvent extends RequestEvent {
     }
 
     /**
-     * Get the elapsed time of the query.
+     * Get the elapsed time of the request.
      *
      * @param timeUnit Desired time unit in which to return the elapsed time.
      * @return The elapsed time.

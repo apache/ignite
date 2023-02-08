@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  *
  */
-public class CacheContinuousRequestEventBufferTest extends GridCommonAbstractTest {
+public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */

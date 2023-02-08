@@ -23,7 +23,7 @@ public abstract class RequestEvent {
     private final ConnectionDescription conn;
 
     /** */
-    private final long qryId;
+    private final long requestId;
 
     /** */
     private final short opCode;
@@ -33,18 +33,18 @@ public abstract class RequestEvent {
 
     /**
      * @param conn Connection description.
-     * @param qryId Query id.
+     * @param requestId Request id.
      * @param opCode Operation code.
      * @param opName Operation name.
      */
     protected RequestEvent(
         ConnectionDescription conn,
-        long qryId,
+        long requestId,
         short opCode,
         String opName
     ) {
         this.conn = conn;
-        this.qryId = qryId;
+        this.requestId = requestId;
         this.opCode = opCode;
         this.opName = opName;
     }
@@ -57,10 +57,10 @@ public abstract class RequestEvent {
     }
 
     /**
-     * @return Query id.
+     * @return Request id.
      */
-    public long queryId() {
-        return qryId;
+    public long requestId() {
+        return requestId;
     }
 
     /**

@@ -44,7 +44,7 @@ public class HandshakeFailEvent extends ConnectionEvent {
     }
 
     /**
-     * Get the elapsed time of the query.
+     * Get the elapsed time of the handshake.
      *
      * @param timeUnit Desired time unit in which to return the elapsed time.
      * @return the elapsed time.

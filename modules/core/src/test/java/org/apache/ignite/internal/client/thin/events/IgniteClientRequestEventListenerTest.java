@@ -86,7 +86,7 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
 
             RequestStartEvent startEvent = (RequestStartEvent)evSet.get(RequestStartEvent.class);
 
-            assertTrue(startEvent.queryId() >= 0);
+            assertTrue(startEvent.requestId() >= 0);
 
             ConnectionDescription connDesc = startEvent.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
@@ -97,7 +97,7 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
             assertEquals(ClientOperation.CACHE_GET_NAMES.name(), startEvent.operationName());
 
             RequestSuccessEvent successEvent = (RequestSuccessEvent)evSet.get(RequestSuccessEvent.class);
-            assertEquals(successEvent.queryId(), successEvent.queryId());
+            assertEquals(successEvent.requestId(), successEvent.requestId());
 
             connDesc = startEvent.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
@@ -126,7 +126,7 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
 
             RequestStartEvent startEvent = (RequestStartEvent)evSet.get(RequestStartEvent.class);
 
-            assertTrue(startEvent.queryId() >= 0);
+            assertTrue(startEvent.requestId() >= 0);
 
             ConnectionDescription connDesc = startEvent.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());
@@ -137,7 +137,7 @@ public class IgniteClientRequestEventListenerTest extends AbstractThinClientTest
             assertEquals(ClientOperation.CACHE_PUT.name(), startEvent.operationName());
 
             RequestFailEvent failEvent = (RequestFailEvent)evSet.get(RequestFailEvent.class);
-            assertEquals(failEvent.queryId(), failEvent.queryId());
+            assertEquals(failEvent.requestId(), failEvent.requestId());
 
             connDesc = startEvent.connectionDescription();
             assertEquals(clientHost(grid(0).localNode()), connDesc.remoteAddress().getAddress().getHostAddress());

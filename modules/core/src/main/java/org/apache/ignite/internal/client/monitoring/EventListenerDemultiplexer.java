@@ -46,7 +46,7 @@ public class EventListenerDemultiplexer {
     private static final EventListenerDemultiplexer NO_OP = new EventListenerDemultiplexer();
 
     /** */
-    final List<RequestEventListener> qryEventListeners;
+    final List<RequestEventListener> reqEventListeners;
 
     /** */
     final List<ConnectionEventListener> connEventListeners;
@@ -56,23 +56,23 @@ public class EventListenerDemultiplexer {
 
     /** */
     EventListenerDemultiplexer() {
-        qryEventListeners = null;
+        reqEventListeners = null;
         connEventListeners = null;
         logger = NullLogger.INSTANCE;
     }
 
     /** */
     EventListenerDemultiplexer(
-        List<RequestEventListener> qryEventListeners,
+        List<RequestEventListener> reqEventListeners,
         List<ConnectionEventListener> connEventListeners,
         IgniteLogger logger
     ) {
         this.logger = logger;
 
-        if (!F.isEmpty(qryEventListeners))
-            this.qryEventListeners = Collections.unmodifiableList(qryEventListeners);
+        if (!F.isEmpty(reqEventListeners))
+            this.reqEventListeners = Collections.unmodifiableList(reqEventListeners);
         else
-            this.qryEventListeners = null;
+            this.reqEventListeners = null;
 
         if (!F.isEmpty(connEventListeners))
             this.connEventListeners = Collections.unmodifiableList(connEventListeners);
@@ -113,10 +113,10 @@ public class EventListenerDemultiplexer {
      * @param opName Operation name.
      */
     public void onRequestStart(ConnectionDescription conn, long requestId, short opCode, String opName) {
-        if (F.isEmpty(qryEventListeners))
+        if (F.isEmpty(reqEventListeners))
             return;
 
-        executeForEach(qryEventListeners, l -> l.onRequestStart(new RequestStartEvent(conn, requestId, opCode, opName)));
+        executeForEach(reqEventListeners, l -> l.onRequestStart(new RequestStartEvent(conn, requestId, opCode, opName)));
     }
 
     /**
@@ -133,10 +133,10 @@ public class EventListenerDemultiplexer {
         String opName,
         long elapsedTimeNanos
     ) {
-        if (F.isEmpty(qryEventListeners))
+        if (F.isEmpty(reqEventListeners))
             return;
 
-        executeForEach(qryEventListeners, l ->
+        executeForEach(reqEventListeners, l ->
             l.onRequestSuccess(new RequestSuccessEvent(conn, requestId, opCode, opName, elapsedTimeNanos)));
     }
 
@@ -156,10 +156,10 @@ public class EventListenerDemultiplexer {
         long elapsedTimeNanos,
         Throwable throwable
     ) {
-        if (F.isEmpty(qryEventListeners))
+        if (F.isEmpty(reqEventListeners))
             return;
 
-        executeForEach(qryEventListeners, l ->
+        executeForEach(reqEventListeners, l ->
             l.onRequestFail(new RequestFailEvent(conn, requestId, opCode, opName, elapsedTimeNanos, throwable)));
     }
 

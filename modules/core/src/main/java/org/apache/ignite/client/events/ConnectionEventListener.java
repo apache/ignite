@@ -50,7 +50,7 @@ public interface ConnectionEventListener extends EventListener {
     }
 
     /**
-     * @param event Connection closed event (without exception).
+     * @param event Connection closed event (with or without exception).
      */
     default void onConnectionClosed(ConnectionClosedEvent event) {
         // No-op.

@@ -754,7 +754,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 eventListener.onHandshakeFail(
                     new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
-                    startTime - System.nanoTime(),
+                    System.nanoTime() - startTime,
                     err
                 );
 
