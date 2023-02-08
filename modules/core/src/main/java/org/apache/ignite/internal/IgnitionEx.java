@@ -1914,7 +1914,7 @@ public class IgnitionEx {
             if (myCfg.getUserAttributes() == null)
                 myCfg.setUserAttributes(Collections.<String, Object>emptyMap());
 
-            initializeDefaultMBeans(myCfg);
+            initializeDefaultMBeanServer(myCfg);
 
             Marshaller marsh = myCfg.getMarshaller();
 
@@ -2075,7 +2075,7 @@ public class IgnitionEx {
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
             if (F.isEmpty(cfg.getMetricExporterSpi()))
-                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+                cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED ? new NoopMetricExporterSpi() : new JmxMetricExporterSpi());
 
             if (cfg.getTracingSpi() == null)
                 cfg.setTracingSpi(new NoopTracingSpi());
@@ -2596,16 +2596,10 @@ public class IgnitionEx {
         }
     }
 
-    /** Initialize default mbean server and default mbeans. */
-    public static void initializeDefaultMBeans(IgniteConfiguration myCfg) {
-        if (U.IGNITE_MBEANS_DISABLED)
-            return;
-
-        if (myCfg.getMBeanServer() == null)
+    /** Initialize default mbean server. */
+    public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
+        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
-
-        if (myCfg.getMetricExporterSpi() == null)
-            myCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
     }
 
     /**

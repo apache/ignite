@@ -40,8 +40,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeans;
-
 /**
  * Test context.
  */
@@ -96,8 +94,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      * @throws IgniteCheckedException If failed
      */
     public void start() throws IgniteCheckedException {
-        initializeDefaultMBeans(config());
-
         for (GridComponent comp : this)
             comp.start();
     }

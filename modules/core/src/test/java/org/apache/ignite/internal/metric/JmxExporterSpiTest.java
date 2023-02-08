@@ -86,8 +86,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigInitializer;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -233,7 +233,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     @Test
     public void testJmxMetricsExporterIsDisabled() throws Exception {
         IgniteConfiguration cfg = startDedicatedNode(getConfiguration(getTestIgniteInstanceName(G.allGrids().size()))
-            .setMetricExporterSpi(new MetricExporterSpi[0]));
+            .setMetricExporterSpi(new NoopMetricExporterSpi()));
 
         try {
             assertTrue(F.isEmpty(cfg.getMetricExporterSpi()) ||
