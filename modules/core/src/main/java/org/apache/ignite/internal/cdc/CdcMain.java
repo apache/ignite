@@ -357,8 +357,7 @@ public class CdcMain implements Runnable {
 
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
-
-                if (F.isEmpty(cfg.getMetricExporterSpi())) {
+                else {
                     cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED ? new NoopMetricExporterSpi() :
                         new JmxMetricExporterSpi());
                 }
