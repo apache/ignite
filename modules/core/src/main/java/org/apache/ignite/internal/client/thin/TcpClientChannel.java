@@ -653,7 +653,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         long startTime = System.nanoTime();
 
         eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
-            new ProtocolContext(ver, null).toString(), null));
+            new ProtocolContext(ver).toString(), null));
 
         while (true) {
             ClientRequestFuture fut = new ClientRequestFuture(requestId, ClientOperation.HANDSHAKE);

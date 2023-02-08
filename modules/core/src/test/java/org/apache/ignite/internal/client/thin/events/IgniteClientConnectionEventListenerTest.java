@@ -122,7 +122,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
     /** */
     @Test
     public void testUnsupportedProtocolFail() {
-        ProtocolVersion unsupportedProto = new ProtocolVersion((short)1, (short)8, (short)0);
+        ProtocolVersion unsupportedProto = new ProtocolVersion((short)255, (short)0, (short)0);
         assertTrue(unsupportedProto.compareTo(ProtocolVersion.LATEST_VER) > 0);
 
         long startNano = System.nanoTime();
@@ -208,7 +208,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
             Event failEv = (Event)evSet.get(eventCls);
 
             assertNotNull(failEv);
-            assertEquals(failEv.connectionDescription().protocol(), "ProtocolContext [version=" + ProtocolVersion.LATEST_VER
+            assertEquals(failEv.connectionDescription().protocol(), "ProtocolContext [version=" + ProtocolVersion.V1_7_0
                 + ", features=[]]");
             assertEquals(LOCALHOST, failEv.connectionDescription().remoteAddress().getAddress());
             assertEquals(SRV_PORT, failEv.connectionDescription().remoteAddress().getPort());

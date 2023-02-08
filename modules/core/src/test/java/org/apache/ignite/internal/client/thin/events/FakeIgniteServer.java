@@ -93,7 +93,7 @@ public class FakeIgniteServer extends JUnitAssertAware implements GridNioServerL
         ProtocolVersion protoVer,
         EnumSet<ErrorType> errorTypes
     ) {
-        this.protoVer = protoVer != null ? protoVer : ProtocolVersion.LATEST_VER;
+        this.protoVer = protoVer != null ? protoVer : ProtocolVersion.V1_7_0;
 
         this.errorTypes = errorTypes != null ? errorTypes : EnumSet.noneOf(ErrorType.class);
 
