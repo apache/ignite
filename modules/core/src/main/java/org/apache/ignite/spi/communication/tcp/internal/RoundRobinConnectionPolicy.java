@@ -35,10 +35,6 @@ public class RoundRobinConnectionPolicy implements ConnectionPolicy {
 
     /** {@inheritDoc} */
     @Override public int connectionIndex() {
-        int connIdx = (int)(U.safeAbs(Thread.currentThread().getId()) % cfg.connectionsPerNode());
-
-        System.err.println("TEST : connectionIndex(): " + connIdx);
-
-        return connIdx;
+        return (int)(U.safeAbs(Thread.currentThread().getId()) % cfg.connectionsPerNode());
     }
 }

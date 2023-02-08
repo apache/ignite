@@ -1072,8 +1072,6 @@ public class GridNioServerWrapper {
         assert nodeSupports(remote, CHANNEL_COMMUNICATION) : "Node doesn't support direct connection over socket channel " +
             "[nodeId=" + remote.id() + ']';
 
-        System.err.println("TEST | openChannel(), connectionIndex: " + chConnPlc.connectionIndex());
-
         ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 
         GridFutureAdapter<Channel> chFut = new GridFutureAdapter<>();

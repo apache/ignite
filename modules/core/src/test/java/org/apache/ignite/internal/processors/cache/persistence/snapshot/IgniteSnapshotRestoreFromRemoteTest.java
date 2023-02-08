@@ -114,13 +114,12 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if(!F.isEmpty(changedConsistentId))
+        if (!F.isEmpty(changedConsistentId))
             cfg.setConsistentId(cfg.getConsistentId() + changedConsistentId);
 
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(cmPairedConnections);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(4);
 
         return cfg;
     }
