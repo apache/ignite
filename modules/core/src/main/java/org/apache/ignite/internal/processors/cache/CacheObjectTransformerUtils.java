@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
@@ -55,14 +54,14 @@ public class CacheObjectTransformerUtils {
     public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
         assert bytes[offset] != TRANSFORMED;
 
-        try {
-            CacheObjectTransformer transformer = transformer(ctx);
+        CacheObjectTransformer transformer = transformer(ctx);
 
-            if (transformer == null)
-                return bytes;
+        if (transformer == null)
+            return bytes;
 
-            byte[] transformed = transformer.transform(bytes, offset, length);
+        byte[] transformed = transformer.transform(bytes, offset, length);
 
+        if (transformed != null) {
             transformed[0] = TRANSFORMED;
             transformed[1] = VER;
 
@@ -78,11 +77,11 @@ public class CacheObjectTransformerUtils {
 
             return transformed;
         }
-        catch (IgniteCheckedException ex) { // Can not be transformed.
+        else {
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
-                        "Object transformation was cancelled. " + ex.getMessage(),
+                        "Object transformation was cancelled.",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         detachIfNecessary(bytes, offset, length),
                         null,

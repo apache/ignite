@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.transform;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -66,9 +65,12 @@ public abstract class CacheObjectTransformerAdapter implements CacheObjectTransf
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] transform(byte[] bytes, int offset, int length) throws IgniteCheckedException {
+    @Override public byte[] transform(byte[] bytes, int offset, int length) {
         ByteBuffer src = sourceByteBuffer(bytes, offset, length);
         ByteBuffer transformed = transform(src);
+
+        if (transformed == null)
+            return null;
 
         assert transformed.remaining() > 0 : transformed.remaining();
 
@@ -89,10 +91,9 @@ public abstract class CacheObjectTransformerAdapter implements CacheObjectTransf
      * Transforms the data.
      *
      * @param original Original data.
-     * @return Transformed data.
-     * @throws IgniteCheckedException when transformation is not possible/suitable.
+     * @return Transformed data or null when transformation is not possible/suitable.
      */
-    protected abstract ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException;
+    protected abstract ByteBuffer transform(ByteBuffer original);
 
     /** {@inheritDoc} */
     @Override public byte[] restore(byte[] bytes, int offset, int length) {

@@ -24,7 +24,6 @@ import com.github.luben.zstd.Zstd;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
@@ -107,9 +106,9 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
+        @Override protected ByteBuffer transform(ByteBuffer original) {
             if (type == CompressionType.DISABLED)
-                throw new IgniteCheckedException("Disabled.");
+                return null;
 
             int locOverhead = 8; // Compression type + length.
             int totalOverhead = CacheObjectTransformer.OVERHEAD + locOverhead;
@@ -118,7 +117,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             int lim = origSize - totalOverhead;
 
             if (lim <= 0)
-                throw new IgniteCheckedException("Compression is not profitable.");
+                return null;
 
             int maxCompLen;
 
@@ -172,7 +171,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                         compressed.position(0);
                     }
                     catch (IOException e) {
-                        throw new IgniteCheckedException(e);
+                        return null;
                     }
 
                     break;
@@ -189,7 +188,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             compressed.rewind();
 
             if (size >= lim) // Limiting to gain compression profit.
-                throw new IgniteCheckedException("Compression is not profitable.");
+                return null;
 
             return compressed;
         }

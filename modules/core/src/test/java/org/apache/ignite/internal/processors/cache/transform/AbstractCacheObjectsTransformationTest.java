@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -396,9 +395,9 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
+        @Override protected ByteBuffer transform(ByteBuffer original) {
             if (failOnTransformation())
-                throw new IgniteCheckedException("Failed.");
+                return null;
 
             tCntr.computeIfAbsent(shift, key -> new AtomicInteger()).incrementAndGet();
 
