@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
-import org.apache.ignite.internal.ThreadLocalNativeOrderDirectByteBuffer;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -43,17 +42,18 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
+import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
  * Compression processor.
  */
 public class CompressionProcessorImpl extends CompressionProcessor {
     /** Max page size. */
-    private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalNativeOrderDirectByteBuffer(MAX_PAGE_SIZE);
+    private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalDirectByteBuffer(MAX_PAGE_SIZE, NATIVE_BYTE_ORDER);
 
     /** A bit more than max page size, extra space is required by compressors. */
     private final ThreadLocalDirectByteBuffer compressBuf =
-        new ThreadLocalNativeOrderDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE));
+        new ThreadLocalDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE), NATIVE_BYTE_ORDER);
 
     /**
      * @param ctx Kernal context.

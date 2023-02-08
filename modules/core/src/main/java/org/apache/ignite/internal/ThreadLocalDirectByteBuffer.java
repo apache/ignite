@@ -18,13 +18,17 @@
 package org.apache.ignite.internal;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Thread local direct byte buffer.
  */
 public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
     /** */
-    final int size;
+    private final int size;
+
+    /** Byte order. */
+    private final ByteOrder order;
 
     /** */
     public ThreadLocalDirectByteBuffer() {
@@ -33,7 +37,13 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
 
     /** */
     public ThreadLocalDirectByteBuffer(int size) {
+        this(size, null);
+    }
+
+    /** */
+    public ThreadLocalDirectByteBuffer(int size, ByteOrder order) {
         this.size = size;
+        this.order = order;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +81,11 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
 
     /** */
     protected ByteBuffer allocateDirectBuffer(int capacity) {
-        return ByteBuffer.allocateDirect(capacity);
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity);
+
+        if (order != null)
+            buf = buf.order(order);
+
+        return buf;
     }
 }
