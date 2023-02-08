@@ -177,7 +177,6 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     public void testRestoreWithPairedConnections() throws Exception {
         changedConsistentId = "_new";
 
-        // Set false of remove to pass the test.
         cmPairedConnections = true;
 
         IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, GRIDS);
