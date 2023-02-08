@@ -1357,11 +1357,10 @@ public class IgniteConfiguration {
 
     /**
      * Should return MBean server instance. If not provided, the system will use default
-     * platform MBean server unless {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED} is set to {@code true}.
+     * platform MBean server.
      *
      * @return MBean server instance or {@code null} to make the system create a default one.
      * @see ManagementFactory#getPlatformMBeanServer()
-     * @see IgniteSystemProperties#IGNITE_MBEANS_DISABLED
      */
     public MBeanServer getMBeanServer() {
         return mbeanSrv;
@@ -2439,12 +2438,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}. If no metrics exporter is passed,
-     * {@link JmxMetricExporterSpi} is used by default unless {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED}
-     * is set to {@code true}.
+     * Sets fully configured instances of {@link MetricExporterSpi}.
      *
-     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}. If empty, no default metrics
-     *        exporter is used.
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @return {@code this} for chaining.
      * @see IgniteConfiguration#getMetricExporterSpi()
      * @see JmxMetricExporterSpi
@@ -2469,9 +2465,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets fully configured metric SPI implementations. If no metrics exporter is passed to
-     * {@link #setMetricExporterSpi(MetricExporterSpi...)}, {@link JmxMetricExporterSpi} is used by default unless
-     * {@link IgniteSystemProperties#IGNITE_MBEANS_DISABLED} is set to {@code true}.
+     * Gets fully configured metric SPI implementations.
      *
      * @return Metric exporter SPI implementations.
      * @see JmxMetricExporterSpi
