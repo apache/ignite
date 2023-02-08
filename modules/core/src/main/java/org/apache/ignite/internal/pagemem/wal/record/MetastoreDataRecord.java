@@ -39,7 +39,6 @@ public class MetastoreDataRecord extends WALRecord implements WalRecordCacheGrou
      * @param value Value.
      */
     public MetastoreDataRecord(String key, @Nullable byte[] value) {
-        System.out.println("MetastoreDataRecord.MetastoreDataRecord - " + key);
         this.key = key;
         this.value = value;
     }

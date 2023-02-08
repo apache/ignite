@@ -36,6 +36,9 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     /** Cache name. */
     private String cacheName;
 
+    /** */
+    private boolean rebuildFromScratch;
+
     /**
      * Default constructor for {@link Externalizable}.
      */
@@ -44,16 +47,19 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
 
     /**
      * Constructor.
+     * TODO: create V2 here for backward compatibility.
      *
      * @param cacheName Cache name.
      */
-    public IndexRebuildCacheInfo(String cacheName) {
+    public IndexRebuildCacheInfo(String cacheName, boolean rebuildFromScratch) {
         this.cacheName = cacheName;
+        this.rebuildFromScratch = rebuildFromScratch;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeLongString(out, cacheName);
+        out.writeBoolean(rebuildFromScratch);
     }
 
     /** {@inheritDoc} */
@@ -62,6 +68,7 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
         cacheName = U.readLongString(in);
+        in.readBoolean();
     }
 
     /**

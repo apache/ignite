@@ -21,69 +21,42 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
+import java.util.function.Consumer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cdc.CdcIndexRebuildTest.TestVal;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 
-import static org.apache.ignite.WalDuringIndexRebuildTest.RebuildType.REMOVE_INDEX_FILE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_INSERT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /** */
-@RunWith(Parameterized.class)
 @SuppressWarnings({"resource"})
 public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
     /** Batches count. */
     public static final int ENTRIES_CNT = 10_000;
-
-    /** Rebuild type. */
-    @Parameter
-    public RebuildType rebuildType;
-
-    /** */
-    @Parameters(name = "rebuildType={0}")
-    public static List<Object[]> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (RebuildType rebuildType : RebuildType.values())
-            params.add(new Object[]{rebuildType});
-
-        return params;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -114,73 +87,64 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testIndexRebuild() throws Exception {
+    public void testIndexBinRemoveRebuild() throws Exception {
+        doTestIndexRebuild(srv -> {
+            try {
+                srv.cluster().state(INACTIVE);
+
+                awaitPartitionMapExchange();
+
+                Path path = checkIdxFileExists();
+
+                stopGrid(0);
+
+                Files.delete(path);
+
+                srv = startGrid(0);
+
+                srv.cluster().state(ACTIVE);
+            }
+            catch (Throwable e) {
+                throw new IgniteException(e);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testIndexForceRebuild() throws Exception {
+        doTestIndexRebuild(srv -> forceRebuildIndexes(srv, srv.cachex(DEFAULT_CACHE_NAME).context()));
+    }
+
+    /** */
+    private void doTestIndexRebuild(Consumer<IgniteEx> doRebuildIdx) throws Exception {
         IgniteEx srv = startGrid(0);
 
         srv.cluster().state(ACTIVE);
 
-        createAndPopulateCache(srv, DEFAULT_CACHE_NAME);
+        createAndPopulateCache(srv);
 
         forceCheckpoint(srv);
 
-        WALPointer walPrtBefore = srv.context()
-                .cache()
-                .context()
-                .wal()
-                .lastWritePointer();
+        WALPointer walPrtBefore = srv.context().cache().context().wal().lastWritePointer();
 
-        long walIdxBefore = curWalIdx(srv);
+        long startTs = System.currentTimeMillis();
 
-        String dirName = srv.name().replace(".", "_");
+        doRebuildIdx.accept(srv);
 
-        Path idxFileBefore = checkIdxFileExists(dirName);
-
-        long startTs;
-
-        if (rebuildType == REMOVE_INDEX_FILE) {
-            srv.cluster().state(INACTIVE);
-
-            awaitPartitionMapExchange();
-
-            stopGrid(0);
-
-            Files.delete(idxFileBefore);
-
-            srv = startGrid(0);
-
-            startTs = System.currentTimeMillis();
-
-            srv.cluster().state(ACTIVE);
-        }
-        else {
-            startTs = System.currentTimeMillis();
-
-            forceRebuildIndexes(srv, srv.cachex(DEFAULT_CACHE_NAME).context());
-        }
+        srv = grid(0);
 
         indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME)).get(getTestTimeout());
 
-        long finishTs = System.currentTimeMillis();
-
-        log.warning(">>>>>> Index rebuild finished and took " + (finishTs - startTs) + " ms");
+        log.warning(">>>>>> Index rebuild finished and took " + (System.currentTimeMillis() - startTs) + " ms");
 
         forceCheckpoint(srv);
 
-        long walIdxAfter = curWalIdx(srv);
-
-        log.warning(">>>>>> Index rebuild generated " + (walIdxAfter - walIdxBefore) + " segments");
-
-        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes(
-            dirName,
-            (rt, wp) -> wp.compareTo(walPrtBefore) <= 0
-        );
-
-        Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes(
-            dirName,
-            (rt, wp) -> wp.compareTo(walPrtBefore) > 0
-        );
+        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes((rt, wp) -> wp.compareTo(walPrtBefore) <= 0);
+        Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes((rt, wp) -> wp.compareTo(walPrtBefore) > 0);
 
         log.warning(">>>>>> WalRecords comparison:");
+
         log.warning(String.format("%-62.60s%-30.28s%-30.28s\n", "Record type", "Data load (before rebuild)",
                 "After index rebuild"));
 
@@ -191,76 +155,35 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
                 recTypesAfter.get(recType)));
         }
 
-        checkIdxFileExists(dirName);
+        checkIdxFileExists();
 
-        assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
+        assertEquals((Long)3L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
         assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_REPLACE, 0L));
     }
 
-    /** @param ignite Ignite. */
-    private long curWalIdx(IgniteEx ignite) {
-        return ignite.context()
-            .cache()
-            .context()
-            .wal()
-            .currentSegment();
+    /** */
+    private void createAndPopulateCache(IgniteEx ignite) {
+        IgniteCache<Integer, TestVal> cache = ignite.getOrCreateCache(
+            new CacheConfiguration<Integer, TestVal>(DEFAULT_CACHE_NAME)
+                .setIndexedTypes(Integer.class, TestVal.class));
+
+        for (int i = 0; i < ENTRIES_CNT; i++)
+            cache.put(i, new TestVal());
+
+        assertEquals(3, ignite.context().indexProcessor().indexes(DEFAULT_CACHE_NAME).size());
     }
 
     /** */
-    private void createAndPopulateCache(IgniteEx ignite, String cacheName) {
-        int fieldsCnt = 2;
-
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>(fieldsCnt);
-
-        List<QueryIndex> indexes = new ArrayList<>(fieldsCnt);
-
-        for (int i = 0; i < fieldsCnt; i++) {
-            String fieldName = "F" + i;
-
-            fields.put(fieldName, String.class.getName());
-
-            indexes.add(new QueryIndex(fieldName).setInlineSize(128));
-        }
-
-        QueryEntity qryEntity = new QueryEntity()
-            .setKeyType(Integer.class.getName())
-            .setValueType("TestVal")
-            .setFields(fields)
-            .setIndexes(indexes);
-
-        IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
-            new CacheConfiguration<>(cacheName)
-                .setQueryEntities(Collections.singleton(qryEntity)))
-            .withKeepBinary();
-
-        BinaryObjectBuilder binObjBuilder = ignite.binary().builder("TestVal");
-
-        for (String field : fields.keySet())
-            binObjBuilder.setField(field, UUID.randomUUID().toString());
-
-        BinaryObject binObj = binObjBuilder.build();
-
-        for (int i = 0; i < ENTRIES_CNT; i++)
-            cache.put(i, binObj);
-
-        log.warning(">>>>>> Puts finished.");
-
-        assertTrue("Unexpected indexes count", ignite.context().indexProcessor()
-            .indexes(cacheName).size() >= fieldsCnt);
-    }
-
-    /**
-     * @param dirName Directory name.
-     */
-    private Path checkIdxFileExists(String dirName) throws IgniteCheckedException, IOException {
+    private Path checkIdxFileExists() throws IgniteCheckedException, IOException {
         Path pdsDir = U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
-            DFLT_STORE_DIR + File.separatorChar + dirName + File.separatorChar + "cache-" + DEFAULT_CACHE_NAME,
+            DFLT_STORE_DIR + File.separatorChar + grid(0).name().replace(".", "_") +
+                File.separatorChar + "cache-" + DEFAULT_CACHE_NAME,
             false
         ).toPath();
 
         Path idxFile = Files.list(pdsDir)
-            .filter(p -> p.endsWith("index.bin"))
+            .filter(p -> p.endsWith(INDEX_FILE_NAME))
             .findFirst()
             .orElseThrow(() -> new IgniteException("index.bin not found"));
 
@@ -271,49 +194,38 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
         return idxFile;
     }
 
-    /**
-     * @param dn2DirName Node directory name.
-     * @param predicate Predicate.
-     */
-    private Map<RecordType, Long> countWalRecordsByTypes(String dn2DirName,
-        IgniteBiPredicate<RecordType, WALPointer> predicate) throws IgniteCheckedException {
-
-        File walDir = U.resolveWorkDirectory(U.defaultWorkDirectory(),
-            DFLT_STORE_DIR + "/wal/" + dn2DirName, false);
-
-        File walArchiveDir = U.resolveWorkDirectory(U.defaultWorkDirectory(),
-            DFLT_STORE_DIR + "/wal/archive/" + dn2DirName, false);
-
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+    /** @param filter Predicate. */
+    private Map<RecordType, Long> countWalRecordsByTypes(
+        IgniteBiPredicate<RecordType, WALPointer> filter
+    ) throws IgniteCheckedException {
+        String dn2DirName = grid(0).name().replace(".", "_");
 
         IteratorParametersBuilder beforeIdxRemoveBldr = new IteratorParametersBuilder()
-            .filesOrDirs(walDir, walArchiveDir)
-            .filter(predicate);
+            .filesOrDirs(
+                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH + "/" + dn2DirName, false),
+                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH + "/" + dn2DirName, false)
+            )
+            .filter(filter);
 
         Map<RecordType, Long> cntByRecTypes = new EnumMap<>(RecordType.class);
 
         for (RecordType recType : RecordType.values())
             cntByRecTypes.put(recType, 0L);
 
-        try (WALIterator walIter = factory.iterator(beforeIdxRemoveBldr)) {
-            while (walIter.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> entry = walIter.next();
-
-                RecordType recType = entry.getValue().type();
-
-                cntByRecTypes.merge(recType, 1L, Long::sum);
-            }
+        try (WALIterator walIter = new IgniteWalIteratorFactory(log).iterator(beforeIdxRemoveBldr)) {
+            while (walIter.hasNext())
+                cntByRecTypes.merge(walIter.next().getValue().type(), 1L, Long::sum);
         }
 
         return cntByRecTypes;
     }
 
-    /** */
-    public enum RebuildType {
-        /** Remove index file. */
-        REMOVE_INDEX_FILE,
-
-        /** Force index rebuild. */
-        FORCE_INDEX_REBUILD
+    /** @param ignite Ignite. */
+    private long curWalIdx(IgniteEx ignite) {
+        return ignite.context()
+            .cache()
+            .context()
+            .wal()
+            .currentSegment();
     }
 }

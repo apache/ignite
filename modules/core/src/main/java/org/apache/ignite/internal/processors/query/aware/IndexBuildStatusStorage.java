@@ -110,7 +110,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * @see #onFinishRebuildIndexes
      */
     public void onStartRebuildIndexes(GridCacheContext<?, ?> cacheCtx) {
-        onStartOperation(cacheCtx, true);
+        onStartOperation(cacheCtx, true, false);
     }
 
     /**
@@ -124,7 +124,12 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * @see #onFinishBuildNewIndex
      */
     public void onStartBuildNewIndex(GridCacheContext<?, ?> cacheCtx) {
-        onStartOperation(cacheCtx, false);
+        onStartOperation(cacheCtx, false, false);
+    }
+
+    /** */
+    public void markIndexBuildFromScratch(GridCacheContext<?, ?> cacheCtx) {
+        onStartOperation(cacheCtx, true, true);
     }
 
     /**
@@ -296,9 +301,10 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      *
      * @param cacheCtx Cache context.
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
+     * @param rebuildFromScratch ???.
      * @see #onFinishOperation
      */
-    private void onStartOperation(GridCacheContext<?, ?> cacheCtx, boolean rebuild) {
+    private void onStartOperation(GridCacheContext<?, ?> cacheCtx, boolean rebuild, boolean rebuildFromScratch) {
         if (!stopNodeLock.enterBusy())
             throw new IgniteException("Node is stopping.");
 
@@ -308,7 +314,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
             statuses.compute(cacheName, (k, prev) -> {
                 if (prev != null) {
-                    prev.onStartOperation(rebuild);
+                    prev.onStartOperation(rebuild, rebuildFromScratch);
 
                     return prev;
                 }
@@ -320,7 +326,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
                 metaStorageOperation(metaStorage -> {
                     assert metaStorage != null;
 
-                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName));
+                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName, rebuildFromScratch));
                 });
             }
         }

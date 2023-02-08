@@ -29,9 +29,22 @@ public abstract class AbstractIndex implements Index {
     /**
      * @param val Mark or unmark index to rebuild.
      */
-    public void markIndexRebuild(boolean val) {
-        rebuildInProgress.compareAndSet(!val, val);
+    public void markIndexRebuild(boolean val, boolean disableWalForIdx) {
+        if (rebuildInProgress.compareAndSet(!val, val)) {
+            if (val) {
+                if (disableWalForIdx)
+                    disableWal();
+            }
+            else
+                enableWal();
+        }
     }
+
+    /** */
+    public abstract void disableWal();
+
+    /** */
+    public abstract void enableWal();
 
     /**
      * @return Whether index is rebuilding now.

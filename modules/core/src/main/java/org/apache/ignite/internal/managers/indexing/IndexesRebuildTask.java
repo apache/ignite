@@ -68,7 +68,9 @@ public class IndexesRebuildTask {
 
         String cacheName = cctx.name();
 
-        if (pageStore == null || !pageStore.hasIndexStore(cctx.groupId())) {
+        boolean cleanBuild = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
+
+        if (cleanBuild) {
             boolean mvccEnabled = cctx.mvccEnabled();
 
             // If there are no index store, rebuild all indexes.
@@ -84,7 +86,7 @@ public class IndexesRebuildTask {
         }
 
         // Closure prepared, do rebuild.
-        cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
+        cctx.kernalContext().query().markAsRebuildNeeded(cctx, true, cleanBuild);
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
@@ -108,7 +110,7 @@ public class IndexesRebuildTask {
 
             if (err == null) {
                 try {
-                    cctx.kernalContext().query().markAsRebuildNeeded(cctx, false);
+                    cctx.kernalContext().query().markAsRebuildNeeded(cctx, false, false);
                 }
                 catch (Throwable t) {
                     err = t;
