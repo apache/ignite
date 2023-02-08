@@ -67,12 +67,15 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
@@ -352,9 +355,15 @@ public class CdcMain implements Runnable {
                 cfg.setIgniteInstanceName(cdcInstanceName(igniteCfg.getIgniteInstanceName()));
                 cfg.setWorkDirectory(igniteCfg.getWorkDirectory());
 
-                // Use CDC-configured or default JmxMetricExporterSpi.
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
+
+                if (F.isEmpty(cfg.getMetricExporterSpi())) {
+                    cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED ? new NoopMetricExporterSpi() :
+                        new JmxMetricExporterSpi());
+                }
+
+                initializeDefaultMBeanServer(cfg);
 
                 return cfg;
             }
