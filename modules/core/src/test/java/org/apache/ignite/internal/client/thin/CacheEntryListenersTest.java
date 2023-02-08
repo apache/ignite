@@ -73,6 +73,9 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** */
     private boolean enpointsDiscoveryEnabled = true;
 
+    /** */
+    private boolean partitionAwarenessEnabled = true;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -83,6 +86,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         enpointsDiscoveryEnabled = true;
+        partitionAwarenessEnabled = true;
     }
 
     /** {@inheritDoc} */
@@ -95,6 +99,11 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected boolean isClientEndpointsDiscoveryEnabled() {
         return enpointsDiscoveryEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isClientPartitionAwarenessEnabled() {
+        return partitionAwarenessEnabled;
     }
 
     /** Test continuous queries. */
@@ -621,6 +630,8 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testContinuousQueriesWithConcurrentCompute() throws Exception {
+        partitionAwarenessEnabled = false;
+
         try (IgniteClient client = startClient(0, 1, 2)) {
             int threadsCnt = 20;
             int iterations = 50;
@@ -641,6 +652,10 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
                             QueryCursor<?> cur = cache.query(new ContinuousQuery<Integer, Integer>()
                                 .setLocalListener(lsnr));
+
+                            // This call and disable of PA are required to provide happens-before guaranties between
+                            // listener start and entry put. Without this call, event, triggered by put, can be skipped.
+                            cache.containsKey(0);
 
                             cache.put(i, i);
 
