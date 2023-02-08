@@ -43,13 +43,6 @@ public interface ConnectionEventListener extends EventListener {
     }
 
     /**
-     * @param event Authentication fail event.
-     */
-    default void onAuthenticationFail(AuthenticationFailEvent event) {
-        // No-op.
-    }
-
-    /**
      * @param event Connection closed event (with or without exception).
      */
     default void onConnectionClosed(ConnectionClosedEvent event) {

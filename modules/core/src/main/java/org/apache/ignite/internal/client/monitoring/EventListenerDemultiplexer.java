@@ -23,7 +23,6 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.client.events.AuthenticationFailEvent;
 import org.apache.ignite.client.events.ConnectionClosedEvent;
 import org.apache.ignite.client.events.ConnectionDescription;
 import org.apache.ignite.client.events.ConnectionEventListener;
@@ -194,20 +193,6 @@ public class EventListenerDemultiplexer {
             return;
 
         executeForEach(connEventListeners, l -> l.onHandshakeFail(new HandshakeFailEvent(conn, elapsedTimeNanos, throwable)));
-    }
-
-    /**
-     * @param conn Connection description.
-     * @param elapsedTimeNanos Elapsed time in nanoseconds.
-     * @param user User name.
-     * @param throwable Throwable that caused the failure.
-     */
-    public void onAuthenticationFail(ConnectionDescription conn, long elapsedTimeNanos, String user, Throwable throwable) {
-        if (F.isEmpty(connEventListeners))
-            return;
-
-        executeForEach(connEventListeners, l ->
-            l.onAuthenticationFail(new AuthenticationFailEvent(conn, elapsedTimeNanos, user, throwable)));
     }
 
     /**

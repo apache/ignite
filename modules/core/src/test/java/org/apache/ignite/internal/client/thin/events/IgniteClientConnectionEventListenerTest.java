@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.client.events.AuthenticationFailEvent;
 import org.apache.ignite.client.events.ConnectionClosedEvent;
 import org.apache.ignite.client.events.ConnectionEvent;
 import org.apache.ignite.client.events.ConnectionEventListener;
@@ -121,7 +121,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
 
     /** */
     @Test
-    public void testUnsupportedProtocolFail() throws Exception {
+    public void testUnsupportedProtocolFail() {
         ProtocolVersion unsupportedProto = new ProtocolVersion((short)1, (short)8, (short)0);
         assertTrue(unsupportedProto.compareTo(ProtocolVersion.LATEST_VER) > 0);
 
@@ -138,45 +138,24 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
 
     /** */
     @Test
-    public void testAuthenticationFail() throws Exception {
-        long startNano = System.nanoTime();
-        testFail(
-            () -> new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), EnumSet.of(FakeIgniteServer.ErrorType.AUTHENTICATION_ERROR)),
-            (AuthenticationFailEvent event, Throwable hsErr) -> {
-                assertTrue(System.nanoTime() - startNano >= event.elapsedTime(TimeUnit.NANOSECONDS));
-                assertEquals(hsErr, event.throwable());
-            },
-            AuthenticationFailEvent.class
-        );
+    public void testHandshakeFail() {
+        Stream.of(FakeIgniteServer.ErrorType.HANDSHAKE_CONNECTION_ERROR, FakeIgniteServer.ErrorType.HANDSHAKE_ERROR,
+            FakeIgniteServer.ErrorType.AUTHENTICATION_ERROR).forEach(errType -> {
+                AtomicLong startNano = new AtomicLong(System.nanoTime());
+                testFail(
+                    () -> new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), EnumSet.of(errType)),
+                    (HandshakeFailEvent event, Throwable hsErr) -> {
+                        assertTrue(System.nanoTime() - startNano.get() >= event.elapsedTime(TimeUnit.NANOSECONDS));
+                        assertEquals(hsErr, event.throwable());
+                    },
+                    HandshakeFailEvent.class
+                );
+            });
     }
 
     /** */
     @Test
-    public void testHandshakeFail() throws Exception {
-        AtomicLong startNano = new AtomicLong(System.nanoTime());
-        testFail(
-            () -> new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), EnumSet.of(FakeIgniteServer.ErrorType.HANDSHAKE_ERROR)),
-            (HandshakeFailEvent event, Throwable hsErr) -> {
-                assertTrue(System.nanoTime() - startNano.get() >= event.elapsedTime(TimeUnit.NANOSECONDS));
-                assertEquals(hsErr, event.throwable());
-            },
-            HandshakeFailEvent.class
-        );
-
-        startNano.set(System.nanoTime());
-        testFail(
-            () -> new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), EnumSet.of(FakeIgniteServer.ErrorType.HANDSHAKE_CONNECTION_ERROR)),
-            (HandshakeFailEvent event, Throwable hsErr) -> {
-                assertTrue(System.nanoTime() - startNano.get() >= event.elapsedTime(TimeUnit.NANOSECONDS));
-                assertEquals(hsErr, event.throwable());
-            },
-            HandshakeFailEvent.class
-        );
-    }
-
-    /** */
-    @Test
-    public void testConnectionLost() throws Exception {
+    public void testConnectionLost() {
         testFail(
             () -> new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), EnumSet.of(FakeIgniteServer.ErrorType.CONNECTION_ERROR)),
             IgniteClient::cacheNames,
@@ -190,7 +169,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
         Supplier<FakeIgniteServer> srvFactory,
         BiConsumer<Event, Throwable> checkEventAction,
         Class<Event> eventCls
-    ) throws Exception {
+    ) {
         testFail(srvFactory, client -> fail(), checkEventAction, eventCls);
     }
 
@@ -200,17 +179,13 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
         Consumer<IgniteClient> clientAction,
         BiConsumer<Event, Throwable> checkEventAction,
         Class<Event> eventCls
-    ) throws Exception {
+    ) {
         try (FakeIgniteServer srv = srvFactory.get()) {
             srv.start();
 
             Throwable hsErr = null;
             Map<Class<? extends ConnectionEvent>, ConnectionEvent> evSet = new ConcurrentHashMap<>();
             ConnectionEventListener lsnr = new ConnectionEventListener() {
-                @Override public void onAuthenticationFail(AuthenticationFailEvent event) {
-                    evSet.put(event.getClass(), event);
-                }
-
                 @Override public void onConnectionClosed(ConnectionClosedEvent event) {
                     evSet.put(event.getClass(), event);
                 }
@@ -243,6 +218,9 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
                 assertEquals(srv.nodeId(), failEv.connectionDescription().serverNodeId());
 
             checkEventAction.accept(failEv, hsErr);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed event test", e);
         }
     }
 

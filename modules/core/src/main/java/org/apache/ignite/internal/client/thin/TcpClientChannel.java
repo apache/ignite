@@ -728,10 +728,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                             long elapsedNanos = System.nanoTime() - startTime;
 
-                            if (errCode == ClientStatus.AUTH_FAILED)
-                                eventListener.onAuthenticationFail(connDesc, elapsedNanos, user, resultErr);
-                            else
-                                eventListener.onHandshakeFail(connDesc, elapsedNanos, resultErr);
+                            eventListener.onHandshakeFail(connDesc, elapsedNanos, resultErr);
 
                             throw resultErr;
                         }
