@@ -273,26 +273,19 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /**
-     * @return Detached binary array.
-     */
-    private byte[] detachArray() {
-        int len = length();
-
-        byte[] arr0 = new byte[len];
-
-        U.arrayCopy(arr, start, arr0, 0, len);
-
-        return arr0;
-    }
-
-    /**
      * @return Detached binary object.
      */
     public BinaryObjectImpl detach() {
         if (!detachAllowed || detached())
             return this;
 
-        return new BinaryObjectImpl(ctx, detachArray(), 0);
+        int len = length();
+
+        byte[] arr0 = new byte[len];
+
+        U.arrayCopy(arr, start, arr0, 0, len);
+
+        return new BinaryObjectImpl(ctx, arr0, 0);
     }
 
     /**
