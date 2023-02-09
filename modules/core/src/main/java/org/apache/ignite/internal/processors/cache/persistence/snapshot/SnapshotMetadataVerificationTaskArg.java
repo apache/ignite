@@ -25,9 +25,9 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Input parameters for checking snapshot partitions consistency task.
+ * Input parameters for checking snapshot metadata.
  */
-public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
+public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -37,8 +37,11 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
+    /** Incremental snapshot index. */
+    private int incIdx;
+
     /** Default constructor. */
-    public SnapshotMetadataCollectorTaskArg() {
+    public SnapshotMetadataVerificationTaskArg() {
         // No-op.
     }
 
@@ -46,9 +49,10 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      */
-    public SnapshotMetadataCollectorTaskArg(String snpName, @Nullable String snpPath) {
+    public SnapshotMetadataVerificationTaskArg(String snpName, @Nullable String snpPath, int incIdx) {
         this.snpName = snpName;
         this.snpPath = snpPath;
+        this.incIdx = incIdx;
     }
 
     /**
@@ -65,20 +69,29 @@ public class SnapshotMetadataCollectorTaskArg extends VisorDataTransferObject {
         return snpPath;
     }
 
+    /**
+     * @return Incremental snapshot index.
+     */
+    public int incrementalIndex() {
+        return incIdx;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
         U.writeString(out, snpPath);
+        out.writeInt(incIdx);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
         snpPath = U.readString(in);
+        incIdx = in.readInt();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotMetadataCollectorTaskArg.class, this);
+        return S.toString(SnapshotMetadataVerificationTaskArg.class, this);
     }
 }

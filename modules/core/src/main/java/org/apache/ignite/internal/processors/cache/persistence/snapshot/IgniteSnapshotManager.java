@@ -1209,7 +1209,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param meta Metadata to store.
      * @param smf File to store.
      */
-    private <M extends Serializable> void storeSnapshotMeta(M meta, File smf) {
+    public <M extends Serializable> void storeSnapshotMeta(M meta, File smf) {
         if (smf.exists())
             throw new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath());
 
@@ -1681,19 +1681,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Checks snapshot.
+     *
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name,
-        @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
+        return checkSnapshot(name, snpPath, -1);
+    }
+
+    /**
+     * Checks full and incremental snapshot.
+     *
+     * @param name Snapshot name.
+     * @param snpPath Snapshot directory path.
+     * @param incIdx Incremental snapshot index.
+     * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     */
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        return checkSnapshot(name, snpPath, null, false).chain(f -> {
+        return checkSnapshot(name, snpPath, null, false, incIdx).chain(f -> {
             try {
                 return f.get();
             }
@@ -1713,6 +1727,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param grps Collection of cache group names to check.
      * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
      *                              handlers, otherwise only system consistency check will be performed.
+     * @param incIdx Incremental snapshot index.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
@@ -1720,7 +1735,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
-        boolean includeCustomHandlers
+        boolean includeCustomHandlers,
+        int incIdx
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -1734,15 +1750,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
 
-        SnapshotMetadataCollectorTaskArg taskArg = new SnapshotMetadataCollectorTaskArg(name, snpPath);
+        SnapshotMetadataVerificationTaskArg taskArg = new SnapshotMetadataVerificationTaskArg(name, snpPath, incIdx);
 
         kctx0.task().execute(
-            SnapshotMetadataCollectorTask.class,
+            SnapshotMetadataVerificationTask.class,
             taskArg,
             options(bltNodes).withAuthenticationDisabled()
         ).listen(f0 -> {
-            if (f0.error() == null) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
+            if (f0.error() == null && F.isEmpty(f0.result().exceptions())) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result().meta();
 
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
@@ -1833,7 +1849,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
             }
             else {
-                if (f0.error() instanceof IgniteSnapshotVerifyException)
+                if (f0.error() == null)
+                    res.onDone(new IgniteSnapshotVerifyException(f0.result().exceptions()));
+                else if (f0.error() instanceof IgniteSnapshotVerifyException)
                     res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
                         new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
                 else
@@ -1891,7 +1909,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Read metadata.
      * @param <T> Type of metadata.
      */
-    <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
+    public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
         if (!smf.exists())
             throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
@@ -2321,7 +2339,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
-    private static String snapshotMetaFileName(String consId) {
+    public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 

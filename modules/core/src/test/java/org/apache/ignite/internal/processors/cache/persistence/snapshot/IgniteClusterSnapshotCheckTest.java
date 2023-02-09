@@ -109,7 +109,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Optional cache name to be created on demand. */
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
-    /** Cleanup data of task execution results if need. */
+    /** Cleanup data of task execution results if needed. */
     @Before
     public void beforeCheck() {
         jobResults.clear();
@@ -622,7 +622,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false, -1).get(TIMEOUT);
     }
 
     /**

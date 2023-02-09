@@ -50,9 +50,11 @@ public class SnapshotMetadata implements Serializable {
     private final UUID rqId;
 
     /** Snapshot name. */
+    @GridToStringInclude
     private final String snpName;
 
     /** Consistent id of a node to which this metadata relates. */
+    @GridToStringInclude
     private final String consId;
 
     /**
