@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -132,6 +133,7 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         backups = 2;
 
         int nodes = 3;
+        int txs = 10;
 
         Ignite g = startGrids(nodes);
 
@@ -146,16 +148,17 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
                 msg instanceof GridDhtTxFinishRequest && !((GridDistributedTxFinishRequest)msg).commit());
         }
 
+        AtomicInteger key = new AtomicInteger();
+
         multithreadedAsync(() -> {
             try (Transaction tx = cln.transactions().txStart()) {
-                for (int i = 0; i < 1; i++)
-                    cln.cache(DEFAULT_CACHE_NAME).put(0, 0);
+                cln.cache(DEFAULT_CACHE_NAME).put(key.incrementAndGet(), 0);
 
                 tx.commit();
             }
-        }, 1, "async-tx");
+        }, txs, "async-tx");
 
-        TestRecordingCommunicationSpi.spi(cln).waitForBlocked(1);
+        TestRecordingCommunicationSpi.spi(cln).waitForBlocked(txs);
 
         stopGrid(nodes);
 
