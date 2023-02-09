@@ -170,7 +170,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         int transformCancelled = transformableVal ? 0 : 1;
         int restored = transformableVal && binarizableVal ? NODES : 0; // Binary array is required (e.g. to wait for proper Metadata)
 
-        checkEvents(transformed, transformCancelled, restored);
+        checkEvents(transformed, transformCancelled, restored, transformableVal);
     }
 
     /**
@@ -233,25 +233,28 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         int transformCancelled = 0;
         int restored = transformableVal ? 1 : 0; // Value restored.
 
-        checkEvents(transformed, transformCancelled, restored);
+        checkEvents(transformed, transformCancelled, restored, transformableVal);
     }
 
     /**
      *
      */
-    private void checkEvents(int transformed, int transformCancelled, int restored) {
+    private void checkEvents(int transformed, int transformCancelled, int restored, boolean transformableVal) {
         for (int i = transformed + transformCancelled + restored; i > 0; i--) {
             CacheObjectTransformedEvent evt = event();
 
             if (evt.isRestore())
                 restored--;
-            else if (evt.getTransformed() != null) {
-                transformed--;
+            else {
+                boolean arrEqual = Arrays.equals(evt.getOriginal(), evt.getTransformed());
 
-                assertFalse(evt.toString(), Arrays.equals(evt.getOriginal(), evt.getTransformed()));
+                assertEquals(transformableVal, !arrEqual);
+
+                if (!arrEqual)
+                    transformed--;
+                else
+                    transformCancelled--;
             }
-            else
-                transformCancelled--;
         }
 
         assertEquals(0, transformed);

@@ -104,7 +104,7 @@ public class CacheObjectTransformerUtils {
                         "Object transformation was cancelled.",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         res,
-                        null,
+                        res,
                         false));
             }
 

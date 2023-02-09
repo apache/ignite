@@ -54,8 +54,11 @@ public class CacheObjectTransformedEvent extends EventAdapter {
         boolean restore) {
         super(node, msg, type);
 
+        assert original != null;
+        assert transformed != null;
+
         this.original = original.clone();
-        this.transformed = transformed == null ? null : transformed.clone();
+        this.transformed = transformed.clone();
         this.restore = restore;
     }
 
