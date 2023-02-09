@@ -121,30 +121,15 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         arr = arrayFromValueBytes(coCtx);
     }
 
-    /**
-     * @param ctx Context.
-     * @param arr Array.
-     * @param start Start.
-     * @param valBytes Value bytes.
-     */
-    private BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start, byte[] valBytes) {
-        assert ctx != null;
-        assert arr != null || valBytes != null;
-
-        this.ctx = ctx;
-        this.arr = arr;
-        this.start = start;
-        this.valBytes = valBytes;
-    }
-
     /** {@inheritDoc} */
     @Override public KeyCacheObject copy(int part) {
         if (this.part == part)
             return this;
 
-        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start, arr);
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
 
         cp.part = part;
+        cp.valBytes = arr;
 
         return cp;
     }
