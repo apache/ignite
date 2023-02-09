@@ -57,7 +57,6 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
-import static org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper.MAX_CONN_PER_NODE;
 
 /**
  * Registry of client connections.
@@ -188,7 +187,7 @@ public class ConnectionClientPool {
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
-        assert connIdx > MAX_CONN_PER_NODE || (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
+        assert GridNioServerWrapper.isChannelConnIdx(connIdx) || (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
             || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
 
         if (locNodeSupplier.get().isClient()) {
@@ -495,7 +494,7 @@ public class ConnectionClientPool {
 
         if (connIdx >= cfg.connectionsPerNode()) {
             assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) ||
-                connIdx > MAX_CONN_PER_NODE;
+                GridNioServerWrapper.isChannelConnIdx(connIdx);
 
             return;
         }
