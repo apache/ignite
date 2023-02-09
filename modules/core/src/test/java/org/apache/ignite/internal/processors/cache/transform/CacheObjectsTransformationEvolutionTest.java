@@ -193,7 +193,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
                 ControllableCacheObjectTransformer.transformationShift(shift);
 
-                cache.put(kv0, kv0); // Using the value that has been got from the cache as a key and as a value.
+                cache.put(kv0, kv0); // Using the value which was obtained from the cache as a key and as a value.
             }
         }
 
