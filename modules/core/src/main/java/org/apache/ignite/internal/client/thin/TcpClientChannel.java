@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Timer;
@@ -192,10 +193,39 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         timeout = cfg.getTimeout();
 
-        sock = connMgr.open(cfg.getAddress(), this, this);
+        List<InetSocketAddress> addrs = cfg.getAddresses();
 
-        if (log.isDebugEnabled())
-            log.debug("Connection establised: " + cfg.getAddress());
+        ClientConnection sock = null;
+        ClientConnectionException connectionEx = null;
+
+        assert !addrs.isEmpty();
+
+        for (InetSocketAddress addr : addrs) {
+            try {
+                sock = connMgr.open(addr, this, this);
+
+                if (log.isDebugEnabled())
+                    log.debug("Connection established: " + addr);
+
+                break;
+            }
+            catch (ClientConnectionException e) {
+                log.info("Can't establish connection with " + addr);
+
+                if (connectionEx != null)
+                    connectionEx.addSuppressed(e);
+                else
+                    connectionEx = e;
+            }
+        }
+
+        if (sock == null) {
+            assert connectionEx != null;
+
+            throw connectionEx;
+        }
+
+        this.sock = sock;
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
@@ -633,13 +663,18 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private static void validateConfiguration(ClientChannelConfiguration cfg) {
         String error = null;
 
-        InetSocketAddress addr = cfg.getAddress();
+        List<InetSocketAddress> addrs = cfg.getAddresses();
 
-        if (addr == null)
+        if (F.isEmpty(addrs))
             error = "At least one Ignite server node must be specified in the Ignite client configuration";
-        else if (addr.getPort() < 1024 || addr.getPort() > 49151)
-            error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
-        else if (cfg.getHeartbeatInterval() <= 0)
+        else {
+            for (InetSocketAddress addr : addrs) {
+                if (addr.getPort() < 1024 || addr.getPort() > 49151)
+                    error = String.format("Ignite client port %s is out of valid ports range 1024...49151", addr.getPort());
+            }
+        }
+
+        if (error == null && cfg.getHeartbeatInterval() <= 0)
             error = "heartbeatInterval cannot be zero or less.";
 
         if (error != null)
@@ -883,6 +918,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     ", recommended: " + recommendedHeartbeatInterval + ", server-side IdleTimeout: " + serverIdleTimeoutMs + ")");
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "TcpClientChannel [srvNodeId=" + srvNodeId + ", addr=" + sock.remoteAddress() + ']';
     }
 
     /** */

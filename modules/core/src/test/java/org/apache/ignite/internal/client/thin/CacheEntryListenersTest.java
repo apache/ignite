@@ -70,6 +70,12 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** Timeout. */
     private static final long TIMEOUT = 1_000L;
 
+    /** */
+    private boolean enpointsDiscoveryEnabled = true;
+
+    /** */
+    private boolean partitionAwarenessEnabled = true;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -78,10 +84,26 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        enpointsDiscoveryEnabled = true;
+        partitionAwarenessEnabled = true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
                 new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(100)));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isClientEndpointsDiscoveryEnabled() {
+        return enpointsDiscoveryEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isClientPartitionAwarenessEnabled() {
+        return partitionAwarenessEnabled;
     }
 
     /** Test continuous queries. */
@@ -199,6 +221,9 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** Test continuous queries with page size parameter. */
     @Test
     public void testContinuousQueriesWithPageSize() throws Exception {
+        // It's required to connect exactly to nodes 1 and 2, without node 0.
+        enpointsDiscoveryEnabled = false;
+
         try (IgniteClient client = startClient(1, 2)) {
             ClientCache<Integer, Integer> cache = client.getOrCreateCache("testCQWithPageSize");
             IgniteCache<Integer, Integer> nodeCache = grid(0).getOrCreateCache(cache.getName());
@@ -230,6 +255,9 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** Test continuous queries with time interval parameter. */
     @Test
     public void testContinuousQueriesWithTimeInterval() throws Exception {
+        // It's required to connect exactly to nodes 1 and 2, without node 0.
+        enpointsDiscoveryEnabled = false;
+
         try (IgniteClient client = startClient(1, 2)) {
             ClientCache<Integer, Integer> cache = client.getOrCreateCache("testCQWithTimeInterval");
             IgniteCache<Integer, Integer> nodeCache = grid(0).getOrCreateCache(cache.getName());
@@ -602,6 +630,8 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testContinuousQueriesWithConcurrentCompute() throws Exception {
+        partitionAwarenessEnabled = false;
+
         try (IgniteClient client = startClient(0, 1, 2)) {
             int threadsCnt = 20;
             int iterations = 50;
@@ -622,6 +652,10 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
 
                             QueryCursor<?> cur = cache.query(new ContinuousQuery<Integer, Integer>()
                                 .setLocalListener(lsnr));
+
+                            // This call and disable of PA are required to provide happens-before guaranties between
+                            // listener start and entry put. Without this call, event, triggered by put, can be skipped.
+                            cache.containsKey(0);
 
                             cache.put(i, i);
 
