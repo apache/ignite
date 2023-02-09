@@ -46,6 +46,8 @@ public interface CacheObjectTransformer {
 
     /**
      * Returns {@code true} when direct byte buffers are required.
+     *
+     * @return Direct flag.
      */
     public boolean direct();
 }
