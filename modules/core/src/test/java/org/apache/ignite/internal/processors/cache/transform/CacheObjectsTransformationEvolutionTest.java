@@ -75,9 +75,6 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         ControllableCacheObjectTransformer.rCntr.clear();
     }
 
-
-    //TODO TX, Atomic
-
     /**
      * @throws Exception If failed.
      */
