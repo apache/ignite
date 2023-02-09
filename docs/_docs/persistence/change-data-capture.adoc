@@ -173,7 +173,8 @@ The application will start from the `0000000000000010.wal` segment after being e
 
 == Flush existing caches
 
-In some cases when the CDC has been forcefully disabled, it is necessary to flush data from existing caches, for example:
+In some cases when the CDC has been forcefully disabled for a while, it is necessary to flush data from
+existing caches, for example:
 
 - pre-synchronize replication;
 - handle missed segments.
