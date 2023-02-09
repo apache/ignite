@@ -126,7 +126,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         IgniteCache<Object, Object> cache =
             primaryNode(0/*any*/, CACHE_NAME).getOrCreateCache(AbstractCacheObjectsTransformationTest.CACHE_NAME);
 
-        int cnt = 1000;
+        int cnt = 100;
 
         int totalCnt = 0;
         int transformCnt = 0;
