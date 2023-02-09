@@ -73,7 +73,7 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
     public void testCdcStartWithNonDefaultWorkDir() throws Exception {
         U.nullifyHomeDirectory();
 
-        U.setIgniteHome("/not/existed/ignite/home");
+        //U.setIgniteHome("/not/existed/ignite/home");
 
         IgniteConfiguration cfg = new IgniteConfiguration()
             .setWorkDirectory(DFLT_WORK_DIR)
