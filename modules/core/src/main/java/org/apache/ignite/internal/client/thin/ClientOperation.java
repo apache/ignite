@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
 
 /** Operation codes. */
 public enum ClientOperation {
+    /** Handshake */
+    HANDSHAKE(-1),
+
     /** Resource close. */
     RESOURCE_CLOSE(0),
 
