@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.EnumSet;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SE_281_THIN_CLIENT_COMPATIBLE;
 
@@ -35,6 +36,13 @@ public class ProtocolContext {
 
     /** */
     private final boolean ise281Compatible;
+
+    /**
+     * @param ver Protocol version.
+     */
+    public ProtocolContext(ProtocolVersion ver) {
+        this(ver, null);
+    }
 
     /**
      * @param ver Protocol version.
@@ -115,5 +123,14 @@ public class ProtocolContext {
     public static boolean isIse281Compatible(ProtocolVersion ver) {
         return IgniteSystemProperties.getBoolean(IGNITE_SE_281_THIN_CLIENT_COMPATIBLE, false) &&
             ProtocolVersion.V1_7_0.equals(ver);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(
+            ProtocolContext.class.getSimpleName(),
+            "version", version(), false,
+            "features", features.toString(), false
+        );
     }
 }
