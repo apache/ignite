@@ -152,7 +152,7 @@ So when enabled there will be gap between segments: `0000000000000002.wal`, `000
 In this case `ignite-cdc.sh` will fail with the something like "Found missed segments. Some events are missed. Exiting! [lastSegment=2, nextSegment=10]".
 
 NOTE: Make sure you need to sync data before restarting the CDC application. You can synchronize caches using
-flush caches command, snapshot or other methods.
+link:#flush-existing-caches[flush caches command], snapshot or other methods.
 
 To fix this error you can run the following link:tools/control-script[Control Script] command:
 
