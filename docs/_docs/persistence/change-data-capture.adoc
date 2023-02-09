@@ -173,11 +173,11 @@ The application will start from the `0000000000000010.wal` segment after being e
 
 == Flush existing caches
 
-In some cases when the CDC has been forcefully disabled for a while, it is necessary to flush data from
-existing caches, for example:
+When the CDC has been forcefully disabled for a while, cache changes will be skipped.
+In this case it is necessary to flush data from existing caches. For example, this is important for the following cases:
 
-- pre-synchronize replication;
-- handle missed segments.
+- pre-synchronizing replication;
+- handling missed segments.
 
 To flush cache entries you can run the following link:tools/control-script[Control Script] command:
 
@@ -187,7 +187,7 @@ To flush cache entries you can run the following link:tools/control-script[Contr
 control.sh|bat --cdc flush_caches --caches cache1,...,cacheN [--only-primary]
 ----
 
-The command will iterate over caches and writes data entries to the WAL to get captured by CDC.
+The command will iterate over caches and writes data entries to the WAL to get captured by CDC application.
 
 == cdc-ext
 
