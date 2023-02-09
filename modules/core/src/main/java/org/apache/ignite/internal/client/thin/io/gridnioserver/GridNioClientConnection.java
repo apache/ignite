@@ -64,16 +64,21 @@ class GridNioClientConnection implements ClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException {
-        if (onDone != null)
-            ses.send(msg).listen(f -> onDone.run());
-        else
-            ses.sendNoFuture(msg, null);
+    @Override @Nullable public InetSocketAddress localAddress() {
+        return ses.localAddress();
     }
 
     /** {@inheritDoc} */
     @Override @Nullable public InetSocketAddress remoteAddress() {
         return ses.remoteAddress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void send(ByteBuffer msg, @Nullable Runnable onDone) throws IgniteCheckedException {
+        if (onDone != null)
+            ses.send(msg).listen(f -> onDone.run());
+        else
+            ses.sendNoFuture(msg, null);
     }
 
     /** {@inheritDoc} */

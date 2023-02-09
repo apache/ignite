@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.monitoring.EventListenerDemultiplexer;
 
 /**
  * Configuration required to initialize {@link TcpClientChannel}.
@@ -112,6 +113,9 @@ final class ClientChannelConfiguration {
     /** */
     private final IgniteLogger logger;
 
+    /** */
+    private final EventListenerDemultiplexer eventListener;
+
     /**
      * Constructor.
      */
@@ -143,6 +147,7 @@ final class ClientChannelConfiguration {
         this.heartbeatInterval = cfg.getHeartbeatInterval();
         this.autoBinaryConfigurationEnabled = cfg.isAutoBinaryConfigurationEnabled();
         this.logger = cfg.getLogger();
+        this.eventListener = EventListenerDemultiplexer.create(cfg);
     }
 
     /**
@@ -326,5 +331,10 @@ final class ClientChannelConfiguration {
      */
     public IgniteLogger getLogger() {
         return logger;
+    }
+
+    /** */
+    public EventListenerDemultiplexer eventListener() {
+        return eventListener;
     }
 }
