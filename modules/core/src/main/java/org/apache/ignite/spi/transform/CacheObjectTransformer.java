@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.transform;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -30,21 +31,21 @@ public interface CacheObjectTransformer {
     /**
      * Transforms the data.
      *
-     * @param bytes  Byte array contains the data.
-     * @param offset Data offset.
-     * @param length Data length.
-     * @return Byte array contains the transformed data started with non-filled area with {@link #OVERHEAD} size
-     * or null when transformation is not possible/suitable.
+     * @param original Original data.
+     * @return Transformed data or {@code null} when transformation is not possible/suitable.
      */
-    public byte[] transform(byte[] bytes, int offset, int length);
+    public ByteBuffer transform(ByteBuffer original);
 
     /**
      * Restores the data.
      *
-     * @param bytes  Byte array contains the transformed data.
-     * @param offset Data offset.
-     * @param length Data length.
-     * @return Byte array contains the restored data.
+     * @param transformed Transformed data.
+     * @return Restored data.
      */
-    public byte[] restore(byte[] bytes, int offset, int length);
+    public ByteBuffer restore(ByteBuffer transformed);
+
+    /**
+     * Returns {@code true} when direct byte buffers are required.
+     */
+    public boolean direct();
 }

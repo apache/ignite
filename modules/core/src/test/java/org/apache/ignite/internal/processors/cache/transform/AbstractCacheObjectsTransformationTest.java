@@ -395,7 +395,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer transform(ByteBuffer original) {
+        @Override public ByteBuffer transform(ByteBuffer original) {
             if (failOnTransformation())
                 return null;
 
@@ -414,7 +414,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer restore(ByteBuffer transformed) {
+        @Override public ByteBuffer restore(ByteBuffer transformed) {
             ByteBuffer restored = byteBuffer(transformed.remaining() - 4);
 
             int origShift = transformed.getInt();

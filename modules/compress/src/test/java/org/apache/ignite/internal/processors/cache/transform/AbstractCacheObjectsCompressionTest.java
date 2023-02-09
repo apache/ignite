@@ -101,12 +101,12 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         static final LZ4Compressor lz4Compressor = lz4Factory.highCompressor(1);
 
         /** {@inheritDoc} */
-        @Override protected boolean direct() {
+        @Override public boolean direct() {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer transform(ByteBuffer original) {
+        @Override public ByteBuffer transform(ByteBuffer original) {
             if (type == CompressionType.DISABLED)
                 return null;
 
@@ -194,7 +194,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer restore(ByteBuffer transformed) {
+        @Override public ByteBuffer restore(ByteBuffer transformed) {
             CompressionType type = CompressionType.values()[transformed.getInt()];
             int length = transformed.getInt();
 

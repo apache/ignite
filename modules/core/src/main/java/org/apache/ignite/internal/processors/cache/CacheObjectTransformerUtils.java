@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
 
@@ -27,6 +29,9 @@ import static org.apache.ignite.spi.transform.CacheObjectTransformer.OVERHEAD;
 
 /** */
 public class CacheObjectTransformerUtils {
+    /** Source byte buffer. */
+    private static final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer();
+
     /** Version. */
     private static final byte VER = 0;
 
@@ -59,11 +64,24 @@ public class CacheObjectTransformerUtils {
         if (transformer == null)
             return bytes;
 
-        byte[] transformed = transformer.transform(bytes, offset, length);
+        ByteBuffer src = sourceByteBuffer(bytes, offset, length, transformer.direct());
+        ByteBuffer transformed = transformer.transform(src);
 
         if (transformed != null) {
-            transformed[0] = TRANSFORMED;
-            transformed[1] = VER;
+            assert transformed.remaining() > 0 : transformed.remaining();
+
+            byte[] res = new byte[OVERHEAD + transformed.remaining()];
+
+            if (transformed.isDirect())
+                transformed.get(res, OVERHEAD, transformed.remaining());
+            else {
+                byte[] arr = transformed.array();
+
+                U.arrayCopy(arr, 0, res, OVERHEAD, arr.length);
+            }
+
+            res[0] = TRANSFORMED;
+            res[1] = VER;
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
@@ -71,11 +89,11 @@ public class CacheObjectTransformerUtils {
                         "Object transformed",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         detachIfNecessary(bytes, offset, length),
-                        transformed,
+                        res,
                         false));
             }
 
-            return transformed;
+            return res;
         }
         else {
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
@@ -123,28 +141,55 @@ public class CacheObjectTransformerUtils {
 
         assert transformed == TRANSFORMED;
 
-        byte[] restored;
+        int offset;
 
         if (ver == 0) {
-            int offset = 1 /*transformed*/ + 1 /*ver*/;
+            offset = 1 /*transformed*/ + 1 /*ver*/;
 
             assert offset == OVERHEAD : offset; // Correct while VER == 0;
-
-            restored = transformer.restore(bytes, offset, bytes.length - offset);
         }
         else
             throw new IllegalStateException("Unknown version " + ver);
+
+        ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset, transformer.direct());
+        ByteBuffer restored = transformer.restore(src);
+
+        byte[] res;
+
+        if (restored.isDirect()) {
+            res = new byte[restored.remaining()];
+
+            restored.get(res);
+        }
+        else
+            res = restored.array();
 
         if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
             ctx.kernalContext().event().record(
                 new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                     "Object restored",
                     EVT_CACHE_OBJECT_TRANSFORMED,
-                    restored,
+                    res,
                     bytes,
                     true));
         }
 
-        return restored;
+        return res;
+    }
+
+    /** */
+    private static ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length, boolean direct) {
+        ByteBuffer src;
+
+        if (direct) {
+            src = srcBuf.get(bytes.length);
+
+            src.put(bytes, offset, length);
+            src.flip();
+        }
+        else
+            src = ByteBuffer.wrap(bytes, offset, length);
+
+        return src;
     }
 }

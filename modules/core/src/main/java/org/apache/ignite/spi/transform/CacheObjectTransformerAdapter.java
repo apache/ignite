@@ -19,42 +19,20 @@ package org.apache.ignite.spi.transform;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  *
  */
-@IgniteExperimental
 public abstract class CacheObjectTransformerAdapter implements CacheObjectTransformer {
-    /** Source byte buffer. */
-    private final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer();
-
-    /** Destination byte buffer. */
-    private final ThreadLocalDirectByteBuffer dstBuf = new ThreadLocalDirectByteBuffer();
-
-    /** */
-    private ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length) {
-        ByteBuffer src;
-
-        if (direct()) {
-            src = srcBuf.get(bytes.length);
-
-            src.put(bytes, offset, length);
-            src.flip();
-        }
-        else
-            src = ByteBuffer.wrap(bytes, offset, length);
-
-        return src;
-    }
+    /** Byte buffer. */
+    private final ThreadLocalDirectByteBuffer buf = new ThreadLocalDirectByteBuffer();
 
     /** Thread local direct byte buffer with a required capacty. */
     protected ByteBuffer byteBuffer(int capacity) {
         ByteBuffer buf;
 
         if (direct()) {
-            buf = dstBuf.get(capacity);
+            buf = this.buf.get(capacity);
 
             buf.limit(capacity);
         }
@@ -65,64 +43,7 @@ public abstract class CacheObjectTransformerAdapter implements CacheObjectTransf
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] transform(byte[] bytes, int offset, int length) {
-        ByteBuffer src = sourceByteBuffer(bytes, offset, length);
-        ByteBuffer transformed = transform(src);
-
-        if (transformed == null)
-            return null;
-
-        assert transformed.remaining() > 0 : transformed.remaining();
-
-        byte[] res = new byte[OVERHEAD + transformed.remaining()];
-
-        if (transformed.isDirect())
-            transformed.get(res, OVERHEAD, transformed.remaining());
-        else {
-            byte[] arr = transformed.array();
-
-            U.arrayCopy(arr, 0, res, OVERHEAD, arr.length);
-        }
-
-        return res;
-    }
-
-    /**
-     * Transforms the data.
-     *
-     * @param original Original data.
-     * @return Transformed data or null when transformation is not possible/suitable.
-     */
-    protected abstract ByteBuffer transform(ByteBuffer original);
-
-    /** {@inheritDoc} */
-    @Override public byte[] restore(byte[] bytes, int offset, int length) {
-        ByteBuffer src = sourceByteBuffer(bytes, offset, length);
-        ByteBuffer restored = restore(src);
-
-        if (restored.isDirect()) {
-            byte[] res = new byte[restored.remaining()];
-
-            restored.get(res);
-
-            return res;
-        }
-        else
-            return restored.array();
-    }
-
-    /**
-     * Restores the data.
-     *
-     * @param transformed Transformed data.
-     * @return Restored data.
-     */
-    protected abstract ByteBuffer restore(ByteBuffer transformed);
-
-    /**
-     * Returns {@code true} when direct byte buffers are required.
-     */
-    protected boolean direct() {
+    @Override public boolean direct() {
         return false;
     }
 }
