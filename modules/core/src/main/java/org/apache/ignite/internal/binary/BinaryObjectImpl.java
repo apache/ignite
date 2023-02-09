@@ -264,12 +264,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
         assert part == -1; // Keys should never be transformed.
 
-        byte[] bytes = CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx);
-
-        if (bytes == arr && !detached()) // Was not transformed, but starts not from 0.
-            return detachArray();
-        else
-            return bytes;
+        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx);
     }
 
     /** {@inheritDoc} */

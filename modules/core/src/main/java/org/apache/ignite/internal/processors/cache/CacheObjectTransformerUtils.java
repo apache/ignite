@@ -96,17 +96,19 @@ public class CacheObjectTransformerUtils {
             return res;
         }
         else {
+            byte[] res = detachIfNecessary(bytes, offset, length);
+
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                         "Object transformation was cancelled.",
                         EVT_CACHE_OBJECT_TRANSFORMED,
-                        detachIfNecessary(bytes, offset, length),
+                        res,
                         null,
                         false));
             }
 
-            return bytes;
+            return res;
         }
     }
 
