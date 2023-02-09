@@ -46,6 +46,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils.getResult;
+
 /**
  * Interop compute.
  */
@@ -378,7 +380,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         IgniteInternalFuture<?> fut = compute.executeAsync(taskName, arg);
 
-        return async ? readAndListenFuture(reader, fut) : toBinary(fut.get());
+        return async ? readAndListenFuture(reader, fut) : toBinary(getResult(fut));
     }
 
     /**
