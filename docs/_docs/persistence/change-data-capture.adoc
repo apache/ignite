@@ -171,7 +171,7 @@ For example, CDC was turned off several times: `000000000000002.wal`, `000000000
 Then, after the command is executed, the following segment links will be deleted: `000000000000002.wal`, `000000000000003.wal`, `000000000000008.wal`.
 The application will start from the `0000000000000010.wal` segment after being enabled.
 
-== Flush existing data
+== Flush existing caches
 
 In some cases the CDC needs to flush data from existing caches, for example:
 

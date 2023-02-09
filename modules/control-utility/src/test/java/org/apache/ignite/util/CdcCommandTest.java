@@ -159,8 +159,6 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             "Failed to delete lost segment CDC links. Unable to acquire lock to lock CDC folder.");
 
         assertFalse(fut.isDone());
-
-        fut.cancel();
     }
 
     /** */
@@ -264,14 +262,13 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
-        checkSize(cnsmr0, KEYS_CNT);
-        checkSize(cnsmr1, KEYS_CNT);
+        waitForSize(cnsmr0, KEYS_CNT);
+        waitForSize(cnsmr1, KEYS_CNT);
 
         cnsmr0.clear();
         cnsmr1.clear();
 
-        executeCommand(EXIT_CODE_OK,
-            CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME, ONLY_PRIMARY);
+        executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME, ONLY_PRIMARY);
 
         checkFlushCaches(srv0, cnsmr0, true);
         checkFlushCaches(srv1, cnsmr1, true);
@@ -279,8 +276,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         cnsmr0.clear();
         cnsmr1.clear();
 
-        executeCommand(EXIT_CODE_OK,
-            CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME);
+        executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME);
 
         checkFlushCaches(srv0, cnsmr0, false);
         checkFlushCaches(srv1, cnsmr1, false);
@@ -290,7 +286,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     private void checkFlushCaches(Ignite srv, UserCdcConsumer cnsmr, boolean onlyPrimary) throws Exception {
         int keyCnt = onlyPrimary ? srv.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY) : KEYS_CNT;
 
-        checkSize(cnsmr, keyCnt);
+        waitForSize(cnsmr, keyCnt);
     }
 
     /** */
@@ -314,7 +310,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /** */
-    private void checkSize(UserCdcConsumer cnsmr, int expSize) throws Exception {
+    private void waitForSize(UserCdcConsumer cnsmr, int expSize) throws Exception {
         assertTrue(waitForCondition(() -> expSize == cnsmr.data(UPDATE, CU.cacheId(DEFAULT_CACHE_NAME)).size(),
             getTestTimeout()));
     }
