@@ -136,8 +136,6 @@ public class CacheObjectTransformerUtils {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectTransformer transformer = transformer(ctx);
-
         byte transformed = bytes[0];
         byte ver = bytes[1];
 
@@ -152,6 +150,8 @@ public class CacheObjectTransformerUtils {
         }
         else
             throw new IllegalStateException("Unknown version " + ver);
+
+        CacheObjectTransformer transformer = transformer(ctx);
 
         ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset, transformer.direct());
         ByteBuffer restored = transformer.restore(src);
