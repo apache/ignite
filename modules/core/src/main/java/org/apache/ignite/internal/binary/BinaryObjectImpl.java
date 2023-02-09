@@ -127,7 +127,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param start Start.
      * @param valBytes Value bytes.
      */
-    public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start, byte[] valBytes) {
+    private BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start, byte[] valBytes) {
         assert ctx != null;
         assert arr != null || valBytes != null;
 
