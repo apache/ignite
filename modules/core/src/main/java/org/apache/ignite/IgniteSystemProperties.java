@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DF
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.DFLT_MARSHAL_BUFFERS_RECHECK;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.DFLT_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DFLT_DISCOVERY_HISTORY_SIZE;
-import static org.apache.ignite.internal.managers.indexing.IndexesRebuildTask.DFLT_DISABLE_WAL_DURING_INDEX_REBUILD;
+import static org.apache.ignite.internal.managers.indexing.IndexesRebuildTask.DFLT_DISABLE_WAL_DURING_FULL_INDEX_REBUILD;
 import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.DFLT_AFFINITY_BACKUPS_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_PART_DISTRIBUTION_WARN_THRESHOLD;
@@ -1469,11 +1469,11 @@ public final class IgniteSystemProperties {
 
     /**
      * When set to {@code false}, WAL will not be automatically disabled for index during full index rebuild.
-     * Default is {@link IndexesRebuildTask#DFLT_DISABLE_WAL_DURING_INDEX_REBUILD}.
+     * Default is {@link IndexesRebuildTask#DFLT_DISABLE_WAL_DURING_FULL_INDEX_REBUILD}.
      */
     @SystemProperty(value = "When set to false, WAL will not be automatically disabled during " +
-        "full index rebuild", defaults = "" + DFLT_DISABLE_WAL_DURING_INDEX_REBUILD)
-    public static final String IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD = "IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD";
+        "full index rebuild", defaults = "" + DFLT_DISABLE_WAL_DURING_FULL_INDEX_REBUILD)
+    public static final String IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD = "IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD";
 
     /**
      * When property is set {@code false} each next exchange will try to compare with previous.

@@ -37,7 +37,7 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     private String cacheName;
 
     /** */
-    private boolean rebuildFromScratch;
+    private boolean fullRebuild;
 
     /**
      * Default constructor for {@link Externalizable}.
@@ -51,15 +51,15 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
      *
      * @param cacheName Cache name.
      */
-    public IndexRebuildCacheInfo(String cacheName, boolean rebuildFromScratch) {
+    public IndexRebuildCacheInfo(String cacheName, boolean fullRebuild) {
         this.cacheName = cacheName;
-        this.rebuildFromScratch = rebuildFromScratch;
+        this.fullRebuild = fullRebuild;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeLongString(out, cacheName);
-        out.writeBoolean(rebuildFromScratch);
+        out.writeBoolean(fullRebuild);
     }
 
     /** {@inheritDoc} */
@@ -78,6 +78,11 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
      */
     public String cacheName() {
         return cacheName;
+    }
+
+    /** @return {@code True} if rebuilding indexes, otherwise building a new index. */
+    public boolean fullRebuild() {
+        return fullRebuild;
     }
 
     /** {@inheritDoc} */

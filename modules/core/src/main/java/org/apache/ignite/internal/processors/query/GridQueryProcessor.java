@@ -4320,7 +4320,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Mark that index for cache rebuilding from scratch. */
     public void markIndexBuildFromScratch(GridCacheContext cacheCtx) {
-        idxBuildStatusStorage.markIndexBuildFromScratch(cacheCtx);
+        idxBuildStatusStorage.markFullIndexRebuild(cacheCtx);
     }
 
     /**
@@ -4348,7 +4348,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     public boolean rebuildIndexesFromScratchCompleted(String cacheName) {
-        return idxBuildStatusStorage.rebuildFromScratchCompleted(cacheName);
+        return idxBuildStatusStorage.fullRebuildCompleted(cacheName);
     }
 
     /**

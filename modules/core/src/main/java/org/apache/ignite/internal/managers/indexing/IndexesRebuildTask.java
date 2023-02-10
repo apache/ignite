@@ -38,16 +38,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Task that rebuilds indexes.
  */
 public class IndexesRebuildTask {
-    /**
-     * @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD
-     */
-    public static final boolean DFLT_DISABLE_WAL_DURING_INDEX_REBUILD = true;
+    /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD */
+    public static final boolean DFLT_DISABLE_WAL_DURING_FULL_INDEX_REBUILD = true;
 
     /** Index rebuilding futures for caches. Mapping: cacheId -> rebuild indexes future. */
     private final Map<Integer, SchemaIndexCacheFuture> idxRebuildFuts = new ConcurrentHashMap<>();
@@ -75,9 +74,9 @@ public class IndexesRebuildTask {
 
         String cacheName = cctx.name();
 
-        boolean cleanBuild = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
+        boolean fullRebuild = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
 
-        if (cleanBuild) {
+        if (fullRebuild) {
             boolean mvccEnabled = cctx.mvccEnabled();
 
             // If there are no index store, rebuild all indexes.
@@ -95,7 +94,7 @@ public class IndexesRebuildTask {
         // Closure prepared, do rebuild.
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
-        if (cleanBuild && IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD)) {
+        if (fullRebuild && getBoolean(IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD)) {
             cctx.kernalContext().query().markIndexBuildFromScratch(cctx);
 
             if (cctx.group().persistenceEnabled())
