@@ -85,9 +85,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING */
     public static final boolean DFLT_DISABLE_WAL_DURING_REBALANCING = true;
 
-    /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD */
-    public static final boolean DFLT_DISABLE_WAL_DURING_INDEX_REBUILD = true;
-
     /** ID history for discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<T2<UUID, Boolean>> discoMsgIdHist =
         new GridBoundedConcurrentLinkedHashSet<>(HIST_SIZE);

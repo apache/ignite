@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -73,6 +74,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -88,6 +90,12 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
  *
  */
 public class CacheGroupContext {
+    /**
+     * @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD
+     * @see #indexWalEnabled(boolean)
+     */
+    public static final boolean DFLT_DISABLE_WAL_DURING_INDEX_REBUILD = true;
+
     /**
      * Unique group ID. Currently for shared group it is generated as group name hash,
      * for non-shared as cache name hash (see {@link ClusterCachesInfo#checkCacheConflict}).
@@ -1246,6 +1254,9 @@ public class CacheGroupContext {
 
     /** @param indexWalEnabled Index WAL enabled flag. */
     public void indexWalEnabled(boolean indexWalEnabled) {
+        if (!IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD))
+            return;
+
         this.indexWalEnabled = indexWalEnabled;
     }
 

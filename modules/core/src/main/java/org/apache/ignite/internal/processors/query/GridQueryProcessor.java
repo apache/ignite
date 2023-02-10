@@ -2612,7 +2612,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Chain real index rebuild future with user future and do some post-processing.
+     * Chain real index rebuild future with user future and do some post processing.
      *
      * @param idxFut Real index future. If {@code null} simply completes existing user future.
      * @param cctx Cache context.
@@ -4314,12 +4314,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @see #onFinishRebuildIndexes
      * @see #rebuildIndexesCompleted
      */
-    public void onStartRebuildIndexes(GridCacheContext<?, ?> cacheCtx) {
+    public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
         idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx);
     }
 
     /** Mark that index for cache rebuilding from scratch. */
-    public void markIndexBuildFromScratch(GridCacheContext<?, ?> cacheCtx) {
+    public void markIndexBuildFromScratch(GridCacheContext cacheCtx) {
         idxBuildStatusStorage.markIndexBuildFromScratch(cacheCtx);
     }
 
@@ -4344,6 +4344,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public boolean rebuildIndexesCompleted(GridCacheContext cacheCtx) {
         return idxBuildStatusStorage.rebuildCompleted(cacheCtx.name());
+    }
+
+    /** */
+    public boolean rebuildIndexesFromScratchCompleted(GridCacheContext cacheCtx) {
+        return idxBuildStatusStorage.rebuildFromScratchCompleted(cacheCtx.name());
     }
 
     /**

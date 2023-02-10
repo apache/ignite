@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -679,6 +680,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
 
             File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
+
+            GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+            // TODO: check grpId with several caches.
+            if (idxFile.exists()
+                && qryProc.moduleEnabled()
+                && !qryProc.rebuildIndexesFromScratchCompleted(cctx.cacheContext(grpId))) {
+                log.warning("Index.bin can be inconsistent because rebuild from scratch didn't completed.");
+                log.warning("Removing index.bin [grpId=" + grpId + ']');
+
+                if (!idxFile.delete())
+                    throw new IgniteCheckedException("Failed to remove index.bin");
+            }
 
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);

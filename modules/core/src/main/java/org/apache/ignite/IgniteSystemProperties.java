@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -69,6 +70,7 @@ import static org.apache.ignite.internal.processors.affinity.AffinityAssignment.
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache.DFLT_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager.DFLT_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
+import static org.apache.ignite.internal.processors.cache.CacheGroupContext.DFLT_DISABLE_WAL_DURING_INDEX_REBUILD;
 import static org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture.DFLT_IGNITE_PARTITION_RELEASE_FUTURE_WARN_LIMIT;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.DFLT_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.DFLT_CACHE_START_SIZE;
@@ -80,7 +82,6 @@ import static org.apache.ignite.internal.processors.cache.GridCachePartitionExch
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.DFLT_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.internal.processors.cache.GridCacheTtlManager.DFLT_UNWIND_THROTTLING_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.DFLT_TTL_EXPIRE_BATCH_SIZE;
-import static org.apache.ignite.internal.processors.cache.WalStateManager.DFLT_DISABLE_WAL_DURING_INDEX_REBUILD;
 import static org.apache.ignite.internal.processors.cache.WalStateManager.DFLT_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.DFLT_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
@@ -1467,9 +1468,8 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
-     * When set to {@code false}, WAL will not be automatically disabled during rebalancing if there is no partition in
-     * OWNING state.
-     * Default is {@code true}.
+     * When set to {@code false}, WAL will not be automatically disabled for index during full index rebuild.
+     * Default is {@link CacheGroupContext#DFLT_DISABLE_WAL_DURING_INDEX_REBUILD}.
      */
     @SystemProperty(value = "When set to false, WAL will not be automatically disabled during " +
         "full index rebuild", defaults = "" + DFLT_DISABLE_WAL_DURING_INDEX_REBUILD)

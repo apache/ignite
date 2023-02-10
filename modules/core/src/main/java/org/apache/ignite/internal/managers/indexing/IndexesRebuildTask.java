@@ -118,6 +118,9 @@ public class IndexesRebuildTask {
             if (err == null) {
                 try {
                     cctx.kernalContext().query().markAsRebuildNeeded(cctx, false);
+
+                    if (cctx.group().persistenceEnabled())
+                        cctx.group().indexWalEnabled(cctx.group().localWalEnabled());
                 }
                 catch (Throwable t) {
                     err = t;
