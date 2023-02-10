@@ -129,7 +129,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
 
         cp.part = part;
-        cp.valBytes = arr;
+        cp.valBytes = arr; // Keys should never be transformed.
 
         return cp;
     }
@@ -141,9 +141,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void partition(int part) {
+        assert part >= 0;
+
         this.part = part;
 
-        valBytes = arr;
+        valBytes = arr;  // Keys should never be transformed.
     }
 
     /** {@inheritDoc} */
