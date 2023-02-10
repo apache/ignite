@@ -4346,8 +4346,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return idxBuildStatusStorage.rebuildCompleted(cacheCtx.name());
     }
 
-    /** */
-    public boolean rebuildIndexesFromScratchCompleted(String cacheName) {
+    /** @return {@code True} if full rebuild completed. */
+    public boolean fullRebuildCompleted(String cacheName) {
         return idxBuildStatusStorage.fullRebuildCompleted(cacheName);
     }
 
