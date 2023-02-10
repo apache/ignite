@@ -178,7 +178,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private File storeWorkDir;
 
     /** */
-    private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** */
     private static final GridStripedReadWriteLock initDirLock =

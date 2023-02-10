@@ -92,7 +92,7 @@ public class IndexesRebuildTask {
             cctx.kernalContext().query().markIndexBuildFromScratch(cctx);
 
             if (cctx.group().persistenceEnabled())
-                cctx.shared().walState().disableGroupDurabilityForIndexRebuild(cctx.group());
+                cctx.group().indexWalEnabled(false);
         }
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();

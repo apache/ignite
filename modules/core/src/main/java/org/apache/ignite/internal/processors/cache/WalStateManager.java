@@ -455,11 +455,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    /** */
-    public void disableGroupDurabilityForIndexRebuild(CacheGroupContext cctx) {
-
-    }
-
     /**
      * Handle propose message in discovery thread.
      *
