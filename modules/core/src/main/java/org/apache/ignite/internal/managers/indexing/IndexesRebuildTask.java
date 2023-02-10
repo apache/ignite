@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -37,11 +38,17 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD;
 
 /**
  * Task that rebuilds indexes.
  */
 public class IndexesRebuildTask {
+    /**
+     * @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD
+     */
+    public static final boolean DFLT_DISABLE_WAL_DURING_INDEX_REBUILD = true;
+
     /** Index rebuilding futures for caches. Mapping: cacheId -> rebuild indexes future. */
     private final Map<Integer, SchemaIndexCacheFuture> idxRebuildFuts = new ConcurrentHashMap<>();
 
@@ -88,7 +95,7 @@ public class IndexesRebuildTask {
         // Closure prepared, do rebuild.
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
-        if (cleanBuild) {
+        if (cleanBuild && IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD)) {
             cctx.kernalContext().query().markIndexBuildFromScratch(cctx);
 
             if (cctx.group().persistenceEnabled())
