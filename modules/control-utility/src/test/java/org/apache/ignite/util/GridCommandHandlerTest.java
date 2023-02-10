@@ -977,7 +977,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     private void setState(Ignite ignite, ClusterState state, String strState, String... cacheNames) throws Exception {
-        log.info(ignite.cluster().state() + " -> " + state);
+        ClusterState curState = ignite.cluster().state();
+
+        log.info(curState + " -> " + state);
 
         CountDownLatch latch = getNewStateLatch(ignite.cluster().state(), state);
 
@@ -990,7 +992,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(state, ignite.cluster().state());
 
-        assertContains(log, testOut.toString(), "Cluster state changed to " + strState);
+        if (state == curState)
+            assertContains(log, testOut.toString(), "Cluster state is already " + strState);
+        else
+            assertContains(log, testOut.toString(), "Cluster state changed to " + strState);
 
         List<IgniteEx> nodes = IntStream.range(0, 2)
             .mapToObj(this::grid)
