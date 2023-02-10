@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.database;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -36,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -54,7 +56,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /** */
 @SuppressWarnings({"resource"})
-public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
+public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
     /** Batches count. */
     public static final int ENTRIES_CNT = 10_000;
 
@@ -71,8 +73,6 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         cleanPersistenceDir();
     }
 
@@ -88,36 +88,6 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIndexBinRemoveRebuild() throws Exception {
-        doTestIndexRebuild(srv -> {
-            try {
-                srv.cluster().state(INACTIVE);
-
-                awaitPartitionMapExchange();
-
-                Path path = checkIdxFileExists();
-
-                stopGrid(0);
-
-                Files.delete(path);
-
-                srv = startGrid(0);
-
-                srv.cluster().state(ACTIVE);
-            }
-            catch (Throwable e) {
-                throw new IgniteException(e);
-            }
-        });
-    }
-
-    /** */
-    @Test
-    public void testIndexForceRebuild() throws Exception {
-        doTestIndexRebuild(srv -> forceRebuildIndexes(srv, srv.cachex(DEFAULT_CACHE_NAME).context()));
-    }
-
-    /** */
-    private void doTestIndexRebuild(Consumer<IgniteEx> doRebuildIdx) throws Exception {
         IgniteEx srv = startGrid(0);
 
         srv.cluster().state(ACTIVE);
@@ -130,9 +100,19 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         long startTs = System.currentTimeMillis();
 
-        doRebuildIdx.accept(srv);
+        srv.cluster().state(INACTIVE);
 
-        srv = grid(0);
+        awaitPartitionMapExchange();
+
+        Path path = checkIdxFileExists();
+
+        stopGrid(0);
+
+        Files.delete(path);
+
+        srv = startGrid(0);
+
+        srv.cluster().state(ACTIVE);
 
         indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME)).get(getTestTimeout());
 
@@ -140,10 +120,8 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         forceCheckpoint(srv);
 
-        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes((rt, wp) -> wp.compareTo(walPrtBefore) <= 0);
-        Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes((rt, wp) -> wp.compareTo(walPrtBefore) > 0);
-
-        log.warning(">>>>>> WalRecords comparison:");
+        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes(wp -> wp.compareTo(walPrtBefore) <= 0);
+        Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes(wp -> wp.compareTo(walPrtBefore) > 0);
 
         log.warning(String.format("%-62.60s%-30.28s%-30.28s\n", "Record type", "Data load (before rebuild)",
                 "After index rebuild"));
@@ -157,7 +135,7 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         checkIdxFileExists();
 
-        assertEquals((Long)3L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
+        assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
         assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_REPLACE, 0L));
     }
 
@@ -196,7 +174,7 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
 
     /** @param filter Predicate. */
     private Map<RecordType, Long> countWalRecordsByTypes(
-        IgniteBiPredicate<RecordType, WALPointer> filter
+        Predicate<WALPointer> filter
     ) throws IgniteCheckedException {
         String dn2DirName = grid(0).name().replace(".", "_");
 
@@ -205,7 +183,7 @@ public class WalDuringIndexRebuildTest extends GridCommonAbstractTest {
                 U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH + "/" + dn2DirName, false),
                 U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH + "/" + dn2DirName, false)
             )
-            .filter(filter);
+            .filter((rt, ptr) -> filter.test(ptr));
 
         Map<RecordType, Long> cntByRecTypes = new EnumMap<>(RecordType.class);
 
