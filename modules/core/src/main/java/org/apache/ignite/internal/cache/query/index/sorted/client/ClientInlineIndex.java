@@ -131,14 +131,4 @@ public class ClientInlineIndex extends AbstractClientIndex implements InlineInde
     @Override public IndexDefinition indexDefinition() {
         return def;
     }
-
-    /** {@inheritDoc} */
-    @Override public void disableWal() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void enableWal() {
-        // No-op.
-    }
 }

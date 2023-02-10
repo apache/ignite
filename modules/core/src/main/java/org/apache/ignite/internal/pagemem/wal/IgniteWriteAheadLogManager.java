@@ -209,8 +209,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Checks WAL disabled for cache group.
      *
      * @param grpId Group id.
+     * @param pageId Page id.
      */
-    public boolean disabled(int grpId);
+    public boolean disabled(int grpId, long pageId);
 
     /**
      * Getting local WAL segment size.

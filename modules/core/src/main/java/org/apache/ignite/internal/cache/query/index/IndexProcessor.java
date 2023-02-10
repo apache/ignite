@@ -338,7 +338,7 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Mark/unmark for rebuild indexes for a specific cache.
      */
-    public void markRebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean val, boolean disableWalForidx) {
+    public void markRebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean val) {
         ddlLock.readLock().lock();
 
         try {
@@ -349,7 +349,7 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             for (Index idx: idxs) {
                 if (idx instanceof AbstractIndex)
-                    ((AbstractIndex)idx).markIndexRebuild(val, disableWalForidx);
+                    ((AbstractIndex)idx).markIndexRebuild(val);
             }
 
         }

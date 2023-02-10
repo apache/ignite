@@ -36,6 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -65,6 +66,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
@@ -82,6 +84,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_REBALANCING */
     public static final boolean DFLT_DISABLE_WAL_DURING_REBALANCING = true;
+
+    /** @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD */
+    public static final boolean DFLT_DISABLE_WAL_DURING_INDEX_REBUILD = true;
 
     /** ID history for discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<T2<UUID, Boolean>> discoMsgIdHist =
@@ -448,6 +453,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (!locParts.isEmpty() && cnt == locParts.size())
                 grp.localWalEnabled(false, true);
         }
+    }
+
+    /** */
+    public void disableGroupDurabilityForIndexRebuild(CacheGroupContext cctx) {
+
     }
 
     /**
@@ -1013,12 +1023,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Checks WAL disabled for cache group.
      *
      * @param grpId Group id.
+     * @param pageId Page id.
      * @return {@code True} if WAL disable for group. {@code False} If not.
      */
-    public boolean isDisabled(int grpId) {
+    public boolean isDisabled(int grpId, long pageId) {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
-        return ctx != null && !ctx.walEnabled();
+        return ctx != null
+            && (PageIdUtils.partId(pageId) == INDEX_PARTITION ? ctx.indexWalEnabled() : !ctx.walEnabled());
     }
 
     /**

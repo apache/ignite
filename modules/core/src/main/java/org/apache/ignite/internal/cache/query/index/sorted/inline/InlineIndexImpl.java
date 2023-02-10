@@ -594,18 +594,6 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         return def;
     }
 
-    /** {@inheritDoc} */
-    @Override public void disableWal() {
-        for (InlineIndexTree seg : segments)
-            seg.wal(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void enableWal() {
-        for (InlineIndexTree seg : segments)
-            seg.wal(cctx.shared().wal());
-    }
-
     /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
     private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
         /** Cursors over segments. */

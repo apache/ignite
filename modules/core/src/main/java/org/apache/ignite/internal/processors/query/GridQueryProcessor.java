@@ -2523,11 +2523,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val, boolean disableWalForIdx) {
+    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
         if (rebuildIsMeaningless(cctx))
             return;
 
-        idxProc.markRebuildIndexesForCache(cctx, val, disableWalForIdx);
+        idxProc.markRebuildIndexesForCache(cctx, val);
 
         schemaMgr.markIndexRebuild(cctx.name(), val);
     }

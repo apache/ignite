@@ -70,7 +70,7 @@ public abstract class DataStructure {
 
     /** */
     @Nullable
-    protected volatile IgniteWriteAheadLogManager wal;
+    protected final IgniteWriteAheadLogManager wal;
 
     /** */
     protected ReuseList reuseList;
@@ -476,11 +476,6 @@ public abstract class DataStructure {
      */
     protected int pageSize() {
         return pageMem.realPageSize(grpId);
-    }
-
-    /** */
-    public void wal(IgniteWriteAheadLogManager wal) {
-        this.wal = wal;
     }
 
     /**

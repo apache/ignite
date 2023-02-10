@@ -2560,10 +2560,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             err = t;
         }
 
-        if (err != null && cleanIdxRebuildFutures)
-            cctx.kernalContext().query().removeIndexRebuildFuturesOnExchange(this, null);
-
         final Throwable err0 = err;
+
+        if (err0 != null && cleanIdxRebuildFutures)
+            cctx.kernalContext().query().removeIndexRebuildFuturesOnExchange(this, null);
 
         // Should execute this listener first, before any external listeners.
         // Listeners use stack as data structure.

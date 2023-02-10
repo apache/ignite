@@ -80,6 +80,7 @@ import static org.apache.ignite.internal.processors.cache.GridCachePartitionExch
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.DFLT_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.internal.processors.cache.GridCacheTtlManager.DFLT_UNWIND_THROTTLING_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.DFLT_TTL_EXPIRE_BATCH_SIZE;
+import static org.apache.ignite.internal.processors.cache.WalStateManager.DFLT_DISABLE_WAL_DURING_INDEX_REBUILD;
 import static org.apache.ignite.internal.processors.cache.WalStateManager.DFLT_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.DFLT_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
@@ -1466,6 +1467,15 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
+     * When set to {@code false}, WAL will not be automatically disabled during rebalancing if there is no partition in
+     * OWNING state.
+     * Default is {@code true}.
+     */
+    @SystemProperty(value = "When set to false, WAL will not be automatically disabled during " +
+        "full index rebuild", defaults = "" + DFLT_DISABLE_WAL_DURING_INDEX_REBUILD)
+    public static final String IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD = "IGNITE_DISABLE_WAL_DURING_INDEX_REBUILD";
+
+    /**
      * When property is set {@code false} each next exchange will try to compare with previous.
      * If last rebalance is equivalent with new possible one, new rebalance does not trigger.
      * Set the property {@code true} and each exchange will try to trigger new rebalance.
@@ -2102,7 +2112,7 @@ public final class IgniteSystemProperties {
     /**
      * Comma separated packages list to expose in configuration view.
      * The default value is null.
-     * @see org.apache.ignite.internal.managers.systemview.GridSystemViewManager#CFG_VIEW
+     * @see org.apache.ignite.internal.IgniteKernal#CFG_VIEW
      * @see org.apache.ignite.spi.systemview.view.ConfigurationView
      */
     @SystemProperty(value = "Packages list to expose in configuration view")

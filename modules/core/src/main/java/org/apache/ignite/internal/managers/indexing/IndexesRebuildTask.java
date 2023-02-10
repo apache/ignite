@@ -86,7 +86,14 @@ public class IndexesRebuildTask {
         }
 
         // Closure prepared, do rebuild.
-        cctx.kernalContext().query().markAsRebuildNeeded(cctx, true, cleanBuild);
+        cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
+
+        if (cleanBuild) {
+            cctx.kernalContext().query().markIndexBuildFromScratch(cctx);
+
+            if (cctx.group().persistenceEnabled())
+                cctx.shared().walState().disableGroupDurabilityForIndexRebuild(cctx.group());
+        }
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
@@ -110,7 +117,7 @@ public class IndexesRebuildTask {
 
             if (err == null) {
                 try {
-                    cctx.kernalContext().query().markAsRebuildNeeded(cctx, false, false);
+                    cctx.kernalContext().query().markAsRebuildNeeded(cctx, false);
                 }
                 catch (Throwable t) {
                     err = t;
