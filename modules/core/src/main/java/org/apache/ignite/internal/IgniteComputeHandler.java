@@ -23,6 +23,9 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
+import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -38,28 +41,51 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 
-/** */
+/**
+ * Represents a general facade that delegates Ignite compute requests to {@link GridTaskProcessor} and
+ * {@link GridClosureProcessor} internal processors. It also provides a built-in mechanism for accumulating execution
+ * options that are automatically applied to computations.
+ *
+ * @see TaskExecutionOptions
+ * @see IgniteComputeImpl
+ * @see PlatformCompute
+ */
 public class IgniteComputeHandler {
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
     /** Task execution options. */
     private final ThreadLocal<TaskExecutionOptions> opts;
 
-    /** */
-    public IgniteComputeHandler(IgniteComputeHandler other, Function<TaskExecutionOptions, TaskExecutionOptions> transformer) {
-        this(other.ctx, transformer);
+    /**
+     * Creates copy of specified computation handler. The result instance will inherit all options set for the original
+     * handler so far with {@code optsTransformer} applied to them.
+     *
+     * @param other Ignite computation handler.
+     * @param optsTransformer Function for initial execution options customization.
+     */ 
+    public IgniteComputeHandler(
+        IgniteComputeHandler other,
+        Function<TaskExecutionOptions, TaskExecutionOptions> optsTransformer
+    ) {
+        this(other.ctx, optsTransformer);
 
         TaskExecutionOptions copy = TaskExecutionOptions.options(other.opts.get());
 
-        opts.set(transformer.apply(copy));
+        opts.set(optsTransformer.apply(copy));
     }
 
-    /** */
-    public IgniteComputeHandler(GridKernalContext ctx, Function<TaskExecutionOptions, TaskExecutionOptions> transformer) {
+    /**
+     * @param ctx Kernal context.
+     * @param optsTransformer Function for initial execution options customization.
+     */
+    public IgniteComputeHandler(
+        GridKernalContext ctx,
+        Function<TaskExecutionOptions, TaskExecutionOptions> optsTransformer
+    ) {
         this.ctx = ctx;
 
-        opts = ThreadLocal.withInitial(() -> transformer.apply(TaskExecutionOptions.options()));
+        opts = ThreadLocal.withInitial(() -> optsTransformer.apply(TaskExecutionOptions.options()));
     }
 
     /**
