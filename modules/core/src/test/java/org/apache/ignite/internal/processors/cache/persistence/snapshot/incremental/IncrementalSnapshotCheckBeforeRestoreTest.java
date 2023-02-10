@@ -141,7 +141,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
                 log,
                 () -> snp(n).checkSnapshot(SNP, null, null, false, 1).get(getTestTimeout()),
                 IgniteCheckedException.class,
-                "Full snapshot metafile was not found for this node.");
+                "Full snapshot metafile not found for this node.");
         }
     }
 
@@ -194,7 +194,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
                     log,
                     () -> snp(n).checkSnapshot(SNP, null, null, false, inc).get(getTestTimeout()),
                     IgniteCheckedException.class,
-                    "No WAL segments were found for incremental snapshot");
+                    "No WAL segments found for incremental snapshot");
             }
         }
     }

@@ -97,10 +97,10 @@ public class SnapshotMetadataVerificationTask
                     .collect(Collectors.toList());
 
                 if (metas.isEmpty())
-                    throw new IgniteException("Full snapshot metafile was not found for this node." );
+                    throw new IgniteException("Full snapshot metafile not found for this node." );
 
                 if (metas.size() > 1)
-                    throw new IgniteException("Multiple snapshot metafiles were found for this node. " + metas);
+                    throw new IgniteException("Multiple snapshot metafiles found for this node. " + metas);
 
                 checkIncrementalSnapshots(metas.get(0), arg);
             }
@@ -161,7 +161,7 @@ public class SnapshotMetadataVerificationTask
                         FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches())));
 
             if (walSeg.isEmpty())
-                throw new IgniteException("No WAL segments were found for incremental snapshot [dir=" + incSnpDir + ']');
+                throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + incSnpDir + ']');
 
             long actFirstSeg = walSeg.get(0).idx();
 

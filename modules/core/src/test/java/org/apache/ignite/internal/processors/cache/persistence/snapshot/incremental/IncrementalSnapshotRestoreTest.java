@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.increme
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,7 +80,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
@@ -276,50 +274,6 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
-    }
-
-    /** */
-    @Test
-    public void testNonExistentSnapshotFailed() throws Exception {
-        loadAndCreateSnapshot(true, (incSnp) -> loadData(CACHE, new HashMap<>(), 1));
-
-        restartWithCleanPersistence();
-
-        GridTestUtils.assertThrowsAnyCause(log, () ->
-            grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 2).get(getTestTimeout()),
-            IgniteException.class,
-            "Incremental snapshot doesn't exists");
-    }
-
-    /** */
-    @Test
-    public void testRecoveryOnClusterSnapshotIfNoWalsOnSingleNode() throws Exception {
-        loadAndCreateSnapshot(true, (incSnp) -> loadData(CACHE, new HashMap<>(), 1_000));
-
-        restartWithCleanPersistence();
-
-        File rm = Paths.get(U.defaultWorkDirectory())
-            .resolve(DFLT_SNAPSHOT_DIRECTORY)
-            .resolve(SNP)
-            .resolve(IgniteSnapshotManager.INC_SNP_DIR)
-            .resolve(U.maskForFileName(getTestIgniteInstanceName(1)))
-            .resolve("0000000000000001")
-            .resolve("0000000000000000.wal.zip")
-            .toFile();
-
-        assertTrue(U.delete(rm));
-
-        GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
-            IgniteCheckedException.class,
-            "No WAL segments found for incremental snapshot");
-
-        awaitPartitionMapExchange();
-
-        for (int i = 0; i < nodes(); i++) {
-            assertNull(grid(i).cache(CACHE));
-            assertNull(grid(i).cache(CACHE2));
-        }
     }
 
     /** */
