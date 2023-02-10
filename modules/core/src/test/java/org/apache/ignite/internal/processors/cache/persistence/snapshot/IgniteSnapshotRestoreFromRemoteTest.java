@@ -108,9 +108,9 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     private String changedConsistentId;
 
     /** */
-    private boolean cmPairedConnections;
+    private boolean usePairedConnections;
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -119,7 +119,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(cmPairedConnections);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(usePairedConnections);
 
         return cfg;
     }
@@ -177,7 +177,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     public void testRestoreWithPairedConnections() throws Exception {
         changedConsistentId = "_new";
 
-        cmPairedConnections = true;
+        usePairedConnections = true;
 
         IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, GRIDS);
 
