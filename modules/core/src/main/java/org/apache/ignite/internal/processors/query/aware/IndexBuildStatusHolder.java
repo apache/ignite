@@ -54,8 +54,8 @@ public class IndexBuildStatusHolder {
     /** Rebuilding indexes. Guarded by {@code this}. */
     private boolean rebuild;
 
-    /** */
-    private volatile boolean fullRebuild;
+    /** {@code True} if full rebuiling indexes, otherwise building a new index. */
+    private boolean fullRebuild;
 
     /** Count of new indexes being built. Guarded by {@code this}. */
     private int newIdx;
@@ -70,11 +70,11 @@ public class IndexBuildStatusHolder {
     public IndexBuildStatusHolder(boolean persistent, boolean rebuild, boolean fullRebuild) {
         this.persistent = persistent;
 
-        onStartOperation(rebuild, false);
+        onStartOperation(rebuild, fullRebuild);
     }
 
     /**
-     * Callback on the start of the operation.
+     * Callback on the start of of the operation.
      *
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
      * @param fullRebuild {@code True} if full rebuild, {@code false} otherwise.
@@ -156,8 +156,8 @@ public class IndexBuildStatusHolder {
         return rebuild;
     }
 
-    /** */
-    public boolean fullRebuild() {
+    /** @return {@code True} if full rebuiling indexes, otherwise building a new index. */
+    public synchronized boolean fullRebuild() {
         return fullRebuild;
     }
 

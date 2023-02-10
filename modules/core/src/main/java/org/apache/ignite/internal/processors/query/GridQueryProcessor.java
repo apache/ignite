@@ -4318,8 +4318,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx);
     }
 
-    /** Mark that index for cache rebuilding from scratch. */
-    public void markIndexBuildFromScratch(GridCacheContext cacheCtx) {
+    /** Mark that index fully rebuild in progress. */
+    public void markFullIndexRebuild(GridCacheContext cacheCtx) {
         idxBuildStatusStorage.markFullIndexRebuild(cacheCtx);
     }
 

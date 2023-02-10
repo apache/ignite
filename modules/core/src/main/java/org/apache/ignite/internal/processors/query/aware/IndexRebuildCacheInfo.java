@@ -47,7 +47,6 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
 
     /**
      * Constructor.
-     * TODO: create V2 here for backward compatibility.
      *
      * @param cacheName Cache name.
      */
@@ -68,7 +67,7 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
         cacheName = U.readLongString(in);
-        in.readBoolean();
+        fullRebuild = protoVer == V2 && in.readBoolean();
     }
 
     /**
@@ -83,6 +82,11 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     /** @return {@code True} if rebuilding indexes, otherwise building a new index. */
     public boolean fullRebuild() {
         return fullRebuild;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */

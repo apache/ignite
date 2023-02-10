@@ -1021,8 +1021,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     public boolean isDisabled(int grpId, long pageId) {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
-        return ctx != null
-            && (PageIdUtils.partId(pageId) == INDEX_PARTITION ? ctx.indexWalEnabled() : !ctx.walEnabled());
+        return ctx != null && (PageIdUtils.partId(pageId) == INDEX_PARTITION
+            ? ctx.indexWalEnabled()
+            : !ctx.walEnabled());
     }
 
     /**

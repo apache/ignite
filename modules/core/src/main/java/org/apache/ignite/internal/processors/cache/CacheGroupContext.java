@@ -177,7 +177,7 @@ public class CacheGroupContext {
     private volatile boolean globalWalEnabled;
 
     /** */
-    private volatile boolean indexWalEnabled;
+    private volatile boolean idxWalEnabled;
 
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
@@ -251,7 +251,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
-        this.indexWalEnabled = true;
+        this.idxWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
         this.compressHandler = compressHandler;
 
@@ -1241,12 +1241,12 @@ public class CacheGroupContext {
 
     /** @return Index WAL enabled. */
     public boolean indexWalEnabled() {
-        return indexWalEnabled && globalWalEnabled;
+        return idxWalEnabled && globalWalEnabled;
     }
 
-    /** @param indexWalEnabled Index WAL enabled flag. */
-    public void indexWalEnabled(boolean indexWalEnabled) {
-        this.indexWalEnabled = indexWalEnabled;
+    /** @param idxWalEnabled Index WAL enabled flag. */
+    public void indexWalEnabled(boolean idxWalEnabled) {
+        this.idxWalEnabled = idxWalEnabled;
     }
 
     /**
@@ -1278,7 +1278,7 @@ public class CacheGroupContext {
 
             localWalEnabled = enabled;
 
-            indexWalEnabled = localWalEnabled;
+            idxWalEnabled = localWalEnabled;
         }
 
         if (persist) {

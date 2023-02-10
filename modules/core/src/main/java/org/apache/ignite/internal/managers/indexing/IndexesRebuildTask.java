@@ -95,7 +95,7 @@ public class IndexesRebuildTask {
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
         if (fullRebuild && getBoolean(IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD)) {
-            cctx.kernalContext().query().markIndexBuildFromScratch(cctx);
+            cctx.kernalContext().query().markFullIndexRebuild(cctx);
 
             if (cctx.group().persistenceEnabled())
                 cctx.group().indexWalEnabled(false);

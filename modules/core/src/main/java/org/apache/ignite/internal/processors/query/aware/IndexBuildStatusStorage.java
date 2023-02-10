@@ -127,7 +127,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
         onStartOperation(cacheCtx, false, false);
     }
 
-    /** */
+    /** Mark that index fully rebuild in progress. */
     public void markFullIndexRebuild(GridCacheContext<?, ?> cacheCtx) {
         onStartOperation(cacheCtx, true, true);
     }
@@ -178,7 +178,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * Check if rebuilding of indexes for the cache has been completed.
      *
      * @param cacheName Cache name.
-     * @return {@code True} if completed.
+     * @return {@code True} if full rebuild completed.
      */
     public boolean fullRebuildCompleted(String cacheName) {
         IndexBuildStatusHolder status = statuses.get(cacheName);
