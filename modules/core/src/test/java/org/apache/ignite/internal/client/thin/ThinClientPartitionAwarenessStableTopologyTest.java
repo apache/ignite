@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.Arrays;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -32,6 +33,7 @@ import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
 import org.junit.Test;
@@ -60,6 +62,15 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         initClient(getClientConfiguration(1, 2, 3), 1, 2);
     }
 
+    /** {@inheritDoc} */
+    @Override protected ClientConfiguration getClientConfiguration(int... nodeIdxs) {
+        ClientConfiguration cfg = super.getClientConfiguration(nodeIdxs);
+
+        // To cover more cases, we need undiscovered nodes for this test, so disable endpoints discovery
+        // by setting addresses finder.
+        return cfg.setAddressesFinder(cfg::getAddresses);
+    }
+
     /**
      * Test that partition awareness is not applicable for replicated cache.
      */
@@ -83,6 +94,8 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
         client.close();
+
+        Arrays.fill(channels, null);
 
         initClient(getClientConfiguration(1, 2, 3)
             .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {

@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -54,8 +53,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setMetricExporterSpi(new JmxMetricExporterSpi());
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /** @throws Exception If fails. */

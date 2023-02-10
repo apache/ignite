@@ -22,8 +22,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.log.LogExporterSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.junit.jupiter.api.Test;
 
 public class ConfiguringMetrics {
@@ -105,7 +107,8 @@ public class ConfiguringMetrics {
         //tag::new-metric-framework[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
+        // Change metric exporter.
+        cfg.setMetricExporterSpi(new LogExporterSpi());
 
         Ignite ignite = Ignition.start(cfg);
         //end::new-metric-framework[]
@@ -119,6 +122,7 @@ public class ConfiguringMetrics {
         //tag::metrics-filter[]
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        // Create configured JMX metrics exporter.
         JmxMetricExporterSpi jmxExporter = new JmxMetricExporterSpi();
 
         //export cache metrics only
@@ -126,6 +130,20 @@ public class ConfiguringMetrics {
 
         cfg.setMetricExporterSpi(jmxExporter);
         //end::metrics-filter[]
+
+        Ignition.start(cfg).close();
+    }
+
+    @Test
+    void disableDefaultJmxExporter() {
+
+        //tag::disable-default-jmx-exporter[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // Disable default JMX metrics exporter. Also could be disabled with the system property
+        // '-DIGNITE_MBEANS_DISABLED=true' or by setting other metrics exporter.
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+        //end::disable-default-jmx-exporter[]
 
         Ignition.start(cfg).close();
     }
