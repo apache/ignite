@@ -195,7 +195,6 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         assertCacheKeys(scc.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
-
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
