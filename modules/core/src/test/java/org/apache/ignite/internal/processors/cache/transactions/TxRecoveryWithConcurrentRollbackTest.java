@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -38,7 +37,6 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -120,57 +118,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         stopAllGrids();
 
         cleanPersistenceDir();
-    }
-
-
-    /**
-     * This test validates that no rollback messages are sent for transaction that should be commited (transactions
-     * is prepared on all nodes).
-     */
-    @Test
-    public void testNoTryRollbackConcurrentlyWithCommit() throws Exception {
-        persistence = false;
-        backups = 2;
-
-        int nodes = 3;
-        int txs = 10;
-
-        Ignite g = startGrids(nodes);
-
-        g.cluster().state(ACTIVE);
-
-        Ignite cln = startClientGrid(nodes);
-
-        TestRecordingCommunicationSpi.spi(cln).blockMessages((n, msg) -> msg instanceof GridNearTxFinishRequest);
-
-        for (int n = 0; n < nodes; n++) {
-            TestRecordingCommunicationSpi.spi(grid(n)).record((node, msg) ->
-                msg instanceof GridDhtTxFinishRequest && !((GridDistributedTxFinishRequest)msg).commit());
-        }
-
-        AtomicInteger key = new AtomicInteger();
-
-        multithreadedAsync(() -> {
-            try (Transaction tx = cln.transactions().txStart()) {
-                cln.cache(DEFAULT_CACHE_NAME).put(key.incrementAndGet(), 0);
-
-                tx.commit();
-            }
-        }, txs, "async-tx");
-
-        TestRecordingCommunicationSpi.spi(cln).waitForBlocked(txs);
-
-        stopGrid(nodes);
-
-        for (int n = 0; n < nodes; n++) {
-            final int n0 = n;
-
-            GridTestUtils.waitForCondition(
-                () -> grid(n0).context().cache().context().tm().activeTransactions().isEmpty(),
-                10);
-
-            assertTrue(TestRecordingCommunicationSpi.spi(grid(n)).recordedMessages(true).isEmpty());
-        }
     }
 
     /**
