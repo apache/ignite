@@ -438,14 +438,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
+    @Override public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
         throws IgniteCheckedException {
         assert storeWorkDir != null;
 
         if (!idxCacheStores.containsKey(cacheId)) {
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, workingDir),
+                new File(storeWorkDir, cacheName),
                 cacheId,
+                cacheName,
                 partitions,
                 pageMetrics,
                 cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
@@ -485,6 +486,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
                 grpId,
+                MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
                 pageMetrics,
                 false);
@@ -587,6 +589,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return initDir(
             cacheWorkDir,
             grpDesc.groupId(),
+            ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
             pageMetrics,
             ccfg.isEncryptionEnabled()
@@ -658,6 +661,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
+     * @param cacheName Cache name.
      * @param partitions Number of partitions.
      * @param pageMetrics Page metrics.
      * @param encrypted {@code True} if this cache encrypted.
@@ -666,6 +670,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
+        String cacheName,
         int partitions,
         PageMetrics pageMetrics,
         boolean encrypted) throws IgniteCheckedException {
@@ -683,15 +688,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
-            // TODO: check grpId with several caches.
             if (idxFile.exists()
                 && qryProc.moduleEnabled()
-                && !qryProc.rebuildIndexesFromScratchCompleted(cctx.cacheContext(grpId))) {
-                log.warning("Index.bin can be inconsistent because rebuild from scratch didn't completed.");
-                log.warning("Removing index.bin [grpId=" + grpId + ']');
+                && !qryProc.rebuildIndexesFromScratchCompleted(cacheName)) {
+                log.warning("Rebuild from scratch didn't completed, index.bin can be inconsistent. " +
+                    "Removing it to rebuild one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
 
-                if (!idxFile.delete())
-                    throw new IgniteCheckedException("Failed to remove index.bin");
+                if (!idxFile.delete()) {
+                    throw new IgniteCheckedException(
+                        "Failed to remove index.bin [grpId=" + grpId + ", cacheName=" + cacheName + ']'
+                    );
+                }
             }
 
             if (dirExisted && !idxFile.exists())

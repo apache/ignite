@@ -48,11 +48,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      *
      * @param cacheId Cache id.
      * @param partitions Partitions count.
-     * @param workingDir Working directory.
+     * @param cacheName Cache name.
      * @param pageMetrics Page metrics.
      * @throws IgniteCheckedException If failed.
      */
-    public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
+    public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
         throws IgniteCheckedException;
 
     /**

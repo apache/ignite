@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -48,8 +47,6 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
      * @param realPageSize Page size without encryption overhead.
      */
     public PageSnapshot(FullPageId fullId, byte[] arr, int realPageSize) {
-        if (fullId != null)
-            System.out.println("fullId.groupId() = " + fullId.groupId() + ", partId=" + PageIdUtils.partId(fullId.pageId()));
         this.fullPageId = fullId;
         this.pageDataBytes = arr;
         this.realPageSize = realPageSize;
@@ -65,9 +62,6 @@ public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware 
      * @param realPageSize Page size without encryption overhead.
      */
     public PageSnapshot(FullPageId fullPageId, long ptr, int pageSize, int realPageSize) {
-        if (fullPageId != null)
-            System.out.println("fullId.groupId() = " + fullPageId.groupId() + ", partId=" + PageIdUtils.partId(fullPageId.pageId()));
-
         this.fullPageId = fullPageId;
         this.realPageSize = realPageSize;
 
