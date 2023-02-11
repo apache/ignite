@@ -333,7 +333,7 @@ public class PlatformFutureUtils {
         return true;
     }
 
-    /** */
+    /** Awaits and returns the result of the specified future. */
     public static <T> T getResult(IgniteInternalFuture<T> fut) {
         try {
             return fut.get();

@@ -107,7 +107,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private final IgniteComputeHandler compute;
 
-    /** */
+    /**
+     * @param platformCtx Platform context.
+     * @param grp Cluster group associated with this compute instance.
+     */
     public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp, String platformAttr) {
         this(platformCtx, grp, platformAttr, null, null);
     }
@@ -116,14 +119,17 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * Constructor.
      *
      * @param platformCtx Context.
-     * @param grp Cluster group.
+     * @param grp Cluster group associated with this compute instance.
+     * @param platformAttr Platform attribute.
+     * @param execName Custom executor name associated with this compute instance.
+     * @param compute Optional compute handler from which the initial task execution options will be copied.
      */
     private PlatformCompute(
         PlatformContext platformCtx,
         ClusterGroup grp,
         String platformAttr,
         String execName,
-        IgniteComputeHandler compute
+        @Nullable IgniteComputeHandler compute
     ) {
         super(platformCtx);
 
@@ -135,8 +141,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
         this.platformAttr = platformAttr;
 
         this.compute = compute == null
-            ? new IgniteComputeHandler(platformCtx.kernalContext(), this::enrich)
-            : new IgniteComputeHandler(compute, this::enrich);
+            ? new IgniteComputeHandler(platformCtx.kernalContext(), this::enrichOptions)
+            : new IgniteComputeHandler(compute, this::enrichOptions);
 
         platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
     }
@@ -518,7 +524,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** Enriches specified task execution options with those that are bounded to the current compute instance. */
-    private TaskExecutionOptions enrich(TaskExecutionOptions opts) {
+    private TaskExecutionOptions enrichOptions(TaskExecutionOptions opts) {
         opts.withProjection(grp.nodes());
 
         if (execName != null)

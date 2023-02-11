@@ -49,7 +49,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
     /** Initial topology version. */
     private final long topVer;
 
-    /** */
+    /** Cluster group. */
     private final ClusterGroup grp;
 
     /**

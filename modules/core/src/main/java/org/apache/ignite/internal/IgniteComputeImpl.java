@@ -87,7 +87,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param prj Projection.
      * @param async Async support flag.
      * @param execName Custom executor name.
-     * @param compute Optional compute handler from which the initial task execution options are copied.
+     * @param compute Optional compute handler from which the initial task execution options will be copied.
      */
     private IgniteComputeImpl(
         GridKernalContext ctx,
@@ -103,8 +103,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         this.execName = execName;
 
         this.compute = compute == null
-            ? new IgniteComputeHandler(ctx, this::enrich)
-            : new IgniteComputeHandler(compute, this::enrich);
+            ? new IgniteComputeHandler(ctx, this::enrichOptions)
+            : new IgniteComputeHandler(compute, this::enrichOptions);
     }
 
     /** {@inheritDoc} */
@@ -575,7 +575,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** Enriches specified task execution options with those that are bounded to the current compute instance. */
-    private TaskExecutionOptions enrich(TaskExecutionOptions opts) {
+    private TaskExecutionOptions enrichOptions(TaskExecutionOptions opts) {
         opts.withProjection(prj.nodes());
 
         if (execName != null)
