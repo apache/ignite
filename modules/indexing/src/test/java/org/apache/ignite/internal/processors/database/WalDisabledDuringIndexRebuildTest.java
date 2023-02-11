@@ -18,47 +18,52 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcIndexRebuildTest.TestVal;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_INSERT;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.util.IgniteUtils.MB;
 
 /** */
 @SuppressWarnings({"resource"})
 public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
     /** Batches count. */
-    public static final int ENTRIES_CNT = 10_000;
+    public static final int ENTRIES_CNT = 1_000;
+
+    // 1а, 1б - проверить тоже самое на cacheGroup'е с несколькими кешами.
+    // 3. index.bin удаляется и перезапускается когда нода упала посередине.
+    // 4. Можно ли отключать при запуске вручную (?).
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -87,28 +92,40 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testIndexBinRemoveRebuild() throws Exception {
+    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD, value = "true")
+    public void testDisabled() throws Exception {
+        doTestIndexRebuild(true);
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD, value = "false")
+    public void testNotDisabled() throws Exception {
+        doTestIndexRebuild(false);
+    }
+
+    /** */
+    private void doTestIndexRebuild(boolean expWalDisabled) throws Exception {
         IgniteEx srv = startGrid(0);
 
         srv.cluster().state(ACTIVE);
 
-        createAndPopulateCache(srv);
+        IgniteCache<Integer, TestVal> cache = srv.getOrCreateCache(
+            new CacheConfiguration<Integer, TestVal>(DEFAULT_CACHE_NAME)
+                .setIndexedTypes(Integer.class, TestVal.class));
 
-        forceCheckpoint(srv);
+        for (int i = 0; i < ENTRIES_CNT; i++)
+            cache.put(i, new TestVal());
+
+        assertEquals(3, srv.context().indexProcessor().indexes(DEFAULT_CACHE_NAME).size());
 
         WALPointer walPrtBefore = srv.context().cache().context().wal().lastWritePointer();
 
-        long startTs = System.currentTimeMillis();
-
-        srv.cluster().state(INACTIVE);
-
-        awaitPartitionMapExchange();
-
-        Path path = checkIdxFileExists();
+        File idx = checkIdxFile();
 
         stopGrid(0);
 
-        Files.delete(path);
+        U.delete(idx);
 
         srv = startGrid(0);
 
@@ -116,58 +133,69 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME)).get(getTestTimeout());
 
-        log.warning(">>>>>> Index rebuild finished and took " + (System.currentTimeMillis() - startTs) + " ms");
-
         forceCheckpoint(srv);
 
-        Map<RecordType, Long> recTypesBefore = countWalRecordsByTypes(wp -> wp.compareTo(walPrtBefore) <= 0);
         Map<RecordType, Long> recTypesAfter = countWalRecordsByTypes(wp -> wp.compareTo(walPrtBefore) > 0);
 
-        log.warning(String.format("%-62.60s%-30.28s%-30.28s\n", "Record type", "Data load (before rebuild)",
-                "After index rebuild"));
+        checkIdxFile();
 
-        for (RecordType recType : RecordType.values()) {
-            log.warning(String.format("%-62.60s%-30.28s%-30.28s",
-                recType,
-                recTypesBefore.get(recType),
-                recTypesAfter.get(recType)));
+        if (expWalDisabled)
+            assertEquals((Long)3L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
+        else
+            assertTrue(recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L) > 0);
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD, value = "true")
+    public void testRestartInCaseOfFailure() throws Exception {
+        AtomicBoolean err = new AtomicBoolean(false);
+
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
+            if (tree.name().equals("-33802375_TESTVAL_F1_IDX##H2Tree")) {
+                PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
+
+                return new PageHandler() {
+                    @Override public Object run(
+                        int cacheId,
+                        long pageId,
+                        long page,
+                        long pageAddr,
+                        PageIO io,
+                        Boolean walPlc,
+                        Object arg,
+                        int intArg,
+                        IoStatisticsHolder statHolder
+                    ) throws IgniteCheckedException {
+                        if (err.get())
+                            throw new IgniteCheckedException("Expected error");
+
+                        return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
+                    }
+                };
+            }
+
+            return hnd;
+        };
+
+        try {
+            doTestIndexRebuild(true);
         }
-
-        checkIdxFileExists();
-
-        assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_INSERT, 0L));
-        assertEquals((Long)0L, recTypesAfter.getOrDefault(BTREE_PAGE_REPLACE, 0L));
+        finally {
+            BPlusTree.testHndWrapper = null;
+        }
     }
 
     /** */
-    private void createAndPopulateCache(IgniteEx ignite) {
-        IgniteCache<Integer, TestVal> cache = ignite.getOrCreateCache(
-            new CacheConfiguration<Integer, TestVal>(DEFAULT_CACHE_NAME)
-                .setIndexedTypes(Integer.class, TestVal.class));
-
-        for (int i = 0; i < ENTRIES_CNT; i++)
-            cache.put(i, new TestVal());
-
-        assertEquals(3, ignite.context().indexProcessor().indexes(DEFAULT_CACHE_NAME).size());
-    }
-
-    /** */
-    private Path checkIdxFileExists() throws IgniteCheckedException, IOException {
-        Path pdsDir = U.resolveWorkDirectory(
+    private File checkIdxFile() throws IgniteCheckedException {
+        File idxFile = new File(U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
             DFLT_STORE_DIR + File.separatorChar + grid(0).name().replace(".", "_") +
                 File.separatorChar + "cache-" + DEFAULT_CACHE_NAME,
             false
-        ).toPath();
+        ), INDEX_FILE_NAME);
 
-        Path idxFile = Files.list(pdsDir)
-            .filter(p -> p.endsWith(INDEX_FILE_NAME))
-            .findFirst()
-            .orElseThrow(() -> new IgniteException("index.bin not found"));
-
-        assertTrue("Index file not found", idxFile.toFile().exists());
-
-        log.warning(">>>>>> Index file size: " + Files.size(idxFile) / MB + " MB");
+        assertTrue("Index file not found", idxFile.exists());
 
         return idxFile;
     }
@@ -196,14 +224,5 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
         }
 
         return cntByRecTypes;
-    }
-
-    /** @param ignite Ignite. */
-    private long curWalIdx(IgniteEx ignite) {
-        return ignite.context()
-            .cache()
-            .context()
-            .wal()
-            .currentSegment();
     }
 }

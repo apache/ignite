@@ -1022,7 +1022,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
         return ctx != null && (PageIdUtils.partId(pageId) == INDEX_PARTITION
-            ? ctx.indexWalEnabled()
+            ? !ctx.indexWalEnabled()
             : !ctx.walEnabled());
     }
 
