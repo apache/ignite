@@ -59,7 +59,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** Do not remove. For tests only. */
     @SuppressWarnings("NonConstantFieldWithUpperCaseName")
-    private static boolean DFLT_LAZY = true;
+    public static boolean DFLT_LAZY = true;
 
     /** SQL Query. */
     private String sql;
