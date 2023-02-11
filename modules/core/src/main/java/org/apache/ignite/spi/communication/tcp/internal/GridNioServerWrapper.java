@@ -135,7 +135,7 @@ public class GridNioServerWrapper {
     static final int CHANNEL_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Maximum {@link GridNioSession} connections per node. */
-    public static final int MAX_CONN_PER_NODE = 1024;
+    static final int MAX_CONN_PER_NODE = 1024;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -1122,6 +1122,14 @@ public class GridNioServerWrapper {
         finally {
             connectGate.leave();
         }
+    }
+
+    /**
+     * @param connIdx Connection index to check.
+     * @return {@code true} if connection index is related to the channel create request\response.
+     */
+    static boolean isChannelConnIdx(int connIdx) {
+        return connIdx > MAX_CONN_PER_NODE;
     }
 
     /**
