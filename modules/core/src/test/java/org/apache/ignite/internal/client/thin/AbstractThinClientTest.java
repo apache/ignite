@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -43,8 +44,8 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
         log.setLevel(Level.ALL);
 
         return new ClientConfiguration()
-                .setPartitionAwarenessEnabled(false)
-                .setLogger(log);
+            .setPartitionAwarenessEnabled(isClientPartitionAwarenessEnabled())
+            .setLogger(log);
     }
 
     /**
@@ -61,7 +62,10 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
             addrs[i] = clientHost(node) + ":" + clientPort(node);
         }
 
-        return getClientConfiguration().setAddresses(addrs);
+        if (isClientEndpointsDiscoveryEnabled())
+            return getClientConfiguration().setAddresses(addrs);
+        else
+            return getClientConfiguration().setAddressesFinder(new StaticAddressFinder(addrs));
     }
 
     /**
@@ -144,5 +148,37 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     protected void dropAllThinClientConnections() {
         for (Ignite ignite : G.allGrids())
             dropAllThinClientConnections(ignite);
+    }
+
+    /**
+     * Toggles endpoints discovery feature on or off.
+     */
+    protected boolean isClientEndpointsDiscoveryEnabled() {
+        return true;
+    }
+
+    /**
+     * Toggles partition awareness feature on or off.
+     */
+    protected boolean isClientPartitionAwarenessEnabled() {
+        return true;
+    }
+
+    /**
+     * Address finder with static set of addresses, used to disable endpoints discovery.
+     */
+    public static class StaticAddressFinder implements ClientAddressFinder {
+        /** */
+        private final String[] addrs;
+
+        /** */
+        public StaticAddressFinder(String... addrs) {
+            this.addrs = addrs.clone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getAddresses() {
+            return addrs.clone();
+        }
     }
 }
