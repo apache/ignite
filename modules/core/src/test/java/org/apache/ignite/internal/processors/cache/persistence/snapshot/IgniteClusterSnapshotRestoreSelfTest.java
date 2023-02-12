@@ -789,7 +789,16 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         startGridsWithSnapshot(nodes, keysCnt);
 
-        Ignite ign = restartWithCleanPersistence(nodes, Collections.singleton(DEFAULT_CACHE_NAME));
+        stopAllGrids();
+
+        for (int n = 0; n < nodes; n++)
+            cleanPersistenceDir(true);
+
+        dfltCacheCfg = null;
+
+        Ignite ign = startGrids(nodes);
+
+        ign.cluster().state(ClusterState.ACTIVE);
 
         ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 

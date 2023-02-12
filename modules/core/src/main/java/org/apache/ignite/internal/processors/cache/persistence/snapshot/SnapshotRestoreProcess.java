@@ -1148,7 +1148,7 @@ public class SnapshotRestoreProcess {
         File[] mappings = marshallerDir.listFiles(BinaryUtils::notTmpFile);
 
         if (mappings == null)
-            throw new IgniteException("Failed to list marshaller directory: " + marshallerDir);
+            throw new IgniteException("Failed to list marshaller directory [dir=" + marshallerDir + ']');
 
         for (File map: mappings) {
             if (stopChecker.getAsBoolean())

@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits.common;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -152,10 +151,6 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -1961,6 +1956,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        cleanPersistenceDir(false);
+    }
+
+    /**
+     * @param saveSnp Do not clean snapshot directory if {@code true}.
+     */
+    protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
@@ -1968,7 +1970,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
             false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+
+        if (!saveSnp)
+            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**
@@ -2814,36 +2818,5 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertThat(timeoutProperty, notNullValue());
 
         return timeoutProperty;
-    }
-
-    /** Clean work directory, excluding snapshot directory. */
-    protected IgniteEx restartWithCleanPersistence(int nodes, Collection<String> caches) throws Exception {
-        stopAllGrids();
-
-        assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), "cp").toFile()));
-        assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH).toFile()));
-
-        deleteNodesDirs(nodes, DFLT_STORE_DIR, DFLT_BINARY_METADATA_PATH, DFLT_WAL_PATH, DFLT_WAL_ARCHIVE_PATH);
-
-        IgniteEx ign = startGrids(nodes);
-
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        // Destroy caches configured with IgniteConfiguration before restoring snapshot.
-        ign.destroyCaches(caches);
-
-        awaitPartitionMapExchange();
-
-        return ign;
-    }
-
-    /** */
-    private void deleteNodesDirs(int nodes, String... dirs) throws IgniteCheckedException {
-        for (int i = 0; i < nodes; i++) {
-            String nodeFolder = U.maskForFileName(getTestIgniteInstanceName(i));
-
-            for (String dir: dirs)
-                assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), dir, nodeFolder).toFile()));
-        }
     }
 }
