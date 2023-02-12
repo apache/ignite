@@ -473,7 +473,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).publicCompute();
+        return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
     }
 
     /** {@inheritDoc} */
@@ -500,7 +500,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final IgniteCompute compute(ClusterGroup grp) {
-        return ((ClusterGroupAdapter)grp).publicCompute();
+        return ((ClusterGroupAdapter)grp).compute();
     }
 
     /** {@inheritDoc} */
@@ -3074,16 +3074,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCompute internalCompute() {
-        return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).internalCompute();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCompute internalCompute(ClusterGroup grp) {
-        return ((ClusterGroupAdapter)grp).internalCompute();
     }
 
     /** {@inheritDoc} */

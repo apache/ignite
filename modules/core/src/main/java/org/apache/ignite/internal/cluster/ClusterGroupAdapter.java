@@ -75,11 +75,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Kernal context. */
     protected transient GridKernalContext ctx;
 
-    /** Internal compute facade. */
-    private transient IgniteCompute internalCompute;
-
-    /** Public compute facade. */
-    private transient IgniteCompute publicCompute;
+    /** Compute. */
+    private transient IgniteComputeImpl compute;
 
     /** Messaging. */
     private transient IgniteMessagingImpl messaging;
@@ -204,29 +201,16 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return Internal {@link IgniteCompute} facade for this cluster group.
+     * @return {@link IgniteCompute} for this cluster group.
      */
-    public final IgniteCompute internalCompute() {
-        if (internalCompute == null) {
+    public final IgniteCompute compute() {
+        if (compute == null) {
             assert ctx != null;
 
-            internalCompute = new IgniteComputeImpl(ctx, this, false);
+            compute = new IgniteComputeImpl(ctx, this);
         }
 
-        return internalCompute;
-    }
-
-    /**
-     * @return Public {@link IgniteCompute} facade for this cluster group.
-     */
-    public final IgniteCompute publicCompute() {
-        if (publicCompute == null) {
-            assert ctx != null;
-
-            publicCompute = new IgniteComputeImpl(ctx, this, true);
-        }
-
-        return publicCompute;
+        return compute;
     }
 
     /**

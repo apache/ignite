@@ -94,9 +94,11 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * JDBC connection implementation.
@@ -744,7 +746,11 @@ public class JdbcConnection implements Connection {
 
                 assert grp.nodes().size() == 1;
 
-                return ((IgniteEx)ignite).internalCompute(grp).callAsync(task).get(timeout, SECONDS);
+                return ((IgniteEx)ignite).context().closure().callAsync(
+                    BALANCE,
+                    task,
+                    options(grp.nodes())
+                ).get(timeout, SECONDS);
             }
             else
                 return task.call();
@@ -752,7 +758,7 @@ public class JdbcConnection implements Connection {
         catch (IgniteClientDisconnectedException | ComputeTaskTimeoutException e) {
             throw new SQLException("Failed to establish connection.", SqlStateCode.CONNECTION_FAILURE, e);
         }
-        catch (IgniteException ignored) {
+        catch (IgniteCheckedException | IgniteException ignored) {
             return false;
         }
     }

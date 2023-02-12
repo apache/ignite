@@ -36,7 +36,9 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * JDBC statement implementation.
@@ -125,8 +127,13 @@ public class JdbcStatement implements Statement {
         }
 
         try {
-            List<JdbcStatementResultInfo> rsInfos =
-                loc ? qryTask.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            List<JdbcStatementResultInfo> rsInfos = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             results = new ArrayList<>(rsInfos.size());
 
@@ -169,8 +176,13 @@ public class JdbcStatement implements Statement {
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), false, conn.skipReducerOnUpdate());
 
         try {
-            JdbcQueryTaskResult qryRes =
-                loc ? qryTask.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            JdbcQueryTaskResult qryRes = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             JdbcResultSet rs = new JdbcResultSet(qryRes.isQuery(), uuid, this, qryRes.getTbls(), qryRes.getCols(),
                 qryRes.getTypes(), qryRes.getRows(), qryRes.isFinished());
@@ -466,7 +478,13 @@ public class JdbcStatement implements Statement {
             conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            int[] res = loc ? task.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(task);
+            int[] res = loc
+                ? task.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    task,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
             long updateCnt = F.isEmpty(res) ? -1 : res[res.length - 1];
 

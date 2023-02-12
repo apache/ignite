@@ -109,6 +109,7 @@ import static org.apache.ignite.events.EventType.EVT_BASELINE_AUTO_ADJUST_ENABLE
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
 import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
 import static org.apache.ignite.internal.IgniteFeatures.SAFE_CLUSTER_DEACTIVATION;
@@ -116,6 +117,7 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
@@ -1357,7 +1359,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param blt New cluster state.
      * @param forceBlt New cluster state.
      */
-    private IgniteInternalFuture<Void> sendComputeChangeGlobalState(
+    private IgniteInternalFuture<?> sendComputeChangeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
         BaselineTopology blt,
@@ -1373,10 +1375,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", client=" + ctx.clientNode() + "]"
         );
 
-        IgniteFuture<Void> fut = ctx.grid().internalCompute().runAsync(
-            new ClientSetClusterStateComputeRequest(state, forceDeactivation, blt, forceBlt));
-
-        return ((IgniteFutureImpl<Void>)fut).internalFuture();
+        return ctx.closure().runAsync(
+            BALANCE,
+            new ClientSetClusterStateComputeRequest(state, forceDeactivation, blt, forceBlt),
+            options(ctx.cluster().get().forServers().nodes())
+        );
     }
 
     /** {@inheritDoc} */

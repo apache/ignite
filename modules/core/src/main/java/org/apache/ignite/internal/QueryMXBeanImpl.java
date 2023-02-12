@@ -26,10 +26,12 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
 /**
@@ -115,8 +117,16 @@ public class QueryMXBeanImpl implements QueryMXBean {
      * @param id Scan query id.
      */
     public void cancelScan(UUID originNodeId, String cacheName, long id) {
-        ctx.grid().internalCompute(ctx.grid().cluster())
-            .broadcast(new CancelScan(), new T3<>(originNodeId, cacheName, id));
+        try {
+            ctx.closure().broadcast(
+                new CancelScan(),
+                new T3<>(originNodeId, cacheName, id),
+                options(ctx.cluster().get().nodes())
+            ).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -126,8 +136,16 @@ public class QueryMXBeanImpl implements QueryMXBean {
      * @param routineId Routine id.
      */
     public void cancelContinuous(UUID originNodeId, UUID routineId) {
-        ctx.grid().internalCompute(ctx.grid().cluster().forNodeId(originNodeId))
-            .broadcast(new CancelContinuousOnInitiator(), routineId);
+        try {
+            ctx.closure().broadcast(
+                new CancelContinuousOnInitiator(),
+                routineId,
+                options(ctx.cluster().get().forNodeId(originNodeId).nodes())
+            ).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**

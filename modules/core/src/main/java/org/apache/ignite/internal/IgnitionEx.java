@@ -151,6 +151,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -2268,8 +2269,18 @@ public class IgnitionEx {
                             .collect(Collectors.toSet());
 
                         if (!supportedPolicyNodes.isEmpty()) {
-                            safeToStop = grid0.internalCompute(grid0.cluster().forNodeIds(supportedPolicyNodes))
-                                .execute(CheckCpHistTask.class, proposedSuppliers);
+                            try {
+                                safeToStop = grid0.context().task().execute(
+                                    CheckCpHistTask.class,
+                                    proposedSuppliers,
+                                    options(grid0.cluster().forNodeIds(supportedPolicyNodes).nodes())
+                                ).get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to check availability of historical rebalance", e);
+
+                                safeToStop = false;
+                            }
                         }
                     }
 

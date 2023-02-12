@@ -399,7 +399,7 @@ public class SecurityUtils {
         if (!security.enabled())
             return;
 
-        if (!F.isEmpty(permissions.systemPermissions())) {
+        if (permissions.systemPermissions() != null) {
             for (SecurityPermission permission : permissions.systemPermissions())
                 security.authorize(permission);
         }

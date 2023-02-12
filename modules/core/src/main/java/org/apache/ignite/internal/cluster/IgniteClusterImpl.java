@@ -81,6 +81,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
 
@@ -275,7 +276,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().internalCompute().execute(IgniteKillTask.class, false);
+            ctx.task().execute(IgniteKillTask.class, false, options().withProjection(nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -287,7 +291,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().internalCompute(forNodeIds(ids)).execute(IgniteKillTask.class, false);
+            ctx.task().execute(IgniteKillTask.class, false, options().withProjection(forNodeIds(ids).nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -299,7 +306,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().internalCompute().execute(IgniteKillTask.class, true);
+            ctx.task().execute(IgniteKillTask.class, true, options().withProjection(nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -311,7 +321,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().internalCompute(forNodeIds(ids)).execute(IgniteKillTask.class, true);
+            ctx.task().execute(IgniteKillTask.class, true, options().withProjection(forNodeIds(ids).nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -908,7 +921,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
                         try {
-                            ctx.grid().internalCompute(forNodes(neighbors)).execute(IgniteKillTask.class, false);
+                            ctx.task().execute(IgniteKillTask.class, false, options(forNodes(neighbors).nodes())).get();
                         }
                         catch (ClusterGroupEmptyException ignored) {
                             // No-op, nothing to restart.

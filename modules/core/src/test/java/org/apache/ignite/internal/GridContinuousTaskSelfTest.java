@@ -204,7 +204,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx ign = startGrid(0);
 
-            IgniteFuture<String> fut = ign.compute(ign.cluster().forNodes(ign.cluster().nodes())).callAsync(
+            IgniteFuture<String> fut = ign.compute(ign.cluster()).callAsync(
                 new IgniteCallable<String>() {
                     @IgniteInstanceResource
                     private IgniteEx g;

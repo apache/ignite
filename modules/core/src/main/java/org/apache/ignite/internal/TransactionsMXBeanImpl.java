@@ -23,10 +23,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -55,8 +56,6 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public String getActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
         String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill) {
         try {
-            IgniteCompute compute = ctx.cluster().get().internalCompute();
-
             VisorTxProjection proj = null;
 
             if (prj != null) {
@@ -79,8 +78,10 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
                 limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder, null);
 
-            Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
-                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
+            Map<ClusterNode, VisorTxTaskResult> res = ctx.task().execute(
+                new VisorTxTask(),
+                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false)
+            ).get();
 
             if (detailed) {
                 StringWriter sw = new StringWriter();
@@ -121,11 +122,19 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public void cancel(String xid) {
         A.notNull(xid, "xid");
 
-        IgniteCompute compute = ctx.cluster().get().internalCompute();
-
-        compute.execute(new VisorTxTask(),
-            new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
-                1, null, null, null, null, null, xid, null, null, null), false));
+        try {
+            ctx.task().execute(
+                new VisorTxTask(),
+                new VisorTaskArgument<>(
+                    ctx.localNodeId(),
+                    new VisorTxTaskArg(VisorTxOperation.KILL, 1, null, null, null, null, null, xid, null, null, null),
+                    false
+                )
+            ).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */

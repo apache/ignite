@@ -24,19 +24,22 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Task for remove specified binary type.
@@ -74,7 +77,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
         private transient ComputeJobContext jobCtx;
 
         /** Metadata future. */
-        private transient IgniteFuture<Void> future;
+        private transient IgniteInternalFuture<?> future;
 
         /** Job result: metadata info for removed type (used for job continuation). */
         private transient MetadataMarshalled res;
@@ -109,11 +112,15 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
                     ignite.context().cacheObjects().removeType(typeId);
 
-                    future = ignite.internalCompute().broadcastAsync(new DropAllThinSessionsJob());
+                    future = ignite.context().closure().runAsync(
+                        BROADCAST,
+                        new DropAllThinSessionsJob(),
+                        options(ignite.cluster().forServers().nodes())
+                    );
 
                     jobCtx.holdcc();
 
-                    future.listen((IgniteInClosure<IgniteFuture<Void>>)f -> {
+                    future.listen((IgniteInClosure<IgniteInternalFuture<?>>)f -> {
                         if (f.isDone())
                             jobCtx.callcc();
                     });
