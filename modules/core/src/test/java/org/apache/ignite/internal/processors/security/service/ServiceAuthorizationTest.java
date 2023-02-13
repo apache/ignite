@@ -252,7 +252,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
     }
 
     /** @return Ignite node configuration. */
-    private IgniteConfiguration configuration(int idx, SecurityPermission... perms) throws Exception {
+    private IgniteConfiguration configuration(int idx, SecurityPermission... perms1) throws Exception {
         String name = getTestIgniteInstanceName(idx);
 
         IgniteConfiguration cfg = getConfiguration(

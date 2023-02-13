@@ -96,6 +96,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
@@ -1120,6 +1121,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
+
+        try {
+            ctx.security().authorize(SecurityPermission.CHANGE_CLUSTER_STATE);
+        }
+        catch (SecurityException e) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(state) +
+                "Operation is not allowed.", e));
+        }
 
         if (ctx.clientNode())
             return sendComputeChangeGlobalState(state, forceDeactivation, blt, forceChangeBaselineTopology);

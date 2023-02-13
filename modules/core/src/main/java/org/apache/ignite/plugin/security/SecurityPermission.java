@@ -91,7 +91,10 @@ public enum SecurityPermission {
     REFRESH_STATISTICS,
 
     /** Permission to execute ANALYZE and DROP STATISTICS command. */
-    CHANGE_STATISTICS;
+    CHANGE_STATISTICS,
+
+    /** Permission to change cluster state like setting to ACTIVE or INACTIVE. */
+    CHANGE_CLUSTER_STATE;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();
