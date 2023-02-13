@@ -4314,8 +4314,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @see #onFinishRebuildIndexes
      * @see #rebuildIndexesCompleted
      */
-    public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
-        idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx);
+    public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean fullRebuild) {
+        idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx, fullRebuild);
     }
 
     /** Mark that index fully rebuild in progress. */

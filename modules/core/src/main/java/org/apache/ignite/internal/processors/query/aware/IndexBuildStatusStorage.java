@@ -109,8 +109,8 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * @param cacheCtx Cache context.
      * @see #onFinishRebuildIndexes
      */
-    public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
-        onStartOperation(cacheCtx, true, false);
+    public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean fullRebuild) {
+        onStartOperation(cacheCtx, true, fullRebuild);
     }
 
     /**

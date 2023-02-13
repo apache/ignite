@@ -116,7 +116,7 @@ public class IndexesRebuildTask {
         // Check that the previous rebuild is completed.
         assert prevIntRebFut == null;
 
-        cctx.kernalContext().query().onStartRebuildIndexes(cctx);
+        cctx.kernalContext().query().onStartRebuildIndexes(cctx, fullRebuild);
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
