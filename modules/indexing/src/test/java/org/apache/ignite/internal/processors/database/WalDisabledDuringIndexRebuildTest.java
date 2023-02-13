@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,13 +41,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -55,22 +57,36 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_INSERT;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.query.schema.management.SortedIndexDescriptorFactory.H2_TREE;
 
 /** */
+@RunWith(Parameterized.class)
 @SuppressWarnings({"resource"})
 public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
     /** Batches count. */
     public static final int ENTRIES_CNT = 1_000;
 
     /** */
+    public static final String GRP_NAME = "my-group";
+
+    /** */
     private ListeningTestLogger testLog;
 
-    // 1а, 1б - проверить тоже самое на cacheGroup'е с несколькими кешами.
-    // 4. Можно ли отключать при запуске вручную (?).
+    /** */
+    @Parameterized.Parameter()
+    public boolean cacheGrps;
+
+    /** */
+    @Parameterized.Parameters(name = "cacheGroups={0}")
+    public static Iterable<Object> data() {
+        return Arrays.asList(true, false);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -135,15 +151,13 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
             H2_TREE
         );
 
-        AtomicInteger errCnt = new AtomicInteger(10);
-
         try {
-            // Setting up
+            AtomicInteger errCntr = new AtomicInteger(10);
+
+            // Setting up wrapper that will fail on 10 put operation.
             BPlusTree.testHndWrapper = (tree, hnd) -> {
                 if (!tree.name().equals(treeName))
                     return hnd;
-
-                System.out.println("WalDisabledDuringIndexRebuildTest.testRestartInCaseOfFailure");
 
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
@@ -159,7 +173,7 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
                         int lvl,
                         IoStatisticsHolder statHolder
                     ) throws IgniteCheckedException {
-                        if (arg instanceof BPlusTree.Put && errCnt.decrementAndGet() == 0)
+                        if (arg instanceof BPlusTree.Put && errCntr.decrementAndGet() == 0)
                             throw new IgniteCheckedException("Test error!");
 
                         return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl, statHolder);
@@ -187,7 +201,7 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
             LogListener lsnr = LogListener.matches(
                 "Rebuild of index.bin don't finish before node stop, index.bin can be inconsistent. " +
                     "Removing it to rebuild one more time " +
-                    "[grpId=" + CU.cacheId(DEFAULT_CACHE_NAME) + ", cacheName=" + DEFAULT_CACHE_NAME + ']'
+                    "[grpId=" + cacheGroupId(cacheName(), cacheGroupName()) + ", cacheName=" + cacheName() + ']'
             ).build();
 
             testLog = new ListeningTestLogger(log);
@@ -197,6 +211,11 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
             awaitRebuild();
 
             assertTrue(lsnr.check());
+
+            assertEquals(
+                (Long)6L,
+                countWalRecordsByTypes(wp -> wp.compareTo(walStartPtr) > 0).getOrDefault(BTREE_PAGE_INSERT, 0L)
+            );
         }
         finally {
             BPlusTree.testHndWrapper = null;
@@ -211,7 +230,7 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         srv.cluster().state(ACTIVE);
 
-        indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME)).get(getTestTimeout());
+        indexRebuildFuture(srv, cacheId(cacheName())).get(getTestTimeout());
 
         forceCheckpoint(srv);
 
@@ -224,14 +243,10 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         srv.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, TestVal> cache = srv.getOrCreateCache(
-            new CacheConfiguration<Integer, TestVal>(DEFAULT_CACHE_NAME)
-                .setIndexedTypes(Integer.class, TestVal.class));
+        produceData(srv, cacheName());
 
-        for (int i = 0; i < ENTRIES_CNT; i++)
-            cache.put(i, new TestVal());
-
-        assertEquals(3, srv.context().indexProcessor().indexes(DEFAULT_CACHE_NAME).size());
+        if (cacheGrps)
+            produceData(srv, DEFAULT_CACHE_NAME + "2");
 
         WALPointer walPrtBefore = srv.context().cache().context().wal().lastWritePointer();
 
@@ -245,11 +260,25 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void produceData(IgniteEx srv, String cacheName) {
+        IgniteCache<Integer, TestVal> cache = srv.getOrCreateCache(
+            new CacheConfiguration<Integer, TestVal>(cacheName)
+                .setGroupName(cacheGroupName())
+                .setIndexedTypes(Integer.class, TestVal.class));
+
+        for (int i = 0; i < ENTRIES_CNT; i++)
+            cache.put(i, new TestVal());
+
+        assertEquals(3, srv.context().indexProcessor().indexes(cacheName).size());
+    }
+
+    /** */
     private File checkIdxFile() throws IgniteCheckedException {
+        String dirName = cacheGrps ? (CACHE_GRP_DIR_PREFIX + cacheGroupName()) : (CACHE_DIR_PREFIX + cacheName());
+
         File idxFile = new File(U.resolveWorkDirectory(
             U.defaultWorkDirectory(),
-            DFLT_STORE_DIR + File.separatorChar + grid(0).name().replace(".", "_") +
-                File.separatorChar + "cache-" + DEFAULT_CACHE_NAME,
+            DFLT_STORE_DIR + File.separatorChar + grid(0).name().replace(".", "_") + File.separatorChar + dirName,
             false
         ), INDEX_FILE_NAME);
 
@@ -282,5 +311,15 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
         }
 
         return cntByRecTypes;
+    }
+
+    /** */
+    private String cacheName() {
+        return cacheGrps ? (DEFAULT_CACHE_NAME + "2") : DEFAULT_CACHE_NAME;
+    }
+
+    /** */
+    private String cacheGroupName() {
+        return cacheGrps ? GRP_NAME : null;
     }
 }
