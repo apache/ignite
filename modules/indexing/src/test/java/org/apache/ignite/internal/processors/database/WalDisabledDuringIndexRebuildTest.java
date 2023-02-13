@@ -201,7 +201,7 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
             LogListener lsnr = LogListener.matches(
                 "Rebuild of index.bin don't finish before node stop, index.bin can be inconsistent. " +
                     "Removing it to rebuild one more time " +
-                    "[grpId=" + cacheGroupId(cacheName(), cacheGroupName()) + ", cacheName=" + cacheName() + ']'
+                    "[grpId=" + cacheGroupId(cacheName(), cacheGroupName())
             ).build();
 
             testLog = new ListeningTestLogger(log);
@@ -243,10 +243,8 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
         srv.cluster().state(ACTIVE);
 
-        produceData(srv, cacheName());
-
-        if (cacheGrps)
-            produceData(srv, DEFAULT_CACHE_NAME + "2");
+        for (int i = 0; i < (cacheGrps ? 1 : 3); i++)
+            produceData(srv, cacheName() + (i > 0 ? i + 1 : ""));
 
         WALPointer walPrtBefore = srv.context().cache().context().wal().lastWritePointer();
 
@@ -291,12 +289,12 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
     private Map<RecordType, Long> countWalRecordsByTypes(
         Predicate<WALPointer> filter
     ) throws IgniteCheckedException {
-        String dn2DirName = grid(0).name().replace(".", "_");
+        String dir = grid(0).name().replace(".", "_");
 
         IteratorParametersBuilder beforeIdxRemoveBldr = new IteratorParametersBuilder()
             .filesOrDirs(
-                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH + "/" + dn2DirName, false),
-                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH + "/" + dn2DirName, false)
+                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH + "/" + dir, false),
+                U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH + "/" + dir, false)
             )
             .filter((rt, ptr) -> filter.test(ptr));
 
