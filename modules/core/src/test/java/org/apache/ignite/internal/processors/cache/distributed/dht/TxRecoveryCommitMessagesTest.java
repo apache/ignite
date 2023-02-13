@@ -94,9 +94,8 @@ public class TxRecoveryCommitMessagesTest extends GridCommonAbstractTest {
         for (int n = 0; n < nodes; n++) {
             TestRecordingCommunicationSpi.spi(grid(n)).record((node, msg) -> true);
 
-            for (IgniteInternalTx tx: grid(n).context().cache().context().tm().activeTransactions()) {
+            for (IgniteInternalTx tx: grid(n).context().cache().context().tm().activeTransactions())
                 txFinFuts.add(tx.finishFuture());
-            }
         }
 
         txFinFuts.markInitialized();
@@ -113,11 +112,12 @@ public class TxRecoveryCommitMessagesTest extends GridCommonAbstractTest {
 
             assertEquals(reqCnt + resCnt, msgs.size());
 
-            List<Object> reqMsgs = msgs.stream().filter(m -> m instanceof GridDhtTxFinishRequest)
+            List<GridDhtTxFinishRequest> reqMsgs = msgs.stream().filter(m -> m instanceof GridDhtTxFinishRequest)
+                .map(m -> (GridDhtTxFinishRequest)m)
                 .collect(Collectors.toList());
 
             assertEquals(primTxsPerNode * BACKUPS, reqMsgs.size());
-            assertFalse(reqMsgs.stream().anyMatch(m -> !((GridDhtTxFinishRequest)m).commit()));
+            assertFalse(reqMsgs.stream().anyMatch(m -> !m.commit()));
 
             List<Object> resMsgs = msgs.stream().filter(m -> m instanceof GridDhtTxFinishResponse)
                 .collect(Collectors.toList());
