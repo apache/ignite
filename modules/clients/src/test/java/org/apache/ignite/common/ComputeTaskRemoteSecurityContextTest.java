@@ -221,7 +221,7 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
         String login = "thin_client";
 
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses(Config.SERVER)
+            .setAddressesFinder(() -> new String[] {Config.SERVER})
             .setUserName(login)
             .setUserPassword("");
 

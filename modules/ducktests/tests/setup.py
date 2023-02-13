@@ -23,7 +23,7 @@ with open('ignitetest/__init__.py', 'r') as fd:
 
 # Note: when changing the version of ducktape, also revise tests/docker/Dockerfile
 setup(name="ignitetest",
-      version=version,
+      version=version.replace("-SNAPSHOT", ".dev0"),
       description="Apache Ignite System Tests",
       author="Apache Ignite",
       platforms=["any"],
