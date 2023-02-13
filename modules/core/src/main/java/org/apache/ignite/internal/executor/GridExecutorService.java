@@ -733,6 +733,6 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
     /** @return Task execution options with node projection automatically set. */
     private TaskExecutionOptions options() {
-        return TaskExecutionOptions.options(prj.nodes());
+        return TaskExecutionOptions.options(prj.nodes()).asPublicRequest();
     }
 }

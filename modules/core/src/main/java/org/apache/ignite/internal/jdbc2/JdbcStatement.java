@@ -27,9 +27,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -101,7 +100,7 @@ public class JdbcStatement implements Statement {
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -127,7 +126,7 @@ public class JdbcStatement implements Statement {
 
         try {
             List<JdbcStatementResultInfo> rsInfos =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+                loc ? qryTask.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             results = new ArrayList<>(rsInfos.size());
 
@@ -151,7 +150,7 @@ public class JdbcStatement implements Statement {
     private void executeSingle(String sql, Boolean isQuery) throws SQLException {
         ensureNotClosed();
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -171,7 +170,7 @@ public class JdbcStatement implements Statement {
 
         try {
             JdbcQueryTaskResult qryRes =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+                loc ? qryTask.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             JdbcResultSet rs = new JdbcResultSet(qryRes.isQuery(), uuid, this, qryRes.getTbls(), qryRes.getCols(),
                 qryRes.getTypes(), qryRes.getRows(), qryRes.isFinished());
@@ -453,7 +452,7 @@ public class JdbcStatement implements Statement {
         if ((F.isEmpty(command) || F.isEmpty(batchArgs)) && F.isEmpty(batch))
             throw new SQLException("Batch is empty.");
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -467,7 +466,7 @@ public class JdbcStatement implements Statement {
             conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {
-            int[] res = loc ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
+            int[] res = loc ? task.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(task);
 
             long updateCnt = F.isEmpty(res) ? -1 : res[res.length - 1];
 

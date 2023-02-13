@@ -55,6 +55,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -743,7 +744,7 @@ public class JdbcConnection implements Connection {
 
                 assert grp.nodes().size() == 1;
 
-                return ignite.compute(grp).callAsync(task).get(timeout, SECONDS);
+                return ((IgniteEx)ignite).internalCompute(grp).callAsync(task).get(timeout, SECONDS);
             }
             else
                 return task.call();

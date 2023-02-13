@@ -34,7 +34,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -115,9 +115,9 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        startGrid("srv", ALLOW_ALL, false);
+        startGrid("srv", ALL_PERMISSIONS, false);
 
-        startGrid(CLNT_NODE, ALLOW_ALL, true);
+        startGrid(CLNT_NODE, ALL_PERMISSIONS, true);
     }
 
     /** */

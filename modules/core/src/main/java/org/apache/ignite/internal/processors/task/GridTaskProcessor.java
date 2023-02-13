@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatusSnapshot;
@@ -88,7 +89,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -106,6 +106,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
  * This class defines task processor.
@@ -218,7 +219,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
 
         for (GridTaskWorker<?, ?> worker : tasks.values())
-            worker.finishTask(null, err, false);
+            worker.finishTask(null, err, false, false);
     }
 
     /**
@@ -297,7 +298,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     Throwable ex =
                         new ComputeTaskCancelledCheckedException("Task cancelled due to stopping of the grid: " + task);
 
-                    task.finishTask(null, ex, false);
+                    task.finishTask(null, ex, false, false);
                 }
             }
 
@@ -525,23 +526,11 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         @Nullable ComputeTask<T, R> task,
         IgniteUuid sesId,
         @Nullable T arg,
-        @Nullable TaskExecutionOptions opts
+        TaskExecutionOptions opts
     ) {
         assert sesId != null;
 
-        String taskClsName;
-
-        if (task != null) {
-            if (task instanceof GridPeerDeployAware)
-                taskClsName = ((GridPeerDeployAware)task).deployClass().getName();
-            else
-                taskClsName = task.getClass().getName();
-        }
-        else
-            taskClsName = taskCls != null ? taskCls.getName() : taskName;
-
-        if (!opts.isAuthenticationDisabled())
-            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
+        authorizeUserTask(taskName, taskCls, task, opts);
 
         assert opts.timeout() >= 0;
 
@@ -689,7 +678,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             fullSup,
             internal,
             opts.executor(),
-            ctx.security().enabled() ? ctx.security().securityContext().subject().login() : null
+            ctx.security().securityContext()
         );
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
@@ -1139,8 +1128,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * Handles user cancellation.
      *
      * @param sesId Session ID.
+     * @return Whether task was cancelled by this call.
      */
-    public void onCancelled(IgniteUuid sesId) {
+    public boolean cancel(IgniteUuid sesId) {
         assert sesId != null;
 
         lock.readLock();
@@ -1152,17 +1142,17 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 U.warn(log, "Attempt to cancel task while stopping grid (will ignore): " + sesId
                     + tryResolveTaskName(task));
 
-                return;
+                return false;
             }
 
             if (task == null) {
                 if (log.isDebugEnabled())
                     log.debug("Attempt to cancel unknown task (was task already reduced?): " + sesId);
 
-                return;
+                return false;
             }
 
-            task.finishTask(null, new ComputeTaskCancelledCheckedException("Task was cancelled."), true);
+            return task.cancelTask();
         }
         finally {
             lock.readUnlock();
@@ -1588,5 +1578,45 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             return emptyMap();
         else
             return taskWorker.jobStatuses();
+    }
+
+    /** */
+    private void authorizeUserTask(
+        @Nullable String taskName,
+        @Nullable Class<?> taskCls,
+        @Nullable ComputeTask<?, ?> task,
+        TaskExecutionOptions opts
+    ) {
+        taskCls = resolveTaskClass(taskName, taskCls, task);
+
+        if (taskCls == null || !SecurityUtils.isSystemType(ctx, taskCls)) {
+            assert opts.isPublicRequest();
+
+            ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), TASK_EXECUTE);
+        }
+    }
+
+    /**
+     * @return Class of the task which is about to execute. {@code null} means that the user is requesting a task
+     * execution by its name, and a task class corresponding to this name was not found by the default classloader on
+     * the local node.
+     */
+    private Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {
+        if (taskCls != null)
+            return taskCls;
+
+        if (task != null)
+            return task.getClass();
+
+        if (taskName != null) {
+            try {
+                return U.forName(taskName, U.gridClassLoader());
+            }
+            catch (ClassNotFoundException ignored) {
+                // No-op.
+            }
+        }
+
+        return null;
     }
 }

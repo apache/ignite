@@ -109,7 +109,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
                     ignite.context().cacheObjects().removeType(typeId);
 
-                    future = ignite.compute().broadcastAsync(new DropAllThinSessionsJob());
+                    future = ignite.internalCompute().broadcastAsync(new DropAllThinSessionsJob());
 
                     jobCtx.holdcc();
 

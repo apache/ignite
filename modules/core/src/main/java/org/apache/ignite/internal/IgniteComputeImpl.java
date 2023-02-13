@@ -63,6 +63,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     private String execName;
 
     /** */
+    private boolean isPublicFacade;
+
+    /** */
     private IgniteComputeHandler compute;
 
     /**
@@ -76,8 +79,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param ctx Kernal context.
      * @param prj Projection.
      */
-    public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj) {
-        this(ctx, prj, false, null, null);
+    public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, boolean isPublicFacade) {
+        this(ctx, prj, false, null, isPublicFacade, null);
     }
 
     /**
@@ -94,6 +97,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         ClusterGroupAdapter prj,
         boolean async,
         String execName,
+        boolean isPublicFacade,
         @Nullable IgniteComputeHandler compute
     ) {
         super(async);
@@ -101,6 +105,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         this.ctx = ctx;
         this.prj = prj;
         this.execName = execName;
+        this.isPublicFacade = isPublicFacade;
 
         this.compute = compute == null
             ? new IgniteComputeHandler(ctx, this::enrichOptions)
@@ -109,7 +114,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override protected IgniteCompute createAsyncInstance() {
-        return new IgniteComputeImpl(ctx, prj, true, execName, compute);
+        return new IgniteComputeImpl(ctx, prj, true, execName, isPublicFacade, compute);
     }
 
     /** {@inheritDoc} */
@@ -539,12 +544,14 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(prj);
         out.writeObject(execName);
+        out.writeBoolean(isPublicFacade);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         prj = (ClusterGroupAdapter)in.readObject();
         execName = (String)in.readObject();
+        isPublicFacade = in.readBoolean();
     }
 
     /**
@@ -554,7 +561,12 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     protected Object readResolve() throws ObjectStreamException {
-        return execName == null ? prj.compute() : prj.compute().withExecutor(execName);
+        IgniteCompute compute = isPublicFacade ? prj.publicCompute() : prj.internalCompute();
+
+        if (execName != null)
+            compute = compute.withExecutor(execName);
+
+        return compute;
     }
 
     /** {@inheritDoc} */
@@ -571,16 +583,19 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** {@inheritDoc} */
     @Override public IgniteCompute withExecutor(@NotNull String name) {
-        return new IgniteComputeImpl(ctx, prj, isAsync(), name, compute);
+        return new IgniteComputeImpl(ctx, prj, isAsync(), name, isPublicFacade, compute);
     }
 
     /** Enriches specified task execution options with those that are bounded to the current compute instance. */
     private TaskExecutionOptions enrichOptions(TaskExecutionOptions opts) {
         opts.withProjection(prj.nodes());
 
+        if (isPublicFacade)
+            opts.asPublicRequest();
+
         if (execName != null)
             opts.withExecutor(execName);
-        
+
         return opts;
     }
 }

@@ -21,8 +21,10 @@ import java.util.Collection;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
@@ -172,4 +174,10 @@ public interface IgniteEx extends Ignite {
      * @throws IgniteException If set could not be fetched or created.
      */
     public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException;
+
+    /** */
+    public IgniteCompute internalCompute();
+
+    /** */
+    public IgniteCompute internalCompute(ClusterGroup grp);
 }

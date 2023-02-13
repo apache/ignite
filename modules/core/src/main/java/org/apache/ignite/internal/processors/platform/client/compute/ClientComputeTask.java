@@ -21,24 +21,24 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientNotification;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectNotification;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
-import org.apache.ignite.internal.processors.task.GridTaskProcessor;
-import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientMessageParser.OP_COMPUTE_TASK_FINISHED;
-import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Client compute task.
@@ -63,7 +63,7 @@ class ClientComputeTask implements ClientCloseableResource {
     private volatile long taskId;
 
     /** Task future. */
-    private volatile ComputeTaskInternalFuture<Object> taskFut;
+    private volatile IgniteInternalFuture<Object> taskFut;
 
     /** Task closed flag. */
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -94,22 +94,20 @@ class ClientComputeTask implements ClientCloseableResource {
 
         this.taskId = taskId;
 
-        GridTaskProcessor task = ctx.kernalContext().task();
-
         IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
             F.nodeForNodeIds(nodeIds);
 
-        TaskExecutionOptions opts = options()
-            .withProjectionPredicate(nodePredicate)
-            .withTimeout(timeout);
+        IgniteEx ignite = ctx.kernalContext().grid();
+
+        IgniteCompute compute = ignite.compute(ignite.cluster().forPredicate(nodePredicate)).withTimeout(timeout);
 
         if ((flags & NO_FAILOVER_FLAG_MASK) != 0)
-            opts.withFailoverDisabled();
+            compute.withNoFailover();
 
         if ((flags & NO_RESULT_CACHE_FLAG_MASK) != 0)
-            opts.withResultCacheDisabled();
+            compute.withNoResultCache();
 
-        taskFut = task.execute(taskName, arg, opts);
+        taskFut = ((IgniteFutureImpl<Object>)compute.executeAsync(taskName, arg)).internalFuture();
 
         // Fail fast.
         if (taskFut.isDone() && taskFut.error() != null)

@@ -275,7 +275,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            compute().execute(IgniteKillTask.class, false);
+            ctx.grid().internalCompute().execute(IgniteKillTask.class, false);
         }
         finally {
             unguard();
@@ -287,7 +287,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().compute(forNodeIds(ids)).execute(IgniteKillTask.class, false);
+            ctx.grid().internalCompute(forNodeIds(ids)).execute(IgniteKillTask.class, false);
         }
         finally {
             unguard();
@@ -299,7 +299,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            compute().execute(IgniteKillTask.class, true);
+            ctx.grid().internalCompute().execute(IgniteKillTask.class, true);
         }
         finally {
             unguard();
@@ -311,7 +311,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().compute(forNodeIds(ids)).execute(IgniteKillTask.class, true);
+            ctx.grid().internalCompute(forNodeIds(ids)).execute(IgniteKillTask.class, true);
         }
         finally {
             unguard();
@@ -908,7 +908,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
                         try {
-                            ctx.grid().compute(forNodes(neighbors)).execute(IgniteKillTask.class, false);
+                            ctx.grid().internalCompute(forNodes(neighbors)).execute(IgniteKillTask.class, false);
                         }
                         catch (ClusterGroupEmptyException ignored) {
                             // No-op, nothing to restart.

@@ -1306,7 +1306,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             req.isSessionFullSupport(),
                             req.isInternal(),
                             req.executorName(),
-                            ctx.security().enabled() ? ctx.security().securityContext().subject().login() : null
+                            ctx.security().securityContext()
                         );
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());

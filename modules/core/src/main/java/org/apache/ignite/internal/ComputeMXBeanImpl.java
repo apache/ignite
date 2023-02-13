@@ -55,7 +55,7 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
      */
     public void cancel(IgniteUuid sesId) {
         try {
-            ctx.grid().compute(ctx.grid().cluster()).broadcast(new ComputeCancelSession(), sesId);
+            ctx.grid().internalCompute(ctx.grid().cluster()).broadcast(new ComputeCancelSession(), sesId);
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

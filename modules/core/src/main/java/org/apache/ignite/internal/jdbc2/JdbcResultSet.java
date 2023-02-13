@@ -48,7 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -218,7 +218,7 @@ public class JdbcResultSet implements ResultSet {
     private void fetchPage() throws SQLException {
         JdbcConnection conn = (JdbcConnection)stmt.getConnection();
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -233,7 +233,7 @@ public class JdbcResultSet implements ResultSet {
 
         try {
             JdbcQueryTaskResult res =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+                loc ? qryTask.call() : ignite.internalCompute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
 
             finished = res.isFinished();
 
@@ -268,9 +268,9 @@ public class JdbcResultSet implements ResultSet {
                 JdbcConnection conn = (JdbcConnection)stmt.getConnection();
 
                 if (conn.isCloseCursorTaskSupported()) {
-                    Ignite ignite = conn.ignite();
+                    IgniteEx ignite = conn.ignite();
 
-                    ignite.compute(ignite.cluster().forNodeId(conn.nodeId())).call(new JdbcCloseCursorTask(uuid));
+                    ignite.internalCompute(ignite.cluster().forNodeId(conn.nodeId())).call(new JdbcCloseCursorTask(uuid));
                 }
             }
         }

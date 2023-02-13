@@ -115,7 +115,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
      * @param id Scan query id.
      */
     public void cancelScan(UUID originNodeId, String cacheName, long id) {
-        ctx.grid().compute(ctx.grid().cluster())
+        ctx.grid().internalCompute(ctx.grid().cluster())
             .broadcast(new CancelScan(), new T3<>(originNodeId, cacheName, id));
     }
 
@@ -126,7 +126,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
      * @param routineId Routine id.
      */
     public void cancelContinuous(UUID originNodeId, UUID routineId) {
-        ctx.grid().compute(ctx.grid().cluster().forNodeId(originNodeId))
+        ctx.grid().internalCompute(ctx.grid().cluster().forNodeId(originNodeId))
             .broadcast(new CancelContinuousOnInitiator(), routineId);
     }
 

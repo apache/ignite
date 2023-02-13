@@ -556,6 +556,16 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCompute internalCompute() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCompute internalCompute(ClusterGroup grp) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }

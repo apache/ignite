@@ -67,7 +67,7 @@ class VisorIdleVerifyJob<ResultT> extends VisorJob<VisorIdleVerifyTaskArg, Resul
     /** {@inheritDoc} */
     @Override protected ResultT run(VisorIdleVerifyTaskArg arg) throws IgniteException {
         if (fut == null) {
-            fut = ignite.compute().executeAsync(taskCls, arg);
+            fut = ignite.internalCompute().executeAsync(taskCls, arg);
 
             if (!fut.isDone()) {
                 jobCtx.holdcc();

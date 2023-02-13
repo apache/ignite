@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
@@ -185,7 +186,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         final ClusterGroup dataNodes = grid.cluster().forDataNodes(dataCacheName);
 
-        IgniteFuture f = grid.compute(dataNodes).broadcastAsync(
+        IgniteFuture f = ((IgniteEx)grid).internalCompute(dataNodes).broadcastAsync(
             new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
 
         f.listen(new CleanupCompletionListener(metaCache, dataCacheName));

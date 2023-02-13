@@ -2268,7 +2268,7 @@ public class IgnitionEx {
                             .collect(Collectors.toSet());
 
                         if (!supportedPolicyNodes.isEmpty()) {
-                            safeToStop = grid0.compute(grid0.cluster().forNodeIds(supportedPolicyNodes))
+                            safeToStop = grid0.internalCompute(grid0.cluster().forNodeIds(supportedPolicyNodes))
                                 .execute(CheckCpHistTask.class, proposedSuppliers);
                         }
                     }

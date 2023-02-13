@@ -55,7 +55,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public String getActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
         String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill) {
         try {
-            IgniteCompute compute = ctx.cluster().get().compute();
+            IgniteCompute compute = ctx.cluster().get().internalCompute();
 
             VisorTxProjection proj = null;
 
@@ -121,7 +121,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public void cancel(String xid) {
         A.notNull(xid, "xid");
 
-        IgniteCompute compute = ctx.cluster().get().compute();
+        IgniteCompute compute = ctx.cluster().get().internalCompute();
 
         compute.execute(new VisorTxTask(),
             new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,

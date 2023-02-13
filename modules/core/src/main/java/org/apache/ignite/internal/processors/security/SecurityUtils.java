@@ -58,6 +58,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 
@@ -241,14 +242,16 @@ public class SecurityUtils {
         return System.getSecurityManager() != null;
     }
 
-    /**
-     * @return True if class of {@code target} is a system type.
-     */
+    /** @return True if class of {@code target} is a system type. */
     public static boolean isSystemType(GridKernalContext ctx, Object target, boolean considerWrapperCls) {
-        Class<?> cls = considerWrapperCls && target instanceof GridInternalWrapper
-            ? ((GridInternalWrapper<?>)target).userObject().getClass()
-            : target.getClass();
+        if (considerWrapperCls)
+            target = unwrap(target);
 
+        return isSystemType(ctx, target.getClass());
+    }
+
+    /** @return Whether specified class is a system type. */
+    public static boolean isSystemType(GridKernalContext ctx, Class<?> cls) {
         Boolean isSysType = SYSTEM_TYPES.get(cls);
 
         if (isSysType == null) {
@@ -258,6 +261,11 @@ public class SecurityUtils {
         }
 
         return isSysType;
+    }
+
+    /** */
+    public static Object unwrap(Object target) {
+        return target instanceof GridInternalWrapper ? ((GridInternalWrapper<?>)target).userObject() : target;
     }
 
     /**
@@ -384,5 +392,28 @@ public class SecurityUtils {
             throw new IgniteSpiException("Authentication failed for local node: " + node.id());
 
         return secCtx;
+    }
+
+    /** */
+    public static void authorizeAll(IgniteSecurity security, SecurityPermissionSet permissions) {
+        if (!security.enabled())
+            return;
+
+        if (!F.isEmpty(permissions.systemPermissions())) {
+            for (SecurityPermission permission : permissions.systemPermissions())
+                security.authorize(permission);
+        }
+
+        authorizeAll(security, permissions.cachePermissions());
+        authorizeAll(security, permissions.taskPermissions());
+        authorizeAll(security, permissions.servicePermissions());
+    }
+
+    /** */
+    private static void authorizeAll(IgniteSecurity security, Map<String, Collection<SecurityPermission>> permissions) {
+        if (F.isEmpty(permissions))
+            return;
+
+        permissions.forEach((name, permsPerName) -> permsPerName.forEach(perm -> security.authorize(name, perm)));
     }
 }

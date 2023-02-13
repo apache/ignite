@@ -43,7 +43,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStoreTest.TEST_CACHE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Tests REST processor authorization commands GET_OR_CREATE_CACHE / DESTROY_CACHE.
@@ -63,7 +63,7 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
         return new TestSecurityPluginProvider(
             name,
             null,
-            ALLOW_ALL,
+            ALL_PERMISSIONS,
             globalAuth,
             clientData()
         ) {

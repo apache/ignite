@@ -48,7 +48,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
@@ -73,6 +72,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -2351,7 +2351,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             long txOwnerThreadId = tx.threadId();
 
-            Ignite ignite = cctx.kernalContext().grid();
+            IgniteEx ignite = cctx.kernalContext().grid();
 
             ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
@@ -2362,7 +2362,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             );
 
             if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
-                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+                IgniteCompute compute = ignite.internalCompute(ignite.cluster().forNodeId(nearNodeId));
 
                 try {
                     compute
