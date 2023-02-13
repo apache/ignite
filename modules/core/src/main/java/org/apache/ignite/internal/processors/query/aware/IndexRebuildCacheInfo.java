@@ -21,7 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -36,7 +38,11 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     /** Cache name. */
     private String cacheName;
 
-    /** */
+    /**
+     * {@code True} if full index rebuild, {@code false} otherwise.
+     * @see IndexesRebuildTask
+     * @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD
+     */
     private boolean fullRebuild;
 
     /**

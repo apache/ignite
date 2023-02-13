@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -37,6 +38,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
@@ -176,7 +178,10 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
-    /** */
+    /**
+     * @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD
+     * @see IndexesRebuildTask
+     */
     private volatile boolean idxWalEnabled;
 
     /** Flag indicates that cache group is under recovering and not attached to topology. */
@@ -1239,7 +1244,7 @@ public class CacheGroupContext {
         return globalWalEnabled;
     }
 
-    /** @return Index WAL enabled. */
+    /** @return {@code True} if WAL for index operations enabled. */
     public boolean indexWalEnabled() {
         return idxWalEnabled && globalWalEnabled;
     }
