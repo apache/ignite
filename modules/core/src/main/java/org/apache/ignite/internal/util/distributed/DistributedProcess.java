@@ -96,7 +96,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish
     ) {
         this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
     }
@@ -112,7 +112,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
         this.ctx = ctx;
@@ -274,8 +274,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
-            (Exception)p.resFut.error());
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(), p.resFut.error());
 
         UUID crdId = p.crdId;
 
@@ -333,7 +332,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void finishProcess(Process p) {
         HashMap<UUID, R> res = new HashMap<>();
 
-        HashMap<UUID, Exception> err = new HashMap<>();
+        HashMap<UUID, Throwable> err = new HashMap<>();
 
         p.singleMsgs.forEach((uuid, msg) -> {
             if (msg.hasError())
