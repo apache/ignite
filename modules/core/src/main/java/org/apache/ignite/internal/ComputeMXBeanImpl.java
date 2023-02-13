@@ -65,7 +65,7 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
             ).get();
         }
         catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw new RuntimeException(U.convertException(e));
         }
     }
 

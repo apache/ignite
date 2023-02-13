@@ -246,4 +246,12 @@ public class SecurityPermissionSetBuilder {
 
         return permSet;
     }
+
+    /**
+     * @param perms System permissions.
+     * @return {@link SecurityPermissionSet} instance with specified permissions added.
+     */
+    public static SecurityPermissionSet systemPermissions(SecurityPermission... perms) {
+        return create().defaultAllowAll(false).appendSystemPermissions(perms).build();
+    }
 }

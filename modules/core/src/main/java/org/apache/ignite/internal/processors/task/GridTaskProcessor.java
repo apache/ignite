@@ -1598,7 +1598,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /**
      * @return Class of the task which is about to execute. {@code null} means that the user is requesting a task
-     * execution by its name, and a task class corresponding to this name was not found by the default classloader on
+     * execution by its name, and  corresponding to this name task class was not found by the default classloader on
      * the local node.
      */
     private Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {

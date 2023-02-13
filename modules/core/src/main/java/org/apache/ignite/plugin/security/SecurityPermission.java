@@ -57,6 +57,9 @@ public enum SecurityPermission {
     /** Visor admin operations permissions. */
     ADMIN_OPS,
 
+    /** */
+    ADMIN_KILL,
+
     /** Service deploy permission. */
     SERVICE_DEPLOY,
 

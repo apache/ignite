@@ -21,13 +21,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
@@ -38,6 +39,7 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskAdapter;
@@ -52,6 +54,10 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataCollectorTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.PublicAccessJob;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -60,16 +66,17 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.ToStringClosure;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -77,11 +84,20 @@ import org.junit.Test;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.common.AbstractEventSecurityContextTest.sendRestRequest;
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
+import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -111,14 +127,29 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     /** */
     private static final int SRV_NODES_CNT = 2;
 
+    /** */
+    public static CountDownLatch taskStartedLatch;
+
+    /** */
+    public static CountDownLatch taskUnblockedLatch;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        registerSystemType(SystemRunnable.class);
+        registerSystemType(PublicAccessSystemTask.class);
+        registerSystemType(PublicAccessSystemJob.class);
 
         for (int idx = 0; idx < SRV_NODES_CNT; idx++)
             startGrid(idx, false);
 
         startGrid(SRV_NODES_CNT, true);
+
+        // Terminates jobs immediately after cancel.
+        grid(0).context().distributedConfiguration()
+            .property(COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT)
+            .propagate(0L);
 
         grid(0).createCache(CACHE);
     }
@@ -136,7 +167,9 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             .appendTaskPermissions(AllowedComputeTask.class.getName(), TASK_EXECUTE)
             .appendTaskPermissions(AllowedClosure.class.getName(), TASK_EXECUTE)
             .appendTaskPermissions(CancelAllowedTask.class.getName(), TASK_EXECUTE, TASK_CANCEL)
-            .appendTaskPermissions(CancelForbiddenTask.class.getName(), TASK_EXECUTE);
+            .appendTaskPermissions(CancelForbiddenTask.class.getName(), TASK_EXECUTE)
+            .appendTaskPermissions(CancelAllowedRunnable.class.getName(), TASK_EXECUTE, TASK_CANCEL)
+            .appendTaskPermissions(CancelForbiddenRunnable.class.getName(), TASK_EXECUTE);
 
         if (!isClient)
             permsBuilder.appendSystemPermissions(CACHE_CREATE, JOIN_AS_SERVER);
@@ -153,7 +186,22 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
                 false,
                 new TestSecurityData("ignite-client", permissions),
                 new TestSecurityData("grid-client", permissions),
-                new TestSecurityData("rest-client", permissions)
+                new TestSecurityData("rest-client", permissions),
+                new TestSecurityData("no-permissions-login-0", NO_PERMISSIONS),
+                new TestSecurityData("no-permissions-login-1", NO_PERMISSIONS),
+                new TestSecurityData(
+                    "admin-kill",
+                    create().defaultAllowAll(false)
+                        .appendSystemPermissions(ADMIN_KILL)
+                        .build()
+                ),
+                new TestSecurityData(
+                    "admin-ops",
+                    create().defaultAllowAll(false)
+                        .appendSystemPermissions(ADMIN_OPS)
+                        .build()
+                )
+
             )).setClientMode(isClient);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
@@ -167,27 +215,61 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
     /** */
     @Test
-    public void testNode() {
-        doNodeTest(0, 0);
-        doNodeTest(0, 1);
-        doNodeTest(2, 1);
+    public void testNode() throws Exception {
+        for (int initIdx = 0; initIdx <= SRV_NODES_CNT; initIdx++) {
+            for (int execIdx = 0; execIdx < SRV_NODES_CNT; execIdx++)
+                checkTaskStart(initIdx, execIdx);
+
+            IgniteCompute compute = grid(initIdx).compute();
+
+            checkTaskCancelSucceeded(() -> new TestFutureAdapter<>(compute.broadcastAsync(new CancelAllowedRunnable())));
+
+            checkTaskCancelFailed(
+                () -> new TestFutureAdapter<>(compute.broadcastAsync(new CancelForbiddenRunnable())),
+                SecurityException.class
+            );
+
+            checkTaskCancel(
+                () -> new TestFutureAdapter<>(compute.runAsync(Arrays.asList(
+                    new CancelAllowedRunnable(),
+                    new CancelForbiddenRunnable()))
+                ),
+                null,
+                2,
+                SecurityException.class
+            );
+        }
     }
 
     /** */
     @Test
     public void testIgniteClient() throws Exception {
-        try (
-            IgniteClient cli = Ignition.startClient(new ClientConfiguration()
-                .setUserName("ignite-client")
-                .setUserPassword("")
-                .setAddresses("127.0.0.1:10800"))
-        ) {
+        try (IgniteClient cli = startClient("ignite-client")) {
             checkTask(String.class, (t, a) -> cli.compute().execute(t, a));
             checkTask(String.class, (t, a) -> cli.compute().executeAsync(t, a).get());
             checkTask(String.class, (t, a) -> cli.compute().executeAsync2(t, a).get());
 
-            testTaskCancelFailed(t -> cli.compute().executeAsync2(t, null));
-            testTaskCancelSucceeded(t -> cli.compute().executeAsync2(t, null));
+            checkTaskCancelSucceeded(() -> cli.compute().executeAsync2(CancelAllowedTask.class.getName(), null));
+
+            checkTaskCancelFailed(
+                () -> cli.compute().executeAsync2(CancelForbiddenTask.class.getName(), null),
+                ClientAuthorizationException.class
+            );
+        }
+    }
+
+    /** */
+    @Test
+    public void testPublicAccessSystemTask() {
+        try (IgniteClient cli = startClient("admin-ops")) {
+            assertCompleted(
+                () -> cli.compute().executeAsync2(PublicAccessSystemTask.class.getName(), null).get(),
+                SRV_NODES_CNT
+            );
+        }
+
+        try (IgniteClient cli = startClient("no-permissions-login-0")) {
+            assertFailed(() -> cli.compute().executeAsync2(PublicAccessSystemTask.class.getName(), null).get());
         }
     }
 
@@ -209,13 +291,13 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testRestClient() {
-        for (Ignite ignite : Ignition.allGrids()) {
+        for (Ignite reqRecipient : Ignition.allGrids()) {
             checkTask(String.class, (t, a) -> {
                 JsonNode resp = sendRestRequest(
                     EXE,
                     Arrays.asList(
                         "name=" + t,
-                        "destId=" + ignite.cluster().localNode().id()
+                        "destId=" + reqRecipient.cluster().localNode().id()
                     ),
                     "rest-client"
                 );
@@ -227,7 +309,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private void doNodeTest(int initiator, int executor) {
+    private void checkTaskStart(int initiator, int executor) {
         checkTask(ComputeTask.class, (t, a) -> grid(initiator).compute().execute(t, a));
         checkTask(ComputeTask.class, (t, a) -> grid(initiator).compute().executeAsync(t, a).get());
 
@@ -301,6 +383,91 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         checkCallable(c -> executorService(initiator, executor).invokeAny(singletonList(c)));
         checkCallable(c -> executorService(initiator, executor).invokeAny(singletonList(c), getTestTimeout(), MILLISECONDS));
     }
+
+    /** */
+    @Test
+    public void testSystemTaskCancel() throws Exception {
+        SecurityContext initiatorSecCtx = securityContext("no-permissions-login-0");
+
+        SupplierX<Future<?>> starter = () -> {
+            try (OperationSecurityContext ignored1 = grid(0).context().security().withContext(initiatorSecCtx)) {
+                return new TestFutureAdapter<>(
+                    grid(0).context().closure().runAsync(
+                        BROADCAST,
+                        new SystemRunnable(),
+                        options(grid(0).cluster().forServers().nodes())
+                    ).publicFuture()
+                );
+            }
+        };
+
+        // System task initiator does not require any permissions to cancel it.
+        checkTaskCancel(starter, initiatorSecCtx, SRV_NODES_CNT, null);
+
+        // System task non-initiator require ADMIN_KILL permission granted to cancel it.
+        checkTaskCancel(starter, securityContext("admin-kill"), SRV_NODES_CNT, null);
+
+        // System task cannot be cancelled by a non-initiator without ADMIN_KILL permission granted.
+        checkTaskCancel(starter, securityContext("no-permissions-login-1"), SRV_NODES_CNT, SecurityException.class);
+    }
+
+    /** */
+    private void checkTaskCancelSucceeded(SupplierX<Future<?>> taskStarter) throws Exception {
+        checkTaskCancel(taskStarter, null, SRV_NODES_CNT, null);
+    }
+
+    /** */
+    private void checkTaskCancelFailed(SupplierX<Future<?>> taskStarter, Class<? extends Throwable> expE) throws Exception {
+        checkTaskCancel(taskStarter, null, SRV_NODES_CNT, expE);
+    }
+
+    /** */
+    private void checkTaskCancel(
+        SupplierX<Future<?>> taskStarter,
+        SecurityContext initiator,
+        int expTaskCnt,
+        @Nullable Class<? extends Throwable> expE
+    ) throws Exception {
+        taskStartedLatch = new CountDownLatch(expTaskCnt);
+        taskUnblockedLatch = new CountDownLatch(1);
+
+        CANCELLED_TASK_CNTR.set(0);
+        EXECUTED_TASK_CNTR.set(0);
+
+        try {
+            Future<?> fut = taskStarter.get();
+
+            assertTrue(taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
+
+            try (
+                OperationSecurityContext ignored = initiator == null
+                    ? null
+                    : grid(0).context().security().withContext(initiator)
+            ) {
+                if (expE == null) {
+                    fut.cancel(true);
+
+                    assertTrue(fut.isCancelled());
+
+                    assertTrue(waitForCondition(() -> expTaskCnt == CANCELLED_TASK_CNTR.get(), getTestTimeout()));
+
+                    assertEquals(0, EXECUTED_TASK_CNTR.get());
+                }
+                else {
+                    assertThrowsWithCause(() -> fut.cancel(true), expE);
+
+                    assertFalse(fut.isCancelled());
+
+                    taskUnblockedLatch.countDown();
+
+                    assertTrue(waitForCondition(() -> expTaskCnt == EXECUTED_TASK_CNTR.get(), getTestTimeout()));
+                }
+            }
+        }
+        finally {
+            taskUnblockedLatch.countDown();
+        }
+    }
     
     /** */
     private IgniteCompute compute(int initiator, int executor) {
@@ -359,44 +526,6 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private void testTaskCancelFailed(Function<String, Future<?>> taskStarter) throws Exception {
-        AbstractHangingTask.taskStartedLatch = new CountDownLatch(SRV_NODES_CNT);
-        AbstractHangingTask.taskUnblockedLatch = new CountDownLatch(1);
-
-        EXECUTED_TASK_CNTR.set(0);
-
-        Future<?> fut = taskStarter.apply(CancelForbiddenTask.class.getName());
-
-        assertTrue(AbstractHangingTask.taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
-
-        GridTestUtils.assertThrowsWithCause(() -> fut.cancel(true), ClientAuthorizationException.class);
-
-        assertFalse(fut.isCancelled());
-
-        AbstractHangingTask.taskUnblockedLatch.countDown();
-
-        assertTrue(waitForCondition(() -> SRV_NODES_CNT == EXECUTED_TASK_CNTR.get(), getTestTimeout()));
-    }
-
-    /** */
-    private void testTaskCancelSucceeded(Function<String, Future<?>> taskStarter) throws Exception {
-        AbstractHangingTask.taskStartedLatch = new CountDownLatch(SRV_NODES_CNT);
-        AbstractHangingTask.taskUnblockedLatch = new CountDownLatch(1);
-
-        CANCELLED_TASK_CNTR.set(0);
-
-        Future<?> fut = taskStarter.apply(CancelAllowedTask.class.getName());
-
-        assertTrue(AbstractHangingTask.taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
-
-        assertTrue(fut.cancel(true));
-
-        assertTrue(waitForCondition(() -> SRV_NODES_CNT == CANCELLED_TASK_CNTR.get(), getTestTimeout()));
-
-        AbstractHangingTask.taskUnblockedLatch.countDown();
-    }
-
-    /** */
     private void assertCompleted(RunnableX r, int expCnt) {
         EXECUTED_TASK_CNTR.set(0);
 
@@ -418,9 +547,9 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
             if (e instanceof IgniteException) {
                 assertTrue(
-                    e.getMessage().contains("Authorization failed")
-                        || e.getMessage().contains("Access to Ignite Internal tasks is restricted")
-                        || e.getMessage().contains("Failed to get any task completion")
+                    e.getMessage().contains("Authorization failed") ||
+                    e.getMessage().contains("Access to Ignite Internal tasks is restricted") ||
+                    e.getMessage().contains("Failed to get any task completion")
                 );
 
                 return;
@@ -491,6 +620,23 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private static class CancelForbiddenTask extends AbstractHangingTask { }
 
     /** */
+    private static class CancelAllowedRunnable extends AbstractHangingRunnable { }
+
+    /** */
+    private static class CancelForbiddenRunnable extends AbstractHangingRunnable { }
+
+    /** */
+    private static class SystemRunnable extends AbstractHangingRunnable { }
+
+    /** */
+    private static class PublicAccessSystemTask extends AbstractTask {
+        /** {@inheritDoc} */
+        @Override protected ComputeJob job() {
+            return new PublicAccessSystemJob();
+        }
+    }
+
+    /** */
     private abstract static class AbstractRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
@@ -520,43 +666,17 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
     /** */
     private abstract static class AbstractHangingTask extends AbstractTask {
-        /** */
-        public static CountDownLatch taskStartedLatch;
-
-        /** */
-        public static CountDownLatch taskUnblockedLatch;
-
         /** {@inheritDoc} */
         @Override protected ComputeJob job() {
-            return new Job();
+            return new HangingJob();
         }
+    }
 
-        /** */
-        private static class Job implements ComputeJob {
-            /** {@inheritDoc} */
-            @Override public Object execute() {
-                LockSupport.parkNanos(10_000_000);
-
-                taskStartedLatch.countDown();
-
-                try {
-                    taskUnblockedLatch.await(5_000, MILLISECONDS);
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-
-                    throw new IgniteException(e);
-                }
-
-                EXECUTED_TASK_CNTR.incrementAndGet();
-
-                return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public void cancel() {
-                CANCELLED_TASK_CNTR.incrementAndGet();
-            }
+    /** */
+    private abstract static class AbstractHangingRunnable implements IgniteRunnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            new HangingJob().execute();
         }
     }
 
@@ -582,6 +702,14 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
+    private static class PublicAccessSystemJob extends TestJob implements PublicAccessJob {
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return SecurityPermissionSetBuilder.systemPermissions(ADMIN_OPS);
+        }
+    }
+
+    /** */
     private static class TestJob implements ComputeJob {
         /** {@inheritDoc} */
         @Override public void cancel() {
@@ -590,6 +718,31 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
         /** {@inheritDoc} */
         @Override public Object execute() {
+            EXECUTED_TASK_CNTR.incrementAndGet();
+
+            return null;
+        }
+    }
+
+    /** */
+    private static class HangingJob extends ComputeJobAdapter {
+        /** {@inheritDoc} */
+        @Override public Object execute() {
+            LockSupport.parkNanos(10_000_000);
+
+            taskStartedLatch.countDown();
+
+            try {
+                taskUnblockedLatch.await(5_000, MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                CANCELLED_TASK_CNTR.incrementAndGet();
+
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException(e);
+            }
+
             EXECUTED_TASK_CNTR.incrementAndGet();
 
             return null;
@@ -611,6 +764,12 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
+    private interface SupplierX<T> {
+        /** */
+        T get() throws Exception;
+    }
+
+    /** */
     private interface ConsumerX<T> {
         /** */
         void accept(T t) throws Exception;
@@ -620,5 +779,31 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private interface BiConsumerX<T, U> {
         /** */
         void accept(T t, U u) throws Exception;
+    }
+
+    /** */
+    private SecurityContext securityContext(String login) throws Exception {
+        AuthenticationContext authCtx = new AuthenticationContext();
+
+        authCtx.credentials(new SecurityCredentials(login, ""));
+        authCtx.subjectType(REMOTE_CLIENT);
+        authCtx.subjectId(UUID.randomUUID());
+
+        return grid(0).context().security().authenticate(authCtx);
+    }
+
+    /** */
+    private void registerSystemType(Class<?> cls) throws Exception {
+        ConcurrentMap<Class<?>, Boolean> sysTypes = U.field(SecurityUtils.class, "SYSTEM_TYPES");
+
+        sysTypes.put(cls, true);
+    }
+
+    /** */
+    private IgniteClient startClient(String login) {
+        return Ignition.startClient(new ClientConfiguration()
+            .setUserName(login)
+            .setUserPassword("")
+            .setAddresses("127.0.0.1:10800"));
     }
 }

@@ -28,7 +28,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logFinish;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /**
  * Base class for Visor jobs.
@@ -88,6 +89,6 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter implements Public
 
     /** {@inheritDoc} */
     @Override public SecurityPermissionSet requiredPermissions() {
-        return NO_PERMISSIONS;
+        return systemPermissions(ADMIN_OPS);
     }
 }

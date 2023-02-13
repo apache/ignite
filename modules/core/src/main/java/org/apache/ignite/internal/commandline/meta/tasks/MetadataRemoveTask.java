@@ -33,13 +33,15 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_METADATA_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /**
  * Task for remove specified binary type.
@@ -91,11 +93,14 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
         }
 
         /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return systemPermissions(ADMIN_METADATA_OPS);
+        }
+
+        /** {@inheritDoc} */
         @Override protected MetadataMarshalled run(@Nullable MetadataTypeArgs arg) throws IgniteException {
             try {
                 if (future == null) {
-                    ignite.context().security().authorize(null, SecurityPermission.ADMIN_METADATA_OPS);
-
                     assert Objects.nonNull(arg);
 
                     int typeId = arg.typeId(ignite.context());
@@ -150,8 +155,6 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
         /** {@inheritDoc} */
         @Override public void run() throws IgniteException {
-            ignite.context().security().authorize(null, SecurityPermission.ADMIN_METADATA_OPS);
-
             ignite.context().sqlListener().closeAllSessions();
         }
     }

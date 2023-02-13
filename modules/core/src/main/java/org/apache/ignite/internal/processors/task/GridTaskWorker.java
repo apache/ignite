@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FIN
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSystemType;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
@@ -1802,7 +1802,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 if (!isSystemType(ctx, executable.getClass()))
                     ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
                 else if (!isClosedByInitiator)
-                    ctx.security().authorize(ADMIN_OPS); // TODO choose appropriate permissions instead of ADMIN_OPS
+                    ctx.security().authorize(ADMIN_KILL);
             }
         }
     }
