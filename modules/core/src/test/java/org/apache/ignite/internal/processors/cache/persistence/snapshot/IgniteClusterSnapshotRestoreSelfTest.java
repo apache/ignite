@@ -791,14 +791,22 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         stopAllGrids();
 
-        for (int n = 0; n < nodes; n++)
-            cleanPersistenceDir(true);
+        cleanPersistenceDir(true);
 
         dfltCacheCfg = null;
 
-        Ignite ign = startGrids(nodes);
+        IgniteEx ign = startGrids(nodes);
 
         ign.cluster().state(ClusterState.ACTIVE);
+
+        GridTestUtils.waitForCondition(() -> {
+            for (int n = 0; n < nodes; n++) {
+                if (grid(n).context().state().clusterState().transition())
+                    return false;
+            }
+
+            return true;
+        }, getTestTimeout());
 
         ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
