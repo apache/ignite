@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
@@ -374,6 +375,23 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheNames Cache names.
+     * @param affKey Affinity key.
+     * @param job Closure to execute.
+     * @param opts Task execution options.
+     * @return Grid future for collection of closure results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <R> ComputeTaskInternalFuture<R> affinityCall(
+        Collection<String> cacheNames,
+        Object affKey,
+        IgniteCallable<R> job,
+        TaskExecutionOptions opts
+    ) throws IgniteCheckedException {
+        return affinityCall(cacheNames, partition(F.first(cacheNames), affKey), job, opts);
+    }
+
+    /**
+     * @param cacheNames Cache names.
      * @param partId Partition.
      * @param job Closure to execute.
      * @param opts Task execution options.
@@ -406,6 +424,23 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         finally {
             busyLock.readUnlock();
         }
+    }
+
+    /**
+     * @param cacheNames Cache names.
+     * @param affKey Affinity key.
+     * @param job Job.
+     * @param opts Task execution options.
+     * @return Job future.
+     * @throws IgniteCheckedException If failed.
+     */
+    public ComputeTaskInternalFuture<?> affinityRun(
+        @NotNull Collection<String> cacheNames,
+        Object affKey,
+        Runnable job,
+        TaskExecutionOptions opts
+    ) throws IgniteCheckedException {
+        return affinityRun(cacheNames, partition(F.first(cacheNames), affKey), job, opts);
     }
 
     /**
@@ -894,6 +929,29 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             return res0;
         }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param affKey Affinity key.
+     * @return Partition ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int partition(String cacheName, Object affKey) throws IgniteCheckedException {
+        assert cacheName != null;
+        assert affKey != null;
+
+        // In case cache key is passed instead of affinity key.
+        final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+
+        int partId = ctx.affinity().partition(cacheName, affKey0);
+
+        if (partId < 0) {
+            throw new IgniteCheckedException("Failed map key to partition: [cache=" + cacheName + " key="
+                + affKey + ']');
+        }
+
+        return partId;
     }
 
     /**
