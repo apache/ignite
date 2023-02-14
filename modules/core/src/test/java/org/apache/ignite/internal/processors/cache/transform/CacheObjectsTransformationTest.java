@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache.transform;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -98,7 +98,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
 
         int i = -42; // Avoiding intersection with an incremental key.
         int[] is = new int[] {i, i, i};
-        List<Integer> iList = Lists.newArrayList(i, i, i);
+        List<Integer> iList = F.asList(i, i, i);
 
         putAndCheck(i);
         putAndCheck(is);
@@ -106,23 +106,23 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
 
         String str = "test";
         String[] strs = new String[] {str, str, str};
-        List<String> strList = Lists.newArrayList(str, str, str);
+        List<String> strList = F.asList(str, str, str);
 
         putAndCheck(str);
         putAndCheck(strs);
         putAndCheck(strList);
 
-        BinarizableData data = new BinarizableData(str, Lists.newArrayList(i, i, i), i);
+        BinarizableData data = new BinarizableData(str, F.asList(i, i, i), i);
         BinarizableData[] datas = new BinarizableData[] {data, data, data};
-        List<BinarizableData> dataList = Lists.newArrayList(data, data, data);
+        List<BinarizableData> dataList = F.asList(data, data, data);
 
         putAndCheck(data);
         putAndCheck(datas);
         putAndCheck(dataList);
 
-        BinarizableData ddata = new BinarizableData(str, Lists.newArrayList(i, i, i), i, data);
+        BinarizableData ddata = new BinarizableData(str, F.asList(i, i, i), i, data);
         BinarizableData[] ddatas = new BinarizableData[] {ddata, ddata, ddata};
-        List<BinarizableData> ddataList = Lists.newArrayList(ddata, ddata, ddata);
+        List<BinarizableData> ddataList = F.asList(ddata, ddata, ddata);
 
         putAndCheck(ddata);
         putAndCheck(ddatas);
@@ -131,12 +131,12 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
         builder.setField("str", str + "!");
-        builder.setField("list", Lists.newArrayList(i, i));
+        builder.setField("list", F.asList(i, i));
         builder.setField("i", i);
 
         BinaryObject bo = builder.build();
         BinaryObject[] bos = new BinaryObject[] {bo, bo, bo};
-        List<BinaryObject> boList = Lists.newArrayList(bo, bo, bo);
+        List<BinaryObject> boList = F.asList(bo, bo, bo);
 
         putAndCheck(bo);
         putAndCheck(bos);
@@ -146,7 +146,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
 
         BinaryObject dbo = builder.build();
         BinaryObject[] dbos = new BinaryObject[] {dbo, dbo, dbo};
-        List<BinaryObject> dboList = Lists.newArrayList(dbo, dbo, dbo);
+        List<BinaryObject> dboList = F.asList(dbo, dbo, dbo);
 
         putAndCheck(dbo);
         putAndCheck(dbos);
