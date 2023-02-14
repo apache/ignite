@@ -107,6 +107,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * the indexes are automatically rebuilt.
      *
      * @param cacheCtx Cache context.
+     * @param fullRebuild {@code True} if full rebuiling indexes, otherwise building a new index.
      * @see #onFinishRebuildIndexes
      */
     public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean fullRebuild) {

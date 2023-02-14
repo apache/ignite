@@ -29,7 +29,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -179,7 +178,6 @@ public class CacheGroupContext {
     private volatile boolean globalWalEnabled;
 
     /**
-     * @see IgniteSystemProperties#IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD
      * @see IndexesRebuildTask
      */
     private volatile boolean idxWalEnabled;

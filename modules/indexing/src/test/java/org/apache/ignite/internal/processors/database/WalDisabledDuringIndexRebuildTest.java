@@ -44,13 +44,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
@@ -116,7 +114,6 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD, value = "true")
     public void testDisabled() throws Exception {
         WALPointer walStartPtr = createDataAndDeleteIndexBin();
 
@@ -130,18 +127,6 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD, value = "false")
-    public void testNotDisabled() throws Exception {
-        WALPointer walStartPtr = createDataAndDeleteIndexBin();
-
-        awaitRebuild();
-
-        assertTrue(countWalRecordsByTypes(wp -> wp.compareTo(walStartPtr) > 0).getOrDefault(BTREE_PAGE_INSERT, 0L) > 0);
-    }
-
-    /** */
-    @Test
-    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_FULL_INDEX_REBUILD, value = "true")
     public void testRestartInCaseOfFailure() throws Exception {
         WALPointer walStartPtr = createDataAndDeleteIndexBin();
 
