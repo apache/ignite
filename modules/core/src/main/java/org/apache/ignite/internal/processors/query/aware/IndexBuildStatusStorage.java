@@ -107,11 +107,11 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * the indexes are automatically rebuilt.
      *
      * @param cacheCtx Cache context.
-     * @param fullRebuild {@code True} if full rebuiling indexes, otherwise building a new index.
+     * @param recreate {@code True} if index.bin recreating, otherwise building a new index.
      * @see #onFinishRebuildIndexes
      */
-    public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean fullRebuild) {
-        onStartOperation(cacheCtx, true, fullRebuild);
+    public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean recreate) {
+        onStartOperation(cacheCtx, true, recreate);
     }
 
     /**
@@ -128,8 +128,8 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
         onStartOperation(cacheCtx, false, false);
     }
 
-    /** Mark that index fully rebuild in progress. */
-    public void markFullIndexRebuild(GridCacheContext<?, ?> cacheCtx) {
+    /** Mark that index.bin recreate in progress. */
+    public void markIndexRecreate(GridCacheContext<?, ?> cacheCtx) {
         onStartOperation(cacheCtx, true, true);
     }
 
@@ -176,15 +176,15 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
     }
 
     /**
-     * Check if rebuilding of indexes for the cache has been completed.
+     * Check if index.bin recreating for the cache has been completed.
      *
      * @param cacheName Cache name.
-     * @return {@code True} if full rebuild completed.
+     * @return {@code True} if index.bin recreate completed.
      */
-    public boolean fullRebuildCompleted(String cacheName) {
+    public boolean recreateCompleted(String cacheName) {
         IndexBuildStatusHolder status = statuses.get(cacheName);
 
-        return status == null || !status.fullRebuild();
+        return status == null || !status.recreate();
     }
 
     /** {@inheritDoc} */
@@ -208,7 +208,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
                         statuses.put(
                             cacheInfo.cacheName(),
-                            new IndexBuildStatusHolder(true, true, cacheInfo.fullRebuild())
+                            new IndexBuildStatusHolder(true, true, cacheInfo.recreate())
                         );
                     },
                     true
@@ -317,10 +317,10 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      *
      * @param cacheCtx Cache context.
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
-     * @param fullRebuild {@code True} if full rebuild, {@code false} otherwise.
+     * @param recreate {@code True} if index.bin recreating, {@code false} otherwise.
      * @see #onFinishOperation
      */
-    private void onStartOperation(GridCacheContext cacheCtx, boolean rebuild, boolean fullRebuild) {
+    private void onStartOperation(GridCacheContext cacheCtx, boolean rebuild, boolean recreate) {
         if (!stopNodeLock.enterBusy())
             throw new IgniteException("Node is stopping.");
 
@@ -330,19 +330,19 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
 
             statuses.compute(cacheName, (k, prev) -> {
                 if (prev != null) {
-                    prev.onStartOperation(rebuild, fullRebuild);
+                    prev.onStartOperation(rebuild, recreate);
 
                     return prev;
                 }
                 else
-                    return new IndexBuildStatusHolder(persistent, rebuild, fullRebuild);
+                    return new IndexBuildStatusHolder(persistent, rebuild, recreate);
             });
 
             if (persistent) {
                 metaStorageOperation(metaStorage -> {
                     assert metaStorage != null;
 
-                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName, fullRebuild));
+                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName, recreate));
                 });
             }
         }

@@ -54,8 +54,8 @@ public class IndexBuildStatusHolder {
     /** Rebuilding indexes. Guarded by {@code this}. */
     private boolean rebuild;
 
-    /** {@code True} if full rebuiling indexes, otherwise building a new index. */
-    private boolean fullRebuild;
+    /** {@code True} if index.bin recreating, otherwise building a new index. */
+    private boolean recreate;
 
     /** Count of new indexes being built. Guarded by {@code this}. */
     private int newIdx;
@@ -65,25 +65,25 @@ public class IndexBuildStatusHolder {
      *
      * @param persistent Persistent cache.
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
-     * @param fullRebuild {@code True} if full rebuiling indexes, otherwise building a new index.
+     * @param recreate {@code True} if index.bin recreating, otherwise building a new index.
      */
-    public IndexBuildStatusHolder(boolean persistent, boolean rebuild, boolean fullRebuild) {
+    public IndexBuildStatusHolder(boolean persistent, boolean rebuild, boolean recreate) {
         this.persistent = persistent;
 
-        onStartOperation(rebuild, fullRebuild);
+        onStartOperation(rebuild, recreate);
     }
 
     /**
      * Callback on the start of of the operation.
      *
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
-     * @param fullRebuild {@code True} if full rebuild, {@code false} otherwise.
+     * @param recreate {@code True} if index.bin recreating, {@code false} otherwise.
      * @see #onFinishOperation
      */
-    public synchronized void onStartOperation(boolean rebuild, boolean fullRebuild) {
+    public synchronized void onStartOperation(boolean rebuild, boolean recreate) {
         status = INIT;
 
-        this.fullRebuild = fullRebuild;
+        this.recreate = recreate;
 
         if (rebuild)
             this.rebuild = true;
@@ -156,9 +156,9 @@ public class IndexBuildStatusHolder {
         return rebuild;
     }
 
-    /** @return {@code True} if full rebuiling indexes, otherwise building a new index. */
-    public synchronized boolean fullRebuild() {
-        return fullRebuild;
+    /** @return {@code True} if index.bin recreating, otherwise building a new index. */
+    public synchronized boolean recreate() {
+        return recreate;
     }
 
     /**

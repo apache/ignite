@@ -68,9 +68,9 @@ public class IndexesRebuildTask {
 
         String cacheName = cctx.name();
 
-        boolean fullRebuild = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
+        boolean recreate = pageStore == null || !pageStore.hasIndexStore(cctx.groupId());
 
-        if (fullRebuild) {
+        if (recreate) {
             boolean mvccEnabled = cctx.mvccEnabled();
 
             // If there are no index store, rebuild all indexes.
@@ -88,8 +88,8 @@ public class IndexesRebuildTask {
         // Closure prepared, do rebuild.
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
-        if (fullRebuild) {
-            cctx.kernalContext().query().markFullIndexRebuild(cctx);
+        if (recreate) {
+            cctx.kernalContext().query().markIndexRecreate(cctx);
 
             if (cctx.group().persistenceEnabled())
                 cctx.group().indexWalEnabled(false);
@@ -110,7 +110,7 @@ public class IndexesRebuildTask {
         // Check that the previous rebuild is completed.
         assert prevIntRebFut == null;
 
-        cctx.kernalContext().query().onStartRebuildIndexes(cctx, fullRebuild);
+        cctx.kernalContext().query().onStartRebuildIndexes(cctx, recreate);
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();

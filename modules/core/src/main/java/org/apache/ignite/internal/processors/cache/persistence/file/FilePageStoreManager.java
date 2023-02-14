@@ -690,9 +690,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             if (idxFile.exists()
                 && qryProc.moduleEnabled()
-                && !qryProc.fullRebuildCompleted(cacheName)) {
-                log.warning("Rebuild of index.bin don't finish before node stop, index.bin can be inconsistent. " +
-                    "Removing it to rebuild one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
+                && !qryProc.recreateCompleted(cacheName)) {
+                log.warning("Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
+                    "Removing it to recreate one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
 
                 if (!idxFile.delete()) {
                     throw new IgniteCheckedException(

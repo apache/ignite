@@ -38,10 +38,10 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     private String cacheName;
 
     /**
-     * {@code True} if full index rebuild, {@code false} otherwise.
+     * {@code True} if index.bin recreating, {@code false} otherwise.
      * @see IndexesRebuildTask
      */
-    private boolean fullRebuild;
+    private boolean recreate;
 
     /**
      * Default constructor for {@link Externalizable}.
@@ -53,16 +53,17 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
      * Constructor.
      *
      * @param cacheName Cache name.
+     * @param recreate {@code True} if index.bin recreating, {@code false} otherwise.
      */
-    public IndexRebuildCacheInfo(String cacheName, boolean fullRebuild) {
+    public IndexRebuildCacheInfo(String cacheName, boolean recreate) {
         this.cacheName = cacheName;
-        this.fullRebuild = fullRebuild;
+        this.recreate = recreate;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeLongString(out, cacheName);
-        out.writeBoolean(fullRebuild);
+        out.writeBoolean(recreate);
     }
 
     /** {@inheritDoc} */
@@ -71,7 +72,7 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
         cacheName = U.readLongString(in);
-        fullRebuild = protoVer == V2 && in.readBoolean();
+        recreate = protoVer == V2 && in.readBoolean();
     }
 
     /**
@@ -83,9 +84,9 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
         return cacheName;
     }
 
-    /** @return {@code True} if rebuilding indexes, otherwise building a new index. */
-    public boolean fullRebuild() {
-        return fullRebuild;
+    /** @return {@code True} if index.bin recreating, {@code false} otherwise. */
+    public boolean recreate() {
+        return recreate;
     }
 
     /** {@inheritDoc} */

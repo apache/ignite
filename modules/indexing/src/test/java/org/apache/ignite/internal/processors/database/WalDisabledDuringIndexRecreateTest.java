@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.query.schema.management.Sort
 /** */
 @RunWith(Parameterized.class)
 @SuppressWarnings({"resource"})
-public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
+public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     /** Batches count. */
     public static final int ENTRIES_CNT = 1_000;
 
@@ -184,8 +184,8 @@ public class WalDisabledDuringIndexRebuildTest extends GridCommonAbstractTest {
             }
 
             LogListener lsnr = LogListener.matches(
-                "Rebuild of index.bin don't finish before node stop, index.bin can be inconsistent. " +
-                    "Removing it to rebuild one more time " +
+                "Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
+                    "Removing it to recreate one more time " +
                     "[grpId=" + cacheGroupId(cacheName(), cacheGroupName())
             ).build();
 

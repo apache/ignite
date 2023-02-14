@@ -177,9 +177,7 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
-    /**
-     * @see IndexesRebuildTask
-     */
+    /** @see IndexesRebuildTask */
     private volatile boolean idxWalEnabled;
 
     /** Flag indicates that cache group is under recovering and not attached to topology. */

@@ -4311,20 +4311,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * the rebuilding of the indexes has been {@link #rebuildIndexesCompleted}.
      *
      * @param cacheCtx Cache context.
-     * @param fullRebuild {@code True} if full rebuild.
+     * @param recreate {@code True} if index.bin recreating.
      * @see #onFinishRebuildIndexes
      * @see #rebuildIndexesCompleted
      */
-    public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean fullRebuild) {
-        idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx, fullRebuild);
+    public void onStartRebuildIndexes(GridCacheContext cacheCtx, boolean recreate) {
+        idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx, recreate);
     }
 
     /**
-     * Mark that index fully rebuild in progress.
+     * Mark that index.bin recreating in progress.
      * @param cacheCtx Cache context.
      */
-    public void markFullIndexRebuild(GridCacheContext cacheCtx) {
-        idxBuildStatusStorage.markFullIndexRebuild(cacheCtx);
+    public void markIndexRecreate(GridCacheContext cacheCtx) {
+        idxBuildStatusStorage.markIndexRecreate(cacheCtx);
     }
 
     /**
@@ -4352,10 +4352,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if full rebuild completed.
+     * @return {@code True} if index.bin recreating completed.
      */
-    public boolean fullRebuildCompleted(String cacheName) {
-        return idxBuildStatusStorage.fullRebuildCompleted(cacheName);
+    public boolean recreateCompleted(String cacheName) {
+        return idxBuildStatusStorage.recreateCompleted(cacheName);
     }
 
     /**
