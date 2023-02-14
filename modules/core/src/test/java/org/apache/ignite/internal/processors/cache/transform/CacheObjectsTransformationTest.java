@@ -76,7 +76,6 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         assertFalse(ControllableCacheObjectTransformer.failOnTransformation());
 
         doTest();
-
     }
 
     /**
