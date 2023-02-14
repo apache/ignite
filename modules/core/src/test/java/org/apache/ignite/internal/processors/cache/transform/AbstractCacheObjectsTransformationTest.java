@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -121,14 +122,13 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
             val instanceof int[] || val instanceof Collection);
 
         boolean binarizableColVal = (val instanceof Object[] && !(val instanceof String[] || val instanceof int[])) ||
-            (val instanceof Collection && !(
-                ((Iterable<?>)val).iterator().next() instanceof String ||
-                    ((Iterable<?>)val).iterator().next() instanceof Integer)
-            );
+            (val instanceof Collection &&
+                !(F.first((Iterable<?>)val) instanceof String || F.first((Iterable<?>)val) instanceof Integer));
 
         boolean binaryVal = val instanceof BinaryObject;
+
         boolean binaryColVal = val instanceof BinaryObject[] ||
-            (val instanceof Collection && ((Iterable<?>)val).iterator().next() instanceof BinaryObject);
+            (val instanceof Collection && F.first((Iterable<?>)val) instanceof BinaryObject);
 
         if (binaryVal)
             assertTrue(binarizableVal);
