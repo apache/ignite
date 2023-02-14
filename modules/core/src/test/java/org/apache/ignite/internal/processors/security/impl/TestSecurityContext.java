@@ -70,6 +70,7 @@ public class TestSecurityContext implements SecurityContext, Serializable {
             case ADMIN_OPS:
             case ADMIN_SNAPSHOT:
             case JOIN_AS_SERVER:
+            case CHANGE_CLUSTER_STATE:
                 return systemOperationAllowed(perm);
 
             default:

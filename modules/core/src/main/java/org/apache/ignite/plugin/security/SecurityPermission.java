@@ -87,14 +87,17 @@ public enum SecurityPermission {
     /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT,
 
+    /** Permission to change cluster state to ACTIVE and ACTIVE_READ_ONLY. */
+    ADMIN_CLUSTER_STATE_ACTIVE,
+
+    /** Permission to change cluster state to INACTIVE. */
+    ADMIN_CLUSTER_STATE_INACTIVE,
+
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,
 
     /** Permission to execute ANALYZE and DROP STATISTICS command. */
-    CHANGE_STATISTICS,
-
-    /** Permission to change cluster state like setting to ACTIVE or INACTIVE. */
-    CHANGE_CLUSTER_STATE;
+    CHANGE_STATISTICS;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

@@ -146,7 +146,7 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
     /** Tests that all service deploy calls require {@link SecurityPermission#SERVICE_DEPLOY} permission. */
     @Test
     public void testServiceDeploy() throws Exception {
-        startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE, SERVICE_CANCEL));
+        startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_INVOKE, SERVICE_CANCEL));
         startGrid(configuration(FORBIDDEN_NODE_IDX, SERVICE_INVOKE));
 
         checkDeploy(srvcs -> srvcs.deploy(serviceConfiguration()), false);

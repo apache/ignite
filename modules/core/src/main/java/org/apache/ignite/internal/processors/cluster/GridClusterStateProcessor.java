@@ -1123,7 +1123,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
 
         try {
-            ctx.security().authorize(SecurityPermission.CHANGE_CLUSTER_STATE);
+            switch (state) {
+                case ACTIVE:
+                    ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE_ACTIVE);
+                    break;
+                case INACTIVE:
+                    ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE_INACTIVE);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("No security permission is available for state " + state);
+            }
         }
         catch (SecurityException e) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(state) +
