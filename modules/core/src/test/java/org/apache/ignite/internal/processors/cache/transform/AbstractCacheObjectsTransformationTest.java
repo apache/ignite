@@ -79,8 +79,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
      *
      * @return Data cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration<?,?> cacheConfiguration() {
+        CacheConfiguration<?,?> cfg = defaultCacheConfiguration();
 
         cfg.setName(CACHE_NAME);
         cfg.setBackups(NODES);

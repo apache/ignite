@@ -58,8 +58,8 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
 
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = super.cacheConfiguration();
+    @Override protected CacheConfiguration<?,?> cacheConfiguration() {
+        CacheConfiguration<?,?> cfg = super.cacheConfiguration();
 
         cfg.setAtomicityMode(mode);
 
