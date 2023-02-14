@@ -49,6 +49,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
  * Binary object implementation.
@@ -99,6 +100,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
+
+        assert arr[start] != TRANSFORMED; // Raw array should never be transformed.
 
         this.ctx = ctx;
         this.arr = arr;
