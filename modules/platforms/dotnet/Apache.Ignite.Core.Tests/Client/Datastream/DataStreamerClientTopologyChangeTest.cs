@@ -176,7 +176,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             cancel.Cancel();
             adderTask.Wait(TimeSpan.FromSeconds(15));
-            streamer.Close(cancel: false);
+            streamer.CloseAsync(cancel: false).Wait(TimeSpan.FromSeconds(15));
 
             var streamerImpl = (DataStreamerClient<int, int>) streamer;
 
