@@ -141,12 +141,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var streamer = client.GetDataStreamer<int, int>(cache.Name, options);
 
             var id = 0;
-            var cancel = false;
+            var cancel = new CancellationTokenSource();
 
             var adderTask = Task.Factory.StartNew(() =>
             {
                 // ReSharper disable once AccessToModifiedClosure
-                while (!cancel)
+                while (!cancel.IsCancellationRequested)
                 {
                     id++;
 
@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 }
             }
 
-            cancel = true;
+            cancel.Cancel();
             adderTask.Wait(TimeSpan.FromSeconds(15));
             streamer.Close(cancel: false);
 
