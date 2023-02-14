@@ -1125,6 +1125,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         try {
             switch (state) {
                 case ACTIVE:
+                case ACTIVE_READ_ONLY:
                     ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE_ACTIVE);
                     break;
                 case INACTIVE:
@@ -1134,9 +1135,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     throw new UnsupportedOperationException("No security permission is available for state " + state);
             }
         }
-        catch (SecurityException e) {
-            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to " + prettyStr(state) +
-                "Operation is not allowed.", e));
+        catch (org.apache.ignite.plugin.security.SecurityException e) {
+            return new GridFinishedFuture<>(e);
         }
 
         if (ctx.clientNode())
