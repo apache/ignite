@@ -125,6 +125,6 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
      *
      */
     private void putAndCheck(Object val, boolean compressible) {
-        putAndCheck(val, false /*no chances to compress integer*/, compressible, false);
+        putAndCheck(val, compressible, false);
     }
 }

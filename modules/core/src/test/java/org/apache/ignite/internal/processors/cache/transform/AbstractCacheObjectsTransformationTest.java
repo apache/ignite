@@ -116,7 +116,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected void putAndCheck(Object val, boolean transformableKey, boolean transformableVal, boolean reversed) {
+    protected void putAndCheck(Object val, boolean transformableVal, boolean reversed) {
         boolean binarizableVal = !(val instanceof String || val instanceof Integer || val instanceof Object[] ||
             val instanceof int[] || val instanceof Collection);
 
@@ -148,7 +148,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         cache.put(k, v);
 
-        checkPut(!reversed && binarizableVal, reversed ? transformableKey : transformableVal);
+        checkPut(!reversed && binarizableVal, transformableVal);
 
         checkGet(
             k,
@@ -157,7 +157,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
             !reversed && binaryColVal,
             !reversed && binarizableVal,
             !reversed && binarizableColVal,
-            reversed ? transformableKey : transformableVal);
+            transformableVal);
     }
 
     /**

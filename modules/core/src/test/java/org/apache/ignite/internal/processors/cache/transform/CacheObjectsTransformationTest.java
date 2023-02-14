@@ -159,10 +159,6 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
      */
     private void putAndCheck(Object val) {
         for (boolean reversed : new boolean[] {true, false})
-            putAndCheck(
-                val,
-                !ControllableCacheObjectTransformer.failOnTransformation(),
-                !ControllableCacheObjectTransformer.failOnTransformation(),
-                reversed);
+            putAndCheck(val, !ControllableCacheObjectTransformer.failOnTransformation(), reversed);
     }
 }
