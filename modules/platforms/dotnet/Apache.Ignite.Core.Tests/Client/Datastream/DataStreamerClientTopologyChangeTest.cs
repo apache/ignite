@@ -166,16 +166,22 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
                 if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                 {
-                    nodes.Enqueue(StartServer());
+                    var startTask = Task.Run(StartServer);
+
+                    Assert.IsTrue(startTask.Wait(TimeSpan.FromSeconds(15)));
+
+                    nodes.Enqueue(startTask.Result);
                 }
                 else
                 {
-                    nodes.Dequeue().Dispose();
+                    var oldNode = nodes.Dequeue();
+                    var stopTask = Task.Run(() => oldNode.Dispose());
+                    Assert.IsTrue(stopTask.Wait(TimeSpan.FromSeconds(10)));
                 }
             }
 
             cancel.Cancel();
-            adderTask.Wait(TimeSpan.FromSeconds(15));
+            Assert.IsTrue(adderTask.Wait(TimeSpan.FromSeconds(15)));
             streamer.CloseAsync(cancel: false).Wait(TimeSpan.FromSeconds(15));
 
             var streamerImpl = (DataStreamerClient<int, int>) streamer;
