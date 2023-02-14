@@ -15,24 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.client.events;
 
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Reliability test with async cache operation.
- */
-public class ReliabilityTestAsync extends ReliabilityTest {
-    /** {@inheritDoc} */
-    @Override protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
-        try {
-            cache.putAsync(key, val).get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException)
-                throw (RuntimeException)e.getCause();
+/** */
+public class HandshakeSuccessEvent extends ConnectionEvent {
+    /** */
+    private final long elapsedTimeNanos;
 
-            throw new RuntimeException(e);
-        }
+    /**
+     * @param conn Connection description.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     */
+    public HandshakeSuccessEvent(
+        ConnectionDescription conn,
+        long elapsedTimeNanos
+    ) {
+        super(conn);
+
+        this.elapsedTimeNanos = elapsedTimeNanos;
+    }
+
+    /**
+     * Get the elapsed time of the handshake.
+     *
+     * @param timeUnit Desired time unit in which to return the elapsed time.
+     * @return the elapsed time.
+     */
+    public long elapsedTime(TimeUnit timeUnit) {
+        return timeUnit.convert(elapsedTimeNanos, TimeUnit.NANOSECONDS);
     }
 }

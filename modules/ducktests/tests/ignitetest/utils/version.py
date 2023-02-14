@@ -47,7 +47,7 @@ class IgniteVersion(LooseVersion):
             self.project = self.DEFAULT_PROJECT if not match.group(1) else match.group(1)
             version = match.group(2)
 
-        self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
+        self.is_dev = version == self.DEV_VERSION
 
         if self.is_dev:
             version = __version__  # we may also parse pom file to gain correct version (in future)
@@ -71,7 +71,7 @@ class IgniteVersion(LooseVersion):
         return "IgniteVersion ('%s')" % str(self)
 
 
-DEV_BRANCH = IgniteVersion(__version__)
+DEV_BRANCH = IgniteVersion("dev")
 
 # 2.7.x versions
 V_2_7_6 = IgniteVersion("2.7.6")

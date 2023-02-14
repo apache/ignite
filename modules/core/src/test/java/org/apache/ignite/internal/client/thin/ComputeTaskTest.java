@@ -81,6 +81,13 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean isClientEndpointsDiscoveryEnabled() {
+        // In this test it's critical to connect to the nodes specified in startClient method,
+        // since node for task is checked and one of the nodes doesn't allow tasks execution.
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
