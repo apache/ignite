@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.cache.Cache;
@@ -42,6 +43,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -228,9 +230,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return true;
 
-        return ch.service(
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareService(null, tx,
             ClientOperation.CACHE_CONTAINS_KEYS,
-            req -> writeKeys(keys, req),
+            req -> writeKeys(keys, req, tx),
             res -> res.in().readBoolean());
     }
 
@@ -242,9 +246,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(true);
 
-        return ch.serviceAsync(
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareServiceAsync(null, tx,
             ClientOperation.CACHE_CONTAINS_KEYS,
-            req -> writeKeys(keys, req),
+            req -> writeKeys(keys, req, tx),
             res -> res.in().readBoolean());
     }
 
@@ -303,7 +309,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return new HashMap<>();
 
-        return ch.service(ClientOperation.CACHE_GET_ALL, req -> writeKeys(keys, req), this::readEntries);
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareService(null, tx,
+            ClientOperation.CACHE_GET_ALL,
+            req -> writeKeys(keys, req, tx),
+            this::readEntries);
     }
 
     /** {@inheritDoc} */
@@ -314,7 +325,13 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(new HashMap<>());
 
-        return ch.serviceAsync(ClientOperation.CACHE_GET_ALL, req -> writeKeys(keys, req), this::readEntries);
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareServiceAsync(null, tx,
+            ClientOperation.CACHE_GET_ALL,
+            req -> writeKeys(keys, req, tx),
+            this::readEntries);
+
     }
 
     /** {@inheritDoc} */
@@ -325,12 +342,28 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (map.isEmpty())
             return;
 
-        ch.request(ClientOperation.CACHE_PUT_ALL, req -> writeEntries(map, req));
+        TcpClientTransaction tx = transactions.tx();
+
+        txAwareService(null, tx,
+            ClientOperation.CACHE_PUT_ALL,
+            req -> writeEntries(map, req, tx),
+            null);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) throws ClientException {
-        return ch.requestAsync(ClientOperation.CACHE_PUT_ALL, req -> writeEntries(map, req));
+        if (map == null)
+            throw new NullPointerException("map");
+
+        if (map.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(null);
+
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareServiceAsync(null, tx,
+            ClientOperation.CACHE_PUT_ALL,
+            req -> writeEntries(map, req, tx),
+            null);
     }
 
     /** {@inheritDoc} */
@@ -475,11 +508,14 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return;
 
-        ch.request(
+        TcpClientTransaction tx = transactions.tx();
+
+        txAwareService(null, tx,
             ClientOperation.CACHE_REMOVE_KEYS,
             req -> {
-                writeKeys(keys, req);
-            }
+                writeKeys(keys, req, tx);
+            },
+            null
         );
     }
 
@@ -491,11 +527,14 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
 
-        return ch.requestAsync(
-                ClientOperation.CACHE_REMOVE_KEYS,
-                req -> {
-                    writeKeys(keys, req);
-                }
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareServiceAsync(null, tx,
+            ClientOperation.CACHE_REMOVE_KEYS,
+            req -> {
+                writeKeys(keys, req, tx);
+            },
+            null
         );
     }
 
@@ -707,9 +746,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return;
 
-        ch.request(
+        TcpClientTransaction tx = transactions.tx();
+
+        txAwareService(null, tx,
             ClientOperation.CACHE_CLEAR_KEYS,
-            req -> writeKeys(keys, req)
+            req -> writeKeys(keys, req, tx),
+            null
         );
     }
 
@@ -721,9 +763,12 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (keys.isEmpty())
             return IgniteClientFutureImpl.completedFuture(null);
 
-        return ch.requestAsync(
+        TcpClientTransaction tx = transactions.tx();
+
+        return txAwareServiceAsync(null, tx,
             ClientOperation.CACHE_CLEAR_KEYS,
-            req -> writeKeys(keys, req)
+            req -> writeKeys(keys, req, tx),
+            null
         );
     }
 
@@ -1063,6 +1108,68 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /**
+     * Execute operation on channel most suitable for transactional context.
+     */
+    private <T> T txAwareService(
+        @Nullable K affKey,
+        TcpClientTransaction tx,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) {
+        // Transactional operation cannot be executed on affinity node, it should be executed on node started
+        // the transaction.
+        if (tx != null) {
+            try {
+                return tx.clientChannel().service(op, payloadWriter, payloadReader);
+            }
+            catch (ClientConnectionException e) {
+                throw new ClientException("Transaction context has been lost due to connection errors. " +
+                    "Cache operations are prohibited until current transaction closed.", e);
+            }
+        }
+        else if (affKey != null)
+            return ch.affinityService(cacheId, affKey, op, payloadWriter, payloadReader);
+        else
+            return ch.service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Execute operation on channel most suitable for transactional context.
+     */
+    private <T> IgniteClientFuture<T> txAwareServiceAsync(
+        @Nullable K affKey,
+        TcpClientTransaction tx,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) {
+        // Transactional operation cannot be executed on affinity node, it should be executed on node started
+        // the transaction.
+        if (tx != null) {
+            CompletableFuture<T> fut = new CompletableFuture<>();
+
+            tx.clientChannel().serviceAsync(op, payloadWriter, payloadReader).whenComplete((res, err) -> {
+                if (err instanceof ClientConnectionException) {
+                    fut.completeExceptionally(
+                        new ClientException("Transaction context has been lost due to connection errors. " +
+                            "Cache operations are prohibited until current transaction closed.", err));
+                }
+                else if (err != null)
+                    fut.completeExceptionally(err);
+                else
+                    fut.complete(res);
+            });
+
+            return new IgniteClientFutureImpl<>(fut);
+        }
+        else if (affKey != null)
+            return ch.affinityServiceAsync(cacheId, affKey, op, payloadWriter, payloadReader);
+        else
+            return ch.serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /**
      * Execute cache operation with a single key.
      */
     private <T> T cacheSingleKeyOperation(
@@ -1071,18 +1178,17 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         Consumer<PayloadOutputChannel> additionalPayloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException {
+        TcpClientTransaction tx = transactions.tx();
+
         Consumer<PayloadOutputChannel> payloadWriter = req -> {
-            writeCacheInfo(req);
+            writeCacheInfo(req, tx);
             writeObject(req, key);
 
             if (additionalPayloadWriter != null)
                 additionalPayloadWriter.accept(req);
         };
 
-        // Transactional operation cannot be executed on affinity node, it should be executed on node started
-        // the transaction.
-        return transactions.tx() == null ? ch.affinityService(cacheId, key, op, payloadWriter, payloadReader) :
-            ch.service(op, payloadWriter, payloadReader);
+        return txAwareService(key, tx, op, payloadWriter, payloadReader);
     }
 
     /**
@@ -1094,30 +1200,31 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         Consumer<PayloadOutputChannel> additionalPayloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException {
+        TcpClientTransaction tx = transactions.tx();
+
         Consumer<PayloadOutputChannel> payloadWriter = req -> {
-            writeCacheInfo(req);
+            writeCacheInfo(req, tx);
             writeObject(req, key);
 
             if (additionalPayloadWriter != null)
                 additionalPayloadWriter.accept(req);
         };
 
-        // Transactional operation cannot be executed on affinity node, it should be executed on node started
-        // the transaction.
-        return transactions.tx() == null
-                ? ch.affinityServiceAsync(cacheId, key, op, payloadWriter, payloadReader)
-                : ch.serviceAsync(op, payloadWriter, payloadReader);
+        return txAwareServiceAsync(key, tx, op, payloadWriter, payloadReader);
+    }
+
+    /** Write cache ID and flags for non-transactional operations. */
+    private void writeCacheInfo(PayloadOutputChannel payloadCh) {
+        writeCacheInfo(payloadCh, null);
     }
 
     /** Write cache ID and flags. */
-    private void writeCacheInfo(PayloadOutputChannel payloadCh) {
+    private void writeCacheInfo(PayloadOutputChannel payloadCh, TcpClientTransaction tx) {
         BinaryOutputStream out = payloadCh.out();
 
         out.writeInt(cacheId);
 
         byte flags = keepBinary ? KEEP_BINARY_FLAG_MASK : 0;
-
-        TcpClientTransaction tx = transactions.tx();
 
         if (expiryPlc != null) {
             ProtocolContext protocolCtx = payloadCh.clientChannel().protocolCtx();
@@ -1130,14 +1237,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             flags |= WITH_EXPIRY_POLICY_FLAG_MASK;
         }
 
-        if (tx != null) {
-            if (tx.clientChannel() != payloadCh.clientChannel()) {
-                throw new ClientException("Transaction context has been lost due to connection errors. " +
-                    "Cache operations are prohibited until current transaction closed.");
-            }
-
+        if (tx != null)
             flags |= TRANSACTIONAL_FLAG_MASK;
-        }
 
         out.writeByte(flags);
 
@@ -1177,8 +1278,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** */
-    private void writeKeys(Set<? extends K> keys, PayloadOutputChannel req) {
-        writeCacheInfo(req);
+    private void writeKeys(Set<? extends K> keys, PayloadOutputChannel req, TcpClientTransaction tx) {
+        writeCacheInfo(req, tx);
         ClientUtils.collection(keys, req.out(), serDes::writeObject);
     }
 
@@ -1196,8 +1297,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** */
-    private void writeEntries(Map<? extends K, ? extends V> map, PayloadOutputChannel req) {
-        writeCacheInfo(req);
+    private void writeEntries(Map<? extends K, ? extends V> map, PayloadOutputChannel req, TcpClientTransaction tx) {
+        writeCacheInfo(req, tx);
         ClientUtils.collection(
                 map.entrySet(),
                 req.out(),

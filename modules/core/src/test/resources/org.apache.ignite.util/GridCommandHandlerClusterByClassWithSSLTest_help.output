@@ -133,6 +133,13 @@ This utility can do the following commands:
       routine_id      - Routine identifier.
       origin_node_id  - Originating node id.
 
+  Kill client connection by id:
+    control.(sh|bat) --kill CLIENT connection_id [--node-id node_id]
+
+    Parameters:
+      connection_id      - Connection identifier or ALL.
+      --node-id node_id  - Node id to drop connection from.
+
   Kill running snapshot by snapshot name:
     control.(sh|bat) --kill SNAPSHOT snapshot_name
 
@@ -267,6 +274,14 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
       name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
       node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
 
+  Configure metric:
+    control.(sh|bat) --metric (--configure-histogram name newBounds)|(--configure-hitrate name newRateTimeInterval)
+
+    Parameters:
+      name                 - Name of the metric which value should be configured.
+      newBounds            - Comma-separated list of longs to configure histogram.
+      newRateTimeInterval  - Rate time interval of hitrate.
+
   Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence
 
@@ -327,6 +342,13 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   [EXPERIMENTAL]
   Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
+
+  [EXPERIMENTAL]
+  Delete lost segment CDC links:
+    control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
+
+    Parameters:
+      node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

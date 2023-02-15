@@ -38,6 +38,9 @@ public enum ProtocolBitmaskFeature {
      */
     CLUSTER_STATES(2),
 
+    /** Client discovery. */
+    CLUSTER_GROUP_GET_NODES_ENDPOINTS(3),
+
     /** Cluster groups. */
     CLUSTER_GROUPS(4),
 

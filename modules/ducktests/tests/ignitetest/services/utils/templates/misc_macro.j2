@@ -60,9 +60,19 @@
         <bean class="{{ bean_object }}">
             {% for name, value in bean_object.properties.items() %}
                 {% if value is string or value is number or value is boolean %}
-                    <property name="{{ name }}" value="{{ value }}"/>
+                    <property name="{{ name  | snake_to_camel }}" value="{{ value }}"/>
+                {% elif value is iterable and value is not mapping %}
+                    <property name="{{ name | snake_to_camel }}">
+                        <list>
+                            {% for v in value %}
+                                <value>{{ v }}</value>
+                            {% endfor %}
+                        </list>
+                    </property>
+                {% elif value.ref | length > 0 %}
+                    <property name="{{ name  | snake_to_camel }}" ref="{{ value.ref }}"/>
                 {% else %}
-                    <property name="{{ name }}">
+                    <property name="{{ name | snake_to_camel }}">
                         {{ bean(value) }}
                     </property>
                 {% endif %}

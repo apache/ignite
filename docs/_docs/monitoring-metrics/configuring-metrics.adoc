@@ -49,24 +49,6 @@ include::{dotnetFile}[tag=cache-metrics,indent=0]
 tab:C++[unsupported]
 --
 
-For each cache on a node, Ignite creates two JMX Beans: one with cache information specific to the node, and one with global (cluster-wide) information about the cache.
-
-*Local cache information MBean:*::
-+
-....
-group=<Cache_Name>,name="org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl"
-....
-
-
-*Global cache information MBean:*::
-+
-----
-group=<Cache_Name>,name="org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl"
-----
-
-//See link:monitoring-metrics/monitoring-with-jconsole[Monitoring with JConsole] for the information on how to access JMX beans.
-
-
 == Enabling Data Region Metrics
 Data region metrics expose information about data regions, including memory and storage size of the region.
 Enable data region metrics for every region you want to collect the metrics for.

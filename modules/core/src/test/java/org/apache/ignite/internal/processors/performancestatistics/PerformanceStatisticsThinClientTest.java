@@ -87,7 +87,9 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
         ignite.compute().localDeployTask(TestTask.class, TestTask.class.getClassLoader());
 
-        thinClient = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+        thinClient = Ignition.startClient(new ClientConfiguration()
+            // Disable endpoints discovery, required connection to exact one node (node 0).
+            .setAddressesFinder(() -> new String[] {Config.SERVER}));
     }
 
     /** {@inheritDoc} */

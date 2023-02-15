@@ -77,9 +77,15 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     /** {@inheritDoc} */
     @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (IgniteClient client = Command.startClient(clientCfg)) {
-            client.cluster().state(state, forceDeactivation);
+            ClusterState clusterState = client.cluster().state();
 
-            log.info("Cluster state changed to " + state);
+            if (clusterState == state)
+                log.info("Cluster state is already " + state + '.');
+            else {
+                client.cluster().state(state, forceDeactivation);
+
+                log.info("Cluster state changed to " + state + '.');
+            }
 
             return null;
         }
