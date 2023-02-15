@@ -158,6 +158,8 @@ class IgniteSpec(metaclass=ABCMeta):
                     is_jmx_metrics_enabled(self.service)):
                 config = config._replace(ignite_instance_name=self._test_id)
 
+        config = config.prepare_ssl(self.service.globals, self.service.shared_root)
+
         return config
 
     @property

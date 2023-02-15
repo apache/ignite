@@ -21,6 +21,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * This class defines {@link CdcMain} runtime configuration.
@@ -71,19 +72,21 @@ public class CdcConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link MetricExporterSpi}.
+     * Sets fully configured instances of {@link MetricExporterSpi}. {@link JmxMetricExporterSpi} is used by default.
      *
      * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
      * @see CdcConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
      */
     public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
         this.metricExporterSpi = metricExporterSpi;
     }
 
     /**
-     * Gets fully configured metric SPI implementations.
+     * Gets fully configured metric SPI implementations. {@link JmxMetricExporterSpi} is used by default.
      *
      * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;

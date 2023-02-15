@@ -35,6 +35,7 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -72,6 +72,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -108,20 +109,20 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testJmxNoPdsStatisticsEnable() throws Exception {
+    public void testNoPdsStatisticsEnable() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
 
-        testJmxStatisticsEnable(false);
+        testStatisticsEnable(false);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testJmxPdsStatisticsEnable() throws Exception {
+    public void testPdsStatisticsEnable() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
 
-        testJmxStatisticsEnable(true);
+        testStatisticsEnable(true);
     }
 
     /**
@@ -317,24 +318,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    @Test
-    public void testJmxApiClearStatistics() throws Exception {
-        startGrids(3);
-
-        IgniteCache<Integer, String> cache = grid(0).cache(CACHE1);
-
-        cache.enableStatistics(true);
-
-        incrementCacheStatistics(cache);
-
-        mxBean(0, CACHE1, CacheClusterMetricsMXBeanImpl.class).clear();
-
-        assertCacheStatisticsIsClear(Collections.singleton(CACHE1));
-    }
-
-    /**
      * Cache statistics is cleared on all nodes.
      *
      * @param cacheNames a collection of cache names.
@@ -350,14 +333,14 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                         IgniteCache<?, ?> cache = ig.cache(cacheName);
 
                         try {
-                            assertEquals("CachePuts", 0L, cache.mxBean().getCachePuts());
-                            assertEquals("CacheHits", 0L, cache.mxBean().getCacheHits());
-                            assertEquals("CacheGets", 0L, cache.mxBean().getCacheGets());
-                            assertEquals("CacheRemovals", 0L, cache.mxBean().getCacheRemovals());
-                            assertEquals("CacheMisses", 0L, cache.mxBean().getCacheMisses());
-                            assertEquals("AverageGetTime", 0f, cache.mxBean().getAveragePutTime());
-                            assertEquals("AveragePutTime", 0f, cache.mxBean().getAverageGetTime());
-                            assertEquals("AverageRemoveTime", 0f, cache.mxBean().getAverageRemoveTime());
+                            assertEquals("CachePuts", 0L, cache.metrics().getCachePuts());
+                            assertEquals("CacheHits", 0L, cache.metrics().getCacheHits());
+                            assertEquals("CacheGets", 0L, cache.metrics().getCacheGets());
+                            assertEquals("CacheRemovals", 0L, cache.metrics().getCacheRemovals());
+                            assertEquals("CacheMisses", 0L, cache.metrics().getCacheMisses());
+                            assertEquals("AverageGetTime", 0f, cache.metrics().getAveragePutTime());
+                            assertEquals("AveragePutTime", 0f, cache.metrics().getAverageGetTime());
+                            assertEquals("AverageRemoveTime", 0f, cache.metrics().getAverageRemoveTime());
                         }
                         catch (AssertionError e) {
                             log.warning(e.toString());
@@ -405,7 +388,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     /**
      * @param persistence Persistence.
      */
-    private void testJmxStatisticsEnable(boolean persistence) throws Exception {
+    private void testStatisticsEnable(boolean persistence) throws Exception {
         this.persistence = persistence;
 
         Ignite ig1 = startGrid(1);
@@ -421,12 +404,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         ig2.getOrCreateCache(cacheCfg2);
 
-        CacheMetricsMXBean mxBeanCache1 = mxBean(2, CACHE1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache2 = mxBean(2, CACHE2, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean mxBeanCache1loc = mxBean(2, CACHE1, CacheLocalMetricsMXBeanImpl.class);
-
-        mxBeanCache1.enableStatistics();
-        mxBeanCache2.disableStatistics();
+        ig2.cache(CACHE1).enableStatistics(true);
+        ig2.cache(CACHE2).enableStatistics(false);
 
         assertCachesStatisticsMode(true, false);
 
@@ -436,12 +415,12 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         assertCachesStatisticsMode(true, false);
 
-        mxBeanCache1loc.disableStatistics();
+        ig2.cache(CACHE1).enableStatistics(false);
 
         assertCachesStatisticsMode(false, false);
 
-        mxBeanCache1.enableStatistics();
-        mxBeanCache2.enableStatistics();
+        ig2.cache(CACHE1).enableStatistics(true);
+        ig2.cache(CACHE2).enableStatistics(true);
 
         // Start node 1 again.
         startGrid(1);
@@ -494,26 +473,12 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         else
             assertCachesStatisticsMode(false, false);
 
-        mxBeanCache1 = mxBean(1, CACHE1, CacheLocalMetricsMXBeanImpl.class);
-        mxBeanCache2 = mxBean(1, CACHE2, CacheLocalMetricsMXBeanImpl.class);
-
-        mxBeanCache1.enableStatistics();
-        mxBeanCache2.disableStatistics();
+        ig1.cache(CACHE1).enableStatistics(true);
+        ig1.cache(CACHE2).enableStatistics(false);
 
         startGrid(2);
 
         assertCachesStatisticsMode(true, false);
-    }
-
-    /**
-     * Gets CacheMetricsMXBean for given node and group name.
-     *
-     * @param nodeIdx Node index.
-     * @param cacheName Cache name.
-     * @return MBean instance.
-     */
-    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz) {
-        return getMxBean(getTestIgniteInstanceName(nodeIdx), cacheName, clazz.getName(), CacheMetricsMXBean.class);
     }
 
     /** Default cache config. */
@@ -592,7 +557,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(cacheName);
 
-        CacheMetricsMXBean mxBeanCache = mxBean(0, cacheName, CacheLocalMetricsMXBeanImpl.class);
+        CacheMetrics localCacheMetrics = cache.localMetrics();
 
         final List<Integer> priKeys = primaryKeys(cache, 3, 1);
 
@@ -681,7 +646,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                     fail(e.toString());
                 }
 
-                String coll = mxBeanCache.getTxKeyCollisions();
+                String coll = localCacheMetrics.getTxKeyCollisions();
 
                 if (coll.contains("val=" + priKeys.get(2)) || coll.contains("val=" + priKeys.get(0)));
                     return true;
@@ -789,7 +754,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        CacheMetricsMXBean mxBeanCache = mxBean(0, cacheName, CacheLocalMetricsMXBeanImpl.class);
+        CacheMetrics localCacheMetrics = cache.localMetrics();
 
         IgniteTxManager txManager = ((IgniteEx)ig).context().cache().context().tm();
 
@@ -802,9 +767,9 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
             txMXBean2.setTxKeyCollisionsInterval(ThreadLocalRandom.current().nextInt(1000, 1100));
 
-            mxBeanCache.getTxKeyCollisions();
+            localCacheMetrics.getTxKeyCollisions();
 
-            mxBeanCache.clear();
+            ig.cache(cacheName).clearStatistics();
 
             try {
                 U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
@@ -832,11 +797,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         assertFalse(grid.cluster().state().active());
 
-        CacheMetricsMXBean mxBean = mxBean(0, CACHE1, CacheLocalMetricsMXBeanImpl.class);
-
-        long size = mxBean.getCacheSize();
-
-        assertEquals(-1, size);
+        assertThrows(null, () -> grid.cache(CACHE1).metrics().getCacheSize(), IgniteException.class,
+            "Can not perform the operation because the cluster is inactive");
     }
 
     /**

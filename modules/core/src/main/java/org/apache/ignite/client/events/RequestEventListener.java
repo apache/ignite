@@ -15,33 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.task;
+package org.apache.ignite.client.events;
 
-/**
- * Defines keys for thread-local context in task processor.
- */
-public enum GridTaskThreadContextKey {
-    /** Task name. */
-    TC_TASK_NAME,
+import java.util.EventListener;
 
-    /** No failover flag. */
-    TC_NO_FAILOVER,
+/** */
+public interface RequestEventListener extends EventListener {
+    /**
+     * @param event Request start event.
+     */
+    default void onRequestStart(RequestStartEvent event) {
+        // No-op.
+    }
 
-    /** No result cache flag. */
-    TC_NO_RESULT_CACHE,
+    /**
+     * @param event Request success event.
+     */
+    default void onRequestSuccess(RequestSuccessEvent event) {
+        // No-op.
+    }
 
-    /** Projection for the task. */
-    TC_SUBGRID,
-
-    /** Projection predicate for the task. */
-    TC_SUBGRID_PREDICATE,
-
-    /** Timeout in milliseconds associated with the task. */
-    TC_TIMEOUT,
-
-    /** IO manager policy. */
-    TC_IO_POLICY,
-
-    /** Skip authorization for the task. */
-    TC_SKIP_AUTH
+    /**
+     * @param event Request failure event.
+     */
+    default void onRequestFail(RequestFailEvent event) {
+        // No-op.
+    }
 }

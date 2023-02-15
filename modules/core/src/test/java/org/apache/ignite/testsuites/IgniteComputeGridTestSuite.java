@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutor
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorSelfTest;
 import org.apache.ignite.internal.processors.compute.InterruptComputeJobTest;
 import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
+import org.apache.ignite.internal.processors.compute.TaskOptionsPropagationTest;
 import org.apache.ignite.internal.util.StripedExecutorTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
@@ -183,7 +184,8 @@ import org.junit.runners.Suite;
     ComputeJobChangePriorityTest.class,
     ComputeJobStatusTest.class,
     ComputeTaskWithWithoutFullSupportTest.class,
-    InterruptComputeJobTest.class
+    InterruptComputeJobTest.class,
+    TaskOptionsPropagationTest.class
 })
 public class IgniteComputeGridTestSuite {
 }

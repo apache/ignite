@@ -213,7 +213,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         MetricRegistry mreg = metricRegistry();
 
         allocRate = mreg.hitRateMetric("AllocationRate",
-            "Allocation rate (pages per second) averaged across rateTimeInternal.",
+            "Allocation rate (pages per second) averaged across rateTimeInterval.",
             60_000,
             5);
 

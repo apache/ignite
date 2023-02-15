@@ -331,6 +331,20 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |===
 
+== CONFIGURATION
+
+
+The CONFIGURATION view contains the configuration properties of node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Configuration property name.
+|VALUE |VARCHAR |Configuration property value.
+
+|===
+
 == BASELINE_NODES
 
 
@@ -729,6 +743,17 @@ This view exposes information about all available binary types.
 == METASTORAGE
 
 This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
+== DISTRIBUTED_METASTORAGE
+
+This view exposes the contents of the distributed metastorage cache.
 
 [{table_opts}]
 |===

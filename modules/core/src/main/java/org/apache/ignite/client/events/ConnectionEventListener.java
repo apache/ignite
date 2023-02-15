@@ -15,21 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.client.events;
 
-import org.apache.ignite.configuration.ClientConfiguration;
+import java.util.EventListener;
 
-/**
- * Reliability test with partition awareness and async operation.
- */
-public class ReliabilityTestPartitionAwareAsync extends ReliabilityTestAsync {
-    /** {@inheritDoc} */
-    @Override protected ClientConfiguration getClientConfiguration() {
-        return super.getClientConfiguration().setPartitionAwarenessEnabled(true);
+/** */
+public interface ConnectionEventListener extends EventListener {
+    /**
+     * @param event Handshake start event.
+     */
+    default void onHandshakeStart(HandshakeStartEvent event) {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitionAware() {
-        return true;
+    /**
+     * @param event Handshake success event.
+     */
+    default void onHandshakeSuccess(HandshakeSuccessEvent event) {
+        // No-op.
+    }
+
+    /**
+     * @param event Handshake fail event.
+     */
+    default void onHandshakeFail(HandshakeFailEvent event) {
+        // No-op.
+    }
+
+    /**
+     * @param event Connection closed event (with or without exception).
+     */
+    default void onConnectionClosed(ConnectionClosedEvent event) {
+        // No-op.
     }
 }
