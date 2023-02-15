@@ -615,56 +615,34 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         grid(0).cache(CACHE).put(10_000, new Person("name"));
 
-        BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)grid(0).context().cacheObjects()).binaryContext();
+        checkBinaryMetaRestored((shouldExists) -> {
+            BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)grid(0).context().cacheObjects()).binaryContext();
 
-        int persTypeId = binCtx.typeId(Person.class.getName());
+            int persTypeId = binCtx.typeId(Person.class.getName());
 
-        Consumer<Boolean> checkMetaIsEmpty = (shouldBeEmpty) -> {
             for (int n = 0; n < nodes(); n++) {
                 List<Map<Integer, MappedName>> mappings = grid(n).context().marshallerContext().getCachedMappings();
                 IgniteCacheObjectProcessor objPrc = grid(n).context().cacheObjects();
 
-                if (shouldBeEmpty) {
-                    assertEquals(mappings.toString(), 1, mappings.size());
-                    assertTrue(mappings.get(0).isEmpty());
-                    assertNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
-                }
-                else {
+                if (shouldExists) {
                     assertEquals(mappings.toString(), 1, mappings.size());
                     assertTrue(mappings.get(0).containsKey(persTypeId));
                     assertNotNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
                 }
+                else {
+                    assertEquals(mappings.toString(), 1, mappings.size());
+                    assertTrue(mappings.get(0).isEmpty());
+                    assertNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
+                }
             }
 
             // Check accessing class only after explicit validate meta on every node.
-            if (!shouldBeEmpty) {
+            if (shouldExists) {
                 Person p = (Person)grid(0).cache(CACHE).get(10_000);
 
                 assertEquals("name", p.name);
             }
-        };
-
-        grid(0).snapshot().createIncrementalSnapshot(SNP).get();
-
-        restartWithCleanPersistence();
-
-        checkMetaIsEmpty.accept(true);
-
-        grid(0).snapshot().restoreSnapshot(SNP, null).get(getTestTimeout());
-
-        checkMetaIsEmpty.accept(true);
-
-        restartWithCleanPersistence();
-
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
-
-        checkMetaIsEmpty.accept(false);
-
-        stopAllGrids();
-
-        startGrids(nodes());
-
-        checkMetaIsEmpty.accept(false);
+        });
     }
 
     /** */
@@ -682,7 +660,14 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             }
         });
 
-        Consumer<Boolean> checkMetaIsChanged = (shouldChange) -> {
+        grid(0).cache(CACHE).withKeepBinary().put(
+            10_000,
+            grid(0).binary().builder("TestType")
+                .setField("age", 10)
+                .setField("balance", 100)
+                .build());
+
+        checkBinaryMetaRestored((shouldChange) -> {
             for (int n = 0; n < nodes(); n++) {
                 IgniteCacheObjectProcessor objPrc = grid(n).context().cacheObjects();
 
@@ -702,34 +687,30 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             }
             else
                 assertNull(obj);
-        };
+        });
+    }
 
-        grid(0).cache(CACHE).withKeepBinary().put(
-            10_000,
-            grid(0).binary().builder("TestType")
-                .setField("age", 10)
-                .setField("balance", 100)
-                .build());
-
+    /** Checks that binary metadata and marshaller restored from an incremental snapshot, and still exists after restart. */
+    private void checkBinaryMetaRestored(Consumer<Boolean> binaryMetaCheck) throws Exception {
         grid(0).snapshot().createIncrementalSnapshot(SNP).get();
 
         restartWithCleanPersistence();
 
         grid(0).snapshot().restoreSnapshot(SNP, null).get(getTestTimeout());
 
-        checkMetaIsChanged.accept(false);
+        binaryMetaCheck.accept(false);
 
         restartWithCleanPersistence();
 
         grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
 
-        checkMetaIsChanged.accept(true);
+        binaryMetaCheck.accept(true);
 
         stopAllGrids();
 
         startGrids(nodes());
 
-        checkMetaIsChanged.accept(true);
+        binaryMetaCheck.accept(true);
     }
 
     /**
