@@ -163,9 +163,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    private void checkPut(
-        boolean binarizableVal,
-        boolean transformableVal) {
+    private void checkPut(boolean binarizableVal, boolean transformableVal) {
         int transformed = transformableVal ? 1 : 0;
         int transformCancelled = transformableVal ? 0 : 1;
         int restored = transformableVal && binarizableVal ? NODES : 0; // Binary array is required (e.g. to wait for proper Metadata)
@@ -183,7 +181,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         boolean binaryColExpVal,
         boolean binarizableVal,
         boolean binarizableColVal,
-        boolean transformableVal) {
+        boolean transformableVal
+    ) {
         for (Ignite node : G.allGrids()) {
             for (boolean keepBinary : new boolean[] {true, false})
                 getWithCheck(
@@ -211,7 +210,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         boolean binarizableVal,
         boolean binarizableColVal,
         boolean transformableVal,
-        boolean keepBinary) {
+        boolean keepBinary
+    ) {
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
         if (keepBinary)
