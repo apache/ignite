@@ -1278,8 +1278,6 @@ public class CacheGroupContext {
             }
 
             localWalEnabled = enabled;
-
-            idxWalEnabled = localWalEnabled;
         }
 
         if (persist) {
