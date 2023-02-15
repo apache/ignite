@@ -91,8 +91,8 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             putAndGet(list, false); // Too short list.
 
             // Adding more elements.
-            list.add(new BinarizableData(str, null, i));
-            list.add(new BinarizableData(str, null, i));
+            list.add(new BinarizableData(str + 1 /*avoiding possible 'as handle' marshalling*/, null, i));
+            list.add(new BinarizableData(str + 2 /*avoiding possible 'as handle' marshalling*/, null, i));
 
             putAndGet(list, type != CompressionType.DISABLED); // Enough to be compressed.
 
