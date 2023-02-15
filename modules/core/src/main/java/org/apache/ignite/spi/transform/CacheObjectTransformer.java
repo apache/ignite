@@ -25,9 +25,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 public interface CacheObjectTransformer {
-    /** Additional space required to store the transformed data. */
-    public int OVERHEAD = 2;
-
     /**
      * Transforms the data.
      *

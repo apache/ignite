@@ -25,10 +25,12 @@ import org.apache.ignite.spi.transform.CacheObjectTransformer;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
-import static org.apache.ignite.spi.transform.CacheObjectTransformer.OVERHEAD;
 
 /** */
 public class CacheObjectTransformerUtils {
+    /** Additional space required to store the transformed data. */
+    public static final int OVERHEAD = 2;
+
     /** Source byte buffer. */
     private static final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer();
 

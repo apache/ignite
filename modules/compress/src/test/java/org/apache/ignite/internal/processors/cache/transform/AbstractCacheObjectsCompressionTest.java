@@ -26,7 +26,7 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectTransformer;
+import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.xerial.snappy.Snappy;
 
@@ -111,7 +111,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 return null;
 
             int locOverhead = 8; // Compression type + length.
-            int totalOverhead = CacheObjectTransformer.OVERHEAD + locOverhead;
+            int totalOverhead = CacheObjectTransformerUtils.OVERHEAD + locOverhead;
 
             int origSize = original.remaining();
             int lim = origSize - totalOverhead;
