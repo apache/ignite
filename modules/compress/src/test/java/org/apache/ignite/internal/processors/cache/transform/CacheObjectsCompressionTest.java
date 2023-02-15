@@ -61,19 +61,19 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
 
             int i = 42;
 
-            putAndCheck(i, false); // No chances to compress integer.
+            putAndGet(i, false); // No chances to compress integer.
 
             String str = "Test string";
 
-            putAndCheck(str, false); // Too short string.
+            putAndGet(str, false); // Too short string.
 
             StringData sd = new StringData(str);
 
-            putAndCheck(sd, false); // Too short wrapped string.
+            putAndGet(sd, false); // Too short wrapped string.
 
             List<Object> sdList = Collections.singletonList(sd);
 
-            putAndCheck(sdList, false); // Too short wrapped string.
+            putAndGet(sdList, false); // Too short wrapped string.
 
             StringBuilder sb = new StringBuilder();
 
@@ -82,23 +82,23 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
 
             String str2 = sb.toString();
 
-            putAndCheck(str2, type != CompressionType.DISABLED);
+            putAndGet(str2, type != CompressionType.DISABLED);
 
             List<Object> list = new ArrayList<>();
 
             list.add(new BinarizableData(str, null, i));
 
-            putAndCheck(list, false); // Too short list.
+            putAndGet(list, false); // Too short list.
 
             // Adding more elements.
             list.add(new BinarizableData(str, null, i));
             list.add(new BinarizableData(str, null, i));
 
-            putAndCheck(list, type != CompressionType.DISABLED); // Enough to be compressed.
+            putAndGet(list, type != CompressionType.DISABLED); // Enough to be compressed.
 
             BinarizableData data = new BinarizableData(str, list, i);
 
-            putAndCheck(data, type != CompressionType.DISABLED);
+            putAndGet(data, type != CompressionType.DISABLED);
 
             BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
@@ -106,15 +106,15 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             builder.setField("list", list); // Wrapped strings, enough to be compressed.
             builder.setField("i", i);
 
-            putAndCheck(builder.build(), type != CompressionType.DISABLED); // Enough to be compressed.
+            putAndGet(builder.build(), type != CompressionType.DISABLED); // Enough to be compressed.
 
             builder.setField("str", str);
 
-            putAndCheck(builder.build(), type != CompressionType.DISABLED); // Still enough to be compressed.
+            putAndGet(builder.build(), type != CompressionType.DISABLED); // Still enough to be compressed.
 
             builder.setField("list", null);
 
-            putAndCheck(builder.build(), false); // Too short wrapped string.
+            putAndGet(builder.build(), false); // Too short wrapped string.
         }
         finally {
             CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
@@ -124,7 +124,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
     /**
      *
      */
-    private void putAndCheck(Object val, boolean compressible) {
-        putAndCheck(val, compressible, false);
+    private void putAndGet(Object val, boolean compressible) {
+        putAndGet(val, compressible, false);
     }
 }

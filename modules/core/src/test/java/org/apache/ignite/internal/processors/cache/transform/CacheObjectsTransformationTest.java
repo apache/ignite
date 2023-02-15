@@ -100,33 +100,33 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         int[] is = new int[] {i, i, i};
         List<Integer> iList = Lists.newArrayList(i, i, i);
 
-        putAndCheck(i);
-        putAndCheck(is);
-        putAndCheck(iList);
+        putAndGet(i);
+        putAndGet(is);
+        putAndGet(iList);
 
         String str = "test";
         String[] strs = new String[] {str, str, str};
         List<String> strList = Lists.newArrayList(str, str, str);
 
-        putAndCheck(str);
-        putAndCheck(strs);
-        putAndCheck(strList);
+        putAndGet(str);
+        putAndGet(strs);
+        putAndGet(strList);
 
         BinarizableData data = new BinarizableData(str, Lists.newArrayList(i, i, i), i);
         BinarizableData[] datas = new BinarizableData[] {data, data, data};
         List<BinarizableData> dataList = Lists.newArrayList(data, data, data);
 
-        putAndCheck(data);
-        putAndCheck(datas);
-        putAndCheck(dataList);
+        putAndGet(data);
+        putAndGet(datas);
+        putAndGet(dataList);
 
         BinarizableData ddata = new BinarizableData(str, Lists.newArrayList(i, i, i), i, data);
         BinarizableData[] ddatas = new BinarizableData[] {ddata, ddata, ddata};
         List<BinarizableData> ddataList = Lists.newArrayList(ddata, ddata, ddata);
 
-        putAndCheck(ddata);
-        putAndCheck(ddatas);
-        putAndCheck(ddataList);
+        putAndGet(ddata);
+        putAndGet(ddatas);
+        putAndGet(ddataList);
 
         BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
@@ -138,9 +138,9 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         BinaryObject[] bos = new BinaryObject[] {bo, bo, bo};
         List<BinaryObject> boList = Lists.newArrayList(bo, bo, bo);
 
-        putAndCheck(bo);
-        putAndCheck(bos);
-        putAndCheck(boList);
+        putAndGet(bo);
+        putAndGet(bos);
+        putAndGet(boList);
 
         builder.setField("data", data);
 
@@ -148,16 +148,16 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         BinaryObject[] dbos = new BinaryObject[] {dbo, dbo, dbo};
         List<BinaryObject> dboList = Lists.newArrayList(dbo, dbo, dbo);
 
-        putAndCheck(dbo);
-        putAndCheck(dbos);
-        putAndCheck(dboList);
+        putAndGet(dbo);
+        putAndGet(dbos);
+        putAndGet(dboList);
     }
 
     /**
      * @param val Value.
      */
-    private void putAndCheck(Object val) {
+    private void putAndGet(Object val) {
         for (boolean reversed : new boolean[] {true, false})
-            putAndCheck(val, !ControllableCacheObjectTransformer.failOnTransformation(), reversed);
+            putAndGet(val, !ControllableCacheObjectTransformer.failOnTransformation(), reversed);
     }
 }

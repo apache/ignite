@@ -26,16 +26,15 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,7 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Leak test.
+ *
  */
 public abstract class AbstractCacheObjectsTransformationTest extends GridCommonAbstractTest {
     /** Cache name. */
@@ -117,53 +116,27 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected void putAndCheck(Object val, boolean transformableVal, boolean reversed) {
+    protected void putAndGet(Object val, boolean transformableVal, boolean reversed) {
         boolean binarizableVal = !(val instanceof String || val instanceof Integer || val instanceof Object[] ||
             val instanceof int[] || val instanceof Collection);
-
-        boolean binarizableColVal = (val instanceof Object[] && !(val instanceof String[] || val instanceof int[])) ||
-            (val instanceof Collection &&
-                !(F.first((Iterable<?>)val) instanceof String || F.first((Iterable<?>)val) instanceof Integer));
-
-        boolean binaryVal = val instanceof BinaryObject;
-
-        boolean binaryColVal = val instanceof BinaryObject[] ||
-            (val instanceof Collection && F.first((Iterable<?>)val) instanceof BinaryObject);
-
-        if (binaryVal)
-            assertTrue(binarizableVal);
-
-        if (binaryColVal)
-            assertTrue(binarizableColVal);
-
-        assertFalse(binaryVal && binaryColVal);
-        assertFalse(binarizableVal && binarizableColVal);
-
-        Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partition.
-
-        IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
         Object k = reversed ? val : ++key;
         Object v = reversed ? ++key : val;
 
-        cache.put(k, v);
-
-        checkPut(!reversed && binarizableVal, transformableVal);
-
-        checkGet(
-            k,
-            v,
-            !reversed && binaryVal,
-            !reversed && binaryColVal,
-            !reversed && binarizableVal,
-            !reversed && binarizableColVal,
-            transformableVal);
+        putWithCheck(k, v, !reversed && binarizableVal, transformableVal);
+        getWithCheck(k, v, transformableVal);
     }
 
     /**
      *
      */
-    private void checkPut(boolean binarizableVal, boolean transformableVal) {
+    private void putWithCheck(Object key, Object val, boolean binarizableVal, boolean transformableVal) {
+        Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partition.
+
+        IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
+
+        cache.put(key, val);
+
         int transformed = transformableVal ? 1 : 0;
         int transformCancelled = transformableVal ? 0 : 1;
         int restored = transformableVal && binarizableVal ? NODES : 0; // Binary array is required (e.g. to wait for proper Metadata)
@@ -174,44 +147,17 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    private void checkGet(
-        Object key,
-        Object expVal,
-        boolean binaryExpVal,
-        boolean binaryColExpVal,
-        boolean binarizableVal,
-        boolean binarizableColVal,
-        boolean transformableVal
-    ) {
+    private void getWithCheck(Object key, Object expVal, boolean transformableVal) {
         for (Ignite node : G.allGrids()) {
             for (boolean keepBinary : new boolean[] {true, false})
-                getWithCheck(
-                    node,
-                    key,
-                    expVal,
-                    binaryExpVal,
-                    binaryColExpVal,
-                    binarizableVal,
-                    binarizableColVal,
-                    transformableVal,
-                    keepBinary);
+                getWithCheck(node, key, expVal, transformableVal, keepBinary);
         }
     }
 
     /**
      *
      */
-    private void getWithCheck(
-        Ignite node,
-        Object key,
-        Object expVal,
-        boolean binaryExpVal,
-        boolean binaryColExpVal,
-        boolean binarizableVal,
-        boolean binarizableColVal,
-        boolean transformableVal,
-        boolean keepBinary
-    ) {
+    private void getWithCheck(Ignite node, Object key, Object expVal, boolean transformableVal, boolean keepBinary) {
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
         if (keepBinary)
@@ -219,21 +165,16 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         Object obj = cache.get(key);
 
-        // Need to deserialize the expectation to compare with the deserialized get result.
-        if (!keepBinary && (binaryExpVal || binaryColExpVal))
-            expVal = deserializeBinary(expVal);
+        CacheObjectContext coCtx = ((IgniteCacheProxy<Object, Object>)cache).context().cacheObjectContext();
 
-        // Deserializing the get result to compare with the non-binary expectation.
-        if (keepBinary && ((binarizableVal && !binaryExpVal) || (binarizableColVal && !binaryColExpVal)))
-            obj = deserializeBinary(obj);
+        expVal = coCtx.unwrapBinaryIfNeeded(expVal, false, true, null);
+        obj = coCtx.unwrapBinaryIfNeeded(obj, false, true, null);
 
         assertEqualsArraysAware(expVal, obj);
 
-        int transformed = 0;
-        int transformCancelled = 0;
         int restored = transformableVal ? 1 : 0; // Value restored.
 
-        checkEvents(transformed, transformCancelled, restored, transformableVal);
+        checkEvents(0, 0, restored, transformableVal);
     }
 
     /**
@@ -281,43 +222,6 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
             evt = evtQueue.poll();
 
         return evt;
-    }
-
-    /**
-     *
-     */
-    private Object deserializeBinary(Object obj) {
-        Object res;
-
-        if (obj instanceof Object[])
-            res = deserializeBinaryArray((Object[])obj);
-        else if (obj instanceof Collection)
-            res = deserializeBinaryCollection((Collection<Object>)obj);
-        else
-            res = ((BinaryObject)obj).deserialize();
-
-        return res;
-    }
-
-    /**
-     *
-     */
-    private Object[] deserializeBinaryArray(Object[] objs) {
-        Object[] des = new Object[objs.length];
-
-        for (int i = 0; i < objs.length; i++)
-            des[i] = ((BinaryObject)objs[i]).deserialize();
-
-        return des;
-    }
-
-    /**
-     *
-     */
-    private Collection<Object> deserializeBinaryCollection(Collection<Object> objSet) {
-        return objSet.stream()
-            .map(obj -> ((BinaryObject)obj).deserialize())
-            .collect(Collectors.toList());
     }
 
     /**
