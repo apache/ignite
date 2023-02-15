@@ -26,7 +26,6 @@ import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.internal.jdbc2.JdbcSchemaCaseSelfTest;
 import org.apache.ignite.jdbc.JdbcAuthorizationTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
-import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
 import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcThinMetadataSqlMatchTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
@@ -105,7 +104,6 @@ import org.junit.runners.Suite;
     RunningQueryInfoCheckInitiatorTest.class,
 
     JdbcComplexQuerySelfTest.class,
-    JdbcMetadataSelfTest.class,
     JdbcPojoQuerySelfTest.class,
     JdbcConnectionReopenTest.class,
     JdbcAuthorizationTest.class,
