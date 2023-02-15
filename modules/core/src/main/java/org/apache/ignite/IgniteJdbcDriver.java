@@ -27,6 +27,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
+import org.apache.ignite.internal.jdbc2.JdbcConnection;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.
@@ -66,12 +67,7 @@ import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
  * you have to add main Ignite JAR will all dependencies to its classpath.
  * <h1 class="header">Configuration</h1>
  *
- * JDBC driver can return two different types of connection: Ignite Java client based connection and
- * Ignite client node based connection. Java client best connection is deprecated and left only for
- * compatibility with previous version, so you should always use Ignite client node based mode.
- * It is also preferable because it has much better performance.
- *
- * The type of returned connection depends on provided JDBC connection URL.
+ * JDBC driver return Ignite client node based connection.
  *
  * <h2 class="header">Configuration of Ignite client node based connection</h2>
  *
@@ -296,7 +292,7 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        return new org.apache.ignite.internal.jdbc2.JdbcConnection(url, props);
+        return new JdbcConnection(url, props);
     }
 
     /** {@inheritDoc} */

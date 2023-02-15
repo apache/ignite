@@ -1133,10 +1133,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * This does extended toString compare. <br> Actual toString in case binary is enabled is called at {@link
-     * org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
-     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br> and then strings are
-     * compared in assertions <p> And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected
+     * This does extended toString compare. <p> For binary marshaller result of such BinaryObjectImpl.toString will be unexpected
      * by this test: <br> <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582,
      * hash=11433031, a=100, b=AAAA]</code> <br>
      *
