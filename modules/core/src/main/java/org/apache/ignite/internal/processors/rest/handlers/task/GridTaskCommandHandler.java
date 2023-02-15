@@ -32,7 +32,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -219,9 +217,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 if (locExec) {
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    IgniteCompute compute = ctx.grid().compute().withTimeout(timeout);
-
-                    taskFut = ((IgniteFutureImpl<Object>)compute.executeAsync(name, arg)).internalFuture();
+                    taskFut = ctx.task().execute(name, arg, options().asPublicRequest().withTimeout(timeout));
                 }
                 else {
                     // Using predicate instead of node intentionally
