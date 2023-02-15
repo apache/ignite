@@ -142,7 +142,7 @@ class IncrementalSnapshotFutureTask
                 try {
                     copyWal(incSnpDir, fut.result());
 
-                    File snpMarshallerDir = MarshallerContextImpl.mappingFileStoreWorkDir(incSnpDir.getAbsolutePath());
+                    File snpMarshallerDir = incrementalSnapshotMarshallerDir(incSnpDir);
 
                     copyFiles(
                         MarshallerContextImpl.mappingFileStoreWorkDir(cctx.gridConfig().getWorkDirectory()),
@@ -152,11 +152,9 @@ class IncrementalSnapshotFutureTask
 
                     PdsFolderSettings<?> pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-                    File snpBinMetaDir = new File(incSnpDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
-
                     copyFiles(
                         binaryWorkDir(cctx.gridConfig().getWorkDirectory(), pdsSettings.folderName()),
-                        snpBinMetaDir,
+                        incrementalSnapshotBinaryDir(incSnpDir),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
@@ -246,5 +244,15 @@ class IncrementalSnapshotFutureTask
     /** {@inheritDoc} */
     @Override public void accept(String name, File file) {
         onDone(new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name)));
+    }
+
+    /** @return File of binary directory for specified incremental snapshot directory. */
+    public static File incrementalSnapshotBinaryDir(File incSnpDir) {
+        return new File(incSnpDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
+    }
+
+    /** @return File of marshaller directory for specified incremental snapshot directory. */
+    public static File incrementalSnapshotMarshallerDir(File incSnpDir) {
+        return new File(incSnpDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
     }
 }

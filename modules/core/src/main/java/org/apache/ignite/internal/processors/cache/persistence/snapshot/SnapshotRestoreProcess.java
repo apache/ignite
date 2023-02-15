@@ -123,6 +123,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotFutureTask.incrementalSnapshotBinaryDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotFutureTask.incrementalSnapshotMarshallerDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
@@ -958,13 +960,24 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
-                            SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+                            File binDir;
+                            File marshallerDir;
 
-                            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
+                            if (opCtx0.incIdx > 0) {
+                                File incSnpDir = ctx.cache().context().snapshotMgr()
+                                    .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx);
+
+                                binDir = incrementalSnapshotBinaryDir(incSnpDir);
+                                marshallerDir = incrementalSnapshotMarshallerDir(incSnpDir);
+                            }
+                            else {
+                                SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+
+                                binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
+                                marshallerDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+                            }
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
-
-                            File marshallerDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
 
                             restoreMappings(marshallerDir, opCtx0.stopChecker);
                         }
