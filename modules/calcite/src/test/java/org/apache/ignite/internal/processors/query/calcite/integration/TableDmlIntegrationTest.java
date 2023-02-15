@@ -535,6 +535,19 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testInsertValueOverflow() {
+        sql("CREATE TABLE TEST_SOURCE (ID INT PRIMARY KEY, VAL SMALLINT);");
+        sql("INSERT INTO TEST_SOURCE (ID, VAL) VALUES (1, 200);");
+        sql("CREATE TABLE TEST_DEST (ID INT PRIMARY KEY, VAL TINYINT);");
+
+        assertThrows("INSERT INTO TEST_DEST VALUES (1, 200)",
+            IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("INSERT INTO TEST_DEST VALUES (1, (SELECT VAL FROM TEST_SOURCE WHERE ID=1))",
+            IgniteSQLException.class, "TINYINT overflow");
+    }
+
+    /** */
     private void checkDefaultValue(String sqlType, String sqlVal, Object expectedVal) {
         try {
             executeSql("CREATE TABLE test (dummy INT, val " + sqlType + " DEFAULT " + sqlVal + ")");
