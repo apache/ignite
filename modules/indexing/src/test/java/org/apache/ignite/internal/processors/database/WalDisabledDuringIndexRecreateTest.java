@@ -74,6 +74,9 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     public static final String GRP_NAME = "my-group";
 
     /** */
+    public static final Long IDX_CNT = 3L;
+
+    /** */
     private ListeningTestLogger testLog;
 
     /** */
@@ -120,7 +123,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         awaitRebuild();
 
         assertEquals(
-            (Long)3L,
+            IDX_CNT,
             countWalRecordsByTypes(wp -> wp.compareTo(walStartPtr) > 0).getOrDefault(BTREE_PAGE_INSERT, 0L)
         );
     }
@@ -198,7 +201,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
             assertTrue(lsnr.check());
 
             assertEquals(
-                (Long)6L,
+                (Long)(2 * IDX_CNT),
                 countWalRecordsByTypes(wp -> wp.compareTo(walStartPtr) > 0).getOrDefault(BTREE_PAGE_INSERT, 0L)
             );
         }
