@@ -173,9 +173,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 {
                     logger.Warn("/// Starting server... ");
                     var startTask = Task.Run(StartServer);
+                    logger.Warn("/// Starting server - task started... ");
 
                     Assert.IsTrue(startTask.Wait(TimeSpan.FromSeconds(15)));
 
+                    logger.Warn("/// Starting server (2) ...");
                     nodes.Enqueue(startTask.Result);
                     logger.Warn("/// Server started");
                 }
