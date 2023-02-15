@@ -110,6 +110,22 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /**
      * @param ctx Context.
+     * @param bytes Array/ValBytes.
+     */
+    public BinaryObjectImpl(BinaryContext ctx, byte[] bytes) {
+        assert ctx != null;
+        assert bytes != null;
+
+        this.ctx = ctx;
+
+        assert bytes[0] != TRANSFORMED; // Raw array should never be transformed.
+
+        arr = bytes;
+        valBytes = bytes;
+    }
+
+    /**
+     * @param ctx Context.
      * @param valBytes Value bytes.
      * @param coCtx Cache object context.
      */
