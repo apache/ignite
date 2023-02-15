@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -80,15 +81,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             readCacheData(cache1, ENTRY_CNT_CACHE1);
             readCacheData(cache2, ENTRY_CNT_CACHE2);
 
-            awaitMetricsUpdate(1);
-
-            Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
-
-            for (ClusterNode node : nodes) {
-                Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
-                assertNotNull(metrics);
-                assertFalse(metrics.isEmpty());
-            }
+            checkRemoteMetrics(false);
 
             assertMetrics(cache1, true);
             assertMetrics(cache2, true);
@@ -116,15 +109,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             readCacheData(cache1, ENTRY_CNT_CACHE1);
             readCacheData(cache2, ENTRY_CNT_CACHE2);
 
-            awaitMetricsUpdate(1);
-
-            Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
-
-            for (ClusterNode node : nodes) {
-                Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
-                assertNotNull(metrics);
-                assertTrue(metrics.isEmpty());
-            }
+            checkRemoteMetrics(true);
 
             assertMetrics(cache1, false);
             assertMetrics(cache2, false);
@@ -138,40 +123,41 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      * Tests that only local metrics are updating if discovery updates disabled.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, value = "true")
     public void testMetricsDiscoveryUpdatesDisabled() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, "true");
+        startGrids();
 
         try {
-            startGrids();
+            createCaches(true);
 
-            try {
-                createCaches(true);
+            populateCacheData(cache1, ENTRY_CNT_CACHE1);
+            populateCacheData(cache2, ENTRY_CNT_CACHE2);
 
-                populateCacheData(cache1, ENTRY_CNT_CACHE1);
-                populateCacheData(cache2, ENTRY_CNT_CACHE2);
+            readCacheData(cache1, ENTRY_CNT_CACHE1);
+            readCacheData(cache2, ENTRY_CNT_CACHE2);
 
-                readCacheData(cache1, ENTRY_CNT_CACHE1);
-                readCacheData(cache2, ENTRY_CNT_CACHE2);
+            checkRemoteMetrics(true);
 
-                awaitMetricsUpdate(1);
-
-                Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
-
-                for (ClusterNode node : nodes) {
-                    Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
-                    assertNotNull(metrics);
-                    assertTrue(metrics.isEmpty());
-                }
-
-                assertOnlyLocalMetricsUpdating(CACHE1);
-                assertOnlyLocalMetricsUpdating(CACHE2);
-            }
-            finally {
-                stopAllGrids();
-            }
+            assertOnlyLocalMetricsUpdating(CACHE1);
+            assertOnlyLocalMetricsUpdating(CACHE2);
         }
         finally {
-            System.setProperty(IgniteSystemProperties.IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE, "false");
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    private void checkRemoteMetrics(boolean expectedEmpty) throws InterruptedException {
+        // Wait for two subsequent metrics update events, to be sure we have cought the last metric state, but
+        // not some intermediate state with pending updates.
+        awaitMetricsUpdate(2);
+
+        Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
+
+        for (ClusterNode node : nodes) {
+            Map<Integer, CacheMetrics> metrics = ((IgniteClusterNode)node).cacheMetrics();
+            assertNotNull(metrics);
+            assertEquals(expectedEmpty, metrics.isEmpty());
         }
     }
 
@@ -181,18 +167,18 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     private void startGrids() throws Exception {
         startGrids(GRID_CNT);
 
-        startGrid(GRID_CNT);
+        startClientGrid(GRID_CNT);
     }
 
     /**
      * @param statisticsEnabled Statistics enabled.
      */
     private void createCaches(boolean statisticsEnabled) {
-        CacheConfiguration ccfg1 = defaultCacheConfiguration();
+        CacheConfiguration<Integer, Integer> ccfg1 = defaultCacheConfiguration();
         ccfg1.setName(CACHE1);
         ccfg1.setStatisticsEnabled(statisticsEnabled);
 
-        CacheConfiguration ccfg2 = defaultCacheConfiguration();
+        CacheConfiguration<Integer, Integer> ccfg2 = defaultCacheConfiguration();
         ccfg2.setName(CACHE2);
         ccfg2.setStatisticsEnabled(statisticsEnabled);
 
@@ -243,37 +229,21 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
                 assertEquals(metrics.name(), ms[j].name());
 
             // Dynamic metrics
-            long sumGets = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                @Override public Long apply(CacheMetrics input) {
-                    return input.getCacheGets();
-                }
-            }, expectNonZero);
+            long sumGets = sum(ms, CacheMetrics::getCacheGets, expectNonZero);
 
             assertEquals(metrics.getCacheGets(), sumGets);
 
-            long sumPuts = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                @Override public Long apply(CacheMetrics input) {
-                    return input.getCachePuts();
-                }
-            }, expectNonZero);
+            long sumPuts = sum(ms, CacheMetrics::getCachePuts, expectNonZero);
 
             assertEquals(metrics.getCachePuts(), sumPuts);
 
-            long sumHits = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                @Override public Long apply(CacheMetrics input) {
-                    return input.getCacheHits();
-                }
-            }, expectNonZero);
+            long sumHits = sum(ms, CacheMetrics::getCacheHits, expectNonZero);
 
             assertEquals(metrics.getCacheHits(), sumHits);
 
             if (expectNonZero) {
-                long sumHeapEntries = sum(ms, new IgniteClosure<CacheMetrics, Long>() {
-                    @Override public Long apply(CacheMetrics input) {
-                        return input.getHeapEntriesCount();
-                    }
-                    // Currently non-zero even when statistics is off
-                }, true);
+                // Currently non-zero even when statistics is off.
+                long sumHeapEntries = sum(ms, CacheMetrics::getHeapEntriesCount, true);
 
                 assertEquals(metrics.getHeapEntriesCount(), sumHeapEntries);
             }
@@ -287,7 +257,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      */
     private void assertOnlyLocalMetricsUpdating(String cacheName) {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache cache = grid(i).cache(cacheName);
+            IgniteCache<Integer, Integer> cache = grid(i).cache(cacheName);
 
             CacheMetrics clusterMetrics = cache.metrics(grid(i).cluster().forCacheNodes(cacheName));
             CacheMetrics locMetrics = cache.localMetrics();

@@ -487,14 +487,14 @@ class KillCommandsTests {
      */
     public static void doTestCancelClientConnection(List<IgniteEx> srvs, BiConsumer<UUID, Long> cliCanceler) {
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + srvs.get(0).localNode().attribute(CLIENT_LISTENER_PORT))
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:" + srvs.get(0).localNode().attribute(CLIENT_LISTENER_PORT)})
             .setPartitionAwarenessEnabled(false);
 
         IgniteClient cli0 = Ignition.startClient(cfg);
         IgniteClient cli1 = Ignition.startClient(cfg);
         IgniteClient cli2 = Ignition.startClient(cfg);
         IgniteClient cli3 = Ignition.startClient(new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + srvs.get(1).localNode().attribute(CLIENT_LISTENER_PORT))
+            .setAddressesFinder(() -> new String[] {"127.0.0.1:" + srvs.get(1).localNode().attribute(CLIENT_LISTENER_PORT)})
             .setPartitionAwarenessEnabled(false));
 
         assertEquals(ClusterState.ACTIVE, cli0.cluster().state());

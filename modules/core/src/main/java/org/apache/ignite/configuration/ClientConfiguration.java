@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.EventListener;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -154,6 +155,9 @@ public final class ClientConfiguration implements Serializable {
 
     /** Logger. */
     private IgniteLogger logger;
+
+    /** */
+    private EventListener[] eventListeners;
 
     /**
      * @return Host addresses.
@@ -839,5 +843,22 @@ public final class ClientConfiguration implements Serializable {
      */
     public IgniteLogger getLogger() {
         return logger;
+    }
+
+    /**
+     * @param listeners Clent event listeners.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setEventListeners(EventListener... listeners) {
+        eventListeners = listeners;
+
+        return this;
+    }
+
+    /**
+     * @return Client event listeners.
+     */
+    public EventListener[] getEventListeners() {
+        return eventListeners;
     }
 }

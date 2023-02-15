@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 
 /**
  * Holds JDBC connection properties.
@@ -86,7 +87,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Lazy query execution property. */
     private BooleanProperty lazy = new BooleanProperty(
-        "lazy", "Enable lazy query execution", false, false);
+        "lazy", "Enable lazy query execution", DFLT_LAZY, false);
 
     /** Socket send buffer size property. */
     private IntegerProperty socketSendBuffer = new IntegerProperty(

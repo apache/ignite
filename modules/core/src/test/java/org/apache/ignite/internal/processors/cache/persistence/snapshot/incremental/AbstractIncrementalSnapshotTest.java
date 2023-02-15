@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -56,9 +55,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
@@ -216,9 +212,7 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
     protected void restartWithCleanPersistence(List<String> caches) throws Exception {
         stopAllGrids();
 
-        assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), "cp").toFile()));
-
-        deleteNodesDirs(DFLT_STORE_DIR, DFLT_BINARY_METADATA_PATH, DFLT_WAL_PATH, DFLT_WAL_ARCHIVE_PATH);
+        cleanPersistenceDir(true);
 
         startGrids(nodes());
 
@@ -233,16 +227,6 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
             Path path = Paths.get(U.defaultWorkDirectory(), DFLT_STORE_DIR, nodeFolder);
 
             GridTestUtils.waitForCondition(() -> !path.toFile().exists(), 1_000, 10);
-        }
-    }
-
-    /** */
-    private void deleteNodesDirs(String... dirs) throws IgniteCheckedException {
-        for (int i = 0; i < nodes(); i++) {
-            String nodeFolder = U.maskForFileName(getTestIgniteInstanceName(i));
-
-            for (String dir: dirs)
-                assertTrue(U.delete(Paths.get(U.defaultWorkDirectory(), dir, nodeFolder).toFile()));
         }
     }
 

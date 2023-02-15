@@ -59,7 +59,10 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -76,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheStripedExecutor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -107,6 +111,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
@@ -119,6 +124,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotFutureTask.incrementalSnapshotBinaryDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotFutureTask.incrementalSnapshotMarshallerDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
@@ -954,11 +961,26 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
-                            SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+                            File binDir;
+                            File marshallerDir;
 
-                            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
+                            if (opCtx0.incIdx > 0) {
+                                File incSnpDir = ctx.cache().context().snapshotMgr()
+                                    .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx);
+
+                                binDir = incrementalSnapshotBinaryDir(incSnpDir);
+                                marshallerDir = incrementalSnapshotMarshallerDir(incSnpDir);
+                            }
+                            else {
+                                SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
+
+                                binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
+                                marshallerDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+                            }
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
+
+                            restoreMappings(marshallerDir, opCtx0.stopChecker);
                         }
                         catch (Throwable t) {
                             log.error("Unable to perform metadata update operation for the cache groups restore process", t);
@@ -1179,6 +1201,31 @@ public class SnapshotRestoreProcess {
         }
 
         return retFut;
+    }
+
+    /** Restore registered mappings for user classes. */
+    private void restoreMappings(File marshallerDir, BooleanSupplier stopChecker) throws IgniteCheckedException {
+        File[] mappings = marshallerDir.listFiles(BinaryUtils::notTmpFile);
+
+        if (mappings == null)
+            throw new IgniteException("Failed to list marshaller directory [dir=" + marshallerDir + ']');
+
+        for (File map: mappings) {
+            if (stopChecker.getAsBoolean())
+                return;
+
+            if (Thread.interrupted())
+                throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
+
+            String fileName = map.getName();
+
+            int typeId = BinaryUtils.mappedTypeId(fileName);
+            byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+            BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).binaryContext();
+
+            binCtx.registerUserClassName(typeId, BinaryUtils.readMapping(map), false, false, platformId);
+        }
     }
 
     /**
