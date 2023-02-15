@@ -274,7 +274,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     ) throws IgniteCheckedException {
         String dir = grid(0).name().replace(".", "_");
 
-        IteratorParametersBuilder beforeIdxRemoveBldr = new IteratorParametersBuilder()
+        IteratorParametersBuilder walIterBldr = new IteratorParametersBuilder()
             .filesOrDirs(
                 U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_PATH + "/" + dir, false),
                 U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_WAL_ARCHIVE_PATH + "/" + dir, false)
@@ -286,7 +286,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         for (RecordType recType : RecordType.values())
             cntByRecTypes.put(recType, 0L);
 
-        try (WALIterator walIter = new IgniteWalIteratorFactory(log).iterator(beforeIdxRemoveBldr)) {
+        try (WALIterator walIter = new IgniteWalIteratorFactory(log).iterator(walIterBldr)) {
             while (walIter.hasNext())
                 cntByRecTypes.merge(walIter.next().getValue().type(), 1L, Long::sum);
         }
