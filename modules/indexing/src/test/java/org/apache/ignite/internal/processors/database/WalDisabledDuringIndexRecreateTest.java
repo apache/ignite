@@ -217,8 +217,6 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
         indexRebuildFuture(srv, cacheId(cacheName())).get(getTestTimeout());
 
-        forceCheckpoint(srv);
-
         checkIdxFile();
     }
 
