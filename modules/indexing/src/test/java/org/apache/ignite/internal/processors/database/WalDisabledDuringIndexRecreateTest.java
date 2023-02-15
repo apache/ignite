@@ -77,6 +77,9 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     public static final Long IDX_CNT = 3L;
 
     /** */
+    public static final int GRP_CACHES_CNT = 3;
+
+    /** */
     private ListeningTestLogger testLog;
 
     /** */
@@ -162,7 +165,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
                         IoStatisticsHolder statHolder
                     ) throws IgniteCheckedException {
                         if (arg instanceof BPlusTree.Put && errCntr.decrementAndGet() == 0)
-                            throw new IgniteCheckedException("Test error!");
+                            throw new IgniteCheckedException("Test error on 10 put"); // Node failure during index rebuild.
 
                         return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl, statHolder);
                     }
@@ -229,8 +232,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
         srv.cluster().state(ACTIVE);
 
-        for (int i = 0; i < (cacheGrps ? 1 : 3); i++)
-            produceData(srv, cacheName() + (i > 0 ? i + 1 : ""));
+        for (int i = 0; i < (cacheGrps ? GRP_CACHES_CNT : 1); i++)
+            produceData(srv, DEFAULT_CACHE_NAME + i);
 
         WALPointer walPrtBefore = srv.context().cache().context().wal().lastWritePointer();
 
@@ -253,7 +256,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTRIES_CNT; i++)
             cache.put(i, new TestVal());
 
-        assertEquals(3, srv.context().indexProcessor().indexes(cacheName).size());
+        assertEquals(GRP_CACHES_CNT, srv.context().indexProcessor().indexes(cacheName).size());
     }
 
     /** */
@@ -299,7 +302,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
     /** */
     private String cacheName() {
-        return cacheGrps ? (DEFAULT_CACHE_NAME + "2") : DEFAULT_CACHE_NAME;
+        return DEFAULT_CACHE_NAME + (cacheGrps ? "2" : "0");
     }
 
     /** */

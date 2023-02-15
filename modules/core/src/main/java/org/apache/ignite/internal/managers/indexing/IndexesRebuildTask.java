@@ -91,8 +91,7 @@ public class IndexesRebuildTask {
         if (recreate) {
             cctx.kernalContext().query().markIndexRecreate(cctx);
 
-            if (cctx.group().persistenceEnabled())
-                cctx.group().indexWalEnabled(false);
+            cctx.group().indexWalEnabled(false);
         }
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
@@ -119,8 +118,7 @@ public class IndexesRebuildTask {
                 try {
                     cctx.kernalContext().query().markAsRebuildNeeded(cctx, false);
 
-                    if (cctx.group().persistenceEnabled())
-                        cctx.group().indexWalEnabled(cctx.group().localWalEnabled());
+                    cctx.group().indexWalEnabled(cctx.group().localWalEnabled());
                 }
                 catch (Throwable t) {
                     err = t;
