@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -54,8 +54,8 @@ public class CdcCommand extends AbstractCommand<String> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             executeTaskByNameOnNode(
                 client,
                 VisorCdcDeleteLostSegmentsTask.class.getName(),
@@ -65,7 +65,7 @@ public class CdcCommand extends AbstractCommand<String> {
             );
 
             Collection<UUID> nodeIds = nodeId != null ? Collections.singletonList(nodeId) :
-                client.compute().nodes(node -> !node.isClient()).stream().map(GridClientNode::nodeId)
+                client.cluster().forServers().nodes().stream().map(ClusterNode::id)
                     .collect(Collectors.toSet());
 
             client.compute().execute(VisorCdcDeleteLostSegmentsTask.class.getName(),
