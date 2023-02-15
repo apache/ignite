@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/pers";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
     /** Statement. */
     private Statement stmt;
