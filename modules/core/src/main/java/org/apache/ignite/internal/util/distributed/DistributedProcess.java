@@ -146,22 +146,32 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             if (crd.isLocal())
                 initCoordinator(p, topVer);
 
-            IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
+            try {
+                IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
-            fut.listen(f -> {
-                if (f.error() != null)
-                    p.resFut.onDone(f.error());
-                else
-                    p.resFut.onDone(f.result());
+                fut.listen(f -> {
+                    if (f.error() != null)
+                        p.resFut.onDone(f.error());
+                    else
+                        p.resFut.onDone(f.result());
 
-                if (!ctx.clientNode()) {
-                    assert crd != null;
+                    if (!ctx.clientNode()) {
+                        assert crd != null;
 
+                        sendSingleMessage(p);
+                    }
+                });
+
+                p.initFut.onDone();
+            }
+            catch (Throwable err) {
+                U.error(log, "Failed to handle InitMessage [id=" + p.id + ']', err);
+
+                p.resFut.onDone(err);
+
+                if (!ctx.clientNode())
                     sendSingleMessage(p);
-                }
-            });
-
-            p.initFut.onDone();
+            }
         });
 
         ctx.discovery().setCustomEventListener(FullMessage.class, (topVer, snd, msg0) -> {
@@ -180,9 +190,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id, msg.result(), msg.error());
-
-            processes.remove(msg.processId());
+            try {
+                finish.apply(p.id, msg.result(), msg.error());
+            }
+            catch (Throwable err) {
+                U.error(log, "Failed to handle FullMessage [id=" + p.id + ']', err);
+            }
+            finally {
+                processes.remove(msg.processId());
+            }
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
