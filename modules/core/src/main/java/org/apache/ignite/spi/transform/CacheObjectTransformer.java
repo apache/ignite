@@ -19,6 +19,7 @@ package org.apache.ignite.spi.transform;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides cache object's bytes transformation (eg. encryption, compression, etc).
@@ -31,7 +32,7 @@ public interface CacheObjectTransformer {
      * @param original Original data.
      * @return Transformed data or {@code null} when transformation is not possible/suitable.
      */
-    public ByteBuffer transform(ByteBuffer original);
+    public @Nullable ByteBuffer transform(ByteBuffer original);
 
     /**
      * Restores the data.
