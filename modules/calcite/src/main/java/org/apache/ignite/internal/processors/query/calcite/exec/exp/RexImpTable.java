@@ -1213,7 +1213,7 @@ public class RexImpTable {
                         argValueList);
                 }
             }
-            return Expressions.makeBinary(expressionType,
+            return IgniteExpressions.makeBinary(expressionType,
                 argValueList.get(0), argValueList.get(1));
         }
 
@@ -1829,9 +1829,9 @@ public class RexImpTable {
                 case INTERVAL_SECOND:
                     switch (call.getKind()) {
                         case MINUS:
-                            return normalize(typeName, Expressions.subtract(trop0, trop1));
+                            return normalize(typeName, IgniteExpressions.subtractExact(trop0, trop1));
                         default:
-                            return normalize(typeName, Expressions.add(trop0, trop1));
+                            return normalize(typeName, IgniteExpressions.addExact(trop0, trop1));
                     }
 
                 default:

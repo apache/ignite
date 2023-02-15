@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -346,6 +347,26 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("CURRENT_DATE").check();
         assertExpression("LOCALTIME").check();
         assertExpression("LOCALTIMESTAMP").check();
+    }
+
+    /** */
+    @Test
+    public void testArithmeticOverflow() {
+        assertThrows("select 9223372036854775807 + 1", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select 9223372036854775807 * 2", IgniteSQLException.class, "BIGINT overflow");
+        assertThrows("select -9223372036854775808 - 1", IgniteSQLException.class, "BIGINT overflow");
+
+        assertThrows("select 2147483647 + 1", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select 2147483647 * 2", IgniteSQLException.class, "INTEGER overflow");
+        assertThrows("select -2147483648 - 1", IgniteSQLException.class, "INTEGER overflow");
+
+        assertThrows("select 32000::smallint + 1000::smallint", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select 17000::smallint * 2::smallint", IgniteSQLException.class, "SMALLINT overflow");
+        assertThrows("select -32000::smallint - 1000::smallint", IgniteSQLException.class, "SMALLINT overflow");
+
+        assertThrows("select 2::tinyint + 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select 2::tinyint * 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
+        assertThrows("select -2::tinyint - 127::tinyint", IgniteSQLException.class, "TINYINT overflow");
     }
 
     /** */
