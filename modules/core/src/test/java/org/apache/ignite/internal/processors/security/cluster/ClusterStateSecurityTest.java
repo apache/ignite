@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.security.cluster;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -41,6 +43,9 @@ import static org.junit.Assert.assertNotEquals;
 public class ClusterStateSecurityTest extends AbstractSecurityTest {
     /** */
     private boolean isClient;
+
+    /** */
+    private boolean persistent = true;
 
     /** */
     private ClusterState startState = INACTIVE;
@@ -72,6 +77,12 @@ public class ClusterStateSecurityTest extends AbstractSecurityTest {
         ));
 
         cfg.setClientMode(isClient);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistent)));
+
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
+
         cfg.setClusterStateOnStart(startState);
 
         return cfg;
@@ -138,13 +149,13 @@ public class ClusterStateSecurityTest extends AbstractSecurityTest {
 
         Ignite ig = startGrids(3);
 
-        for(int i=0; i<states.length; ++i){
+        for (int i = 0; i < states.length; ++i) {
             assert allowed[i] != null;
 
             ClusterState stateBefore = ig.cluster().state();
             ClusterState stateTo = states[i];
 
-            assert !stateBefore.equals(stateTo);
+            assert stateBefore != stateTo;
 
             if (allowed[i]) {
                 ig.cluster().state(stateTo);
