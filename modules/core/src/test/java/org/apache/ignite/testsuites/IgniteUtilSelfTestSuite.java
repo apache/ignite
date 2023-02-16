@@ -22,6 +22,7 @@ import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.util.BasicRateLimiterTest;
 import org.apache.ignite.internal.util.DistributedProcessClientAwaitTest;
 import org.apache.ignite.internal.util.DistributedProcessCoordinatorLeftTest;
+import org.apache.ignite.internal.util.DistributedProcessErrorHandlingTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.GridCountDownCallbackTest;
@@ -146,6 +147,7 @@ import org.junit.runners.Suite;
 
     GridCountDownCallbackTest.class,
 
+    DistributedProcessErrorHandlingTest.class,
     DistributedProcessCoordinatorLeftTest.class,
     DistributedProcessClientAwaitTest.class,
 

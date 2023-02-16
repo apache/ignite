@@ -819,13 +819,13 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestoreOperationResponse> res, Map<UUID, Exception> errs) {
+    private void finishPrepare(UUID reqId, Map<UUID, SnapshotRestoreOperationResponse> res, Map<UUID, Throwable> errs) {
         if (ctx.clientNode())
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        Exception failure = F.first(errs.values());
+        Throwable failure = F.first(errs.values());
 
         assert opCtx0 != null || failure != null : "Context has not been created on the node " + ctx.localNodeId();
 
@@ -1232,13 +1232,13 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishPreload(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
+    private void finishPreload(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Throwable> errs) {
         if (ctx.clientNode())
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        Exception failure = errs.values().stream().findFirst().
+        Throwable failure = errs.values().stream().findFirst().
             orElse(checkNodeLeft(opCtx0.nodes(), res.keySet()));
 
         opCtx0.errHnd.accept(failure);
@@ -1291,13 +1291,13 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishCacheStart(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
+    private void finishCacheStart(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Throwable> errs) {
         if (ctx.clientNode())
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        Exception failure = errs.values().stream().findFirst().
+        Throwable failure = errs.values().stream().findFirst().
             orElse(checkNodeLeft(opCtx0.nodes(), res.keySet()));
 
         if (failure == null) {
@@ -1352,7 +1352,7 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishCacheStop(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
+    private void finishCacheStop(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Throwable> errs) {
         if (ctx.clientNode())
             return;
 
@@ -1658,13 +1658,13 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishIncrementalSnapshotRestore(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
+    private void finishIncrementalSnapshotRestore(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Throwable> errs) {
         if (ctx.clientNode())
             return;
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        Exception failure = errs.values().stream().findFirst().
+        Throwable failure = errs.values().stream().findFirst().
             orElse(checkNodeLeft(opCtx0.nodes(), res.keySet()));
 
         if (failure == null) {
@@ -1801,7 +1801,7 @@ public class SnapshotRestoreProcess {
      * @param res Results.
      * @param errs Errors.
      */
-    private void finishRollback(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Exception> errs) {
+    private void finishRollback(UUID reqId, Map<UUID, Boolean> res, Map<UUID, Throwable> errs) {
         if (ctx.clientNode())
             return;
 

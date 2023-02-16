@@ -1132,7 +1132,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param res Results.
      * @param err Errors.
      */
-    private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+    private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental()) {
@@ -1372,7 +1372,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param res Results.
      * @param err Errors.
      */
-    private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+    private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq == null || !F.eq(id, snpReq.requestId()))
