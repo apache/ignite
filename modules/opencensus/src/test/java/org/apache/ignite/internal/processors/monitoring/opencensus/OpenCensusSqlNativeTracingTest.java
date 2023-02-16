@@ -334,18 +334,13 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
                 assertEquals(expParts, parts);
             });
 
-            SpanId execSpan = checkChildSpan(SQL_QRY_EXECUTE, execReqSpan);
+            SpanId pagePrepareSpan = checkChildSpan(SQL_PAGE_PREPARE, execReqSpan);
 
-            List<SpanId> distrLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, execSpan);
+            idxRangeReqRows += checkIndexRangeRequestChildSpans(pagePrepareSpan);
 
-            for (SpanId span : distrLookupReqSpans) {
-                idxRangeReqRows += parseInt(getAttribute(span, SQL_IDX_RANGE_ROWS));
+            preparedRows += parseInt(getAttribute(pagePrepareSpan, SQL_PAGE_ROWS));
 
-                checkChildSpan(SQL_IDX_RANGE_RESP, span);
-            }
-
-            preparedRows += parseInt(getAttribute(checkChildSpan(SQL_PAGE_PREPARE, execReqSpan), SQL_PAGE_ROWS));
-
+            checkChildSpan(SQL_QRY_EXECUTE, execReqSpan);
             checkChildSpan(SQL_PAGE_RESP, execReqSpan);
         }
 
@@ -417,7 +412,6 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      * @throws Exception If failed.
      */
     @Test
-    @SuppressWarnings("Convert2MethodRef")
     public void testNextPageRequestFailure() throws Exception {
         String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
 
@@ -541,6 +535,21 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         for (SpanId rootSpan : rootSpans)
             checkBasicSelectQuerySpanTree(rootSpan, TEST_TABLE_POPULATION);
+    }
+
+    /** @return Number of received rows. */
+    private Integer checkIndexRangeRequestChildSpans(SpanId parentSpan) {
+        List<SpanId> distLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, parentSpan);
+
+        int idxRangeReqRows = 0;
+
+        for (SpanId span : distLookupReqSpans) {
+            idxRangeReqRows += parseInt(getAttribute(span, SQL_IDX_RANGE_ROWS));
+
+            checkChildSpan(SQL_IDX_RANGE_RESP, span);
+        }
+
+        return idxRangeReqRows;
     }
 
     /**
