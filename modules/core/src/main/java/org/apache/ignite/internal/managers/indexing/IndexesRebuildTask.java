@@ -97,7 +97,7 @@ public class IndexesRebuildTask {
 
             if (log.isInfoEnabled()) {
                 log.info("WAL disabled for index partition " +
-                    "[grpName=" + cctx.group().name() + ", grpId=" + cctx.groupId() + ']');
+                    "[name=" + cctx.group().name() + ", id=" + cctx.groupId() + ']');
             }
         }
 
@@ -151,7 +151,7 @@ public class IndexesRebuildTask {
 
                     if (log.isInfoEnabled()) {
                         log.info("WAL enabled for index partition " +
-                            "[grpName=" + cctx.group().name() + ", grpId=" + cctx.group().groupId() + ']');
+                            "[name=" + cctx.group().name() + ", id=" + cctx.group().groupId() + ']');
                     }
                 }
             }
