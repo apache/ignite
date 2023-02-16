@@ -313,8 +313,6 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
                     if (pageId != UNKNOWN_PAGE_ID && PageIdUtils.partId(pageId) != INDEX_PARTITION)
                         continue;
 
-                    System.out.println("rec.get2().getClass().getName() = " + rec.get2().getClass().getName());
-
                     cntGrpRecs++;
                 }
             }
