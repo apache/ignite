@@ -248,8 +248,10 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> rbldFut = indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME + i));
 
             if (rbldFut != null)
-                rbldFut.get(getTestTimeout());
+                rbldFut.get(10_000);
         }
+
+        assertTrue(srv.<Integer, TestVal>cache(cacheName()).containsKey(0));
 
         assertTrue(walDisabledLsnr.check());
         assertTrue(walEnabledLsnr.check());
