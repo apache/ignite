@@ -81,7 +81,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     public static final String GRP_NAME = "my-group";
 
     /** */
-    public static final long IDX_CNT = 3L;
+    public static final long IDX_CNT = 3;
 
     /** */
     public static final int GRP_CACHES_CNT = 3;
