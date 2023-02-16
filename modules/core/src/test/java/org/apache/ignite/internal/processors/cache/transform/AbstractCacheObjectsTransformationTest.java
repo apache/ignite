@@ -165,7 +165,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         Object obj = cache.get(key);
 
-        CacheObjectContext coCtx = ((IgniteCacheProxy<Object, Object>)cache).context().cacheObjectContext();
+        CacheObjectContext coCtx = ((IgniteCacheProxy<?, ?>)cache).context().cacheObjectContext();
 
         expVal = coCtx.unwrapBinaryIfNeeded(expVal, false, true, null);
         obj = coCtx.unwrapBinaryIfNeeded(obj, false, true, null);
