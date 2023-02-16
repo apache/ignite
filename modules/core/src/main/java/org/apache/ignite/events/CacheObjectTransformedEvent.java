@@ -51,7 +51,8 @@ public class CacheObjectTransformedEvent extends EventAdapter {
         int type,
         byte[] original,
         byte[] transformed,
-        boolean restore) {
+        boolean restore
+    ) {
         super(node, msg, type);
 
         assert original != null;
