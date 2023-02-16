@@ -1568,7 +1568,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         if (!err.isEmpty()) {
             if (masterKeyChangeRequest != null && masterKeyChangeRequest.requestId().equals(id))
                 masterKeyChangeRequest = null;
@@ -1613,7 +1613,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Exception> err) {
+    private void finishPerformMasterKeyChange(UUID id, Map<UUID, EmptyResult> res, Map<UUID, Throwable> err) {
         completeMasterKeyChangeFuture(id, err);
     }
 
@@ -1621,7 +1621,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param reqId Request id.
      * @param err Exception.
      */
-    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
+    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Throwable> err) {
         synchronized (opsMux) {
             boolean isInitiator = masterKeyChangeFut != null && masterKeyChangeFut.id().equals(reqId);
 
@@ -1629,7 +1629,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 return;
 
             if (!F.isEmpty(err)) {
-                Exception e = err.values().stream().findFirst().get();
+                Throwable e = err.values().stream().findFirst().get();
 
                 masterKeyChangeFut.onDone(e);
             }
