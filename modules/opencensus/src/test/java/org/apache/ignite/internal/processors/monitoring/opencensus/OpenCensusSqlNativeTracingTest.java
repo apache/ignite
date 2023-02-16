@@ -341,7 +341,10 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
             List<SpanId> distLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, pagePrepareSpan);
 
             for (SpanId span : distLookupReqSpans) {
-                idxRangeReqRows += parseInt(getAttribute(span, SQL_IDX_RANGE_ROWS));
+                String rowsAttr = getAttribute(span, SQL_IDX_RANGE_ROWS);
+
+                if (rowsAttr != null)
+                    idxRangeReqRows += parseInt(rowsAttr);
 
                 checkChildSpan(SQL_IDX_RANGE_RESP, span);
             }
@@ -541,21 +544,6 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
         for (SpanId rootSpan : rootSpans)
             checkBasicSelectQuerySpanTree(rootSpan, TEST_TABLE_POPULATION);
-    }
-
-    /** @return Number of received rows. */
-    private Integer checkIndexRangeRequestChildSpans(SpanId parentSpan) {
-        List<SpanId> distLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, parentSpan);
-
-        int idxRangeReqRows = 0;
-
-        for (SpanId span : distLookupReqSpans) {
-            idxRangeReqRows += parseInt(getAttribute(span, SQL_IDX_RANGE_ROWS));
-
-            checkChildSpan(SQL_IDX_RANGE_RESP, span);
-        }
-
-        return idxRangeReqRows;
     }
 
     /**
