@@ -446,10 +446,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         if (!idxCacheStores.containsKey(cacheId)) {
             GridCacheContext<?, ?> cctx = this.cctx.cacheContext(cacheId);
 
-            Collection<String> grpCaches = cctx != null
-                ? cctx.group().caches().stream().map(GridCacheContext::name).collect(Collectors.toSet())
-                : Collections.singleton(cacheName);
-
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, cacheName),
                 cacheId,
@@ -457,7 +453,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 partitions,
                 pageMetrics,
                 cctx != null && cctx.config().isEncryptionEnabled(),
-                grpCaches
+                cctx != null
+                    ? cctx.group().caches().stream().map(GridCacheContext::name).collect(Collectors.toSet())
+                    : null
             );
 
             CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
@@ -498,7 +496,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
                 pageMetrics,
                 false,
-                Collections.singleton(MetaStorage.METASTORAGE_CACHE_NAME));
+                null);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -699,17 +697,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
-            boolean idxRecreating = qryProc.moduleEnabled() && grpCaches.stream()
-                .anyMatch(name -> !qryProc.recreateCompleted(name));
+            if (qryProc.moduleEnabled()) {
+                boolean idxRecreating = grpCaches == null
+                    ? !qryProc.recreateCompleted(cacheName)
+                    : grpCaches.stream().anyMatch(name -> !qryProc.recreateCompleted(name));
 
-            if (idxFile.exists() && idxRecreating) {
-                log.warning("Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
-                    "Removing it to recreate one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
+                if (idxFile.exists() && idxRecreating) {
+                    log.warning("Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
+                        "Removing it to recreate one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
 
-                if (!idxFile.delete()) {
-                    throw new IgniteCheckedException(
-                        "Failed to remove index.bin [grpId=" + grpId + ", cacheName=" + cacheName + ']'
-                    );
+                    if (!idxFile.delete()) {
+                        throw new IgniteCheckedException(
+                            "Failed to remove index.bin [grpId=" + grpId + ", cacheName=" + cacheName + ']'
+                        );
+                    }
                 }
             }
 

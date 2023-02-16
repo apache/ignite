@@ -147,7 +147,7 @@ public class IndexesRebuildTask {
                 }
 
                 if (!recreateContinues) {
-                    cctx.group().indexWalEnabled(cctx.group().localWalEnabled());
+                    cctx.group().indexWalEnabled(true);
 
                     if (log.isInfoEnabled()) {
                         log.info("WAL enabled for index partition " +

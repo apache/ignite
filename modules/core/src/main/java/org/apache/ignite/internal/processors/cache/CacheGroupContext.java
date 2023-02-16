@@ -1242,7 +1242,7 @@ public class CacheGroupContext {
 
     /** @return {@code True} if WAL for index operations enabled. */
     public boolean indexWalEnabled() {
-        return idxWalEnabled && walEnabled();
+        return idxWalEnabled;
     }
 
     /** @param idxWalEnabled Index WAL enabled flag. */
