@@ -61,10 +61,21 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     @Parameterized.Parameter(1)
     public boolean client;
 
+    /** From-thin-client flag. */
+    @Parameterized.Parameter(3)
+    public boolean thinClient;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "persistence={0}, fromClient={1}")
+    @Parameterized.Parameters(name = "persistence={0}, fromClient={1}, thinClient={2}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false, false}, {true, false}, {false, true}, {true, true}});
+        return Arrays.asList(new Object[][] {
+            {false, false, false},
+            {false, true, false},
+            {false, true, true},
+            {true, false, false},
+            {true, true, false},
+            {true, true, true},
+        });
     }
 
     /** */
@@ -160,6 +171,8 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     private void testChangeClusterState(ClusterState[] states, Boolean[] allowed) throws Exception {
         assert states != null && allowed != null && states.length == allowed.length && states.length > 0;
+
+        assert !thinClient || client;
 
         Ignite ig0 = startGrid(G.allGrids().size());
 
