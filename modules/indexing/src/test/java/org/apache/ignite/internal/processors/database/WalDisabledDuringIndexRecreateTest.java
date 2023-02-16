@@ -367,7 +367,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
     /** */
     private String cacheName() {
-        return DEFAULT_CACHE_NAME + (cacheGrps ? "2" : "0");
+        return DEFAULT_CACHE_NAME + (cacheGrps ? Integer.toString(GRP_CACHES_CNT - 1) : "0");
     }
 
     /** */
