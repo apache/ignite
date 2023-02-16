@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.client.events;
 
-/**
- * Test to check JDBC driver behavior when cache specified in connection string does not have any query entities.
- */
-public class JdbcDefaultNoOpCacheTest extends JdbcNoDefaultCacheTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite(0).getOrCreateCache("noop");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String getUrl() {
-        return super.getUrl() + "noop";
+/** */
+public class HandshakeStartEvent extends ConnectionEvent {
+    /**
+     * @param conn Connection description.
+     */
+    public HandshakeStartEvent(ConnectionDescription conn) {
+        super(conn);
     }
 }

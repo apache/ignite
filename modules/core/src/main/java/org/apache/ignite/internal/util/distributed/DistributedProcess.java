@@ -96,7 +96,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish
     ) {
         this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req, false));
     }
@@ -112,7 +112,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
+        CI3<UUID, Map<UUID, R>, Map<UUID, Throwable>> finish,
         BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
         this.ctx = ctx;
@@ -147,22 +147,32 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             if (crd.isLocal())
                 initCoordinator(p, topVer);
 
-            IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
+            try {
+                IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
-            fut.listen(f -> {
-                if (f.error() != null)
-                    p.resFut.onDone(f.error());
-                else
-                    p.resFut.onDone(f.result());
+                fut.listen(f -> {
+                    if (f.error() != null)
+                        p.resFut.onDone(f.error());
+                    else
+                        p.resFut.onDone(f.result());
 
-                if (!ctx.clientNode() || p.waitClnRes) {
-                    assert crd != null;
+                    if (!ctx.clientNode() || p.waitClnRes) {
+                        assert crd != null;
 
+                        sendSingleMessage(p);
+                    }
+                });
+
+                p.initFut.onDone();
+            }
+            catch (Throwable err) {
+                U.error(log, "Failed to handle InitMessage [id=" + p.id + ']', err);
+
+                p.resFut.onDone(err);
+
+                if (!ctx.clientNode())
                     sendSingleMessage(p);
-                }
-            });
-
-            p.initFut.onDone();
+            }
         });
 
         ctx.discovery().setCustomEventListener(FullMessage.class, (topVer, snd, msg0) -> {
@@ -181,9 +191,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id, msg.result(), msg.error());
-
-            processes.remove(msg.processId());
+            try {
+                finish.apply(p.id, msg.result(), msg.error());
+            }
+            catch (Throwable err) {
+                U.error(log, "Failed to handle FullMessage [id=" + p.id + ']', err);
+            }
+            finally {
+                processes.remove(msg.processId());
+            }
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
@@ -277,8 +293,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
-            (Exception)p.resFut.error());
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(), p.resFut.error());
 
         UUID crdId = p.crdId;
 
@@ -336,7 +351,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void finishProcess(Process p) {
         HashMap<UUID, R> res = new HashMap<>();
 
-        HashMap<UUID, Exception> err = new HashMap<>();
+        HashMap<UUID, Throwable> err = new HashMap<>();
 
         p.singleMsgs.forEach((uuid, msg) -> {
             if (msg.hasError())

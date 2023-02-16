@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Tests.Client.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -981,6 +982,19 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             foreach (var g in new[] {_grid1, _grid2, _grid3})
                 Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
+        }
+        
+        /// <summary>
+        /// Tests that compute modifiers are reset between calls.
+        /// </summary>
+        [Test]
+        public void TestTaskOptionsPropagation()
+        {
+            ICompute compute = _grid1.GetCompute();
+            
+            compute.WithTimeout(500).Call(new ComputeFunc());
+
+            compute.ExecuteJavaTask<object>(ComputeClientTests.TestTask, (long)1000);
         }
 
         /// <summary>

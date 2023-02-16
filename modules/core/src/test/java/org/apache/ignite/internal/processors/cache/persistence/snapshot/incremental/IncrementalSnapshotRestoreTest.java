@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -51,9 +52,11 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
@@ -63,6 +66,8 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Incremen
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -557,6 +562,111 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         }
     }
 
+    /** */
+    @Test
+    public void testBinaryMetaDataRestored() throws Exception {
+        loadAndCreateSnapshot(false, (incSnp) -> loadData(CACHE, new HashMap<>(), 1_000));
+
+        grid(0).cache(CACHE).put(10_000, new Person("name"));
+
+        checkBinaryMetaRestored((shouldExists) -> {
+            BinaryContext binCtx = ((CacheObjectBinaryProcessorImpl)grid(0).context().cacheObjects()).binaryContext();
+
+            int persTypeId = binCtx.typeId(Person.class.getName());
+
+            for (int n = 0; n < nodes(); n++) {
+                List<Map<Integer, MappedName>> mappings = grid(n).context().marshallerContext().getCachedMappings();
+                IgniteCacheObjectProcessor objPrc = grid(n).context().cacheObjects();
+
+                if (shouldExists) {
+                    assertEquals(mappings.toString(), 1, mappings.size());
+                    assertTrue(mappings.get(0).containsKey(persTypeId));
+                    assertNotNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
+                }
+                else {
+                    assertEquals(mappings.toString(), 1, mappings.size());
+                    assertTrue(mappings.get(0).isEmpty());
+                    assertNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
+                }
+            }
+
+            // Check accessing class only after explicit validate meta on every node.
+            if (shouldExists) {
+                Person p = (Person)grid(0).cache(CACHE).get(10_000);
+
+                assertEquals("name", p.name);
+            }
+        });
+    }
+
+    /** */
+    @Test
+    public void testChangedBinaryMetaDataRestored() throws Exception {
+        loadAndCreateSnapshot(false, (incSnp) -> {
+            Random rnd = new Random();
+
+            for (int i = 0; i < 1_000; i++) {
+                BinaryObject obj = grid(0).binary().builder("TestType")
+                    .setField("age", rnd.nextInt(100))
+                    .build();
+
+                grid(0).cache(CACHE).withKeepBinary().put(i, obj);
+            }
+        });
+
+        grid(0).cache(CACHE).withKeepBinary().put(
+            10_000,
+            grid(0).binary().builder("TestType")
+                .setField("age", 10)
+                .setField("balance", 100)
+                .build());
+
+        checkBinaryMetaRestored((shouldChange) -> {
+            for (int n = 0; n < nodes(); n++) {
+                IgniteCacheObjectProcessor objPrc = grid(n).context().cacheObjects();
+
+                BinaryType binType = objPrc.metadata(objPrc.typeId("TestType"));
+
+                assertNotNull(binType);
+
+                assertEquals(shouldChange ? 2 : 1, binType.fieldNames().size());
+            }
+
+            // Check accessing class after explicit validate meta.
+            BinaryObject obj = (BinaryObject)grid(0).cache(CACHE).withKeepBinary().get(10_000);
+
+            if (shouldChange) {
+                assertEquals(10, (int)obj.field("age"));
+                assertEquals(100, (int)obj.field("balance"));
+            }
+            else
+                assertNull(obj);
+        });
+    }
+
+    /** Checks that binary metadata and marshaller restored from an incremental snapshot, and still exists after restart. */
+    private void checkBinaryMetaRestored(Consumer<Boolean> binaryMetaCheck) throws Exception {
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get();
+
+        restartWithCleanPersistence();
+
+        grid(0).snapshot().restoreSnapshot(SNP, null).get(getTestTimeout());
+
+        binaryMetaCheck.accept(false);
+
+        restartWithCleanPersistence();
+
+        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+
+        binaryMetaCheck.accept(true);
+
+        stopAllGrids();
+
+        startGrids(nodes());
+
+        binaryMetaCheck.accept(true);
+    }
+
     /**
      * Load and create full and incremental snapshots.
      *
@@ -782,6 +892,17 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             }
 
             return super.readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+        }
+    }
+
+    /** */
+    private static class Person {
+        /** */
+        private final String name;
+
+        /** */
+        Person(String name) {
+            this.name = name;
         }
     }
 

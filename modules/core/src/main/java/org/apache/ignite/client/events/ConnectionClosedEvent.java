@@ -15,24 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.client.events;
 
-import java.util.concurrent.ExecutionException;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Reliability test with async cache operation.
- */
-public class ReliabilityTestAsync extends ReliabilityTest {
-    /** {@inheritDoc} */
-    @Override protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
-        try {
-            cache.putAsync(key, val).get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException)
-                throw (RuntimeException)e.getCause();
+/** */
+public class ConnectionClosedEvent extends ConnectionEvent {
+    /** */
+    private final Throwable throwable;
 
-            throw new RuntimeException(e);
-        }
+    /**
+     * @param conn Connection description.
+     * @param throwable Throwable that caused the failure if any.
+     */
+    public ConnectionClosedEvent(
+        ConnectionDescription conn,
+        Throwable throwable
+    ) {
+        super(conn);
+
+        this.throwable = throwable;
+    }
+
+    /**
+     * Get a cause of the failure if any.
+     *
+     * @return A cause of the failure if any.
+     */
+    @Nullable public Throwable throwable() {
+        return throwable;
     }
 }
