@@ -336,9 +336,15 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
 
             SpanId pagePrepareSpan = checkChildSpan(SQL_PAGE_PREPARE, execReqSpan);
 
-            idxRangeReqRows += checkIndexRangeRequestChildSpans(pagePrepareSpan);
-
             preparedRows += parseInt(getAttribute(pagePrepareSpan, SQL_PAGE_ROWS));
+
+            List<SpanId> distLookupReqSpans = findChildSpans(SQL_IDX_RANGE_REQ, pagePrepareSpan);
+
+            for (SpanId span : distLookupReqSpans) {
+                idxRangeReqRows += parseInt(getAttribute(span, SQL_IDX_RANGE_ROWS));
+
+                checkChildSpan(SQL_IDX_RANGE_RESP, span);
+            }
 
             checkChildSpan(SQL_QRY_EXECUTE, execReqSpan);
             checkChildSpan(SQL_PAGE_RESP, execReqSpan);
