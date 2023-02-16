@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.security.cluster;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -25,14 +27,23 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
-import static java.lang.Boolean.*;
-import static org.apache.ignite.cluster.ClusterState.*;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE_ACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE_INACTIVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertNotEquals;
@@ -40,18 +51,27 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Tests permissions of cluster ctate change.
  */
-public class ClusterStateSecurityTest extends AbstractSecurityTest {
-    /** */
-    private boolean isClient;
+@RunWith(Parameterized.class)
+public class ClusterStatePermissionsTest extends AbstractSecurityTest {
+    /** Persistence flag. */
+    @Parameterized.Parameter(0)
+    public boolean persistence;
 
-    /** */
-    private boolean persistent = true;
+    /** From-client flag. */
+    @Parameterized.Parameter(1)
+    public boolean client;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "persistence={0}, fromClient={1}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{false, false}, {true, false}, {false, true}, {true, true}});
+    }
 
     /** */
     private ClusterState startState = INACTIVE;
 
     /** */
-    private SecurityPermission[] adminPerms;
+    private SecurityPermission[] adminPerms = F.asArray(ADMIN_CLUSTER_STATE_ACTIVE, ADMIN_CLUSTER_STATE_INACTIVE);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -64,26 +84,36 @@ public class ClusterStateSecurityTest extends AbstractSecurityTest {
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setPluginProviders(new TestSecurityPluginProvider(
+        SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false);
+
+        if (cfg.isClientMode()) {
+            secBuilder.appendSystemPermissions(adminPerms);
+
+            secBuilder.appendTaskPermissions(
+                "org.apache.ignite.internal.processors.cluster.ClientSetClusterStateComputeRequest",
+                TASK_EXECUTE
+            );
+        }
+        else {
+            secBuilder.appendSystemPermissions(F.concat(adminPerms, JOIN_AS_SERVER, CACHE_CREATE));
+
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
+
+            cfg.setCacheConfiguration(defaultCacheConfiguration());
+
+            cfg.setClusterStateOnStart(startState);
+        }
+
+        TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
             instanceName,
             "",
-            create()
-                .defaultAllowAll(false)
-                .appendSystemPermissions(JOIN_AS_SERVER)
-                .appendSystemPermissions(adminPerms)
-                .build(),
+            secBuilder.build(),
             null,
             false
-        ));
+        );
 
-        cfg.setClientMode(isClient);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistent)));
-
-        cfg.setCacheConfiguration(defaultCacheConfiguration());
-
-        cfg.setClusterStateOnStart(startState);
+        cfg.setPluginProviders(secPlugin);
 
         return cfg;
     }
@@ -118,36 +148,27 @@ public class ClusterStateSecurityTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testDeactivationAllowedActivationNotAllowed() throws Exception {
+        Ignite ig = startGrids(1);
+
+        ig.cluster().state(ACTIVE);
+
         adminPerms = F.asArray(ADMIN_CLUSTER_STATE_INACTIVE);
 
-        startState = ACTIVE;
-
         testChangeClusterState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
-    }
-
-    /** */
-    @Test
-    public void testActiveIsAllowedAtStartByDefault() throws Exception {
-        testAllowedAtStart(ACTIVE);
-    }
-
-    /** */
-    @Test
-    public void testInactiveReadOnlyIsAllowedAtStartByDefault() throws Exception {
-        testAllowedAtStart(ACTIVE_READ_ONLY);
-    }
-
-    /** */
-    @Test
-    public void testInactiveIsAllowedAtStartByDefault() throws Exception {
-        testAllowedAtStart(INACTIVE);
     }
 
     /** */
     private void testChangeClusterState(ClusterState[] states, Boolean[] allowed) throws Exception {
         assert states != null && allowed != null && states.length == allowed.length && states.length > 0;
 
-        Ignite ig = startGrids(3);
+        Ignite ig0 = startGrid(G.allGrids().size());
+
+        startGrid(G.allGrids().size());
+        startGrid(G.allGrids().size());
+
+        Ignite ig = client ? startClientGrid(G.allGrids().size()) : ig0;
+
+        assert !client || ig.configuration().isClientMode();
 
         for (int i = 0; i < states.length; ++i) {
             assert allowed[i] != null;
