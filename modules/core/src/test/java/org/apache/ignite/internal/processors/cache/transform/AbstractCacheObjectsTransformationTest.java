@@ -131,7 +131,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
      *
      */
     private void putWithCheck(Object key, Object val, boolean binarizableVal, boolean transformableVal) {
-        Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partition.
+        Ignite node = backupNode(0, CACHE_NAME); // Any key, because of single partition.
 
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
