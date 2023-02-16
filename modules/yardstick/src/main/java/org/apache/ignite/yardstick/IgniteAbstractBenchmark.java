@@ -160,7 +160,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /**
      * @return Grid.
      */
-    public Ignite ignite() {
+    protected Ignite ignite() {
         return node.ignite();
     }
 

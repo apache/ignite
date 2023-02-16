@@ -64,7 +64,6 @@
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
 			            <property name="maxSize" value="#{300 * 1024 * 1024}"/>
                         <property name="persistenceEnabled" value="true"/>
-                        <property name="metricsEnabled" value="true"/>
                         <property name="pageReplacementMode" value="#{systemProperties['IGNITE_PAGE_REPLACEMENT_MODE']}"/>
                     </bean>
                 </property>
