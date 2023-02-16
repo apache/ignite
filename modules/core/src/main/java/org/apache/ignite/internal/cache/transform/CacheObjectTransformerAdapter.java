@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.transform;
+package org.apache.ignite.internal.cache.transform;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.cache.transform.CacheObjectTransformer;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 
 /**

@@ -26,8 +26,8 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
-import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.xerial.snappy.Snappy;
 
 /**

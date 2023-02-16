@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerAdapter;
 
 /** Test checks that indexing works (including inlining) with enabled cache objects transformer. */
 public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCacheKeyValueFieldsTest {

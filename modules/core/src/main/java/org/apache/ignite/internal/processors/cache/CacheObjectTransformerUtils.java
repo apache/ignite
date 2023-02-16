@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.cache.transform.CacheObjectTransformer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.transform.CacheObjectTransformer;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.transform;
+package org.apache.ignite.cache.transform;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.lang.IgniteExperimental;
