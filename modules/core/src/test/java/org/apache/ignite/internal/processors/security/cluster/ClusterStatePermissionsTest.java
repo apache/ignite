@@ -39,8 +39,8 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE_ACTIVE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE_INACTIVE;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_ACTIVATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_DEACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
@@ -71,7 +71,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     private ClusterState startState = INACTIVE;
 
     /** */
-    private SecurityPermission[] adminPerms = F.asArray(ADMIN_CLUSTER_STATE_ACTIVE, ADMIN_CLUSTER_STATE_INACTIVE);
+    private SecurityPermission[] adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -121,7 +121,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
-        adminPerms = F.asArray(ADMIN_CLUSTER_STATE_ACTIVE, ADMIN_CLUSTER_STATE_INACTIVE);
+        adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
 
         testChangeClusterState(
             F.asArray(ACTIVE, INACTIVE, ACTIVE_READ_ONLY, INACTIVE),
@@ -132,7 +132,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testActivationAllowedDeactivationNotAllowed() throws Exception {
-        adminPerms = F.asArray(ADMIN_CLUSTER_STATE_ACTIVE);
+        adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
 
         testChangeClusterState(F.asArray(ACTIVE, INACTIVE), F.asArray(TRUE, FALSE));
     }
@@ -140,7 +140,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testActivationReadOnlyAllowedDeactivationNotAllowed() throws Exception {
-        adminPerms = F.asArray(ADMIN_CLUSTER_STATE_ACTIVE);
+        adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
 
         testChangeClusterState(F.asArray(ACTIVE_READ_ONLY, INACTIVE), F.asArray(TRUE, FALSE));
     }
@@ -152,7 +152,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
 
         ig.cluster().state(ACTIVE);
 
-        adminPerms = F.asArray(ADMIN_CLUSTER_STATE_INACTIVE);
+        adminPerms = F.asArray(ADMIN_CLUSTER_DEACTIVE);
 
         testChangeClusterState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
     }
@@ -193,8 +193,8 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
                         return null;
                     },
                     org.apache.ignite.plugin.security.SecurityException.class,
-                    "Authorization failed [perm=" + (stateTo == INACTIVE ? ADMIN_CLUSTER_STATE_INACTIVE :
-                        ADMIN_CLUSTER_STATE_ACTIVE)
+                    "Authorization failed [perm=" + (stateTo == INACTIVE ? ADMIN_CLUSTER_DEACTIVE :
+                        ADMIN_CLUSTER_ACTIVATE)
                 );
 
                 assertEquals(stateBefore, ig.cluster().state());
@@ -207,7 +207,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     private void testAllowedAtStart(ClusterState startState) throws Exception {
         this.startState = startState;
 
-        adminPerms = F.asArray(startState == INACTIVE ? ADMIN_CLUSTER_STATE_ACTIVE : ADMIN_CLUSTER_STATE_INACTIVE);
+        adminPerms = F.asArray(startState == INACTIVE ? ADMIN_CLUSTER_ACTIVATE : ADMIN_CLUSTER_DEACTIVE);
 
         Ignite ig = startGrids(3);
 

@@ -1126,10 +1126,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             switch (state) {
                 case ACTIVE:
                 case ACTIVE_READ_ONLY:
-                    ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE_ACTIVE);
+                    ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_ACTIVATE);
                     break;
                 case INACTIVE:
-                    ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE_INACTIVE);
+                    ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_DEACTIVE);
                     break;
                 default:
                     throw new UnsupportedOperationException("No security permission is available for state " + state);

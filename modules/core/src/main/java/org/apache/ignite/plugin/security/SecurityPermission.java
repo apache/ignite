@@ -87,11 +87,11 @@ public enum SecurityPermission {
     /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT,
 
-    /** Permission to change cluster state to ACTIVE and ACTIVE_READ_ONLY. */
-    ADMIN_CLUSTER_STATE_ACTIVE,
+    /** Administration operation: change cluster state to ACTIVE or ACTIVE_READ_ONLY. */
+    ADMIN_CLUSTER_ACTIVATE,
 
-    /** Permission to change cluster state to INACTIVE. */
-    ADMIN_CLUSTER_STATE_INACTIVE,
+    /** Administration operation: change cluster state to INACTIVE. */
+    ADMIN_CLUSTER_DEACTIVE,
 
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,

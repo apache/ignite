@@ -69,8 +69,8 @@ public class TestSecurityContext implements SecurityContext, Serializable {
             case ADMIN_QUERY:
             case ADMIN_OPS:
             case ADMIN_SNAPSHOT:
-            case ADMIN_CLUSTER_STATE_ACTIVE:
-            case ADMIN_CLUSTER_STATE_INACTIVE:
+            case ADMIN_CLUSTER_ACTIVATE:
+            case ADMIN_CLUSTER_DEACTIVE:
             case JOIN_AS_SERVER:
                 return systemOperationAllowed(perm);
 
