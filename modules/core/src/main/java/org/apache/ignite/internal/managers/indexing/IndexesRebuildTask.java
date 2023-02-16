@@ -88,18 +88,23 @@ public class IndexesRebuildTask {
         // Closure prepared, do rebuild.
         cctx.kernalContext().query().markAsRebuildNeeded(cctx, true);
 
+        IgniteLogger log = cctx.kernalContext().grid().log();
+
         if (recreate) {
             cctx.kernalContext().query().markIndexRecreate(cctx);
 
             cctx.group().indexWalEnabled(false);
+
+            if (log.isInfoEnabled()) {
+                log.info("WAL disabled for index partition " +
+                    "[grpName=" + cctx.group().name() + ", grpId=" + cctx.groupId() + ']');
+            }
         }
 
         GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
         // To avoid possible data race.
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
-
-        IgniteLogger log = cctx.kernalContext().grid().log();
 
         // An internal future for the ability to cancel index rebuilding.
         SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(cancelTok);
@@ -117,8 +122,6 @@ public class IndexesRebuildTask {
             if (err == null) {
                 try {
                     cctx.kernalContext().query().markAsRebuildNeeded(cctx, false);
-
-                    cctx.group().indexWalEnabled(cctx.group().localWalEnabled());
                 }
                 catch (Throwable t) {
                     err = t;
@@ -131,6 +134,28 @@ public class IndexesRebuildTask {
                 cctx.kernalContext().query().onFinishRebuildIndexes(cctx);
 
             idxRebuildFuts.remove(cctx.cacheId(), intRebFut);
+
+            if (recreate) {
+                boolean recreateContinues = false;
+
+                for (GridCacheContext<?, ?> cctx0 : cctx.group().caches()) {
+                    if (idxRebuildFuts.containsKey(cctx0.cacheId())) {
+                        recreateContinues = true;
+
+                        break;
+                    }
+                }
+
+                if (!recreateContinues) {
+                    cctx.group().indexWalEnabled(cctx.group().localWalEnabled());
+
+                    if (log.isInfoEnabled()) {
+                        log.info("WAL enabled for index partition " +
+                            "[grpName=" + cctx.group().name() + ", grpId=" + cctx.group().groupId() + ']');
+                    }
+                }
+            }
+
             intRebFut.onDone(err);
 
             outRebuildCacheIdxFut.onDone(err);

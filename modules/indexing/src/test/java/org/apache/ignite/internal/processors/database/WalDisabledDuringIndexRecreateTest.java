@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.database;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCache;
@@ -33,15 +31,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcIndexRebuildTest.TestVal;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
+import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -54,7 +59,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_INSERT;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -74,10 +79,13 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     public static final String GRP_NAME = "my-group";
 
     /** */
-    public static final Long IDX_CNT = 3L;
+    public static final long IDX_CNT = 3L;
 
     /** */
     public static final int GRP_CACHES_CNT = 3;
+
+    /** */
+    public static final long UNKNOWN_PAGE_ID = -1;
 
     /** */
     private ListeningTestLogger testLog;
@@ -126,8 +134,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         awaitRebuild();
 
         assertEquals(
-            IDX_CNT,
-            countWalRecordsByTypes(wp -> wp.compareTo(walStartPtr) > 0).getOrDefault(BTREE_PAGE_INSERT, 0L)
+            IDX_CNT * cachesCnt(),
+            countWalGrpRecords(wp -> wp.compareTo(walStartPtr) > 0, CU.cacheGroupId(cacheName(), cacheGroupName()))
         );
     }
 
@@ -204,8 +212,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
             assertTrue(lsnr.check());
 
             assertEquals(
-                (Long)(2 * IDX_CNT),
-                countWalRecordsByTypes(wp -> wp.compareTo(walStartPtr) > 0).getOrDefault(BTREE_PAGE_INSERT, 0L)
+                2 * IDX_CNT * cachesCnt(),
+                countWalGrpRecords(wp -> wp.compareTo(walStartPtr) > 0, cacheGroupId(cacheName(), cacheGroupName()))
             );
         }
         finally {
@@ -232,7 +240,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
         srv.cluster().state(ACTIVE);
 
-        for (int i = 0; i < (cacheGrps ? GRP_CACHES_CNT : 1); i++)
+        for (int i = 0; i < cachesCnt(); i++)
             produceData(srv, DEFAULT_CACHE_NAME + i);
 
         WALPointer walPrtBefore = srv.context().cache().context().wal().lastWritePointer();
@@ -275,8 +283,9 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     }
 
     /** @param filter Predicate. */
-    private Map<RecordType, Long> countWalRecordsByTypes(
-        Predicate<WALPointer> filter
+    private long countWalGrpRecords(
+        Predicate<WALPointer> filter,
+        long grpId
     ) throws IgniteCheckedException {
         String dir = grid(0).name().replace(".", "_");
 
@@ -287,17 +296,41 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
             )
             .filter((rt, ptr) -> filter.test(ptr));
 
-        Map<RecordType, Long> cntByRecTypes = new EnumMap<>(RecordType.class);
-
-        for (RecordType recType : RecordType.values())
-            cntByRecTypes.put(recType, 0L);
+        long cntGrpRecs = 0;
 
         try (WALIterator walIter = new IgniteWalIteratorFactory(log).iterator(walIterBldr)) {
-            while (walIter.hasNext())
-                cntByRecTypes.merge(walIter.next().getValue().type(), 1L, Long::sum);
+            while (walIter.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> rec = walIter.next();
+
+                if (!filter.test(rec.get1()))
+                    continue;
+
+                if (rec.get2() instanceof InsertRecord
+                    && ((WalRecordCacheGroupAware)rec.get2()).groupId() == grpId) {
+
+                    long pageId = pageId(rec.get2());
+
+                    if (pageId != UNKNOWN_PAGE_ID && PageIdUtils.partId(pageId) != INDEX_PARTITION)
+                        continue;
+
+                    System.out.println("rec.get2().getClass().getName() = " + rec.get2().getClass().getName());
+
+                    cntGrpRecs++;
+                }
+            }
         }
 
-        return cntByRecTypes;
+        return cntGrpRecs;
+    }
+
+    /** */
+    public long pageId(WALRecord rec) {
+        if (rec instanceof PageDeltaRecord)
+            return ((PageDeltaRecord)rec).pageId();
+        else if (rec instanceof PageSnapshot)
+            return ((PageSnapshot)rec).fullPageId().pageId();
+
+        return UNKNOWN_PAGE_ID;
     }
 
     /** */
@@ -308,5 +341,10 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     /** */
     private String cacheGroupName() {
         return cacheGrps ? GRP_NAME : null;
+    }
+
+    /** */
+    private int cachesCnt() {
+        return cacheGrps ? GRP_CACHES_CNT : 1;
     }
 }
