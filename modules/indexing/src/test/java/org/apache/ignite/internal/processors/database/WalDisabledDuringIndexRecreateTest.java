@@ -74,7 +74,6 @@ import static org.apache.ignite.internal.processors.query.schema.management.Sort
 
 /** */
 @RunWith(Parameterized.class)
-@SuppressWarnings({"resource"})
 public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     /** Batches count. */
     public static final int ENTRIES_CNT = 1_000;
