@@ -60,6 +60,7 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -443,13 +444,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         assert storeWorkDir != null;
 
         if (!idxCacheStores.containsKey(cacheId)) {
+            GridCacheContext<?, ?> cctx = this.cctx.cacheContext(cacheId);
+
+            Collection<String> grpCaches = cctx != null
+                ? cctx.group().caches().stream().map(GridCacheContext::name).collect(Collectors.toSet())
+                : Collections.singleton(cacheName);
+
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, cacheName),
                 cacheId,
                 cacheName,
                 partitions,
                 pageMetrics,
-                cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
+                cctx != null && cctx.config().isEncryptionEnabled(),
+                grpCaches
             );
 
             CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
@@ -489,7 +497,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
                 pageMetrics,
-                false);
+                false,
+                Collections.singleton(MetaStorage.METASTORAGE_CACHE_NAME));
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -592,7 +601,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
             pageMetrics,
-            ccfg.isEncryptionEnabled()
+            ccfg.isEncryptionEnabled(),
+            grpDesc.caches().keySet()
         );
     }
 
@@ -673,7 +683,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         String cacheName,
         int partitions,
         PageMetrics pageMetrics,
-        boolean encrypted) throws IgniteCheckedException {
+        boolean encrypted,
+        Collection<String> grpCaches) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
@@ -688,9 +699,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
-            if (idxFile.exists()
-                && qryProc.moduleEnabled()
-                && !qryProc.recreateCompleted(cacheName)) {
+            boolean idxRecreating = qryProc.moduleEnabled() && grpCaches.stream()
+                .anyMatch(name -> !qryProc.recreateCompleted(name));
+
+            if (idxFile.exists() && idxRecreating) {
                 log.warning("Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
                     "Removing it to recreate one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
 

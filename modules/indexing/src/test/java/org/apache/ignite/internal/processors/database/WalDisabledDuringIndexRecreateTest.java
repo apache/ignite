@@ -28,7 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcIndexRebuildTest.TestVal;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -106,6 +108,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
             .setGridLogger(testLog)
             .setConsistentId(igniteInstanceName)
             .setClusterStateOnStart(INACTIVE)
+            .setFailureHandler(new StopNodeFailureHandler())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true))
@@ -131,6 +134,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     public void testDisabled() throws Exception {
         WALPointer walStartPtr = createDataAndDeleteIndexBin();
 
+        testLog = new ListeningTestLogger(log);
+
         awaitRebuild();
 
         assertEquals(
@@ -150,86 +155,105 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
             H2_TREE
         );
 
-        try {
-            AtomicInteger errCntr = new AtomicInteger(10);
+        AtomicInteger errCntr = new AtomicInteger(10);
 
-            // Setting up wrapper that will fail on 10 put operation.
-            BPlusTree.testHndWrapper = (tree, hnd) -> {
-                if (!tree.name().equals(treeName))
-                    return hnd;
+        // Setting up wrapper that will fail on 10 put operation.
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
+            if (!tree.name().equals(treeName))
+                return hnd;
 
-                PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
+            PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
-                return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
-                    @Override public BPlusTree.Result run(
-                        int cacheId,
-                        long pageId,
-                        long page,
-                        long pageAddr,
-                        PageIO io,
-                        Boolean walPlc,
-                        BPlusTree.Get arg,
-                        int lvl,
-                        IoStatisticsHolder statHolder
-                    ) throws IgniteCheckedException {
-                        if (arg instanceof BPlusTree.Put && errCntr.decrementAndGet() == 0)
-                            throw new IgniteCheckedException("Test error on 10 put"); // Node failure during index rebuild.
+            return new PageHandler<BPlusTree.Get, BPlusTree.Result>() {
+                @Override public BPlusTree.Result run(
+                    int cacheId,
+                    long pageId,
+                    long page,
+                    long pageAddr,
+                    PageIO io,
+                    Boolean walPlc,
+                    BPlusTree.Get arg,
+                    int lvl,
+                    IoStatisticsHolder statHolder
+                ) throws IgniteCheckedException {
+                    if (arg instanceof BPlusTree.Put && errCntr.decrementAndGet() == 0)
+                        throw new IgniteCheckedException("Test error on 10 put"); // Node failure during index rebuild.
 
-                        return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl, statHolder);
-                    }
+                    return delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, lvl, statHolder);
+                }
 
-                    @Override public boolean releaseAfterWrite(
-                        int cacheId, long pageId, long page, long pageAddr, BPlusTree.Get g, int lvl
-                    ) {
-                        return g.canRelease(pageId, lvl);
-                    }
-                };
+                @Override public boolean releaseAfterWrite(
+                    int cacheId, long pageId, long page, long pageAddr, BPlusTree.Get g, int lvl
+                ) {
+                    return g.canRelease(pageId, lvl);
+                }
             };
+        };
 
-            try {
-                awaitRebuild();
-
-                throw new RuntimeException("Rebuild must not succeed!");
-            }
-            catch (Exception ignore) {
-                BPlusTree.testHndWrapper = null;
-
-                stopAllGrids();
-            }
-
-            LogListener lsnr = LogListener.matches(
-                "Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
-                    "Removing it to recreate one more time " +
-                    "[grpId=" + cacheGroupId(cacheName(), cacheGroupName())
-            ).build();
-
+        try {
             testLog = new ListeningTestLogger(log);
-
-            testLog.registerListener(lsnr);
 
             awaitRebuild();
 
-            assertTrue(lsnr.check());
-
-            assertEquals(
-                2 * IDX_CNT * cachesCnt(),
-                countWalGrpRecords(wp -> wp.compareTo(walStartPtr) > 0, cacheGroupId(cacheName(), cacheGroupName()))
-            );
+            assertTrue("Rebuild must not succeed", false);
+        }
+        catch (Exception ignore) {
+            // No-op
         }
         finally {
             BPlusTree.testHndWrapper = null;
 
-            testLog = null;
+            stopAllGrids();
         }
+
+        testLog = new ListeningTestLogger(log);
+
+        LogListener lsnr = LogListener.matches(
+            "Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
+                "Removing it to recreate one more time " +
+                "[grpId=" + cacheGroupId(cacheName(), cacheGroupName())
+        ).build();
+
+        testLog.registerListener(lsnr);
+
+        awaitRebuild();
+
+        assertTrue(lsnr.check());
+
+        assertEquals(
+            2 * IDX_CNT * cachesCnt(),
+            countWalGrpRecords(wp -> wp.compareTo(walStartPtr) > 0, cacheGroupId(cacheName(), cacheGroupName()))
+        );
     }
 
     /** */
     private void awaitRebuild() throws Exception {
+        LogListener walDisabledLsnr = LogListener.matches(
+            "WAL disabled for index partition " +
+                "[name=" + cacheGroupName() + ", id=" + cacheGroupId(cacheName(), cacheGroupName()) + ']'
+        ).build();
+
+        LogListener walEnabledLsnr = LogListener.matches(
+            "WAL enabled for index partition " +
+                "[name=" + cacheGroupName() + ", id=" + cacheGroupId(cacheName(), cacheGroupName()) + ']'
+        ).build();
+
+        testLog.registerListener(walDisabledLsnr);
+        testLog.registerListener(walEnabledLsnr);
+
         IgniteEx srv = startGrid(0);
 
         srv.cluster().state(ACTIVE);
 
-        indexRebuildFuture(srv, cacheId(cacheName())).get(getTestTimeout());
+        for (int i = 0; i < cachesCnt(); i++) {
+            IgniteInternalFuture<?> rbldFut = indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME + i));
+
+            if (rbldFut != null)
+                rbldFut.get(getTestTimeout());
+        }
+
+        assertTrue(walDisabledLsnr.check());
+        assertTrue(walEnabledLsnr.check());
 
         checkIdxFile();
     }
