@@ -245,9 +245,6 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         srv.cluster().state(ACTIVE);
 
         for (int i = 0; i < cachesCnt(); i++) {
-            if (srv.context().isStopping())
-                break;
-
             IgniteInternalFuture<?> rbldFut = indexRebuildFuture(srv, cacheId(DEFAULT_CACHE_NAME + i));
 
             if (rbldFut != null)
