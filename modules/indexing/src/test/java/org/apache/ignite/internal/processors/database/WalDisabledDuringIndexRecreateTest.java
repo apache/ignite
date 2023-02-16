@@ -40,7 +40,9 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -79,9 +81,6 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
     /** */
     public static final String GRP_NAME = "my-group";
-
-    /** */
-    public static final long IDX_CNT = 3;
 
     /** */
     public static final int GRP_CACHES_CNT = 3;
@@ -139,7 +138,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         awaitRebuild();
 
         assertEquals(
-            IDX_CNT * cachesCnt(),
+            0,
             countWalGrpRecords(wp -> wp.compareTo(walStartPtr) > 0, CU.cacheGroupId(cacheName(), cacheGroupName()))
         );
     }
@@ -221,7 +220,7 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         assertTrue(lsnr.check());
 
         assertEquals(
-            2 * IDX_CNT * cachesCnt(),
+            0,
             countWalGrpRecords(wp -> wp.compareTo(walStartPtr) > 0, cacheGroupId(cacheName(), cacheGroupName()))
         );
     }
@@ -288,7 +287,10 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
         for (int i = 0; i < ENTRIES_CNT; i++)
             cache.put(i, new TestVal());
 
-        assertEquals(GRP_CACHES_CNT, srv.context().indexProcessor().indexes(cacheName).size());
+        assertEquals(
+            TestVal.class.getDeclaredFields().length + 1,
+            srv.context().indexProcessor().indexes(cacheName).size()
+        );
     }
 
     /** */
@@ -331,6 +333,12 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
                 if (rec.get2() instanceof InsertRecord
                     && ((WalRecordCacheGroupAware)rec.get2()).groupId() == grpId) {
+
+                    BPlusIO<?> io = ((InsertRecord)rec.get2()).io();
+
+                    if (io instanceof IndexStorageImpl.MetaStoreLeafIO
+                        || io instanceof IndexStorageImpl.MetaStoreInnerIO)
+                        continue;
 
                     long pageId = pageId(rec.get2());
 
