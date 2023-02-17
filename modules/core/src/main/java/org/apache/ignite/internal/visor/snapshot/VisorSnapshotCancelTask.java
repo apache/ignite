@@ -38,7 +38,7 @@ public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<VisorSnaps
     }
 
     /** */
-    private static class VisorSnapshotCancelJob extends VisorJob<VisorSnapshotCancelTaskArg, String> {
+    private static class VisorSnapshotCancelJob extends VisorSnapshotJob<VisorSnapshotCancelTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

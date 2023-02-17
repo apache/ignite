@@ -576,11 +576,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
     /** Enriches specified task execution options with those that are bounded to the current compute instance. */
     private TaskExecutionOptions enrichOptions(TaskExecutionOptions opts) {
-        opts.withProjection(prj.nodes());
-
         if (execName != null)
             opts.withExecutor(execName);
-        
-        return opts;
+
+        return opts.asPublicRequest().withProjection(prj.nodes());
     }
 }

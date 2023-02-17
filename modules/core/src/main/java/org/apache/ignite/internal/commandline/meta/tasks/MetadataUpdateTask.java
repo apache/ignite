@@ -28,8 +28,11 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_METADATA_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /**
  * Task for update specified binary type.
@@ -71,9 +74,12 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, M
         }
 
         /** {@inheritDoc} */
-        @Override protected MetadataMarshalled run(@Nullable MetadataMarshalled arg) throws IgniteException {
-            ignite.context().security().authorize(null, SecurityPermission.ADMIN_METADATA_OPS);
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return systemPermissions(ADMIN_METADATA_OPS);
+        }
 
+        /** {@inheritDoc} */
+        @Override protected MetadataMarshalled run(@Nullable MetadataMarshalled arg) throws IgniteException {
             assert Objects.nonNull(arg);
 
             byte[] marshalled = arg.metadataMarshalled();

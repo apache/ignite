@@ -93,7 +93,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
     }
 
     /** */
-    private static class VisorSnapshotStatusJob extends VisorJob<Void, SnapshotStatus> {
+    private static class VisorSnapshotStatusJob extends VisorSnapshotJob<Void, SnapshotStatus> {
         /** */
         private static final long serialVersionUID = 0L;
 

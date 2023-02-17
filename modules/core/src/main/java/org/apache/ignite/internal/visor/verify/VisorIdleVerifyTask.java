@@ -19,19 +19,22 @@ package org.apache.ignite.internal.visor.verify;
 
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobContext;
-import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.JobContextResource;
+
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Task to verify checksums of backup partitions.
@@ -56,7 +59,7 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
         private static final long serialVersionUID = 0L;
 
         /** */
-        private ComputeTaskFuture<Map<PartitionKey, List<PartitionHashRecord>>> fut;
+        private IgniteInternalFuture<Map<PartitionKey, List<PartitionHashRecord>>> fut;
 
         /** Auto-inject job context. */
         @JobContextResource
@@ -72,23 +75,32 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
 
         /** {@inheritDoc} */
         @Override protected VisorIdleVerifyTaskResult run(VisorIdleVerifyTaskArg arg) throws IgniteException {
-            if (fut == null) {
-                fut = ignite.compute().executeAsync(VerifyBackupPartitionsTask.class, arg.caches());
+            try {
+                if (fut == null) {
+                    fut = ignite.context().task().execute(
+                        VerifyBackupPartitionsTask.class,
+                        arg.caches(),
+                        options(ignite.cluster().forServers().nodes())
+                    );
 
-                if (!fut.isDone()) {
-                    jobCtx.holdcc();
+                    if (!fut.isDone()) {
+                        jobCtx.holdcc();
 
-                    fut.listen(new IgniteInClosure<IgniteFuture<Map<PartitionKey, List<PartitionHashRecord>>>>() {
-                        @Override public void apply(IgniteFuture<Map<PartitionKey, List<PartitionHashRecord>>> f) {
-                            jobCtx.callcc();
-                        }
-                    });
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Map<PartitionKey, List<PartitionHashRecord>>>>() {
+                            @Override public void apply(IgniteInternalFuture<Map<PartitionKey, List<PartitionHashRecord>>> f) {
+                                jobCtx.callcc();
+                            }
+                        });
 
-                    return null;
+                        return null;
+                    }
                 }
-            }
 
-            return new VisorIdleVerifyTaskResult(fut.get());
+                return new VisorIdleVerifyTaskResult(fut.get());
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */
