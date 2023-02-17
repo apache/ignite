@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCache
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest2;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest3;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimpleTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
@@ -116,6 +117,7 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest3.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsSporadicDataRecordsOnBackupTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistence.class, ignoredTests);
