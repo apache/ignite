@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -89,7 +90,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -1437,7 +1438,13 @@ public class SnapshotRestoreProcess {
             .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx)
             .requestId();
 
-        IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(segments, incSnpId);
+        File lastSeg = Arrays.stream(segments)
+            .map(File::toPath)
+            .max(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex))
+            .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [id=" + incSnpId + ']'))
+            .toFile();
+
+        IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(lastSeg, incSnpId);
 
         if (incSnpFinRec == null)
             throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found [id=" + incSnpId + ']');
@@ -1547,14 +1554,8 @@ public class SnapshotRestoreProcess {
     }
 
     /** @return {@link IncrementalSnapshotFinishRecord} for specified snapshot, or {@code null} if not found. */
-    private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(File[] segments, UUID incSnpId) throws IgniteCheckedException {
-        List<FileDescriptor> walSegs = new IgniteWalIteratorFactory(log).resolveWalFiles(
-            new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filesOrDirs(segments));
-
-        File lastSeg = walSegs.get(walSegs.size() - 1).file();
-
-        try (WALIterator it = walIter(log, Collections.singleton(INCREMENTAL_SNAPSHOT_FINISH_RECORD), lastSeg)) {
+    private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(File segment, UUID incSnpId) throws IgniteCheckedException {
+        try (WALIterator it = walIter(log, Collections.singleton(INCREMENTAL_SNAPSHOT_FINISH_RECORD), segment)) {
             while (it.hasNext()) {
                 IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)it.next().getValue();
 
