@@ -161,22 +161,28 @@ public class IgnitePdsWithTtlTest3 extends GridCommonAbstractTest {
                     cache.put(id * 1_000_000 + i, "datadatadatadatadaat");
                     i++;
                 }
-                printStatistics((IgniteCacheProxy)cache, "After cache puts");
             }, WORKLOAD_THREADS_CNT, "loader");
 
             doSleep(EXPIRATION_TIMEOUT * 2);
             timeoutReached.set(true);
             ldrFut.get();
 
-            srv.cluster().state(INACTIVE);
-            doSleep(10_000);
+            printStatistics((IgniteCacheProxy)cache, "After cache puts");
 
+            doSleep(2_000);
+
+            srv.cluster().state(INACTIVE);
+
+            doSleep(5_000);
             stopGrid(0);
 
             startGrid(0);
+            doSleep(10_000);
         }
         finally {
             stopAllGrids();
+
+            assertFalse("Failure handler should not be triggered.", failureHndTriggered);
         }
     }
 
