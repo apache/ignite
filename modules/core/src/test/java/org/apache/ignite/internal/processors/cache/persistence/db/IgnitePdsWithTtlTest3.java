@@ -140,6 +140,9 @@ public class IgnitePdsWithTtlTest3 extends GridCommonAbstractTest {
         return ccfg;
     }
 
+    /**
+     * Check the node start after deactiovation with TTL cache.
+     */
     @Test
     public void testStartAfterDeactivateWithTtlExpiring() throws Exception {
         try {
