@@ -212,6 +212,28 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
     /** */
     @Test
+    public void testRecoveryWithNoLocalPartitions() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        Ignite ign = startGrids(backups() + 2);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        Map<Integer, Integer> expSnpData = new HashMap<>();
+
+        loadAndCreateSnapshot(true, (incSnp) -> loadData(CACHE, expSnpData, 1_000));
+
+        restartWithCleanPersistence(backups() + 2, F.asList(CACHE, CACHE2));
+
+        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+
+        checkData(expSnpData, CACHE);
+    }
+
+    /** */
+    @Test
     public void testRecoveryOnLastIncrementalSnapshot() throws Exception {
         Map<Integer, Integer> expSnpData = new HashMap<>();
 
@@ -887,7 +909,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
     /** */
     private void restartWithCleanPersistence() throws Exception {
-        restartWithCleanPersistence(F.asList(CACHE, CACHE2));
+        restartWithCleanPersistence(nodes(), F.asList(CACHE, CACHE2));
     }
 
     /** {@inheritDoc} */

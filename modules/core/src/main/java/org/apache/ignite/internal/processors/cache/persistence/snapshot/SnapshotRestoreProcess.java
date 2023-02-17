@@ -1535,9 +1535,16 @@ public class SnapshotRestoreProcess {
             for (int part = 0; part < cacheCtx.topology().partitions(); part++) {
                 int partId = part;
 
-                exec.submit(() -> cacheCtx.topology().localPartition(partId).finalizeUpdateCounters(), cacheCtx.groupId(), part);
+                exec.submit(() -> {
+                    GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(partId);
+
+                    if (locPart != null)
+                        locPart.finalizeUpdateCounters();
+                }, cacheCtx.groupId(), part);
             }
         }
+
+        exec.awaitApplyComplete();
 
         if (log.isInfoEnabled()) {
             log.info("Finished restore incremental snapshot [updatesApplied=" + applied.longValue() +
