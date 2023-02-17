@@ -36,7 +36,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Common class for security tests.
@@ -68,12 +68,12 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteEx startGridAllowAll(String login) throws Exception {
-        return startGrid(login, ALLOW_ALL, false);
+        return startGrid(login, ALL_PERMISSIONS, false);
     }
 
     /** */
     protected IgniteEx startClientAllowAll(String login) throws Exception {
-        return startGrid(login, ALLOW_ALL, true);
+        return startGrid(login, ALL_PERMISSIONS, true);
     }
 
     /**

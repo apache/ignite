@@ -39,7 +39,7 @@ public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapsh
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorJob<VisorSnapshotCheckTaskArg,
+    private static class VisorSnapshotCheckJob extends VisorSnapshotJob<VisorSnapshotCheckTaskArg,
         SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
