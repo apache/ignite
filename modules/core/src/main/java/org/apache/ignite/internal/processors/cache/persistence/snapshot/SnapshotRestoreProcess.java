@@ -1433,13 +1433,14 @@ public class SnapshotRestoreProcess {
     ) throws IgniteCheckedException, IOException {
         File[] segments = walSegments(snpName, snpPath, incIdx);
 
-        IncrementalSnapshotMetadata incMeta = ctx.cache().context().snapshotMgr()
-            .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+        UUID incSnpId = ctx.cache().context().snapshotMgr()
+            .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx)
+            .requestId();
 
-        IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(segments, incMeta);
+        IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(segments, incSnpId);
 
         if (incSnpFinRec == null)
-            throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found [id=" + incMeta.requestId() + ']');
+            throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found [id=" + incSnpId + ']');
 
         CacheStripedExecutor exec = new CacheStripedExecutor(ctx.pools().getStripedExecutorService());
 
@@ -1546,10 +1547,7 @@ public class SnapshotRestoreProcess {
     }
 
     /** @return {@link IncrementalSnapshotFinishRecord} for specified snapshot, or {@code null} if not found. */
-    private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(
-        File[] segments,
-        IncrementalSnapshotMetadata incMeta
-    ) throws IgniteCheckedException {
+    private @Nullable IncrementalSnapshotFinishRecord readFinishRecord(File[] segments, UUID incSnpId) throws IgniteCheckedException {
         List<FileDescriptor> walSegs = new IgniteWalIteratorFactory(log).resolveWalFiles(
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
                 .filesOrDirs(segments));
@@ -1560,7 +1558,7 @@ public class SnapshotRestoreProcess {
             while (it.hasNext()) {
                 IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)it.next().getValue();
 
-                if (finRec.id().equals(incMeta.requestId()))
+                if (finRec.id().equals(incSnpId))
                     return finRec;
             }
         }
