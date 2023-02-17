@@ -23,6 +23,7 @@ import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
+import org.apache.ignite.internal.binary.BinaryContextPredefinedTypesTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -173,7 +174,8 @@ import org.junit.runners.Suite;
 
     GridCacheBinaryObjectUserClassloaderSelfTest.class,
 
-    BinaryMetadataMoveLegacyFolderTest.class
+    BinaryMetadataMoveLegacyFolderTest.class,
+    BinaryContextPredefinedTypesTest.class,
 })
 public class IgniteBinaryObjectsTestSuite {
 }
