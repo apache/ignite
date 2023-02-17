@@ -17,14 +17,21 @@
 
 package org.apache.ignite.internal.processors.security.cluster;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -54,15 +61,15 @@ import static org.junit.Assert.assertNotEquals;
 @RunWith(Parameterized.class)
 public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** Persistence flag. */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter
     public boolean persistence;
 
     /** From-client flag. */
     @Parameterized.Parameter(1)
     public boolean client;
 
-    /** From-thin-client flag. */
-    @Parameterized.Parameter(3)
+    /** Thin client flag. */
+    @Parameterized.Parameter(2)
     public boolean thinClient;
 
     /** @return Test parameters. */
@@ -79,10 +86,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private ClusterState startState = INACTIVE;
-
-    /** */
-    private SecurityPermission[] adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
+    private SecurityPermission[] testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -98,7 +102,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
         SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false);
 
         if (cfg.isClientMode()) {
-            secBuilder.appendSystemPermissions(adminPerms);
+            secBuilder.appendSystemPermissions(testPerms);
 
             secBuilder.appendTaskPermissions(
                 "org.apache.ignite.internal.processors.cluster.ClientSetClusterStateComputeRequest",
@@ -106,22 +110,27 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
             );
         }
         else {
-            secBuilder.appendSystemPermissions(F.concat(adminPerms, JOIN_AS_SERVER, CACHE_CREATE));
+            secBuilder.appendSystemPermissions(F.concat(testPerms, JOIN_AS_SERVER, CACHE_CREATE));
 
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
 
             cfg.setCacheConfiguration(defaultCacheConfiguration());
 
-            cfg.setClusterStateOnStart(startState);
+            cfg.setClusterStateOnStart(INACTIVE);
         }
 
         TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
             instanceName,
             "",
             secBuilder.build(),
-            null,
-            false
+            false,
+            new TestSecurityData(
+                "client",
+                "",
+                create().defaultAllowAll(false).appendSystemPermissions(testPerms).build(),
+                new Permissions()
+            )
         );
 
         cfg.setPluginProviders(secPlugin);
@@ -132,7 +141,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
-        adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
+        testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
 
         testChangeClusterState(
             F.asArray(ACTIVE, INACTIVE, ACTIVE_READ_ONLY, INACTIVE),
@@ -143,7 +152,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testActivationAllowedDeactivationNotAllowed() throws Exception {
-        adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
+        testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
 
         testChangeClusterState(F.asArray(ACTIVE, INACTIVE), F.asArray(TRUE, FALSE));
     }
@@ -151,7 +160,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     @Test
     public void testActivationReadOnlyAllowedDeactivationNotAllowed() throws Exception {
-        adminPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
+        testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
 
         testChangeClusterState(F.asArray(ACTIVE_READ_ONLY, INACTIVE), F.asArray(TRUE, FALSE));
     }
@@ -163,7 +172,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
 
         ig.cluster().state(ACTIVE);
 
-        adminPerms = F.asArray(ADMIN_CLUSTER_DEACTIVE);
+        testPerms = F.asArray(ADMIN_CLUSTER_DEACTIVE);
 
         testChangeClusterState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
     }
@@ -171,17 +180,14 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     /** */
     private void testChangeClusterState(ClusterState[] states, Boolean[] allowed) throws Exception {
         assert states != null && allowed != null && states.length == allowed.length && states.length > 0;
-
         assert !thinClient || client;
 
-        Ignite ig0 = startGrid(G.allGrids().size());
+        Ignite ig = startGrid(G.allGrids().size());
 
         startGrid(G.allGrids().size());
         startGrid(G.allGrids().size());
 
-        Ignite ig = client ? startClientGrid(G.allGrids().size()) : ig0;
-
-        assert !client || ig.configuration().isClientMode();
+        Consumer<ClusterState> action = changeStateAction(ig);
 
         for (int i = 0; i < states.length; ++i) {
             assert allowed[i] != null;
@@ -192,23 +198,13 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
             assert stateBefore != stateTo;
 
             if (allowed[i]) {
-                ig.cluster().state(stateTo);
+                action.accept(stateTo);
 
                 assertNotEquals(stateBefore, ig.cluster().state());
                 assertEquals(stateTo, ig.cluster().state());
             }
             else {
-                assertThrows(
-                    null,
-                    () -> {
-                        ig.cluster().state(stateTo);
-
-                        return null;
-                    },
-                    org.apache.ignite.plugin.security.SecurityException.class,
-                    "Authorization failed [perm=" + (stateTo == INACTIVE ? ADMIN_CLUSTER_DEACTIVE :
-                        ADMIN_CLUSTER_ACTIVATE)
-                );
+                ensureThrows(action, stateTo);
 
                 assertEquals(stateBefore, ig.cluster().state());
                 assertNotEquals(stateTo, ig.cluster().state());
@@ -217,13 +213,69 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private void testAllowedAtStart(ClusterState startState) throws Exception {
-        this.startState = startState;
+    private void ensureThrows(Consumer<ClusterState> action, ClusterState stateTo) {
+        if (thinClient) {
+            assertThrows(
+                null,
+                () -> {
+                    action.accept(stateTo);
 
-        adminPerms = F.asArray(startState == INACTIVE ? ADMIN_CLUSTER_ACTIVATE : ADMIN_CLUSTER_DEACTIVE);
+                    return null;
+                },
+                ClientAuthorizationException.class,
+                "User is not authorized to perform this operation"
+            );
+        }
+        else {
+            assertThrows(
+                null,
+                () -> {
+                    action.accept(stateTo);
 
-        Ignite ig = startGrids(3);
+                    return null;
+                },
+                org.apache.ignite.plugin.security.SecurityException.class, "Authorization failed [perm=" +
+                    (stateTo == INACTIVE ? ADMIN_CLUSTER_DEACTIVE : ADMIN_CLUSTER_ACTIVATE)
+            );
+        }
+    }
 
-        assertEquals(startState, ig.cluster().state());
+    /** */
+    private Consumer<ClusterState> changeStateAction(Ignite srv) throws Exception {
+        if (client) {
+            if (thinClient) {
+                IgniteClient thinClient = G.startClient(clientConfiguration());
+
+                return new Consumer<ClusterState>() {
+                    /** {@inheritDoc} */
+                    @Override public void accept(ClusterState state) {
+                        thinClient.cluster().state(state);
+                    }
+                };
+            }
+            else {
+                Ignite client = startClientGrid(G.allGrids().size());
+
+                return new Consumer<ClusterState>() {
+                    /** {@inheritDoc} */
+                    @Override public void accept(ClusterState state) {
+                        client.cluster().state(state);
+                    }
+                };
+            }
+        }
+        else {
+            return new Consumer<ClusterState>() {
+                /** {@inheritDoc} */
+                @Override public void accept(ClusterState state) {
+                    srv.cluster().state(state);
+                }
+            };
+        }
+    }
+
+    /** */
+    private static ClientConfiguration clientConfiguration() {
+        return new ClientConfiguration().setAddresses(Config.SERVER).setUserName("client").setUserPassword("");
     }
 }

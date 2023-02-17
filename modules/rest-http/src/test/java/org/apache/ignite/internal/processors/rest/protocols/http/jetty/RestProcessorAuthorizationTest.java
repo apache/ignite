@@ -81,7 +81,8 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
                         SecurityPermission perm,
                         SecurityContext securityCtx
                     ) throws SecurityException {
-                        authorizationCtxList.add(F.t(name, perm, securityCtx));
+                        if (perm.name().startsWith("CACHE_"))
+                            authorizationCtxList.add(F.t(name, perm, securityCtx));
 
                         super.authorize(name, perm, securityCtx);
                     }
