@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -108,6 +109,8 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -127,6 +130,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -174,6 +179,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_ACTIVATE;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -201,6 +208,33 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     protected static File customDiagnosticDir;
+
+    /** */
+    private SecurityPermission[] clientPermissions;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (!F.isEmpty(clientPermissions)) {
+            TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
+                igniteInstanceName,
+                "",
+                create().defaultAllowAll(true).build(),
+                false,
+                new TestSecurityData(
+                    "client",
+                    "",
+                    create().defaultAllowAll(false).appendSystemPermissions(clientPermissions).build(),
+                    new Permissions()
+                )
+            );
+
+            cfg.setPluginProviders(secPlugin);
+        }
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -244,6 +278,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testActivate() throws Exception {
+        clientPermissions = F.asArray(ADMIN_CLUSTER_ACTIVATE);
+
         Ignite ignite = startGrids(1);
 
         injectTestSystemOut();

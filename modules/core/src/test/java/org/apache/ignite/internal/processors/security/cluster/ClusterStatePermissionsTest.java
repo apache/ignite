@@ -86,7 +86,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private SecurityPermission[] testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
+    private SecurityPermission[] testPerms;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -143,7 +143,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     public void testActivationDeactivationAllowed() throws Exception {
         testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVE);
 
-        testChangeClusterState(
+        doTestChangeState(
             F.asArray(ACTIVE, INACTIVE, ACTIVE_READ_ONLY, INACTIVE),
             F.asArray(TRUE, TRUE, TRUE, TRUE)
         );
@@ -154,7 +154,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     public void testActivationAllowedDeactivationNotAllowed() throws Exception {
         testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
 
-        testChangeClusterState(F.asArray(ACTIVE, INACTIVE), F.asArray(TRUE, FALSE));
+        doTestChangeState(F.asArray(ACTIVE, INACTIVE), F.asArray(TRUE, FALSE));
     }
 
     /** */
@@ -162,7 +162,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     public void testActivationReadOnlyAllowedDeactivationNotAllowed() throws Exception {
         testPerms = F.asArray(ADMIN_CLUSTER_ACTIVATE);
 
-        testChangeClusterState(F.asArray(ACTIVE_READ_ONLY, INACTIVE), F.asArray(TRUE, FALSE));
+        doTestChangeState(F.asArray(ACTIVE_READ_ONLY, INACTIVE), F.asArray(TRUE, FALSE));
     }
 
     /** */
@@ -174,11 +174,11 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
 
         testPerms = F.asArray(ADMIN_CLUSTER_DEACTIVE);
 
-        testChangeClusterState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
+        doTestChangeState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
     }
 
     /** */
-    private void testChangeClusterState(ClusterState[] states, Boolean[] allowed) throws Exception {
+    private void doTestChangeState(ClusterState[] states, Boolean[] allowed) throws Exception {
         assert states != null && allowed != null && states.length == allowed.length && states.length > 0;
         assert !thinClient || client;
 
@@ -244,7 +244,8 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     private Consumer<ClusterState> changeStateAction(Ignite srv) throws Exception {
         if (client) {
             if (thinClient) {
-                IgniteClient thinClient = G.startClient(clientConfiguration());
+                IgniteClient thinClient = G.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                    .setUserName("client").setUserPassword(""));
 
                 return new Consumer<ClusterState>() {
                     /** {@inheritDoc} */
@@ -272,10 +273,5 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
                 }
             };
         }
-    }
-
-    /** */
-    private static ClientConfiguration clientConfiguration() {
-        return new ClientConfiguration().setAddresses(Config.SERVER).setUserName("client").setUserPassword("");
     }
 }
