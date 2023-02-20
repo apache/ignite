@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.WalTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotVerifyException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -339,8 +340,8 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         GridTestUtils.assertThrowsAnyCause(log, () ->
             grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 2).get(getTestTimeout()),
-            IgniteException.class,
-            "Failed to list marshaller directory");
+            IgniteSnapshotVerifyException.class,
+            "No incremental snapshot found");
     }
 
     /** */
@@ -363,7 +364,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
-            IgniteCheckedException.class,
+            IgniteSnapshotVerifyException.class,
             "No WAL segments found for incremental snapshot");
 
         awaitPartitionMapExchange();
@@ -715,13 +716,11 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
                 IgniteCacheObjectProcessor objPrc = grid(n).context().cacheObjects();
 
                 if (shouldExists) {
-                    assertEquals(mappings.toString(), 1, mappings.size());
-                    assertTrue(mappings.get(0).containsKey(persTypeId));
+                    assertTrue(mappings.stream().anyMatch(m -> m.containsKey(persTypeId)));
                     assertNotNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
                 }
                 else {
-                    assertEquals(mappings.toString(), 1, mappings.size());
-                    assertTrue(mappings.get(0).isEmpty());
+                    assertFalse(mappings.stream().anyMatch(m -> m.containsKey(persTypeId)));
                     assertNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
                 }
             }
