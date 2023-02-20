@@ -1683,6 +1683,15 @@ public class SnapshotRestoreProcess {
             orElse(checkNodeLeft(opCtx0.nodes(), res.keySet()));
 
         if (failure == null) {
+            if (fut != null) {  // Call on originated node only.
+                Set<String> cacheGrps = opCtx0.cfgs.keySet().stream()
+                    .map(cacheId -> CU.cacheOrGroupName(ctx.cache().cacheDescriptor(cacheId).cacheConfiguration()))
+                    .collect(Collectors.toSet());
+
+                ctx.cache().context().snapshotMgr()
+                    .warnAtomicCachesInIncrementalSnapshot(opCtx0.snpName, opCtx0.incIdx, cacheGrps);
+            }
+
             finishProcess(reqId, null);
 
             return;
