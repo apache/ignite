@@ -119,7 +119,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disabled(int grpId) {
+    @Override public boolean disabled(int grpId, long pageId) {
         return false;
     }
 

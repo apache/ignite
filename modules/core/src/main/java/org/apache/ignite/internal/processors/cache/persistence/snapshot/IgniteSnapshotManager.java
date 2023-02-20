@@ -1574,9 +1574,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             .callAsync(
                 BROADCAST,
                 new CancelSnapshotCallable(null, name),
-                options(cctx.discovery().aliveServerNodes())
-                    .withFailoverDisabled()
-                    .withAuthenticationDisabled()
+                options(cctx.discovery().aliveServerNodes()).withFailoverDisabled()
             );
     }
 
@@ -1593,9 +1591,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             .callAsync(
                 BROADCAST,
                 new CancelSnapshotCallable(reqId, null),
-                options(cctx.discovery().aliveServerNodes())
-                    .withFailoverDisabled()
-                    .withAuthenticationDisabled()
+                options(cctx.discovery().aliveServerNodes()).withFailoverDisabled()
             );
 
         return new IgniteFutureImpl<>(fut0);
@@ -1745,7 +1741,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().execute(
             SnapshotMetadataCollectorTask.class,
             taskArg,
-            options(bltNodes).withAuthenticationDisabled()
+            options(bltNodes)
         ).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
@@ -1827,7 +1823,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 kctx0.task().execute(
                         cls,
                         new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath),
-                        options(new ArrayList<>(metas.keySet())).withAuthenticationDisabled()
+                        options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
@@ -2021,9 +2017,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .callAsync(
                         BALANCE,
                         new CreateSnapshotCallable(name, incremental),
-                        options(Collections.singletonList(crd))
-                            .withFailoverDisabled()
-                            .withAuthenticationDisabled()
+                        options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
 
@@ -2774,7 +2768,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(
             taskCls,
             snpName,
-            options(bltNodes).withAuthenticationDisabled()
+            options(bltNodes)
         ));
     }
 

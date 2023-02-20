@@ -34,7 +34,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Test for disabled {@link IgniteAuthenticationProcessor}.
@@ -206,7 +206,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     public void testBothAuthenticationAndSecurityPluginConfiguration() {
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             startGrid(configuration(0, true, false)
-                .setPluginProviders(new TestSecurityPluginProvider("login", "", ALLOW_ALL, false)));
+                .setPluginProviders(new TestSecurityPluginProvider("login", "", ALL_PERMISSIONS, false)));
 
             return null;
         },

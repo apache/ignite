@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,7 +57,9 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -212,6 +215,52 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
     /** */
     @Test
+    public void testRecoveryOnIncrementalSnapshotWithMultipleSegments() throws Exception {
+        Map<Integer, Integer> expSnpData = new HashMap<>();
+
+        loadAndCreateSnapshot(true, (incSnp) -> {
+            loadData(CACHE, expSnpData, 1_000);
+
+            if (incSnp) {
+                for (int i = 0; i < 3; i++) {
+                    loadData(CACHE, expSnpData, 1_000);
+
+                    rollWalSegment(grid(RND.nextInt(nodes())));
+                }
+            }
+        });
+
+        restartWithCleanPersistence();
+
+        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+
+        checkData(expSnpData, CACHE);
+    }
+
+    /** */
+    @Test
+    public void testRecoveryWithNoLocalPartitions() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        Ignite ign = startGrids(backups() + 2);
+
+        ign.cluster().state(ClusterState.ACTIVE);
+
+        Map<Integer, Integer> expSnpData = new HashMap<>();
+
+        loadAndCreateSnapshot(true, (incSnp) -> loadData(CACHE, expSnpData, 1_000));
+
+        restartWithCleanPersistence(backups() + 2, F.asList(CACHE, CACHE2));
+
+        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+
+        checkData(expSnpData, CACHE);
+    }
+
+    /** */
+    @Test
     public void testRecoveryOnLastIncrementalSnapshot() throws Exception {
         Map<Integer, Integer> expSnpData = new HashMap<>();
 
@@ -256,8 +305,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         checkData(expSnpData, CACHE);
 
-        for (int i = 0; i < nodes(); i++)
-            assertNull(grid(0).cache(CACHE2));
+        assertNoCaches(Collections.singleton(CACHE2));
 
         restartWithCleanPersistence();
 
@@ -265,8 +313,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         checkData(expSnpData, CACHE2);
 
-        for (int i = 0; i < nodes(); i++)
-            assertNull(grid(i).cache(CACHE));
+        assertNoCaches(Collections.singleton(CACHE));
     }
 
     /** */
@@ -293,7 +340,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         GridTestUtils.assertThrowsAnyCause(log, () ->
             grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 2).get(getTestTimeout()),
             IgniteException.class,
-            "Incremental snapshot doesn't exists");
+            "Failed to list marshaller directory");
     }
 
     /** */
@@ -321,10 +368,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < nodes(); i++) {
-            assertNull(grid(i).cache(CACHE));
-            assertNull(grid(i).cache(CACHE2));
-        }
+        assertNoCaches(F.asList(CACHE, CACHE2));
     }
 
     /** */
@@ -334,7 +378,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        corruptIncrementalSnapshot(1, 1);
+        corruptIncrementalSnapshot(1, 1, 0);
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
@@ -342,10 +386,56 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < nodes(); i++) {
-            assertNull("node" + i, grid(i).cache(CACHE));
-            assertNull("node" + i, grid(i).cache(CACHE2));
+        assertNoCaches(F.asList(CACHE, CACHE2));
+    }
+
+    /** */
+    @Test
+    public void testFailedOnCorruptedIntermediateWalSegment() throws Exception {
+        int crptNodeIdx = 1;
+
+        loadAndCreateSnapshot(true, (incSnp) -> {
+            loadData(CACHE, new HashMap<>(), 1_000);
+
+            if (incSnp) {
+                // Prepare incremental snapshot of 3 segments.
+                for (int i = 0; i < 3; i++) {
+                    // Load data after ClusterSnapshotRecord.
+                    loadData(CACHE, new HashMap<>(), 1_000);
+
+                    rollWalSegment(grid(crptNodeIdx));
+                }
+
+                loadData(CACHE, new HashMap<>(), 1_000);
+            }
+        });
+
+        restartWithCleanPersistence();
+
+        corruptIncrementalSnapshot(crptNodeIdx, 1, 1);
+
+        Throwable ex = GridTestUtils.assertThrows(log,
+            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
+            Throwable.class, null);
+
+        boolean expExc = false;
+
+        // Corrupted WAL segment leads to different errors.
+        if (ex instanceof IgniteException) {
+            if (ex.getMessage().contains("Failed to read WAL record at position")
+                || ex.getMessage().contains("WAL tail reached not in the last available segment")) {
+                expExc = true;
+            }
         }
+        else if (ex instanceof AssertionError) {
+            expExc = true;
+        }
+
+        assertTrue(ex.getMessage(), expExc);
+
+        awaitPartitionMapExchange();
+
+        assertNoCaches(F.asList(CACHE, CACHE2));
     }
 
     /** */
@@ -864,16 +954,20 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     }
 
     /** Corrupts WAL segment in incremental snapshot. */
-    private void corruptIncrementalSnapshot(int nodeIdx, int incIdx) throws Exception {
+    private void corruptIncrementalSnapshot(int nodeIdx, int incIdx, int segIdx) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
         File incSnpDir = grid(nodeIdx).context().cache().context().snapshotMgr()
-                .incrementalSnapshotLocalDir(SNP, null, incIdx);
+            .incrementalSnapshotLocalDir(SNP, null, incIdx);
 
         File[] incSegs = incSnpDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
+        Arrays.sort(incSegs);
+
+        File crptSeg = incSegs[segIdx];
+
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filesOrDirs(incSegs[0]);
+            .filesOrDirs(crptSeg);
 
         try (WALIterator it = factory.iterator(params)) {
             for (int i = 0; i < 400; i++)
@@ -881,13 +975,36 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
             WALPointer corruptPtr = it.next().getKey();
 
-            WalTestUtils.corruptWalSegmentFile(new FileDescriptor(incSegs[0]), corruptPtr);
+            WalTestUtils.corruptWalSegmentFile(new FileDescriptor(incSegs[segIdx]), corruptPtr);
         }
     }
 
     /** */
     private void restartWithCleanPersistence() throws Exception {
-        restartWithCleanPersistence(F.asList(CACHE, CACHE2));
+        restartWithCleanPersistence(nodes(), F.asList(CACHE, CACHE2));
+    }
+
+    /** */
+    private void assertNoCaches(Collection<String> caches) {
+        for (int i = 0; i < nodes(); i++) {
+            for (String cache: caches)
+                assertNull("[node=" + i + ", cache=" + cache + ']', grid(i).cache(cache));
+        }
+    }
+
+    /** Rolls WAL segment for specified grid. */
+    private void rollWalSegment(IgniteEx g) {
+        g.context().cache().context().database().checkpointReadLock();
+
+        try {
+            g.context().cache().context().wal().log(new ClusterSnapshotRecord("dummy"), RolloverType.CURRENT_SEGMENT);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            g.context().cache().context().database().checkpointReadUnlock();
+        }
     }
 
     /** {@inheritDoc} */

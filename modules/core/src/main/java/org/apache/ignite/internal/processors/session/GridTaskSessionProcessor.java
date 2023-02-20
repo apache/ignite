@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -81,7 +82,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
      * @param internal {@code True} in case of internal task.
      * @param execName Custom executor name.
-     * @param login User who created the session, {@code null} if security is not enabled.
+     * @param secCtx Security context of the user who created the session, {@code null} if security is not enabled.
      * @return New session if one did not exist, or existing one.
      */
     public GridTaskSessionImpl createTaskSession(
@@ -99,7 +100,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         boolean fullSup,
         boolean internal,
         @Nullable String execName,
-        @Nullable Object login
+        @Nullable SecurityContext secCtx
     ) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
@@ -118,7 +119,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 false,
                 internal,
                 execName,
-                login
+                secCtx
             );
         }
 
@@ -144,7 +145,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         true,
                         internal,
                         execName,
-                        login
+                        secCtx
                     )
                 );
 

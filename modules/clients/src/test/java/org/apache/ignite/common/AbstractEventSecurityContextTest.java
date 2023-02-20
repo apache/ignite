@@ -111,7 +111,7 @@ public abstract class AbstractEventSecurityContextTest extends AbstractSecurityT
     }
 
     /** */
-    protected static JsonNode sendRestRequest(GridRestCommand cmd, Collection<String> params, String login) throws IOException {
+    public static JsonNode sendRestRequest(GridRestCommand cmd, Collection<String> params, String login) throws IOException {
         String url = "http://127.0.0.1:" + DFLT_REST_PORT + "/ignite" +
             "?ignite.login=" + login +
             "&ignite.password=" +

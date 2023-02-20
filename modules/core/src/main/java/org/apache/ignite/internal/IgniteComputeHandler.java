@@ -679,6 +679,20 @@ public class IgniteComputeHandler {
         return this;
     }
 
+    /** */
+    public IgniteComputeHandler asPublicRequest() {
+        guard();
+
+        try {
+            opts.get().asPublicRequest();
+        }
+        finally {
+            unguard();
+        }
+
+        return this;
+    }
+
     /**
      * <tt>ctx.gateway().readLock()</tt>
      */
