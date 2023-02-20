@@ -58,7 +58,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /** Base class for testing incremental snapshot algorithm. */
@@ -209,25 +208,19 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
     }
 
     /** Prepare for snapshot restoring - restart grids, with clean persistence. */
-    protected void restartWithCleanPersistence(List<String> caches) throws Exception {
+    protected void restartWithCleanPersistence(int nodes, List<String> caches) throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir(true);
 
-        startGrids(nodes());
+        startGrids(nodes);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         // Caches are configured with IgniteConiguration, need to destroy them before restoring snapshot.
         grid(0).destroyCaches(caches);
 
-        for (int i = 0; i < nodes(); i++) {
-            String nodeFolder = U.maskForFileName(getTestIgniteInstanceName(i));
-
-            Path path = Paths.get(U.defaultWorkDirectory(), DFLT_STORE_DIR, nodeFolder);
-
-            GridTestUtils.waitForCondition(() -> !path.toFile().exists(), 1_000, 10);
-        }
+        awaitPartitionMapExchange();
     }
 
     /**
