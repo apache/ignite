@@ -193,7 +193,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         File[] links = wal0.walCdcDirectory().listFiles(WAL_SEGMENT_FILE_FILTER);
 
         assertEquals(expLinks.size(), links.length);
-        Arrays.stream(links).map(File::toPath).map(CdcMain::segmentIndex)
+        Arrays.stream(links).map(File::toPath).map(FileWriteAheadLogManager::segmentIndex)
             .allMatch(expLinks::contains);
     }
 
