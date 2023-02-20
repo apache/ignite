@@ -203,7 +203,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /**
      * @return {@link IgniteCompute} for this cluster group.
      */
-    public final IgniteCompute compute() {
+    public final IgniteComputeImpl compute() {
         if (compute == null) {
             assert ctx != null;
 

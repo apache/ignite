@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -109,8 +108,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -130,8 +127,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -179,8 +174,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_ACTIVATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -208,33 +201,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** */
     protected static File customDiagnosticDir;
-
-    /** */
-    private SecurityPermission[] clientPermissions;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (!F.isEmpty(clientPermissions)) {
-            TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
-                igniteInstanceName,
-                "",
-                create().defaultAllowAll(true).build(),
-                false,
-                new TestSecurityData(
-                    "client",
-                    "",
-                    create().defaultAllowAll(false).appendSystemPermissions(clientPermissions).build(),
-                    new Permissions()
-                )
-            );
-
-            cfg.setPluginProviders(secPlugin);
-        }
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -278,8 +244,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testActivate() throws Exception {
-        clientPermissions = F.asArray(ADMIN_CLUSTER_ACTIVATE);
-
         Ignite ignite = startGrids(1);
 
         injectTestSystemOut();
@@ -339,7 +303,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param cacheToCorrupt Function determining should cache with given name be corrupted or not.
      */
     private File startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
-        @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
+                                                  @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
         assert cachesToStart != null && cachesToStart.length > 0;
 
         IgniteEx ig0 = startGrid(0);
@@ -488,8 +452,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(f ->
                 f.getName().contains(cacheName0)
-                    || f.getName().contains(cacheName1)
-                    || f.getName().contains(cacheName2)
+                || f.getName().contains(cacheName1)
+                || f.getName().contains(cacheName2)
             )
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
@@ -1394,7 +1358,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String what = "There is no connectivity between the following nodes";
 
         assertContains(log, out.replaceAll("[\\W_]+", "").trim(),
-            what.replaceAll("[\\W_]+", "").trim());
+                            what.replaceAll("[\\W_]+", "").trim());
     }
 
     /**
@@ -1828,14 +1792,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test kill by xid.
         validate(h, map -> {
-                assertEquals(1, map.size());
+            assertEquals(1, map.size());
 
-                Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+            Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-                VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
+            VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
 
-                assertEquals(toKill[0].getXid(), info.getXid());
-            }, "--tx", "--kill",
+            assertEquals(toKill[0].getXid(), info.getXid());
+        }, "--tx", "--kill",
             "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "--nodes", grid(0).localNode().consistentId().toString());
 
@@ -2066,8 +2030,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
-            .filter(s -> s.contains("Arguments:"))
-            .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+                                        .filter(s -> s.contains("Arguments:"))
+                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
         assertFalse(testOutStr, isInstanse1Found);

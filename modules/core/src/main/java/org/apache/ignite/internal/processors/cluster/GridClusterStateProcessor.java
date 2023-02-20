@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
@@ -48,11 +47,11 @@ import org.apache.ignite.events.ClusterStateChangeStartedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
@@ -76,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -1362,7 +1362,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param blt New cluster state.
      * @param forceBlt New cluster state.
      */
-    private IgniteInternalFuture<Void> sendComputeChangeGlobalState(
+    private IgniteInternalFuture<?> sendComputeChangeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
         BaselineTopology blt,
@@ -1378,12 +1378,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", client=" + ctx.clientNode() + "]"
         );
 
-        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
-
-        IgniteFuture<Void> fut = comp.runAsync(new ClientSetClusterStateComputeRequest(state, forceDeactivation, blt,
-            forceBlt));
-
-        return ((IgniteFutureImpl<Void>)fut).internalFuture();
+        return ctx.closure().runAsync(
+            GridClosureCallMode.BALANCE,
+            new ClientSetClusterStateComputeRequest(state, forceDeactivation, blt, forceBlt),
+            TaskExecutionOptions.options(ctx.discovery().serverNodes((topVer))).withFailoverDisabled()
+                .withAuthenticationDisabled()
+        );
     }
 
     /** {@inheritDoc} */

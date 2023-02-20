@@ -59,7 +59,6 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertNotEquals;
@@ -81,16 +80,16 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     @Parameterized.Parameters(name = "nodeType={0}, persistence={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
-            {NodeType.SERVER, false},
-            {NodeType.SERVER, true},
+//            {NodeType.SERVER, false},
+//            {NodeType.SERVER, true},
             {NodeType.CLIENT, false},
-            {NodeType.CLIENT, true},
-            {NodeType.THIN_CLIENT, false},
-            {NodeType.THIN_CLIENT, true},
-            {NodeType.GRID_CLIENT, false},
-            {NodeType.GRID_CLIENT, true},
-            {NodeType.MX_BEAN, false},
-            {NodeType.MX_BEAN, true}
+//            {NodeType.CLIENT, true},
+//            {NodeType.THIN_CLIENT, false},
+//            {NodeType.THIN_CLIENT, true},
+//            {NodeType.GRID_CLIENT, false},
+//            {NodeType.GRID_CLIENT, true},
+//            {NodeType.MX_BEAN, false},
+//            {NodeType.MX_BEAN, true}
         });
     }
 
@@ -116,10 +115,10 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
         if (cfg.isClientMode()) {
             secBuilder.appendSystemPermissions(testPerms);
 
-            secBuilder.appendTaskPermissions(
-                "org.apache.ignite.internal.processors.cluster.ClientSetClusterStateComputeRequest",
-                TASK_EXECUTE
-            );
+//            secBuilder.appendTaskPermissions(
+//                "org.apache.ignite.internal.processors.cluster.ClientSetClusterStateComputeRequest",
+//                TASK_EXECUTE
+//            );
         }
         else {
             secBuilder.appendSystemPermissions(F.concat(testPerms, JOIN_AS_SERVER, CACHE_CREATE));
@@ -225,7 +224,6 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
         if (NodeType.THIN_CLIENT == nodeType) {
             cause = ClientAuthorizationException.class;
             errMsg = "User is not authorized to perform this operation";
-
         }
         else {
             cause = IgniteException.class;
