@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +39,8 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -46,9 +49,17 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Test partition awareness of thin client on unstable topology.
  */
+@RunWith(Parameterized.class)
 public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** */
-    private boolean sslEnabled;
+    @Parameterized.Parameter
+    public boolean sslEnabled;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "sslEnabled={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{false}, {true}});
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -256,8 +267,6 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
     /** */
     @Test
     public void testSessionCloseBeforeHandshake() throws Exception {
-        sslEnabled = true;
-
         startGrid(0);
 
         ClientConfiguration cliCfg = getClientConfiguration(0)
@@ -278,8 +287,6 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
     /** */
     @Test
     public void testCreateSessionAfterClose() throws Exception {
-        sslEnabled = true;
-
         startGrids(2);
 
         CountDownLatch srvStopped = new CountDownLatch(1);
