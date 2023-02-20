@@ -135,6 +135,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Pending requests. */
     private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
 
+    /** Lock to safely close pending requests. */
+    private final ReadWriteLock pendingReqsLock = new ReentrantReadWriteLock();
+
     /** Topology change listeners. */
     private final Collection<Consumer<ClientChannel>> topChangeLsnrs = new CopyOnWriteArrayList<>();
 
@@ -273,8 +276,15 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
             U.closeQuiet(sock);
 
-            for (ClientRequestFuture pendingReq : pendingReqs.values())
-                pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+            pendingReqsLock.writeLock().lock();
+
+            try {
+                for (ClientRequestFuture pendingReq : pendingReqs.values())
+                    pendingReq.onDone(new ClientConnectionException("Channel is closed", cause));
+            }
+            finally {
+                pendingReqsLock.writeLock().unlock();
+            }
 
             notificationLsnrsGuard.readLock().lock();
 
@@ -333,17 +343,26 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         PayloadOutputChannel payloadCh = new PayloadOutputChannel(this);
 
         try {
-            if (closed()) {
-                ClientConnectionException err = new ClientConnectionException("Channel is closed");
+            ClientRequestFuture fut;
 
-                eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+            pendingReqsLock.readLock().lock();
 
-                throw err;
+            try {
+                if (closed()) {
+                    ClientConnectionException err = new ClientConnectionException("Channel is closed");
+
+                    eventListener.onRequestFail(connDesc, id, op.code(), op.name(), System.nanoTime() - startTimeNanos, err);
+
+                    throw err;
+                }
+
+                fut = new ClientRequestFuture(id, op, startTimeNanos);
+
+                pendingReqs.put(id, fut);
             }
-
-            ClientRequestFuture fut = new ClientRequestFuture(id, op, startTimeNanos);
-
-            pendingReqs.put(id, fut);
+            finally {
+                pendingReqsLock.readLock().unlock();
+            }
 
             eventListener.onRequestStart(connDesc, id, op.code(), op.name());
 
@@ -691,9 +710,21 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             new ProtocolContext(ver).toString(), null));
 
         while (true) {
-            ClientRequestFuture fut = new ClientRequestFuture(requestId, ClientOperation.HANDSHAKE);
+            ClientRequestFuture fut;
 
-            pendingReqs.put(requestId, fut);
+            pendingReqsLock.readLock().lock();
+
+            try {
+                if (closed())
+                    throw new ClientConnectionException("Channel is closed");
+
+                fut = new ClientRequestFuture(requestId, ClientOperation.HANDSHAKE);
+
+                pendingReqs.put(requestId, fut);
+            }
+            finally {
+                pendingReqsLock.readLock().unlock();
+            }
 
             handshakeReq(ver, user, pwd, userAttrs);
 
