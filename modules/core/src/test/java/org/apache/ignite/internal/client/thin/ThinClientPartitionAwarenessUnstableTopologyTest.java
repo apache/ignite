@@ -293,6 +293,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         AtomicBoolean dfltInited = new AtomicBoolean();
 
+        // The client should close pending requests on closing without waiting.
         try (TcpIgniteClient client = new TcpIgniteClient((cfg, connMgr) -> {
             // Skip default channel to successful client start.
             if (!dfltInited.compareAndSet(false, true)) {
