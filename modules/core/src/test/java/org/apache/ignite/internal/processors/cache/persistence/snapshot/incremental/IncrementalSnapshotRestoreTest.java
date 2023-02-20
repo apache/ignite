@@ -340,7 +340,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         GridTestUtils.assertThrowsAnyCause(log, () ->
             grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 2).get(getTestTimeout()),
             IgniteException.class,
-            "Incremental snapshot doesn't exists");
+            "Failed to list marshaller directory");
     }
 
     /** */
