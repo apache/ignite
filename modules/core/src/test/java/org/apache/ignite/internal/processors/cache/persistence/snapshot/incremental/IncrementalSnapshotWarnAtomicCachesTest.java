@@ -211,7 +211,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         awaitPartitionMapExchange();
 
-        LogListener lsnr = warnLogListener(warnAtomicCaches, 0);  // Should warn only for incremental caches.
+        LogListener lsnr = warnLogListener(warnAtomicCaches, 0);  // Should not warn for full snapshots.
 
         lsnLogger.registerListener(lsnr);
 
