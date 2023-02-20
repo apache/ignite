@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -78,69 +83,82 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
     /** */
     @Test
-    public void testAtomicCacheWarn() throws Exception {
-        checkWarnMessageOnCreateSnapshot("cache",
-            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache", "grp"));
-
-        checkWarnMessageOnRestoreSnapshot("cache", null);
+    public void testTransactionalCacheNoWarn() throws Exception {
+        checkCachesSnapshotCreationAndRestore(
+            cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache3", null));
     }
 
     /** */
     @Test
-    public void testAtomicCacheNoBackupsNoWarn() throws Exception {
-        checkWarnMessageOnCreateSnapshot(null,
-            cacheConfiguration(CacheAtomicityMode.ATOMIC, 0, "cache", "grp"));
-
-        checkWarnMessageOnRestoreSnapshot(null, null);
+    public void testDefaultCacheGroup() throws Exception {
+        checkCachesSnapshotCreationAndRestore(prepareCacheConfs(null, null, null, null));
     }
 
     /** */
     @Test
-    public void testMultipleCachesSingleAtomicWarn() throws Exception {
-        checkWarnMessageOnCreateSnapshot("cache0",
-            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache0", "grp0"),
-            cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache1", "grp1"));
-
-        checkWarnMessageOnRestoreSnapshot("cache0", null);
-        checkWarnMessageOnRestoreSnapshot("cache0", F.asList("grp0"));
-        checkWarnMessageOnRestoreSnapshot(null, F.asList("grp1"));
+    public void testMultipleCachesInGroupWarn() throws Exception {
+        checkCachesSnapshotCreationAndRestore(prepareCacheConfs(null, "grp0", "grp0", null));
     }
 
     /** */
     @Test
-    public void testCacheGroupWithAtomicWarn() throws Exception {
-        checkWarnMessageOnCreateSnapshot("cache0",
-            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache0", "grp"),
-            cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache1", "grp"));
-
-        checkWarnMessageOnRestoreSnapshot("cache0", null);
+    public void testMixedGroupWarnOnlyAtomic() throws Exception {
+        checkCachesSnapshotCreationAndRestore(prepareCacheConfs(null, null, "grp0", "grp0"));
     }
 
     /** */
-    @Test
-    public void testMultipleAtomicCachesWarn() throws Exception {
-        checkWarnMessageOnCreateSnapshot("cache0, cache2",
-            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache0", "grp"),
-            cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache1", "grp"),
-            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache2", "grp1"));
-
-        checkWarnMessageOnRestoreSnapshot("cache[0,2], cache[0,2]", null);
-        checkWarnMessageOnRestoreSnapshot("cache0", F.asList("grp"));
-        checkWarnMessageOnRestoreSnapshot("cache2", F.asList("grp1"));
+    private CacheConfiguration<Integer, Integer>[] prepareCacheConfs(String grp0, String grp1, String grp2, String grp3) {
+        return new CacheConfiguration[] {
+            cacheConfiguration(CacheAtomicityMode.ATOMIC, 0, "cache0", grp0),
+            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache1", grp1),
+            cacheConfiguration(CacheAtomicityMode.ATOMIC, 1, "cache2", grp2),
+            cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache3", grp3)
+        };
     }
 
     /** */
-    @Test
-    public void testTxCacheNoWarn() throws Exception {
-        checkWarnMessageOnCreateSnapshot(null,
-            cacheConfiguration(CacheAtomicityMode.TRANSACTIONAL, 1, "cache", "grp"));
+    public void checkCachesSnapshotCreationAndRestore(CacheConfiguration<Integer, Integer>... ccfgs) throws Exception {
+        List<Integer> allWarnCaches = new ArrayList<>();
+        Map<String, List<Integer>> warnCachesByGrps = new HashMap<>();
 
-        checkWarnMessageOnRestoreSnapshot(null, null);
+        for (CacheConfiguration<?, ?> ccfg: ccfgs) {
+            if (ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC && ccfg.getBackups() > 0) {
+                String grpName = ccfg.getGroupName() == null ? ccfg.getName() : ccfg.getGroupName();
+
+                warnCachesByGrps.compute(grpName, (grp, caches) -> {
+                    caches = caches == null ? new ArrayList<>() : caches;
+
+                    int cacheNum = Integer.parseInt(ccfg.getName().replace("cache", ""));
+
+                    caches.add(cacheNum);
+
+                    allWarnCaches.add(cacheNum);
+
+                    return caches;
+                });
+            }
+        }
+
+        checkWarnMessageOnCreateSnapshot(cachesPattern(allWarnCaches), ccfgs);
+        checkWarnMessageOnRestoreSnapshot(cachesPattern(allWarnCaches), null);
+
+        for (String grp: warnCachesByGrps.keySet())
+            checkWarnMessageOnRestoreSnapshot(cachesPattern(warnCachesByGrps.get(grp)), F.asList(grp));
+    }
+
+    /** Transforms cache numbers to cache pattern. For example, [0, 1] -> cache[0,1], cache[0,1]. */
+    private @Nullable String cachesPattern(List<Integer> cacheNums) {
+        if (cacheNums.isEmpty())
+            return null;
+
+        return cacheNums.stream()
+            .map(c -> "cache" + cacheNums)
+            .collect(Collectors.joining(", "));
     }
 
     /** */
     private void checkWarnMessageOnCreateSnapshot(
-        String warnAtomicCaches,
+        @Nullable String warnAtomicCaches,
         CacheConfiguration<Integer, Integer>... ccfgs
     ) throws Exception {
         this.ccfgs = ccfgs;
@@ -154,13 +172,13 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
                 g.cache(c.getName()).put(i, i);
         }
 
-        LogListener lsnr = warnLogListener(warnAtomicCaches, 0);  // Should warn only for incremental caches.
+        LogListener lsnr = warnLogListener(warnAtomicCaches, 0);  // Should not warn for full snapshots.
 
         lsnLogger.registerListener(lsnr);
 
         g.snapshot().createSnapshot(SNP).get(getTestTimeout());
 
-        assertTrue(lsnr.check());
+        assertTrue(warnAtomicCaches, lsnr.check());
 
         for (CacheConfiguration<Integer, Integer> c: ccfgs) {
             for (int i = 1_000; i < 2_000; i++)
@@ -173,7 +191,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        assertTrue(lsnr.check());
+        assertTrue(warnAtomicCaches, lsnr.check());
     }
 
     /** */
@@ -199,7 +217,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().restoreSnapshot(SNP, restoreCacheGrps).get(getTestTimeout());
 
-        assertTrue(lsnr.check());
+        assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
 
         g.destroyCaches(g.cacheNames());
 
@@ -211,7 +229,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         g.snapshot().restoreIncrementalSnapshot(SNP, restoreCacheGrps, 1).get(getTestTimeout());
 
-        assertTrue(lsnr.check());
+        assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
     }
 
     /** */

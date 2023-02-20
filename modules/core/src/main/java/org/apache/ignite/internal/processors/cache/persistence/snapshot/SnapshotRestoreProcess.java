@@ -1684,10 +1684,9 @@ public class SnapshotRestoreProcess {
 
         if (failure == null) {
             if (fut != null) {  // Call on originated node only.
-                Set<String> cacheGrps = new HashSet<>();
-
-                for (int cacheId: opCtx0.cfgs.keySet())
-                    cacheGrps.add(ctx.cache().cacheDescriptor(cacheId).groupDescriptor().groupName());
+                Set<String> cacheGrps = opCtx0.cfgs.keySet().stream()
+                    .map(cacheId -> CU.cacheOrGroupName(ctx.cache().cacheDescriptor(cacheId).cacheConfiguration()))
+                    .collect(Collectors.toSet());
 
                 ctx.cache().context().snapshotMgr()
                     .warnAtomicCachesInIncrementalSnapshot(opCtx0.snpName, opCtx0.incIdx, cacheGrps);

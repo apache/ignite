@@ -1388,6 +1388,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             markWalFut = null;
 
             incSnpId = null;
+
+            if (clusterSnpFut != null && endFail.isEmpty() && snpReq.error() == null)
+                warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
         }
 
         clusterSnpReq = null;
@@ -1402,12 +1405,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                         clusterSnpFut.onDone(wrn);
                     }
-                    else {
-                        if (snpReq.incremental())
-                            warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
-
+                    else
                         clusterSnpFut.onDone();
-                    }
 
                     if (log.isInfoEnabled())
                         log.info(SNAPSHOT_FINISHED_MSG + snpReq);
@@ -2142,9 +2141,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         U.warn(log, "Incremental snapshot [snpName=" + snpName + ", incIdx=" + incIdx + "] contains ATOMIC caches with backups: "
             + warnCaches + ". Please note, incremental snapshots doesn't guarantee consistency of restored atomic caches. " +
-            "It is highly recommended to verify those caches after restoring with the command: " +
-            "\"control.sh --cache idle_verify $cache\". If it is needed it's possible to repair inconsistent partitions " +
-            "with the command: \"control.sh --consistency repair --cache $cache --partition $partition\". " +
+            "It is highly recommended to verify these caches after restoring with the \"idle_verify\" command. " +
+            "If it is needed it's possible to repair inconsistent partitions with the \"consistency\" command. " +
             "Please, check the \"Control Script\" section of Ignite docs for more information about these commands.");
     }
 
