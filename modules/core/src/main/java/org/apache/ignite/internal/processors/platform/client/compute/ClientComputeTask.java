@@ -100,6 +100,7 @@ class ClientComputeTask implements ClientCloseableResource {
             F.nodeForNodeIds(nodeIds);
 
         TaskExecutionOptions opts = options()
+            .asPublicRequest()
             .withProjectionPredicate(nodePredicate)
             .withTimeout(timeout);
 

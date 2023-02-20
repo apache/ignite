@@ -384,7 +384,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (nodeIds != null)
             compute.withProjection(grp.forNodeIds(nodeIds).nodes());
 
-        IgniteInternalFuture<?> fut = compute.executeAsync(taskName, arg);
+        IgniteInternalFuture<?> fut = compute.asPublicRequest().executeAsync(taskName, arg);
 
         return async ? readAndListenFuture(reader, fut) : toBinary(getResult(fut));
     }

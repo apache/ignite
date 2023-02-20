@@ -15,34 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang.gridfunc;
+package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.internal.processors.security.PublicAccessJob;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
-
 /**
- * Absolute closure that does nothing.
+ * Represents an interface that must be implemented by any internal {@link ComputeJob} that should be accessible for a
+ * user to be executed through the Ignite public API.
  */
-public class NoOpClosure extends GridAbsClosure implements PublicAccessJob {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public void apply() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NoOpClosure.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public SecurityPermissionSet requiredPermissions() {
-        return NO_PERMISSIONS;
-    }
+public interface PublicAccessJob {
+    /** @return Set of permissions to be authorized before job execution. */
+    public SecurityPermissionSet requiredPermissions();
 }
