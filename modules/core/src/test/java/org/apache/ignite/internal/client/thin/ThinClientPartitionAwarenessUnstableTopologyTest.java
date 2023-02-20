@@ -309,7 +309,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         }, getClientConfiguration(0))) {
             GridNioServer<ByteBuffer> srv = getFieldValue(client.reliableChannel(), "connMgr", "srv");
 
-            // Make sure SSL handshake data will not be recieved.
+            // Make sure handshake data will not be recieved.
             setFieldValue(srv, "skipRead", true);
 
             GridTestUtils.runAsync(() -> {
