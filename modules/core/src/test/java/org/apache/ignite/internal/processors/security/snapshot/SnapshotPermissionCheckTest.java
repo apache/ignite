@@ -44,7 +44,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.lang.String.format;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_ACTIVATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -132,7 +131,6 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
         return SecurityPermissionSetBuilder.create()
             .defaultAllowAll(false)
             .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_CREATE, CACHE_PUT)
-            .appendSystemPermissions(ADMIN_CLUSTER_ACTIVATE)
             .appendSystemPermissions(perms)
             .build();
     }

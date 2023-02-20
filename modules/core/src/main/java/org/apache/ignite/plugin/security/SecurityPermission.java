@@ -45,18 +45,6 @@ public enum SecurityPermission {
     /** Events {@code disable} permission. */
     EVENTS_DISABLE,
 
-    /** Common visor view tasks permission. */
-    ADMIN_VIEW,
-
-    /** Visor cache read (query) permission. */
-    ADMIN_QUERY,
-
-    /** Visor cache load permission. */
-    ADMIN_CACHE,
-
-    /** Visor admin operations permissions. */
-    ADMIN_OPS,
-
     /** Service deploy permission. */
     SERVICE_DEPLOY,
 
@@ -75,6 +63,18 @@ public enum SecurityPermission {
     /** Join as server node permission. */
     JOIN_AS_SERVER,
 
+    /** Common visor view tasks permission. */
+    ADMIN_VIEW,
+
+    /** Visor cache read (query) permission. */
+    ADMIN_QUERY,
+
+    /** Visor cache load permission. */
+    ADMIN_CACHE,
+
+    /** Administration operations over cluster. */
+    ADMIN_OPS,
+
     /** Administration operation with cluster metadata (REMOVE, UPDATE). */
     ADMIN_METADATA_OPS,
 
@@ -86,12 +86,6 @@ public enum SecurityPermission {
 
     /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT,
-
-    /** Administration operation: change cluster state to ACTIVE or ACTIVE_READ_ONLY. */
-    ADMIN_CLUSTER_ACTIVATE,
-
-    /** Administration operation: change cluster state to INACTIVE. */
-    ADMIN_CLUSTER_DEACTIVE,
 
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,

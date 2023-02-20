@@ -339,7 +339,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param cacheToCorrupt Function determining should cache with given name be corrupted or not.
      */
     private File startGridAndPutNodeToMaintenance(CacheConfiguration[] cachesToStart,
-                                                  @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
+        @Nullable Function<String, Boolean> cacheToCorrupt) throws Exception {
         assert cachesToStart != null && cachesToStart.length > 0;
 
         IgniteEx ig0 = startGrid(0);
@@ -488,8 +488,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(f ->
                 f.getName().contains(cacheName0)
-                || f.getName().contains(cacheName1)
-                || f.getName().contains(cacheName2)
+                    || f.getName().contains(cacheName1)
+                    || f.getName().contains(cacheName2)
             )
             .map(f -> f.listFiles().length == 1)
             .reduce(true, (t, u) -> t && u);
@@ -1394,7 +1394,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String what = "There is no connectivity between the following nodes";
 
         assertContains(log, out.replaceAll("[\\W_]+", "").trim(),
-                            what.replaceAll("[\\W_]+", "").trim());
+            what.replaceAll("[\\W_]+", "").trim());
     }
 
     /**
@@ -1828,14 +1828,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Test kill by xid.
         validate(h, map -> {
-            assertEquals(1, map.size());
+                assertEquals(1, map.size());
 
-            Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+                Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
 
-            VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
+                VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
 
-            assertEquals(toKill[0].getXid(), info.getXid());
-        }, "--tx", "--kill",
+                assertEquals(toKill[0].getXid(), info.getXid());
+            }, "--tx", "--kill",
             "--xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "--nodes", grid(0).localNode().consistentId().toString());
 
@@ -2066,8 +2066,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Ignite instase 1 can be logged only in arguments list.
         boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
-                                        .filter(s -> s.contains("Arguments:"))
-                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+            .filter(s -> s.contains("Arguments:"))
+            .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
 
         assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
         assertFalse(testOutStr, isInstanse1Found);
