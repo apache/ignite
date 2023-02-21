@@ -80,16 +80,16 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     @Parameterized.Parameters(name = "nodeType={0}, persistence={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
-//            {NodeType.SERVER, false},
-//            {NodeType.SERVER, true},
+            {NodeType.SERVER, false},
+            {NodeType.SERVER, true},
             {NodeType.CLIENT, false},
-//            {NodeType.CLIENT, true},
-//            {NodeType.THIN_CLIENT, false},
-//            {NodeType.THIN_CLIENT, true},
-//            {NodeType.GRID_CLIENT, false},
-//            {NodeType.GRID_CLIENT, true},
-//            {NodeType.MX_BEAN, false},
-//            {NodeType.MX_BEAN, true}
+            {NodeType.CLIENT, true},
+            {NodeType.THIN_CLIENT, false},
+            {NodeType.THIN_CLIENT, true},
+            {NodeType.GRID_CLIENT, false},
+            {NodeType.GRID_CLIENT, true},
+            {NodeType.MX_BEAN, false},
+            {NodeType.MX_BEAN, true}
         });
     }
 

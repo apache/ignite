@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
@@ -95,7 +96,7 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             "pwd",
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-//                .appendSystemPermissions(ADMIN_OPS)
+                .appendSystemPermissions(ADMIN_OPS)
                 .build(),
             new Permissions()
         )};

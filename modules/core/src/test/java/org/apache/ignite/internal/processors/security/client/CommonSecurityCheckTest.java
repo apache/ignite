@@ -30,12 +30,10 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -46,6 +44,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -71,20 +70,11 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return Test data.
      */
     protected TestSecurityData[] clientData() {
-        return new TestSecurityData[] {
-            new TestSecurityData(
-                CLIENT,
-                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                    .appendSystemPermissions(clientPermissions())
-                    .build()
-            )};
-    }
-
-    /**
-     * @return Client permissions
-     */
-    protected SecurityPermission[] clientPermissions() {
-        return F.asArray(CACHE_CREATE);
+        return new TestSecurityData[]{new TestSecurityData(CLIENT,
+            SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
+                .build()
+        )};
     }
 
     /**
@@ -143,7 +133,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
             .setSslContextFactory(getClientSslContextFactory()::create)
             .setRouters(Arrays.asList("127.0.0.1:11211", "127.0.0.1:11212"))
             .setSecurityCredentialsProvider(
-                new SecurityCredentialsBasicProvider(new SecurityCredentials("client", "")))
+                new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
             .setUserAttributes(userAttrs);
     }
 

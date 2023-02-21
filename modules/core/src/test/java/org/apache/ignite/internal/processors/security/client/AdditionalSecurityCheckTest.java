@@ -25,8 +25,6 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -40,11 +38,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
  */
 @RunWith(JUnit4.class)
 public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
-    /** {@inheritDoc} */
-    @Override protected SecurityPermission[] clientPermissions() {
-        return F.concat(super.clientPermissions(), SecurityPermission.ADMIN_OPS);
-    }
-
     /**
      *
      */
