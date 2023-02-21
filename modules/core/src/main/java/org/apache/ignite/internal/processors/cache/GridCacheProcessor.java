@@ -60,6 +60,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -3043,6 +3044,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (snpMgr == null)
             snpMgr = new IgniteCacheSnapshotManager();
 
+        CacheObjectTransformerManager transMgr = ctx.plugins().createComponent(CacheObjectTransformerManager.class);
+
         GridCacheIoManager ioMgr = new GridCacheIoManager();
         CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
         GridCacheSharedTtlCleanupManager ttl = new GridCacheSharedTtlCleanupManager();
@@ -3077,7 +3080,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             storeSesLsnrs,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            transMgr
         );
     }
 

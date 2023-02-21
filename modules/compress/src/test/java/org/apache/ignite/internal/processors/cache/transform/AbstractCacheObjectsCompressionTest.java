@@ -26,7 +26,6 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.xerial.snappy.Snappy;
 
@@ -48,7 +47,8 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setCacheObjectTransformer(new CompressionTransformer());
+        return super.getConfiguration(igniteInstanceName).setPluginProviders(
+            new TestCacheObjectTransformerPluginProvider(new CompressionTransformer()));
     }
 
     /**
@@ -87,7 +87,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static class CompressionTransformer extends CacheObjectTransformerAdapter {
+    protected static class CompressionTransformer extends TestCacheObjectTransformerManagerAdapter {
         /** Comptession type. */
         protected static volatile CompressionType type = CompressionType.defaultType();
 

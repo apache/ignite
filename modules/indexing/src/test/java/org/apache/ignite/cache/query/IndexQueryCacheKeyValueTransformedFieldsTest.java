@@ -20,19 +20,21 @@ package org.apache.ignite.cache.query;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerAdapter;
+import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerManagerAdapter;
+import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerPluginProvider;
 
 /** Test checks that indexing works (including inlining) with enabled cache objects transformer. */
 public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCacheKeyValueFieldsTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        return super.getConfiguration(instanceName).setCacheObjectTransformer(new RandomShiftCacheObjectTransformer());
+        return super.getConfiguration(instanceName).setPluginProviders(
+            new TestCacheObjectTransformerPluginProvider(new RandomShiftCacheObjectTransformer()));
     }
 
     /**
      * Transforms each object with a random shift.
      */
-    protected static final class RandomShiftCacheObjectTransformer extends CacheObjectTransformerAdapter {
+    protected static final class RandomShiftCacheObjectTransformer extends TestCacheObjectTransformerManagerAdapter {
         /** {@inheritDoc} */
         @Override public ByteBuffer transform(ByteBuffer original) {
             ByteBuffer transformed = byteBuffer(original.remaining() + 4);

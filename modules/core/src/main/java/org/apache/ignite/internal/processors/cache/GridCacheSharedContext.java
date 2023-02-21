@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -147,6 +148,9 @@ public class GridCacheSharedContext<K, V> {
     /** Deadlock detection manager. */
     private DeadlockDetectionManager deadlockDetectionMgr;
 
+    /** Cache objects transformation manager. */
+    private CacheObjectTransformerManager transMgr;
+
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -237,7 +241,8 @@ public class GridCacheSharedContext<K, V> {
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
-        CacheDiagnosticManager diagnosticMgr
+        CacheDiagnosticManager diagnosticMgr,
+        CacheObjectTransformerManager transMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -262,7 +267,8 @@ public class GridCacheSharedContext<K, V> {
             evictMgr,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            transMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -444,7 +450,8 @@ public class GridCacheSharedContext<K, V> {
             evictMgr,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr
+            diagnosticMgr,
+            transMgr
         );
 
         this.mgrs = mgrs;
@@ -495,7 +502,8 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
-        CacheDiagnosticManager diagnosticMgr
+        CacheDiagnosticManager diagnosticMgr,
+        CacheObjectTransformerManager transMgr
     ) {
         this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
@@ -520,6 +528,7 @@ public class GridCacheSharedContext<K, V> {
         this.evictMgr = add(mgrs, evictMgr);
         this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
         this.deadlockDetectionMgr = add(mgrs, deadlockDetectionMgr);
+        this.transMgr = add(mgrs, transMgr);
     }
 
     /**
@@ -901,6 +910,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public DeadlockDetectionManager deadlockDetectionMgr() {
         return deadlockDetectionMgr;
+    }
+
+    /**
+     * @return Cache objects transformation manager.
+     */
+    public CacheObjectTransformerManager transformer() {
+        return transMgr;
     }
 
     /**

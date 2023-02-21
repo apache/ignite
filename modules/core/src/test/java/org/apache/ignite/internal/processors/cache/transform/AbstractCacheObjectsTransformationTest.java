@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
@@ -277,7 +276,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected static final class ControllableCacheObjectTransformer extends CacheObjectTransformerAdapter {
+    protected static final class ControllableCacheObjectTransformer extends TestCacheObjectTransformerManagerAdapter {
         /** Shift. */
         private static volatile int shift;
 

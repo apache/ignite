@@ -64,7 +64,8 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setCacheObjectTransformer(new ControllableCacheObjectTransformer());
+        return super.getConfiguration(igniteInstanceName).setPluginProviders(
+            new TestCacheObjectTransformerPluginProvider(new ControllableCacheObjectTransformer()));
     }
 
     /** {@inheritDoc} */

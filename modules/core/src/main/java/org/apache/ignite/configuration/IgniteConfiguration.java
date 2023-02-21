@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cache.transform.CacheObjectTransformer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
@@ -418,9 +417,6 @@ public class IgniteConfiguration {
     /** Failover SPI. */
     private FailoverSpi[] failSpi;
 
-    /** Cache object transformer. */
-    private CacheObjectTransformer cacheObjTrans;
-
     /** Load balancing SPI. */
     private LoadBalancingSpi[] loadBalancingSpi;
 
@@ -646,7 +642,6 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        cacheObjTrans = cfg.getCacheObjectTransformer();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
@@ -2252,29 +2247,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setFailoverSpi(FailoverSpi... failSpi) {
         this.failSpi = failSpi;
-
-        return this;
-    }
-
-    /**
-     * Should return fully configured cache object's transformer implementation.
-     *
-     * @return Grid cache object transformer implementation or {@code null}.
-     */
-    @IgniteExperimental
-    public CacheObjectTransformer getCacheObjectTransformer() {
-        return cacheObjTrans;
-    }
-
-    /**
-     * Sets fully configured instance of {@link CacheObjectTransformer}.
-     *
-     * @param cacheObjTrans Fully configured instance of {@link CacheObjectTransformer}.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public IgniteConfiguration setCacheObjectTransformer(CacheObjectTransformer cacheObjTrans) {
-        this.cacheObjTrans = cacheObjTrans;
 
         return this;
     }

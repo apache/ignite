@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.cache.transform.CacheObjectTransformer;
+import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,12 +38,12 @@ public class CacheObjectTransformerUtils {
     private static final byte VER = 0;
 
     /***/
-    private static CacheObjectTransformer transformer(CacheObjectValueContext ctx) {
-        return ctx.kernalContext().config().getCacheObjectTransformer();
+    private static CacheObjectTransformerManager transformer(CacheObjectValueContext ctx) {
+        return ctx.kernalContext().cache().context().transformer();
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformer} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformerManager} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -53,7 +53,7 @@ public class CacheObjectTransformerUtils {
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformer} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformerManager} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -61,7 +61,7 @@ public class CacheObjectTransformerUtils {
     public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
         assert bytes[offset] != TRANSFORMED;
 
-        CacheObjectTransformer transformer = transformer(ctx);
+        CacheObjectTransformerManager transformer = transformer(ctx);
 
         if (transformer == null)
             return bytes;
@@ -153,7 +153,7 @@ public class CacheObjectTransformerUtils {
         else
             throw new IllegalStateException("Unknown version " + ver);
 
-        CacheObjectTransformer transformer = transformer(ctx);
+        CacheObjectTransformerManager transformer = transformer(ctx);
 
         ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset, transformer.direct());
         ByteBuffer restored = transformer.restore(src);

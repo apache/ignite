@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.cache.transform;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.cache.transform.CacheObjectTransformer;
+import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 
 /**
  *
  */
-public abstract class CacheObjectTransformerAdapter implements CacheObjectTransformer {
+public abstract class CacheObjectTransformerManagerAdapter implements CacheObjectTransformerManager {
     /** Byte buffer. */
     private final ThreadLocalDirectByteBuffer buf = new ThreadLocalDirectByteBuffer();
 

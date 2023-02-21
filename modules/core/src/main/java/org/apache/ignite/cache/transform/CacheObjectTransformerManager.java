@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.transform;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Provides cache object's bytes transformation (eg. encryption, compression, etc).
  */
 @IgniteExperimental
-public interface CacheObjectTransformer {
+public interface CacheObjectTransformerManager extends GridCacheSharedManager {
     /**
      * Transforms the data.
      *
