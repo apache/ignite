@@ -74,6 +74,9 @@ public class CacheStripedExecutor {
             try {
                 task.run();
             }
+            catch (Throwable err) {
+                onError(new IgniteCheckedException("Failed to execute submitted task [grpId=" + grpId + ", partId=" + partId + ']', err));
+            }
             finally {
                 CHECKPOINT_LOCK_HOLD_COUNT.set(0);
 

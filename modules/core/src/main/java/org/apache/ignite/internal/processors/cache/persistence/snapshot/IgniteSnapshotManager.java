@@ -78,6 +78,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -119,6 +120,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
@@ -1388,6 +1390,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             markWalFut = null;
 
             incSnpId = null;
+
+            if (clusterSnpFut != null && endFail.isEmpty() && snpReq.error() == null)
+                warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
         }
 
         clusterSnpReq = null;
@@ -2114,6 +2119,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             return new IgniteFinishedFutureImpl<>(e);
         }
+    }
+
+    /** Writes a warning message if an incremental snapshot contains atomic caches. */
+    void warnAtomicCachesInIncrementalSnapshot(String snpName, int incIdx, Collection<String> cacheGrps) {
+        List<String> warnCaches = new ArrayList<>();
+
+        for (String cacheGrp: cacheGrps) {
+            CacheGroupContext cgctx = cctx.cache().cacheGroup(CU.cacheId(cacheGrp));
+
+            if (cgctx != null && cgctx.hasAtomicCaches()) {
+                for (GridCacheContext<?, ?> c : cgctx.caches()) {
+                    CacheConfiguration<?, ?> ccfg = c.config();
+
+                    if (ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC && ccfg.getBackups() > 0)
+                        warnCaches.add(ccfg.getName());
+                }
+            }
+        }
+
+        if (warnCaches.isEmpty())
+            return;
+
+        U.warn(log, "Incremental snapshot [snpName=" + snpName + ", incIdx=" + incIdx + "] contains ATOMIC caches with backups: "
+            + warnCaches + ". Please note, incremental snapshots doesn't guarantee consistency of restored atomic caches. " +
+            "It is highly recommended to verify these caches after restoring with the \"idle_verify\" command. " +
+            "If it is needed it's possible to repair inconsistent partitions with the \"consistency\" command. " +
+            "Please, check the \"Control Script\" section of Ignite docs for more information about these commands.");
     }
 
     /** {@inheritDoc} */
