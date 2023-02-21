@@ -26,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterState;
+//import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -44,7 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
@@ -94,13 +94,13 @@ public class IgnitePdsWithTtlTest3 extends GridCommonAbstractTest {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataRegionConfiguration dfltRegion = new DataRegionConfiguration()
-            .setMaxSize(2L * 1024 * 1024 * 1024)
+            .setMaxSize(1024 * 1024 * 1024)
             .setPersistenceEnabled(true);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setWalSegmentSize(16 * 1024 * 1024)
-                .setMaxWalArchiveSize(256 * 1024 * 1024)
+                .setMaxWalArchiveSize(128 * 1024 * 1024)
                 .setCheckpointFrequency(10_000)
                 .setDefaultDataRegionConfiguration(dfltRegion)
                 .setWalMode(WALMode.LOG_ONLY));
@@ -148,7 +148,7 @@ public class IgnitePdsWithTtlTest3 extends GridCommonAbstractTest {
         try {
             IgniteEx srv = startGrid(0);
 
-            srv.cluster().state(ClusterState.ACTIVE);
+            srv.cluster().active(true);
 
             IgniteCache<Integer, String> cache = srv.cache(CACHE_NAME_ATOMIC);
 
@@ -174,16 +174,25 @@ public class IgnitePdsWithTtlTest3 extends GridCommonAbstractTest {
 
             doSleep(2_000);
 
-            srv.cluster().state(INACTIVE);
+            srv.cluster().active(false);
 
             doSleep(5_000);
             stopGrid(0);
 
-            startGrid(0);
+            IgniteInternalFuture<IgniteEx> future = runAsync(() -> startGrid(0));
+            try {
+                future.get(20, TimeUnit.SECONDS);
+            }
+            catch (Throwable ex) {
+                failureHndTriggered = true;
+                future.cancel();
+                assertFalse("Hang in grid start", failureHndTriggered);
+                System.exit(1);
+            }
             doSleep(10_000);
         }
         finally {
-            stopAllGrids();
+//            stopAllGrids();
 
             assertFalse("Failure handler should not be triggered.", failureHndTriggered);
         }
