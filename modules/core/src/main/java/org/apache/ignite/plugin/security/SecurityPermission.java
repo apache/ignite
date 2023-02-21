@@ -54,7 +54,7 @@ public enum SecurityPermission {
     /** Visor cache load permission. */
     ADMIN_CACHE,
 
-    /** Administration operation over cluster like changing state or baseline. */
+    /** Administration operation over cluster: changing state or changing baseline via remote API like control.sh. */
     ADMIN_OPS,
 
     /** Service deploy permission. */
