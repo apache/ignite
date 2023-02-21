@@ -17,24 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
-import java.util.Random;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -43,7 +52,19 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.A
 /** */
 public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSnapshotTest {
     /** */
-    private static final Random RND = new Random();
+    private static volatile CountDownLatch blockClientJoinReq;
+
+    /** */
+    private static volatile CountDownLatch unblockClientJoinReq;
+
+    /** */
+    private static volatile CountDownLatch acceptClientReq;
+
+    /** */
+    private static volatile CountDownLatch addClient;
+
+    /** */
+    private static volatile CountDownLatch rcvStartSnpReq;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -53,69 +74,129 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
 
         cfg.setSnapshotThreadPoolSize(1);
 
+        if (getTestIgniteInstanceIndex(instanceName) == 0) {
+            cfg.setDiscoverySpi(new CoordinatorBlockingDiscoverySpi()
+                .setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
+        }
+
+        if (getTestIgniteInstanceIndex(instanceName) == nodes() + 1) {
+            cfg.setDiscoverySpi(new ClientBlockingDiscoverySpi()
+                .setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
+        }
+
         return cfg;
     }
 
     /** */
     @Test
-    public void testJoiningNodeShouldNotInitLocalSnapshot() throws Exception {
-        TestRecordingCommunicationSpi srvComm = TestRecordingCommunicationSpi.spi(grid(0));
+    public void testJoiningClientShouldInitLocalSnapshot() throws Exception {
+        checkClientAwarenessOfSnapshot(true, () -> {
+            unblockClientJoinReq.countDown();
 
-        AtomicBoolean blk = new AtomicBoolean();
+            // Await for the client occupied the discovery thread.
+            U.awaitQuiet(acceptClientReq);
 
-        srvComm.blockMessages((n, msg) ->
-            msg instanceof GridNearTxPrepareResponse && blk.compareAndSet(false, true));
+            // Snapshot awaits for the discovery thread unblocked.
+            IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
-        IgniteInternalFuture<?> tx = multithreadedAsync(() -> runTx(grid(nodes()), 0, 100), 1);
+            addClient.countDown();
 
-        srvComm.waitForBlocked();
-
-        IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
-
-        // Wait for incremental snapshot started on all server nodes.
-        assertTrue(GridTestUtils
-            .waitForCondition(() -> snp(grid(0)).incrementalSnapshotId() != null, getTestTimeout(), 10));
-
-        IgniteEx newCln = startClientGrid(nodes() + 1);
-
-        runTx(newCln, 100, 200);
-
-        assertNull(snp(newCln).incrementalSnapshotId());
-
-        srvComm.stopBlock();
-
-        tx.get(getTestTimeout());
-
-        snpFut.get(getTestTimeout());
-
-        checkRestoredCache(1);
+            return snpFut;
+        });
     }
 
     /** */
     @Test
-    public void testTransactionFromJoiningNodeIsExcluded() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
+    public void testJoiningClientShouldNotInitLocalSnapshot() throws Exception {
+        checkClientAwarenessOfSnapshot(false, () -> {
+            IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
-        // Block starting of incremental snapshot on one node.
-        grid(1).context().pools().getSnapshotExecutorService().submit(() -> U.awaitQuiet(latch));
+            // Await for the snapshot occupied the discovery thread.
+            U.awaitQuiet(rcvStartSnpReq);
 
-        IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
+            // Client will be blocked waiting for discovery thread.
+            unblockClientJoinReq.countDown();
+            addClient.countDown();
 
-        IgniteEx newCln = startClientGrid(nodes() + 1);
+            return snpFut;
+        });
+    }
 
-        IgniteUuid txId = runTx(newCln, 0, 100);
+    /**
+     * Check if client should know about incremental snapshot or not, depending on order of client start and snapshot request.
+     */
+    private void checkClientAwarenessOfSnapshot(boolean clnShouldStartSnapshot, Supplier<IgniteFuture<Void>> start) throws Exception {
+        rcvStartSnpReq = new CountDownLatch(1);
+        acceptClientReq = new CountDownLatch(1);
+        unblockClientJoinReq = new CountDownLatch(1);
+        blockClientJoinReq = new CountDownLatch(1);
+        addClient = new CountDownLatch(1);
 
-        latch.countDown();
+        IgniteInternalFuture<?> newClnFut = multithreadedAsync(() -> startClientGrid(nodes() + 1), 1);
+
+        // Await client is about to start. Wait only TcpDiscoveryNodeAddedMessage.
+        U.awaitQuiet(blockClientJoinReq);
+
+        CountDownLatch locSnpStart = new CountDownLatch(1);
+
+        grid(0).context().pools().getSnapshotExecutorService().submit(() -> U.awaitQuiet(locSnpStart));
+
+        IgniteFuture<Void> snpFut = start.get();
+
+        newClnFut.get(getTestTimeout());
+
+        IgniteUuid txId = runTx(grid(nodes() + 1), 0, 100);
+
+        if (clnShouldStartSnapshot)
+            assertNotNull(snp(grid(nodes() + 1)).incrementalSnapshotId());
+        else
+            assertNull(snp(grid(nodes() + 1)).incrementalSnapshotId());
+
+        locSnpStart.countDown();
 
         snpFut.get(getTestTimeout());
 
-        assertTransactionExcluded(1, txId);
+        assertTrue(transactionExcluded(0, txId));
 
-        checkRestoredCache(1);
+        checkRestoredSnapshotIsEmpty();
+    }
+
+    /** Limit bounds for different threads to avoid locks. */
+    private IgniteUuid runTx(IgniteEx g, int from, int to) {
+        try (Transaction tx = g.transactions().txStart()) {
+            for (int j = 0; j < 10; j++) {
+                IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+
+                cache.put(from + ThreadLocalRandom.current().nextInt(to - from), 0);
+            }
+
+            tx.commit();
+
+            return tx.xid();
+        }
     }
 
     /** */
-    private void checkRestoredCache(int incIdx) throws Exception {
+    private boolean transactionExcluded(int nodeIdx, IgniteUuid txId) throws Exception {
+        try (WALIterator iter = walIter(nodeIdx)) {
+            while (iter.hasNext()) {
+                WALRecord rec = iter.next().getValue();
+
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
+                    IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)rec;
+
+                    assertTrue(finRec.excluded().stream().anyMatch(id -> id.asIgniteUuid().equals(txId)));
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** */
+    private void checkRestoredSnapshotIsEmpty() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir(true);
@@ -128,47 +209,57 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
 
         awaitPartitionMapExchange();
 
-        g.snapshot().restoreIncrementalSnapshot(SNP, null, incIdx).get(getTestTimeout());
+        g.snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
 
         assertPartitionsSame(idleVerify(grid(0)));
 
         assertEquals(0, grid(0).cache(CACHE).size());
     }
 
-    /** Limit bounds for different threads to avoid locks. */
-    private IgniteUuid runTx(IgniteEx g, int from, int to) {
-        try (Transaction tx = g.transactions().txStart()) {
-            for (int j = 0; j < 10; j++) {
-                IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+    /** */
+    private static class ClientBlockingDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(
+            Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout
+        ) throws IOException, IgniteCheckedException {
+            if (msg instanceof TcpDiscoveryJoinRequestMessage && blockClientJoinReq != null) {
+                blockClientJoinReq.countDown();
 
-                cache.put(from + RND.nextInt(to - from), 0);
+                U.awaitQuiet(unblockClientJoinReq);
             }
 
-            tx.commit();
-
-            return tx.xid();
+            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 
     /** */
-    private void assertTransactionExcluded(int nodeIdx, IgniteUuid txId) throws Exception {
-        boolean checked = false;
+    private static class CoordinatorBlockingDiscoverySpi extends TcpDiscoverySpi {
+        /** {@inheritDoc} */
+        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage && acceptClientReq != null) {
+                acceptClientReq.countDown();
 
-        try (WALIterator iter = walIter(nodeIdx)) {
-            while (iter.hasNext()) {
-                WALRecord rec = iter.next().getValue();
+                U.awaitQuiet(addClient);
+            }
 
-                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
-                    IncrementalSnapshotFinishRecord finRec = (IncrementalSnapshotFinishRecord)rec;
+            if (msg instanceof TcpDiscoveryCustomEventMessage && rcvStartSnpReq != null) {
+                TcpDiscoveryCustomEventMessage m = (TcpDiscoveryCustomEventMessage)msg;
 
-                    assertTrue(finRec.excluded().stream().anyMatch(id -> id.asIgniteUuid().equals(txId)));
+                try {
+                    CustomMessageWrapper m0 = (CustomMessageWrapper)m.message(
+                        marshaller(), U.resolveClassLoader(ignite().configuration()));
 
-                    checked = true;
+                    if (m0.delegate() instanceof InitMessage)
+                        rcvStartSnpReq.countDown();
+                }
+                catch (Throwable e) {
+                    // No-op.
                 }
             }
         }
-
-        assertTrue(checked);
     }
 
     /** {@inheritDoc} */
