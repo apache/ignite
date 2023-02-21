@@ -1139,7 +1139,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 return new GridFinishedFuture<>();
         }
 
-        ctx.security().authorize(SecurityPermission.ADMIN_OPS);
+        checkSecurity(state);
 
         GridChangeGlobalStateFuture startedFut = null;
 
@@ -1231,6 +1231,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return resFut;
+    }
+
+    /** */
+    private void checkSecurity(ClusterState state) {
+        ctx.security().authorize(SecurityPermission.ADMIN_OPS);
     }
 
     /** {@inheritDoc} */

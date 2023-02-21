@@ -17,6 +17,8 @@
 
 package org.apache.ignite.plugin.security;
 
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,7 +56,13 @@ public enum SecurityPermission {
     /** Visor cache load permission. */
     ADMIN_CACHE,
 
-    /** Administration operation over cluster: changing state or changing baseline via remote API like control.sh. */
+    /**
+     * Administration operation over cluster: changing cluster state or baseline via remote API like control.sh or the
+     * REST API. Managing client connections in {@link ClientProcessorMXBean}.
+     *
+     * @see #ADMIN_CLUSTER_ACTIVATE
+     * @see #ADMIN_CLUSTER_DEACTIVATE
+     */
     ADMIN_OPS,
 
     /** Service deploy permission. */
@@ -86,6 +94,20 @@ public enum SecurityPermission {
 
     /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT,
+
+    /**
+     * Administration operation: cluster activation.
+     *
+     * @see ClusterState
+     */
+    ADMIN_CLUSTER_ACTIVATE,
+
+    /**
+     * Administration operation: cluster deactivation.
+     *
+     * @see ClusterState
+     */
+    ADMIN_CLUSTER_DEACTIVATE,
 
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,
