@@ -45,13 +45,31 @@ public enum SecurityPermission {
     /** Events {@code disable} permission. */
     EVENTS_DISABLE,
 
-    /** Common visor view tasks permission. */
+    /**
+     * Common visor view tasks permission.
+     *
+     * @deprecated Is not used. Also, the visor has been removed. Use command.sh instead.
+     */
+    @Deprecated
     ADMIN_VIEW,
 
-    /** Visor cache read (query) permission. */
+    /**
+     * Visor cache read (query) permission.
+     *
+     * @deprecated Is not used. Also, the visor has been removed. Use command.sh instead.
+     */
+    @Deprecated
     ADMIN_QUERY,
 
-    /** Visor cache load permission. */
+    /**
+     * Visor cache load permission.
+     *
+     * @see #CACHE_CREATE
+     * @see #CACHE_DESTROY
+     * @see #CACHE_REMOVE
+     * @deprecated Is not used. Also, the visor has been removed. Use command.sh instead.
+     */
+    @Deprecated
     ADMIN_CACHE,
 
     /** Visor admin operations permissions. */

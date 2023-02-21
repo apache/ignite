@@ -64,9 +64,6 @@ public class TestSecurityContext implements SecurityContext, Serializable {
 
             case EVENTS_DISABLE:
             case EVENTS_ENABLE:
-            case ADMIN_VIEW:
-            case ADMIN_CACHE:
-            case ADMIN_QUERY:
             case ADMIN_OPS:
             case ADMIN_SNAPSHOT:
             case JOIN_AS_SERVER:
