@@ -1122,8 +1122,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
 
-        ctx.security().authorize(SecurityPermission.ADMIN_OPS);
-
         if (ctx.clientNode())
             return sendComputeChangeGlobalState(state, forceDeactivation, blt, forceChangeBaselineTopology);
 
@@ -1140,6 +1138,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (!state.active() || BaselineTopology.equals(curState.baselineTopology(), blt))
                 return new GridFinishedFuture<>();
         }
+
+        ctx.security().authorize(SecurityPermission.ADMIN_OPS);
 
         GridChangeGlobalStateFuture startedFut = null;
 
