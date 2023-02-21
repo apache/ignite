@@ -621,7 +621,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId), metrics);
 
-                    if (!ctx.wal().disabled(fullId.groupId())) {
+                    if (!ctx.wal().disabled(fullId.groupId(), fullId.pageId())) {
                         if (!ctx.wal().isAlwaysWriteFullPages())
                             ctx.wal().log(
                                 new InitNewPageRecord(
@@ -1893,7 +1893,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) throws IgniteCheckedException {
-        boolean walIsNotDisabled = walMgr != null && !walMgr.disabled(pageId.groupId());
+        boolean walIsNotDisabled = walMgr != null && !walMgr.disabled(pageId.groupId(), pageId.pageId());
         boolean pageRecOrAlwaysWriteFullPage = walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages());
 
         if (pageRecOrAlwaysWriteFullPage && walIsNotDisabled)

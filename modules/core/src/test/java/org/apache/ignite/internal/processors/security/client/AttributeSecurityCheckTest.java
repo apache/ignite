@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Checks user attributes presents in GridClient messages.
@@ -43,7 +43,7 @@ public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAuthenticationContextSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestAuthenticationContextSecurityPluginProvider(name, null, ALL_PERMISSIONS,
             globalAuth, true, (ctx) -> userAttrs = ctx.nodeAttributes(), clientData());
     }
 

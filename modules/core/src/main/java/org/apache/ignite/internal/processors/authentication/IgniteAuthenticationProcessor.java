@@ -89,7 +89,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
@@ -1407,7 +1407,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet permissions() {
-            return ALLOW_ALL;
+            return ALL_PERMISSIONS;
         }
 
         /** {@inheritDoc} */
