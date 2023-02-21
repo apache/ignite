@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -30,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message that holds a transaction message and incremental snapshot ID.
  */
-public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
+public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,6 +45,9 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
     /** ID of the latest incremental snapshot after which this transaction committed. */
     private @Nullable UUID txSnpId;
 
+    /** Incremental snapshot topology version. */
+    private long topVer;
+
     /** */
     public IncrementalSnapshotAwareMessage() {
     }
@@ -54,11 +56,13 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
     public IncrementalSnapshotAwareMessage(
         GridCacheMessage payload,
         UUID id,
-        @Nullable UUID txSnpId
+        @Nullable UUID txSnpId,
+        long topVer
     ) {
         this.payload = payload;
         this.id = id;
         this.txSnpId = txSnpId;
+        this.topVer = topVer;
     }
 
     /** @return Incremental snapshot ID. */
@@ -74,6 +78,11 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
     /** */
     public GridCacheMessage payload() {
         return payload;
+    }
+
+    /** @return Incremental snapshot topology version. */
+    public long snapshotTopologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -101,14 +110,20 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
         }
 
         switch (writer.state()) {
-            case 4:
+            case 3:
                 if (!writer.writeUuid("id", id))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 4:
                 if (!writer.writeMessage("payload", payload))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -135,7 +150,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 3:
                 id = reader.readUuid("id");
 
                 if (!reader.isLastRead())
@@ -143,8 +158,16 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 4:
                 payload = reader.readMessage("payload");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                topVer = reader.readLong("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -176,6 +199,16 @@ public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cacheGroupMessage() {
         return false;
     }
 }

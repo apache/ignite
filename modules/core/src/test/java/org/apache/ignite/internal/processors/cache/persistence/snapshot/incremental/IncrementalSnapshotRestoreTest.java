@@ -742,9 +742,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             assertEquals(e.getValue(), expData.get(e.getKey()));
         }
 
-        // Idle verify - OK.
-        for (int i = 0; i < nodes(); i++)
-            idleVerify(grid(i));
+        assertPartitionsSame(idleVerify(grid(0)));
 
         // Read repair check - OK.
         AtomicBoolean readRepairCheckFailed = new AtomicBoolean(false);

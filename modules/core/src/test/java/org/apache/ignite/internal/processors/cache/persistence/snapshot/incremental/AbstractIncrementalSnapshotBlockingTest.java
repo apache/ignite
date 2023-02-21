@@ -293,7 +293,7 @@ public abstract class AbstractIncrementalSnapshotBlockingTest extends AbstractIn
         }
 
         /** {@inheritDoc} */
-        @Override public void handleIncrementalSnapshotId(UUID id) {
+        @Override public void handleIncrementalSnapshotId(UUID id, long topVer) {
             // Block only discovery worker thread.
             if (Thread.currentThread().getName().contains("disco")) {
                 if (beforeStartLatch != null) {
@@ -306,7 +306,7 @@ public abstract class AbstractIncrementalSnapshotBlockingTest extends AbstractIn
                 }
             }
 
-            super.handleIncrementalSnapshotId(id);
+            super.handleIncrementalSnapshotId(id, topVer);
         }
 
         /** */

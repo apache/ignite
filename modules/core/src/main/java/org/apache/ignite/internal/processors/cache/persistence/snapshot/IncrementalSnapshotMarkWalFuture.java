@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -57,6 +58,9 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
     /** Incremental snapshot ID. */
     private final UUID id;
 
+    /** Incremental snapshot topology version. */
+    private final long topVer;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -72,9 +76,10 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
     private final Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive = ConcurrentHashMap.newKeySet();
 
     /** */
-    IncrementalSnapshotMarkWalFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
+    IncrementalSnapshotMarkWalFuture(GridCacheSharedContext<?, ?> cctx, UUID id, long topVer) {
         this.cctx = cctx;
         this.id = id;
+        this.topVer = topVer;
 
         log = cctx.logger(IncrementalSnapshotMarkWalFuture.class);
 
@@ -172,7 +177,15 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
                     return false;
                 }
 
-                if (id.equals(tx.incSnpId()))
+                AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
+
+                if (txTopVer == null) {
+                    U.warn(log, "Incremental snapshot is inconsistent due to transaction doesn't map to topology: " + tx);
+
+                    return false;
+                }
+
+                if (id.equals(tx.incSnpId()) || txTopVer.topologyVersion() > topVer)
                     excluded.add(tx.nearXidVersion());
                 else
                     included.add(tx.nearXidVersion());
