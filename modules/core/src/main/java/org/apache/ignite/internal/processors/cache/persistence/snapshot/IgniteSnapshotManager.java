@@ -839,7 +839,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         clusterSnpReq = req;
 
         if (req.incremental())
-            handleIncrementalSnapshotId(req.requestId());
+            handleIncrementalSnapshotId(req.requestId(), cctx.discovery().topologyVersion());
 
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
@@ -903,8 +903,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Handles received incremental snapshot ID from remote node.
      *
      * @param id Incremental snapshot ID.
+     * @param topVer Incremental snapshot topology version.
      */
-    public void handleIncrementalSnapshotId(UUID id) {
+    public void handleIncrementalSnapshotId(UUID id, long topVer) {
         // TODO: IGNITE-18599 handle if `id != incSnpId`.
         if (incSnpId != null)
             return;
@@ -919,10 +920,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             wrapMsgsFut = new GridFutureAdapter<>();
 
-            cctx.tm().txMessageTransformer((msg, tx) -> new IncrementalSnapshotAwareMessage(msg, id, tx == null ? null : tx.incSnpId()));
+            cctx.tm().txMessageTransformer((msg, tx) -> new IncrementalSnapshotAwareMessage(
+                msg, id, tx == null ? null : tx.incSnpId(), topVer));
 
             markWalFut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
-                    ? new IncrementalSnapshotMarkWalFuture(cctx, id) : null;
+                ? new IncrementalSnapshotMarkWalFuture(cctx, id, topVer) : null;
 
             incSnpId = id;
         }
