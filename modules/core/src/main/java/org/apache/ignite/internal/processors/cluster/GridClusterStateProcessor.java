@@ -1382,8 +1382,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return ctx.closure().runAsync(
             GridClosureCallMode.BALANCE,
             new ClientSetClusterStateComputeRequest(state, forceDeactivation, blt, forceBlt),
-            TaskExecutionOptions.options(ctx.discovery().serverNodes((topVer))).withFailoverDisabled()
-                .withAuthenticationDisabled()
+            TaskExecutionOptions.options(ctx.discovery().serverNodes((topVer))).withAuthenticationDisabled()
         );
     }
 
