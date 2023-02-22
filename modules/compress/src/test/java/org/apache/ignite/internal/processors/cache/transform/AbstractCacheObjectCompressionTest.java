@@ -32,7 +32,7 @@ import org.xerial.snappy.Snappy;
 /**
  *
  */
-public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheObjectsTransformationTest {
+public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheObjectTransformationTest {
     /** Huge string. */
     protected static final String HUGE_STRING;
 

@@ -35,7 +35,7 @@ import org.junit.runners.Parameterized;
  *
  */
 @RunWith(Parameterized.class)
-public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransformationTest {
+public class CacheObjectTransformationTest extends AbstractCacheObjectTransformationTest {
     /** Atomicity mode. */
     @Parameterized.Parameter
     public CacheAtomicityMode mode;

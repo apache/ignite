@@ -19,8 +19,8 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.transform.CacheObjectsCompressionConsumptionTest;
-import org.apache.ignite.internal.processors.cache.transform.CacheObjectsCompressionTest;
+import org.apache.ignite.internal.processors.cache.transform.CacheObjectCompressionConsumptionTest;
+import org.apache.ignite.internal.processors.cache.transform.CacheObjectCompressionTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
@@ -33,8 +33,8 @@ public class IgniteCompressionTestSuite {
     public static List<Class<?>> suite() {
         List<Class<?>> suite = new ArrayList<>();
 
-        suite.add(CacheObjectsCompressionTest.class);
-        suite.add(CacheObjectsCompressionConsumptionTest.class);
+        suite.add(CacheObjectCompressionTest.class);
+        suite.add(CacheObjectCompressionConsumptionTest.class);
 
         return suite;
     }

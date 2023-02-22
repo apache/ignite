@@ -27,13 +27,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsCompressionTest.CompressionTransformer.CompressionType;
+import static org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectCompressionTest.CompressionTransformer.CompressionType;
 
 /**
  *
  */
 @RunWith(Parameterized.class)
-public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompressionTest {
+public class CacheObjectCompressionTest extends AbstractCacheObjectCompressionTest {
     /** Thin client. */
     @Parameterized.Parameter
     public CompressionType type;

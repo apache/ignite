@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public abstract class AbstractCacheObjectsTransformationTest extends GridCommonAbstractTest {
+public abstract class AbstractCacheObjectTransformationTest extends GridCommonAbstractTest {
     /** Cache name. */
     protected static final String CACHE_NAME = "data";
 

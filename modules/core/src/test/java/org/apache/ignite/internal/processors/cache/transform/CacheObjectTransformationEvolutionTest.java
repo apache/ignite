@@ -37,7 +37,7 @@ import org.junit.runners.Parameterized;
  * Checks transformation algorithm change.
  */
 @RunWith(Parameterized.class)
-public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObjectsTransformationTest {
+public class CacheObjectTransformationEvolutionTest extends AbstractCacheObjectTransformationTest {
     /** Atomicity mode. */
     @Parameterized.Parameter
     public CacheAtomicityMode mode;
@@ -122,7 +122,7 @@ public class CacheObjectsTransformationEvolutionTest extends AbstractCacheObject
         prepareCluster();
 
         IgniteCache<Object, Object> cache =
-            primaryNode(0/*any*/, CACHE_NAME).getOrCreateCache(AbstractCacheObjectsTransformationTest.CACHE_NAME);
+            primaryNode(0/*any*/, CACHE_NAME).getOrCreateCache(AbstractCacheObjectTransformationTest.CACHE_NAME);
 
         int cnt = 100;
 

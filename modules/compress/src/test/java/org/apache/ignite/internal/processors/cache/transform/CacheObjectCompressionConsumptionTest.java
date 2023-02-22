@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRI
  *
  */
 @RunWith(Parameterized.class)
-public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjectsCompressionTest {
+public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCompressionTest {
     /** Region name. */
     private static final String REGION_NAME = "region";
 
