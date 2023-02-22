@@ -38,7 +38,6 @@ import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -379,7 +378,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     private SecurityPermissionSet serverPermissions() {
         return create()
             .defaultAllowAll(false)
-            .appendSystemPermissions(CACHE_CREATE, JOIN_AS_SERVER, ADMIN_OPS)
+            .appendSystemPermissions(CACHE_CREATE, JOIN_AS_SERVER)
             .appendTaskPermissions(
                 "org.apache.ignite.internal.processors.cache.GridCacheAdapter$SizeTask", TASK_EXECUTE)
             .build();

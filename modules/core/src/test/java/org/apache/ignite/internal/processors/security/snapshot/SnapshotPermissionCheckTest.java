@@ -45,7 +45,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.lang.String.format;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_ACTIVATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -91,7 +91,7 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
      * @throws Exception If fails.
      */
     private void doTest(Consumer<? super Supplier<Future<Void>>> check, SecurityPermission... perms) throws Exception {
-        Ignite srv = startGrid("srv", permissions(F.concat(perms, ADMIN_OPS)), false);
+        Ignite srv = startGrid("srv", permissions(F.concat(perms, ADMIN_CLUSTER_ACTIVATE)), false);
 
         Ignite clnt = startGrid("clnt", permissions(perms), true);
 

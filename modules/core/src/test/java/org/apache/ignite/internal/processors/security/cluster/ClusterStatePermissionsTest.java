@@ -36,6 +36,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -64,7 +65,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertNotEquals;
 
 /**
- * Tests permissions of cluster ctate change.
+ * Tests permissions of cluster state change.
  */
 @RunWith(Parameterized.class)
 public class ClusterStatePermissionsTest extends AbstractSecurityTest {
@@ -108,9 +109,6 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (operationNodeType == NodeType.GRID_CLIENT)
-            cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
         if (!cfg.isClientMode()) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
@@ -127,8 +125,11 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
             srvPerms = permissions;
         else if (operationNodeType == NodeType.THIN_CLIENT)
             clientPerms = permissions;
-        else if (operationNodeType == NodeType.GRID_CLIENT)
+        else if (operationNodeType == NodeType.GRID_CLIENT) {
             clientPerms = F.concat(permissions, ADMIN_OPS);
+
+            cfg.setConnectorConfiguration(new ConnectorConfiguration());
+        }
 
         SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false)
             .appendSystemPermissions(F.concat(srvPerms, JOIN_AS_SERVER, CACHE_CREATE));
@@ -154,7 +155,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests activation and deactivation is allowed with the permission.
+     * Tests botah activation and deactivation are allowed.
      */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
@@ -164,7 +165,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests activation is not allowed without the permission.
+     * Tests activation is not allowed.
      */
     @Test
     public void testActivationNotAllowed() throws Exception {
@@ -182,7 +183,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests Tests deactivation is allowed, activation is not allowed.
+     * Tests deactivation is allowed, activation is not allowed.
      */
     @Test
     public void testDeactivationAllowedActivationNotAllowed() throws Exception {
@@ -190,7 +191,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
 
         permissions = F.asArray(ADMIN_CLUSTER_DEACTIVATE);
 
-        doTestChangeState(F.asArray(INACTIVE, ACTIVE), F.asArray(TRUE, FALSE));
+        doTestChangeState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
     }
 
     /**
@@ -204,7 +205,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * Starts server node, activates cluster and restores the test configuration.
+     * Starts server node, activates it and restores the test configuration.
      */
     private void startAllAllowedNode() throws Exception {
         NodeType nodeType = operationNodeType;
@@ -224,7 +225,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tries to change state and ensures the error raises if required.
+     * Tries to change state and ensures a proper error raises if required.
      */
     private void doTestChangeState(ClusterState[] states, Boolean[] allowed) throws Exception {
         assert states != null && allowed != null && states.length == allowed.length && states.length > 0;
@@ -284,7 +285,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * @return CHange state operation depending on {@link #operationNodeType}.
+     * @return Change state operation depending on {@link #operationNodeType}.
      */
     private Consumer<ClusterState> nodeStateAction(Ignite srv) throws Exception {
         switch (operationNodeType) {
@@ -346,7 +347,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
             }
 
             default:
-                throw new IllegalArgumentException("Unsupported node type: " + operationNodeType);
+                throw new IllegalArgumentException("Unsupported operation node type: " + operationNodeType);
         }
     }
 
@@ -354,16 +355,25 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
      * Node type of change state operation.
      */
     public enum NodeType {
-        /** Server node for Java API call or JMX call. */
+        /** Server node for Java API call the or the JMX call. */
         SERVER,
 
-        /** Client node for Java API call or JMX call. */
+        /** Client node for Java API call the or the JMX call. */
         CLIENT,
 
-        /** Call from thin client node. */
+        /**
+         * Call from the thin client.
+         *
+         * @see IgniteClient
+         */
         THIN_CLIENT,
 
-        /** Call from remote control like control.sh of REST API. */
+        /**
+         * Call from a remote control like control.sh of the REST API.
+         *
+         * @see GridClient
+         * @see GridRestProcessor
+         */
         GRID_CLIENT
     }
 }
