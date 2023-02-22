@@ -300,9 +300,12 @@ public class IgniteTxHandler {
 
     /** */
     private void processIncrementalSnapshotAwareMessage(UUID nodeId, IncrementalSnapshotAwareMessage msg) {
-        ctx.snapshotMgr().handleIncrementalSnapshotId(msg.id());
+        // Skip if node has joined after incremental snapshot started.
+        if (ctx.localNode().order() <= msg.snapshotTopologyVersion()) {
+            ctx.snapshotMgr().handleIncrementalSnapshotId(msg.id(), msg.snapshotTopologyVersion());
 
-        setIncrementalSnapshotIdIfRequired(msg);
+            setIncrementalSnapshotIdIfRequired(msg);
+        }
 
         GridCacheMessage cacheMsg = msg.payload();
 
