@@ -96,9 +96,9 @@ public enum SecurityPermission {
     ADMIN_SNAPSHOT,
 
     /**
-     * Administration operation: cluster activation.
+     * Administration operation: setting cluster state to any active state.
      *
-     * @see ClusterState
+     * @see ClusterState#active()
      */
     ADMIN_CLUSTER_ACTIVATE,
 

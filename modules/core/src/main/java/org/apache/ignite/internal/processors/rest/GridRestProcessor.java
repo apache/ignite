@@ -917,10 +917,16 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+            case CLUSTER_ACTIVATE:
+            case CLUSTER_DEACTIVATE:
             case BASELINE_SET:
             case BASELINE_ADD:
             case BASELINE_REMOVE:
+            case CLUSTER_SET_STATE:
                 perm = SecurityPermission.ADMIN_OPS;
+
                 break;
 
             case DATA_REGION_METRICS:
@@ -945,11 +951,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case REMOVE_USER:
             case UPDATE_USER:
             case PROBE:
-            case CLUSTER_ACTIVE:
-            case CLUSTER_ACTIVATE:
-            case CLUSTER_INACTIVE:
-            case CLUSTER_DEACTIVATE:
-            case CLUSTER_SET_STATE:
                 break;
 
             default:
