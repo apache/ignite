@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
@@ -33,6 +39,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
     /** Max streamer data size. */
     private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
 
+    /** */
+    public static final String VAL_TYPE = "org.apache.ignite.ducktest.DataBinary";
+
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         int backups = jsonNode.get("backups").asInt();
@@ -41,14 +50,40 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int from = jsonNode.get("from").asInt();
         int to = jsonNode.get("to").asInt();
 
+        int idxCnt = 0;
+
+        if (jsonNode.has("indexCount"))
+            idxCnt = jsonNode.get("indexCount").asInt();
+
         markInitialized();
 
         for (int i = 1; i <= cacheCnt; i++) {
-            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
-                new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
-                    .setBackups(backups));
+            CacheConfiguration<Integer, BinaryObject> ccfg = new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
+                .setBackups(backups);
 
-            generateCacheData(cache.getName(), entrySize, from, to);
+            if (idxCnt > 0) {
+                QueryEntity qe = new QueryEntity();
+                List<QueryIndex> qi = new ArrayList<>(idxCnt);
+
+                qe.setKeyType(Integer.class.getName());
+                qe.setValueType(VAL_TYPE);
+
+                for (int j = 0; j < idxCnt; j++) {
+                    String field = "UUID" + j;
+
+                    qe.addQueryField(field, UUID.class.getName(), null);
+                    qi.add(new QueryIndex(field));
+                }
+
+                qe.setIndexes(qi);
+
+                ccfg.setQueryEntities(Collections.singleton(qe));
+
+            }
+
+            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(ccfg);
+
+            generateCacheData(cache.getName(), entrySize, from, to, idxCnt);
         }
 
         markFinished();
@@ -60,11 +95,11 @@ public class DataGenerationApplication extends IgniteAwareApplication {
      * @param from From key.
      * @param to To key.
      */
-    private void generateCacheData(String cacheName, int entrySize, int from, int to) {
+    private void generateCacheData(String cacheName, int entrySize, int from, int to, int idxCnt) {
         int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
         int logEach = (to - from) / 10;
 
-        BinaryObjectBuilder builder = ignite.binary().builder("org.apache.ignite.ducktest.DataBinary");
+        BinaryObjectBuilder builder = ignite.binary().builder(VAL_TYPE);
 
         byte[] data = new byte[entrySize];
 
@@ -74,6 +109,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
             for (int i = from; i < to; i++) {
                 builder.setField("key", i);
                 builder.setField("data", data);
+
+                for (int j = 0; j < idxCnt; j++)
+                    builder.setField("UUID" + j, UUID.randomUUID());
 
                 stmr.addData(i, builder.build());
 
