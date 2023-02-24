@@ -93,6 +93,8 @@ public class CLIArgumentParser {
             return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
         else if (type == Long.class)
             return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
+        else if (type == Boolean.class)
+            return (T)((Boolean)Boolean.parseBoolean(val));
         else if (type == UUID.class)
             return (T)UUID.fromString(val);
 

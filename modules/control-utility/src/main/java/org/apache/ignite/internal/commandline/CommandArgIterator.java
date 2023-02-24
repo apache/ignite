@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -193,6 +194,19 @@ public class CommandArgIterator {
             namesSet.add(name.trim());
         }
         return namesSet;
+    }
+
+    /** @return Directory value. */
+    public File nextDirectoryArgument(String argName) {
+        File dir = new File(nextArg(argName));
+
+        if (!dir.exists() || !dir.isDirectory()) {
+            throw new IllegalArgumentException(
+                argName + " directory is a file or not exists: " + dir.getAbsolutePath()
+            );
+        }
+
+        return dir;
     }
 
     /**
