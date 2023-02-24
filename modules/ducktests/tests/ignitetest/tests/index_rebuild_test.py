@@ -60,24 +60,25 @@ def last_wal_files(ignites) -> dict:
     wal_idxs = {}
     for node in ignites.nodes:
         wal_idxs[node.account.hostname] = \
-            IgniteAwareService.exec_command(node, f'ls {ignites.wal_dir} -R | grep wal | sort | tail -1')
+            IgniteAwareService.exec_command(node, f'ls {ignites.wal_dir} -R | grep wal | sort | tail -1').strip()
     return wal_idxs
 
 
 CACHE_NAME = "test-cache-1"
 
 
-class RebalancePersistentTest(IgniteTest):
+class IndexRebuildTest(IgniteTest):
     """
     Tests index.bin rebuild.
     """
 
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     @defaults(backups=[1], cache_count=[1], entry_count=[50000], entry_size=[50_000], preloaders=[1], index_count=[3])
     def test_index_bin_rebuild(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                                index_count):
         """
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
         Tests index.bin rebuild on node start.
         """
 
@@ -88,14 +89,17 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility = ControlUtility(ignites)
 
+        control_utility.disable_baseline_auto_adjust()
+
+        _, version, _ = control_utility.cluster_state()
+        control_utility.set_baseline(version)
+
         control_utility.activate()
 
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             data_gen_params=data_gen_params)
-
-        self.logger.info(control_utility.system_view("indexes"))
 
         control_utility.deactivate()
 
@@ -170,6 +174,7 @@ class RebalancePersistentTest(IgniteTest):
         )
 
         node_config = IgniteConfiguration(
+            auto_activation_enabled=False,
             version=IgniteVersion(ignite_version),
             data_storage=data_storage,
             metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"}
