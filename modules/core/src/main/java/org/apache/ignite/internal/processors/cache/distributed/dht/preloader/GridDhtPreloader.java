@@ -293,7 +293,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 throw new AssertionError(buf.toString());
             }
 
-            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+            ctx.database().markCacheGroupWalDisabled(grp.groupId());
         }
 
         return assignments;

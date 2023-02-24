@@ -306,6 +306,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Metastorage key to save currently running snapshot directory path. */
     private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
 
+    /** Prefix for meta store records which means that incremental snapshot creation is disabled for a cache group. */
+    private static final String INC_SNP_DISABLE_KEY_PREFIX = "grp-inc-snp-disabled-";
+
     /** Default value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
     public static final boolean DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = true;
 
@@ -1320,6 +1323,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 removeLastMetaStorageKey();
+
+                if (req.error() == null) {
+                    Collection<Integer> grpIds = req.groups().stream().map(CU::cacheId).collect(Collectors.toList());
+
+                    enableIncrementalSnapshotsCreation(grpIds);
+                }
             }
             catch (Exception e) {
                 throw F.wrap(e);
@@ -2622,6 +2631,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Enables creation of incremental snapshots for the given cache groups.
+     *
+     * @param grpIds Group IDs.
+     */
+    private void enableIncrementalSnapshotsCreation(Collection<Integer> grpIds) {
+        cctx.database().checkpointReadLock();
+
+        try {
+            for (int g: grpIds)
+                metaStorage.remove(incSnpCreationDisabledKey(g));
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to allow incremental snapshot creation for group: " + grpIds, e);
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Convert cache group ID to key for {@link #INC_SNP_DISABLE_KEY_PREFIX} metastorage records.
+     *
+     * @param grpId Group ID.
+     * @return Key.
+     */
+    public static String incSnpCreationDisabledKey(int grpId) {
+        return INC_SNP_DISABLE_KEY_PREFIX + grpId;
+    }
+
+    /**
      * @param snpName Snapshot name event related to.
      * @param msg Event message.
      * @param type Snapshot event type.
@@ -2821,6 +2860,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (int grpId : meta.cacheGroupIds()) {
             if (grpId == METASTORAGE_CACHE_ID)
                 continue;
+
+            if (metaStorage.read(incSnpCreationDisabledKey(grpId)) != null) {
+                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                    "WAL was disabled since previous snapshot for cache group [groupId=" + grpId + ']');
+            }
 
             CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grpId);
 

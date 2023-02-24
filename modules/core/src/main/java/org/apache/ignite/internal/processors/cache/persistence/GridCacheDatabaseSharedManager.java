@@ -193,6 +193,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.fromStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incSnpCreationDisabledKey;
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 
@@ -3114,7 +3115,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             else {
                 metaStorage.write(key, true);
 
-                lastCheckpointInapplicableForWalRebalance(grpId);
+                markCacheGroupWalDisabled(grpId);
             }
         }
         catch (IgniteCheckedException e) {
@@ -3138,14 +3139,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return metaStorage.read(checkpointInapplicableCpAndGroupIdToKey(cpTs, grpId)) != null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void markCacheGroupWalDisabled(int grpId) {
+        checkpointReadLock();
+
+        try {
+            lastCheckpointInapplicableForWalRebalance(grpId);
+
+            disableIncrementalSnapshotsCreation(grpId);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+    }
+
     /**
      * Set last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
      *
      * @param grpId Group ID.
      */
-    @Override public void lastCheckpointInapplicableForWalRebalance(int grpId) {
-        checkpointReadLock();
-
+    private void lastCheckpointInapplicableForWalRebalance(int grpId) {
         try {
             CheckpointEntry lastCp = checkpointManager.checkpointMarkerStorage().removeFromEarliestCheckpoints(grpId);
 
@@ -3157,8 +3170,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (IgniteCheckedException e) {
             log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
         }
-        finally {
-            checkpointReadUnlock();
+    }
+
+    /**
+     * Forbid creation of incremental snapshots for given cache group.
+     *
+     * @param grpId Group ID.
+     */
+    private void disableIncrementalSnapshotsCreation(int grpId) {
+        try {
+            metaStorage.write(incSnpCreationDisabledKey(grpId), true);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to disable incremental snapshot creation for the cache group: " + grpId, e);
         }
     }
 

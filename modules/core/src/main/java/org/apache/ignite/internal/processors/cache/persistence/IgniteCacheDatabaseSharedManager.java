@@ -1571,11 +1571,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Marks last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
+     * Writes to the local metastorage flag meaning that updates into the given cache groups aren't persisted into WAL.
      *
-     * @param grpId Group id.
+     * @param grpId Group ID.
      */
-    public void lastCheckpointInapplicableForWalRebalance(int grpId) {
+    public void markCacheGroupWalDisabled(int grpId) {
         // No-op.
     }
 
