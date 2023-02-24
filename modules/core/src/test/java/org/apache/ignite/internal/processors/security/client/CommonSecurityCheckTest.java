@@ -30,10 +30,12 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -59,6 +61,9 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     /** */
     protected boolean fail;
 
+    /** */
+    protected SecurityPermission[] clientPermissions = F.asArray(ADMIN_OPS, CACHE_CREATE);
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -72,7 +77,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     protected TestSecurityData[] clientData() {
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
+                .appendSystemPermissions(clientPermissions)
                 .build()
         )};
     }
