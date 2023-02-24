@@ -29,8 +29,10 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,6 +50,8 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
     /** */
     @Test
     public void testAuthenticate() throws Exception {
+        clientPermissions = F.concat(clientPermissions, SecurityPermission.ADMIN_CLUSTER_ACTIVATE);
+
         startGrid();
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
