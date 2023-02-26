@@ -260,9 +260,6 @@ class ControlUtility:
 
         return "Enabled." in output
 
-    def system_view(self, view_name):
-        return self.__run(f"--system-view {view_name}")
-
     def __performance_statistics_cmd(self, sub_command):
         return self.__run(f"--performance-statistics {sub_command}")
 

@@ -242,3 +242,9 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: absolute path to the specified script
         """
         return os.path.join(self.home_dir, "bin", script_name)
+
+    def cache_dir(self, consistent_dir, cache_name):
+        return os.path.join(self.database_dir, consistent_dir, f'cache-{cache_name}')
+
+    def index_file(self, consistent_dir, cache_name):
+        return os.path.join(self.database_dir, consistent_dir, f'cache-{cache_name}', 'index.bin')

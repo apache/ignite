@@ -16,7 +16,6 @@
 """
 Module contains index.bin rebuild tests.
 """
-import os
 import time
 
 from ducktape.mark import defaults
@@ -104,14 +103,11 @@ class IndexRebuildTest(IgniteTest):
 
         ignites.stop()
 
-        wal_idxs_before = last_wal_files(ignites)
         wal_before_rebuild = get_file_sizes(ignites.nodes, ignites.wal_dir)
-        idx_before_rebuild = get_file_sizes(ignites.nodes,
-                                            os.path.join(ignites.database_dir, '*', f'cache-{CACHE_NAME}', 'index.bin'))
+        idx_before_rebuild = get_file_sizes(ignites.nodes, ignites.index_file('*', CACHE_NAME))
 
         for node in ignites.nodes:
-            path = os.path.join(ignites.database_dir, node.account.hostname, f'cache-{CACHE_NAME}', 'index.bin')
-            IgniteAwareService.exec_command(node, f'rm {path}')
+            IgniteAwareService.exec_command(node, f'rm {ignites.index_file(node.account.hostname, CACHE_NAME)}')
 
         start_time = round(time.time() * 1000)
 
@@ -132,10 +128,8 @@ class IndexRebuildTest(IgniteTest):
 
         rebuild_time = round(time.time() * 1000) - start_time
 
-        wal_idxs_after = last_wal_files(ignites)
         wal_after_rebuild = get_file_sizes(ignites.nodes, ignites.wal_dir)
-        idx_after_rebuild = get_file_sizes(ignites.nodes, os.path.join(ignites.database_dir, '*', f'cache-{CACHE_NAME}',
-                                                                       'index.bin'))
+        idx_after_rebuild = get_file_sizes(ignites.nodes, ignites.index_file('*', CACHE_NAME))
 
         wal_enlargement = {}
         for node in wal_before_rebuild:
@@ -147,9 +141,7 @@ class IndexRebuildTest(IgniteTest):
             "wal_after_rebuild": wal_after_rebuild,
             "idx_before_rebuild": idx_before_rebuild,
             "idx_after_rebuild": idx_after_rebuild,
-            "wal_enlargement": wal_enlargement,
-            "wal_idxs_before": wal_idxs_before,
-            "wal_idxs_after": wal_idxs_after,
+            "wal_enlargement_bytes": wal_enlargement,
             "rebuild_time_ms": rebuild_time
         }
 
