@@ -163,19 +163,18 @@ class IndexRebuildTest(IgniteTest):
         """
         node_count = self.available_cluster_size - data_gen_params.preloaders
 
-        data_storage = DataStorageConfiguration(
-            max_wal_archive_size=1000 * data_gen_params.data_region_max_size,
-            wal_segment_size=round((data_gen_params.entry_size * data_gen_params.entry_count) / (node_count * 10)),
-            default=DataRegionConfiguration(
-                persistence_enabled=True,
-                max_size=data_gen_params.data_region_max_size
-            )
-        )
-
         node_config = IgniteConfiguration(
+            cluster_state='INACTIVE',
             auto_activation_enabled=False,
             version=IgniteVersion(ignite_version),
-            data_storage=data_storage,
+            data_storage=DataStorageConfiguration(
+                max_wal_archive_size=1000 * data_gen_params.data_region_max_size,
+                wal_segment_size=round((data_gen_params.entry_size * data_gen_params.entry_count) / (node_count * 10)),
+                default=DataRegionConfiguration(
+                    persistence_enabled=True,
+                    max_size=data_gen_params.data_region_max_size
+                )
+            ),
             metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"}
         )
 

@@ -56,7 +56,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  * This startup is a Java application with {@link #main(String[])} method that accepts command line arguments.
  */
 @IgniteExperimental
-public class WalReaderCommandLineStartup {
+public class IgniteWalReader {
     /** Quite log flag. */
     private static final boolean QUITE = IgniteSystemProperties.getBoolean(IGNITE_QUIET);
 
@@ -107,7 +107,7 @@ public class WalReaderCommandLineStartup {
         if (args.length > 0 && isHelp(args[0]))
             exit(null, true, 0);
 
-        new WalReaderCommandLineStartup().readWal(Arrays.asList(args));
+        new IgniteWalReader().readWal(Arrays.asList(args));
 
         exit(null, false, EXIT_CODE_OK);
     }
@@ -115,7 +115,7 @@ public class WalReaderCommandLineStartup {
     /** Executes WAL read. */
     private void readWal(List<String> args) {
         try {
-            IgniteLogger log = setupJavaLogger("wal-reader", WalReaderCommandLineStartup.class);
+            IgniteLogger log = setupJavaLogger("wal-reader", IgniteWalReader.class);
 
             try (WALIterator iter = iteratorFromArgs(args)) {
                 while (iter.hasNext()) {
