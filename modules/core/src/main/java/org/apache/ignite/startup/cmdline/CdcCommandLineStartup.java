@@ -32,12 +32,12 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
 
 /**
  * This class defines command-line Ignite Capture Data Change startup. This startup can be used to start Ignite
- * Capture Data Change application outside any hosting environment from command line.
+ * Capture Data Change application outside of any hosting environment from command line.
  * This startup is a Java application with {@link #main(String[])} method that accepts command line arguments.
  * It accepts just one parameter which is Spring XML configuration file path.
  * You can run this class from command line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${IGNITE_HOME}/bin/ignite-cdc.{sh|bat}} shipped with Ignite use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/cdc.{sh|bat}} shipped with Ignite use
  * this startup and you can use them as an example.
  * <p>
  *

@@ -315,7 +315,7 @@ public class IgniteIndexReader implements AutoCloseable {
             optionalArg(INDEXES_ARG, "you can specify index tree names that will be processed, separated by comma " +
                 "without spaces, other index trees will be skipped.", String[].class, () -> U.EMPTY_STRS),
             optionalArg(CHECK_PARTS_ARG,
-                "check cache data tree in partition files and it's consistency with indexes.", Boolean.class)
+                "check cache data tree in partition files and it's consistency with indexes.", Boolean.class, () -> false)
         ));
 
         if (args.length == 0) {
