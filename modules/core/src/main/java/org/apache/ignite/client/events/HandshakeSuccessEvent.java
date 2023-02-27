@@ -15,23 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.client.events;
 
-import org.apache.ignite.configuration.ClientConfiguration;
+import java.util.concurrent.TimeUnit;
 
-/**
- * Reliability test with partition awareness.
- */
-public class ReliabilityTestPartitionAware extends ReliabilityTest {
-    /** {@inheritDoc} */
-    @Override protected ClientConfiguration getClientConfiguration() {
-        // In partition-aware mode we connect all channels right away.
-        // Otherwise, we connect one channel at a time.
-        return super.getClientConfiguration().setPartitionAwarenessEnabled(true);
+/** */
+public class HandshakeSuccessEvent extends ConnectionEvent {
+    /** */
+    private final long elapsedTimeNanos;
+
+    /**
+     * @param conn Connection description.
+     * @param elapsedTimeNanos Elapsed time in nanoseconds.
+     */
+    public HandshakeSuccessEvent(
+        ConnectionDescription conn,
+        long elapsedTimeNanos
+    ) {
+        super(conn);
+
+        this.elapsedTimeNanos = elapsedTimeNanos;
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean isPartitionAware() {
-        return true;
+    /**
+     * Get the elapsed time of the handshake.
+     *
+     * @param timeUnit Desired time unit in which to return the elapsed time.
+     * @return the elapsed time.
+     */
+    public long elapsedTime(TimeUnit timeUnit) {
+        return timeUnit.convert(elapsedTimeNanos, TimeUnit.NANOSECONDS);
     }
 }

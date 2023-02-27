@@ -20,12 +20,16 @@ package org.apache.ignite.internal.visor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logFinish;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /**
  * Base class for Visor jobs.
@@ -33,7 +37,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
  * @param <A> Job argument type.
  * @param <R> Job result type.
  */
-public abstract class VisorJob<A, R> extends ComputeJobAdapter {
+public abstract class VisorJob<A, R> extends ComputeJobAdapter implements PublicAccessJob {
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
     protected transient IgniteEx ignite;
@@ -82,4 +86,9 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
      * @throws IgniteException In case of error.
      */
     protected abstract R run(@Nullable A arg) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override public SecurityPermissionSet requiredPermissions() {
+        return systemPermissions(ADMIN_OPS);
+    }
 }

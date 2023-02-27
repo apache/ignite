@@ -67,6 +67,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
@@ -355,6 +357,11 @@ public class CdcMain implements Runnable {
 
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
+                else {
+                    cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
+                        ? new NoopMetricExporterSpi()
+                        : new JmxMetricExporterSpi());
+                }
 
                 initializeDefaultMBeanServer(cfg);
 
@@ -438,12 +445,12 @@ public class CdcMain implements Runnable {
                         // Need unseen WAL segments only.
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
-                        .sorted(Comparator.comparingLong(this::segmentIndex)) // Sort by segment index.
+                        .sorted(Comparator.comparingLong(CdcMain::segmentIndex)) // Sort by segment index.
                         .peek(p -> {
                             long nextSgmnt = segmentIndex(p);
 
                             if (lastSgmnt.get() != -1 && nextSgmnt - lastSgmnt.get() != 1) {
-                                throw new IgniteException("Found missed segments. Some events are missed. " +
+                                throw new IgniteException("Found missed segments. Some events are missed. Exiting! " +
                                     "[lastSegment=" + lastSgmnt.get() + ", nextSegment=" + nextSgmnt + ']');
                             }
 
@@ -525,15 +532,16 @@ public class CdcMain implements Runnable {
                 walState = null;
             }
 
-            boolean interrupted = Thread.interrupted();
+            boolean interrupted = false;
 
-            while (iter.hasNext() && !interrupted) {
+            do {
                 boolean commit = consumer.onRecords(iter);
 
                 if (commit) {
                     T2<WALPointer, Integer> curState = iter.state();
 
-                    assert curState != null;
+                    if (curState == null)
+                        continue;
 
                     if (log.isDebugEnabled())
                         log.debug("Saving state [curState=" + curState + ']');
@@ -560,7 +568,7 @@ public class CdcMain implements Runnable {
                 }
 
                 interrupted = Thread.interrupted();
-            }
+            } while (iter.hasNext() && !interrupted);
 
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
@@ -810,7 +818,7 @@ public class CdcMain implements Runnable {
      * @param segment WAL segment file.
      * @return Segment index.
      */
-    public long segmentIndex(Path segment) {
+    public static long segmentIndex(Path segment) {
         String fn = segment.getFileName().toString();
 
         return Long.parseLong(fn.substring(0, fn.indexOf('.')));

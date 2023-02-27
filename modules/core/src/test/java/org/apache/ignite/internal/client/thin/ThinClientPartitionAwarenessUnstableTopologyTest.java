@@ -17,22 +17,82 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.client.events.ConnectionEventListener;
+import org.apache.ignite.client.events.HandshakeStartEvent;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Test partition awareness of thin client on unstable topology.
  */
+@RunWith(Parameterized.class)
 public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
+    /** */
+    @Parameterized.Parameter
+    public boolean sslEnabled;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "sslEnabled={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{false}, {true}});
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (sslEnabled) {
+            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setSslEnabled(true)
+                .setSslClientAuth(true)
+                .setUseIgniteSslContextFactory(false)
+                .setSslContextFactory(GridTestUtils.sslFactory()));
+        }
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected ClientConfiguration getClientConfiguration(int... nodeIdxs) {
+        ClientConfiguration cfg = super.getClientConfiguration(nodeIdxs);
+
+        if (sslEnabled) {
+            cfg.setSslMode(SslMode.REQUIRED)
+                .setSslContextFactory(GridTestUtils.sslFactory());
+        }
+
+        return cfg;
     }
 
     /**
@@ -201,6 +261,63 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
             }
 
             assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
+        }
+    }
+
+    /** */
+    @Test
+    public void testSessionCloseBeforeHandshake() throws Exception {
+        startGrid(0);
+
+        ClientConfiguration cliCfg = getClientConfiguration(0)
+            .setEventListeners(new ConnectionEventListener() {
+                @Override public void onHandshakeStart(HandshakeStartEvent event) {
+                    // Close connection.
+                    stopAllGrids();
+                }
+            });
+
+        GridTestUtils.assertThrowsWithCause(() -> {
+            try (IgniteClient client = Ignition.startClient(cliCfg)) {
+                return client;
+            }
+        }, ClientConnectionException.class);
+    }
+
+    /** */
+    @Test
+    public void testCreateSessionAfterClose() throws Exception {
+        startGrids(2);
+
+        CountDownLatch srvStopped = new CountDownLatch(1);
+
+        AtomicBoolean dfltInited = new AtomicBoolean();
+
+        // The client should close pending requests on closing without waiting.
+        try (TcpIgniteClient client = new TcpIgniteClient((cfg, connMgr) -> {
+            // Skip default channel to successful client start.
+            if (!dfltInited.compareAndSet(false, true)) {
+                try {
+                    // Connection manager should be stopped before opening a new connection.
+                    srvStopped.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+            }
+
+            return new TcpClientChannel(cfg, connMgr);
+        }, getClientConfiguration(0))) {
+            GridNioServer<ByteBuffer> srv = getFieldValue(client.reliableChannel(), "connMgr", "srv");
+
+            // Make sure handshake data will not be recieved.
+            setFieldValue(srv, "skipRead", true);
+
+            GridTestUtils.runAsync(() -> {
+                assertTrue(waitForCondition(() -> getFieldValue(srv, "closed"), getTestTimeout()));
+
+                srvStopped.countDown();
+            });
         }
     }
 }

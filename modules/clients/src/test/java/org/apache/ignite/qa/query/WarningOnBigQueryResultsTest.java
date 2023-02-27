@@ -311,7 +311,7 @@ public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTe
         assertFalse(listener(grid(0)).distributedJoin);
         assertFalse(listener(grid(1)).distributedJoin);
 
-        assertFalse(listener(grid(0)).lazy);
-        assertFalse(listener(grid(1)).lazy);
+        assertTrue(listener(grid(0)).lazy);
+        assertTrue(listener(grid(1)).lazy);
     }
 }

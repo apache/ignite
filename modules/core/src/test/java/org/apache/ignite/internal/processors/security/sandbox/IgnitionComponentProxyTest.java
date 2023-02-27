@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginPro
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * If the Ignite Sandbox is enabled, then {@link Ignition} methods that return existing instances of Ignite should
@@ -49,8 +49,8 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        startGrid(SRV, ALLOW_ALL, false);
-        startGrid(CLNT, ALLOW_ALL, true);
+        startGrid(SRV, ALL_PERMISSIONS, false);
+        startGrid(CLNT, ALL_PERMISSIONS, true);
     }
 
     /**
@@ -152,7 +152,7 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
 
                             return Ignition.start(
                                 optimize(getConfiguration(login,
-                                    new TestSecurityPluginProvider(login, "", ALLOW_ALL, perms, globalAuth)))
+                                    new TestSecurityPluginProvider(login, "", ALL_PERMISSIONS, perms, globalAuth)))
                             );
                         }, acc);
                 }

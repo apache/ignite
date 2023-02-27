@@ -75,7 +75,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     @Test
     public void testNodeIdMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, SYS_METRICS, NODE_ID.argName()),
-            "ID of the node from which metric values should be obtained is expected.");
+            "Expecting " + NODE_ID.argName() + " command argument.");
     }
 
     /** Tests command error output in case value of {@link MetricCommandArg#NODE_ID} argument is invalid.*/
@@ -464,20 +464,5 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         }
         
         return res;
-    }
-
-    /**
-     * Executes command and checks its exit code.
-     *
-     * @param expExitCode Expected exit code.
-     * @param args Command lines arguments.
-     * @return Result of command execution.
-     */
-    private String executeCommand(int expExitCode, String... args) {
-        int res = execute(args);
-
-        assertEquals(expExitCode, res);
-
-        return testOut.toString();
     }
 }

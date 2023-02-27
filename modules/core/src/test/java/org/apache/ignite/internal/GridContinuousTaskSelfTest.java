@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -45,7 +44,9 @@ import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -57,9 +58,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
-import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Continuous task test.
@@ -206,17 +204,15 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx ign = startGrid(0);
 
-            IgniteInternalFuture<String> fut = ign.context().closure().callAsync(
-                BALANCE,
-                new Callable<String>() {
+            IgniteFuture<String> fut = ign.compute(ign.cluster()).callAsync(
+                new IgniteCallable<String>() {
                     @IgniteInstanceResource
                     private IgniteEx g;
 
                     @Override public String call() throws Exception {
                         return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
                     }
-                },
-                options(ign.cluster().nodes())
+                }
             );
 
             assertEquals("DONE", fut.get(3000));

@@ -15,24 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.client.events;
 
-import java.util.concurrent.ExecutionException;
-
-/**
- * Reliability test with async cache operation.
- */
-public class ReliabilityTestAsync extends ReliabilityTest {
-    /** {@inheritDoc} */
-    @Override protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
-        try {
-            cache.putAsync(key, val).get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException)
-                throw (RuntimeException)e.getCause();
-
-            throw new RuntimeException(e);
-        }
+/** */
+public class HandshakeStartEvent extends ConnectionEvent {
+    /**
+     * @param conn Connection description.
+     */
+    public HandshakeStartEvent(ConnectionDescription conn) {
+        super(conn);
     }
 }

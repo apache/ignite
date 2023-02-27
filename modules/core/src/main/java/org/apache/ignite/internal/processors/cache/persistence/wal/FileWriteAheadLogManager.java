@@ -1256,8 +1256,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disabled(int grpId) {
-        return cctx.walState().isDisabled(grpId);
+    @Override public boolean disabled(int grpId, long pageId) {
+        return cctx.walState().isDisabled(grpId, pageId);
     }
 
     /**
@@ -3299,6 +3299,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             len += descriptor.file.length();
 
         return len;
+    }
+
+    /** @return WAL cdc directory (including consistent ID as subfolder) */
+    @Nullable public File walCdcDirectory() {
+        return walCdcDir;
     }
 
     /**
