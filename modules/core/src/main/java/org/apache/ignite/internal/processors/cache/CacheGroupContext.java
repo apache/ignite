@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
@@ -176,6 +177,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** @see IndexesRebuildTask */
+    private volatile boolean idxWalEnabled;
+
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
@@ -248,6 +252,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
+        this.idxWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
         this.compressHandler = compressHandler;
 
@@ -1233,6 +1238,16 @@ public class CacheGroupContext {
      */
     public boolean globalWalEnabled() {
         return globalWalEnabled;
+    }
+
+    /** @return {@code True} if WAL for index operations enabled. */
+    public boolean indexWalEnabled() {
+        return idxWalEnabled;
+    }
+
+    /** @param idxWalEnabled Index WAL enabled flag. */
+    public void indexWalEnabled(boolean idxWalEnabled) {
+        this.idxWalEnabled = idxWalEnabled;
     }
 
     /**

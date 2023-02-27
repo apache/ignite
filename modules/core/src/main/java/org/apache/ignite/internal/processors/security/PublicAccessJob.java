@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.processors.security;
+
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
- * Test to check JDBC driver behavior when cache specified in connection string does not have any query entities.
+ * Represents an interface that must be implemented by any internal {@link ComputeJob} that should be accessible for a
+ * user to be executed through the Ignite public API.
  */
-public class JdbcDefaultNoOpCacheTest extends JdbcNoDefaultCacheTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite(0).getOrCreateCache("noop");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String getUrl() {
-        return super.getUrl() + "noop";
-    }
+public interface PublicAccessJob {
+    /** @return Set of permissions to be authorized before job execution. */
+    public SecurityPermissionSet requiredPermissions();
 }

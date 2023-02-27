@@ -217,7 +217,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 if (locExec) {
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    taskFut = ctx.task().execute(name, arg, options().withTimeout(timeout));
+                    taskFut = ctx.task().execute(name, arg, options().asPublicRequest().withTimeout(timeout));
                 }
                 else {
                     // Using predicate instead of node intentionally

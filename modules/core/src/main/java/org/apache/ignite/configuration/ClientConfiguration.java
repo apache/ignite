@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.EventListener;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -156,6 +157,9 @@ public final class ClientConfiguration implements Serializable {
 
     /** Logger. */
     private IgniteLogger logger;
+
+    /** */
+    private EventListener[] eventListeners;
 
     /**
      * @return Host addresses.
@@ -551,7 +555,6 @@ public final class ClientConfiguration implements Serializable {
      * within explicit transactions {@code ClientTransactions#txStart()}.
      * 2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a partition number
      * as a parameter with which the query is routed to a particular server node that stores the requested data.
-     * @return A value indicating whether partition awareness should be enabled.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
@@ -853,5 +856,22 @@ public final class ClientConfiguration implements Serializable {
      */
     public IgniteLogger getLogger() {
         return logger;
+    }
+
+    /**
+     * @param listeners Clent event listeners.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setEventListeners(EventListener... listeners) {
+        eventListeners = listeners;
+
+        return this;
+    }
+
+    /**
+     * @return Client event listeners.
+     */
+    public EventListener[] getEventListeners() {
+        return eventListeners;
     }
 }

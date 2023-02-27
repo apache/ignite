@@ -47,7 +47,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /** Tests that security information specified in cache create/destroy events belongs to the operation initiator. */
 public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSecurityContextTest {
@@ -167,7 +167,7 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
         checkCacheEvents(
             () -> startGrid(getConfiguration(
                 operationInitiatorLogin,
-                    new TestSecurityPluginProvider(operationInitiatorLogin, "", ALLOW_ALL, false))
+                    new TestSecurityPluginProvider(operationInitiatorLogin, "", ALL_PERMISSIONS, false))
                 .setClientMode(isClient)
                 .setCacheConfiguration(cacheConfiguration()))
                 .close(),
