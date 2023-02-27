@@ -183,7 +183,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append("\nComparision results [mode=").append(mode).append("]:");
+        sb.append("\nComparison results [mode=").append(mode).append("]:");
 
         for (int i = 0; i < cnts.size(); i++) {
             long rn = raws.get(i).net;
