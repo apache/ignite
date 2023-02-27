@@ -163,7 +163,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
 
             CompressionTransformer.type = CompressionTransformer.CompressionType.DISABLED;
 
-            raw = doTest(cnt, keyGen, valGen); // Compresson disabled.
+            raw = doTest(cnt, keyGen, valGen); // Compression disabled.
 
             CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();
 
