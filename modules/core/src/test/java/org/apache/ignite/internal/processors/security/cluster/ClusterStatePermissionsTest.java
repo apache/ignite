@@ -56,7 +56,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
@@ -125,7 +124,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
         else if (operationNodeType == NodeType.THIN_CLIENT)
             clientPerms = permissions;
         else if (operationNodeType == NodeType.GRID_CLIENT) {
-            clientPerms = F.concat(permissions, ADMIN_OPS);
+            clientPerms = permissions;
 
             cfg.setConnectorConfiguration(new ConnectorConfiguration());
         }
@@ -160,7 +159,10 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     public void testActivationDeactivationAllowed() throws Exception {
         permissions = F.asArray(ADMIN_CLUSTER_STATE);
 
-        doTestChangeState(F.asArray(ACTIVE_READ_ONLY, ACTIVE, INACTIVE), F.asArray(TRUE, TRUE, TRUE));
+        doTestChangeState(
+            F.asArray(ACTIVE_READ_ONLY, INACTIVE, ACTIVE_READ_ONLY, ACTIVE, INACTIVE, ACTIVE, ACTIVE_READ_ONLY),
+            F.asArray(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
+        );
     }
 
     /**
