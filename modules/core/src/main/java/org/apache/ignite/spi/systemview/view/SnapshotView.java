@@ -131,7 +131,7 @@ public class SnapshotView {
      * @return Incremental snapshot index, {@code null} for full snapshot.
      */
     @Order(5)
-    public Integer incIdx() {
+    public Integer incrementalIndex() {
         return incIdx;
     }
 

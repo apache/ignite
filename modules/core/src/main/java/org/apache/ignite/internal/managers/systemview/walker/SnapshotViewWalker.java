@@ -34,6 +34,8 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
         v.accept(2, "baselineNodes", String.class);
         v.accept(3, "cacheGroups", String.class);
         v.accept(4, "snapshotRecordSegment", Long.class);
+        v.accept(5, "incrementalIndex", Integer.class);
+        v.accept(6, "type", String.class);
     }
 
     /** {@inheritDoc} */
@@ -43,10 +45,12 @@ public class SnapshotViewWalker implements SystemViewRowAttributeWalker<Snapshot
         v.accept(2, "baselineNodes", String.class, row.baselineNodes());
         v.accept(3, "cacheGroups", String.class, row.cacheGroups());
         v.accept(4, "snapshotRecordSegment", Long.class, row.snapshotRecordSegment());
+        v.accept(5, "incrementalIndex", Integer.class, row.incrementalIndex());
+        v.accept(6, "type", String.class, row.type());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 5;
+        return 7;
     }
 }
