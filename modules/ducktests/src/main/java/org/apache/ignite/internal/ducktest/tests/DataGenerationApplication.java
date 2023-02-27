@@ -20,7 +20,6 @@ package org.apache.ignite.internal.ducktest.tests;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -69,9 +68,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 qe.setValueType(VAL_TYPE);
 
                 for (int j = 0; j < idxCnt; j++) {
-                    String field = "UUID" + j;
+                    String field = "bytes" + j;
 
-                    qe.addQueryField(field, UUID.class.getName(), null);
+                    qe.addQueryField(field, byte[].class.getName(), null);
                     qi.add(new QueryIndex(field));
                 }
 
@@ -110,8 +109,13 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 builder.setField("key", i);
                 builder.setField("data", data);
 
-                for (int j = 0; j < idxCnt; j++)
-                    builder.setField("UUID" + j, UUID.randomUUID());
+                for (int j = 0; j < idxCnt; j++) {
+                    byte[] indexedBytes = new byte[100];
+
+                    ThreadLocalRandom.current().nextBytes(indexedBytes);
+
+                    builder.setField("bytes" + j, indexedBytes);
+                }
 
                 stmr.addData(i, builder.build());
 

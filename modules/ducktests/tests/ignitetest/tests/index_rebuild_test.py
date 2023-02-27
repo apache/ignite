@@ -16,7 +16,6 @@
 """
 Module contains index.bin rebuild tests.
 """
-import os
 import time
 
 from ducktape.mark import defaults
@@ -36,11 +35,11 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 def get_file_sizes(nodes: list, file: str) -> dict:
     """
-    Return WAL size in bytes.
+    Return file size in bytes.
 
     :param nodes: List of nodes.
     :param file: File to get size for.
-    :return Dictionary with key as hostname value is dictionary wit size in bytes and path to the file on specific node.
+    :return Dictionary with key as hostname value is files sizes on the node.
     """
     res = {}
     for node in nodes:
@@ -48,20 +47,9 @@ def get_file_sizes(nodes: list, file: str) -> dict:
 
         data = out.split("\t")
 
-        res[node.account.hostname] = {
-            "size": int(data[0]),
-            "path": data[1].strip()
-        }
+        res[node.account.hostname] = int(data[0])
 
     return res
-
-
-def last_wal_files(ignites) -> dict:
-    wal_idxs = {}
-    for node in ignites.nodes:
-        wal_idxs[node.account.hostname] = \
-            IgniteAwareService.exec_command(node, f'ls {ignites.wal_dir} -R | grep wal | sort | tail -1').strip()
-    return wal_idxs
 
 
 CACHE_NAME = "test-cache-1"
@@ -74,7 +62,7 @@ class IndexRebuildTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[50000], entry_size=[50_000], preloaders=[1], index_count=[3])
+    @defaults(backups=[1], cache_count=[1], entry_count=[50000], entry_size=[50], preloaders=[1], index_count=[3])
     def test_index_bin_rebuild(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                                index_count):
         """
@@ -104,14 +92,11 @@ class IndexRebuildTest(IgniteTest):
 
         ignites.stop()
 
-        wal_idxs_before = last_wal_files(ignites)
         wal_before_rebuild = get_file_sizes(ignites.nodes, ignites.wal_dir)
-        idx_before_rebuild = get_file_sizes(ignites.nodes,
-                                            os.path.join(ignites.database_dir, '*', f'cache-{CACHE_NAME}', 'index.bin'))
+        idx_before_rebuild = get_file_sizes(ignites.nodes, ignites.index_file('*', CACHE_NAME))
 
         for node in ignites.nodes:
-            path = os.path.join(ignites.database_dir, node.account.hostname, f'cache-{CACHE_NAME}', 'index.bin')
-            IgniteAwareService.exec_command(node, f'rm {path}')
+            IgniteAwareService.exec_command(node, f'rm {ignites.index_file(node.account.hostname, CACHE_NAME)}')
 
         start_time = round(time.time() * 1000)
 
@@ -132,14 +117,12 @@ class IndexRebuildTest(IgniteTest):
 
         rebuild_time = round(time.time() * 1000) - start_time
 
-        wal_idxs_after = last_wal_files(ignites)
         wal_after_rebuild = get_file_sizes(ignites.nodes, ignites.wal_dir)
-        idx_after_rebuild = get_file_sizes(ignites.nodes, os.path.join(ignites.database_dir, '*', f'cache-{CACHE_NAME}',
-                                                                       'index.bin'))
+        idx_after_rebuild = get_file_sizes(ignites.nodes, ignites.index_file('*', CACHE_NAME))
 
         wal_enlargement = {}
         for node in wal_before_rebuild:
-            wal_enlargement[node] = wal_after_rebuild[node]['size'] - wal_before_rebuild[node]['size']
+            wal_enlargement[node] = wal_after_rebuild[node] - wal_before_rebuild[node]
 
         return {
             "preload_time": preload_time,
@@ -147,9 +130,7 @@ class IndexRebuildTest(IgniteTest):
             "wal_after_rebuild": wal_after_rebuild,
             "idx_before_rebuild": idx_before_rebuild,
             "idx_after_rebuild": idx_after_rebuild,
-            "wal_enlargement": wal_enlargement,
-            "wal_idxs_before": wal_idxs_before,
-            "wal_idxs_after": wal_idxs_after,
+            "wal_enlargement_bytes": wal_enlargement,
             "rebuild_time_ms": rebuild_time
         }
 
@@ -169,7 +150,7 @@ class IndexRebuildTest(IgniteTest):
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
                 max_wal_archive_size=1000 * data_gen_params.data_region_max_size,
-                wal_segment_size=round((data_gen_params.entry_size * data_gen_params.entry_count) / (node_count * 10)),
+                wal_segment_size=50 * 1024 * 1024,
                 default=DataRegionConfiguration(
                     persistence_enabled=True,
                     max_size=data_gen_params.data_region_max_size
