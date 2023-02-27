@@ -228,12 +228,14 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     private void awaitRebuild() throws Exception {
         LogListener walDisabledLsnr = LogListener.matches(
             "WAL disabled for index partition " +
-                "[name=" + cacheGroupName() + ", id=" + cacheGroupId(cacheName(), cacheGroupName()) + ']'
+                "[name=" + (cacheGroupName() == null ? cacheName() : cacheGroupName()) +
+                ", id=" + cacheGroupId(cacheName(), cacheGroupName()) + ']'
         ).build();
 
         LogListener walEnabledLsnr = LogListener.matches(
             "WAL enabled for index partition " +
-                "[name=" + cacheGroupName() + ", id=" + cacheGroupId(cacheName(), cacheGroupName()) + ']'
+                "[name=" + (cacheGroupName() == null ? cacheName() : cacheGroupName()) +
+                ", id=" + cacheGroupId(cacheName(), cacheGroupName()) + ']'
         ).build();
 
         testLog.registerListener(walDisabledLsnr);

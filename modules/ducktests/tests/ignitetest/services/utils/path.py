@@ -216,6 +216,13 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         return os.path.join(self.work_dir, "db")
 
     @property
+    def wal_dir(self):
+        """
+        :return: path to wal directory
+        """
+        return os.path.join(self.database_dir, "wal")
+
+    @property
     def snapshots_dir(self):
         """
         :return: path to snapshots directory
@@ -235,3 +242,20 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :return: absolute path to the specified script
         """
         return os.path.join(self.home_dir, "bin", script_name)
+
+    def cache_dir(self, consistent_dir, cache_name):
+        """
+        :param consistent_dir: consistent ID directory.
+        :param cache_name: cache name.
+        :return: absolute path to the cache directory.
+        """
+        consistent_dir = consistent_dir.replace('.', '_')
+        return os.path.join(self.database_dir, consistent_dir, f'cache-{cache_name}')
+
+    def index_file(self, consistent_dir, cache_name):
+        """
+        :param consistent_dir: consistent ID directory.
+        :param cache_name: cache name.
+        :return: absolute path to the index file of cache.
+        """
+        return os.path.join(self.cache_dir(consistent_dir, cache_name), 'index.bin')
