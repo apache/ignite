@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_VALIDATION_FAILED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** Tests joining node validation failed event. */
@@ -71,7 +71,7 @@ public class IgniteNodeValidationFailedEventTest extends GridCommonAbstractTest 
         String invalidNodeName = getTestIgniteInstanceName(2);
 
         IgniteConfiguration invalidCfg = getConfiguration(invalidNodeName)
-            .setPluginProviders(new TestSecurityPluginProvider("login", "", ALLOW_ALL, false));
+            .setPluginProviders(new TestSecurityPluginProvider("login", "", ALL_PERMISSIONS, false));
 
         assertThrowsWithCause(() -> startGrid(optimize(invalidCfg)), IgniteSpiException.class);
 

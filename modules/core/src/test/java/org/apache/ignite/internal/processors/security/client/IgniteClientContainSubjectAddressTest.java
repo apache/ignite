@@ -38,7 +38,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Test AuthenticationContext contain subject address when subject is IgniteClient.
@@ -63,7 +63,7 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestSubjectAddressSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestSubjectAddressSecurityPluginProvider(name, null, ALL_PERMISSIONS,
             globalAuth, true, clientData());
     }
 

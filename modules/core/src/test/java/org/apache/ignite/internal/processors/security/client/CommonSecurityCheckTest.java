@@ -48,7 +48,7 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * Common parent for security tests for thin client.
@@ -172,7 +172,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
      * @return Plugin provider.
      */
     protected PluginProvider<?> getPluginProvider(String name) {
-        return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestAdditionalSecurityPluginProvider(name, null, ALL_PERMISSIONS,
             globalAuth, true, clientData());
     }
 }

@@ -896,7 +896,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
-            case EXE:
             case RESULT:
                 perm = SecurityPermission.TASK_EXECUTE;
 
@@ -929,6 +928,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
+            case EXE:
             case DATA_REGION_METRICS:
             case CACHE_METRICS:
             case CACHE_SIZE:
