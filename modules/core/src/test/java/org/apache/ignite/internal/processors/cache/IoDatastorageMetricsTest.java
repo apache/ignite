@@ -17,120 +17,88 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-import javax.management.DynamicMBean;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
-import static org.junit.Assert.assertNotEquals;
-
 /**
- * The test shows that the WalWritingRate metric is not calculated when walMode is in (LOG_ONLY, BACKGROUND).
+ * The test shows that the WalWritingRate metric is not calculated when walMode in all modes.
  */
 @RunWith(Parameterized.class)
 public class IoDatastorageMetricsTest extends GridCommonAbstractTest {
 
-    /**
-     * WALMode.
-     */
+    /** WALMode. */
     @Parameterized.Parameter
     public WALMode walMode;
 
-    /**
-     * WALMode values.
-     */
+    /** WALMode values. */
     @Parameterized.Parameters(name = "walMode={0}")
-    public static Collection<Object[]> parameters() {
+    public static Collection<Object> parameters() {
         return Arrays.asList(
-            new Object[] {WALMode.FSYNC},
-            new Object[] {WALMode.BACKGROUND},
-            new Object[] {WALMode.LOG_ONLY}
+            WALMode.FSYNC,
+            WALMode.BACKGROUND,
+            WALMode.LOG_ONLY
         );
     }
 
-    /**
-     * Тumber of segments.
-     */
-    private static final int MAX_SEGMENTS = 20;
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         stopAllGrids();
         cleanPersistenceDir();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setMetricsEnabled(true)
-                    .setWalArchivePath(DFLT_WAL_PATH)
-                    .setWalSegments(10)
-                    .setWalSegmentSize(1 * 1024 * 1024)
-                    .setMaxWalArchiveSize(20 * 1024 * 1024)
+                    .setWalSegmentSize((int)(U.MB))
                     .setWalMode(walMode)
                     .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration()
                             .setPersistenceEnabled(true)
-                            .setMaxSize(20 * 1024 * 1024)
-                            .setCheckpointPageBufferSize(2 * 1024 * 1024)
                     )
             );
     }
 
     /**
-     * The test shows that the WalWritingRate metric is not calculated when walMode is in (LOG_ONLY, BACKGROUND).
-     * After the tests are completed, you can see the report with grep by ">>> REPORT"
+     * The test shows that the WalWritingRate metric is not calculated when walMode in all modes.
      */
     @Test
-    public void WalWritingRate() throws Exception {
+    public void walWritingRate() throws Exception {
         IgniteEx ignite = startGrid(0);
+
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        AtomicLong key = new AtomicLong();
-        List<Long> walWritingRates = new ArrayList<>();
+        long writingRate = 0;
 
-        long lastSegment = walMgr(ignite).currentSegment() + MAX_SEGMENTS;
-        long prewSegment = walMgr(ignite).currentSegment();
-
-        while (walMgr(ignite).currentSegment() < lastSegment) {
-            long k = key.getAndIncrement();
+        byte i = 0;
+        for (; i < 100; i++) {
             long[] arr = new long[64];
 
-            Arrays.fill(arr, k);
+            Arrays.fill(arr, i);
 
-            ignite.cache(DEFAULT_CACHE_NAME).put(key, arr);
+            ignite.getOrCreateCache(DEFAULT_CACHE_NAME).put(i, arr);
 
-            if (prewSegment != walMgr(ignite).currentSegment()) {
-                prewSegment = walMgr(ignite).currentSegment();
-                DynamicMBean dataRegionMBean = metricRegistry(ignite.name(), "io", "datastorage");
-                walWritingRates.add((Long)dataRegionMBean.getAttribute("WalWritingRate"));
-            }
+            writingRate = (long)metricRegistry(ignite.name(), "io", "datastorage").getAttribute("WalWritingRate");
+
+            if (writingRate > 0)
+                break;
         }
-        long summ = walWritingRates.stream().collect(Collectors.summingLong(Long::longValue));
-        assertNotEquals(0L, summ);
+
+        assertTrue(writingRate > 0);
     }
 }
