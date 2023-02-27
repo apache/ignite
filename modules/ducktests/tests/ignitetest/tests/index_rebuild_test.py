@@ -35,7 +35,7 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 def get_file_sizes(nodes: list, file: str) -> dict:
     """
-    Return WAL size in bytes.
+    Return file size in bytes.
 
     :param nodes: List of nodes.
     :param file: File to get size for.
@@ -62,7 +62,7 @@ class IndexRebuildTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[5000], entry_size=[50], preloaders=[1], index_count=[3])
+    @defaults(backups=[1], cache_count=[1], entry_count=[50000], entry_size=[50], preloaders=[1], index_count=[3])
     def test_index_bin_rebuild(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                                index_count):
         """
