@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
