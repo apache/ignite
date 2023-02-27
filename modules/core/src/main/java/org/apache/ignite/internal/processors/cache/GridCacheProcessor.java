@@ -60,7 +60,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;

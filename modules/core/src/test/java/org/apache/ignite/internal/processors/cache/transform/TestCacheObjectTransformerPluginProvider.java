@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
-import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;

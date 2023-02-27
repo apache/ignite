@@ -31,7 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cache.transform.CacheObjectTransformerManager;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;

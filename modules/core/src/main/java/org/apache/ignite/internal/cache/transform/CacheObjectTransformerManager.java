@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.transform;
+package org.apache.ignite.internal.cache.transform;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides cache object's bytes transformation (eg. encryption, compression, etc).
  */
-@IgniteExperimental
 public interface CacheObjectTransformerManager extends GridCacheSharedManager {
     /**
      * Transforms the data.
