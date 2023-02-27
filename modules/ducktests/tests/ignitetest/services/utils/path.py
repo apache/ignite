@@ -249,6 +249,7 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         :param cache_name: cachen name.
         :return: absolute path to the cache directory.
         """
+        consistent_dir = consistent_dir.replace('.', '_')
         return os.path.join(self.database_dir, consistent_dir, f'cache-{cache_name}')
 
     def index_file(self, consistent_dir, cache_name):

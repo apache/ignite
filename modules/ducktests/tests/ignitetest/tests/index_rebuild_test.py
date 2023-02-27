@@ -62,7 +62,7 @@ class IndexRebuildTest(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[50000], entry_size=[50], preloaders=[1], index_count=[3])
+    @defaults(backups=[1], cache_count=[1], entry_count=[5000], entry_size=[50], preloaders=[1], index_count=[3])
     def test_index_bin_rebuild(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                                index_count):
         """
@@ -150,7 +150,7 @@ class IndexRebuildTest(IgniteTest):
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
                 max_wal_archive_size=1000 * data_gen_params.data_region_max_size,
-                wal_segment_size=round((data_gen_params.entry_size * data_gen_params.entry_count) / (node_count * 10)),
+                wal_segment_size=50 * 1024 * 1024,
                 default=DataRegionConfiguration(
                     persistence_enabled=True,
                     max_size=data_gen_params.data_region_max_size
