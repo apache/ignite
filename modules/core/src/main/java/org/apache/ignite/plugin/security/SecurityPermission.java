@@ -57,11 +57,8 @@ public enum SecurityPermission {
     ADMIN_CACHE,
 
     /**
-     * Administration operation over cluster: changing cluster state or baseline via remote API like control.sh or the
-     * REST API. Managing client connections in {@link ClientProcessorMXBean}.
-     *
-     * @see #ADMIN_CLUSTER_ACTIVATE
-     * @see #ADMIN_CLUSTER_DEACTIVATE
+     * Administration operations with remote API like control.sh or the REST API. Managing client connections in
+     * {@link ClientProcessorMXBean}.
      */
     ADMIN_OPS,
 
@@ -99,18 +96,11 @@ public enum SecurityPermission {
     ADMIN_SNAPSHOT,
 
     /**
-     * Administration operation: setting cluster state to any active state.
-     *
-     * @see ClusterState#active()
-     */
-    ADMIN_CLUSTER_ACTIVATE,
-
-    /**
-     * Administration operation: cluster deactivation.
+     * Administration operation: changing cluster state.
      *
      * @see ClusterState
      */
-    ADMIN_CLUSTER_DEACTIVATE,
+    ADMIN_CLUSTER_STATE,
 
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,

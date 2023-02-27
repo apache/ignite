@@ -45,7 +45,7 @@ public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
      */
     @Test
     public void testClientInfo() throws Exception {
-        clientPermissions = F.concat(clientPermissions, SecurityPermission.ADMIN_CLUSTER_ACTIVATE);
+        clientPermissions = F.concat(clientPermissions, SecurityPermission.ADMIN_CLUSTER_STATE);
 
         Ignite ignite = startGrids(2);
 

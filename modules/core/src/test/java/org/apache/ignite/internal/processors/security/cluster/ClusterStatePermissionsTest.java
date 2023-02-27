@@ -55,8 +55,7 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_ACTIVATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_DEACTIVATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
@@ -159,7 +158,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
      */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
-        permissions = F.asArray(ADMIN_CLUSTER_ACTIVATE, ADMIN_CLUSTER_DEACTIVATE);
+        permissions = F.asArray(ADMIN_CLUSTER_STATE);
 
         doTestChangeState(F.asArray(ACTIVE_READ_ONLY, ACTIVE, INACTIVE), F.asArray(TRUE, TRUE, TRUE));
     }
@@ -176,22 +175,10 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
      * Tests activation is allowed, deactivation is not allowed.
      */
     @Test
-    public void testActivationAllowedDeactivationNotAllowed() throws Exception {
-        permissions = F.asArray(ADMIN_CLUSTER_ACTIVATE);
-
-        doTestChangeState(F.asArray(ACTIVE, INACTIVE), F.asArray(TRUE, FALSE));
-    }
-
-    /**
-     * Tests deactivation is allowed, activation is not allowed.
-     */
-    @Test
-    public void testDeactivationAllowedActivationNotAllowed() throws Exception {
+    public void testDeactivationNotAllowed() throws Exception {
         startAllAllowedNode();
 
-        permissions = F.asArray(ADMIN_CLUSTER_DEACTIVATE);
-
-        doTestChangeState(F.asArray(INACTIVE, ACTIVE, ACTIVE_READ_ONLY), F.asArray(TRUE, FALSE, FALSE));
+        doTestChangeState(F.asArray(INACTIVE), F.asArray(FALSE));
     }
 
     /**
@@ -212,7 +199,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
         SecurityPermission[] perms = permissions;
 
         operationNodeType = NodeType.SERVER;
-        permissions = F.asArray(ADMIN_CLUSTER_ACTIVATE);
+        permissions = F.asArray(ADMIN_CLUSTER_STATE);
 
         Ignite ig = startGrids(1);
 
@@ -268,8 +255,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
         }
         else {
             cause = IgniteException.class;
-            errMsg = "Authorization failed [perm=" + (stateTo.active() ? ADMIN_CLUSTER_ACTIVATE :
-                ADMIN_CLUSTER_DEACTIVATE);
+            errMsg = "Authorization failed [perm=" + ADMIN_CLUSTER_STATE;
         }
 
         assertThrows(

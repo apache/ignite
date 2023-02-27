@@ -50,7 +50,7 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
     /** */
     @Test
     public void testAuthenticate() throws Exception {
-        clientPermissions = F.concat(clientPermissions, SecurityPermission.ADMIN_CLUSTER_ACTIVATE);
+        clientPermissions = F.concat(clientPermissions, SecurityPermission.ADMIN_CLUSTER_STATE);
 
         startGrid();
 
