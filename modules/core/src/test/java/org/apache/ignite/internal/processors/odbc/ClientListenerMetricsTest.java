@@ -163,9 +163,11 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     /** */
     private static ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration()
-                .setAddresses(Config.SERVER)
-                .setSendBufferSize(0)
-                .setReceiveBufferSize(0);
+            .setAddresses(Config.SERVER)
+            // When PA is enabled, async client channel init executes and spoils the metrics.
+            .setPartitionAwarenessEnabled(false)
+            .setSendBufferSize(0)
+            .setReceiveBufferSize(0);
     }
 
     /**

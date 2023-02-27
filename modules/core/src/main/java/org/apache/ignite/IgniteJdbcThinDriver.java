@@ -68,7 +68,7 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
  *
  * <p>
  * JDBC connection URL has the following pattern:
- * {@code jdbc:ignite://<hostname>:<port>/}<br>
+ * {@code jdbc:ignite:thin://<hostname>:<port>/}<br>
  * Note the following:
  * <ul>
  *     <li>Hostname is required.</li>

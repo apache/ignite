@@ -34,7 +34,7 @@ Each exporter always gives access to all available metrics.
 
 Ignite includes the following exporters:
 
-* JMX
+* JMX (default)
 * SQL Views
 * Log files
 * OpenCensus
@@ -97,6 +97,23 @@ tab:C#/.NET[]
 tab:C++[unsupported]
 --
 
+[NOTE]
+====
+This exporter is enabled by default if nothing is set with `IgniteConfiguration.setMetricExporterSpi(...)`.
+====
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=disable-default-jmx-exporter, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
 
 === SQL View
 

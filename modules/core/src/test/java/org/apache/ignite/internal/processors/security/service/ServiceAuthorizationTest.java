@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security.service;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +29,7 @@ import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginPro
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
@@ -53,8 +56,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_INVOKE;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -121,26 +122,37 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         checkCancel(srvcs -> srvcs.cancelAllAsync().get());
     }
 
-    /** Tests that all calls to obtain service instance require {@link SecurityPermission#SERVICE_INVOKE} permission. */
+    /**
+     * Tests that all calls to obtain service instance that is available on local node require
+     * {@link SecurityPermission#SERVICE_INVOKE} permission.
+     */
     @Test
-    public void testServiceInvoke() throws Exception {
+    public void testLocalServiceInvoke() throws Exception {
         startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE));
         startGrid(configuration(FORBIDDEN_NODE_IDX, SERVICE_DEPLOY));
 
-        grid(ALLOWED_NODE_IDX).services().deploy(serviceConfiguration());
+        grid(0).services().deploy(serviceConfiguration());
 
         if (!isClient) {
             checkInvoke(srvcs -> srvcs.service(TEST_SERVICE_NAME), false);
             checkInvoke(srvcs -> srvcs.services(TEST_SERVICE_NAME), false);
         }
 
-        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false), true);
-        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false, getTestTimeout()), true);
-        checkInvoke(srvcs -> srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false, SERVICE_CALL_CTX), true);
-        checkInvoke(srvcs ->
-            srvcs.serviceProxy(TEST_SERVICE_NAME, TestService.class, false, SERVICE_CALL_CTX, getTestTimeout()),
-            true
-        );
+        checkServiceProxyInvoke(TEST_SERVICE_NAME);
+    }
+
+    /**
+     * Tests that all calls to obtain service instance that is available on remote node require
+     * {@link SecurityPermission#SERVICE_INVOKE} permission.
+     */
+    @Test
+    public void testRemoteServiceInvoke() throws Exception {
+        startGrid(configuration(ALLOWED_NODE_IDX, SERVICE_DEPLOY, SERVICE_INVOKE));
+        startGrid(configuration(FORBIDDEN_NODE_IDX, SERVICE_DEPLOY));
+
+        grid(0).services().deploy(serviceConfiguration(new SingleNodeFilter(grid(0).cluster().node().id())));
+
+        checkServiceProxyInvoke(TEST_SERVICE_NAME);
     }
 
     /** Tests that all service deploy calls require {@link SecurityPermission#SERVICE_DEPLOY} permission. */
@@ -242,10 +254,16 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
 
     /** @return Test service configuration. */
     private ServiceConfiguration serviceConfiguration() {
+        return serviceConfiguration(null);
+    }
+
+    /** @return Test service configuration. */
+    private ServiceConfiguration serviceConfiguration(IgnitePredicate<ClusterNode> nodeFilter) {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
         srvcCfg.setMaxPerNodeCount(1);
         srvcCfg.setName(TEST_SERVICE_NAME);
+        srvcCfg.setNodeFilter(nodeFilter);
         srvcCfg.setService(new TestServiceImpl());
         
         return srvcCfg;
@@ -264,9 +282,6 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
                     .defaultAllowAll(false)
                     .appendSystemPermissions(JOIN_AS_SERVER)
                     .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_CREATE)
-                    .appendTaskPermissions(
-                        "org.apache.ignite.internal.processors.affinity.GridAffinityUtils$AffinityJob",
-                        TASK_EXECUTE, TASK_CANCEL)
                     .appendServicePermissions(TEST_SERVICE_NAME, perms)
                     .build(),
                 null,
@@ -425,6 +440,37 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
         /** {@inheritDoc} */
         @Override public boolean doWork() {
             return true;
+        }
+    }
+
+    /** */
+    private void checkServiceProxyInvoke(String svcName) throws Exception {
+        checkInvoke(srvcs -> srvcs.serviceProxy(svcName, TestService.class, false), true);
+        checkInvoke(srvcs -> srvcs.serviceProxy(svcName, TestService.class, false, getTestTimeout()), true);
+        checkInvoke(srvcs -> srvcs.serviceProxy(svcName, TestService.class, false, SERVICE_CALL_CTX), true);
+        checkInvoke(srvcs -> srvcs.serviceProxy(
+                svcName,
+                TestService.class,
+                false,
+                SERVICE_CALL_CTX,
+                getTestTimeout()
+            ), true
+        );
+    }
+
+    /** */
+    public static class SingleNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final UUID nodeId;
+
+        /** */
+        public SingleNodeFilter(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return node.id().equals(nodeId);
         }
     }
 }

@@ -1582,7 +1582,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         ignite().events().localListen(lsnr, EVT_SQL_QUERY_EXECUTION);
 
-        ClientConfiguration cc = new ClientConfiguration().setAddresses(Config.SERVER);
+        ClientConfiguration cc = new ClientConfiguration().setAddressesFinder(() -> new String[] {Config.SERVER});
 
         try (IgniteClient client = Ignition.startClient(cc)) {
             client.query(new SqlFieldsQuery("create table TEST_TABLE(key int primary key, val int)"))
