@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.platform.BinaryContextPlatformDotNetSessionLockResultPredefinedTest;
 import org.apache.ignite.platform.PlatformDefaultJavaObjectFactorySelfTest;
 import org.apache.ignite.platform.PlatformJavaObjectFactoryProxySelfTest;
 import org.junit.runner.RunWith;
@@ -29,6 +30,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     PlatformDefaultJavaObjectFactorySelfTest.class,
     PlatformJavaObjectFactoryProxySelfTest.class,
+    BinaryContextPlatformDotNetSessionLockResultPredefinedTest.class,
 })
 public class IgnitePlatformsTestSuite {
 }
