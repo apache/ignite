@@ -275,6 +275,11 @@ public class BinaryContext {
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
+
+        if (U.sunReflectionFactory() == null) {
+            U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
+                "default constructor is not possible");
+        }
     }
 
     /**
@@ -1453,6 +1458,11 @@ public class BinaryContext {
      */
     public synchronized void removeType(int typeId) {
         schemas.remove(typeId);
+    }
+
+    /** */
+    Collection<BinaryClassDescriptor> predefinedTypes() {
+        return Collections.unmodifiableCollection(predefinedTypes.values());
     }
 
     /**
