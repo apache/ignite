@@ -19,10 +19,9 @@ package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.StringJoiner;
 
-/**
- * Logo definition
- */
+/** Logo definition. */
 public class Logo implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -30,21 +29,20 @@ public class Logo implements Serializable {
     /** Value for id. */
     private Integer id;
 
-    /** Logo as byte array */
+    /** Logo as byte array. */
     private byte[] picture;
 
-    /** Description as value*/
+    /** Description as value. */
     private String description;
 
     /**
      * Empty constructor.
      */
     public Logo() {
+        // No-op.
     }
 
-    /**
-     * Full constructor.
-     */
+    /** */
     public Logo(Integer id, byte[] picture, String description) {
         this.id = id;
         this.picture = picture;
@@ -109,37 +107,32 @@ public class Logo implements Serializable {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
-
-        if (!(o instanceof Logo))
+        if (o == null || getClass() != o.getClass())
             return false;
 
-        Logo that = (Logo)o;
+        Logo logo = (Logo)o;
 
-        if (id != null ? !id.equals(that.id) : that.id != null)
+        if (id != null ? !id.equals(logo.id) : logo.id != null)
             return false;
-
-        if (picture != null ? !Arrays.equals(picture, that.picture) : that.picture != null)
+        if (!Arrays.equals(picture, logo.picture))
             return false;
-
-        return description != null ? description.equals(that.description) : that.description == null;
+        return description != null ? description.equals(logo.description) : logo.description == null;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = id != null ? id.hashCode() : 0;
-
-        res = 31 * res + (picture != null ? Arrays.hashCode(picture) : 0);
-
-        res = 31 * res + (description != null ? description.hashCode() : 0);
-
-        return res;
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + Arrays.hashCode(picture);
+        result = 31 * result + (description != null ? description.hashCode() : 0);
+        return result;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Logo [id=" + id +
-            ", picture=" + Arrays.toString(picture) +
-            ", description=" + description +
-            "]";
+        return new StringJoiner(", ", Logo.class.getSimpleName() + "[", "]")
+            .add("id=" + id)
+            .add("picture=" + Arrays.toString(picture))
+            .add("description='" + description + "'")
+            .toString();
     }
 }

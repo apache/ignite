@@ -31,10 +31,10 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.cache.integration.CacheWriterException;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -612,92 +612,83 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
      * @throws Exception If failed.
      */
     @Test
-    public void testLoadCacheWithLobField() throws Exception {
-        Connection conn = store.openConnection(false);
-
-        PreparedStatement logoStmt = conn.prepareStatement("INSERT INTO Logo(id, picture, description) VALUES (?, ?, ?)");
-
+    public void testLoadCacheLobFields() throws Exception {
+        String longDescription = RandomStringUtils.randomAlphabetic(10000);
         byte[] picture = new byte[64];
 
         for (byte i = 0; i < 64; i++)
             picture[i] = i;
 
-        Random random = new Random();
-        String longDescription = random.ints(97, 123)
-            .limit(10000)
-            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-            .toString();
+        Connection conn = null;
+        PreparedStatement logoStmt = null;
 
-        logoStmt.setInt(1, 1);
+        try {
+            conn = store.openConnection(false);
 
-        Blob blob = logoStmt.getConnection().createBlob();
-        blob.setBytes(1, picture);
-        logoStmt.setBlob(2, blob);
+            logoStmt = conn.prepareStatement("INSERT INTO Logo(id, picture, description) VALUES (?, ?, ?)");
 
-        Clob clob = logoStmt.getConnection().createClob();
-        clob.setString(1, longDescription);
-        logoStmt.setClob(3, clob);
+            logoStmt.setInt(1, 1);
 
-        logoStmt.executeUpdate();
+            Blob blob = logoStmt.getConnection().createBlob();
+            blob.setBytes(1, picture);
+            logoStmt.setBlob(2, blob);
 
-        U.closeQuiet(logoStmt);
+            Clob clob = logoStmt.getConnection().createClob();
+            clob.setString(1, longDescription);
+            logoStmt.setClob(3, clob);
 
-        conn.commit();
+            logoStmt.executeUpdate();
 
-        U.closeQuiet(conn);
-
-        final Collection<BinaryObject> logoVals = new ConcurrentLinkedQueue<>();
+            conn.commit();
+        }
+        finally {
+            U.closeQuiet(logoStmt);
+            U.closeQuiet(conn);
+        }
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
                 if (binaryEnable) {
-                    if (k instanceof BinaryObject && v instanceof BinaryObject) {
-                        BinaryObject key = (BinaryObject)k;
-                        BinaryObject val = (BinaryObject)v;
+                    assertTrue(k instanceof BinaryObject);
+                    assertTrue(v instanceof BinaryObject);
 
-                        if (LogoKey.class.getName().equals(key.type().typeName())
-                            && Logo.class.getName().equals(val.type().typeName())) {
-                            logoVals.add(val);
-                        }
-                    }
+                    BinaryObject val = (BinaryObject)v;
+
+                    assertTrue(Arrays.equals(picture, val.field("picture")));
+                    assertEquals(longDescription, val.field("description"));
                 }
                 else {
-                    if (k instanceof LogoKey && v instanceof Logo)
-                        logoVals.add(null);
+                    assertTrue(k instanceof LogoKey);
+                    assertTrue(v instanceof Logo);
+
+                    Logo val = (Logo)v;
+
+                    assertTrue(Arrays.equals(picture, val.getPicture()));
+                    assertEquals(longDescription, val.getDescription());
                 }
             }
         };
 
         store.loadCache(c);
-
-        assertEquals(1, logoVals.size());
-        assertTrue(Arrays.equals(picture, logoVals.iterator().next().field("picture")));
-        assertEquals(longDescription, logoVals.iterator().next().field("description"));
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testLobWrite() throws IllegalAccessException, SQLException {
+    public void testLobWrite() throws Exception {
         Integer id = 1;
+        LogoKey key = new LogoKey(id);
 
-        LogoKey key = new LogoKey(1);
-
-        Logo val = new Logo();
-        val.setId(id);
-
+        String longDescription = RandomStringUtils.randomAlphabetic(10000);
         byte[] picture = new byte[64];
 
         for (byte i = 0; i < 64; i++)
             picture[i] = i;
 
-        Random random = new Random();
-        String longDescription = random.ints(97, 123)
-            .limit(10000)
-            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-            .toString();
+        Logo val = new Logo();
 
+        val.setId(id);
         val.setPicture(picture);
         val.setDescription(longDescription);
 
@@ -705,18 +696,24 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         store.write(new CacheEntryImpl<>(wrap(key), wrap(val)));
 
-        Connection conn = store.openConnection(false);
+        Statement stmt = null;
+        Connection conn = null;
 
-        Statement stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT PICTURE, DESCRIPTION FROM LOGO");
+        try {
+            conn = store.openConnection(false);
+            stmt = conn.createStatement();
 
-        assertTrue(rs.next());
-        assertTrue(Arrays.equals(picture, rs.getBytes(1)));
-        assertEquals(longDescription, rs.getString(2));
-        assertFalse(rs.next());
+            ResultSet rs = stmt.executeQuery("SELECT picture, description FROM Logo");
 
-        U.closeQuiet(stmt);
-        U.closeQuiet(conn);
+            assertTrue(rs.next());
+            assertTrue(Arrays.equals(picture, rs.getBytes(1)));
+            assertEquals(longDescription, rs.getString(2));
+            assertFalse(rs.next());
+        }
+        finally {
+            U.closeQuiet(stmt);
+            U.closeQuiet(conn);
+        }
     }
 
     /**

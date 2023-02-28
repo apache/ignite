@@ -18,10 +18,9 @@
 package org.apache.ignite.cache.store.jdbc.model;
 
 import java.io.Serializable;
+import java.util.StringJoiner;
 
-/**
- * LogoKey definition.
- */
+/** LogoKey definition. */
 public class LogoKey implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -36,9 +35,7 @@ public class LogoKey implements Serializable {
         // No-op.
     }
 
-    /**
-     * Full constructor.
-     */
+    /** */
     public LogoKey(
         Integer id
     ) {
@@ -67,28 +64,23 @@ public class LogoKey implements Serializable {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
-
-        if (!(o instanceof LogoKey))
+        if (o == null || getClass() != o.getClass())
             return false;
 
-        LogoKey that = (LogoKey)o;
+        LogoKey key = (LogoKey)o;
 
-        if (id != null ? !id.equals(that.id) : that.id != null)
-            return false;
-
-        return true;
+        return id != null ? id.equals(key.id) : key.id == null;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = id != null ? id.hashCode() : 0;
-
-        return res;
+        return id != null ? id.hashCode() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "LogoKey [id=" + id +
-            "]";
+        return new StringJoiner(", ", LogoKey.class.getSimpleName() + "[", "]")
+            .add("id=" + id)
+            .toString();
     }
 }
