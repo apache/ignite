@@ -68,6 +68,9 @@ class IncrementalSnapshotFutureTask
     /** Future that completes with WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
     private final IgniteInternalFuture<WALPointer> highPtrFut;
 
+    /** Status of the task. */
+    private volatile Status status;
+
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -107,6 +110,8 @@ class IncrementalSnapshotFutureTask
             null
         );
 
+        // WAL is marking at this moment, while highPtrFut is not completed.
+        status = Status.MARKING_WAL;
         this.incIdx = incIdx;
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
@@ -140,6 +145,8 @@ class IncrementalSnapshotFutureTask
                 }
 
                 try {
+                    status = Status.COPYING_FILES;
+
                     copyWal(incSnpDir, fut.result());
 
                     File snpMarshallerDir = incrementalSnapshotMarshallerDir(incSnpDir);
@@ -254,5 +261,19 @@ class IncrementalSnapshotFutureTask
     /** @return File of marshaller directory for specified incremental snapshot directory. */
     public static File incrementalSnapshotMarshallerDir(File incSnpDir) {
         return new File(incSnpDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
+    }
+
+    /** @return Task status. */
+    public String status() {
+        return status.name();
+    }
+
+    /** Status of incremental snapshot task. */
+    private enum Status {
+        /** Marking WAL segments to include into the snapshot. */
+        MARKING_WAL,
+
+        /** Copying files to the snapshot directory. */
+        COPYING_FILES,
     }
 }

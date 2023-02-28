@@ -420,6 +420,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Last seen cluster snapshot operation. */
     private volatile ClusterSnapshotFuture lastSeenSnpFut = new ClusterSnapshotFuture();
 
+    /** Last seen incremental snapshot operation. */
+    private volatile ClusterSnapshotFuture lastSeenIncSnpFut;
+
     /** Snapshot operation handlers. */
     private final SnapshotHandlers handlers = new SnapshotHandlers();
 
@@ -575,16 +578,43 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String.class, "The ID of the last started snapshot operation.");
 
         mreg.register("CurrentSnapshotTotalSize", () -> {
-            SnapshotFutureTask task = currentSnapshotTask();
+            SnapshotFutureTask task = currentSnapshotTask(SnapshotFutureTask.class);
 
             return task == null ? -1 : task.totalSize();
         }, "Estimated size of current cluster snapshot in bytes on this node. The value may grow during snapshot creation.");
 
         mreg.register("CurrentSnapshotProcessedSize", () -> {
-            SnapshotFutureTask task = currentSnapshotTask();
+            SnapshotFutureTask task = currentSnapshotTask(SnapshotFutureTask.class);
 
             return task == null ? -1 : task.processedSize();
         }, "Processed size of current cluster snapshot in bytes on this node.");
+
+        // Incremental snapshot metrics.
+        // Metrics visible on a snapshot initiator node.
+        mreg.register("LastIncrementalSnapshotName",
+            () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.name).orElse(""),
+            String.class,
+            "The name of full snapshot for which the last incremental snapshot requested on this node.");
+        mreg.register("LastIncrementalSnapshotIndex",
+            () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.incIdx).orElse(0),
+            "Ihe index of the last incremental snapshot requested on this node.");
+        mreg.register("LastIncrementalSnapshotStartTime",
+            () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.startTime).orElse(0L),
+            "The system time of the last incremental snapshot request start time on this node.");
+        mreg.register("LastIncrementalSnapshotEndTime",
+            () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.endTime).orElse(0L),
+            "The system time of the last incremental snapshot request end time on this node.");
+        mreg.register("LastIncrementalSnapshotErrorMessage",
+            () -> Optional.ofNullable(lastSeenIncSnpFut).map(GridFutureAdapter::error).map(Object::toString).orElse(""),
+            String.class,
+            "The error message of last started incremental snapshot on this node.");
+
+        // Metrics visible on all nodes.
+        mreg.register("CurrentIncrementalSnapshotStatus", () -> {
+            IncrementalSnapshotFutureTask task = currentSnapshotTask(IncrementalSnapshotFutureTask.class);
+
+            return task == null ? "" : task.status();
+        }, String.class, "Status of current incremental snapshot on this node.");
 
         restoreCacheGrpProc.registerMetrics();
 
@@ -2062,10 +2092,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
+                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, incIdx);
 
                 clusterSnpFut = snpFut0;
-                lastSeenSnpFut = snpFut0;
+
+                if (incremental)
+                    lastSeenIncSnpFut = snpFut0;
+                else
+                    lastSeenSnpFut = snpFut0;
             }
 
             List<String> grps = cctx.cache().persistentGroups().stream()
@@ -2115,7 +2149,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             U.error(log, SNAPSHOT_FAILED_MSG, e);
 
-            lastSeenSnpFut = new ClusterSnapshotFuture(name, e);
+            ClusterSnapshotFuture errSnpFut = new ClusterSnapshotFuture(name, e);
+
+            if (incremental)
+                lastSeenIncSnpFut = errSnpFut;
+            else
+                lastSeenSnpFut = errSnpFut;
 
             return new IgniteFinishedFutureImpl<>(e);
         }
@@ -2543,7 +2582,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Current snapshot task. */
-    private SnapshotFutureTask currentSnapshotTask() {
+    private <T extends AbstractSnapshotFutureTask<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
         SnapshotOperationRequest req = clusterSnpReq;
 
         if (req == null)
@@ -2551,10 +2590,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         AbstractSnapshotFutureTask<?> task = locSnpTasks.get(req.snapshotName());
 
-        if (!(task instanceof SnapshotFutureTask))
+        if (task == null || task.getClass() != snpTaskCls)
             return null;
 
-        return (SnapshotFutureTask)task;
+        return (T)task;
     }
 
     /**
@@ -4256,6 +4295,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot start time. */
         final long startTime;
 
+        /** Incremental snapshot index. */
+        final @Nullable Integer incIdx;
+
         /** Snapshot finish time. */
         volatile long endTime;
 
@@ -4272,6 +4314,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             name = "";
             startTime = 0;
             endTime = 0;
+            incIdx = null;
         }
 
         /**
@@ -4285,15 +4328,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             startTime = U.currentTimeMillis();
             endTime = 0;
             rqId = null;
+            incIdx = null;
         }
 
         /**
          * @param rqId Unique snapshot request id.
          * @param name Snapshot name.
          */
-        public ClusterSnapshotFuture(UUID rqId, String name) {
+        public ClusterSnapshotFuture(UUID rqId, String name, @Nullable Integer incIdx) {
             this.rqId = rqId;
             this.name = name;
+            this.incIdx = incIdx;
             startTime = U.currentTimeMillis();
         }
 

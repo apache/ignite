@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionC
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -105,6 +106,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -252,6 +254,8 @@ public class SnapshotRestoreProcess {
             "The system time when the restore operation of a cluster snapshot on this node ended.");
         mreg.register("snapshotName", () -> lastOpCtx.snpName, String.class,
             "The snapshot name of the last running cluster snapshot restore operation on this node.");
+        mreg.register("incrementalIndex", () -> lastOpCtx.incIdx,
+            "The index of incremental snapshot of the last snapshot restore operation on this node.");
         mreg.register("requestId", () -> Optional.ofNullable(lastOpCtx.reqId).map(UUID::toString).orElse(""),
             String.class, "The request ID of the last running cluster snapshot restore operation on this node.");
         mreg.register("error", () -> Optional.ofNullable(lastOpCtx.err.get()).map(Throwable::toString).orElse(""),
@@ -260,6 +264,12 @@ public class SnapshotRestoreProcess {
             "The total number of partitions to be restored on this node.");
         mreg.register("processedPartitions", () -> lastOpCtx.processedParts.get(),
             "The number of processed partitions on this node.");
+        mreg.register("totalWalSegments", () -> lastOpCtx.totalWalSegments,
+            "The total number of WAL segments in the incremental snapshot to be restored on this node.");
+        mreg.register("processedWalSegments", () -> lastOpCtx.processedWalSegments,
+            "The number of processed WAL segments in the incremental snapshot on this node.");
+        mreg.register("processedEntries", () -> Optional.ofNullable(lastOpCtx.processedEntries).map(LongAdder::sum).orElse(-1L),
+            "The number of processed entries from incremental snapshot on this node.");
     }
 
     /**
@@ -297,7 +307,7 @@ public class SnapshotRestoreProcess {
                 if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
+                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName, incIdx);
 
                 fut0 = fut;
             }
@@ -1432,7 +1442,11 @@ public class SnapshotRestoreProcess {
         Set<Integer> cacheIds,
         int incIdx
     ) throws IgniteCheckedException, IOException {
+        SnapshotRestoreContext opCtx0 = opCtx;
+
         File[] segments = walSegments(snpName, snpPath, incIdx);
+
+        opCtx0.totalWalSegments = segments.length;
 
         UUID incSnpId = ctx.cache().context().snapshotMgr()
             .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx)
@@ -1455,6 +1469,9 @@ public class SnapshotRestoreProcess {
 
         LongAdder applied = new LongAdder();
 
+        opCtx0.processedEntries = applied;
+        opCtx0.processedWalSegments = 0;
+
         Set<WALRecord.RecordType> recTypes = new HashSet<>(F.asList(
             CLUSTER_SNAPSHOT,
             INCREMENTAL_SNAPSHOT_START_RECORD,
@@ -1464,22 +1481,24 @@ public class SnapshotRestoreProcess {
         // Create a single WAL iterator for 2 steps: finding ClusterSnapshotRecord and applying incremental snapshots.
         // TODO: Fix it after resolving https://issues.apache.org/jira/browse/IGNITE-18718.
         try (WALIterator it = walIter(log, recTypes, segments)) {
-            boolean snpRecReached = false;
+            long startIdx = -1;
 
             // Step 1. Skips applying WAL until base snapshot record has been reached.
             while (it.hasNext()) {
-                WALRecord rec = it.next().getValue();
+                IgniteBiTuple<WALPointer, WALRecord> walRec = it.next();
+
+                WALRecord rec = walRec.getValue();
 
                 if (rec.type() == CLUSTER_SNAPSHOT) {
                     if (((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(snpName)) {
-                        snpRecReached = true;
+                        startIdx = walRec.getKey().index();
 
                         break;
                     }
                 }
             }
 
-            if (!snpRecReached)
+            if (startIdx < 0)
                 throw new IgniteCheckedException("System WAL record for full snapshot wasn't found [snpName=" + snpName + ']');
 
             UUID prevIncSnpId = incIdx > 1
@@ -1489,9 +1508,21 @@ public class SnapshotRestoreProcess {
             IgnitePredicate<GridCacheVersion> txVerFilter = prevIncSnpId != null
                 ? txVer -> true : txVer -> !incSnpFinRec.excluded().contains(txVer);
 
+            long lastProcessedIdx = 0;
+
             // Step 2. Apply incremental snapshots.
             while (it.hasNext()) {
-                WALRecord rec = it.next().getValue();
+                IgniteBiTuple<WALPointer, WALRecord> walRec = it.next();
+
+                long curIdx = walRec.getKey().index();
+
+                if (curIdx != lastProcessedIdx) {
+                    opCtx0.processedWalSegments = (int)(curIdx - startIdx);
+
+                    lastProcessedIdx = curIdx;
+                }
+
+                WALRecord rec = walRec.getValue();
 
                 if (rec.type() == INCREMENTAL_SNAPSHOT_START_RECORD) {
                     IncrementalSnapshotStartRecord startRec = (IncrementalSnapshotStartRecord)rec;
@@ -1533,6 +1564,8 @@ public class SnapshotRestoreProcess {
                 }
             }
         }
+
+        opCtx0.processedWalSegments += 1;
 
         exec.awaitApplyComplete();
 
@@ -2025,6 +2058,15 @@ public class SnapshotRestoreProcess {
 
         /** Operation end time. */
         private volatile long endTime;
+
+        /** Total number of WAL segments in incremental snapshot to be restored. */
+        private volatile int totalWalSegments = -1;
+
+        /** Number of processed WAL segments in incremental snapshot. */
+        private volatile int processedWalSegments = -1;
+
+        /** Number of processed entries in incremental snapshot. */
+        private volatile LongAdder processedEntries;
 
         /** Creates an empty context. */
         protected SnapshotRestoreContext() {
