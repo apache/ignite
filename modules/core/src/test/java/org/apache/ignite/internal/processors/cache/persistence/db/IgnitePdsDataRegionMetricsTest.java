@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,23 +45,31 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.events.EventType.EVT_PAGE_REPLACEMENT_STARTED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
  */
 public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
+    /** */
+    private static final String SMALL_REGION = "SmallRegion";
+
     /** */
     private static final long INIT_REGION_SIZE = 20 << 20;
 
@@ -83,6 +92,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setIncludeEventTypes(EVT_PAGE_REPLACEMENT_STARTED);
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
@@ -95,6 +106,12 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                     .setName("EmptyRegion")
                     .setInitialSize(INIT_REGION_SIZE)
                     .setMaxSize(MAX_REGION_SIZE)
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(SMALL_REGION)
+                    .setMaxSize(INIT_REGION_SIZE)
                     .setPersistenceEnabled(true)
                     .setMetricsEnabled(true))
             .setCheckpointFrequency(1000);
@@ -292,6 +309,59 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         Assert.assertTrue(metricsResult.get().get1() > 0);
         Assert.assertTrue(metricsResult.get().get2() > 0);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testReadMetrics() throws Exception {
+        int cnt = 100;
+
+        IgniteEx ignite = startGrid();
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("smallRegionCache")
+            .setDataRegionName(SMALL_REGION));
+
+        for (int i = 0; i < cnt; i++)
+            cache.put(i, i);
+
+        ignite.cluster().state(ClusterState.INACTIVE);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        ReadOnlyMetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+            SMALL_REGION));
+
+        LongMetric readPages = mreg.findMetric("PagesRead");
+        LongMetric readPagesTime = mreg.findMetric("PagesReadTime");
+        LongMetric replPages = mreg.findMetric("PagesReplaced");
+        LongMetric replPagesTime = mreg.findMetric("PagesReplaceTime");
+
+        assertTrue(readPages.value() > 0);
+        assertTrue(readPagesTime.value() > 0);
+        assertEquals(0, replPages.value());
+        assertEquals(0, replPagesTime.value());
+
+        AtomicBoolean replacementStarted = new AtomicBoolean();
+
+        ignite.events().remoteListen((uuid, evt) -> {
+            if (evt.type() == EVT_PAGE_REPLACEMENT_STARTED) {
+                replacementStarted.set(true);
+
+                return false;
+            }
+
+            return true;
+        }, null, EVT_PAGE_REPLACEMENT_STARTED);
+
+        while (!replacementStarted.get())
+            cache.put(cnt++, new byte[1000]);
+
+        assertTrue(replPages.value() > 0);
+        assertTrue(replPagesTime.value() > 0);
     }
 
     /**
