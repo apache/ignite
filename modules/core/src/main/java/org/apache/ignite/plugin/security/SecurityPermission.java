@@ -18,7 +18,6 @@
 package org.apache.ignite.plugin.security;
 
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
