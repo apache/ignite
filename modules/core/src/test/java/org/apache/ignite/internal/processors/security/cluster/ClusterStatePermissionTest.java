@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -59,14 +60,13 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertNotEquals;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Tests permissions of cluster state change.
  */
 @RunWith(Parameterized.class)
-public class ClusterStatePermissionsTest extends AbstractSecurityTest {
+public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /** */
     private static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
 
@@ -153,7 +153,7 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests botah activation and deactivation are allowed.
+     * Tests both activation and deactivation are allowed.
      */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
@@ -187,10 +187,10 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
      * Tests attempt to set same state is allowed without the permission.
      */
     @Test
-    public void testSameStateAllowedWithoutPermission() throws Exception {
+    public void testSameStateNotAllowedWithoutPermission() throws Exception {
         startAllAllowedNode();
 
-        doTestChangeState(F.asArray(ACTIVE), F.asArray(TRUE));
+        doTestChangeState(F.asArray(ACTIVE), F.asArray(FALSE));
     }
 
     /**
@@ -236,11 +236,8 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
 
                 assertEquals(stateTo, ig.cluster().state());
             }
-            else {
+            else
                 ensureThrows(action, stateTo);
-
-                assertNotEquals(stateTo, ig.cluster().state());
-            }
         }
     }
 
@@ -248,19 +245,17 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
      * Ensures that a proper error occurs.
      */
     private void ensureThrows(Consumer<ClusterState> action, ClusterState stateTo) {
-        Class<? extends Throwable> cause;
-        String errMsg;
+        Class<? extends Throwable> cause = SecurityException.class;
+        String errMsg = "Authorization failed [perm=" + ADMIN_CLUSTER_STATE;
 
         if (NodeType.THIN_CLIENT == operationNodeType) {
             cause = ClientAuthorizationException.class;
             errMsg = "User is not authorized to perform this operation";
         }
-        else {
-            cause = IgniteException.class;
-            errMsg = "Authorization failed [perm=" + ADMIN_CLUSTER_STATE;
-        }
+        else if (NodeType.GRID_CLIENT == operationNodeType)
+            cause = GridClientException.class;
 
-        assertThrows(
+        assertThrowsAnyCause(
             null,
             () -> {
                 action.accept(stateTo);
@@ -277,36 +272,22 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
      */
     private Consumer<ClusterState> nodeStateAction(Ignite srv) throws Exception {
         switch (operationNodeType) {
-            case SERVER: {
-                return new Consumer<ClusterState>() {
-                    /** {@inheritDoc} */
-                    @Override public void accept(ClusterState state) {
-                        srv.cluster().state(state);
+            case SERVER:
+                return (state) -> srv.cluster().state(state);
+
+            case CLIENT:
+                return (state) -> {
+                    try {
+                        startClientGrid(G.allGrids().size()).cluster().state(state);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException("Unable to start client grid.", e);
                     }
                 };
-            }
-
-            case CLIENT: {
-                Ignite client = startClientGrid(G.allGrids().size());
-
-                return new Consumer<ClusterState>() {
-                    /** {@inheritDoc} */
-                    @Override public void accept(ClusterState state) {
-                        client.cluster().state(state);
-                    }
-                };
-            }
 
             case THIN_CLIENT: {
-                IgniteClient thinClient = G.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
-                    .setUserName("client").setUserPassword(""));
-
-                return new Consumer<ClusterState>() {
-                    /** {@inheritDoc} */
-                    @Override public void accept(ClusterState state) {
-                        thinClient.cluster().state(state);
-                    }
-                };
+                return (state) -> G.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                    .setUserName("client").setUserPassword("")).cluster().state(state);
             }
 
             case GRID_CLIENT: {
@@ -322,7 +303,6 @@ public class ClusterStatePermissionsTest extends AbstractSecurityTest {
                 assert gridCleint.connected();
 
                 return new Consumer<ClusterState>() {
-                    /** {@inheritDoc} */
                     @Override public void accept(ClusterState state) {
                         try {
                             gridCleint.state().state(state, true);

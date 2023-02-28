@@ -1107,6 +1107,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
+        ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+
         if (ctx.maintenanceRegistry().isMaintenanceMode()) {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to " + prettyStr(state) + " (node is in maintenance mode).")
@@ -1138,8 +1140,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (!state.active() || BaselineTopology.equals(curState.baselineTopology(), blt))
                 return new GridFinishedFuture<>();
         }
-
-        ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
 
         GridChangeGlobalStateFuture startedFut = null;
 

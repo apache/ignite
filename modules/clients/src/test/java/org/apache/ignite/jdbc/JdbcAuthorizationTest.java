@@ -48,7 +48,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.cre
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
- * Tests permissions required for execution of the basic SQL requests through JDBC client.
+ * Tests permission required for execution of the basic SQL requests through JDBC client.
  */
 public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** Name of the schema for DML operations testing. */
