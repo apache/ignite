@@ -165,7 +165,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, new SecurityCredentials("", ""));
 
         for (TestSecurityData data : predefinedAuthData)
-            PERMS.put(data.credentials().getLogin().toString(), data.getPermissions());
+            PERMS.put(data.credentials().getLogin().toString(), data.permissions());
     }
 
     /** {@inheritDoc} */

@@ -60,6 +60,9 @@ public enum SecurityPermission {
     /** System processes kill permission. */
     ADMIN_KILL,
 
+    /** Permission to perform administration of security data. */
+    ADMIN_SECURITY,
+
     /** Service deploy permission. */
     SERVICE_DEPLOY,
 

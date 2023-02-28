@@ -25,34 +25,27 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  * Test security data for subject configuration.
  */
 public class TestSecurityData {
-    /** Login. */
-    private String login;
-
-    /** Password. */
-    private String pwd;
+    /** */
+    private final SecurityCredentials creds;
 
     /** Security permission set. */
-    private SecurityPermissionSet prmSet;
+    private final SecurityPermissionSet prmSet;
 
     /** */
-    private Permissions sandboxPerms;
-
-    /**
-     * Default constructor.
-     */
-    public TestSecurityData() {
-        // No-op.
-    }
+    private final Permissions sandboxPerms;
 
     /**
      * @param login Login.
      * @param pwd Password.
      * @param prmSet Permissions.
      */
-    public TestSecurityData(String login, String pwd, SecurityPermissionSet prmSet,
-        Permissions sandboxPerms) {
-        this.login = login;
-        this.pwd = pwd;
+    public TestSecurityData(
+        String login,
+        String pwd,
+        SecurityPermissionSet prmSet,
+        Permissions sandboxPerms
+    ) {
+        creds = new SecurityCredentials(login, pwd);
         this.prmSet = prmSet;
         this.sandboxPerms = sandboxPerms;
     }
@@ -68,17 +61,8 @@ public class TestSecurityData {
     /**
      * Getting security permission set.
      */
-    public SecurityPermissionSet getPermissions() {
+    public SecurityPermissionSet permissions() {
         return prmSet;
-    }
-
-    /**
-     * @param prmSet Security permission set.
-     */
-    public TestSecurityData setPermissions(SecurityPermissionSet prmSet) {
-        this.prmSet = prmSet;
-
-        return this;
     }
 
     /** */
@@ -86,49 +70,10 @@ public class TestSecurityData {
         return sandboxPerms;
     }
 
-    /** */
-    public TestSecurityData sandboxPermissions(Permissions perms) {
-        sandboxPerms = perms;
-
-        return this;
-    }
-
-    /**
-     * Login.
-     */
-    public String getLogin() {
-        return login;
-    }
-
-    /**
-     * @param login Login.
-     */
-    public TestSecurityData setLogin(String login) {
-        this.login = login;
-
-        return this;
-    }
-
-    /**
-     * Password.
-     */
-    public String getPwd() {
-        return pwd;
-    }
-
-    /**
-     * @param pwd Password.
-     */
-    public TestSecurityData setPwd(String pwd) {
-        this.pwd = pwd;
-
-        return this;
-    }
-
     /**
      * @return Security credentials.
      */
     public SecurityCredentials credentials() {
-        return new SecurityCredentials(getLogin(), getPwd(), null);
+        return creds;
     }
 }
