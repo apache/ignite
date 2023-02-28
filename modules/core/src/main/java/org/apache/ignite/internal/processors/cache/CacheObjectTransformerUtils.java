@@ -79,7 +79,7 @@ public class CacheObjectTransformerUtils {
             else {
                 byte[] arr = transformed.array();
 
-                U.arrayCopy(arr, 0, res, OVERHEAD, arr.length);
+                U.arrayCopy(arr, transformed.position(), res, OVERHEAD, transformed.remaining());
             }
 
             res[0] = TRANSFORMED;
