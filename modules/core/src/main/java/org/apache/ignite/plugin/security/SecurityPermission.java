@@ -56,10 +56,7 @@ public enum SecurityPermission {
     /** Visor cache load permission. */
     ADMIN_CACHE,
 
-    /**
-     * Administration operations with remote API like control.sh or the REST API. Managing client connections in
-     * {@link ClientProcessorMXBean}.
-     */
+    /** Visor admin operations permissions. */
     ADMIN_OPS,
 
     /** System processes kill permission. */
