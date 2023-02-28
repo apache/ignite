@@ -178,7 +178,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     /** Tests cache event security context in case operation is initiated from the {@link IgniteClient}. */
     @Test
     public void testIgniteClient() throws Exception {
-        operationInitiatorLogin = "thin_client";
+        operationInitiatorLogin = THIN_CLIENT_LOGIN;
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses(Config.SERVER)
@@ -241,7 +241,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     public void testGridClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
 
-        operationInitiatorLogin = "grid_client";
+        operationInitiatorLogin = GRID_CLIENT_LOGIN;
 
         GridClientConfiguration cfg = new GridClientConfiguration()
             .setServers(singletonList("127.0.0.1:11211"))
@@ -288,7 +288,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     public void testRestClient() throws Exception {
         Assume.assumeTrue(txIsolation == null && txConcurrency == null);
 
-        operationInitiatorLogin = "rest_client";
+        operationInitiatorLogin = REST_CLIENT_LOGIN;
 
         checkEvents(k -> sendRestRequest(CACHE_PUT, k, "val", null), false, EVT_CACHE_OBJECT_PUT);
         checkEvents(k -> sendRestRequest(CACHE_PUT_ALL, k, "val", null), false, EVT_CACHE_OBJECT_PUT);

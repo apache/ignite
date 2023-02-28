@@ -175,16 +175,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
-
-        USERS.remove(nodeSecData.credentials().getLogin());
-
-        for (TestSecurityData data : predefinedAuthData)
-            USERS.remove(data.credentials().getLogin());
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean sandboxEnabled() {
         return true;
     }
