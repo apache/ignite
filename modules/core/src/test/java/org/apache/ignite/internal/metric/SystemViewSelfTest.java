@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -2098,40 +2098,43 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             .setDataStorageConfiguration(
                 new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration().setName("pds").setPersistenceEnabled(true)
-                )))
+                ).setWalCompactionEnabled(true)))
         ) {
             ignite.cluster().state(ClusterState.ACTIVE);
 
             ignite.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             ignite.snapshot().createSnapshot(testSnap0).get();
+            ignite.snapshot().createSnapshot(testSnap1).get(getTestTimeout());
+            ignite.snapshot().createIncrementalSnapshot(testSnap1).get(getTestTimeout());
+            ignite.snapshot().createIncrementalSnapshot(testSnap1).get(getTestTimeout());
 
             SystemView<SnapshotView> views = ignite.context().systemView().view(SNAPSHOT_SYS_VIEW);
 
-            assertEquals(1, views.size());
+            List<T2<String, Integer>> exp = Lists.newArrayList(
+                new T2<>(testSnap0, null),
+                new T2<>(testSnap1, null),
+                new T2<>(testSnap1, 1),
+                new T2<>(testSnap1, 2));
 
-            SnapshotView view = F.first(views);
+            assertEquals(4, views.size());
 
-            assertEquals(testSnap0, view.name());
-            assertEquals(ignite.localNode().consistentId().toString(), view.consistentId());
-            assertNotNull(view.snapshotRecordSegment());
+            for (SnapshotView v: views) {
+                assertTrue(exp.remove(new T2<>(v.name(), v.incrementalIndex())));
 
-            Collection<?> constIds = F.nodeConsistentIds(ignite.cluster().nodes());
+                assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
+                assertNotNull(v.snapshotRecordSegment());
 
-            assertEquals(F.concat(constIds, ","), view.baselineNodes());
-            assertEquals(F.concat(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME), ","), view.cacheGroups());
+                Integer incIdx = v.incrementalIndex();
 
-            ignite.createCache("testCache");
-
-            ignite.snapshot().createSnapshot(testSnap1).get();
-
-            views = ignite.context().systemView().view(SNAPSHOT_SYS_VIEW);
-
-            assertEquals(2, views.size());
-
-            List<String> exp = Lists.newArrayList(testSnap0, testSnap1);
-
-            views.forEach(v -> assertTrue(exp.remove(v.name())));
+                if (incIdx == null) {
+                    assertEquals(ignite.localNode().consistentId().toString(), v.baselineNodes());
+                    assertEquals(String.join(",", dfltCacheGrp, METASTORAGE_CACHE_NAME), v.cacheGroups());
+                    assertEquals("FULL", v.type());
+                }
+                else
+                    assertEquals("INCREMENTAL", v.type());
+            }
 
             assertTrue(exp.isEmpty());
         }

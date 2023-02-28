@@ -634,8 +634,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SNAPSHOT_SYS_VIEW,
             SNAPSHOT_SYS_VIEW_DESC,
             new SnapshotViewWalker(),
-            () -> F.flatCollections(F.transform(localSnapshotNames(null), name -> readSnapshotMetadatas(name, null))),
-            this::snapshotViewSupplier);
+            () -> F.flatCollections(F.transform(localSnapshotNames(null), name -> {
+                List<SnapshotView> views = new ArrayList<>();
+
+                for (SnapshotMetadata m: readSnapshotMetadatas(name, null)) {
+                    List<File> dirs = snapshotCacheDirectories(m.snapshotName(), null, m.folderName(), grpName -> true);
+
+                    Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
+
+                    views.add(new SnapshotView(m, cacheGrps));
+                }
+
+                for (IncrementalSnapshotMetadata m: readIncrementalSnapshotMetadatas(name))
+                    views.add(new SnapshotView(m));
+
+                return views;
+            })),
+            Function.identity());
     }
 
     /** {@inheritDoc} */
@@ -1968,6 +1983,32 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /**
+     * @param snpName Snapshot name.
+     * @return Collection of incremental snapshots metafiles.
+     */
+    public Collection<IncrementalSnapshotMetadata> readIncrementalSnapshotMetadatas(String snpName) {
+        File[] incDirs = incrementalSnapshotsLocalRootDir(snpName, null)
+            .listFiles((dir, name) -> INC_SNP_NAME_PATTERN.matcher(name).matches());
+
+        if (incDirs == null)
+            return Collections.emptyList();
+
+        List<IncrementalSnapshotMetadata> metas = new ArrayList<>();
+
+        try {
+            for (File incDir: incDirs) {
+                for (File metaFile: incDir.listFiles((dir, name) -> name.endsWith(SNAPSHOT_METAFILE_EXT)))
+                    metas.add(readFromFile(metaFile));
+            }
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
+        }
+
+        return metas;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
         return createSnapshot(name, null, false);
@@ -2884,17 +2925,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static String cacheChangedException(int cacheId, String name) {
         return "Create incremental snapshot request has been rejected. " +
             "Cache changed [cacheId=" + cacheId + ", cacheName=" + name + ']';
-    }
-
-    /**
-     * @param meta Snapshot metadata.
-     * @return Snapshot view.
-     */
-    private SnapshotView snapshotViewSupplier(SnapshotMetadata meta) {
-        List<File> dirs = snapshotCacheDirectories(meta.snapshotName(), null, meta.folderName(), name -> true);
-        Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
-
-        return new SnapshotView(meta, cacheGrps);
     }
 
     /** @return Snapshot handlers. */
