@@ -267,7 +267,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         snp(srv).storeSnapshotMeta(new IncrementalSnapshotMetadata(
             meta.requestId(),
-            meta.fullSnapshotName() + "1",
+            meta.snapshotName() + "1",
             meta.incrementalIndex(),
             meta.consistentId(),
             null,
@@ -300,7 +300,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         snp(srv).storeSnapshotMeta(new IncrementalSnapshotMetadata(
             meta.requestId(),
-            meta.fullSnapshotName(),
+            meta.snapshotName(),
             meta.incrementalIndex() + 1,
             meta.consistentId(),
             null,

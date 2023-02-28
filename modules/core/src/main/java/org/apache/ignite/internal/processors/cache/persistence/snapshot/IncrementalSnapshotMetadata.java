@@ -37,7 +37,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final UUID rqId;
 
-    /** Full snapshot name. */
+    /** Snapshot name. */
     @GridToStringInclude
     private final String snpName;
 
@@ -60,21 +60,22 @@ public class IncrementalSnapshotMetadata implements Serializable {
 
     /**
      * @param rqId Unique request id.
-     * @param fullSnpName Full snapshot name.
+     * @param snpName Snapshot name.
+     * @param incIdx Incremental snapshot index.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param incSnpRec Pointer to {@link IncrementalSnapshotFinishRecord}.
      */
     public IncrementalSnapshotMetadata(
         UUID rqId,
-        String fullSnpName,
+        String snpName,
         int incIdx,
         String consId,
         String folderName,
         WALPointer incSnpRec
     ) {
         this.rqId = rqId;
-        this.snpName = fullSnpName;
+        this.snpName = snpName;
         this.incIdx = incIdx;
         this.consId = consId;
         this.folderName = folderName;
@@ -86,6 +87,16 @@ public class IncrementalSnapshotMetadata implements Serializable {
         return rqId;
     }
 
+    /** @return Snapshot name. */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /** @return Consistent ID of a node to which this metadata relates. */
+    public String consistentId() {
+        return consId;
+    }
+
     /** @return Pointer to {@link IncrementalSnapshotFinishRecord}. */
     public WALPointer incSnpPointer() {
         return incSnpRec;
@@ -94,16 +105,6 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** @return Incremental snapshot index. */
     public int incrementalIndex() {
         return incIdx;
-    }
-
-    /** @return Full snapshot name. */
-    public String fullSnapshotName() {
-        return snpName;
-    }
-
-    /** @return Consistent ID. */
-    public String consistentId() {
-        return consId;
     }
 
     /**
