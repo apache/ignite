@@ -39,7 +39,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
@@ -102,7 +102,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALLOW_ALL, null, false))
+            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
             .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
             .setConnectorConfiguration(
                 new ConnectorConfiguration()

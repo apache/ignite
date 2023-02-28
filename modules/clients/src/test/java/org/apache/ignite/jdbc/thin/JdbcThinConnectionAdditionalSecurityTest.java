@@ -39,7 +39,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /**
  * SSL connection test with security plugin.
@@ -74,7 +74,7 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider("srv_" + igniteInstanceName, null, ALLOW_ALL,
+        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider("srv_" + igniteInstanceName, null, ALL_PERMISSIONS,
             false, true, clientData()));
 
         cfg.setClientConnectorConfiguration(

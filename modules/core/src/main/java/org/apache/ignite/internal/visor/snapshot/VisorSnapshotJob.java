@@ -15,34 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang.gridfunc;
+package org.apache.ignite.internal.visor.snapshot;
 
-import org.apache.ignite.internal.processors.security.PublicAccessJob;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
-/**
- * Absolute closure that does nothing.
- */
-public class NoOpClosure extends GridAbsClosure implements PublicAccessJob {
+/** */
+public abstract class VisorSnapshotJob<A, R> extends VisorJob<A, R> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public void apply() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NoOpClosure.class, this);
+    protected VisorSnapshotJob(@Nullable A arg, boolean debug) {
+        super(arg, debug);
     }
 
     /** {@inheritDoc} */
     @Override public SecurityPermissionSet requiredPermissions() {
-        return NO_PERMISSIONS;
+        return systemPermissions(ADMIN_SNAPSHOT);
     }
 }

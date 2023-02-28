@@ -226,7 +226,6 @@ public class GridServiceProxy<T> implements Serializable {
                                     .withPool(SERVICE_POOL)
                                     .withFailoverDisabled()
                                     .withTimeout(waitTimeout)
-                                    .withAuthenticationDisabled()
                             ).get());
                     }
                 }
