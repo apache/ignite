@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -62,9 +62,10 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(100 * 1024 * 1024);
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-        cfg.getConnectorConfiguration().setSslEnabled(true);
-        cfg.setSslContextFactory(createSslFactory());
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setSslEnabled(true)
+            .setUseIgniteSslContextFactory(false)
+            .setSslContextFactory(createSslFactory()));
 
         return cfg;
     }
