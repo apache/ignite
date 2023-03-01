@@ -32,39 +32,28 @@ public class VisorCdcFlushCachesTaskArg extends IgniteDataTransferObject {
     /** Cache names. */
     private Set<String> caches;
 
-    /** Only primary flag. */
-    private boolean onlyPrimary;
-
     /** */
     public VisorCdcFlushCachesTaskArg() {
         // No-op.
     }
 
     /** */
-    public VisorCdcFlushCachesTaskArg(Set<String> caches, boolean onlyPrimary) {
+    public VisorCdcFlushCachesTaskArg(Set<String> caches) {
         this.caches = caches;
-        this.onlyPrimary = onlyPrimary;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
-        out.writeBoolean(onlyPrimary);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
-        onlyPrimary = in.readBoolean();
     }
 
     /** @return Cache names. */
     public Set<String> caches() {
         return caches;
-    }
-
-    /** @return Only primary flag. */
-    public boolean onlyPrimary() {
-        return onlyPrimary;
     }
 }

@@ -56,7 +56,6 @@ import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksC
 import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.NODE_ID;
 import static org.apache.ignite.internal.commandline.cdc.FlushCachesCommand.CACHES;
 import static org.apache.ignite.internal.commandline.cdc.FlushCachesCommand.FLUSH_CACHES;
-import static org.apache.ignite.internal.commandline.cdc.FlushCachesCommand.ONLY_PRIMARY;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
@@ -248,10 +247,6 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), FLUSH_CACHES, CACHES),
             "At least one cache name should be specified.");
-
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), FLUSH_CACHES, CACHES, ONLY_PRIMARY),
-            "At least one cache name should be specified.");
     }
 
     /** */
@@ -262,24 +257,16 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
 
-        waitForSize(cnsmr0, KEYS_CNT);
-        waitForSize(cnsmr1, KEYS_CNT);
-
-        cnsmr0.clear();
-        cnsmr1.clear();
-
-        executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME, ONLY_PRIMARY);
-
-        checkFlushCaches(srv0, cnsmr0, true);
-        checkFlushCaches(srv1, cnsmr1, true);
+        waitForSize(cnsmr0, srv0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
+        waitForSize(cnsmr1, srv1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
 
         cnsmr0.clear();
         cnsmr1.clear();
 
         executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME);
 
-        checkFlushCaches(srv0, cnsmr0, false);
-        checkFlushCaches(srv1, cnsmr1, false);
+        waitForSize(cnsmr0, srv0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
+        waitForSize(cnsmr1, srv1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
     }
 
     /** */
@@ -291,11 +278,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private UserCdcConsumer runCdc(Ignite ign) throws Exception {
-        UserCdcConsumer cnsmr = new UserCdcConsumer() {
-            @Override protected boolean skipBackup() {
-                return false;
-            }
-        };
+        UserCdcConsumer cnsmr = new UserCdcConsumer();
 
         CdcConfiguration cfg = new CdcConfiguration();
 

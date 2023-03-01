@@ -25,8 +25,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -101,14 +101,8 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
             wal = ignite.context().cache().context().wal(true);
 
             try {
-                for (String name : arg.caches()) {
-                    flushCache(name, true);
-
-                    if (!arg.onlyPrimary())
-                        flushCache(name, false);
-
-                    log.info("Cache flushed [name=" + name + ']');
-                }
+                for (String name : arg.caches())
+                    flushCache(name);
 
                 wal.flush(null, true);
 
@@ -123,9 +117,8 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
 
         /**
          * @param name Cache name to flush.
-         * @param primary {@code True} if flush primary entries, otherwise backup entries.
          */
-        private void flushCache(String name, boolean primary) throws IgniteCheckedException {
+        private void flushCache(String name) throws IgniteCheckedException {
             GridKernalContext ctx = ignite.context();
 
             IgniteInternalCache<?, ?> cache = ctx.cache().cache(name);
@@ -136,12 +129,12 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
             GridCacheContext<?, ?> cctx = cache.context();
 
             GridIterator<CacheDataRow> localRows = cctx.offheap()
-                .cacheIterator(cctx.cacheId(), primary, !primary, AffinityTopologyVersion.NONE, null, null);
+                .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null, null);
 
             for (CacheDataRow row : localRows) {
                 KeyCacheObject key = row.key();
 
-                DataRecord rec = new DataRecord(new DataEntry(
+                CdcDataRecord rec = new CdcDataRecord(new DataEntry(
                     cctx.cacheId(),
                     key,
                     row.value(),
@@ -151,11 +144,13 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                     row.expireTime(),
                     key.partition(),
                     -1,
-                    DataEntry.flags(primary))
+                    DataEntry.flags(true))
                 );
 
                 wal.log(rec);
             }
+
+            log.info("Cache flushed [name=" + name + ']');
         }
     }
 }

@@ -823,34 +823,26 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, KEYS_CNT);
 
-        UserCdcConsumer cnsmr = new UserCdcConsumer() {
-            @Override protected boolean skipBackup() {
-                return false;
-            }
-        };
+        UserCdcConsumer cnsmr0 = new UserCdcConsumer();
+        UserCdcConsumer cnsmr1 = new UserCdcConsumer();
 
-        IgniteInternalFuture<?> fut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+        IgniteInternalFuture<?> fut0 = runAsync(createCdc(cnsmr0, getConfiguration(grid(0).name())));
+        IgniteInternalFuture<?> fut1 = runAsync(createCdc(cnsmr1, getConfiguration(grid(1).name())));
 
-        waitForSize(KEYS_CNT, TX_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, TX_CACHE_NAME, UPDATE, cnsmr0, cnsmr1);
 
-        checkFlushCaches(ign, cnsmr, true);
-
-        checkFlushCaches(ign, cnsmr, false);
-
-        fut.cancel();
-    }
-
-    /** */
-    private void checkFlushCaches(IgniteEx ign, UserCdcConsumer cnsmr, boolean onlyPrimary) throws Exception {
-        cnsmr.data.clear();
+        cnsmr0.clear();
+        cnsmr1.clear();
 
         ign.compute().execute(VisorCdcFlushCachesTask.class,
             new VisorTaskArgument<>(F.nodeIds(ign.cluster().forServers().nodes()),
-                new VisorCdcFlushCachesTaskArg(Collections.singleton(TX_CACHE_NAME), onlyPrimary), false));
+                new VisorCdcFlushCachesTaskArg(Collections.singleton(TX_CACHE_NAME)), false));
 
-        int keyCnt = onlyPrimary ? ign.cache(TX_CACHE_NAME).localSize(CachePeekMode.PRIMARY) : KEYS_CNT;
+        waitForSize(grid(0).cache(TX_CACHE_NAME).localSize(CachePeekMode.PRIMARY), TX_CACHE_NAME, UPDATE, cnsmr0);
+        waitForSize(grid(1).cache(TX_CACHE_NAME).localSize(CachePeekMode.PRIMARY), TX_CACHE_NAME, UPDATE, cnsmr1);
 
-        waitForSize(keyCnt, TX_CACHE_NAME, UPDATE, cnsmr);
+        fut0.cancel();
+        fut1.cancel();
     }
 
     /** */
@@ -868,7 +860,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         ign.compute().execute(VisorCdcFlushCachesTask.class,
             new VisorTaskArgument<>(F.nodeIds(ign.cluster().forServers().nodes()),
-                new VisorCdcFlushCachesTaskArg(Collections.singleton(TX_CACHE_NAME), false), false));
+                new VisorCdcFlushCachesTaskArg(Collections.singleton(TX_CACHE_NAME)), false));
 
         UserCdcConsumer cnsmr = new UserCdcConsumer();
 

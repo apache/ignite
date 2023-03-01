@@ -37,7 +37,6 @@ import org.apache.ignite.internal.visor.cdc.VisorCdcFlushCachesTask;
 import org.apache.ignite.internal.visor.cdc.VisorCdcFlushCachesTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.CDC;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 
 /**
  * The command to flush caches. Iterates over caches and writes data entries to the WAL to get captured by CDC.
@@ -48,9 +47,6 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
 
     /** */
     public static final String CACHES = "--caches";
-
-    /** */
-    public static final String ONLY_PRIMARY = "--only-primary";
 
     /** */
     private VisorCdcFlushCachesTaskArg arg;
@@ -81,7 +77,6 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         Set<String> caches = null;
-        boolean onlyPrimary = false;
 
         while (argIter.hasNextSubArg()) {
             String opt = argIter.nextArg("Failed to read command argument.");
@@ -92,14 +87,12 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
 
                 caches = argIter.nextStringSet("comma-separated list of cache names.");
             }
-            else if (ONLY_PRIMARY.equalsIgnoreCase(opt))
-                onlyPrimary = true;
         }
 
         if (F.isEmpty(caches))
             throw new IllegalArgumentException("At least one cache name should be specified.");
 
-        arg = new VisorCdcFlushCachesTaskArg(caches, onlyPrimary);
+        arg = new VisorCdcFlushCachesTaskArg(caches);
     }
 
     /** {@inheritDoc} */
@@ -107,10 +100,10 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
         Map<String, String> params = new LinkedHashMap<>();
 
         params.put(CACHES + " cache1,...,cacheN", "specifies a comma-separated list of cache names to be flushed.");
-        params.put(ONLY_PRIMARY, "flush only primary entries on a nodes.");
 
-        usage(logger, "Flush caches:", CDC, params, FLUSH_CACHES, CACHES, "cache1,...,cacheN",
-            optional(ONLY_PRIMARY));
+        usage(logger,
+            "Flush cache data entries. Iterates over caches and writes data entries to the WAL to get captured by CDC:",
+            CDC, params, FLUSH_CACHES, CACHES, "cache1,...,cacheN");
     }
 
     /** {@inheritDoc} */

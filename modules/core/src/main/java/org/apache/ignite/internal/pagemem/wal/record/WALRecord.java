@@ -282,7 +282,10 @@ public abstract class WALRecord {
         ENCRYPTED_OUT_OF_ORDER_UPDATE(74, LOGICAL),
 
         /** ClusterSnapshot start. */
-        CLUSTER_SNAPSHOT(75, LOGICAL);
+        CLUSTER_SNAPSHOT(75, LOGICAL),
+
+        /** CDC data record. */
+        CDC_DATA_RECORD(76, CUSTOM);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

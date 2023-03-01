@@ -215,6 +215,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     ) {
         return () -> {
             int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
+            System.out.println("My exp="+expSz + " s="+sum);
             return sum == expSz;
         };
     }
@@ -299,7 +300,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
-                if (skipBackup() && !evt.primary())
+                if (!evt.primary())
                     return;
 
                 data.computeIfAbsent(
@@ -341,11 +342,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** */
         protected boolean commit() {
-            return true;
-        }
-
-        /** */
-        protected boolean skipBackup() {
             return true;
         }
 

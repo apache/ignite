@@ -183,8 +183,8 @@ To flush cache entries you can run the following link:tools/control-script[Contr
 
 [source,shell]
 ----
-# Flush caches.
-control.sh|bat --cdc flush_caches --caches cache1,...,cacheN [--only-primary]
+# Flush cache data entries. Iterates over caches and writes data entries to the WAL to get captured by CDC:
+control.sh|bat --cdc flush_caches --caches cache1,...,cacheN
 ----
 
 The command will iterate over caches and writes data entries to the WAL to get captured by CDC application.
