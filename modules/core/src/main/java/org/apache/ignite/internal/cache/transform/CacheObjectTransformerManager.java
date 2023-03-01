@@ -40,11 +40,4 @@ public interface CacheObjectTransformerManager extends GridCacheSharedManager {
      * @return Restored data.
      */
     public ByteBuffer restore(ByteBuffer transformed);
-
-    /**
-     * Returns {@code true} when direct byte buffers are required.
-     *
-     * @return Direct flag.
-     */
-    public boolean direct();
 }

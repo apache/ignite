@@ -26,6 +26,7 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.xerial.snappy.Snappy;
 
@@ -100,10 +101,11 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
         /** */
         static final LZ4Compressor lz4Compressor = lz4Factory.highCompressor(1);
 
-        /** {@inheritDoc} */
-        @Override public boolean direct() {
-            return true;
-        }
+        /** Direct byte buffer. */
+        private final ThreadLocalDirectByteBuffer src = new ThreadLocalDirectByteBuffer();
+
+        /** Direct byte buffer. */
+        private final ThreadLocalDirectByteBuffer dst = new ThreadLocalDirectByteBuffer();
 
         /** {@inheritDoc} */
         @Override public ByteBuffer transform(ByteBuffer original) {
@@ -141,7 +143,9 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
                     throw new UnsupportedOperationException();
             }
 
-            ByteBuffer compressed = byteBuffer(locOverhead + maxCompLen);
+            original = toDirect(original);
+
+            ByteBuffer compressed = dst.get(locOverhead + maxCompLen);
 
             compressed.position(locOverhead);
 
@@ -198,7 +202,9 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
             CompressionType type = CompressionType.values()[transformed.getInt()];
             int length = transformed.getInt();
 
-            ByteBuffer restored = byteBuffer(length);
+            transformed = toDirect(transformed);
+
+            ByteBuffer restored = dst.get(length);
 
             switch (type) {
                 case ZSTD:
@@ -230,6 +236,22 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
             }
 
             return restored;
+        }
+
+        /**
+         * Some libs may require direct byte buffers.
+         *
+         * @param buf Buffer.
+         */
+        private ByteBuffer toDirect(ByteBuffer buf) {
+            assertFalse(buf.isDirect());
+
+            ByteBuffer direct = src.get(buf.remaining());
+
+            direct.put(buf);
+            direct.flip();
+
+            return direct;
         }
 
         /**

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -30,9 +29,6 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 public class CacheObjectTransformerUtils {
     /** Additional space required to store the transformed data. */
     public static final int OVERHEAD = 2;
-
-    /** Source byte buffer. */
-    private static final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer();
 
     /** Version. */
     private static final byte VER = 0;
@@ -66,7 +62,7 @@ public class CacheObjectTransformerUtils {
         if (transformer == null)
             return bytes;
 
-        ByteBuffer src = sourceByteBuffer(bytes, offset, length, transformer.direct());
+        ByteBuffer src = ByteBuffer.wrap(bytes, offset, length);
         ByteBuffer transformed = transformer.transform(src);
 
         if (transformed != null) {
@@ -155,7 +151,7 @@ public class CacheObjectTransformerUtils {
 
         CacheObjectTransformerManager transformer = transformer(ctx);
 
-        ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset, transformer.direct());
+        ByteBuffer src = ByteBuffer.wrap(bytes, offset, bytes.length - offset);
         ByteBuffer restored = transformer.restore(src);
 
         byte[] res;
@@ -179,21 +175,5 @@ public class CacheObjectTransformerUtils {
         }
 
         return res;
-    }
-
-    /** */
-    private static ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length, boolean direct) {
-        ByteBuffer src;
-
-        if (direct) {
-            src = srcBuf.get(bytes.length);
-
-            src.put(bytes, offset, length);
-            src.flip();
-        }
-        else
-            src = ByteBuffer.wrap(bytes, offset, length);
-
-        return src;
     }
 }

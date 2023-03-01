@@ -37,7 +37,7 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
     protected static final class RandomShiftCacheObjectTransformer extends TestCacheObjectTransformerManagerAdapter {
         /** {@inheritDoc} */
         @Override public ByteBuffer transform(ByteBuffer original) {
-            ByteBuffer transformed = byteBuffer(original.remaining() + 4);
+            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 4]);
 
             int shift = ThreadLocalRandom.current().nextInt();
 
@@ -53,7 +53,7 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = byteBuffer(transformed.remaining() - 4);
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
 
             int shift = transformed.getInt();
 

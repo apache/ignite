@@ -307,7 +307,7 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
 
             tCntr.computeIfAbsent(shift, key -> new AtomicInteger()).incrementAndGet();
 
-            ByteBuffer transformed = byteBuffer(original.remaining() + 4);
+            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 4]);
 
             transformed.putInt(shift);
 
@@ -321,7 +321,7 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = byteBuffer(transformed.remaining() - 4);
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
 
             int origShift = transformed.getInt();
 

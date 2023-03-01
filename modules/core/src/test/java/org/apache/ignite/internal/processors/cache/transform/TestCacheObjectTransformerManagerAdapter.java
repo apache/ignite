@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache.transform;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManagerAdapter;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
  *
  */
-public abstract class TestCacheObjectTransformerManagerAdapter extends CacheObjectTransformerManagerAdapter {
+public abstract class TestCacheObjectTransformerManagerAdapter implements CacheObjectTransformerManager {
     /** {@inheritDoc} */
     @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
         // No-op.

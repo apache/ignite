@@ -62,8 +62,11 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
 
             set(buf);
         }
-        else
+        else {
             buf.clear();
+
+            buf.limit(capacity);
+        }
 
         return buf;
     }
