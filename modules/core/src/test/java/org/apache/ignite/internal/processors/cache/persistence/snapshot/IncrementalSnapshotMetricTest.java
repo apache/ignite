@@ -81,14 +81,12 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         IntMetric incIdx = mreg0.findMetric("LastIncrementalSnapshotIndex");
         ObjectGauge<String> snpName = mreg0.findMetric("LastIncrementalSnapshotName");
         ObjectGauge<String> errMsg = mreg0.findMetric("LastIncrementalSnapshotErrorMessage");
-        ObjectGauge<String> status = mreg0.findMetric("CurrentIncrementalSnapshotStatus");
 
         assertEquals(0, startTime.value());
         assertEquals(0, endTime.value());
         assertEquals(0, incIdx.value());
         assertTrue(snpName.value().isEmpty());
         assertTrue(errMsg.value().isEmpty());
-        assertTrue(status.value().isEmpty());
 
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE);
 
@@ -108,7 +106,6 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         assertEquals(1, incIdx.value());
         assertEquals(SNP, snpName.value());
         assertTrue(errMsg.value().isEmpty());
-        assertEquals("MARKING_WAL", status.value());
 
         beforeFinRecLatch.countDown();
 
@@ -119,7 +116,6 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         assertEquals(1, incIdx.value());
         assertEquals(SNP, snpName.value());
         assertTrue(errMsg.value().isEmpty());
-        assertTrue(status.value().isEmpty());
 
         stopGrid(1);
 

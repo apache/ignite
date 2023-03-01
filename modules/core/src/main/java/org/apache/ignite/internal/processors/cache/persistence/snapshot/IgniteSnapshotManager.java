@@ -590,7 +590,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }, "Processed size of current cluster snapshot in bytes on this node.");
 
         // Incremental snapshot metrics.
-        // Metrics visible on a snapshot initiator node.
         mreg.register("LastIncrementalSnapshotName",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.name).orElse(""),
             String.class,
@@ -608,13 +607,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(GridFutureAdapter::error).map(Object::toString).orElse(""),
             String.class,
             "The error message of last started incremental snapshot on this node.");
-
-        // Metrics visible on all nodes.
-        mreg.register("CurrentIncrementalSnapshotStatus", () -> {
-            IncrementalSnapshotFutureTask task = currentSnapshotTask(IncrementalSnapshotFutureTask.class);
-
-            return task == null ? "" : task.status();
-        }, String.class, "Status of current incremental snapshot on this node.");
 
         restoreCacheGrpProc.registerMetrics();
 
