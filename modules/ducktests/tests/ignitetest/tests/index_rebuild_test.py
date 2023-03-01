@@ -96,7 +96,9 @@ class IndexRebuildTest(IgniteTest):
         idx_before_rebuild = get_file_sizes(ignites.nodes, ignites.index_file('*', CACHE_NAME))
 
         for node in ignites.nodes:
-            IgniteAwareService.exec_command(node, f'rm {ignites.index_file(node.account.hostname, CACHE_NAME)}')
+            IgniteAwareService.exec_command(
+                node,
+                f'rm {ignites.index_file(ignites.consistent_dir(node.account.externally_routable_ip), CACHE_NAME)}')
 
         start_time = round(time.time() * 1000)
 
