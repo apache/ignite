@@ -92,6 +92,27 @@ public interface SnapshotMXBean {
     );
 
     /**
+     * Restore cluster-wide incremental snapshot.
+     *
+     * @param name Snapshot name.
+     * @param path Snapshot directory path.
+     * @param cacheGroupNames Optional comma-separated list of cache group names.
+     * @param incIdx Incremental snapshot index.
+     * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+     */
+    @MXBeanDescription("Restore cluster-wide incremental snapshot.")
+    public void restoreIncrementalSnapshot(
+        @MXBeanParameter(name = "snpName", description = "Snapshot name.")
+            String name,
+        @MXBeanParameter(name = "snpPath", description = "Optional snapshot directory path.")
+            String path,
+        @MXBeanParameter(name = "cacheGroupNames", description = "Optional comma-separated list of cache group names.")
+            String cacheGroupNames,
+        @MXBeanParameter(name = "incIdx", description = "Incremental snapshot index.")
+            int incIdx
+    );
+
+    /**
      * Cancel previously started snapshot restore operation.
      *
      * @param name Snapshot name.
