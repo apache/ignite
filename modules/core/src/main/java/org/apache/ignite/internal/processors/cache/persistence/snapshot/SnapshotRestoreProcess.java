@@ -1517,7 +1517,7 @@ public class SnapshotRestoreProcess {
                 long curIdx = walRec.getKey().index();
 
                 if (curIdx != lastProcessedIdx) {
-                    opCtx0.processedWalSegments = (int)(curIdx - startIdx);
+                    opCtx0.processedWalSegments = (int)(curIdx - startIdx + 1);
 
                     lastProcessedIdx = curIdx;
                 }
@@ -1564,8 +1564,6 @@ public class SnapshotRestoreProcess {
                 }
             }
         }
-
-        opCtx0.processedWalSegments += 1;
 
         exec.awaitApplyComplete();
 

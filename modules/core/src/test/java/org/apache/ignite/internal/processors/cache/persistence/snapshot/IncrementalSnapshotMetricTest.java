@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -26,17 +26,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.AbstractIncrementalSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
-import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -47,16 +46,17 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
 /** */
 public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTest {
     /** */
-    private static final CountDownLatch latch = new CountDownLatch(1);
+    private static CountDownLatch beforeFinRecLatch;
 
     /** */
-    private static final CountDownLatch latch0 = new CountDownLatch(1);
+    private static CountDownLatch logFinRecLatch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -65,14 +65,15 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         if (getTestIgniteInstanceIndex(instanceName) == 0)
             cfg.setPluginProviders(new BlockingWALPluginProvider());
 
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
         return cfg;
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testCreateIncrementalSnapshotMetrics() throws Exception {
+        beforeFinRecLatch = new CountDownLatch(1);
+        logFinRecLatch = new CountDownLatch(1);
+
         MetricRegistry mreg0 = grid(0).context().metric().registry(SNAPSHOT_METRICS);
 
         LongMetric startTime = mreg0.findMetric("LastIncrementalSnapshotStartTime");
@@ -94,13 +95,13 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         for (int i = 0; i < 1024; i++)
             cache.put(i, ThreadLocalRandom.current().nextInt());
 
-        TestRecordingCommunicationSpi.spi(grid(1)).record(SingleNodeMessage.class);
-
         IgniteFuture<Void> incSnpFut = grid(0).snapshot().createIncrementalSnapshot(SNP);
 
-        // Await snapshot task is inited and blocked on grid(0).
-        U.await(latch0);
-        TestRecordingCommunicationSpi.spi(grid(1)).waitForRecorded();
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> snp(grid(0)).currentSnapshotTask(IncrementalSnapshotFutureTask.class) != null,
+            5_000, 10));
+
+        U.await(logFinRecLatch);
 
         assertTrue(startTime.value() > 0);
         assertEquals(0, endTime.value());
@@ -109,7 +110,7 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         assertTrue(errMsg.value().isEmpty());
         assertEquals("MARKING_WAL", status.value());
 
-        latch.countDown();
+        beforeFinRecLatch.countDown();
 
         incSnpFut.get(getTestTimeout());
 
@@ -133,8 +134,6 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
     /** @throws Exception If fails. */
     @Test
     public void testRestoreIncrementalSnapshotMetrics() throws Exception {
-        latch.countDown();
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE);
 
         for (int i = 0; i < 1024; i++) {
@@ -193,10 +192,10 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord record, RolloverType rolloverType) throws IgniteCheckedException, StorageException {
-            if (record.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
-                latch0.countDown();
+            if (record.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD && logFinRecLatch != null) {
+                logFinRecLatch.countDown();
 
-                U.awaitQuiet(latch);
+                U.awaitQuiet(beforeFinRecLatch);
             }
 
             return super.log(record, rolloverType);
