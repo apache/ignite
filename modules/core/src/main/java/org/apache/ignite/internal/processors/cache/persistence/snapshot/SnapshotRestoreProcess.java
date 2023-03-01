@@ -268,7 +268,7 @@ public class SnapshotRestoreProcess {
             "The total number of WAL segments in the incremental snapshot to be restored on this node.");
         mreg.register("processedWalSegments", () -> lastOpCtx.processedWalSegments,
             "The number of processed WAL segments in the incremental snapshot on this node.");
-        mreg.register("processedEntries", () -> Optional.ofNullable(lastOpCtx.processedEntries).map(LongAdder::sum).orElse(-1L),
+        mreg.register("processedWalEntries", () -> Optional.ofNullable(lastOpCtx.processedWalEntries).map(LongAdder::sum).orElse(-1L),
             "The number of processed entries from incremental snapshot on this node.");
     }
 
@@ -1469,7 +1469,7 @@ public class SnapshotRestoreProcess {
 
         LongAdder applied = new LongAdder();
 
-        opCtx0.processedEntries = applied;
+        opCtx0.processedWalEntries = applied;
         opCtx0.processedWalSegments = 0;
 
         Set<WALRecord.RecordType> recTypes = new HashSet<>(F.asList(
@@ -1517,7 +1517,7 @@ public class SnapshotRestoreProcess {
                 long curIdx = walRec.getKey().index();
 
                 if (curIdx != lastProcessedIdx) {
-                    opCtx0.processedWalSegments = (int)(curIdx - startIdx + 1);
+                    opCtx0.processedWalSegments = (int)(curIdx - startIdx);
 
                     lastProcessedIdx = curIdx;
                 }
@@ -1564,6 +1564,8 @@ public class SnapshotRestoreProcess {
                 }
             }
         }
+
+        opCtx0.processedWalSegments += 1;
 
         exec.awaitApplyComplete();
 
@@ -2064,7 +2066,7 @@ public class SnapshotRestoreProcess {
         private volatile int processedWalSegments = -1;
 
         /** Number of processed entries in incremental snapshot. */
-        private volatile LongAdder processedEntries;
+        private volatile LongAdder processedWalEntries;
 
         /** Creates an empty context. */
         protected SnapshotRestoreContext() {

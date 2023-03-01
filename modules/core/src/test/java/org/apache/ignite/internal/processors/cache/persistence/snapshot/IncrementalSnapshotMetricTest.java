@@ -148,7 +148,7 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         IntMetric incIdx = mreg0.findMetric("incrementalIndex");
         IntMetric totalWalSeg = mreg0.findMetric("totalWalSegments");
         IntMetric procWalSeg = mreg0.findMetric("processedWalSegments");
-        LongMetric procEntries = mreg0.findMetric("processedEntries");
+        LongMetric procEntries = mreg0.findMetric("processedWalEntries");
 
         assertEquals(0, incIdx.value());
         assertEquals(-1, totalWalSeg.value());
