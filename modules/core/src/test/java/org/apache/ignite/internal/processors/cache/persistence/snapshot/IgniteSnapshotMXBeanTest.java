@@ -24,6 +24,7 @@ import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,6 +43,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Tests {@link SnapshotMXBean}.
@@ -123,6 +125,41 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, TIMEOUT));
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testRestoreIncrementalSnapshot() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(dfltCacheCfg.getName())) {
+            for (int i = CACHE_KEYS_RANGE; i < 2 * CACHE_KEYS_RANGE; i++)
+                ds.addData(i, valueBuilder().apply(i));
+        }
+
+        ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        ignite.cache(dfltCacheCfg.getName()).destroy();
+
+        awaitPartitionMapExchange();
+
+        DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
+        DynamicMBean mReg1 = metricRegistry(grid(1).name(), null, SNAPSHOT_RESTORE_METRICS);
+
+        assertEquals(0, (long)getMetric("endTime", mReg0));
+        assertEquals(0, (long)getMetric("endTime", mReg1));
+
+        getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
+            .restoreIncrementalSnapshot(SNAPSHOT_NAME, "", "", 1);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, getTestTimeout()));
+        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, getTestTimeout()));
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), 2 * CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If fails. */
