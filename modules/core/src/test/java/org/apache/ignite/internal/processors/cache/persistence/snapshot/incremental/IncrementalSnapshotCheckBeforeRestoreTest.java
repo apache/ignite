@@ -141,7 +141,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
                 log,
                 () -> snp(n).checkSnapshot(SNP, null, null, false, 1).get(getTestTimeout()),
                 IgniteCheckedException.class,
-                "Full snapshot metafile not found for this node.");
+                "Failed to find snapshot metafile");
         }
     }
 

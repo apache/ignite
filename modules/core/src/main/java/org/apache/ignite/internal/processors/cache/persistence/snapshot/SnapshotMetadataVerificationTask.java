@@ -96,11 +96,10 @@ public class SnapshotMetadataVerificationTask
                     .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
                     .collect(Collectors.toList());
 
-                if (metas.isEmpty())
-                    throw new IgniteException("Full snapshot metafile not found for this node." );
-
-                if (metas.size() > 1)
-                    throw new IgniteException("Multiple snapshot metafiles found for this node. " + metas);
+                if (metas.size() != 1) {
+                    throw new IgniteException("Failed to find snapshot metafile [metas=" + metas +
+                        ", snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ']');
+                }
 
                 checkIncrementalSnapshots(metas.get(0), arg);
             }
@@ -180,9 +179,8 @@ public class SnapshotMetadataVerificationTask
 
             List<?> walSegGaps = factory.hasGaps(walSeg);
 
-            if (!walSegGaps.isEmpty()) {
+            if (!walSegGaps.isEmpty())
                 throw new IgniteException("Missed WAL segments [misses=" + walSegGaps + ", meta=" + meta + ']');
-            }
         }
     }
 
