@@ -50,7 +50,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -116,7 +115,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(keepBinary());
-        cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {

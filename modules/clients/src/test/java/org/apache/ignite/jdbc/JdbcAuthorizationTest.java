@@ -44,7 +44,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
@@ -379,8 +378,6 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         return create()
             .defaultAllowAll(false)
             .appendSystemPermissions(CACHE_CREATE, JOIN_AS_SERVER)
-            .appendTaskPermissions(
-                "org.apache.ignite.internal.processors.cache.GridCacheAdapter$SizeTask", TASK_EXECUTE)
             .build();
     }
 

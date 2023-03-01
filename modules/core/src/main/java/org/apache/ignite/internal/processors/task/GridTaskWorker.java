@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -64,11 +65,13 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
+import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
@@ -85,6 +88,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,6 +111,12 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CANCELLED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isSystemType;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
  * Grid task worker. Handles full task life cycle.
@@ -581,6 +591,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             if (node == null)
                 throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
+
+            authorizeSystemTaskJob(job);
 
             IgniteUuid jobId = IgniteUuid.fromUuid(ctx.localNodeId());
 
@@ -1602,20 +1614,29 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param e Exception.
      */
     void finishTask(@Nullable R res, @Nullable Throwable e) {
-        finishTask(res, e, true);
+        finishTask(res, e, false, true);
+    }
+
+    /** @return Whether task was cancelled by this call. */
+    boolean cancelTask() {
+        authorizeTaskCancel();
+
+        return finishTask(null, new ComputeTaskCancelledCheckedException("Task was cancelled."), true, true);
     }
 
     /**
      * @param res Task result.
      * @param e Exception.
+     * @param cancel {@code True} if task is being cancelled.
      * @param cancelChildren Whether to cancel children in case the task become cancelled.
+     * @return Whether task was finished by this call.
      */
-    void finishTask(@Nullable R res, @Nullable Throwable e, boolean cancelChildren) {
+    boolean finishTask(@Nullable R res, @Nullable Throwable e, boolean cancel, boolean cancelChildren) {
         // Avoid finishing a job more than once from
         // different threads.
         synchronized (mux) {
             if (state == State.REDUCING || state == State.FINISHING)
-                return;
+                return false;
 
             state = State.FINISHING;
         }
@@ -1631,10 +1652,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             if (cancelChildren)
                 cancelChildren();
+
+            return true;
         }
         // Once we marked task as 'Finishing' we must complete it.
         finally {
-            fut.onDone(res, e);
+            if (cancel)
+                fut.onCancelled();
+            else
+                fut.onDone(res, e);
 
             ses.onDone();
         }
@@ -1734,6 +1760,50 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     @Override public String toString() {
         synchronized (mux) {
             return S.toString(GridTaskWorker.class, this);
+        }
+    }
+
+    /** */
+    private void authorizeSystemTaskJob(ComputeJob job) {
+        if (!isSystemType(ctx, task.getClass()))
+            return;
+
+        Object executable = unwrap(job);
+
+        if (!isSystemType(ctx, executable.getClass())) {
+            assert opts.isPublicRequest();
+
+            ctx.security().authorize(executable.getClass().getName(), TASK_EXECUTE);
+        }
+        else if (executable instanceof PublicAccessJob)
+            authorizeAll(ctx.security(), ((PublicAccessJob)executable).requiredPermissions());
+        else if (opts.isPublicRequest()) {
+            // We do not allow to execute internal tasks via public API for security reasons.
+            throw new SecurityException("Access to Ignite Internal tasks is restricted" +
+                " [task=" + task.getClass().getName() + ", job=" + job.getClass() + "]");
+        }
+    }
+
+    /** */
+    private void authorizeTaskCancel() {
+        if (!ctx.security().enabled())
+            return;
+
+        if (!isSystemType(ctx, task.getClass()))
+            ctx.security().authorize(task.getClass().getName(), TASK_CANCEL);
+        else {
+            boolean isClosedByInitiator = Objects.equals(
+                ses.initiatorSecurityContext().subject().id(),
+                ctx.security().securityContext().subject().id());
+
+            for (GridJobResultImpl jobRes : jobRes.values()) {
+                Object executable = unwrap(jobRes.getJob());
+
+                if (!isSystemType(ctx, executable.getClass()))
+                    ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
+                else if (!isClosedByInitiator)
+                    ctx.security().authorize(ADMIN_KILL);
+            }
         }
     }
 }

@@ -35,14 +35,17 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.eviction.paged.TestObject;
@@ -51,7 +54,9 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -67,8 +72,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -91,9 +95,6 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Client that has system permissions. */
     private static final String CLIENT_SYS_PERM = "client_sys_perm";
 
-    /** Client that has system permissions. */
-    private static final String CLIENT_CACHE_TASK_OPER = "client_task_oper";
-
     /** Cache. */
     protected static final String CACHE = "TEST_CACHE";
 
@@ -115,14 +116,6 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Size of the data region for object eviction testing. */
     protected static final int EVICTION_TEST_DATA_REGION_SIZE = 20 * (1 << 20);
 
-    /** Remove all task name. */
-    public static final String REMOVE_ALL_TASK =
-        "org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter$RemoveAllTask";
-
-    /** Clear task name. */
-    public static final String CLEAR_TASK =
-        "org.apache.ignite.internal.processors.cache.GridCacheAdapter$ClearTask";
-
     /**
      * @param clientData Array of client security data.
      */
@@ -140,6 +133,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         return getConfiguration(
                 instanceName,
                 securityPluginProvider(instanceName, clientData))
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setThinClientConfiguration(new ThinClientConfiguration()
+                    .setServerToClientExceptionStackTraceSending(true)))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDataRegionConfigurations(new DataRegionConfiguration()
                     .setName(EVICTION_TEST_DATA_REGION_NAME)
@@ -168,7 +164,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      */
     protected AbstractTestSecurityPluginProvider securityPluginProvider(String instanceName,
         TestSecurityData... clientData) {
-        return new TestSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, false, clientData);
+        return new TestSecurityPluginProvider("srv_" + instanceName, null, ALL_PERMISSIONS, false, clientData);
     }
 
     /** {@inheritDoc} */
@@ -202,18 +198,18 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
                     SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                         .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY)
                         .build()
-                ),
-                new TestSecurityData(CLIENT_CACHE_TASK_OPER,
-                    SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                        .appendCachePermissions(CACHE, CACHE_REMOVE)
-                        .appendTaskPermissions(REMOVE_ALL_TASK, TASK_EXECUTE)
-                        .appendTaskPermissions(CLEAR_TASK, TASK_EXECUTE)
-                        .build()
                 )
             )
         );
 
         ignite.cluster().state(ClusterState.ACTIVE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        grid(0).cache(CACHE).clear();
     }
 
     /** */
@@ -259,27 +255,31 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         }
     }
 
-    /**
-     * That test shows the wrong case when a client has permission for a remove operation
-     * but a removeAll operation is forbidden for it. To have permission for the removeAll (clear) operation
-     * a client need to have the permission to execute {@link #REMOVE_ALL_TASK} ({@link #CLEAR_TASK}) task.
-     *
-     * @throws Exception If error occurs.
-     */
+    /** */
     @Test
     public void testCacheTaskPermOperations() {
         List<IgniteBiTuple<Consumer<IgniteClient>, String>> ops = Arrays.asList(
             t(c -> c.cache(CACHE).removeAll(), "removeAll"),
+            t(c -> c.cache(CACHE).removeAll(Collections.singleton("key")), "removeAll"),
             t(c -> c.cache(CACHE).clear(), "clear"),
             t(c -> c.cache(CACHE).clear("key"), "clearKey"),
             t(c -> c.cache(CACHE).clearAll(ImmutableSet.of("key")), "clearKeys")
         );
 
         for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops) {
-            runOperation(CLIENT_CACHE_TASK_OPER, op);
+            grid(0).cache(CACHE).put("key", "val");
 
-            assertThrowsWithCause(() -> runOperation(CLIENT, op), ClientAuthorizationException.class);
+            runOperation(CLIENT_REMOVE, op);
+
+            assertNull(grid(0).cache(CACHE).get("key"));
         }
+
+        grid(0).cache(CACHE).put("key", "val");
+
+        for (IgniteBiTuple<Consumer<IgniteClient>, String> op : ops)
+            assertAuthorizationFailed(() -> runOperation(CLIENT_PUT, op));
+
+        assertEquals("val", grid(0).cache(CACHE).get("key"));
     }
 
     /** */
@@ -452,5 +452,25 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      */
     protected Map<String, String> userAttributres() {
         return null;
+    }
+
+    /** */
+    public static void assertAuthorizationFailed(RunnableX r) {
+        try {
+            r.run();
+        }
+        catch (Exception e) {
+            if (X.hasCause(e, ClientAuthorizationException.class))
+                return;
+
+            // In cases when security exception is thrown during task execution, its stacktrace is propagated back as
+            // a simple string. It is the case for removeAll/clear cache operations.
+            ClientException cliEx = X.cause(e, ClientException.class);
+
+            if (cliEx != null && cliEx.getMessage().contains("Authorization failed [perm=CACHE_REMOVE, name=TEST_CACHE"))
+                return;
+        }
+
+        fail();
     }
 }

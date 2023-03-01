@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -712,11 +713,36 @@ namespace Apache.Ignite.Core.Tests
                     return;
                 }
 
-                var text = args != null
-                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
-                    : message;
+                var sb = new StringBuilder();
 
-                _listener.TestOutput(new TestOutput(text + Environment.NewLine, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
+                if (args != null)
+                {
+                    sb.AppendFormat(formatProvider ?? CultureInfo.InvariantCulture, message, args);
+                }
+                else
+                {
+                    sb.Append(message);
+                }
+
+                if (nativeErrorInfo != null)
+                {
+                    sb.Append(Environment.NewLine).Append(nativeErrorInfo);
+                }
+
+                if (ex != null)
+                {
+                    sb.Append(Environment.NewLine).Append(ex);
+                }
+
+                sb.Append(Environment.NewLine);
+
+                var output = new TestOutput(
+                    text: sb.ToString(),
+                    stream: "Progress",
+                    testId: _ctx.CurrentTest?.Id,
+                    testName: _ctx.CurrentTest?.FullName);
+
+                _listener.TestOutput(output);
             }
 
             /** <inheritdoc /> */

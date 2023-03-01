@@ -52,7 +52,7 @@ public class TaskExecutionOptions {
     private boolean isSysTask;
 
     /** */
-    private boolean isAuthDisabled;
+    private boolean isPublicReq;
 
     /** */
     private TaskExecutionOptions() {}
@@ -68,7 +68,7 @@ public class TaskExecutionOptions {
         isFailoverDisabled = other.isFailoverDisabled;
         isResultCacheDisabled = other.isResultCacheDisabled;
         isSysTask = other.isSysTask;
-        isAuthDisabled = other.isAuthDisabled;
+        isPublicReq = other.isPublicReq;
     }
 
     /** */
@@ -195,13 +195,17 @@ public class TaskExecutionOptions {
     }
 
     /** */
-    public boolean isAuthenticationDisabled() {
-        return isAuthDisabled;
+    public boolean isPublicRequest() {
+        return isPublicReq;
     }
 
-    /** */
-    public TaskExecutionOptions withAuthenticationDisabled() {
-        isAuthDisabled = true;
+    /**
+     * Marks the task as initiated through the public API. It forces Ignite to perform security checks that prevent
+     * access to Ignite internals before task execution. The main purpose of this flag is to separate the tasks that
+     * were performed through the public and private APIs and to perform different security checks in each case.
+     */
+    public TaskExecutionOptions asPublicRequest() {
+        isPublicReq = true;
 
         return this;
     }

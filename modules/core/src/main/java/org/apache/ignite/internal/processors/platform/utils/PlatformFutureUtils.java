@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -330,6 +331,16 @@ public class PlatformFutureUtils {
         }
 
         return true;
+    }
+
+    /** Awaits and returns the result of the specified future. */
+    public static <T> T getResult(IgniteInternalFuture<T> fut) {
+        try {
+            return fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**

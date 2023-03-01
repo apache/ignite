@@ -72,6 +72,7 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -386,43 +387,43 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assertHints(conn, false, false, false, false, false,
+            assertHints(conn, false, false, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, false,
+            assertHints(conn, true, false, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, false,
+            assertHints(conn, false, true, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&collocated=true")) {
-            assertHints(conn, false, false, true, false, false,
+            assertHints(conn, false, false, true, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, false,
+            assertHints(conn, false, false, false, true, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&lazy=true")) {
-            assertHints(conn, false, false, false, false, true,
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&lazy=" + (!DFLT_LAZY))) {
+            assertHints(conn, false, false, false, false, !DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, false,
+            assertHints(conn, false, false, false, false, DFLT_LAZY,
                 true, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true&" +
-            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, true,
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=" + (!DFLT_LAZY) + "&skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, !DFLT_LAZY,
                 true, partitionAwareness);
         }
     }
@@ -435,38 +436,38 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHintsSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, false,
+            assertHints(conn, true, false, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, false,
+            assertHints(conn, false, true, false, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";collocated=true")) {
-            assertHints(conn, false, false, true, false, false,
+            assertHints(conn, false, false, true, false, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, false,
+            assertHints(conn, false, false, false, true, DFLT_LAZY,
                 false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";lazy=true")) {
-            assertHints(conn, false, false, false, false, true,
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";lazy=" + (!DFLT_LAZY))) {
+            assertHints(conn, false, false, false, false, !DFLT_LAZY,
                 false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, false,
+            assertHints(conn, false, false, false, false, DFLT_LAZY,
                 true, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true;" +
-            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, true,
+            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=" + (!DFLT_LAZY) + ";skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, !DFLT_LAZY,
                 true, partitionAwareness);
         }
     }

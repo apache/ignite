@@ -15,32 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.client.events;
 
-import java.sql.ResultSet;
-import org.junit.Test;
+import java.util.EventListener;
 
-/**
- * Test for Jdbc driver query without class on client
- */
-public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
-    /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/";
-
+/** */
+public interface ConnectionEventListener extends EventListener {
     /**
-     * @throws Exception If failed.
+     * @param event Handshake start event.
      */
-    @Test
-    public void testJdbcQuery() throws Exception {
-        stmt.execute("select * from JdbcTestObject");
-
-        ResultSet rs = stmt.getResultSet();
-
-        assertResultSet(rs);
+    default void onHandshakeStart(HandshakeStartEvent event) {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected String getURL() {
-        return URL;
+    /**
+     * @param event Handshake success event.
+     */
+    default void onHandshakeSuccess(HandshakeSuccessEvent event) {
+        // No-op.
+    }
+
+    /**
+     * @param event Handshake fail event.
+     */
+    default void onHandshakeFail(HandshakeFailEvent event) {
+        // No-op.
+    }
+
+    /**
+     * @param event Connection closed event (with or without exception).
+     */
+    default void onConnectionClosed(ConnectionClosedEvent event) {
+        // No-op.
     }
 }

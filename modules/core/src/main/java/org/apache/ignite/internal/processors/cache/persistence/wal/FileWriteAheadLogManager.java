@@ -1257,8 +1257,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disabled(int grpId) {
-        return cctx.walState().isDisabled(grpId);
+    @Override public boolean disabled(int grpId, long pageId) {
+        return cctx.walState().isDisabled(grpId, pageId);
     }
 
     /**

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +39,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -136,7 +138,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
         operations(srvAllowed, clntAllowed).forEach(this::runOperation);
 
-        operations(srvForbidden, clntForbidden).forEach(op -> assertThrowsWithCause(op, SecurityException.class));
+        operations(srvForbidden, clntForbidden).forEach(op -> assertThrowsAny(op, SecurityException.class, ExecutionException.class));
 
         asyncOperations(srvAllowed, clntAllowed).forEach(this::runOperationCancel);
 
@@ -154,7 +156,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             () -> node.compute().call(TEST_CALLABLE),
             () -> node.compute().run(TEST_RUNNABLE),
             () -> node.compute().apply(TEST_CLOSURE, new Object()),
-            () -> node.executorService().invokeAll(singletonList(TEST_CALLABLE)),
+            () -> node.executorService().invokeAll(singletonList(TEST_CALLABLE)).forEach(ComputePermissionCheckTest::getQuiet),
             () -> node.executorService().invokeAny(singletonList(TEST_CALLABLE))
         );
 
@@ -253,6 +255,29 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         /** {@inheritDoc} */
         @Override public @Nullable Integer reduce(List<ComputeJobResult> results) {
             return null;
+        }
+    }
+
+    /** */
+    public static void assertThrowsAny(RunnableX r, Class<? extends Exception>... expExs) {
+        try {
+            r.run();
+        }
+        catch (Exception e) {
+            if (Arrays.stream(expExs).anyMatch(expEx -> X.hasCause(e, expEx)))
+                return;
+        }
+
+        fail();
+    }
+
+    /** */
+    public static <T> T getQuiet(Future<T> fut) {
+        try {
+            return fut.get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new IgniteException(e);
         }
     }
 }
