@@ -86,6 +86,11 @@ namespace Apache.Ignite.Core.Log
                 sb.AppendFormat(" (exception: {0})", ex);
             }
             
+            if (nativeErrorInfo != null)
+            {
+                sb.AppendFormat(" (native error: {0})", nativeErrorInfo);
+            }
+
             Console.WriteLine(sb.ToString());
         }
 
