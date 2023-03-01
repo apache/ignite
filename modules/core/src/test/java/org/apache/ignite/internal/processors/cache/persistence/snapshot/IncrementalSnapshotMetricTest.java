@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.INCREMENTAL_SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
 /** */
@@ -74,7 +74,7 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         beforeFinRecLatch = new CountDownLatch(1);
         logFinRecLatch = new CountDownLatch(1);
 
-        MetricRegistry mreg0 = grid(0).context().metric().registry(SNAPSHOT_METRICS);
+        MetricRegistry mreg0 = grid(0).context().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
 
         LongMetric startTime = mreg0.findMetric("LastIncrementalSnapshotStartTime");
         LongMetric endTime = mreg0.findMetric("LastIncrementalSnapshotEndTime");

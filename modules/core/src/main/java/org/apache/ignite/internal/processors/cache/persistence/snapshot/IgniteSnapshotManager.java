@@ -285,6 +285,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot metrics prefix. */
     public static final String SNAPSHOT_METRICS = "snapshot";
 
+    /** Incremental snapshot metrics prefix. */
+    public static final String INCREMENTAL_SNAPSHOT_METRICS = "incremental_snapshot";
+
     /** Snapshot metafile extension. */
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
@@ -589,21 +592,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return task == null ? -1 : task.processedSize();
         }, "Processed size of current cluster snapshot in bytes on this node.");
 
-        // Incremental snapshot metrics.
-        mreg.register("LastIncrementalSnapshotName",
+        MetricRegistry incSnpMReg = cctx.kernalContext().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
+
+        incSnpMReg.register("LastIncrementalSnapshotName",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.name).orElse(""),
             String.class,
             "The name of full snapshot for which the last incremental snapshot requested on this node.");
-        mreg.register("LastIncrementalSnapshotIndex",
+        incSnpMReg.register("LastIncrementalSnapshotIndex",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.incIdx).orElse(0),
             "Ihe index of the last incremental snapshot requested on this node.");
-        mreg.register("LastIncrementalSnapshotStartTime",
+        incSnpMReg.register("LastIncrementalSnapshotStartTime",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.startTime).orElse(0L),
             "The system time of the last incremental snapshot request start time on this node.");
-        mreg.register("LastIncrementalSnapshotEndTime",
+        incSnpMReg.register("LastIncrementalSnapshotEndTime",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.endTime).orElse(0L),
             "The system time of the last incremental snapshot request end time on this node.");
-        mreg.register("LastIncrementalSnapshotErrorMessage",
+        incSnpMReg.register("LastIncrementalSnapshotErrorMessage",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(GridFutureAdapter::error).map(Object::toString).orElse(""),
             String.class,
             "The error message of last started incremental snapshot on this node.");
