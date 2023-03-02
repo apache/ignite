@@ -116,13 +116,13 @@ public enum CommandList {
     private final String text;
 
     /** Command implementation. */
-    private final Command command;
+    private final Command<?> command;
 
     /**
      * @param text Text.
      * @param command Command implementation.
      */
-    CommandList(String text, Command command) {
+    CommandList(String text, Command<?> command) {
         this.text = text;
         this.command = command;
     }
@@ -150,7 +150,7 @@ public enum CommandList {
     /**
      * @return Command implementation.
      */
-    public Command command() {
+    public Command<?> command() {
         return command;
     }
 

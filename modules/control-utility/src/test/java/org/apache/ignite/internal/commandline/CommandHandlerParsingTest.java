@@ -1189,7 +1189,7 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        return new CommonArgParser(setupTestLogger()).
+        return new CommonArgParser(setupTestLogger(), new CommandsProviderImpl()).
             parseAndValidate(args.iterator());
     }
 

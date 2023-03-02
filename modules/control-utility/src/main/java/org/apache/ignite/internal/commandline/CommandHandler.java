@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -112,6 +113,9 @@ public class CommandHandler {
     /** JULs logger. */
     private final IgniteLogger logger;
 
+    /** Commands provider. */
+    private final CommandsProvider cmdProvider;
+
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
 
@@ -155,7 +159,7 @@ public class CommandHandler {
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger("control-utility", CommandHandler.class);
+        this(setupJavaLogger("control-utility", CommandHandler.class));
     }
 
     /**
@@ -163,6 +167,16 @@ public class CommandHandler {
      */
     public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
+        Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
+
+        if (F.isEmpty(it))
+            cmdProvider = new CommandsProviderImpl();
+        else {
+            List<CommandsProvider> providers = new ArrayList<>();
+            providers.add(new CommandsProviderImpl());
+            it.forEach(providers::add);
+            cmdProvider = new CompoundCommandsProvider(providers);
+        }
     }
 
     /**
@@ -195,7 +209,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommonArgParser(logger, cmdProvider).parseAndValidate(rawArgs.iterator());
 
             Command command = args.command();
             commandName = command.name();
@@ -705,9 +719,10 @@ public class CommandHandler {
 
         logger.info("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values())
-            .filter(c -> experimentalEnabled || !c.command().experimental())
-            .forEach(c -> c.command().printUsage(logger));
+        cmdProvider.commands().forEach(c -> {
+            if (experimentalEnabled || !c.experimental())
+                c.printUsage(logger);
+        });
 
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");

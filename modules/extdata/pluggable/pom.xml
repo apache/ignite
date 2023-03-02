@@ -29,7 +29,7 @@
         <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-extdata-logo</artifactId>
+    <artifactId>ignite-extdata-pluggable</artifactId>
     <url>https://ignite.apache.org</url>
 
     <dependencies>
@@ -75,6 +75,19 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-control-utility</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-control-utility</artifactId>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 

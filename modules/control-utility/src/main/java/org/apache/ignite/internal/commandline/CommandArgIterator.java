@@ -31,7 +31,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class CommandArgIterator {
     /** */
-    private Iterator<String> argsIt;
+    private final Iterator<String> argsIt;
+
+    /** */
+    private final CommandsProvider cmdProvider;
 
     /** */
     private String peekedArg;
@@ -45,9 +48,14 @@ public class CommandArgIterator {
      * @param argsIt Raw argument iterator.
      * @param commonArgumentsAndHighLevelCommandSet All known subcomands.
      */
-    public CommandArgIterator(Iterator<String> argsIt, Set<String> commonArgumentsAndHighLevelCommandSet) {
+    public CommandArgIterator(
+        Iterator<String> argsIt,
+        Set<String> commonArgumentsAndHighLevelCommandSet,
+        CommandsProvider cmdProvider
+    ) {
         this.argsIt = argsIt;
         this.commonArgumentsAndHighLevelCommandSet = commonArgumentsAndHighLevelCommandSet;
+        this.cmdProvider = cmdProvider;
     }
 
     /**
@@ -61,7 +69,7 @@ public class CommandArgIterator {
      * @return <code>true</code> if there's next argument for subcommand.
      */
     public boolean hasNextSubArg() {
-        return hasNextArg() && CommandList.of(peekNextArg()) == null &&
+        return hasNextArg() && cmdProvider.parse(peekNextArg()) == null &&
             !commonArgumentsAndHighLevelCommandSet.contains(peekNextArg());
     }
 

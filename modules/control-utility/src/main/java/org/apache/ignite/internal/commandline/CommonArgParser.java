@@ -45,6 +45,9 @@ public class CommonArgParser {
     private final IgniteLogger logger;
 
     /** */
+    private final CommandsProvider cmdProvider;
+
+    /** */
     static final String CMD_HOST = "--host";
 
     /** */
@@ -147,8 +150,9 @@ public class CommonArgParser {
     /**
      * @param logger Logger.
      */
-    public CommonArgParser(IgniteLogger logger) {
+    public CommonArgParser(IgniteLogger logger, CommandsProvider cmdProvider) {
         this.logger = logger;
+        this.cmdProvider = cmdProvider;
     }
 
     /**
@@ -224,26 +228,25 @@ public class CommonArgParser {
 
         boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
+        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmdProvider);
 
-        CommandList command = null;
+        Command<?> command = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            CommandList cmd = CommandList.of(str);
+            Command<?> cmd = cmdProvider.parse(str);
 
             if (cmd != null) {
                 if (command != null)
                     throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
                         cmd.toString() + ", " + command.toString());
 
-                cmd.command().parseArguments(argIter);
+                cmd.parseArguments(argIter);
 
                 command = cmd;
             }
             else {
-
                 switch (str) {
                     case CMD_HOST:
                         host = argIter.nextArg("Expected host name");
@@ -358,14 +361,14 @@ public class CommonArgParser {
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-        if (!experimentalEnabled && command.command().experimental()) {
+        if (!experimentalEnabled && command.experimental()) {
             logger.warning(String.format("To use experimental command add --enable-experimental parameter for %s",
                 UTILITY_NAME));
 
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
+        return new ConnectionAndSslParameters(command, host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation, verbose,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,

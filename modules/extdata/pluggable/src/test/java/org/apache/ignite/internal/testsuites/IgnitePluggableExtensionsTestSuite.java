@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.testsuites;
 
-import org.apache.ignite.internal.IgniteExtendedLogoTest;
+import org.apache.ignite.internal.commandline.ExtendedControlUtilityTest;
+import org.apache.ignite.internal.plugin.ExtendedLogoTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Info provider test suite.
+ * Pluggable extensions test suite.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgniteExtendedLogoTest.class
+    ExtendedLogoTest.class,
+    ExtendedControlUtilityTest.class,
 })
-public class IgniteLogoExtensionTestSuite {
+public class IgnitePluggableExtensionsTestSuite {
 }
