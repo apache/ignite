@@ -3597,12 +3597,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrid();
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotStatus() throws Exception {
+        walCompactionEnabled(true);
+
         String snapshotName = "snapshot1";
         int keysCnt = 10_000;
 
@@ -3614,24 +3616,41 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(srv, keysCnt);
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
+        // Create snapshot.
         IgniteFuture<Void> fut = srv.snapshot().createSnapshot(snapshotName);
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(true, false, snapshotName);
+        checkSnapshotStatus(true, false, false, snapshotName);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
 
+        // Create incremental snapshot.
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        fut = srv.snapshot().createIncrementalSnapshot(snapshotName);
+
+        spi.waitForBlocked();
+
+        checkSnapshotStatus(true, false, true, snapshotName);
+
+        spi.stopBlock();
+
+        fut.get(getTestTimeout());
+
+        checkSnapshotStatus(false, false, false, null);
+
+        // Restore snapshot.
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
         awaitPartitionMapExchange();
@@ -3642,21 +3661,41 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(false, true, snapshotName);
+        checkSnapshotStatus(false, true, false, snapshotName);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
+
+        // Restore incremental snapshot.
+        srv.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        fut = srv.snapshot().restoreIncrementalSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME), 1);
+
+        spi.waitForBlocked();
+
+        checkSnapshotStatus(false, true, true, snapshotName);
+
+        spi.stopBlock();
+
+        fut.get(getTestTimeout());
+
+        checkSnapshotStatus(false, false, false, null);
     }
 
     /**
      * @param isCreating {@code True} if create snapshot operation is in progress.
      * @param isRestoring {@code True} if restore snapshot operation is in progress.
+     * @param isIncremental {@code True} if incremental snapshot operation.
      * @param expName Expected snapshot name.
      */
-    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
+    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, boolean isIncremental, String expName) throws Exception {
         Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isClient());
 
         assertTrue(waitForCondition(() -> srvs.stream().allMatch(
@@ -3686,7 +3725,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         else
             assertContains(log, out, "Restore snapshot operation is in progress.");
 
+        assertContains(log, out, "Incremental: " + isIncremental);
         assertContains(log, out, "Snapshot name: " + expName);
+
+        if (isIncremental)
+            assertContains(log, out, "Incremental index: 1");
 
         srvs.forEach(srv -> assertContains(log, out, srv.cluster().localNode().id().toString()));
     }
