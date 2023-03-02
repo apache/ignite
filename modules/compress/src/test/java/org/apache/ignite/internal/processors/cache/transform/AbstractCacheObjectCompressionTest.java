@@ -147,7 +147,10 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
 
             ByteBuffer compressed = dst.get(locOverhead + maxCompLen);
 
-            compressed.position(locOverhead);
+            compressed.putInt(type.ordinal());
+            compressed.putInt(origSize);
+
+            assertEquals(locOverhead, compressed.position());
 
             int size;
 
@@ -184,15 +187,8 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
                     throw new UnsupportedOperationException();
             }
 
-            compressed.putInt(type.ordinal());
-            compressed.putInt(origSize);
-
-            assertEquals(locOverhead, compressed.position());
-
-            compressed.rewind();
-
-            if (size >= lim) // Limiting to gain compression profit.
-                return null;
+            if (size >= lim)
+                return null; // Compression is not profitable.
 
             return compressed;
         }
