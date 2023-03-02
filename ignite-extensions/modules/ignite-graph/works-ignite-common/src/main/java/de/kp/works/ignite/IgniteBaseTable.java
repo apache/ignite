@@ -18,20 +18,25 @@ package de.kp.works.ignite;
  *
  */
 
+import de.kp.works.ignite.graph.EdgeEntryIterator;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.graph.IgniteEdgeEntry;
 import de.kp.works.ignite.graph.IgniteVertexEntry;
+import de.kp.works.ignite.graph.VertexEntryIterator;
 import de.kp.works.ignite.mutate.IgniteDelete;
 import de.kp.works.ignite.mutate.IgniteIncrement;
 import de.kp.works.ignite.mutate.IgnitePut;
 import de.kp.works.ignite.query.IgniteEdgeQuery;
 import de.kp.works.ignite.query.IgniteGetQuery;
+import de.kp.works.ignite.query.IgniteResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 
 public class IgniteBaseTable {
 
@@ -49,7 +54,7 @@ public class IgniteBaseTable {
         admin.createTable(name);
 
     }
-
+    
     /** METHODS TO SUPPORT BASIC CRUD OPERATIONS **/
 
     protected Object incrementEdge(IgniteIncrement igniteIncrement) {
@@ -102,6 +107,23 @@ public class IgniteBaseTable {
         else
             updateVertex(ignitePut, vertex);
     }
+    
+    protected void putDocument(IgnitePut ignitePut) throws Exception {
+        Object vertexId = ignitePut.getId();
+        List<IgniteResult> vertex = getDocument(vertexId);
+
+        if (vertex.isEmpty())
+            this.admin.writeDocument(ignitePut, this.name);
+
+        else
+        	this.admin.writeDocument(ignitePut, this.name);
+    }
+    
+    public void createIndex(IgnitePut ignitePut) throws Exception {
+        Object vertexId = ignitePut.getId();
+        this.admin.createIndex(ignitePut, this.name);        	
+    }
+
 
     /**
      * The current version of [IgniteGraph] supports two different
@@ -111,7 +133,7 @@ public class IgniteBaseTable {
      */
     protected void deleteEdge(IgniteDelete igniteDelete) throws Exception {
 
-        List<IgniteEdgeEntry> edge;
+    	List<IgniteEdgeEntry> edge;
         Object edgeId = igniteDelete.getId();
         if (edgeId != null) {
             /*
@@ -156,12 +178,12 @@ public class IgniteBaseTable {
      */
     protected List<IgniteEdgeEntry> getEdge(Object id) {
         IgniteGetQuery igniteQuery = new IgniteGetQuery(name, admin, id);
-        return igniteQuery.getEdgeEntries();
+        return EdgeEntryIterator.toList(igniteQuery.getEdgeEntries());
     }
 
     protected List<IgniteEdgeEntry> getEdge(Object fromId, Object toId) {
         IgniteEdgeQuery igniteQuery = new IgniteEdgeQuery(name, admin, fromId, toId);
-        return igniteQuery.getEdgeEntries();
+        return EdgeEntryIterator.toList(igniteQuery.getEdgeEntries());
     }
     /**
      * Create, update & delete operation for vertices
@@ -173,8 +195,21 @@ public class IgniteBaseTable {
      */
     protected List<IgniteVertexEntry> getVertex(Object id) {
         IgniteGetQuery igniteQuery = new IgniteGetQuery(name, admin, id);
-        return igniteQuery.getVertexEntries();
+        return VertexEntryIterator.toList(igniteQuery.getVertexEntries());
     }
+    
+    protected List<IgniteResult> getDocument(Object vid) {
+    	String id = null;    	
+    	if(ValueUtils.isDocId(vid)) {    		
+    		id = ValueUtils.getDocId(vid);
+    	}
+    	else {
+    		id = vid.toString();
+    	}
+        IgniteGetQuery igniteQuery = new IgniteGetQuery(this.name, admin, id);
+        return igniteQuery.getSqlResultWithMeta();
+    }
+    
     /**
      * The provided [IgnitePut] is transformed into a list of
      * [IgniteEdgeEntry] and these entries are put into cache
@@ -262,15 +297,10 @@ public class IgniteBaseTable {
                      */
                     String propKey   = column.getColName();
                     String propType  = column.getColType();
-                    Object propValue = column.getColValue();
-                    /*
-                     * For a create request, we must generate
-                     * a unique cache key for each entry
-                     */
-                    String cacheKey = UUID.randomUUID().toString();
+                    Object propValue = column.getColValue();                    
+                   
 
-                    entries.add(new IgniteEdgeEntry(
-                            cacheKey,
+                    entries.add(new IgniteEdgeEntry(                           
                             id,
                             idType,
                             label,
@@ -297,9 +327,8 @@ public class IgniteBaseTable {
             /*
              * For a create request, we must generate
              * a unique cache key for each entry
-             */
-            String cacheKey = UUID.randomUUID().toString();
-            entries.add(new IgniteEdgeEntry(cacheKey,
+             */            
+            entries.add(new IgniteEdgeEntry(
                     id, idType, label, toId, toIdType, fromId, fromIdType,
                     createdAt, updatedAt, emptyValue, emptyValue, emptyValue));
 
@@ -359,8 +388,7 @@ public class IgniteBaseTable {
                     	return null;
                     }
                     Object newValue = property.get(0).getColValue();
-                    return new IgniteEdgeEntry(
-                            entry.cacheKey,
+                    return new IgniteEdgeEntry(                          
                             entry.id,
                             entry.idType,
                             entry.label,
@@ -388,14 +416,9 @@ public class IgniteBaseTable {
          */
         IgniteEdgeEntry template = edge.get(0);
         List<IgniteEdgeEntry> newEntries = unknownProps.stream()
-                .map(property -> {
-                    /*
-                     * For a create request, we must generate
-                     * a unique cache key for each entry
-                     */
-                    String cacheKey = UUID.randomUUID().toString();
-                    return new IgniteEdgeEntry(
-                            cacheKey,
+                .map(property -> {                  
+                    
+                    return new IgniteEdgeEntry(                          
                             template.id,
                             template.idType,
                             template.label,
@@ -449,8 +472,7 @@ public class IgniteBaseTable {
         long oldValue = entry.propValue instanceof Number? ((Number)entry.propValue).longValue(): Long.parseLong(entry.propValue.toString());
         Long newValue = oldValue + 1;
 
-        IgniteEdgeEntry newEntry = new IgniteEdgeEntry(
-                entry.cacheKey,
+        IgniteEdgeEntry newEntry = new IgniteEdgeEntry(                
                 entry.id,
                 entry.idType,
                 entry.label,
@@ -537,14 +559,8 @@ public class IgniteBaseTable {
                     String propKey   = column.getColName();
                     String propType  = column.getColType();
                     Object propValue = column.getColValue();
-                    /*
-                     * For a create request, we must generate
-                     * a unique cache key for each entry
-                     */
-                    String cacheKey = UUID.randomUUID().toString();
 
-                    entries.add(new IgniteVertexEntry(
-                            cacheKey,
+                    entries.add(new IgniteVertexEntry(                         
                             id,
                             idType,
                             label,
@@ -563,13 +579,8 @@ public class IgniteBaseTable {
          * i.e. a vertex without properties will be created
          */
         if (entries.isEmpty()) {
-            String emptyValue = "*";
-            /*
-             * For a create request, we must generate
-             * a unique cache key for each entry
-             */
-            String cacheKey = UUID.randomUUID().toString();
-            entries.add(new IgniteVertexEntry(cacheKey,
+            String emptyValue = "*";           
+            entries.add(new IgniteVertexEntry(
                     id, idType, label, createdAt, updatedAt, emptyValue, emptyValue, emptyValue));
 
         }
@@ -624,8 +635,7 @@ public class IgniteBaseTable {
                     	return null;
                     }
                     Object newValue = property.get(0).getColValue();
-                    return new IgniteVertexEntry(
-                            entry.cacheKey,
+                    return new IgniteVertexEntry(                           
                             entry.id,
                             entry.idType,
                             entry.label,
@@ -653,10 +663,8 @@ public class IgniteBaseTable {
                     /*
                      * For a create request, we must generate
                      * a unique cache key for each entry
-                     */
-                    String cacheKey = UUID.randomUUID().toString();
-                    return new IgniteVertexEntry(
-                            cacheKey,
+                     */                    
+                    return new IgniteVertexEntry(                           
                             template.id,
                             template.idType,
                             template.label,
@@ -707,8 +715,7 @@ public class IgniteBaseTable {
         long oldValue = entry.propValue instanceof Number? ((Number)entry.propValue).longValue() : Long.parseLong(entry.propValue.toString());
         Long newValue = oldValue + 1;
 
-        IgniteVertexEntry newEntry = new IgniteVertexEntry(
-                entry.cacheKey,
+        IgniteVertexEntry newEntry = new IgniteVertexEntry(               
                 entry.id,
                 entry.idType,
                 entry.label,

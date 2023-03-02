@@ -117,11 +117,17 @@ public class IgniteGraphFeatures implements Graph.Features {
 
         @Override
         public boolean supportsMultiProperties() {
-            return false;
+            return true;
         }
 
         @Override
         public VertexProperty.Cardinality getCardinality(final String key) {
+        	if(key.toLowerCase().endsWith("list")) {
+        		return  VertexProperty.Cardinality.list;
+        	}
+        	if(key.toLowerCase().endsWith("set")) {
+        		return  VertexProperty.Cardinality.set;
+        	}
             return VertexProperty.Cardinality.single;
         }
     }

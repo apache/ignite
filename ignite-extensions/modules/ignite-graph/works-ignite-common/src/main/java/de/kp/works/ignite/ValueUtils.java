@@ -19,13 +19,9 @@ package de.kp.works.ignite;
  */
 
 
-import org.apache.tinkerpop.shaded.jackson.core.JsonFactory;
-import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.databind.ObjectMapper;
-import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StringArrayDeserializer;
-import org.apache.tinkerpop.shaded.jackson.databind.node.BaseJsonNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.JsonNodeFactory;
 import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
 
 import org.apache.commons.lang3.SerializationUtils;
@@ -37,18 +33,17 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -69,44 +64,47 @@ public final class ValueUtils {
     public static ValueType getValueType(Object o) {
         if (o == null) {
             return ValueType.NULL;
-        } else if (o instanceof Boolean) {
+        } else if (o.getClass() == Boolean.class) {
             return ValueType.BOOLEAN;
-        } else if (o instanceof String || o instanceof Character) {
+        } else if (o.getClass() ==  String.class || o.getClass() ==  Character.class) {
             return ValueType.STRING;
-        } else if (o instanceof Byte) {
+        } else if (o.getClass() ==  Byte.class) {
             return ValueType.BYTE;
-        } else if (o instanceof Short) {
+        } else if (o.getClass() ==  Short.class) {
             return ValueType.SHORT;
-        } else if (o instanceof Integer) {
+        } else if (o.getClass() ==  Integer.class) {
             return ValueType.INT;
-        } else if (o instanceof Long) {
+        } else if (o.getClass() ==  Long.class) {
             return ValueType.LONG;
-        } else if (o instanceof Float) {
+        } else if (o.getClass() ==  Float.class) {
             return ValueType.FLOAT;
-        } else if (o instanceof Double) {
+        } else if (o.getClass() ==  Double.class) {
             return ValueType.DOUBLE;
-        } else if (o instanceof BigDecimal) {
+        } else if (o.getClass() ==  BigDecimal.class || o.getClass() ==  BigInteger.class) {
             return ValueType.DECIMAL;
-        } else if (o instanceof LocalDate) {
+        } else if (o.getClass() ==  LocalDate.class) {
             return ValueType.DATE;
-        } else if (o instanceof LocalTime) {
+        } else if (o.getClass() ==  LocalTime.class) {
             return ValueType.TIME;
-        } else if (o instanceof LocalDateTime) {
+        } else if (o.getClass() ==  LocalDateTime.class) {
             return ValueType.TIMESTAMP;
-        } else if (o instanceof Duration) {
+        } else if (o.getClass() ==  Duration.class) {
             return ValueType.INTERVAL;
-        } else if (o instanceof byte[]) {
+        } else if (o.getClass() ==  byte[].class) {
             return ValueType.BINARY;
         } else if (o instanceof Enum) {
             return ValueType.ENUM;
-        } else if (o instanceof UUID) {
+        } else if (o.getClass() ==  UUID.class) {
             return ValueType.UUID;
         } else if (o instanceof Map) {
         	if(defaultPropertyType==PropertyType.JSON) {
         		return ValueType.JSON_OBJECT;
         	}
             return ValueType.MAP;
-        } else if (o.getClass().isArray() || o instanceof Collection) {
+        } else if (o instanceof Collection) {        	
+            return ValueType.COLLECTION;
+        } 
+        else if (o.getClass().isArray()) {
         	if(defaultPropertyType==PropertyType.JSON) {
         		return ValueType.JSON_ARRAY;
         	}
@@ -186,21 +184,21 @@ public final class ValueUtils {
     	if(toType==ValueType.DOUBLE) {
     		return Double.valueOf(input);
     	}
+    	if(toType==ValueType.DECIMAL) {
+    		return new BigDecimal(input);
+    	}
     	if(toType==ValueType.BINARY) {
     		return Base64.getDecoder().decode(input);
-    	}
-    	if(toType==ValueType.ARRAY) {
+    	}  
+    	if(toType==ValueType.ENUM) {
     		return deserializeFromString(input);
-    	}
-    	if(toType==ValueType.SERIALIZABLE) {
+    	} 
+    	if(toType==ValueType.ARRAY || toType==ValueType.MAP || toType==ValueType.SERIALIZABLE) {
     		return deserializeFromString(input);
-    	}
-    	if(toType==ValueType.ANY) {
-    		return deserializeFromString(input);
-    	}
-    	if(toType==ValueType.JSON_ARRAY) {    		
+    	}    	
+    	if(toType==ValueType.JSON_ARRAY || toType==ValueType.COLLECTION) {    		
     		try {
-    			return StringArrayDeserializer.instance.deserialize(mapper.createParser(input), mapper.getDeserializationContext());
+    			return mapper.readerForListOf(String.class).readValue(input);
 				
 			} catch (IOException e) {
 				logger.error(e.getMessage(),e);
@@ -209,7 +207,7 @@ public final class ValueUtils {
     	}
     	if(toType==ValueType.JSON_OBJECT) {    		
     		try {    			
-				return mapper.readerForMapOf(HashMap.class).readValue(input,HashMap.class);
+				return mapper.readerForMapOf(Object.class).readValue(input);
 			} catch (IOException e) {
 				logger.error(e.getMessage(),e);
 				return input;
@@ -217,4 +215,20 @@ public final class ValueUtils {
     	}
     	return input;
     }
+    
+    // 判断id是不是document的id
+    public static boolean isDocId(Object id) {
+		if (id instanceof ReferenceVertexProperty) {
+			return true;
+		}
+		return false;
+	}
+
+	public static String getDocId(Object id) {
+		if (id instanceof ReferenceVertexProperty) {
+			ReferenceVertexProperty<?> key = (ReferenceVertexProperty) id;
+			return key.id().toString();
+		}
+		return id.toString();
+	}	
 }

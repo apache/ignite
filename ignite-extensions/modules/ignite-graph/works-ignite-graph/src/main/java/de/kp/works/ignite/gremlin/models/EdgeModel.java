@@ -19,7 +19,9 @@ package de.kp.works.ignite.gremlin.models;
  */
 
 import com.google.common.collect.Streams;
+
 import de.kp.works.ignite.query.IgniteQuery;
+import de.kp.works.ignite.IgniteResultTransform;
 import de.kp.works.ignite.IgniteTable;
 import de.kp.works.ignite.gremlin.IgniteGraph;
 import de.kp.works.ignite.gremlin.IgniteVertex;
@@ -57,7 +59,7 @@ public class EdgeModel extends ElementModel {
 
     /** READ **/
 
-    public Iterator<Edge> edges() {
+    public Iterator<Edge> edges(int offset,int limit) {
         /*
          * The parser converts results from Ignite
          * queries to vertices.
@@ -68,9 +70,13 @@ public class EdgeModel extends ElementModel {
          * requested vertices from the Ignite cache.
          */
         IgniteQuery igniteQuery = table.getAllQuery();
+        
+        if(limit>0) {
+        	igniteQuery.withRange(offset,limit);
+        }
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     public Iterator<Edge> edges(Object fromId, int limit) {
@@ -83,14 +89,12 @@ public class EdgeModel extends ElementModel {
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.
          */
-        IgniteQuery igniteQuery;
-        if (fromId == null)
-            igniteQuery = table.getLimitQuery(limit);
-        else
-            igniteQuery = table.getLimitQuery(fromId, limit);
+        IgniteQuery igniteQuery;        
+       
+        igniteQuery = table.getLimitQuery(fromId, limit);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
     /**
      * Method to find all edges that refer to the provided
@@ -108,8 +112,8 @@ public class EdgeModel extends ElementModel {
          */
         IgniteQuery igniteQuery = table.getEdgesQuery(vertex.id(), direction, labels);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
     /**
      * Method to retrieve all edges that refer to the provided
@@ -129,8 +133,8 @@ public class EdgeModel extends ElementModel {
          */
         IgniteQuery igniteQuery = table.getEdgesQuery(vertex.id(), direction, label, key, value);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     /**
@@ -152,8 +156,8 @@ public class EdgeModel extends ElementModel {
         IgniteQuery igniteQuery = table.getEdgesInRangeQuery(vertex.id(), direction, label, key,
                 inclusiveFromValue, exclusiveToValue);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
     /**
      * Method to retrieve all edges that refer to the provided
@@ -174,8 +178,8 @@ public class EdgeModel extends ElementModel {
         IgniteQuery igniteQuery = table.getEdgesWithLimitQuery(vertex.id(), direction, label, key,
                 fromValue, limit, reversed);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
     /**
      * Method to retrieve all vertices that refer to the provided

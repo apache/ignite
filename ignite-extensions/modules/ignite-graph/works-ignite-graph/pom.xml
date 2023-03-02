@@ -5,7 +5,8 @@
     <parent>
         <artifactId>ignite-graph</artifactId>
         <groupId>de.kp.works</groupId>
-        <version>0.4.0</version>
+        <version>0.5.0</version>
+        <relativePath>..</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -16,7 +17,7 @@
         <dependency>
             <groupId>de.kp.works</groupId>
             <artifactId>works-ignite-common</artifactId>
-            <version>0.4.0</version>
+            <version>0.5.0</version>
         </dependency>
 
     </dependencies>
@@ -40,11 +41,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
+                    <version>3.8.1</version>                   
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -25,6 +25,7 @@ import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConf;
 import de.kp.works.ignite.IgniteConstants;
 import de.kp.works.ignite.ValueUtils;
+
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphException;
 import de.kp.works.ignite.gremlin.models.DocumentModel;
@@ -32,23 +33,31 @@ import de.kp.works.ignite.gremlin.models.EdgeModel;
 import de.kp.works.ignite.gremlin.models.VertexModel;
 import de.kp.works.ignite.gremlin.process.strategy.optimization.IgniteGraphStepStrategy;
 import de.kp.works.ignite.gremlin.process.strategy.optimization.IgniteVertexStepStrategy;
+import de.kp.works.ignite.mutate.IgnitePut;
+
 import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.javatuples.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,8 +84,12 @@ public class IgniteGraph implements Graph {
     private final EdgeModel edgeModel;
     private final VertexModel vertexModel;
 
-    private final Cache<ByteBuffer, Edge> edgeCache;
-    private final Cache<ByteBuffer, Vertex> vertexCache;
+    public transient final Cache<String, Edge> edgeCache;
+    public transient final Cache<String, Vertex> vertexCache;
+    public transient final Cache<Tuple, List<Edge>> vertexReletionCache;
+    
+    // label -> documentModel
+    private Map<String,DocumentModel> documentsModel = new Hashtable<>();
     
     public static boolean stringedPropertyType = false;
 
@@ -140,13 +153,18 @@ public class IgniteGraph implements Graph {
         this.edgeCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getElementCacheMaxSize())
                 .expireAfterAccess(config.getElementCacheTtlSecs(), TimeUnit.SECONDS)
-                .removalListener((RemovalListener<ByteBuffer, Edge>) notif -> ((IgniteEdge) notif.getValue()).setCached(false))
+                .removalListener((RemovalListener<String, Edge>) notif -> ((IgniteEdge) notif.getValue()).setCached(false))
                 .build();
 
         this.vertexCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getElementCacheMaxSize())
                 .expireAfterAccess(config.getElementCacheTtlSecs(), TimeUnit.SECONDS)
-                .removalListener((RemovalListener<ByteBuffer, Vertex>) notif -> ((IgniteVertex) notif.getValue()).setCached(false))
+                .removalListener((RemovalListener<String, Vertex>) notif -> ((IgniteVertex) notif.getValue()).setCached(false))
+                .build();
+        
+        this.vertexReletionCache = CacheBuilder.newBuilder()
+                .maximumSize(config.getRelationshipCacheMaxSize())
+                .expireAfterAccess(config.getRelationshipCacheTtlSecs(), TimeUnit.SECONDS)
                 .build();
         
         graphInstances.put(config.getGraphNamespace(), this);
@@ -165,6 +183,11 @@ public class IgniteGraph implements Graph {
         return vertexModel;
     }
     
+    public boolean isDocumentModel(String label) {
+    	String cacheName = IgniteGraphUtils.getTableName(config, label);
+    	return admin.hasCache(cacheName);
+    }
+    
     public DocumentModel getDocumentModel(String label) {
     	if (label == null) {
             throw Exceptions.argumentCanNotBeNull("label");
@@ -172,7 +195,11 @@ public class IgniteGraph implements Graph {
     	if(IgniteConstants.VERTICES.equals(label.toLowerCase()) || IgniteConstants.EDGES.equals(label.toLowerCase())) {
     		 throw Exceptions.variablesNotSupported();
     	}
-    	DocumentModel vertexModel = new DocumentModel(this,admin.getTable(IgniteGraphUtils.getTableName(config, label),ElementType.EDGE));
+    	if(documentsModel.containsKey(label)) {
+    		return documentsModel.get(label);
+    	}
+    	DocumentModel vertexModel = new DocumentModel(this,admin.getTable(IgniteGraphUtils.getTableName(config, label),ElementType.DOCUMENT),label);
+    	documentsModel.put(label, vertexModel);
         return vertexModel;
     }
     
@@ -184,19 +211,44 @@ public class IgniteGraph implements Graph {
          * use this value (long or numeric). Otherwise `null` is
          * returned.
          */
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        Object idValue = getIdValue(keyValues);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse("document");
         /*
          * The `idValue` either is a provided [Long] or a random
          * UUID as [String].
          */
         idValue = IgniteGraphUtils.generateIdIfNeeded(idValue);
-        long now = System.currentTimeMillis();
+        long now = System.currentTimeMillis();        
         IgniteDocument newVertex = new IgniteDocument(this, idValue, label, now, now, IgniteGraphUtils.propertiesToMap(keyValues));
         newVertex.validate();
         newVertex.writeToModel();
         
         return newVertex;
+    }
+    
+    public Vertex addIndex(final IndexMetadata indexMeta) {
+    	// save index define
+    	Vertex index = this.addDocument(
+			T.label,"index",
+			T.id,indexMeta.key().toString(),
+			"label",indexMeta.label(),
+			"isUnique",indexMeta.isUnique(),
+			"createdAt",indexMeta.createdAt(),
+			"updateAt",indexMeta.updatedAt()
+		);
+    	// do create index
+    	IgnitePut put = new IgnitePut(indexMeta.key(), ElementType.DOCUMENT);
+        put.addColumn(IgniteConstants.ID_COL_NAME, "String", indexMeta.key().propertyKey());
+        put.addColumn(IgniteConstants.LABEL_COL_NAME, "String", indexMeta.key().label());
+        put.addColumn(IgniteConstants.PROPERTY_VALUE_COL_NAME, "Boolean", indexMeta.isUnique());
+        
+    	try {
+			this.getDocumentModel(indexMeta.label()).getTable().createIndex(put);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	return index;
     }
 
 
@@ -205,12 +257,23 @@ public class IgniteGraph implements Graph {
     @Override
     public Vertex addVertex(final Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+        Object idValue = null;
+        // 如果_class等于document,则使用document存储
+        for (int i = 0; i < keyValues.length; i = i + 2) {
+            if (keyValues[i].equals("_class")) {
+                String _class = ((String) keyValues[i + 1]);
+                if(_class.equals("document")) {
+                	return this.addDocument(keyValues);
+                }
+            }           
+        }
+        
         /*
          * Vertices that define an `id` in the provided keyValues
          * use this value (long or numeric). Otherwise `null` is
          * returned.
          */
-        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
+        idValue = getIdValue(keyValues);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         /*
          * The `idValue` either is a provided [Long] or a random
@@ -232,13 +295,14 @@ public class IgniteGraph implements Graph {
         if (vertexIds.length == 0) {
             return allVertices();
         } else {
+        	
             Stream<Object> stream = Stream.of(vertexIds);
-            List<Vertex> vertices = stream
+            List<Vertex> vertices = stream            		
                     .map(id -> {
                         if (id == null)
                             throw Exceptions.argumentCanNotBeNull("id");
                         else if (id instanceof Long)
-                            return id;
+                            return id;                        
                         else if (id instanceof Number)
                             return ((Number) id).longValue();
                         else if (id instanceof Vertex)
@@ -248,7 +312,9 @@ public class IgniteGraph implements Graph {
                     })
                     .map(this::findOrCreateVertex)
                     .collect(Collectors.toList());
+            
             getVertexModel().load(vertices);
+            
             return vertices.stream()
                     .filter(v -> ((IgniteVertex) v).arePropertiesFullyLoaded())
                     .iterator();
@@ -279,13 +345,22 @@ public class IgniteGraph implements Graph {
             throw Exceptions.argumentCanNotBeNull("id");
         }
         id = IgniteGraphUtils.generateIdIfNeeded(id);
-        ByteBuffer key = ByteBuffer.wrap(ValueUtils.serialize(id));
+        //-ByteBuffer key = ByteBuffer.wrap(ValueUtils.serialize(id));
+        String key = id.toString();
         Vertex cachedVertex = vertexCache.getIfPresent(key);
         if (cachedVertex != null && !((IgniteVertex) cachedVertex).isDeleted()) {
             return cachedVertex;
         }
         if (!createIfNotFound) return null;
-        IgniteVertex vertex = new IgniteVertex(this, id);
+        
+        IgniteVertex vertex = null;
+        if(ValueUtils.isDocId(id)) {
+        	vertex = new IgniteDocument(this, (ReferenceVertexProperty)id);
+        }
+        else {
+        	vertex = new IgniteVertex(this, id);
+        }
+        
         vertexCache.put(key, vertex);
         vertex.setCached(true);
         return vertex;
@@ -303,30 +378,45 @@ public class IgniteGraph implements Graph {
     /** VERTEX RETRIEVAL METHODS (see VertexModel) **/
 
     public Iterator<Vertex> allVertices() {
-        return vertexModel.vertices();
+        return vertexModel.vertices(0,-1);
     }
 
     public Iterator<Vertex> allVertices(Object fromId, int limit) {
         return vertexModel.vertices(fromId, limit);
     }
 
-    public Iterator<Vertex> verticesByLabel(String label) {
-        return vertexModel.vertices(label);
+    public Iterator<Vertex> verticesByLabel(String label, int offset,int limit) {
+    	if(this.isDocumentModel(label)) {
+    		return this.getDocumentModel(label).vertices(label,offset,limit);
+    	}
+        return vertexModel.vertices(label,offset,limit);
     }
 
     public Iterator<Vertex> verticesByLabel(String label, String key, Object value) {
+    	if(this.isDocumentModel(label)) {
+    		return this.getDocumentModel(label).vertices(label,key,value);
+    	}
         return vertexModel.vertices(label, key, value);
     }
 
     public Iterator<Vertex> verticesInRange(String label, String key, Object inclusiveFromValue, Object exclusiveToValue) {
-        return vertexModel.verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
+    	if(this.isDocumentModel(label)) {
+    		return this.getDocumentModel(label).verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
+    	}
+    	return vertexModel.verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
     }
 
     public Iterator<Vertex> verticesWithLimit(String label, String key, Object fromValue, int limit) {
+    	if(this.isDocumentModel(label)) {
+    		return this.getDocumentModel(label).verticesWithLimit(label, key, fromValue, limit, false);
+    	}
         return verticesWithLimit(label, key, fromValue, limit, false);
     }
 
     public Iterator<Vertex> verticesWithLimit(String label, String key, Object fromValue, int limit, boolean reversed) {
+    	if(this.isDocumentModel(label)) {
+    		return this.getDocumentModel(label).verticesWithLimit(label, key, fromValue, limit, reversed);
+    	}
         return vertexModel.verticesWithLimit(label, key, fromValue, limit, reversed);
     }
 
@@ -369,6 +459,10 @@ public class IgniteGraph implements Graph {
             throw Exceptions.argumentCanNotBeNull("id");
         }
         Edge edge = findOrCreateEdge(id);
+        // 已经加载了
+		if(((IgniteElement)edge).arePropertiesFullyLoaded()) {
+			return edge;
+		}
         ((IgniteEdge) edge).load();
         return edge;
     }
@@ -382,7 +476,8 @@ public class IgniteGraph implements Graph {
             throw Exceptions.argumentCanNotBeNull("id");
         }
         id = IgniteGraphUtils.generateIdIfNeeded(id);
-        ByteBuffer key = ByteBuffer.wrap(ValueUtils.serialize(id));
+        //-ByteBuffer key = ByteBuffer.wrap(ValueUtils.serialize(id));
+        String key = id.toString();
         Edge cachedEdge = edgeCache.getIfPresent(key);
         if (cachedEdge != null && !((IgniteEdge) cachedEdge).isDeleted()) {
             return cachedEdge;
@@ -401,7 +496,7 @@ public class IgniteGraph implements Graph {
     }
 
     public Iterator<Edge> allEdges() {
-        return edgeModel.edges();
+        return edgeModel.edges(0,-1);
     }
 
     public Iterator<Edge> allEdges(Object fromId, int limit) {
@@ -448,5 +543,38 @@ public class IgniteGraph implements Graph {
     public void close() {
         /* Do nothing */
     }
+    
+    public Iterator<Edge> getVertexReletionFromCache(Tuple cacheKey) {        
+        List<Edge> edges = vertexReletionCache.getIfPresent(cacheKey);
+        return edges != null ? IteratorUtils.filter(edges.iterator(), edge -> !((IgniteEdge) edge).isDeleted()) : null;
+    }
 
+    public void cacheVertexReletion(Tuple cacheKey, List<Edge> edges) {        
+        vertexReletionCache.put(cacheKey, edges);
+    }
+
+    protected void invalidateVertexReletionCache(Tuple cacheKey) {
+        if (cacheKey != null) {
+        	vertexReletionCache.invalidate(cacheKey);
+        }
+        else {
+        	vertexReletionCache.invalidateAll();
+        }        
+    }
+    
+    /**
+     * Extracts the value of the {@link T#id} key from the list of arguments.
+     *
+     * @param keyValues a list of key/value pairs
+     * @return the value associated with {@link T#id}
+     */
+    public static Object getIdValue(final Object... keyValues) {
+        for (int i = 0; i < keyValues.length; i = i + 2) {
+            if (keyValues[i].equals(T.id))
+                return keyValues[i + 1];
+            if (keyValues[i].equals(T.id.name()))
+                return keyValues[i + 1];
+        }
+        return null;
+    }
 }

@@ -19,10 +19,13 @@ package de.kp.works.ignite;
  */
 
 import de.kp.works.ignite.graph.ElementType;
+import de.kp.works.ignite.graph.IgniteVertexEntry;
 import de.kp.works.ignite.mutate.*;
 import de.kp.works.ignite.query.*;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class IgniteTable extends IgniteBaseTable {
@@ -47,6 +50,9 @@ public class IgniteTable extends IgniteBaseTable {
             }
             else if (elementType.equals(ElementType.VERTEX)) {
                 putVertex(ignitePut);
+            }
+            else if (elementType.equals(ElementType.DOCUMENT)) {
+            	putDocument(ignitePut);
             }
             else
                 throw new Exception("Table '" + name +  "' is not supported.");
@@ -76,6 +82,9 @@ public class IgniteTable extends IgniteBaseTable {
             }
             else if (elementType.equals(ElementType.VERTEX)) {
                 deleteVertex(igniteDelete);
+            }
+            else if (elementType.equals(ElementType.DOCUMENT)) {
+                admin.deleteDocument(igniteDelete, name);
             }
             else
                 throw new Exception("Table '" + name +  "' is not supported.");
@@ -182,11 +191,15 @@ public class IgniteTable extends IgniteBaseTable {
      * Retrieve all elements (edges or vertices) that refer
      * to the provided list of identifiers
      */
-    public IgniteResult[] get(List<Object> ids) {
+    public List<IgniteResult> get(List<Object> ids) {
         IgniteGetQuery igniteQuery = new IgniteGetQuery(name, admin, ids);
 
-        List<IgniteResult> result = igniteQuery.getResult();
-        return result.toArray(new IgniteResult[0]);
+        Iterator<IgniteResult> it = igniteQuery.getResult();
+        ArrayList<IgniteResult> result = new ArrayList<>();
+		while(it.hasNext()) {
+			result.add(it.next());
+		}
+        return result;
     }
     /**
      * Retrieve the element (edge or vertex) that refers
@@ -195,9 +208,9 @@ public class IgniteTable extends IgniteBaseTable {
     public IgniteResult get(Object id) {
         IgniteGetQuery igniteQuery = new IgniteGetQuery(name, admin, id);
 
-        List<IgniteResult> result = igniteQuery.getResult();
-        if (result.isEmpty()) return null;
-        return result.get(0);
+        Iterator<IgniteResult> result = igniteQuery.getResult();
+        if (!result.hasNext()) return null;
+        return result.next();
     }
 
     /**
@@ -213,22 +226,15 @@ public class IgniteTable extends IgniteBaseTable {
      */
     public IgniteQuery getLabelQuery(String label) {
         return new IgniteLabelQuery(name, admin, label);
-    }
-    /**
-     * Returns an [IgniteQuery] to retrieve a specified
-     * number of (ordered) elements from the beginning
-     * of the cache
-     */
-    public IgniteQuery getLimitQuery(int limit) {
-        return new IgniteLimitQuery(name, admin, limit);
-    }
+    }   
 
     public IgniteQuery getLimitQuery(Object fromId, int limit) {
         return new IgniteLimitQuery(name, admin, fromId, limit);
     }
 
     public IgniteQuery getLimitQuery(String label, String key, Object inclusiveFrom, int limit, boolean reversed) {
-        return new IgniteLimitQuery(name, admin, label, key, inclusiveFrom, limit, reversed);    }
+        return new IgniteLimitQuery(name, admin, label, key, inclusiveFrom, limit, reversed);    
+    }
     /**
      * Returns an [IgniteQuery] to retrieve all elements
      * that are referenced by a certain label and share
@@ -280,5 +286,9 @@ public class IgniteTable extends IgniteBaseTable {
          return new IgniteEdgesWithLimitQuery(name, admin, vertexId, direction, label,
                 key, fromValue, limit, reversed);
 
+    }
+    
+    public IgniteSqlQuery getIgniteSqlQuery(String sql, Object[] args) {
+    	return new IgniteSqlQuery(name,admin,sql, args);
     }
 }

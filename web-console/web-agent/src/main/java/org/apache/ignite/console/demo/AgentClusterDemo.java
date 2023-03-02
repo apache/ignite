@@ -63,7 +63,7 @@ import static org.apache.ignite.console.demo.AgentDemoUtils.newScheduledThreadPo
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
+
 
 /**
  * Demo for cluster features like SQL and Monitoring.
@@ -120,10 +120,10 @@ public class AgentClusterDemo {
 
         cfg.setWorkDirectory(workDir.getAbsolutePath());
 
-        int[] evts = new int[EVTS_DISCOVERY.length + VISOR_TASK_EVTS.length];
+        int[] evts = new int[EVTS_DISCOVERY.length];
 
         System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
-        System.arraycopy(VISOR_TASK_EVTS, 0, evts, EVTS_DISCOVERY.length, VISOR_TASK_EVTS.length);
+        
 
         cfg.setIncludeEventTypes(evts);
 

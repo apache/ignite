@@ -7,7 +7,7 @@
     <groupId>de.kp.works</groupId>
     <artifactId>ignite-graph</artifactId>
     <packaging>pom</packaging>
-    <version>0.4.0</version>
+    <version>0.5.0</version>
     <modules>
         <module>works-ignite-common</module>
         <module>works-ignite-graph</module>
@@ -67,8 +67,6 @@
             <artifactId>gremlin-core</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-
-
        
      </dependencies>
      <build>              
@@ -89,11 +87,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
+                    <version>3.8.1</version>                    
                 </plugin>
             </plugins>
         </pluginManagement>

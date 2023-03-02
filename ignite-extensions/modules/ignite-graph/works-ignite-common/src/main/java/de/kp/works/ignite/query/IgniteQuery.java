@@ -18,24 +18,31 @@ package de.kp.works.ignite.query;
  *
  */
 
+
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConstants;
+import de.kp.works.ignite.IgniteResultTransform;
 import de.kp.works.ignite.IgniteTransform;
 import de.kp.works.ignite.ValueType;
 import de.kp.works.ignite.ValueUtils;
+import de.kp.works.ignite.graph.EdgeEntryIterator;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.graph.IgniteEdgeEntry;
 import de.kp.works.ignite.graph.IgniteVertexEntry;
+import de.kp.works.ignite.graph.VertexEntryIterator;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,7 +54,8 @@ public abstract class IgniteQuery {
     protected IgniteCache<String, BinaryObject> cache;
     protected String sqlStatement;
 
-    protected ElementType elementType;
+    protected ElementType elementType;    
+    
 
     public IgniteQuery(String name, IgniteAdmin admin) {
 
@@ -63,6 +71,9 @@ public abstract class IgniteQuery {
                 elementType = ElementType.VERTEX;
             }
             else if (name.startsWith(admin.namespace() + "_")) {
+                elementType = ElementType.DOCUMENT;
+            }
+            else if (name.startsWith(admin.namespace() + ".")) {
                 elementType = ElementType.DOCUMENT;
             }
             else
@@ -92,16 +103,59 @@ public abstract class IgniteQuery {
          *
          * This implies: FROM = OUT & TO = IN
          */
-        if (direction.equals(Direction.IN))
-            fields.put(IgniteConstants.TO_COL_NAME, vertex.toString());
-
-        else
-            fields.put(IgniteConstants.FROM_COL_NAME, vertex.toString());
-
+        
+        
+    	if (vertex instanceof ReferenceVertexProperty) {
+			ReferenceVertexProperty<?> key = (ReferenceVertexProperty) vertex;        	
+        	if (direction.equals(Direction.BOTH)) {
+                fields.put(IgniteConstants.TO_COL_NAME, key.id().toString());
+                fields.put(IgniteConstants.FROM_COL_NAME, key.id().toString());
+                fields.put(IgniteConstants.TO_TYPE_COL_NAME, key.label());
+                fields.put(IgniteConstants.FROM_TYPE_COL_NAME, key.label());
+            }
+            if (direction.equals(Direction.IN)) {
+                fields.put(IgniteConstants.TO_COL_NAME, key.id().toString());
+                fields.put(IgniteConstants.TO_TYPE_COL_NAME, key.label());
+            }
+            else {
+                fields.put(IgniteConstants.FROM_COL_NAME, key.id().toString());
+                fields.put(IgniteConstants.FROM_TYPE_COL_NAME, key.label());
+            }
+        }
+        else {
+        	if (direction.equals(Direction.BOTH)) {
+                fields.put(IgniteConstants.TO_COL_NAME, vertex.toString());
+                fields.put(IgniteConstants.FROM_COL_NAME, vertex.toString());
+            }
+            if (direction.equals(Direction.IN))
+                fields.put(IgniteConstants.TO_COL_NAME, vertex.toString());
+            else
+                fields.put(IgniteConstants.FROM_COL_NAME, vertex.toString());
+        }
 
     }
+    
+    public IgniteQuery withRange(int offset, int limit) {
+        if(offset>0) {
+        	sqlStatement += " limit " + offset + ',' + limit;
+        }
+        else {
+        	sqlStatement += " limit " + limit;
+        }
+        return this;
+    }
+    
+    public IgniteQuery orderBy(String order, boolean desc) {
+        if(desc) {
+        	sqlStatement += " order by  " + order + " DESC";
+        }
+        else {
+        	sqlStatement += " order by  " + order;
+        }
+        return this;
+    }
 
-    public List<IgniteEdgeEntry> getEdgeEntries() {
+    public Iterator<IgniteEdgeEntry> getEdgeEntries() {
 
         List<IgniteEdgeEntry> entries = new ArrayList<>();
         /*
@@ -109,27 +163,27 @@ public abstract class IgniteQuery {
          * is not defined yet.
          */
         if (sqlStatement == null)
-            return entries;
+            return entries.iterator();
 
         if (!elementType.equals(ElementType.EDGE))
-            return entries;
+            return entries.iterator();
 
         try {
-            List<List<?>> sqlResult = getSqlResult();
+        	FieldsQueryCursor<List<?>> sqlResult = getSqlResult();
             /*
              * Parse sql result and extract edge specific entries
              */
-            entries = parseEdges(sqlResult);
+            return parseEdges(sqlResult);
 
         } catch (Exception e) {
             LOGGER.error("Parsing query result failed.", e);
 
         }
 
-        return entries;
+        return entries.iterator();
     }
 
-    public List<IgniteVertexEntry> getVertexEntries() {
+    public Iterator<IgniteVertexEntry> getVertexEntries() {
 
         List<IgniteVertexEntry> entries = new ArrayList<>();
         /*
@@ -137,24 +191,24 @@ public abstract class IgniteQuery {
          * is not defined yet.
          */
         if (sqlStatement == null)
-            return entries;
+            return entries.iterator();
 
         if (!elementType.equals(ElementType.VERTEX))
-            return entries;
+            return entries.iterator();
 
         try {
-            List<List<?>> sqlResult = getSqlResult();
+        	FieldsQueryCursor<List<?>> sqlResult = getSqlResult();
             /*
              * Parse sql result and extract Vertex specific entries
              */
-            entries = parseVertices(sqlResult);
+            return parseVertices(sqlResult);
 
         } catch (Exception e) {
             LOGGER.error("Parsing query result failed.", e);
 
         }
 
-        return entries;
+        return entries.iterator();
     }
 
 
@@ -163,7 +217,7 @@ public abstract class IgniteQuery {
      * in form of a row-based result list. It supports user
      * specific read requests
      */
-    public List<IgniteResult> getResult() {
+    public Iterator<IgniteResult> getResult() {
 
         List<IgniteResult> result = new ArrayList<>();
         /*
@@ -171,7 +225,7 @@ public abstract class IgniteQuery {
          * is not defined yet.
          */
         if (sqlStatement == null)
-            return result;
+            return result.iterator();
 
         try {
             if (cache == null)
@@ -181,28 +235,26 @@ public abstract class IgniteQuery {
             String cacheName = cache.getName();
 
             if (elementType.equals(ElementType.EDGE)) {
-            	List<List<?>> sqlResult = getSqlResult();
+            	FieldsQueryCursor<List<?>> sqlResult = getSqlResult();
                 /*
                  * Parse sql result and extract edge specific entries
                  */
-                List<IgniteEdgeEntry> entries = parseEdges(sqlResult);
+            	EdgeEntryIterator entries = parseEdges(sqlResult);
                 /*
                  * Group edge entries into edge rows
                  */
-                return IgniteTransform
-                        .transformEdgeEntries(entries);
+                return IgniteResultTransform.transformEdgeEntries(entries);
             }
             else if (elementType.equals(ElementType.VERTEX)) {
-            	List<List<?>> sqlResult = getSqlResult();
+            	FieldsQueryCursor<List<?>> sqlResult = getSqlResult();
                 /*
                  * Parse sql result and extract Vertex specific entries
                  */
-                List<IgniteVertexEntry> entries = parseVertices(sqlResult);
+            	VertexEntryIterator entries = parseVertices(sqlResult);
                 /*
                  * Group vertex entries into edge rows
                  */
-                return IgniteTransform
-                        .transformVertexEntries(entries);
+                return IgniteResultTransform.transformVertexEntries(entries);
 
             }
             else if (elementType.equals(ElementType.DOCUMENT)) {
@@ -210,7 +262,7 @@ public abstract class IgniteQuery {
                  * Parse sql result and extract Document specific entries
                  */
                 List<IgniteResult> entries = getSqlResultWithMeta();                
-                return entries;
+                return entries.iterator();
             }
             else
                 throw new Exception("Cache '" + cacheName +  "' is not supported.");
@@ -218,123 +270,31 @@ public abstract class IgniteQuery {
         } catch (Exception e) {
             LOGGER.error("Parsing query result failed.", e);
         }
-        return result;
+        return result.iterator();
 
-    }
-
-    private List<IgniteEdgeEntry> parseEdges(List<List<?>> sqlResult) {
-        /*
-         * 0 : Cache key
-         *
-         * 1 : IgniteConstants.ID_COL_NAME (String)
-         * 2 : IgniteConstants.ID_TYPE_COL_NAME (String)
-         * 3 : IgniteConstants.LABEL_COL_NAME (String)
-         * 4 : IgniteConstants.TO_COL_NAME (String)
-         * 5 : IgniteConstants.TO_TYPE_COL_NAME (String)
-         * 6 : IgniteConstants.FROM_COL_NAME (String)
-         * 7 : IgniteConstants.FROM_TYPE_COL_NAME (String)
-         * 8 : IgniteConstants.CREATED_AT_COL_NAME (Long)
-         * 9 : IgniteConstants.UPDATED_AT_COL_NAME (Long)
-         * 10: IgniteConstants.PROPERTY_KEY_COL_NAME (String)
-         * 11: IgniteConstants.PROPERTY_TYPE_COL_NAME (String)
-         * 12: IgniteConstants.PROPERTY_VALUE_COL_NAME (String)
-         */
-        return sqlResult.stream().map(result -> {
-            String cacheKey = (String)result.get(0);
-
-            String id     = (String)result.get(1);
-            String idType = (String)result.get(2);
-            String label  = (String)result.get(3);
-
-            String toId     = (String)result.get(4);
-            String toIdType = (String)result.get(5);
-
-            String fromId     = (String)result.get(6);
-            String fromIdType = (String)result.get(7);
-
-            Long createdAt  = (Long)result.get(8);
-            Long updatedAt  = (Long)result.get(9);
-
-            String propKey   = (String)result.get(10);
-            String propType  = (String)result.get(11);
-            Object propValue = result.get(12);
-            if(propValue instanceof String && !propType.equals("STRING")) {
-            	propValue = ValueUtils.parseValue(propValue.toString(), ValueType.valueOf(propType));
-            }
-
-            return new IgniteEdgeEntry(
-                    cacheKey,
-                    id,
-                    idType,
-                    label,
-                    toId,
-                    toIdType,
-                    fromId,
-                    fromIdType,
-                    createdAt,
-                    updatedAt,
-                    propKey,
-                    propType,
-                    propValue);
-
-        }).collect(Collectors.toList());
-    }
-
-    private List<IgniteVertexEntry> parseVertices(List<List<?>> sqlResult) {
-        /*
-         * 0 : Cache key
-         *
-         * 1 : IgniteConstants.ID_COL_NAME (String)
-         * 2 : IgniteConstants.ID_TYPE_COL_NAME (String)
-         * 3 : IgniteConstants.LABEL_COL_NAME (String)
-         * 4 : IgniteConstants.CREATED_AT_COL_NAME (Long)
-         * 5 : IgniteConstants.UPDATED_AT_COL_NAME (Long)
-         * 6 : IgniteConstants.PROPERTY_KEY_COL_NAME (String)
-         * 7 : IgniteConstants.PROPERTY_TYPE_COL_NAME (String)
-         * 8 : IgniteConstants.PROPERTY_VALUE_COL_NAME (String)
-         */
-        return sqlResult.stream().map(result -> {
-
-            String cacheKey = (String)result.get(0);
-
-            String id     = (String)result.get(1);
-            String idType = (String)result.get(2);
-
-            String label  = (String)result.get(3);
-
-            Long createdAt  = (Long)result.get(4);
-            Long updatedAt  = (Long)result.get(5);
-
-            String propKey   = (String)result.get(6);
-            String propType  = (String)result.get(7);
-            Object propValue = result.get(8);
-            
-            if(propValue instanceof String && !propType.equals("STRING")) {
-            	propValue = ValueUtils.parseValue(propValue.toString(), ValueType.valueOf(propType));
-            }
-
-            return new IgniteVertexEntry(
-                    cacheKey,
-                    id,
-                    idType,
-                    label,
-                    createdAt,
-                    updatedAt,
-                    propKey,
-                    propType,
-                    propValue);
-
-        }).collect(Collectors.toList());
     }
     
+    private EdgeEntryIterator parseEdges(FieldsQueryCursor<List<?>> sqlResult) {
+        return new EdgeEntryIterator(sqlResult);
+    }
+
+    private VertexEntryIterator parseVertices(FieldsQueryCursor<List<?>> sqlResult) {        
+        return new VertexEntryIterator(sqlResult);
+    }
+
     protected abstract void createSql(Map<String, String> fields);
 
-    protected List<List<?>> getSqlResult() {
+    protected List<List<?>> getSqlResultList() {
         SqlFieldsQuery sqlQuery = new SqlFieldsQuery(sqlStatement);
         return cache.query(sqlQuery).getAll();
     }
     
-    protected List<IgniteResult> getSqlResultWithMeta() {
+    protected FieldsQueryCursor<List<?>> getSqlResult() {
+        SqlFieldsQuery sqlQuery = new SqlFieldsQuery(sqlStatement);
+        return cache.query(sqlQuery);
+    }
+    
+    public List<IgniteResult> getSqlResultWithMeta() {
         SqlFieldsQuery sqlQuery = new SqlFieldsQuery(sqlStatement);
         FieldsQueryCursor<List<?>> cursor = cache.query(sqlQuery);
         List<List<?>> sqlResult = cursor.getAll();
@@ -342,9 +302,16 @@ public abstract class IgniteQuery {
     	for(List<?> row: sqlResult) {
     		IgniteResult item = new IgniteResult();
     		for(int i=0;i<cursor.getColumnsCount();i++) {
-    			item.addColumn(cursor.getFieldName(i), row.getClass().getSimpleName(), row);
+    			Object value = row.get(i);
+    			if(value!=null) {
+    				String field = cursor.getFieldName(i);
+    				if(field.equals("_KEY")) {
+    					field = "id";
+    				}
+    				item.addColumn(field, value.getClass().getSimpleName(), value);
+    			}
             }
-    		
+    		result.add(item);
     	}
     	return result;
     }

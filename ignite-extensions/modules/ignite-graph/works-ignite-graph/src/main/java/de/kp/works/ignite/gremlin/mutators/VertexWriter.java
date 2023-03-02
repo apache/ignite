@@ -50,19 +50,15 @@ public final class VertexWriter implements Creator {
         Object id = vertex.id();
 
         IgnitePut put = new IgnitePut(id, ElementType.VERTEX);
-        put.addColumn(IgniteConstants.ID_COL_NAME, ValueUtils.getValueType(id).name(),
-                id);
+        put.addColumn(IgniteConstants.ID_COL_NAME, ValueUtils.getValueType(id).name(), id);
 
-        put.addColumn(IgniteConstants.LABEL_COL_NAME, IgniteConstants.STRING_COL_TYPE,
-                label);
+        put.addColumn(IgniteConstants.LABEL_COL_NAME, IgniteConstants.STRING_COL_TYPE, label);
 
         Long createdAt = ((IgniteVertex) vertex).createdAt();
-        put.addColumn(IgniteConstants.CREATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE,
-                createdAt);
+        put.addColumn(IgniteConstants.CREATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE, createdAt);
 
         Long updatedAt = ((IgniteVertex) vertex).updatedAt();
-        put.addColumn(IgniteConstants.UPDATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE,
-                updatedAt);
+        put.addColumn(IgniteConstants.UPDATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE, updatedAt);
 
         ((IgniteVertex) vertex).getProperties().forEach((key, value) -> {
             String colType = ValueUtils.getValueType(value).name();

@@ -34,7 +34,9 @@ public class IgniteResult {
     private List<IgniteColumn> columns = new ArrayList<>();
 
     public void addColumn(String colName, String colType, Object colValue) {
-        columns.add(new IgniteColumn(colName, colType, colValue));
+    	if(!colName.equals("*")) {
+    		columns.add(new IgniteColumn(colName, colType, colValue));
+    	}
     }
 
     /**

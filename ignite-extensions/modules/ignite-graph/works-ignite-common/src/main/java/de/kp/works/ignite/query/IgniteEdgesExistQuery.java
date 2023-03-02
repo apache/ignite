@@ -24,6 +24,8 @@ import de.kp.works.ignite.IgniteConstants;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
+
 public class IgniteEdgesExistQuery extends IgniteQuery {
 
     public IgniteEdgesExistQuery(String cacheName, IgniteAdmin admin,
@@ -34,6 +36,14 @@ public class IgniteEdgesExistQuery extends IgniteQuery {
 
         fields.put(IgniteConstants.TO_COL_NAME, vertex.toString());
         fields.put(IgniteConstants.FROM_COL_NAME, vertex.toString());
+        
+        if (vertex instanceof ReferenceVertexProperty) {
+			ReferenceVertexProperty<?> key = (ReferenceVertexProperty) vertex;			
+            fields.put(IgniteConstants.FROM_COL_NAME, key.id().toString());
+            fields.put(IgniteConstants.TO_COL_NAME, key.id().toString());
+            fields.put(IgniteConstants.FROM_TYPE_COL_NAME, key.label());
+            fields.put(IgniteConstants.TO_TYPE_COL_NAME, key.label());
+        }       
 
         createSql(fields);
 
@@ -48,9 +58,21 @@ public class IgniteEdgesExistQuery extends IgniteQuery {
              */
             sqlStatement += " where " + IgniteConstants.TO_COL_NAME;
             sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "'";
+            
+            if(fields.containsKey(IgniteConstants.TO_TYPE_COL_NAME)){
+                sqlStatement += " and " + IgniteConstants.TO_TYPE_COL_NAME;
+                String id_type = fields.get(IgniteConstants.TO_TYPE_COL_NAME);
+                sqlStatement += " = '" + id_type + "'";
+            }
 
             sqlStatement += " or " + IgniteConstants.FROM_COL_NAME;
             sqlStatement += " = '" + fields.get(IgniteConstants.FROM_COL_NAME) + "'";
+            
+            if(fields.containsKey(IgniteConstants.FROM_TYPE_COL_NAME)){
+                sqlStatement += " and " + IgniteConstants.FROM_TYPE_COL_NAME;
+                String id_type = fields.get(IgniteConstants.FROM_TYPE_COL_NAME);
+                sqlStatement += " = '" + id_type + "'";
+            }
 
         } catch (Exception e) {
             sqlStatement = null;

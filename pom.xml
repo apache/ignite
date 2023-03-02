@@ -92,7 +92,7 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>                
-                <module>modules/compatibility</module>
+                
                 <module>modules/ducktests</module>               
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>

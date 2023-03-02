@@ -19,6 +19,8 @@ package de.kp.works.ignite.gremlin.jsr223;
  */
 
 import de.kp.works.ignite.gremlin.*;
+import de.kp.works.ignite.gremlin.sql.IgniteGraphTraversalSource;
+
 import org.apache.tinkerpop.gremlin.jsr223.AbstractGremlinPlugin;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
@@ -36,7 +38,8 @@ public class IgniteGraphGremlinPlugin extends AbstractGremlinPlugin {
                     IgniteGraphFeatures.class,
                     IgniteProperty.class,
                     IgniteVertex.class,
-                    IgniteVertexProperty.class)
+                    IgniteVertexProperty.class,
+                    IgniteGraphTraversalSource.class)
                     .create();
 
     private static final IgniteGraphGremlinPlugin instance = new IgniteGraphGremlinPlugin();

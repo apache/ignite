@@ -21,6 +21,8 @@ package de.kp.works.ignite.gremlin.models;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.query.IgniteResult;
 import de.kp.works.ignite.IgniteTable;
+import de.kp.works.ignite.ValueUtils;
+import de.kp.works.ignite.gremlin.IgniteDocument;
 import de.kp.works.ignite.gremlin.IgniteGraph;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
 import de.kp.works.ignite.gremlin.mutators.PropertyIncrementer;
@@ -28,6 +30,7 @@ import de.kp.works.ignite.gremlin.mutators.PropertyRemover;
 import de.kp.works.ignite.gremlin.mutators.PropertyWriter;
 import de.kp.works.ignite.gremlin.readers.LoadingElementReader;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +40,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("rawtypes")
 public abstract class ElementModel extends BaseModel {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElementModel.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(ElementModel.class);
 
     public ElementModel(IgniteGraph graph, IgniteTable table) {
         super(graph, table);
@@ -53,8 +56,12 @@ public abstract class ElementModel extends BaseModel {
     @SuppressWarnings("unchecked")
     public void load(Element element) {
         LOGGER.trace("Executing Get, type: {}, id: {}", getClass().getSimpleName(), element.id());
+        Object id = element.id();
+        if(ValueUtils.isDocId(id)) {
+        	id = ValueUtils.getDocId(id);
+        }
 
-        IgniteResult result = table.get(element.id());
+        IgniteResult result = table.get(id);
         if(result!=null) {
         	getReader().load(element, result);
         }
@@ -72,14 +79,14 @@ public abstract class ElementModel extends BaseModel {
     public void load(List<? extends Element> elements) {
         LOGGER.trace("Executing Batch Get, type: {}", getClass().getSimpleName());
 
-        List<Object> ids = elements.stream()
+        List<Object> ids = elements.stream()        	
             .map(Element::id)
             .collect(Collectors.toList());
 
-        IgniteResult[] results = table.get(ids);
-        for (int i = 0; i < results.length; i++) {
+        List<IgniteResult> results = table.get(ids);
+        for (int i = 0; i < results.size(); i++) {
             try {
-                getReader().load(elements.get(i), results[i]);
+                getReader().load(elements.get(i), results.get(i));
             } catch (IgniteGraphNotFoundException e) {
                 // ignore, the element will not have its properties fully loaded
             }

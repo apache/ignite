@@ -5,7 +5,7 @@
     <parent>
         <artifactId>ignite-graph</artifactId>
         <groupId>de.kp.works</groupId>
-        <version>0.4.0</version>
+        <version>0.5.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -15,7 +15,8 @@
     <build>
         
         <plugins>
-             <!-- <plugin>
+             <!-- 
+             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>               
                 <configuration>
@@ -38,7 +39,8 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin> -->
+            </plugin> 
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

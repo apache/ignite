@@ -56,10 +56,22 @@ public class IgniteEdgesWithLimitQuery extends IgniteQuery {
             if (fields.containsKey(IgniteConstants.TO_COL_NAME)) {
                 sqlStatement += " where " + IgniteConstants.TO_COL_NAME;
                 sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "'";
+                
+                if(fields.containsKey(IgniteConstants.TO_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.TO_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.TO_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
             }
             else {
                 sqlStatement += " where " + IgniteConstants.FROM_COL_NAME;
                 sqlStatement += " = '" + fields.get(IgniteConstants.FROM_COL_NAME) + "'";
+                
+                if(fields.containsKey(IgniteConstants.FROM_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.FROM_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.FROM_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
             }
 
             sqlStatement += " and " + IgniteConstants.LABEL_COL_NAME;

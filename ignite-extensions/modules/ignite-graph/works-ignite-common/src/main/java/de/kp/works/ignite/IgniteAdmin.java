@@ -1,22 +1,5 @@
 package de.kp.works.ignite;
-/*
- * Copyright (c) 2019 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- *
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
- *
- */
+
 
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.graph.IgniteEdgeEntry;
@@ -28,36 +11,21 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.ToStringGraphSONSerializer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-/*
- * Copyright (c) 2019 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- *
- * @author Stefan Krusche, Dr. Krusche & Partner PartG
- *
- */
-
 
 import java.util.Base64;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+
+import javax.cache.CacheException;
 
 public class IgniteAdmin {
 
@@ -84,7 +52,7 @@ public class IgniteAdmin {
     }
 
     public String namespace() {
-        return IgniteConnect.namespace();
+        return this.connect.graphNS();
     }
 
     public boolean tableExists(String name) {
@@ -143,9 +111,8 @@ public class IgniteAdmin {
      */
     public boolean hasEdges(Object vertex, String cacheName) {
         IgniteEdgesExistQuery igniteQuery = new IgniteEdgesExistQuery(cacheName, this, vertex);
-        List<IgniteEdgeEntry> edges = igniteQuery.getEdgeEntries();
-
-        return !edges.isEmpty();
+        Iterator<IgniteEdgeEntry> edges = igniteQuery.getEdgeEntries();
+        return edges.hasNext();
     }
 
     /**
@@ -228,11 +195,14 @@ public class IgniteAdmin {
             if(entry.propType.equals("ARRAY")  || entry.propType.equals("MAP") || entry.propType.equals("SERIALIZABLE")) {
             	value = ValueUtils.serializeToString(entry.propValue);
             }
-            else if(entry.propType.equals("JSON_ARRAY") || entry.propType.equals("JSON_OBJECT")) {
+            else if(entry.propType.equals("JSON_ARRAY") || entry.propType.equals("JSON_OBJECT") || entry.propType.equals("COLLECTION")) {
             	value = ValueUtils.serializeToJsonString(entry.propValue);
             }
             else if(entry.propType.equals("BINARY")) {
             	value = Base64.getEncoder().encodeToString((byte[])entry.propValue);
+            }           
+            else {
+            	value = entry.propValue.toString();
             }
             valueBuilder.setField(IgniteConstants.PROPERTY_VALUE_COL_NAME, value);
 
@@ -309,10 +279,9 @@ public class IgniteAdmin {
 
         Ignite ignite = connect.getIgnite();
         IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
-        
 
         List<IgniteColumn> columns = igniteDelete.getColumns();
-        Object id = igniteDelete.getId();
+        Object rid = igniteDelete.getId();
         /*
          * STEP #1: Check whether we must delete the
          * entire vertex or just a certain column
@@ -322,12 +291,12 @@ public class IgniteAdmin {
              * All cache entries that refer to the specific
              * vertex must be deleted.
              */
-            
-            if (hasEdges(id, cacheName))
-                throw new Exception("The doc '" + id.toString() + "' is referenced by at least one edge.");
+           
+            if (hasEdges(rid, cacheName))
+                throw new Exception("The doc '" + rid.toString() + "' is referenced by at least one edge.");
 
             
-            cache.remove(id.toString());
+            cache.remove(ValueUtils.getDocId(rid));
         }
         else {
             /*
@@ -338,15 +307,15 @@ public class IgniteAdmin {
                     .map(IgniteColumn::getColName)
                     .collect(Collectors.toList());
 
-            BinaryObject doc = cache.get(id.toString());
+            BinaryObject doc = cache.get(ValueUtils.getDocId(rid));
             if(doc==null) {
-            	throw new Exception("The doc '" + id.toString() + "' is not existed.");
+            	throw new Exception("The doc '" + rid.toString() + "' is not existed.");
             }
             BinaryObjectBuilder builder = doc.toBuilder();
             for(String field: propKeys) {
             	builder.removeField(field);
             }
-            cache.put(id.toString(), builder.build());
+            cache.put(ValueUtils.getDocId(rid), builder.build());
 
         }
 
@@ -383,6 +352,23 @@ public class IgniteAdmin {
             else if(entry.propType.equals("BINARY")) {
             	value = Base64.getEncoder().encodeToString((byte[])entry.propValue);
             }
+            else if(entry.propType.equals("ENUM")) {
+            	value = ValueUtils.serializeToString(entry.propValue);
+            }
+            else if(entry.propType.equals("COLLECTION")) { // 字符串集合
+            	Collection list = ((Collection)entry.propValue);
+            	int i = 0;
+            	for(Object item: list) {
+            		valueBuilder.setField(IgniteConstants.PROPERTY_VALUE_COL_NAME, item.toString());
+
+                    String cacheKey = entry.cacheKey+'.'+i;
+                    BinaryObject cacheValue = valueBuilder.build();
+
+                    row.put(cacheKey, cacheValue);
+                    i++;
+            	}
+            	continue;
+            }
             else {
             	value = entry.propValue.toString();            	
             }
@@ -413,13 +399,82 @@ public class IgniteAdmin {
             	if(IgniteConstants.ID_COL_NAME.equals(column.getColName())){
             		continue;
             	}
+            	if(IgniteConstants.LABEL_COL_NAME.equals(column.getColName())){
+            		continue;
+            	}
             	valueBuilder.setField(column.getColName(), column.getColValue());
             }
             
-            BinaryObject cacheValue = valueBuilder.build();
-
-            row.put(entry.id.toString(), cacheValue);
+            BinaryObject cacheValue = valueBuilder.build();           
+            row.put(ValueUtils.getDocId(entry.id), cacheValue);
         }
         cache.putAll(row);
+    }
+    
+    /**
+     * Supports create and update operations for vertices
+     */
+    public void writeDocument(IgnitePut entry, String cacheName) {
+
+        Ignite ignite = connect.getIgnite();
+        IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
+
+        
+        BinaryObjectBuilder valueBuilder = ignite.binary().builder(cacheName);
+        
+        for (IgniteColumn column : entry.getColumns()) {
+        	if(IgniteConstants.ID_COL_NAME.equals(column.getColName())){
+        		continue;
+        	}
+        	if(IgniteConstants.LABEL_COL_NAME.equals(column.getColName())){
+        		continue;
+        	}
+        	valueBuilder.setField(column.getColName(), column.getColValue());
+        }
+        
+        BinaryObject cacheValue = valueBuilder.build();
+       
+        cache.put(ValueUtils.getDocId(entry.id), cacheValue);        
+    }
+    
+
+    /**
+     * Supports create and update operations for vertices index
+     */
+    public void createIndex(IgnitePut entry, String cacheName) {
+
+        Ignite ignite = connect.getIgnite();
+        IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
+
+        
+        BinaryObjectBuilder valueBuilder = ignite.binary().builder(cacheName);
+        
+        for (IgniteColumn column : entry.getColumns()) {
+        	if(IgniteConstants.ID_COL_NAME.equals(column.getColName())){
+        		continue;
+        	}
+        	if(IgniteConstants.LABEL_COL_NAME.equals(column.getColName())){
+        		continue;
+        	}
+        	valueBuilder.setField(column.getColName(), column.getColValue());
+        }
+        
+        BinaryObject cacheValue = valueBuilder.build();
+        
+            
+    }
+    
+    public boolean hasCache(String cacheName) {
+    	Ignite ignite = connect.getIgnite();
+    	if(ignite.cacheNames().contains(cacheName)) {
+    		return true;
+    	}
+    	try {
+    		ignite.cache(cacheName);
+    		return true;
+    	}
+    	catch(CacheException e) {
+    		return false;
+    	}
     }
 }

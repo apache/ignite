@@ -1,16 +1,24 @@
 package de.kp.works.ignite.gremlin;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
+
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.gremlin.models.DocumentModel;
-import de.kp.works.ignite.gremlin.models.VertexModel;
 
 public class IgniteDocument extends IgniteVertex {
 
-	public IgniteDocument(IgniteGraph graph, Object id) {
-		super(graph, id);		
+	/**
+	 * 
+	 * @param graph
+	 * @param id [stringId,label]
+	 */
+	public IgniteDocument(IgniteGraph graph, ReferenceVertexProperty id) {
+		super(graph, id, id.label(), null, null, null, false);		
 	}
 	
 	public IgniteDocument(IgniteGraph graph, Object id, String label, Long createdAt, Long updatedAt, Map<String, Object> properties) {
@@ -19,7 +27,7 @@ public class IgniteDocument extends IgniteVertex {
 
     public IgniteDocument(IgniteGraph graph, Object id, String label, Long createdAt, Long updatedAt,
                         Map<String, Object> properties, boolean propertiesFullyLoaded) {
-        super(graph, id, label, createdAt, updatedAt, properties, propertiesFullyLoaded);       
+        super(graph, id instanceof ReferenceVertexProperty? id: new ReferenceVertexProperty<>(id,label,id), label, createdAt, updatedAt, properties, propertiesFullyLoaded);       
     }
 
 	@Override
@@ -28,7 +36,7 @@ public class IgniteDocument extends IgniteVertex {
     }
 	
 	 @Override
-    public DocumentModel getModel() {
+    public DocumentModel getModel() {		
         return graph().getDocumentModel(this.label);
     }
 	 
@@ -36,4 +44,5 @@ public class IgniteDocument extends IgniteVertex {
     public void writeToModel() {
         getModel().writeVertex(this);
     }
+	
 }

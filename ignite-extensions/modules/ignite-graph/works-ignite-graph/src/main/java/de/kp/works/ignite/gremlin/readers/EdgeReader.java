@@ -25,6 +25,7 @@ import de.kp.works.ignite.gremlin.IgniteEdge;
 import de.kp.works.ignite.gremlin.IgniteGraph;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +51,8 @@ public class EdgeReader extends LoadingElementReader<Edge> {
         }
         Object inVertexId = null;
         Object outVertexId = null;
+        String inType = null;
+        String outType = null;
 
         String label = null;
 
@@ -62,12 +65,14 @@ public class EdgeReader extends LoadingElementReader<Edge> {
             switch (colName) {
                 case IgniteConstants.LABEL_COL_NAME:
                     label = column.getColValue().toString();
-                    break;
+                    break;               
                 case IgniteConstants.FROM_COL_NAME:
                     outVertexId = column.getColValue();
-                    break;
+                    outType = column.getColType();
+                    break;               
                 case IgniteConstants.TO_COL_NAME:
                     inVertexId = column.getColValue();
+                    inType = column.getColType();
                     break;
                 case IgniteConstants.CREATED_AT_COL_NAME:
                     createdAt = (Long)column.getColValue();
@@ -81,8 +86,17 @@ public class EdgeReader extends LoadingElementReader<Edge> {
             }
 
         }
+        
 
         if (inVertexId != null && outVertexId != null && label != null) {
+        	
+        	if(inType!=null && graph.isDocumentModel(inType)) {
+            	inVertexId = new ReferenceVertexProperty<>(inVertexId,label,inVertexId);
+            }
+            if(outType!=null && graph.isDocumentModel(outType)) {
+            	outVertexId = new ReferenceVertexProperty<>(outVertexId,label,outVertexId);
+            }
+            
             IgniteEdge newEdge = new IgniteEdge(graph, edge.id(), label, createdAt, updatedAt, props,
                     graph.findOrCreateVertex(inVertexId),
                     graph.findOrCreateVertex(outVertexId));

@@ -19,14 +19,28 @@ package de.kp.works.ignite.gremlin.models;
  */
 
 import de.kp.works.ignite.query.IgniteQuery;
+import de.kp.works.ignite.query.IgniteResult;
+import de.kp.works.ignite.IgniteResultTransform;
 import de.kp.works.ignite.IgniteTable;
+import de.kp.works.ignite.ValueUtils;
+import de.kp.works.ignite.gremlin.IgniteDocument;
+import de.kp.works.ignite.gremlin.IgniteElement;
 import de.kp.works.ignite.gremlin.IgniteGraph;
+import de.kp.works.ignite.gremlin.IgniteVertex;
+import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
 import de.kp.works.ignite.gremlin.mutators.*;
 import de.kp.works.ignite.gremlin.readers.VertexReader;
+
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class VertexModel extends ElementModel {
 
@@ -37,7 +51,51 @@ public class VertexModel extends ElementModel {
     public VertexReader getReader() {
         return new VertexReader(graph);
     }
-
+    
+    /**
+     * Load the elements from the backing table.
+     *
+     * @param elements The elements
+     */
+    @SuppressWarnings("unchecked")
+    public void load(List<? extends Element> elements) {
+        LOGGER.trace("Executing Batch Get, type: {}", getClass().getSimpleName());
+        List<IgniteDocument> docs = new LinkedList<>();
+        final List<Vertex> vertices = new ArrayList<>(elements.size());
+        List<Object> ids = elements.stream()
+    		.filter( vertex -> {
+    			// 已经加载了
+    			if(vertex instanceof IgniteElement && ((IgniteElement)vertex).arePropertiesFullyLoaded()) {
+    				return false;
+    			}
+    			if (vertex instanceof IgniteDocument) {
+                	docs.add((IgniteDocument)vertex);
+                	return false;
+                }
+    			vertices.add((Vertex)vertex);
+    			return true;
+    		})
+            .map(Element::id)            
+            .collect(Collectors.toList());
+        
+        if(ids.size()>0) {
+	        List<IgniteResult> results = table.get(ids);
+	        for (int i = 0; i < results.size(); i++) {
+	            try {
+	                getReader().load(vertices.get(i), results.get(i));
+	            } catch (IgniteGraphNotFoundException e) {
+	                // ignore, the element will not have its properties fully loaded
+	            }
+	        }
+        }
+        
+        if(docs.size()>0) {
+        	docs.forEach( doc -> {        		
+            	doc.load();         	
+            });
+        }
+    }
+    
     /** WRITE & DELETE **/
 
     public void writeVertex(Vertex vertex) {
@@ -52,7 +110,7 @@ public class VertexModel extends ElementModel {
 
     /** READ **/
 
-    public Iterator<Vertex> vertices() {
+    public Iterator<Vertex> vertices(int offset, int limit) {
         /*
          * The parser converts results from Ignite
          * queries to vertices.
@@ -63,9 +121,12 @@ public class VertexModel extends ElementModel {
          * requested vertices from the Ignite cache.
          */
         IgniteQuery igniteQuery = table.getAllQuery();
+        if(limit>0) {
+        	igniteQuery.withRange(offset,limit);
+        }
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     public Iterator<Vertex> vertices(Object fromId, int limit) {
@@ -79,20 +140,18 @@ public class VertexModel extends ElementModel {
          * requested vertices from the Ignite cache.
          */
         IgniteQuery igniteQuery;
-        if (fromId == null)
-            igniteQuery = table.getLimitQuery(limit);
-        else
-            igniteQuery = table.getLimitQuery(fromId, limit);
+       
+        igniteQuery = table.getLimitQuery(fromId, limit);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     /**
      * This method retrieves all vertices that refer to
      * the same label.
      */
-    public Iterator<Vertex> vertices(String label) {
+    public Iterator<Vertex> vertices(String label,int offset, int limit) {
         /*
          * The parser converts results from Ignite
          * queries to vertices.
@@ -103,9 +162,12 @@ public class VertexModel extends ElementModel {
          * requested vertices from the Ignite cache.
          */
         IgniteQuery igniteQuery = table.getLabelQuery(label);
+        if(limit>0) {
+        	igniteQuery.withRange(offset,limit);
+        }
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     /**
@@ -125,8 +187,8 @@ public class VertexModel extends ElementModel {
          */
         IgniteQuery igniteQuery = table.getPropertyQuery(label, key, value);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     public Iterator<Vertex> verticesInRange(String label, String key, Object inclusiveFrom, Object exclusiveTo) {
@@ -144,8 +206,8 @@ public class VertexModel extends ElementModel {
          */
         IgniteQuery igniteQuery = table.getRangeQuery(label, key, inclusiveFrom, exclusiveTo);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 
     public Iterator<Vertex> verticesWithLimit(String label, String key, Object from, int limit, boolean reversed) {
@@ -162,7 +224,7 @@ public class VertexModel extends ElementModel {
          */
         IgniteQuery igniteQuery = table.getLimitQuery(label, key, from, limit, reversed);
 
-        return igniteQuery.getResult().stream()
-                .map(parser::parse).iterator();
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
     }
 }

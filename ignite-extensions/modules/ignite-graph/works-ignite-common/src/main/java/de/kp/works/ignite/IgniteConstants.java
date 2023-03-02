@@ -53,6 +53,7 @@ public class IgniteConstants {
     public static final String EXCLUSIVE_TO_VALUE = "inclusive_to_value";
 
     public static final String LIMIT_VALUE = "limit_value";
+    public static final String OFFSET_VALUE = "offset_value";
     public static final String REVERSED_VALUE = "reversed_value";
 
 }

@@ -1,4 +1,7 @@
 package de.kp.works.ignite.gremlin;
+
+import de.kp.works.ignite.graph.ElementType;
+
 /*
  * Copyright (c) 2019 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -17,8 +20,6 @@ package de.kp.works.ignite.gremlin;
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  *
  */
-
-import java.lang.annotation.ElementType;
 
 public class IndexMetadata {
 

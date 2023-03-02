@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IgniteEdgesQuery extends IgniteQuery {
+	
+	Direction direction;
 
     public IgniteEdgesQuery(String cacheName, IgniteAdmin admin,
                             Object vertex, Direction direction, String... labels) {
@@ -36,10 +38,11 @@ public class IgniteEdgesQuery extends IgniteQuery {
         /*
          * Transform the provided properties into fields
          */
+        this.direction = direction;
         HashMap<String, String> fields = new HashMap<>();
         vertexToFields(vertex, direction, fields);
-
-        fields.put(IgniteConstants.LABEL_COL_NAME, String.join(",", labels));
+        if(labels.length>0)
+        	fields.put(IgniteConstants.LABEL_COL_NAME, String.join(",", labels));
         createSql(fields);
 
     }
@@ -65,15 +68,44 @@ public class IgniteEdgesQuery extends IgniteQuery {
     @Override
     protected void createSql(Map<String, String> fields) {
         try {
-            buildSelectPart();
-
-            if (fields.containsKey(IgniteConstants.TO_COL_NAME)) {
+            buildSelectPart();            
+            
+            if (this.direction == Direction.IN && fields.containsKey(IgniteConstants.TO_COL_NAME)) {
                 sqlStatement += " where " + IgniteConstants.TO_COL_NAME;
-                sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "'";
+                sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "'";                
+                
+                if(fields.containsKey(IgniteConstants.TO_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.TO_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.TO_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
             }
-            else {
+            else if(this.direction == Direction.OUT && fields.containsKey(IgniteConstants.FROM_COL_NAME)){
                 sqlStatement += " where " + IgniteConstants.FROM_COL_NAME;
                 sqlStatement += " = '" + fields.get(IgniteConstants.FROM_COL_NAME) + "'";
+                
+                if(fields.containsKey(IgniteConstants.FROM_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.FROM_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.FROM_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
+            }
+            else if(this.direction == Direction.BOTH){
+                sqlStatement += " where (" + IgniteConstants.FROM_COL_NAME;
+                sqlStatement += " = '" + fields.get(IgniteConstants.FROM_COL_NAME) + "'";                
+                if(fields.containsKey(IgniteConstants.FROM_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.FROM_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.FROM_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
+                
+                sqlStatement += " OR " + IgniteConstants.TO_COL_NAME;
+                sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "')";
+                if(fields.containsKey(IgniteConstants.TO_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.TO_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.TO_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
             }
             if (fields.containsKey(IgniteConstants.PROPERTY_KEY_COL_NAME)) {
                 /*
@@ -91,7 +123,7 @@ public class IgniteEdgesQuery extends IgniteQuery {
                 sqlStatement += " = '" + fields.get(IgniteConstants.LABEL_COL_NAME) + "'";
 
             }
-            else {
+            if(fields.containsKey(IgniteConstants.LABEL_COL_NAME)){
                 sqlStatement += " and " + IgniteConstants.LABEL_COL_NAME;
                 String labels = fields.get(IgniteConstants.LABEL_COL_NAME);
 
@@ -102,10 +134,9 @@ public class IgniteEdgesQuery extends IgniteQuery {
                     List<String> inPart = Stream.of(tokens)
                             .map(token -> "'" + token + "'").collect(Collectors.toList());
 
-                    sqlStatement += " in(" + String.join(",", inPart) + ")";
+                    sqlStatement += " IN (" + String.join(",", inPart) + ")";
                 }
-
-            }
+            }            
 
 
         } catch (Exception e) {

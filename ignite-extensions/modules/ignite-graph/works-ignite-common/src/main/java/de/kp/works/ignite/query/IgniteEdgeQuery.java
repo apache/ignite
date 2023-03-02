@@ -24,6 +24,9 @@ import de.kp.works.ignite.IgniteConstants;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
+
 public class IgniteEdgeQuery extends IgniteQuery {
     /**
      * Retrieve the edge that refers to the provided
@@ -36,9 +39,22 @@ public class IgniteEdgeQuery extends IgniteQuery {
          * Transform the provided properties into fields
          */
         HashMap<String, String> fields = new HashMap<>();
-
+        
         fields.put(IgniteConstants.FROM_COL_NAME, fromId.toString());
         fields.put(IgniteConstants.TO_COL_NAME,   toId.toString());
+        
+        if (fromId instanceof ReferenceVertexProperty) {
+			ReferenceVertexProperty<?> key = (ReferenceVertexProperty) fromId;			
+            fields.put(IgniteConstants.FROM_COL_NAME, key.id().toString());           
+            fields.put(IgniteConstants.FROM_TYPE_COL_NAME, key.label());
+        }
+        
+        if (toId instanceof ReferenceVertexProperty) {
+			ReferenceVertexProperty<?> key = (ReferenceVertexProperty) toId;
+			fields.put(IgniteConstants.TO_COL_NAME, key.id().toString());
+            fields.put(IgniteConstants.TO_TYPE_COL_NAME, key.label());
+        }
+        
         createSql(fields);
 
     }
@@ -57,6 +73,17 @@ public class IgniteEdgeQuery extends IgniteQuery {
 
             sqlStatement += " and " + IgniteConstants.TO_COL_NAME;
             sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "'";
+            
+            if(fields.containsKey(IgniteConstants.FROM_TYPE_COL_NAME)){
+                sqlStatement += " and " + IgniteConstants.FROM_TYPE_COL_NAME;
+                String id_type = fields.get(IgniteConstants.FROM_TYPE_COL_NAME);
+                sqlStatement += " = '" + id_type + "'";
+            }
+            if(fields.containsKey(IgniteConstants.TO_TYPE_COL_NAME)){
+                sqlStatement += " and " + IgniteConstants.TO_TYPE_COL_NAME;
+                String id_type = fields.get(IgniteConstants.TO_TYPE_COL_NAME);
+                sqlStatement += " = '" + id_type + "'";
+            }
 
         } catch (Exception e) {
             sqlStatement = null;

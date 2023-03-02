@@ -21,6 +21,7 @@ package de.kp.works.ignite.query;
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConstants;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexProperty;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +45,7 @@ public class IgniteEdgesInRangeQuery extends IgniteQuery {
         fields.put(IgniteConstants.PROPERTY_KEY_COL_NAME, key);
 
         fields.put(IgniteConstants.INCLUSIVE_FROM_VALUE, inclusiveFromValue.toString());
-        fields.put(IgniteConstants.EXCLUSIVE_TO_VALUE, exclusiveToValue.toString());
+        fields.put(IgniteConstants.EXCLUSIVE_TO_VALUE, exclusiveToValue.toString()); 
 
         createSql(fields);
 
@@ -58,10 +59,23 @@ public class IgniteEdgesInRangeQuery extends IgniteQuery {
             if (fields.containsKey(IgniteConstants.TO_COL_NAME)) {
                 sqlStatement += " where " + IgniteConstants.TO_COL_NAME;
                 sqlStatement += " = '" + fields.get(IgniteConstants.TO_COL_NAME) + "'";
+                
+                
+                if(fields.containsKey(IgniteConstants.TO_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.TO_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.TO_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
             }
             else {
                 sqlStatement += " where " + IgniteConstants.FROM_COL_NAME;
                 sqlStatement += " = '" + fields.get(IgniteConstants.FROM_COL_NAME) + "'";
+                
+                if(fields.containsKey(IgniteConstants.FROM_TYPE_COL_NAME)){
+                    sqlStatement += " and " + IgniteConstants.FROM_TYPE_COL_NAME;
+                    String id_type = fields.get(IgniteConstants.FROM_TYPE_COL_NAME);
+                    sqlStatement += " = '" + id_type + "'";
+                }
             }
 
             sqlStatement += " and " + IgniteConstants.LABEL_COL_NAME;

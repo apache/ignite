@@ -16,10 +16,7 @@
 
 package org.apache.ignite.console.agent.handlers;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
+
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -48,7 +45,6 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import java.util.stream.Stream;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
@@ -71,7 +67,6 @@ import org.apache.ignite.console.websocket.AgentHandshakeResponse;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
@@ -81,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.services.Service;
 import org.eclipse.jetty.client.HttpClient;
@@ -630,11 +626,12 @@ public class WebSocketRouter implements AutoCloseable {
         	args.forEach(e-> argsList.add(e.toString()));
         }
         
-        StringStreamHandler outHandder = new StringStreamHandler();
-        
-        Logger logger = CommandHandler.initLogger(CommandHandler.class.getName() + "Log");
+        StringStreamHandler outHandder = new StringStreamHandler();        
+        Logger logger = Logger.getLogger(CommandHandler.class.getName() + "Log");
         logger.addHandler(outHandder);
-        CommandHandler hnd = new CommandHandler(logger);
+        JavaLogger javaLogger = new JavaLogger(logger);
+        
+        CommandHandler hnd = new CommandHandler(javaLogger);
         hnd.console = null;
         boolean experimentalEnabled = true;
         if(cmdName.equals("commandList")) {        	
@@ -642,7 +639,7 @@ public class WebSocketRouter implements AutoCloseable {
         	Arrays.stream(CommandList.values())
             .filter(c -> experimentalEnabled || !c.command().experimental())
             .forEach(c -> {
-            	c.command().printUsage(logger);
+            	c.command().printUsage(javaLogger);
             	JsonObject cmd = new JsonObject();
             	cmd.put("name", c.name());
             	cmd.put("text", c.text());

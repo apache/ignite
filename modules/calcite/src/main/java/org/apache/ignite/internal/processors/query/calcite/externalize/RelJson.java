@@ -633,9 +633,9 @@ class RelJson {
         for (Map<String, Object> o : order) {
             RexNode expr = toRex(relInput, o.get("expr"));
             Set<SqlKind> directions = new HashSet<>();
-            if (toEnum(o.get("direction")) == Direction.DESCENDING)
+            if (this.<Direction>toEnum(o.get("direction")) == Direction.DESCENDING)
                 directions.add(SqlKind.DESCENDING);
-            if (toEnum(o.get("null-direction")) == NullDirection.FIRST)
+            if (this.<NullDirection>toEnum(o.get("null-direction")) == NullDirection.FIRST)
                 directions.add(SqlKind.NULLS_FIRST);
             else
                 directions.add(SqlKind.NULLS_LAST);

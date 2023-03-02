@@ -20,6 +20,7 @@ package de.kp.works.ignite.query;
 
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConstants;
+import de.kp.works.ignite.graph.ElementType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,9 +50,12 @@ public class IgniteLabelQuery extends IgniteQuery {
              * Build the `clause` of the SQL statement
              * from the provided fields
              */
-            sqlStatement += " where " + IgniteConstants.LABEL_COL_NAME;
-            sqlStatement += " = '" + fields.get(IgniteConstants.LABEL_COL_NAME) + "'";
-
+            if(this.elementType != ElementType.DOCUMENT) {
+            	
+            	sqlStatement += " where " + IgniteConstants.LABEL_COL_NAME;
+                sqlStatement += " = '" + fields.get(IgniteConstants.LABEL_COL_NAME) + "'";
+            }
+            
         } catch (Exception e) {
             sqlStatement = null;
         }

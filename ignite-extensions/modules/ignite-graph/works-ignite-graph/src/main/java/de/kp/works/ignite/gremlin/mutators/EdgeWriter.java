@@ -50,17 +50,15 @@ public class EdgeWriter implements Creator {
         Object id = edge.id();
         IgnitePut put = new IgnitePut(id, ElementType.EDGE);
 
-        put.addColumn(IgniteConstants.ID_COL_NAME, ValueUtils.getValueType(id).name(),
-                id);
+        put.addColumn(IgniteConstants.ID_COL_NAME, ValueUtils.getValueType(id).name(), id);
 
-        put.addColumn(IgniteConstants.LABEL_COL_NAME, IgniteConstants.STRING_COL_TYPE,
-                label);
+        put.addColumn(IgniteConstants.LABEL_COL_NAME, IgniteConstants.STRING_COL_TYPE, label);
         // modify@byron use label instead id type
         Object toId = edge.inVertex().id();
-        put.addColumn(IgniteConstants.TO_COL_NAME, edge.inVertex().label(),toId);
+        put.addColumn(IgniteConstants.TO_COL_NAME, edge.inVertex().label(),ValueUtils.getDocId(toId));
 
         Object fromId = edge.outVertex().id();
-        put.addColumn(IgniteConstants.FROM_COL_NAME, edge.outVertex().label(),fromId);
+        put.addColumn(IgniteConstants.FROM_COL_NAME, edge.outVertex().label(),ValueUtils.getDocId(fromId));
         
         // end@
 

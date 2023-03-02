@@ -26,7 +26,10 @@ import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
 import de.kp.works.ignite.query.IgniteResult;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class VertexReader extends LoadingElementReader<Vertex> {
@@ -66,7 +69,22 @@ public class VertexReader extends LoadingElementReader<Vertex> {
                     updatedAt = (Long)column.getColValue();
                     break;
                 default:
-                    props.put(colName, column.getColValue());
+                	Object oriV = props.get(colName);
+                	if(oriV!=null) {
+                		if(oriV instanceof Collection) {
+                			Collection<Object> list = (Collection)oriV;
+                			list.add(column.getColValue());
+                		}
+                		else {
+                			List<Object> list = new ArrayList<>(4);
+                			list.add(oriV);
+                			list.add(column.getColValue());
+                			props.put(colName, list);
+                		}
+                	}
+                	else {
+                		props.put(colName, column.getColValue());
+                	}
                     break;
             }
 

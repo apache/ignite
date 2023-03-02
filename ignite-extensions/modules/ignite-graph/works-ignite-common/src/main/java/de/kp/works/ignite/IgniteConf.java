@@ -35,13 +35,6 @@ public class IgniteConf {
   
   static {
 	  config.setGridLogger(logger);
-	
-	  DataStorageConfiguration ds = new DataStorageConfiguration();
-	  /*
-	   * Lessons learned: at least 750 MB
-	   */
-	  ds.setSystemRegionMaxSize(2L * 1024 * 1024 * 1024);
-	  config.setDataStorageConfiguration(ds);
   
   }
 

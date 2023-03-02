@@ -20,6 +20,7 @@ package de.kp.works.ignite.query;
 
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConstants;
+import de.kp.works.ignite.graph.ElementType;
 
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +40,7 @@ public class IgniteGetQuery extends IgniteQuery {
          */
         HashMap<String, String> fields = new HashMap<>();
 
-        fields.put(IgniteConstants.ID_COL_NAME, id.toString());
+        fields.put(IgniteConstants.ID_COL_NAME," = '"+id+"'");
         createSql(fields);
 
     }
@@ -53,8 +54,18 @@ public class IgniteGetQuery extends IgniteQuery {
          * Transform the provided properties into fields
          */
         HashMap<String, String> fields = new HashMap<>();
-        fields.put(IgniteConstants.ID_COL_NAME, ids.stream()
-                .map(Object::toString).collect(Collectors.joining(",")));
+        
+        StringBuilder sqlStatement = new StringBuilder("");       
+        if (ids.size() == 1) {
+            sqlStatement.append(" = '" + ids.get(0) + "'");
+        } else {
+            List<String> inPart = Stream.of(ids)
+                    .map(token -> "'" + token + "'").collect(Collectors.toList());
+
+            sqlStatement.append(" IN (" + String.join(",", inPart) + ")");
+        }
+        
+        fields.put(IgniteConstants.ID_COL_NAME, sqlStatement.toString());
 
         createSql(fields);
 
@@ -69,18 +80,13 @@ public class IgniteGetQuery extends IgniteQuery {
              * Build the `where` clause and thereby distinguish
              * between a single or multiple identifier values
              */
-            sqlStatement += " where " + IgniteConstants.ID_COL_NAME;
-            String ids = fields.get(IgniteConstants.ID_COL_NAME);
-
-            String[] tokens = ids.split(",");
-            if (tokens.length == 1) {
-                sqlStatement += " = '" + tokens[0] + "'";
-            } else {
-                List<String> inPart = Stream.of(tokens)
-                        .map(token -> "'" + token + "'").collect(Collectors.toList());
-
-                sqlStatement += " in(" + String.join(",", inPart) + ")";
+            String keyField = IgniteConstants.ID_COL_NAME;
+            if(this.elementType == ElementType.DOCUMENT) {
+            	keyField = "_key";
             }
+            sqlStatement += " where " + keyField;
+            String ids = fields.get(IgniteConstants.ID_COL_NAME);
+            sqlStatement += ids;
 
         } catch (Exception e) {
             sqlStatement = null;

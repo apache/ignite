@@ -35,9 +35,9 @@ public final class IgniteVertexStep<E extends Element> extends VertexStep<E> imp
     private final List<HasContainer> hasContainers = new ArrayList<>();
 
     public IgniteVertexStep(final VertexStep<E> originalVertexStep) {
-        super(
-                originalVertexStep.getTraversal(), originalVertexStep.getReturnClass(),
-                originalVertexStep.getDirection(), originalVertexStep.getEdgeLabels());
+        super(originalVertexStep.getTraversal(), originalVertexStep.getReturnClass(),
+              originalVertexStep.getDirection(), originalVertexStep.getEdgeLabels()
+          );
 
         originalVertexStep.getLabels().forEach(this::addLabel);
     }

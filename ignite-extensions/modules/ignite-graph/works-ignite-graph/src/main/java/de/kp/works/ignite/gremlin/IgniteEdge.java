@@ -122,7 +122,7 @@ public class IgniteEdge extends IgniteElement implements Edge {
         deleteFromModel();
 
         setDeleted(true);
-        if (!isCached()) {
+        if (isCached()) {
             IgniteEdge cachedEdge = (IgniteEdge) graph().findEdge(id, false);
             if (cachedEdge != null) cachedEdge.setDeleted(true);
         }

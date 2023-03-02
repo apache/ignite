@@ -56,3 +56,14 @@ Vertext: id,label,propKey1,propValue1
 
 Document:id,label,prop1,prop2,prop3
 
+
+## 技术架构
+
+整个图数据共用一个ignite实例，通过namespace区分
+
+namespace作为数据库模式存在
+
+
+可以配置多个图实例，第二个图实例的ignite配置文件将不起作为
+
+

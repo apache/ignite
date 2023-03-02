@@ -450,7 +450,9 @@ public class GridH2Table extends TableBase {
         }
 
         // Acquire the lock.
-        lock(exclusive, true);
+        // modify@byron for debug
+        lock(exclusive, false);
+        //-lock(exclusive, true);
 
         if (destroyed) {
             unlock(exclusive);

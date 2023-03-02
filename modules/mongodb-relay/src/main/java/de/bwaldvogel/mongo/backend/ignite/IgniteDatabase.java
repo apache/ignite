@@ -7,15 +7,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.stream.StreamVisitor;
@@ -28,10 +27,7 @@ import de.bwaldvogel.mongo.backend.Index;
 import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.PrimaryKeyIndex;
-import de.bwaldvogel.mongo.backend.Utils;
-import de.bwaldvogel.mongo.bson.Document;
-import de.bwaldvogel.mongo.exception.MongoServerError;
-import de.bwaldvogel.mongo.exception.MongoServerException;
+
 
 public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 	public static final String DEFAULT_DB_NAME = "default";
@@ -156,10 +152,10 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 
     @Override
     protected long getStorageSize() {
-    	DataStorageMetrics fileStore = mvStore.dataStorageMetrics();
+    	DataRegionMetrics fileStore = mvStore.dataRegionMetrics(DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME);
         if (fileStore != null) {
             try {
-                return fileStore.getStorageSize();
+                return fileStore.getTotalAllocatedSize();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to calculate filestore size", e);
             }
@@ -170,10 +166,10 @@ public class IgniteDatabase extends AbstractMongoDatabase<Object> {
 
     @Override
     protected long getFileSize() {
-    	DataStorageMetrics fileStore = mvStore.dataStorageMetrics();
+    	DataRegionMetrics fileStore = mvStore.dataRegionMetrics(DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME);
         if (fileStore != null) {
             try {
-                return fileStore.getTotalAllocatedSize();
+                return fileStore.getTotalUsedPages();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to calculate filestore size", e);
             }

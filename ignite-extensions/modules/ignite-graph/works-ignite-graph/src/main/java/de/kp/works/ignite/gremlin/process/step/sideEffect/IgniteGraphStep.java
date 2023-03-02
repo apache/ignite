@@ -23,9 +23,13 @@ import de.kp.works.ignite.gremlin.IgniteGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -49,7 +53,8 @@ public final class IgniteGraphStep<S, E extends Element> extends GraphStep<S, E>
     private Iterator<? extends Edge> edges() {
         if (null == this.ids)
             return Collections.emptyIterator();
-        return CloseableIteratorUtils.filter(this.getTraversal().getGraph().get().edges(this.ids), edge -> HasContainer.testAll(edge, this.hasContainers));
+        final IgniteGraph graph = (IgniteGraph) this.getTraversal().getGraph().get();        
+        return CloseableIteratorUtils.filter(graph.edges(this.ids), edge -> HasContainer.testAll(edge, this.hasContainers));
     }
 
     private Iterator<? extends Vertex> vertices() {
@@ -71,8 +76,39 @@ public final class IgniteGraphStep<S, E extends Element> extends GraphStep<S, E>
                 .map(hasContainer -> (String) hasContainer.getValue())
                 .findAny();
         if (label.isPresent()) {
+        	Optional<RangeGlobalStep<Vertex>> range = this.traversal.getSteps().stream().filter(step -> step instanceof RangeGlobalStep).findAny();
+        	int limit = 0;
+        	if(range.isPresent()) {
+        		limit = (int)range.get().getHighRange();
+        	}
+        	Optional<HasStep<Element>> kv = this.traversal.getSteps().stream().filter(step -> step instanceof HasStep).findAny();
+        	if(kv.isPresent()) {
+        		List<HasContainer> hasValue = kv.get().getHasContainers();
+        		for(HasContainer hasC: hasValue) {
+        			if(hasC.getBiPredicate() == Compare.eq) {
+        				return IteratorUtils.stream(graph.verticesByLabel(label.get(),hasC.getKey(),hasC.getValue()))
+                                .filter(vertex -> HasContainer.testAll(vertex, hasContainers)).iterator();
+        			}
+        			else if(hasC.getBiPredicate() == Compare.gt || hasC.getBiPredicate() == Compare.gte) {
+        				return IteratorUtils.stream(graph.verticesWithLimit(label.get(),hasC.getKey(),hasC.getValue(),limit))
+                                .filter(vertex -> HasContainer.testAll(vertex, hasContainers)).iterator();
+        			}
+        			else if(hasC.getBiPredicate() == Compare.lt || hasC.getBiPredicate() == Compare.lte) {
+        				return IteratorUtils.stream(graph.verticesInRange(label.get(),hasC.getKey(),null, hasC.getValue()))
+                                .filter(vertex -> HasContainer.testAll(vertex, hasContainers)).iterator();
+        			}
+        		}
+        		
+        	}
+        	
+        	if(range.isPresent()) {
+        		// find a vertex by label with limit
+        		RangeGlobalStep<Vertex> rangeValue = range.get();
+                return IteratorUtils.stream(graph.verticesByLabel(label.get(),(int)rangeValue.getLowRange(),(int)rangeValue.getHighRange()))
+                        .filter(vertex -> HasContainer.testAll(vertex, hasContainers)).iterator();
+        	}
             // find a vertex by label
-            return IteratorUtils.stream(graph.verticesByLabel(label.get()))
+            return IteratorUtils.stream(graph.verticesByLabel(label.get(),0,-1))
                     .filter(vertex -> HasContainer.testAll(vertex, hasContainers)).iterator();
         } else {
             // linear scan

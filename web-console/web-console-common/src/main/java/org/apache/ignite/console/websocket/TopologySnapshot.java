@@ -16,10 +16,12 @@
 
 package org.apache.ignite.console.websocket;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -41,8 +43,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.sortAddresses;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.splitAddresses;
+
 
 /**
  * Topology snapshot POJO.
@@ -254,12 +255,16 @@ public class TopologySnapshot {
                     ? splitAddresses(attribute(attrs, ATTR_IPS))
                     : node.getTcpAddresses();
 
-                String firstIP = F.first(sortAddresses(nodeAddrs));
+                String firstIP = F.first(nodeAddrs);
 
                 return new NodeBean(client, firstIP);
             }));
     }
 
+    private List<String> splitAddresses(String ips){
+    	String[] ipsV = ips.split(", ");
+    	return Arrays.asList(ipsV);
+    }
     /**
      * @return Cluster nodes IDs.
      */

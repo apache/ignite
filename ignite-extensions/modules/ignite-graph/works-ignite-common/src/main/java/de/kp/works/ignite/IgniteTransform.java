@@ -54,6 +54,15 @@ public final class IgniteTransform {
 			igniteResult.addColumn(IgniteConstants.CREATED_AT_COL_NAME, ValueType.LONG.name(), createdAt);
 
 			igniteResult.addColumn(IgniteConstants.UPDATED_AT_COL_NAME, ValueType.LONG.name(), updatedAt);
+			
+			/*
+			 * Extract & add properties
+			 */
+			values.forEach(value -> {
+
+				igniteResult.addColumn(value.propKey, value.propType, value.propValue);
+
+			});
 
 			list.add(igniteResult);
 

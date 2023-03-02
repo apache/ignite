@@ -2,125 +2,125 @@ package de.kp.works.ignite;
 
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.binary.*;
 import org.apache.ignite.*;
 
 import de.kp.works.ignite.graph.*;
 import org.apache.ignite.cache.*;
+
+
 import java.util.*;
 
 public final class IgniteUtil{
-    public static final IgniteUtil MODULE$ = new IgniteUtil();
-    
+	public static IgniteUtil MODULE$ = new IgniteUtil();
+	/**
+	 *  只使用key的前面冒号开头的字符串前缀
+	 * @author admin
+	 *
+	 */
+	public static class KeyPrefixAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper{		
+		private static final long serialVersionUID = 1L;
+
+		@Override public Object affinityKey(Object key) {
+			 if(key instanceof String) {
+				 String strKey = key.toString();
+				 int pos = strKey.indexOf(':');
+				 if(pos>0) {
+					 return strKey.substring(0,pos);
+				 }
+				 return key;
+			 }
+			 return super.affinityKey(key);
+		 }
+				
+	}
     
     public void createCacheIfNotExists(final Ignite ignite, final String table, final CacheConfiguration<String, BinaryObject> cfg) {
         final boolean exists = ignite.cacheNames().contains(table);
         if (!exists) {
-            ignite.createCache((CacheConfiguration)cfg);
+            ignite.createCache(cfg);
         }
     }
     
     public IgniteCache<String, BinaryObject> getOrCreateCache(final Ignite ignite, final String table, final String namespace) {
         final boolean exists = ignite.cacheNames().contains(table);
-        return (IgniteCache<String, BinaryObject>)(exists ? ignite.cache(table) : this.createCache(ignite, table, namespace));
+        return (exists ? ignite.cache(table) : this.createCache(ignite, table, namespace));
     }
     
     public IgniteCache<String, BinaryObject> createCache(final Ignite ignite, final String table, final String namespace) {
-        return this.createCache(ignite, table, namespace, CacheMode.REPLICATED);
+        return this.createCache(ignite, table, namespace, CacheMode.PARTITIONED);
     }
     
-    public IgniteCache<String, BinaryObject> createCache(final Ignite ignite, final String table, final String namespace, final CacheMode cacheMode) {
-        final String string = new StringBuilder().append((Object)namespace).append((Object)"_").append((Object)"edges").toString();
+    public IgniteCache<String, BinaryObject> createCache(final Ignite ignite, final String name, final String namespace, final CacheMode cacheMode) {
+        
         ElementType elementType = null;
-        Label_0137: {
-            Label_0054: {
-                if (table == null) {
-                    if (string != null) {
-                        break Label_0054;
-                    }
-                }
-                else if (!table.equals(string)) {
-                    break Label_0054;
-                }
-                elementType = ElementType.EDGE;
-                break Label_0137;
-            }
-            final String string2 = new StringBuilder().append((Object)namespace).append((Object)"_").append((Object)"vertices").toString();
-            Label_0108: {
-                if (table == null) {
-                    if (string2 != null) {
-                        break Label_0108;
-                    }
-                }
-                else if (!table.equals(string2)) {
-                    break Label_0108;
-                }
-                elementType = ElementType.VERTEX;
-                break Label_0137;
-            }
-            if (!table.startsWith(new StringBuilder().append((Object)namespace).append((Object)"_").toString())) {
-                throw new RuntimeException(new StringBuilder().append((Object)"Table '").append((Object)table).append((Object)"' is not supported.").toString());
-            }
+        /*
+         * Retrieve element type from provided
+         * cache (table) name
+         */
+        if (name.equals(namespace + "_" + IgniteConstants.EDGES)) {
+            elementType = ElementType.EDGE;
+        }
+        else if (name.equals(namespace + "_" + IgniteConstants.VERTICES)) {
+            elementType = ElementType.VERTEX;
+        }
+        else if (name.startsWith(namespace + "_")) {
             elementType = ElementType.DOCUMENT;
         }
+        else if (name.startsWith(namespace + ".")) {
+            elementType = ElementType.DOCUMENT;
+        }
+        else {
+            elementType = ElementType.UNDEFINED;
+            throw new RuntimeException("table name not support!"+name);
+        }
         final ElementType tableType = elementType;
-        final CacheConfiguration cfg = this.createCacheCfg(table, tableType, cacheMode);
-        return (IgniteCache<String, BinaryObject>)ignite.createCache(cfg);
+        final CacheConfiguration<String, BinaryObject> cfg = this.createCacheCfg(name, tableType, cacheMode);
+        return ignite.createCache(cfg);
     }
     
     public CacheConfiguration<String, BinaryObject> createCacheCfg(final String table, final ElementType tableType, final CacheMode cacheMode) {
         final QueryEntity qe = this.buildQueryEntity(table, tableType);
-        final ArrayList qes = new ArrayList();
+        final ArrayList<QueryEntity> qes = new ArrayList<>();
         qes.add(qe);
-        final CacheConfiguration cfg = new CacheConfiguration();
+        final CacheConfiguration<String, BinaryObject> cfg = new CacheConfiguration<>();
         cfg.setName(table);
         cfg.setStoreKeepBinary(false);
         cfg.setIndexedTypes(new Class[] { String.class, BinaryObject.class });
         cfg.setCacheMode(cacheMode);
-        cfg.setQueryEntities((Collection)qes);
-        return (CacheConfiguration<String, BinaryObject>)cfg;
+        cfg.setQueryEntities(qes);
+        // add@byron
+        cfg.setAffinityMapper(new KeyPrefixAffinityKeyMapper());
+        // end@
+        return cfg;
     }
     
     public QueryEntity buildQueryEntity(final String table, final ElementType elementType) {
         final QueryEntity qe = new QueryEntity();
         qe.setKeyType("java.lang.String");
         qe.setValueType(table);
-        final ElementType edge = ElementType.EDGE;
-        Label_0059: {
-            if (elementType == null) {
-                if (edge != null) {
-                    break Label_0059;
-                }
-            }
-            else if (!elementType.equals(edge)) {
-                break Label_0059;
-            }
-            qe.setFields((LinkedHashMap)this.buildEdgeFields());
+        
+        if (elementType == ElementType.EDGE) {
+        	
+        	qe.setFields(this.buildEdgeFields());
+            qe.setIndexes(this.buildEdgeIndexs());
             return qe;
         }
-        final ElementType vertex = ElementType.VERTEX;
-        Label_0097: {
-            if (elementType == null) {
-                if (vertex != null) {
-                    break Label_0097;
-                }
-            }
-            else if (!elementType.equals(vertex)) {
-                break Label_0097;
-            }
-            qe.setFields((LinkedHashMap)this.buildVertexFields());
+        else if(elementType == ElementType.VERTEX) {
+        	
+        	qe.setFields(this.buildVertexFields());
+            qe.setIndexes(this.buildVertexIndexs());
             return qe;
+        } 
+        if (elementType == null || !elementType.equals(ElementType.DOCUMENT)) {
+            throw new RuntimeException(new StringBuilder().append("Table '").append(table).append("' is not supported.").toString());
         }
-        final ElementType document = ElementType.DOCUMENT;
-        if (elementType == null) {
-            if (document != null) {
-                throw new RuntimeException(new StringBuilder().append((Object)"Table '").append((Object)table).append((Object)"' is not supported.").toString());
-            }
+        qe.setFields(this.buildDocumentFields(qe));
+        
+        if(!table.endsWith("_index")) {
+        	qe.setIndexes(this.buildDocumentIndexs());
         }
-        else if (!elementType.equals(document)) {
-            throw new RuntimeException(new StringBuilder().append((Object)"Table '").append((Object)table).append((Object)"' is not supported.").toString());
-        }
-        qe.setFields((LinkedHashMap)this.buildDocumentFields());
         return qe;
     }
     
@@ -138,7 +138,14 @@ public final class IgniteUtil{
         fields.put("property_key", "java.lang.String");
         fields.put("property_type", "java.lang.String");
         fields.put("property_value", "java.lang.String");
-        return (LinkedHashMap<String, String>)fields;
+        return fields;
+    }
+    
+    public List<QueryIndex> buildEdgeIndexs() {
+        final List<QueryIndex> indexes = new ArrayList<>();
+        indexes.add(new QueryIndex("source"));
+        indexes.add(new QueryIndex("to"));
+        return indexes;
     }
     
     public LinkedHashMap<String, String> buildVertexFields() {
@@ -151,20 +158,35 @@ public final class IgniteUtil{
         fields.put("property_key", "java.lang.String");
         fields.put("property_type", "java.lang.String");
         fields.put("property_value", "java.lang.String");
-        return (LinkedHashMap<String, String>)fields;
+        return fields;
     }
     
-    public LinkedHashMap<String, String> buildDocumentFields() {
+    public List<QueryIndex> buildVertexIndexs() {
+        final List<QueryIndex> indexes = new ArrayList<>();
+        indexes.add(new QueryIndex("id"));
+        indexes.add(new QueryIndex(Arrays.asList("label","property_key"),QueryIndexType.SORTED));        
+        return indexes;
+    }
+    
+    public LinkedHashMap<String, String> buildDocumentFields(QueryEntity qe) {
         final LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("id", "java.lang.String");
-        fields.put("id_type", "java.lang.String");
-        fields.put("label", "java.lang.String");
+        fields.put("type", "java.lang.String");        
         fields.put("created_at", "java.lang.Long");
         fields.put("updated_at", "java.lang.Long");
         fields.put("name", "java.lang.String");
         fields.put("title", "java.lang.String");
-        fields.put("uid", "java.lang.String");
-        return (LinkedHashMap<String, String>)fields;
+        fields.put("author", "java.lang.String");
+        
+        qe.setKeyFieldName("id");
+        return fields;
+    }
+    
+    public List<QueryIndex> buildDocumentIndexs() {
+        final List<QueryIndex> indexes = new ArrayList<>();
+        indexes.add(new QueryIndex("id"));
+        indexes.add(new QueryIndex("updated_at"));        
+        return indexes;
     }
 }
 

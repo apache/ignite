@@ -41,7 +41,7 @@ public abstract class IgniteElement implements Element,java.io.Serializable {
     protected Long updatedAt;
     protected Map<String, Object> properties;
     protected transient boolean propertiesFullyLoaded;
-    protected transient IndexMetadata.Key indexKey;
+    //-protected transient IndexMetadata.Key indexKey;
     protected transient long indexTs;
     protected transient boolean isCached;
     protected transient boolean isDeleted;
@@ -79,7 +79,7 @@ public abstract class IgniteElement implements Element,java.io.Serializable {
     public Object id() {
         return id;
     }
-
+    /**
     public IndexMetadata.Key getIndexKey() {
         return indexKey;
     }
@@ -87,7 +87,7 @@ public abstract class IgniteElement implements Element,java.io.Serializable {
     public void setIndexKey(IndexMetadata.Key indexKey) {
         this.indexKey = indexKey;
     }
-
+	*/
     public long getIndexTs() {
         return indexTs;
     }
@@ -164,7 +164,7 @@ public abstract class IgniteElement implements Element,java.io.Serializable {
     }
 
     public Set<String> getPropertyKeys() {
-        return new HashSet<>(getProperties().keySet());
+        return getProperties().keySet();
     }
 
     public void setProperty(String key, Object value) {

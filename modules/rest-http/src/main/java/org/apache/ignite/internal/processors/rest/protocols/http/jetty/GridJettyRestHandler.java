@@ -738,8 +738,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
-            case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
+            case DATA_REGION_METRICS:            
             case NAME:
             case VERSION:
             case PROBE: {

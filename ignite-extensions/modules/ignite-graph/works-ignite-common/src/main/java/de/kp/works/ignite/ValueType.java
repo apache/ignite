@@ -60,7 +60,8 @@ public enum ValueType {
     COUNTER(21),
     ARRAY(22),    
     JSON_ARRAY(23),
-	JSON_OBJECT(24);
+	JSON_OBJECT(24),
+	COLLECTION(25); // Set || List
 
     private final byte code;
 
@@ -122,6 +123,8 @@ public enum ValueType {
                 return JSON_ARRAY;
             case 24:
                 return JSON_OBJECT;
+            case 25:
+                return COLLECTION;
             default:
                 return null;
         }

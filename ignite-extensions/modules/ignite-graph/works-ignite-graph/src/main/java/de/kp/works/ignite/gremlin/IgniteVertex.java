@@ -24,21 +24,22 @@ import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
 import de.kp.works.ignite.gremlin.models.EdgeModel;
 import de.kp.works.ignite.gremlin.models.VertexModel;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.javatuples.Pair;
 import org.javatuples.Tuple;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class IgniteVertex extends IgniteElement implements Vertex {
-
-    private transient Cache<Tuple, List<Edge>> edgeCache;
 
     public IgniteVertex(IgniteGraph graph, Object id) {
         this(graph, id, null, null, null, null, false);
@@ -53,10 +54,7 @@ public class IgniteVertex extends IgniteElement implements Vertex {
         super(graph, id, label, createdAt, updatedAt, properties, propertiesFullyLoaded);
 
         if (graph != null) {
-            this.edgeCache = CacheBuilder.newBuilder()
-                    .maximumSize(graph.configuration().getRelationshipCacheMaxSize())
-                    .expireAfterAccess(graph.configuration().getRelationshipCacheTtlSecs(), TimeUnit.SECONDS)
-                    .build();
+            
         }
     }
 
@@ -70,21 +68,7 @@ public class IgniteVertex extends IgniteElement implements Vertex {
         return ElementType.VERTEX;
     }
 
-    public Iterator<Edge> getEdgesFromCache(Tuple cacheKey) {
-        if (edgeCache == null || !isCached()) return null;
-        List<Edge> edges = edgeCache.getIfPresent(cacheKey);
-        return edges != null ? IteratorUtils.filter(edges.iterator(), edge -> !((IgniteEdge) edge).isDeleted()) : null;
-    }
-
-    public void cacheEdges(Tuple cacheKey, List<Edge> edges) {
-        if (edgeCache == null || !isCached()) return;
-        edgeCache.put(cacheKey, edges);
-    }
-
-    protected void invalidateEdgeCache() {
-        if (edgeCache != null) edgeCache.invalidateAll();
-    }
-
+   
     @Override
     public Edge addEdge(final String label, final Vertex inVertex, final Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("inVertex");
@@ -93,7 +77,7 @@ public class IgniteVertex extends IgniteElement implements Vertex {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
         if(idValue==null || "".equals(idValue)) {
-        	idValue = String.format("%s,%s,%s",this.id(),label,inVertex.id());
+        	idValue = String.format("%s:>%s->%s",this.id(),label,inVertex.id());
         }
         
         long now = System.currentTimeMillis();
@@ -101,17 +85,9 @@ public class IgniteVertex extends IgniteElement implements Vertex {
         newEdge.validate();
         newEdge.writeToModel();
 
-        invalidateEdgeCache();
-        if (!isCached()) {
-            IgniteVertex cachedVertex = (IgniteVertex) graph.findVertex(id, false);
-            if (cachedVertex != null) cachedVertex.invalidateEdgeCache();
-        }
-        ((IgniteVertex) inVertex).invalidateEdgeCache();
-        if (!((IgniteVertex) inVertex).isCached()) {
-            IgniteVertex cachedInVertex = (IgniteVertex) graph.findVertex(inVertex.id(), false);
-            if (cachedInVertex != null) cachedInVertex.invalidateEdgeCache();
-        }
-
+        graph.invalidateVertexReletionCache(Pair.with(this.id(),Direction.OUT));
+        graph.invalidateVertexReletionCache(Pair.with(inVertex.id(),Direction.IN));
+        
         Edge edge = graph.findOrCreateEdge(idValue);
         ((IgniteEdge) edge).copyFrom(newEdge);
         return edge;
@@ -140,10 +116,37 @@ public class IgniteVertex extends IgniteElement implements Vertex {
 
     @Override
     public <V> VertexProperty<V> property(final VertexProperty.Cardinality cardinality, final String key, final V value, final Object... keyValues) {
-        if (cardinality != VertexProperty.Cardinality.single)
-            throw VertexProperty.Exceptions.multiPropertiesNotSupported();
+    	
         if (keyValues.length > 0)
             throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+        if (cardinality == VertexProperty.Cardinality.set) {
+    		Collection<V> list = this.getProperty(key);
+    		if(list==null) {
+    			list = new HashSet<V>();
+    		}
+    		if (value != null) {
+    			if(!list.contains(value)) {
+    				list.add(value);
+    				setProperty(key, list);
+    			}
+                return new IgniteVertexProperty<V>(this, key, value);
+    		}
+    		return VertexProperty.empty();
+    	}
+        else if (cardinality == VertexProperty.Cardinality.list) {
+    		Collection<V> list = this.getProperty(key);
+    		if(list==null) {
+    			list = new ArrayList<V>();
+    		}
+    		if (value != null) {
+    			list.add(value);
+    			setProperty(key, list);
+                return new IgniteVertexProperty<V>(this, key, value);
+    		}
+    		return VertexProperty.empty();
+    	}
+        else if (cardinality != VertexProperty.Cardinality.single)
+            throw VertexProperty.Exceptions.multiPropertiesNotSupported();
         if (value != null) {
             setProperty(key, value);
             return new IgniteVertexProperty<>(this, key, value);
@@ -164,8 +167,25 @@ public class IgniteVertex extends IgniteElement implements Vertex {
         Iterable<String> keys = getPropertyKeys();
         Iterator<String> filter = IteratorUtils.filter(keys.iterator(),
                 key -> ElementHelper.keyExists(key, propertyKeys));
+        // add@byron
+        List<VertexProperty<V>> list = new ArrayList<>(propertyKeys.length);
+        while(filter.hasNext()) {
+        	String key = filter.next();
+        	Object v = getProperty(key);
+        	if(v instanceof Collection) {
+        		for(Object s: (Collection)v) {
+        			list.add(new IgniteVertexProperty<V>(this, key,(V)s));
+        		}
+        	}
+        	else if(v!=null){
+        		list.add(new IgniteVertexProperty<V>(this, key,(V)v));
+        	}
+        }
+        return list.iterator();
+        /**
         return IteratorUtils.map(filter,
                 key -> new IgniteVertexProperty<>(this, key, getProperty(key)));
+        */
     }
 
     /** EDGE RELATED **/
