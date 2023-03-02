@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.ConcurrentTxsIncrementalSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotCheckBeforeRestoreTest;
@@ -52,7 +53,8 @@ import org.junit.runners.Suite;
     IncrementalSnapshotJoiningClientTest.class,
     IncrementalSnapshotRestoreTest.class,
     IncrementalSnapshotCheckBeforeRestoreTest.class,
-    IncrementalSnapshotWarnAtomicCachesTest.class
+    IncrementalSnapshotWarnAtomicCachesTest.class,
+    IncrementalSnapshotMetricTest.class
 })
 public class IncrementalSnapshotsTestSuite {
 }

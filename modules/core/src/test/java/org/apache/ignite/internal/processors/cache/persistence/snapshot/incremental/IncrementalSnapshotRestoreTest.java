@@ -57,9 +57,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -986,21 +984,6 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         for (int i = 0; i < nodes(); i++) {
             for (String cache: caches)
                 assertNull("[node=" + i + ", cache=" + cache + ']', grid(i).cache(cache));
-        }
-    }
-
-    /** Rolls WAL segment for specified grid. */
-    private void rollWalSegment(IgniteEx g) {
-        g.context().cache().context().database().checkpointReadLock();
-
-        try {
-            g.context().cache().context().wal().log(new ClusterSnapshotRecord("dummy"), RolloverType.CURRENT_SEGMENT);
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            g.context().cache().context().database().checkpointReadUnlock();
         }
     }
 
