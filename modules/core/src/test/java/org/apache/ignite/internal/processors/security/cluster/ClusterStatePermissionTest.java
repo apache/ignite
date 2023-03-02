@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security.cluster;
 
 import java.security.Permissions;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
@@ -56,11 +55,13 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.util.lang.GridFunc.asList;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Tests permissions of cluster state change.
@@ -84,16 +85,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "nodeType={0}, persistence={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {NodeType.SERVER, false},
-            {NodeType.SERVER, true},
-            {NodeType.CLIENT, false},
-            {NodeType.CLIENT, true},
-            {NodeType.THIN_CLIENT, false},
-            {NodeType.THIN_CLIENT, true},
-            {NodeType.GRID_CLIENT, false},
-            {NodeType.GRID_CLIENT, true}
-        });
+        return cartesianProduct(asList(NodeType.values()), asList(false, true));
     }
 
     /** {@inheritDoc} */
@@ -110,8 +102,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         if (!cfg.isClientMode()) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
-
-            cfg.setCacheConfiguration(defaultCacheConfiguration());
         }
 
         SecurityPermission[] srvPerms = F.asArray(JOIN_AS_SERVER, CACHE_CREATE);
@@ -222,7 +212,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         Ignite ig = startGrid(G.allGrids().size());
 
         startGrid(G.allGrids().size());
-        startGrid(G.allGrids().size());
 
         Consumer<ClusterState> action = nodeStateAction(ig);
 
@@ -293,7 +282,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             case GRID_CLIENT: {
                 GridClientConfiguration cfg = new GridClientConfiguration();
 
-                cfg.setServers(F.asList("127.0.0.1:11211"));
+                cfg.setServers(asList("127.0.0.1:11211"));
 
                 cfg.setSecurityCredentialsProvider(
                     new SecurityCredentialsBasicProvider(new SecurityCredentials("client", "")));
