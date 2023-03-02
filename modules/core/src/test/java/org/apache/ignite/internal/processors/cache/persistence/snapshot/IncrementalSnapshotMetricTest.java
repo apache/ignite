@@ -76,11 +76,11 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
 
         MetricRegistry mreg0 = grid(0).context().metric().registry(INCREMENTAL_SNAPSHOT_METRICS);
 
-        LongMetric startTime = mreg0.findMetric("LastIncrementalSnapshotStartTime");
-        LongMetric endTime = mreg0.findMetric("LastIncrementalSnapshotEndTime");
-        IntMetric incIdx = mreg0.findMetric("LastIncrementalSnapshotIndex");
-        ObjectGauge<String> snpName = mreg0.findMetric("LastIncrementalSnapshotName");
-        ObjectGauge<String> errMsg = mreg0.findMetric("LastIncrementalSnapshotErrorMessage");
+        LongMetric startTime = mreg0.findMetric("startTime");
+        LongMetric endTime = mreg0.findMetric("endTime");
+        IntMetric incIdx = mreg0.findMetric("incrementalIndex");
+        ObjectGauge<String> snpName = mreg0.findMetric("snapshotName");
+        ObjectGauge<String> errMsg = mreg0.findMetric("error");
 
         assertEquals(0, startTime.value());
         assertEquals(0, endTime.value());
