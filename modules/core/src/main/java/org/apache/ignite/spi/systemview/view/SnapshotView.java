@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.Collection;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -48,6 +49,12 @@ public class SnapshotView {
     /** WAL segment that contains {@link ClusterSnapshotRecord} if exists. */
     private final Long snpRecSeg;
 
+    /** Full or incremental. */
+    private final SnapshotType type;
+
+    /** Incremental snapshot index. */
+    private final Integer incIdx;
+
     /**
      * @param meta Snapshot metadata.
      * @param cacheGrps Cache group names that were included in the snapshot.
@@ -56,12 +63,28 @@ public class SnapshotView {
         SnapshotMetadata meta,
         Collection<String> cacheGrps
     ) {
+        type = SnapshotType.FULL;
         name = meta.snapshotName();
         consistentId = meta.consistentId();
         baselineNodes = F.concat(meta.baselineNodes(), ",");
         snpRecSeg = meta.snapshotRecordPointer() == null ? null : meta.snapshotRecordPointer().index();
+        incIdx = null;
 
         this.cacheGrps = F.concat(cacheGrps, ",");
+    }
+
+    /**
+     * @param incMeta Incremental snapshot metadata.
+     */
+    public SnapshotView(IncrementalSnapshotMetadata incMeta) {
+        type = SnapshotType.INCREMENTAL;
+        name = incMeta.snapshotName();
+        consistentId = incMeta.consistentId();
+        snpRecSeg = incMeta.incSnpPointer().index();
+        incIdx = incMeta.incrementalIndex();
+
+        baselineNodes = null;
+        cacheGrps = null;
     }
 
     /**
@@ -102,5 +125,30 @@ public class SnapshotView {
     @Order(4)
     public Long snapshotRecordSegment() {
         return snpRecSeg;
+    }
+
+    /**
+     * @return Incremental snapshot index, {@code null} for full snapshot.
+     */
+    @Order(5)
+    public Integer incrementalIndex() {
+        return incIdx;
+    }
+
+    /**
+     * @return Snapshot type.
+     */
+    @Order(6)
+    public String type() {
+        return type.name();
+    }
+
+    /** Snapshot types. */
+    private enum SnapshotType {
+        /** Full snapshot. */
+        FULL,
+
+        /** Incremental snapshot. */
+        INCREMENTAL
     }
 }

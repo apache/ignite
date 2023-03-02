@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
+import org.apache.ignite.spi.metric.IntMetric;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
@@ -86,6 +87,17 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public void restoreIncrementalSnapshot(String name, String path, String grpNames, int incIdx) {
+        Set<String> grpNamesSet = F.isEmpty(grpNames) ? null :
+            Arrays.stream(grpNames.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+
+        IgniteFuture<Void> fut = mgr.restoreSnapshot(name, F.isEmpty(path) ? null : path, grpNamesSet, incIdx);
+
+        if (fut.isDone())
+            fut.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public void cancelSnapshotRestore(String name) {
         mgr.cancelSnapshotRestore(name).get();
     }
@@ -105,9 +117,13 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
             MetricRegistry mreg = metricMgr.registry(SNAPSHOT_RESTORE_METRICS);
 
             String name = mreg.findMetric("snapshotName").getAsString();
+            int incIdx = mreg.<IntMetric>findMetric("incrementalIndex").value();
             String id = mreg.findMetric("requestId").getAsString();
 
-            return "Restore snapshot operation is in progress [name=" + name + ", id=" + id + ']';
+            boolean incremental = incIdx > 0;
+
+            return "Restore snapshot operation is in progress [name=" + name + ", incremental=" + incremental +
+                (incremental ? ", incrementalIndex=" + incIdx : "") + ", id=" + id + ']';
         }
 
         return "There is no create or restore snapshot operation in progress.";

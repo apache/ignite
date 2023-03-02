@@ -24,6 +24,7 @@ import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,6 +43,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Tests {@link SnapshotMXBean}.
@@ -127,6 +129,41 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
+    public void testRestoreIncrementalSnapshot() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(dfltCacheCfg.getName())) {
+            for (int i = CACHE_KEYS_RANGE; i < 2 * CACHE_KEYS_RANGE; i++)
+                ds.addData(i, valueBuilder().apply(i));
+        }
+
+        ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        ignite.cache(dfltCacheCfg.getName()).destroy();
+
+        awaitPartitionMapExchange();
+
+        DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
+        DynamicMBean mReg1 = metricRegistry(grid(1).name(), null, SNAPSHOT_RESTORE_METRICS);
+
+        assertEquals(0, (long)getMetric("endTime", mReg0));
+        assertEquals(0, (long)getMetric("endTime", mReg1));
+
+        getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
+            .restoreIncrementalSnapshot(SNAPSHOT_NAME, "", "", 1);
+
+        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, getTestTimeout()));
+        assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, getTestTimeout()));
+
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), 2 * CACHE_KEYS_RANGE);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testCancelRestoreSnapshot() throws Exception {
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
         SnapshotMXBean mxBean = getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
@@ -181,8 +218,9 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     public void testStatus() throws Exception {
         IgniteEx srv = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
 
+        // Create full snapshot.
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
@@ -191,14 +229,33 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(true, false, SNAPSHOT_NAME);
+        checkSnapshotStatus(true, false, false, SNAPSHOT_NAME);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
 
+        // Create incremental snapshot.
+        // TODO: remove condition after resolving IGNITE-17819.
+        if (!encryption) {
+            spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+            fut = srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME);
+
+            spi.waitForBlocked();
+
+            checkSnapshotStatus(true, false, true, SNAPSHOT_NAME);
+
+            spi.stopBlock();
+
+            fut.get(getTestTimeout());
+
+            checkSnapshotStatus(false, false, false, null);
+        }
+
+        // Restore full snapshot.
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
@@ -207,21 +264,42 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.waitForBlocked();
 
-        checkSnapshotStatus(false, true, SNAPSHOT_NAME);
+        checkSnapshotStatus(false, true, false, SNAPSHOT_NAME);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkSnapshotStatus(false, false, null);
+        checkSnapshotStatus(false, false, false, null);
+
+        // Restore incremental snapshot.
+        // TODO: remove condition after resolving IGNITE-17819.
+        if (!encryption) {
+            srv.destroyCache(DEFAULT_CACHE_NAME);
+
+            spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+            fut = srv.snapshot().restoreIncrementalSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME), 1);
+
+            spi.waitForBlocked();
+
+            checkSnapshotStatus(false, true, true, SNAPSHOT_NAME);
+
+            spi.stopBlock();
+
+            fut.get(getTestTimeout());
+
+            checkSnapshotStatus(false, false, false, null);
+        }
     }
 
     /**
      * @param isCreating {@code True} if create snapshot operation is in progress.
      * @param isRestoring {@code True} if restore snapshot operation is in progress.
+     * @param isIncremental {@code True} if incremental snapshot operation.
      * @param expName Expected snapshot name.
      */
-    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
+    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, boolean isIncremental, String expName) throws Exception {
         assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(
                 ignite -> {
                     IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
@@ -247,6 +325,10 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
                 assertContains(log, status, "Restore snapshot operation is in progress");
 
             assertContains(log, status, "name=" + expName);
+            assertContains(log, status, "incremental=" + isIncremental);
+
+            if (isIncremental)
+                assertContains(log, status, "incrementalIndex=1");
         }
     }
 

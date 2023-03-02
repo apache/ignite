@@ -56,6 +56,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /**
      * @param rqId Unique request id.
      * @param snpName Snapshot name.
+     * @param incIdx Incremental snapshot index.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param incSnpRec Pointer to {@link IncrementalSnapshotFinishRecord}.
@@ -81,9 +82,24 @@ public class IncrementalSnapshotMetadata implements Serializable {
         return rqId;
     }
 
+    /** @return Snapshot name. */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /** @return Consistent ID of a node to which this metadata relates. */
+    public String consistentId() {
+        return consId;
+    }
+
     /** @return Pointer to {@link IncrementalSnapshotFinishRecord}. */
     public WALPointer incSnpPointer() {
         return incSnpRec;
+    }
+
+    /** @return Incremental snapshot index. */
+    public int incrementalIndex() {
+        return incIdx;
     }
 
     /** {@inheritDoc} */

@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -42,7 +43,9 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -221,6 +224,21 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
         grid(0).destroyCaches(caches);
 
         awaitPartitionMapExchange();
+    }
+
+    /** Rolls WAL segment for specified grid. */
+    protected void rollWalSegment(IgniteEx g) {
+        g.context().cache().context().database().checkpointReadLock();
+
+        try {
+            g.context().cache().context().wal().log(new ClusterSnapshotRecord("dummy"), RolloverType.CURRENT_SEGMENT);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            g.context().cache().context().database().checkpointReadUnlock();
+        }
     }
 
     /**

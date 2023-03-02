@@ -135,6 +135,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /** Persistence flag. */
     private boolean persistent = true;
 
+    /** WAL compaction flag. */
+    private boolean walCompaction;
+
     /**
      * Persistence setter.
      *
@@ -142,6 +145,15 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      **/
     protected void persistenceEnable(boolean pr) {
         persistent = pr;
+    }
+
+    /**
+     * WAL compaction setter.
+     *
+     * @param walCompaction {@code True} If WAL compaction enable.
+     **/
+    protected void walCompactionEnabled(boolean walCompaction) {
+        this.walCompaction = walCompaction;
     }
 
     /**
@@ -259,6 +271,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
+            .setWalCompactionEnabled(walCompaction)
             .setCheckpointFrequency(checkpointFreq)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(persistent)
