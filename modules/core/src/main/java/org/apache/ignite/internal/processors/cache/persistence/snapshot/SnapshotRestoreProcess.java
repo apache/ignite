@@ -347,7 +347,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 

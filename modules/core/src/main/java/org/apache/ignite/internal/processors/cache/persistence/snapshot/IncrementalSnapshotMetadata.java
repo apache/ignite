@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -33,15 +34,19 @@ public class IncrementalSnapshotMetadata implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Unique snapshot request id. */
+    @GridToStringInclude
     private final UUID rqId;
 
     /** Snapshot name. */
+    @GridToStringInclude
     private final String snpName;
 
     /** Increment index. */
+    @GridToStringInclude
     private final int incIdx;
 
     /** Consistent id of a node to which this metadata relates. */
+    @GridToStringInclude
     private final String consId;
 
     /**
@@ -100,6 +105,16 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** @return Incremental snapshot index. */
     public int incrementalIndex() {
         return incIdx;
+    }
+
+    /**
+     * Checks that incremental snapshot is based on this full snapshot.
+     *
+     * @param meta Full snapshot metadata to verify.
+     * @return {@code false} if given metadata doesn't match full snapshot.
+     */
+    public boolean matchBaseSnapshot(SnapshotMetadata meta) {
+        return snpName.equals(meta.snapshotName()) && consId.equals(meta.consistentId());
     }
 
     /** {@inheritDoc} */
