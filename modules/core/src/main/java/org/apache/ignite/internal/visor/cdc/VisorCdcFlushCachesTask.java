@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.cdc;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -90,7 +90,9 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
             if (F.isEmpty(arg.caches()))
                 throw new IllegalArgumentException("Caches are not specified.");
 
-            Collection<IgniteInternalCache<?, ?>> caches = F.viewReadOnly(arg.caches(), name -> {
+            List<IgniteInternalCache<?, ?>> caches = new ArrayList<>();
+
+            for (String name : arg.caches()) {
                 IgniteInternalCache<?, ?> cache = ignite.context().cache().cache(name);
 
                 if (cache == null)
@@ -101,8 +103,8 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                         ", dataRegionName=" + cache.context().dataRegion().config().getName() + ']');
                 }
 
-                return cache;
-            });
+                caches.add(cache);
+            }
 
             wal = ignite.context().cache().context().wal(true);
 
