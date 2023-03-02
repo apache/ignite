@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -58,7 +57,7 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
     @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) throws IgniteException {
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                throw new IgniteException("Failed to flush cache on the node " +
+                throw new IgniteException("Failed to flush cache on the node. The command is cancelled. " +
                     "[nodeId=" + res.getNode().id() + ']', res.getException());
             }
         }
@@ -91,18 +90,25 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
             if (F.isEmpty(arg.caches()))
                 throw new IllegalArgumentException("Caches are not specified.");
 
-            Collection<String> clusterCaches = ignite.context().cache().cacheNames();
+            Collection<IgniteInternalCache<?, ?>> caches = F.viewReadOnly(arg.caches(), name -> {
+                IgniteInternalCache<?, ?> cache = ignite.context().cache().cache(name);
 
-            arg.caches().forEach(name -> {
-                if (!clusterCaches.contains(name))
-                    throw new IllegalArgumentException("Cache does not exist [name=" + name + ']');
+                if (cache == null)
+                    throw new IgniteException("Cache does not exist [cacheName=" + name + ']');
+
+                if (!cache.context().dataRegion().config().isCdcEnabled()) {
+                    throw new IgniteException("CDC is not enabled for given cache [cacheName=" + name +
+                        ", dataRegionName=" + cache.context().dataRegion().config().getName() + ']');
+                }
+
+                return cache;
             });
 
             wal = ignite.context().cache().context().wal(true);
 
             try {
-                for (String name : arg.caches())
-                    flushCache(name);
+                for (IgniteInternalCache<?, ?> cache : caches)
+                    flushCache(cache);
 
                 wal.flush(null, true);
 
@@ -116,16 +122,9 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
         }
 
         /**
-         * @param name Cache name to flush.
+         * @param cache Cache to flush.
          */
-        private void flushCache(String name) throws IgniteCheckedException {
-            GridKernalContext ctx = ignite.context();
-
-            IgniteInternalCache<?, ?> cache = ctx.cache().cache(name);
-
-            if (cache == null)
-                throw new IgniteException("Cache does not exist [name=" + name + ']');
-
+        private void flushCache(IgniteInternalCache<?, ?> cache) throws IgniteCheckedException {
             GridCacheContext<?, ?> cctx = cache.context();
 
             GridIterator<CacheDataRow> localRows = cctx.offheap()
@@ -150,7 +149,7 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                 wal.log(rec);
             }
 
-            log.info("Cache flushed [name=" + name + ']');
+            log.info("Cache flushed [name=" + cache.name() + ']');
         }
     }
 }

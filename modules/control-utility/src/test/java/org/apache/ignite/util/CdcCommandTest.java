@@ -31,8 +31,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.cdc.CdcSubcommands;
@@ -66,6 +68,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
+    private static final String CDC_DISABLED_DATA_REGION = "cdc_disabled_data_region";
+
+    /** */
     private IgniteEx srv0;
 
     /** */
@@ -83,6 +88,9 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalForceArchiveTimeout(1000)
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(CDC_DISABLED_DATA_REGION)
+                .setCdcEnabled(false))
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setCdcEnabled(true)));
 
@@ -270,10 +278,47 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     }
 
     /** */
-    private void checkFlushCaches(Ignite srv, UserCdcConsumer cnsmr, boolean onlyPrimary) throws Exception {
-        int keyCnt = onlyPrimary ? srv.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY) : KEYS_CNT;
+    @Test
+    public void testFlushCachesNotExist() {
+        injectTestSystemOut();
 
-        waitForSize(cnsmr, keyCnt);
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
+                CommandList.CDC.text(), FLUSH_CACHES, CACHES, "unknown_cache"),
+            "Cache does not exist");
+
+        String cdcDisabledCacheName = "cdcDisabledCache";
+
+        srv0.getOrCreateCache(new CacheConfiguration<>()
+            .setName(cdcDisabledCacheName)
+            .setDataRegionName(CDC_DISABLED_DATA_REGION));
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
+                CommandList.CDC.text(), FLUSH_CACHES, CACHES, cdcDisabledCacheName),
+            "CDC is not enabled for given cache");
+    }
+
+    /** */
+    @Test
+    public void testFlushCachesNodeLeft() {
+        injectTestSystemOut();
+
+        addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+        for (Ignite srv : G.allGrids()) {
+            TestRecordingCommunicationSpi.spi(srv).blockMessages((node, msg) -> {
+                if (msg instanceof GridJobExecuteResponse) {
+                    GridTestUtils.runAsync(srv::close);
+
+                    return true;
+                }
+
+                return false;
+            });
+        }
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
+                CommandList.CDC.text(), FLUSH_CACHES, CACHES, DEFAULT_CACHE_NAME),
+            "Failed to flush cache on the node. The command is cancelled.");
     }
 
     /** */
