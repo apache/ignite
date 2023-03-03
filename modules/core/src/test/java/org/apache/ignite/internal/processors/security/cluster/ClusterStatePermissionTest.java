@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -274,8 +275,14 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 };
 
             case THIN_CLIENT: {
-                return (state) -> G.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
-                    .setUserName("client").setUserPassword("")).cluster().state(state);
+                return new Consumer<ClusterState>() {
+                    @Override public void accept(ClusterState state) {
+                        try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                            .setUserName("client").setUserPassword(""))) {
+                            client.cluster().state(state);
+                        }
+                    }
+                };
             }
 
             case REMOTE_CONTROL: {
@@ -286,13 +293,11 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 cfg.setSecurityCredentialsProvider(
                     new SecurityCredentialsBasicProvider(new SecurityCredentials("client", "")));
 
-                GridClient gridClient = GridClientFactory.start(cfg);
-
-                assert gridClient.connected();
-
                 return new Consumer<ClusterState>() {
                     @Override public void accept(ClusterState state) {
-                        try {
+                        try (GridClient gridClient = GridClientFactory.start(cfg)) {
+                            assert gridClient.connected();
+
                             gridClient.state().state(state, true);
                         }
                         catch (GridClientException e) {
