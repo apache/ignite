@@ -204,7 +204,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /**
      * Tries to change state and ensures that a proper error raises if required.
      *
-     * @param states Cluster to change to one by one.
+     * @param states Cluster states to try to set to one by one.
      * @param allowed {@code True}, if the state changes must be allowed. {@code False} otherwise.
      */
     private void doTestChangeState(ClusterState[] states, boolean allowed) throws Exception {
