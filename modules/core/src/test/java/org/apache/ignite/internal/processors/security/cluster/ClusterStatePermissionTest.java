@@ -82,7 +82,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     public boolean persistence;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "nodeType={0}, persistence={1}")
+    @Parameterized.Parameters(name = "initiator={0}, persistence={1}")
     public static Collection<?> parameters() {
         return cartesianProduct(asList(Initiator.values()), asList(false, true));
     }
@@ -103,20 +103,10 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
         }
 
-        SecurityPermission[] srvPerms = EMPTY_PERMS;
-        SecurityPermission[] clientPerms = EMPTY_PERMS;
-
-        if (initiator == Initiator.SERVER)
-            srvPerms = F.concat(srvPerms, permissions);
-        else if (initiator == Initiator.CLIENT)
-            srvPerms = permissions;
-        else if (initiator == Initiator.THIN_CLIENT)
-            clientPerms = permissions;
-        else if (initiator == Initiator.REMOTE_CONTROL) {
-            clientPerms = permissions;
-
-            cfg.setConnectorConfiguration(new ConnectorConfiguration());
-        }
+        SecurityPermission[] srvPerms = initiator == Initiator.SERVER || initiator == Initiator.CLIENT ? permissions :
+            EMPTY_PERMS;
+        // Apply client-side permissions if they are not for server side.
+        SecurityPermission[] clientPerms = F.isEmpty(srvPerms) ? permissions : EMPTY_PERMS;
 
         SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false)
             .appendSystemPermissions(F.concat(srvPerms, JOIN_AS_SERVER));
@@ -137,6 +127,8 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         cfg.setPluginProviders(secPlugin);
 
         cfg.setClusterStateOnStart(INACTIVE);
+
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -186,10 +178,10 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
      * Starts server node, activates clster and restores the test configuration.
      */
     private void startAllAllowedNode() throws Exception {
-        Initiator nodeType = initiator;
+        Initiator initiator = this.initiator;
         SecurityPermission[] perms = permissions;
 
-        initiator = Initiator.SERVER;
+        this.initiator = Initiator.SERVER;
         permissions = F.asArray(ADMIN_CLUSTER_STATE);
 
         Ignite ig = startGrids(1);
@@ -198,7 +190,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
         assertEquals(ACTIVE, ig.cluster().state());
 
-        initiator = nodeType;
+        this.initiator = initiator;
         permissions = perms;
     }
 
