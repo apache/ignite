@@ -112,7 +112,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             srvPerms = permissions;
         else if (initiator == Initiator.THIN_CLIENT)
             clientPerms = permissions;
-        else if (initiator == Initiator.GRID_CLIENT) {
+        else if (initiator == Initiator.REMOTE_CONTROL) {
             clientPerms = permissions;
 
             cfg.setConnectorConfiguration(new ConnectorConfiguration());
@@ -240,7 +240,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             cause = ClientAuthorizationException.class;
             errMsg = "User is not authorized to perform this operation";
         }
-        else if (Initiator.GRID_CLIENT == initiator)
+        else if (Initiator.REMOTE_CONTROL == initiator)
             cause = GridClientException.class;
 
         assertThrowsAnyCause(
@@ -278,7 +278,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                     .setUserName("client").setUserPassword("")).cluster().state(state);
             }
 
-            case GRID_CLIENT: {
+            case REMOTE_CONTROL: {
                 GridClientConfiguration cfg = new GridClientConfiguration();
 
                 cfg.setServers(asList("127.0.0.1:11211"));
@@ -303,7 +303,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             }
 
             default:
-                throw new IllegalArgumentException("Unsupported operation node type: " + initiator);
+                throw new IllegalArgumentException("Unsupported operation initiator: " + initiator);
         }
     }
 
@@ -330,6 +330,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
          * @see GridClient
          * @see GridRestProcessor
          */
-        GRID_CLIENT
+        REMOTE_CONTROL
     }
 }
