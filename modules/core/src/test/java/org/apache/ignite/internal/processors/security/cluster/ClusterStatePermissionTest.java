@@ -105,7 +105,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * @return Ignite onfiguration with given server and client permissions.
+     * @return Ignite configuration with given server and client permissions.
      */
     private IgniteConfiguration getConfiguration(
         String instanceName,
@@ -303,7 +303,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Initiator type of the cluster state chnage.
+     * Initiator type of the cluster state change.
      */
     private enum Initiator {
         /**
