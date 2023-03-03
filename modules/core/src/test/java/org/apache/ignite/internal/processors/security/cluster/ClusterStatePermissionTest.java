@@ -95,12 +95,24 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(instanceName);
-
         SecurityPermission[] srvPerms = initiator == Initiator.SERVER || initiator == Initiator.CLIENT ? permissions :
             EMPTY_PERMS;
+
         // Apply the permissions on client side if they are not for server side.
         SecurityPermission[] clientPerms = F.isEmpty(srvPerms) ? permissions : EMPTY_PERMS;
+
+        return getConfiguration(instanceName, srvPerms, clientPerms);
+    }
+
+    /**
+     * @return Ignite onfiguration with given server and client permissions.
+     */
+    private IgniteConfiguration getConfiguration(
+        String instanceName,
+        SecurityPermission[] srvPerms,
+        SecurityPermission[] cliPerms
+    ) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
             instanceName,
@@ -110,7 +122,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             new TestSecurityData(
                 "client",
                 "",
-                create().defaultAllowAll(false).appendSystemPermissions(clientPerms).build(),
+                create().defaultAllowAll(false).appendSystemPermissions(cliPerms).build(),
                 new Permissions()
             )
         );
@@ -171,23 +183,13 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Starts a server node, activates the cluster and restores the test configuration.
+     * Starts single server node, activates the cluster.
      */
     private void startAllAllowedNode() throws Exception {
-        Initiator initiator = this.initiator;
-        SecurityPermission[] permissions = this.permissions;
-
-        this.initiator = Initiator.SERVER;
-        this.permissions = F.asArray(ADMIN_CLUSTER_STATE);
-
-        Ignite ig = startGrids(1);
+        Ignite ig = startGrid(getConfiguration(getTestIgniteInstanceName(0), F.asArray(ADMIN_CLUSTER_STATE),
+            EMPTY_PERMS));
 
         ig.cluster().state(ACTIVE);
-
-        assertEquals(ACTIVE, ig.cluster().state());
-
-        this.initiator = initiator;
-        this.permissions = permissions;
     }
 
     /**
