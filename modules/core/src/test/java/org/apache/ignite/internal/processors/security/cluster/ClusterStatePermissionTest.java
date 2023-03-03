@@ -51,8 +51,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -143,7 +141,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests both activation and deactivation are allowed.
+     * Tests all state changes are allowed with the permission.
      */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
@@ -151,40 +149,40 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
         doTestChangeState(
             F.asArray(ACTIVE_READ_ONLY, INACTIVE, ACTIVE_READ_ONLY, ACTIVE, INACTIVE, ACTIVE, ACTIVE_READ_ONLY),
-            F.asArray(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
+            true
         );
     }
 
     /**
-     * Tests activation is not allowed.
+     * Tests activation is not allowed without the permission.
      */
     @Test
     public void testActivationNotAllowed() throws Exception {
-        doTestChangeState(F.asArray(ACTIVE), F.asArray(FALSE));
+        doTestChangeState(F.asArray(ACTIVE), false);
     }
 
     /**
-     * Tests activation is allowed, deactivation is not allowed.
+     * Tests deactivation is not allowed without the permission.
      */
     @Test
     public void testDeactivationNotAllowed() throws Exception {
         startAllAllowedNode();
 
-        doTestChangeState(F.asArray(INACTIVE), F.asArray(FALSE));
+        doTestChangeState(F.asArray(INACTIVE), false);
     }
 
     /**
-     * Tests attempt to set same state is allowed without the permission.
+     * Tests same-state change is not allowed without the permission.
      */
     @Test
     public void testSameStateNotAllowedWithoutPermission() throws Exception {
         startAllAllowedNode();
 
-        doTestChangeState(F.asArray(ACTIVE), F.asArray(FALSE));
+        doTestChangeState(F.asArray(ACTIVE), false);
     }
 
     /**
-     * Starts server node, activates it and restores the test configuration.
+     * Starts server node, activates clster and restores the test configuration.
      */
     private void startAllAllowedNode() throws Exception {
         Initiator nodeType = initiator;
@@ -204,23 +202,24 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tries to change state and ensures a proper error raises if required.
+     * Tries to change state and ensures that a proper error raises if required.
+     *
+     * @param states Cluster to change to one by one.
+     * @param allowed {@code True}, if the state changes must be allowed. {@code False} otherwise.
      */
-    private void doTestChangeState(ClusterState[] states, Boolean[] allowed) throws Exception {
-        assert states != null && allowed != null && states.length == allowed.length && states.length > 0;
+    private void doTestChangeState(ClusterState[] states, boolean allowed) throws Exception {
+        assert states != null && states.length > 0;
 
         Ignite ig = startGrid(G.allGrids().size());
 
         startGrid(G.allGrids().size());
 
-        Consumer<ClusterState> action = nodeStateAction(ig);
+        Consumer<ClusterState> action = initiatorAction(ig);
 
         for (int i = 0; i < states.length; ++i) {
-            assert allowed[i] != null;
-
             ClusterState stateTo = states[i];
 
-            if (allowed[i]) {
+            if (allowed) {
                 action.accept(stateTo);
 
                 assertEquals(stateTo, ig.cluster().state());
@@ -231,7 +230,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Ensures that a proper error occurs.
+     * Ensures that a proper error occurs on sluster change state action.
      */
     private void ensureThrows(Consumer<ClusterState> action, ClusterState stateTo) {
         Class<? extends Throwable> cause = SecurityException.class;
@@ -259,7 +258,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /**
      * @return Change state operation depending on {@link #initiator}.
      */
-    private Consumer<ClusterState> nodeStateAction(Ignite srv) throws Exception {
+    private Consumer<ClusterState> initiatorAction(Ignite srv) throws Exception {
         switch (initiator) {
             case SERVER:
                 return (state) -> srv.cluster().state(state);
