@@ -2708,6 +2708,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Disables creation of incremental snapshots for the given cache group.
+     *
+     * @param grpId Group ID.
+     */
+    public void disableIncrementalSnapshotsCreation(int grpId) {
+        cctx.database().checkpointReadLock();
+
+        try {
+            metaStorage.write(incSnpCreationDisabledKey(grpId), true);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to disable incremental snapshot creation for the cache group: " + grpId, e);
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+    }
+
+    /**
      * Enables creation of incremental snapshots for the given cache groups.
      *
      * @param grpIds Group IDs.

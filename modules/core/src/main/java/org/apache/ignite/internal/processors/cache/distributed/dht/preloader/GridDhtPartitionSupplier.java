@@ -489,7 +489,8 @@ public class GridDhtPartitionSupplier {
                 GridDhtPartitionSupplyMessage errMsg;
 
                 if (fallbackToFullRebalance) {
-                    grp.shared().database().markCacheGroupWalDisabled(grp.groupId());
+                    // Mark the last checkpoint as not applicable for WAL rebalance.
+                    grp.shared().database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
                     // Mark all remaining partitions as missed to trigger full rebalance.
                     if (iter == null && F.isEmpty(remainingParts)) {
