@@ -108,13 +108,10 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         // Apply the permissions on client side if they are not for server side.
         SecurityPermission[] clientPerms = F.isEmpty(srvPerms) ? permissions : EMPTY_PERMS;
 
-        SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false)
-            .appendSystemPermissions(F.concat(srvPerms, JOIN_AS_SERVER));
-
         TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
             instanceName,
             "",
-            secBuilder.build(),
+            create().defaultAllowAll(false).appendSystemPermissions(F.concat(srvPerms, JOIN_AS_SERVER)).build(),
             false,
             new TestSecurityData(
                 "client",
