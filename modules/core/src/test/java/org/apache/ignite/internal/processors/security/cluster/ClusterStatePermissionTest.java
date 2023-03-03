@@ -75,7 +75,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
     /** From-client flag parameter. */
     @Parameterized.Parameter
-    public Initiator operationNodeType;
+    public Initiator initiator;
 
     /** Persistence flag parameter. */
     @Parameterized.Parameter(1)
@@ -103,16 +103,16 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
         }
 
-        SecurityPermission[] srvPerms = F.asArray(JOIN_AS_SERVER);
+        SecurityPermission[] srvPerms = EMPTY_PERMS;
         SecurityPermission[] clientPerms = EMPTY_PERMS;
 
-        if (operationNodeType == Initiator.SERVER)
+        if (initiator == Initiator.SERVER)
             srvPerms = F.concat(srvPerms, permissions);
-        else if (operationNodeType == Initiator.CLIENT)
+        else if (initiator == Initiator.CLIENT)
             srvPerms = permissions;
-        else if (operationNodeType == Initiator.THIN_CLIENT)
+        else if (initiator == Initiator.THIN_CLIENT)
             clientPerms = permissions;
-        else if (operationNodeType == Initiator.GRID_CLIENT) {
+        else if (initiator == Initiator.GRID_CLIENT) {
             clientPerms = permissions;
 
             cfg.setConnectorConfiguration(new ConnectorConfiguration());
@@ -186,10 +186,10 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
      * Starts server node, activates it and restores the test configuration.
      */
     private void startAllAllowedNode() throws Exception {
-        Initiator nodeType = operationNodeType;
+        Initiator nodeType = initiator;
         SecurityPermission[] perms = permissions;
 
-        operationNodeType = Initiator.SERVER;
+        initiator = Initiator.SERVER;
         permissions = F.asArray(ADMIN_CLUSTER_STATE);
 
         Ignite ig = startGrids(1);
@@ -198,7 +198,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
         assertEquals(ACTIVE, ig.cluster().state());
 
-        operationNodeType = nodeType;
+        initiator = nodeType;
         permissions = perms;
     }
 
@@ -236,11 +236,11 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         Class<? extends Throwable> cause = SecurityException.class;
         String errMsg = "Authorization failed [perm=" + ADMIN_CLUSTER_STATE;
 
-        if (Initiator.THIN_CLIENT == operationNodeType) {
+        if (Initiator.THIN_CLIENT == initiator) {
             cause = ClientAuthorizationException.class;
             errMsg = "User is not authorized to perform this operation";
         }
-        else if (Initiator.GRID_CLIENT == operationNodeType)
+        else if (Initiator.GRID_CLIENT == initiator)
             cause = GridClientException.class;
 
         assertThrowsAnyCause(
@@ -256,10 +256,10 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * @return Change state operation depending on {@link #operationNodeType}.
+     * @return Change state operation depending on {@link #initiator}.
      */
     private Consumer<ClusterState> nodeStateAction(Ignite srv) throws Exception {
-        switch (operationNodeType) {
+        switch (initiator) {
             case SERVER:
                 return (state) -> srv.cluster().state(state);
 
@@ -303,7 +303,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
             }
 
             default:
-                throw new IllegalArgumentException("Unsupported operation node type: " + operationNodeType);
+                throw new IllegalArgumentException("Unsupported operation node type: " + initiator);
         }
     }
 
