@@ -21,10 +21,11 @@ import java.security.Permissions;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAuthorizationException;
+import org.apache.ignite.client.ClientCluster;
 import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -311,12 +313,17 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
      * Initiator type of change state operation.
      */
     public enum Initiator {
-        /** Server node for Java API call the or the JMX call. */
+        /**
+         * Server node for Java API call the or the JMX call.
+         *
+         * @see IgniteCluster#state(ClusterState)
+         */
         SERVER,
 
         /**
          * Client node for Java API call the or the JMX call.
          *
+         * @see IgniteCluster#state(ClusterState)
          * @see IgniteConfiguration#isClientMode()
          */
         CLIENT,
@@ -324,7 +331,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         /**
          * Call from the thin client.
          *
-         * @see IgniteClient
+         * @see ClientCluster#state(ClusterState)
          */
         THIN_CLIENT,
 
@@ -332,7 +339,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
          * Call from a remote control like control.sh of the REST API.
          *
          * @see GridClient
-         * @see GridRestProcessor
+         * @see GridRestCommand#CLUSTER_SET_STATE
          */
         REMOTE_CONTROL
     }
