@@ -43,7 +43,6 @@ import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SECURITY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -100,8 +99,8 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** Name of the user with no permission granted. */
     private static final String EMPTY_PERMS_USER = "empty-perms-user";
 
-    /** Name of the user with the {@link SecurityPermission#ADMIN_SECURITY} permission granted. */
-    private static final String ADMIN_SECURITY_USER = "admin-security-user";
+    /** Name of the user with the {@link SecurityPermission#ADMIN_USER_ACCESS} permission granted. */
+    private static final String ADMIN_USER_ACCESS = "admin-user-access";
 
     /** CSV file for bulk-load testing. */
     private static final String BULKLOAD_CSV_FILE = Objects.requireNonNull(resolveIgnitePath(
@@ -119,7 +118,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
 
         Ignite srv = startSecurityGrid(0,
             new TestSecurityData(EMPTY_PERMS_USER, new SecurityBasicPermissionSet()),
-            new TestSecurityData(ADMIN_SECURITY_USER, systemPermissions(ADMIN_SECURITY)),
+            new TestSecurityData(ADMIN_USER_ACCESS, systemPermissions(SecurityPermission.ADMIN_USER_ACCESS)),
             new TestSecurityData(CACHE_CREATE_SYS_PERM_USER, systemPermissions(CACHE_CREATE)),
             new TestSecurityData(CACHE_DESTROY_SYS_PERMS_USER, systemPermissions(CACHE_DESTROY)),
             new TestSecurityData(CACHE_CREATE_CACHE_PERMS_USER, cachePermissions(TEST_CREATE_TABLE_CACHE, CACHE_CREATE)),
@@ -326,7 +325,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
 
         checkAuthentication(login, "test-password", false);
 
-        execute(sql, ADMIN_SECURITY_USER);
+        execute(sql, ADMIN_USER_ACCESS);
 
         checkAuthentication(login, "test-password", true);
     }
@@ -338,7 +337,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testDropUser() throws Exception {
         String login = generateUserLogin();
 
-        execute("CREATE USER " + login + " WITH PASSWORD 'test-password';", ADMIN_SECURITY_USER);
+        execute("CREATE USER " + login + " WITH PASSWORD 'test-password';", ADMIN_USER_ACCESS);
 
         String sql = "DROP USER " + login + ';';
 
@@ -346,7 +345,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
 
         checkAuthentication(login, "test-password", true);
 
-        execute(sql, ADMIN_SECURITY_USER);
+        execute(sql, ADMIN_USER_ACCESS);
 
         checkAuthentication(login, "test-password", false);
     }
@@ -358,7 +357,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     public void testAlterUser() throws Exception {
         String login = generateUserLogin();
 
-        execute("CREATE USER " + login + " WITH PASSWORD 'test-password';", ADMIN_SECURITY_USER);
+        execute("CREATE USER " + login + " WITH PASSWORD 'test-password';", ADMIN_USER_ACCESS);
 
         String sql = "ALTER USER " + login + " WITH PASSWORD 'new-password';";
 
@@ -367,7 +366,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
         checkAuthentication(login, "test-password", true);
         checkAuthentication(login, "new-password", false);
 
-        execute(sql, ADMIN_SECURITY_USER);
+        execute(sql, ADMIN_USER_ACCESS);
 
         checkAuthentication(login, "test-password", false);
         checkAuthentication(login, "new-password", true);
