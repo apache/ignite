@@ -308,7 +308,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Initiator type of change state operation.
+     * Initiator type of the cluster state chnage.
      */
     public enum Initiator {
         /**
