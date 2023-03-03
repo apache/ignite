@@ -171,7 +171,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Starts server node, activates clster and restores the test configuration.
+     * Starts a server node, activates the cluster and restores the test configuration.
      */
     private void startAllAllowedNode() throws Exception {
         Initiator initiator = this.initiator;
