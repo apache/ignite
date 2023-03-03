@@ -98,11 +98,6 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (!cfg.isClientMode()) {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
-        }
-
         SecurityPermission[] srvPerms = initiator == Initiator.SERVER || initiator == Initiator.CLIENT ? permissions :
             EMPTY_PERMS;
         // Apply the permissions on client side if they are not for server side.
@@ -126,6 +121,11 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         cfg.setClusterStateOnStart(INACTIVE);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
+
+        if (!cfg.isClientMode()) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
+        }
 
         return cfg;
     }
