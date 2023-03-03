@@ -310,7 +310,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /**
      * Initiator type of the cluster state chnage.
      */
-    public enum Initiator {
+    private enum Initiator {
         /**
          * Server node for Java API call the or the JMX call.
          *
