@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -91,7 +90,7 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
      * @throws Exception If fails.
      */
     private void doTest(Consumer<? super Supplier<Future<Void>>> check, SecurityPermission... perms) throws Exception {
-        Ignite srv = startGrid("srv", permissions(F.concat(perms, ADMIN_CLUSTER_STATE)), false);
+        Ignite srv = startGrid("srv", permissions(perms), false);
 
         Ignite clnt = startGrid("clnt", permissions(perms), true);
 
@@ -132,7 +131,7 @@ public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
     private static SecurityPermissionSet permissions(SecurityPermission... perms) {
         return SecurityPermissionSetBuilder.create()
             .defaultAllowAll(false)
-            .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_CREATE, CACHE_PUT)
+            .appendCachePermissions(DEFAULT_CACHE_NAME, CACHE_CREATE, CACHE_PUT, ADMIN_CLUSTER_STATE)
             .appendSystemPermissions(perms)
             .build();
     }

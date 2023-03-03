@@ -57,7 +57,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.util.lang.GridFunc.asList;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -104,7 +103,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistence)));
         }
 
-        SecurityPermission[] srvPerms = F.asArray(JOIN_AS_SERVER, CACHE_CREATE);
+        SecurityPermission[] srvPerms = F.asArray(JOIN_AS_SERVER);
         SecurityPermission[] clientPerms = EMPTY_PERMS;
 
         if (operationNodeType == NodeType.SERVER)
@@ -120,7 +119,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         }
 
         SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false)
-            .appendSystemPermissions(F.concat(srvPerms, JOIN_AS_SERVER, CACHE_CREATE));
+            .appendSystemPermissions(F.concat(srvPerms, JOIN_AS_SERVER));
 
         TestSecurityPluginProvider secPlugin = new TestSecurityPluginProvider(
             instanceName,
