@@ -141,7 +141,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests all state changes are allowed with the permission.
+     * Tests that all state changes are allowed with the permission.
      */
     @Test
     public void testActivationDeactivationAllowed() throws Exception {
@@ -154,7 +154,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests activation is not allowed without the permission.
+     * Tests that the activation is not allowed without the permission.
      */
     @Test
     public void testActivationNotAllowed() throws Exception {
@@ -162,7 +162,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests deactivation is not allowed without the permission.
+     * Tests that the deactivation is not allowed without the permission.
      */
     @Test
     public void testDeactivationNotAllowed() throws Exception {
@@ -172,7 +172,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Tests same-state change is not allowed without the permission.
+     * Tests that same-state change is not allowed without the permission.
      */
     @Test
     public void testSameStateNotAllowedWithoutPermission() throws Exception {
