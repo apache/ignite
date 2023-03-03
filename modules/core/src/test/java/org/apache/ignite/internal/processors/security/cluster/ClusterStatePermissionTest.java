@@ -175,10 +175,10 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
      */
     private void startAllAllowedNode() throws Exception {
         Initiator initiator = this.initiator;
-        SecurityPermission[] perms = permissions;
+        SecurityPermission[] permissions = this.permissions;
 
         this.initiator = Initiator.SERVER;
-        permissions = F.asArray(ADMIN_CLUSTER_STATE);
+        this.permissions = F.asArray(ADMIN_CLUSTER_STATE);
 
         Ignite ig = startGrids(1);
 
@@ -187,7 +187,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         assertEquals(ACTIVE, ig.cluster().state());
 
         this.initiator = initiator;
-        permissions = perms;
+        this.permissions = permissions;
     }
 
     /**
