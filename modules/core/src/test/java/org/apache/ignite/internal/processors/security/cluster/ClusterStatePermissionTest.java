@@ -105,7 +105,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
 
         SecurityPermission[] srvPerms = initiator == Initiator.SERVER || initiator == Initiator.CLIENT ? permissions :
             EMPTY_PERMS;
-        // Apply client-side permissions if they are not for server side.
+        // Apply the permissions on client side if they are not for server side.
         SecurityPermission[] clientPerms = F.isEmpty(srvPerms) ? permissions : EMPTY_PERMS;
 
         SecurityPermissionSetBuilder secBuilder = create().defaultAllowAll(false)
