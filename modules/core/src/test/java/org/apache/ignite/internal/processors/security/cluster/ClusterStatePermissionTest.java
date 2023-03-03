@@ -72,7 +72,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /** */
     private SecurityPermission[] permissions = EMPTY_PERMS;
 
-    /** From-client flag parameter. */
+    /** The initiator parameter. */
     @Parameterized.Parameter
     public Initiator initiator;
 
@@ -230,7 +230,7 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     }
 
     /**
-     * Ensures that a proper error occurs on sluster change state action.
+     * Ensures that a proper error occurs on cluster change state action.
      */
     private void ensureThrows(Consumer<ClusterState> action, ClusterState stateTo) {
         Class<? extends Throwable> cause = SecurityException.class;
@@ -286,14 +286,14 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
                 cfg.setSecurityCredentialsProvider(
                     new SecurityCredentialsBasicProvider(new SecurityCredentials("client", "")));
 
-                GridClient gridCleint = GridClientFactory.start(cfg);
+                GridClient gridClient = GridClientFactory.start(cfg);
 
-                assert gridCleint.connected();
+                assert gridClient.connected();
 
                 return new Consumer<ClusterState>() {
                     @Override public void accept(ClusterState state) {
                         try {
-                            gridCleint.state().state(state, true);
+                            gridClient.state().state(state, true);
                         }
                         catch (GridClientException e) {
                             throw new IgniteException(e.getMessage(), e);
