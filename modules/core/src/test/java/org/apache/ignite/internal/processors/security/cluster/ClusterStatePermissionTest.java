@@ -314,7 +314,11 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
         /** Server node for Java API call the or the JMX call. */
         SERVER,
 
-        /** Client node for Java API call the or the JMX call. */
+        /**
+         * Client node for Java API call the or the JMX call.
+         *
+         * @see IgniteConfiguration#isClientMode()
+         */
         CLIENT,
 
         /**
