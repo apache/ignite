@@ -94,6 +94,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
@@ -1106,6 +1107,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
+        ctx.security().authorize(SecurityPermission.ADMIN_CLUSTER_STATE);
+
         if (ctx.maintenanceRegistry().isMaintenanceMode()) {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to " + prettyStr(state) + " (node is in maintenance mode).")
