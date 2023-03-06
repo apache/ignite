@@ -321,25 +321,45 @@ public abstract class SqlListenerUtils {
      * <p>All other characters are considered normal and will be escaped if necessary.</p>
      * <pre>
      * Example:
-     *      som_    -->     som.
-     *      so%     -->     so.*
-     *      s[om]e  -->     so\[om\]e
-     *      so\_me  -->     so_me
-     *      some?   -->     some\?
-     *      som\e   -->     som\\e
+     *      som_                    -->     som.
+     *      so%                     -->     so.*
+     *      s[om]e                  -->     so\[om\]e
+     *      so\_me                  -->     so_me
+     *      some?                   -->     some\?
+     *      som\e                   -->     som\\e
+     *      so\\_\\_e               -->     so__e
+     *      some\\\\_\\\\_table     -->     some\\.\\.table
+     *      some\\\\\\_\\\\\\_table -->     some\\_\\_table
      * </pre>
      */
     public static String translateSqlWildcardsToRegex(String sqlPtrn) {
         if (F.isEmpty(sqlPtrn))
             return sqlPtrn;
 
-        String toRegex = ' ' + sqlPtrn;
+        StringBuilder res = new StringBuilder();
+        int length = sqlPtrn.length();
+        for (int index = 0; index < length; index++) {
+            char ch = sqlPtrn.charAt(index);
+            if (ch == '_')
+                res.append(".");
+            else if (ch == '%')
+                res.append(".*");
+            else if (ch == '[' || ch == ']' || ch == '(' || ch == ')' || ch == '{' || ch == '}'
+                || ch == '*' || ch == '+' || ch == '.' || ch == '^' || ch == '$' || ch == '|' || ch == '?')
+                res.append('\\').append(ch);
+            else if (ch == '\\' && index + 1 < length) {
+                char suf = sqlPtrn.charAt(index + 1);
+                if (suf == '\\' || suf == '_' || suf == '%') {
+                    res.append(suf);
+                    index++;
+                }
+                else
+                    res.append("\\\\");
+            }
+            else
+                res.append(ch);
+        }
 
-        toRegex = toRegex.replaceAll("([\\[\\]{}()*+?.\\\\\\\\^$|])", "\\\\$1");
-        toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)%", "$1$2.*");
-        toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)_", "$1$2.");
-        toRegex = toRegex.replaceAll("([^\\\\\\\\])(\\\\\\\\(?>\\\\\\\\\\\\\\\\)*\\\\\\\\)*\\\\\\\\([_|%])", "$1$2$3");
-
-        return toRegex.substring(1);
+        return res.toString();
     }
 }

@@ -84,6 +84,7 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     @Before
     public void createTables() throws Exception {
         executeDDl("CREATE TABLE MY_FAV_TABLE (id INT PRIMARY KEY, val VARCHAR)");
+        executeDDl("CREATE TABLE MY_FA__TABLE (id INT PRIMARY KEY, val VARCHAR)");
         executeDDl("CREATE TABLE MY0FAV0TABLE (id INT PRIMARY KEY, val VARCHAR)");
         executeDDl("CREATE TABLE \"MY\\FAV\\TABLE\" (id INT PRIMARY KEY, val VARCHAR)");
         executeDDl("CREATE TABLE OTHER_TABLE (id INT PRIMARY KEY, val VARCHAR)");
@@ -94,6 +95,7 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     public void dropTables() throws Exception {
         // tables that matched by "TABLE MY_FAV_TABLE" sql pattern:
         executeDDl("DROP TABLE MY_FAV_TABLE");
+        executeDDl("DROP TABLE MY_FA__TABLE");
         executeDDl("DROP TABLE MY0FAV0TABLE");
         executeDDl("DROP TABLE \"MY\\FAV\\TABLE\"");
 
@@ -109,11 +111,18 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
         assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE"), getTableNames("MY_FAV_TABLE"));
         assertEqualsCollections(singletonList("MY_FAV_TABLE"), getTableNames("MY\\_FAV\\_TABLE"));
 
+        // Escape the consecutive "_" correctly
+        assertEqualsCollections(singletonList("MY_FA__TABLE"), getTableNames("MY\\_FA\\_\\_TABLE"));
+
         assertEqualsCollections(Collections.emptyList(), getTableNames("\\%"));
-        assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE", "OTHER_TABLE"), getTableNames("%"));
+        assertEqualsCollections(
+            asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE", "MY_FA__TABLE", "OTHER_TABLE"),
+            getTableNames("%"));
 
         assertEqualsCollections(Collections.emptyList(), getTableNames(""));
-        assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE", "OTHER_TABLE"), getTableNames(null));
+        assertEqualsCollections(
+            asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE", "MY_FA__TABLE", "OTHER_TABLE"),
+            getTableNames(null));
     }
 
     /**

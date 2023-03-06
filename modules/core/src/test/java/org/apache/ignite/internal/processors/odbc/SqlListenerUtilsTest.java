@@ -48,6 +48,12 @@ public class SqlListenerUtilsTest {
         check(".ome", "_ome");
 
         check("so_e", "so\\_e");
+        check("so__e", "so\\_\\_e");
+        check("so__e___f", "so\\_\\_e\\_\\_\\_f");
+        check("so__e____f", "so\\_\\_e\\_\\_\\_\\_f");
+
+        check( "some\\.\\.table", "some\\\\_\\\\_table");
+        check("some\\_\\_table", "some\\\\\\_\\\\\\_table");
     }
 
     /**
@@ -97,7 +103,7 @@ public class SqlListenerUtilsTest {
     /**
      * Check sql regex translation logic.
      *
-     * @param exp Expected result.
+     * @param exp     Expected result.
      * @param sqlPtrn SQL regex pattern.
      */
     private void check(String exp, String sqlPtrn) {
