@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -37,6 +41,8 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -59,10 +65,10 @@ public class IgnitePdsWithTtlExpirationOnDeactivateTest extends GridCommonAbstra
     private static final int EXPIRATION_TIMEOUT = 5_000;
 
     /** */
-    public static final int ENTRIES = 50_000;
+    private static final String PAYLOAD = RandomStringUtils.randomAlphanumeric(10000);
 
     /** */
-    private static final int WORKLOAD_THREADS_CNT = 8;
+    private static final int WORKLOAD_THREADS_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Failure handler triggered flag. */
     private volatile boolean failureHndTriggered;
@@ -102,9 +108,7 @@ public class IgnitePdsWithTtlExpirationOnDeactivateTest extends GridCommonAbstra
                     .setDefaultDataRegionConfiguration(dfltRegion)
                     .setWalMode(WALMode.LOG_ONLY));
 
-        cfg.setCacheConfiguration(
-            getCacheConfiguration(CACHE_NAME_ATOMIC).setAtomicityMode(ATOMIC)
-        );
+        cfg.setCacheConfiguration(getCacheConfiguration(CACHE_NAME_ATOMIC));
 
         return cfg;
     }
@@ -133,6 +137,8 @@ public class IgnitePdsWithTtlExpirationOnDeactivateTest extends GridCommonAbstra
         ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, EXPIRATION_TIMEOUT)));
         ccfg.setEagerTtl(true);
 
+        ccfg.setAtomicityMode(ATOMIC);
+
         return ccfg;
     }
 
@@ -154,25 +160,62 @@ public class IgnitePdsWithTtlExpirationOnDeactivateTest extends GridCommonAbstra
 
             int i = 0;
             while (!timeoutReached.get()) {
-                cache.put(id * 1_000_000 + i, RandomStringUtils.randomAlphanumeric(1000));
+                cache.put(id * 1_000_000 + i, PAYLOAD);
                 i++;
             }
         }, WORKLOAD_THREADS_CNT, "loader");
 
-        doSleep(EXPIRATION_TIMEOUT * 2);
+        doSleep(EXPIRATION_TIMEOUT);
         timeoutReached.set(true);
         ldrFut.get();
 
+        // Add listener on "cache stop" event, that slow down a little been sys pool workers.
+        addCheckpointListener(srv, new CheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            @Override public void afterCheckpointEnd(Context ctx) {
+                if ("caches stop".equals(ctx.progress().reason())) {
+                    ExecutorService sysPool = srv.context().pools().getSystemExecutorService();
+                    try {
+                        sysPool.invokeAll(IntStream.range(0, WORKLOAD_THREADS_CNT).mapToObj(i -> new Callable<Void>() {
+                            @Override public Void call() {
+                                doSleep(EXPIRATION_TIMEOUT);
+                                return null;
+                            }
+                        }).collect(Collectors.toList()));
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        });
+
+        // Deactivate and restart.
         srv.cluster().state(INACTIVE);
-
         stopGrid(0);
-
         startGrid(0);
 
-        awaitPartitionMapExchange();
-
-        GridTestUtils.waitForCondition(() -> failureHndTriggered, 5_000);
+        GridTestUtils.waitForCondition(() -> failureHndTriggered, EXPIRATION_TIMEOUT);
 
         assertFalse(failureHndTriggered);
+    }
+
+    /** */
+    private void addCheckpointListener(IgniteEx grid, CheckpointListener lsnr) {
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid.context().cache().context()
+                .database();
+
+        dbMgr.addCheckpointListener(lsnr);
     }
 }
