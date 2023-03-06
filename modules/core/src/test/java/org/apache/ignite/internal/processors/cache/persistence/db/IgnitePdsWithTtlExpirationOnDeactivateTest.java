@@ -96,7 +96,8 @@ public class IgnitePdsWithTtlExpirationOnDeactivateTest extends GridCommonAbstra
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataRegionConfiguration dfltRegion = new DataRegionConfiguration()
-                .setMaxSize(100 * 1024 * 1024)
+                .setMaxSize(512 * 1024 * 1024)
+                .setCheckpointPageBufferSize(64 * 1024 * 1024)
                 .setPersistenceEnabled(true);
 
         // Setting MaxWalArchiveSize to a relatively small value leads to frequent checkpoints (too many WAL segments).
