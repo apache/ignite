@@ -195,6 +195,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
@@ -816,7 +817,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * Returns path to specific incremental snapshot.
-     * For example, {@code "work/snapshots/mybackup/increments/node01/0001"}.
+     * For example, {@code "work/snapshots/mybackup/increments/0000000000000001"}.
      *
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
@@ -824,26 +825,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Local snapshot directory where snapshot files are located.
      */
     public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
-        return Paths.get(
-            incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
-            U.fixedLengthNumberName(incIdx, null)
-        ).toFile();
+        return new File(incrementalSnapshotsLocalRootDir(snpName, snpPath), U.fixedLengthNumberName(incIdx, null));
     }
 
     /**
      * Returns root folder for incremental snapshot.
-     * For example, {@code "work/snapshots/mybackup/increments/node01"}.
+     * For example, {@code "work/snapshots/mybackup/increments/"}.
      *
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Local snapshot directory where snapshot files are located.
      */
     public File incrementalSnapshotsLocalRootDir(String snpName, @Nullable String snpPath) {
-        return Paths.get(
-            snapshotLocalDir(snpName, snpPath).getAbsolutePath(),
-            INC_SNP_DIR,
-            pdsSettings.folderName()
-        ).toFile();
+        return new File(snapshotLocalDir(snpName, snpPath), INC_SNP_DIR);
+    }
+
+    /**
+     * @param incSnpDir Incremental snapshot directory.
+     * @param consId Consistent ID.
+     * @return WALs directory for specified incremental snapshot.
+     */
+    public static File incrementalSnapshotWalsDir(File incSnpDir, String consId) {
+        String folderName = U.maskForFileName(consId);
+
+        return incSnpDir.toPath().resolve(DFLT_WAL_PATH).resolve(folderName).toFile();
     }
 
     /**
@@ -1035,7 +1040,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             storeSnapshotMeta(
                 incMeta,
-                new File(incSnpDir, incrementalSnapshotMetaFileName(req.incrementIndex()))
+                new File(incSnpDir, snapshotMetaFileName(pdsSettings.folderName()))
             );
 
             return new SnapshotOperationResponse();
@@ -1083,7 +1088,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     ) throws IgniteCheckedException, IOException {
         return readFromFile(new File(
             incrementalSnapshotLocalDir(snpName, snpPath, incIdx),
-            incrementalSnapshotMetaFileName(incIdx)
+            snapshotMetaFileName(pdsSettings.folderName())
         ));
     }
 
@@ -2455,14 +2460,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
-    }
-
-    /**
-     * @param incIdx Increment index.
-     * @return Snapshot metadata file name.
-     */
-    public static String incrementalSnapshotMetaFileName(int incIdx) {
-        return U.fixedLengthNumberName(incIdx, SNAPSHOT_METAFILE_EXT);
     }
 
     /**

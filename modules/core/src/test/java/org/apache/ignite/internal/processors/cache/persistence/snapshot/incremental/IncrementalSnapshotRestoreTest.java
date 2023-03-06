@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.increme
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -88,9 +87,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** */
@@ -349,14 +348,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        File rm = Paths.get(U.defaultWorkDirectory())
-            .resolve(DFLT_SNAPSHOT_DIRECTORY)
-            .resolve(SNP)
-            .resolve(IgniteSnapshotManager.INC_SNP_DIR)
-            .resolve(U.maskForFileName(getTestIgniteInstanceName(1)))
-            .resolve("0000000000000001")
-            .resolve("0000000000000000.wal.zip")
-            .toFile();
+        File rm = new File(incrementalSnapshotWalDir(grid(1), SNP, 1), "0000000000000000.wal.zip");
 
         assertTrue(U.delete(rm));
 
@@ -952,10 +944,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
     private void corruptIncrementalSnapshot(int nodeIdx, int incIdx, int segIdx) throws Exception {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        File incSnpDir = grid(nodeIdx).context().cache().context().snapshotMgr()
-            .incrementalSnapshotLocalDir(SNP, null, incIdx);
-
-        File[] incSegs = incSnpDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        File[] incSegs = incrementalSnapshotWalDir(grid(nodeIdx), SNP, incIdx).listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
         Arrays.sort(incSegs);
 
@@ -985,6 +974,13 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             for (String cache: caches)
                 assertNull("[node=" + i + ", cache=" + cache + ']', grid(i).cache(cache));
         }
+    }
+
+    /** */
+    private File incrementalSnapshotWalDir(IgniteEx node, String snpName, int incIdx) {
+        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, null, incIdx);
+
+        return incrementalSnapshotWalsDir(incSnpDir, node.localNode().consistentId().toString());
     }
 
     /** {@inheritDoc} */

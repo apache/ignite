@@ -44,6 +44,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
+
 /** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
 @GridInternal
 public class SnapshotMetadataVerificationTask
@@ -123,7 +125,7 @@ public class SnapshotMetadataVerificationTask
                             "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incIdx=" + inc + ']');
                     }
 
-                    String metaFileName = IgniteSnapshotManager.incrementalSnapshotMetaFileName(inc);
+                    String metaFileName = IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString());
 
                     File metafile = incSnpDir.toPath().resolve(metaFileName).toFile();
 
@@ -139,7 +141,7 @@ public class SnapshotMetadataVerificationTask
                             "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
                     }
 
-                    checkWalSegments(incMeta, startSeg, incSnpDir);
+                    checkWalSegments(incMeta, startSeg, incrementalSnapshotWalsDir(incSnpDir, incMeta.folderName()));
 
                     // Incremental snapshots must not cross each other.
                     startSeg = incMeta.incSnpPointer().index() + 1;
@@ -151,16 +153,16 @@ public class SnapshotMetadataVerificationTask
         }
 
         /** Check that incremental snapshot contains all required WAL segments. Throws {@link IgniteException} in case of any errors. */
-        private void checkWalSegments(IncrementalSnapshotMetadata meta, long startWalSeg, File incSnpDir) {
+        private void checkWalSegments(IncrementalSnapshotMetadata meta, long startWalSeg, File incSnpWalDir) {
             IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
             List<FileDescriptor> walSeg = factory.resolveWalFiles(
                 new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                    .filesOrDirs(incSnpDir.listFiles(file ->
+                    .filesOrDirs(incSnpWalDir.listFiles(file ->
                         FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches())));
 
             if (walSeg.isEmpty())
-                throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + incSnpDir + ']');
+                throw new IgniteException("No WAL segments found for incremental snapshot [dir=" + incSnpWalDir + ']');
 
             long actFirstSeg = walSeg.get(0).idx();
 

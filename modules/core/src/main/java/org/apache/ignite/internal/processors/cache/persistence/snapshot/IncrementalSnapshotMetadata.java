@@ -49,10 +49,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final String consId;
 
-    /**
-     * Directory related to the current consistent node id on which partition files are stored.
-     * For some of the cases, consId doesn't equal the directory name.
-     */
+    /** Name of the folder that contains snapshot data. */
     private final String folderName;
 
     /** WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
@@ -105,6 +102,11 @@ public class IncrementalSnapshotMetadata implements Serializable {
     /** @return Incremental snapshot index. */
     public int incrementalIndex() {
         return incIdx;
+    }
+
+    /** @return Name of the folder that contains snapshot data. */
+    public String folderName() {
+        return folderName;
     }
 
     /**
