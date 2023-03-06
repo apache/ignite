@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
-import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -45,7 +44,7 @@ public class InvalidServerTest extends AbstractSecurityTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                 if (msg instanceof TcpDiscoveryNodeAddedMessage && msg.verified())
-                    TestSecurityProcessor.PERMS.remove(new SecurityCredentials(TEST_SERVER_NAME, ""));
+                    TestSecurityProcessor.USERS.remove(TEST_SERVER_NAME);
             }
         }.setIpFinder(LOCAL_IP_FINDER));
 

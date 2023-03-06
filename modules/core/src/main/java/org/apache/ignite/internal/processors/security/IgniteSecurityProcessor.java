@@ -53,6 +53,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNIT
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_ACCESS;
 
 /**
  * Default {@code IgniteSecurity} implementation.
@@ -381,16 +382,22 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void createUser(String login, char[] pwd) throws IgniteCheckedException {
+        authorize(ADMIN_USER_ACCESS);
+
         secPrc.createUser(login, pwd);
     }
 
     /** {@inheritDoc} */
     @Override public void alterUser(String login, char[] pwd) throws IgniteCheckedException {
+        authorize(ADMIN_USER_ACCESS);
+
         secPrc.alterUser(login, pwd);
     }
 
     /** {@inheritDoc} */
     @Override public void dropUser(String login) throws IgniteCheckedException {
+        authorize(ADMIN_USER_ACCESS);
+
         secPrc.dropUser(login);
     }
 

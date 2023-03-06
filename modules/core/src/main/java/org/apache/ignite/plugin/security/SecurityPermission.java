@@ -17,6 +17,7 @@
 
 package org.apache.ignite.plugin.security;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,6 +61,9 @@ public enum SecurityPermission {
     /** System processes kill permission. */
     ADMIN_KILL,
 
+    /** Permission to perform administration of security access for users. */
+    ADMIN_USER_ACCESS,
+
     /** Service deploy permission. */
     SERVICE_DEPLOY,
 
@@ -89,6 +93,13 @@ public enum SecurityPermission {
 
     /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT,
+
+    /**
+     * Administration operation: changing cluster state.
+     *
+     * @see ClusterState
+     */
+    ADMIN_CLUSTER_STATE,
 
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,
