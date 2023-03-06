@@ -532,15 +532,16 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
-     * 1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those operations
-     * within explicit transactions {@code ClientTransactions#txStart()}.
-     * 2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a partition number
-     * as a parameter with which the query is routed to a particular server node that stores the requested data.
+     * <ul>
+     *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those
+     *     operations within explicit transactions {@code ClientTransactions#txStart()}.</li>
+     *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a
+     *     partition number as a parameter with which the query is routed to a particular server node that stores
+     *     the requested data.</li>
+     * </ul>
      * @return A value indicating whether partition awareness should be enabled.
-     * <p>
-     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.
-     * <p>
+     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.</p>
      * When {@code false}, only one connection is established at a given moment to a random server node.
      */
     public boolean isPartitionAwarenessEnabled() {
@@ -549,16 +550,16 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Sets a value indicating whether partition awareness should be enabled.
-     * <p>
      * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
-     * 1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those operations
-     * within explicit transactions {@code ClientTransactions#txStart()}.
-     * 2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a partition number
-     * as a parameter with which the query is routed to a particular server node that stores the requested data.
-     * <p>
-     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.
-     * <p>
+     * <ul>
+     *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on
+     *     those operations within explicit transactions {@code ClientTransactions#txStart()}.</li>
+     *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept
+     *     a partition number as a parameter with which the query is routed to a particular server node that stores
+     *     the requested data.</li>
+     * </ul>
+     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.</p>
      * When {@code false}, only one connection is established at a given moment to a random server node.
      *
      * @param partitionAwarenessEnabled Value indicating whether partition awareness should be enabled.
