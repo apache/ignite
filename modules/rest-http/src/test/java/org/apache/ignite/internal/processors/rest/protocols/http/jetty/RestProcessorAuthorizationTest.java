@@ -137,4 +137,9 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         assertEquals(200, ((HttpURLConnection)conn).getResponseCode());
     }
+
+    /** {@inheritDoc} */
+    @Override protected TestSecurityData[] clientData() {
+        return new TestSecurityData[] {new TestSecurityData(LOGIN, PWD, ALL_PERMISSIONS, new Permissions())};
+    }
 }

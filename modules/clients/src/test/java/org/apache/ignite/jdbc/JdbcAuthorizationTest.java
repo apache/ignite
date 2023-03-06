@@ -21,15 +21,20 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.junit.Test;
@@ -46,6 +51,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
+import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -94,6 +100,9 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** Name of the user with no permission granted. */
     private static final String EMPTY_PERMS_USER = "empty-perms-user";
 
+    /** Name of the user with the {@link SecurityPermission#ADMIN_USER_ACCESS} permission granted. */
+    private static final String ADMIN_USER_ACCESS = "admin-user-access";
+
     /** CSV file for bulk-load testing. */
     private static final String BULKLOAD_CSV_FILE = Objects.requireNonNull(resolveIgnitePath(
         "/modules/clients/src/test/resources/bulkload2.csv")).getAbsolutePath();
@@ -101,12 +110,16 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     /** Counter that is used to obtain unique keys. */
     private static final AtomicInteger KEY_CNTR = new AtomicInteger();
 
+    /** Counter that is used to obtain unique user logins. */
+    private static final AtomicInteger USER_CNTR = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         Ignite srv = startSecurityGrid(0,
             new TestSecurityData(EMPTY_PERMS_USER, new SecurityBasicPermissionSet()),
+            new TestSecurityData(ADMIN_USER_ACCESS, systemPermissions(SecurityPermission.ADMIN_USER_ACCESS)),
             new TestSecurityData(CACHE_CREATE_SYS_PERM_USER, systemPermissions(CACHE_CREATE)),
             new TestSecurityData(CACHE_DESTROY_SYS_PERMS_USER, systemPermissions(CACHE_DESTROY)),
             new TestSecurityData(CACHE_CREATE_CACHE_PERMS_USER, cachePermissions(TEST_CREATE_TABLE_CACHE, CACHE_CREATE)),
@@ -301,6 +314,66 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     }
 
     /**
+     * Tests CREATE USER query permissions check.
+     */
+    @Test
+    public void testCreateUser() throws Exception {
+        String login = generateUserLogin();
+
+        String sql = "CREATE USER " + login + " WITH PASSWORD 'test-password';";
+
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+
+        checkAuthentication(login, "test-password", false);
+
+        execute(sql, ADMIN_USER_ACCESS);
+
+        checkAuthentication(login, "test-password", true);
+    }
+
+    /**
+     * Tests DROP USER query permissions check.
+     */
+    @Test
+    public void testDropUser() throws Exception {
+        String login = generateUserLogin();
+
+        execute("CREATE USER " + login + " WITH PASSWORD 'test-password';", ADMIN_USER_ACCESS);
+
+        String sql = "DROP USER " + login + ';';
+
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+
+        checkAuthentication(login, "test-password", true);
+
+        execute(sql, ADMIN_USER_ACCESS);
+
+        checkAuthentication(login, "test-password", false);
+    }
+
+    /**
+     * Tests ALTER USER query permissions check.
+     */
+    @Test
+    public void testAlterUser() throws Exception {
+        String login = generateUserLogin();
+
+        execute("CREATE USER " + login + " WITH PASSWORD 'test-password';", ADMIN_USER_ACCESS);
+
+        String sql = "ALTER USER " + login + " WITH PASSWORD 'new-password';";
+
+        assertAuthorizationFailed(sql, EMPTY_PERMS_USER);
+
+        checkAuthentication(login, "test-password", true);
+        checkAuthentication(login, "new-password", false);
+
+        execute(sql, ADMIN_USER_ACCESS);
+
+        checkAuthentication(login, "test-password", false);
+        checkAuthentication(login, "new-password", true);
+    }
+
+    /**
      * Inserts random key into the test table.
      *
      * @return Inserted key.
@@ -387,5 +460,26 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      */
     private SecurityPermissionSet cachePermissions(String cache, SecurityPermission... perms) {
         return create().defaultAllowAll(false).appendCachePermissions(cache, perms).build();
+    }
+
+    /** */
+    private String generateUserLogin() {
+        return ("login" + USER_CNTR.incrementAndGet()).toUpperCase();
+    }
+
+    /** */
+    private void checkAuthentication(String login, String pwd, boolean isSucceeded) throws IgniteCheckedException {
+        AuthenticationContext authCtx = new AuthenticationContext();
+
+        authCtx.subjectId(UUID.randomUUID());
+        authCtx.subjectType(REMOTE_CLIENT);
+        authCtx.credentials(new SecurityCredentials(login, pwd));
+
+        SecurityContext secCtx = grid(0).context().security().authenticate(authCtx);
+
+        if (isSucceeded)
+            assertNotNull(secCtx);
+        else
+            assertNull(secCtx);
     }
 }
