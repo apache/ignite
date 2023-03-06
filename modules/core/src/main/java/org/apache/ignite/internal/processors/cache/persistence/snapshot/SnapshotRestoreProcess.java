@@ -1656,6 +1656,9 @@ public class SnapshotRestoreProcess {
             assert grp != null : "cacheId=" + cacheId + " grpId=" + grpId;
 
             grp.localWalEnabled(enabled, false);
+
+            if (!enabled)
+                ctx.cache().context().database().lastCheckpointInapplicableForWalRebalance(grpId);
         }
     }
 
