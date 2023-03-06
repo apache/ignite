@@ -45,25 +45,25 @@ public class CommonArgParser {
     private final IgniteLogger logger;
 
     /** */
-    static final String CMD_HOST = "--host";
+    public static final String CMD_HOST = "--host";
 
     /** */
-    static final String CMD_PORT = "--port";
+    public static final String CMD_PORT = "--port";
 
     /** */
-    static final String CMD_PASSWORD = "--password";
+    public static final String CMD_PASSWORD = "--password";
 
     /** */
-    static final String CMD_USER = "--user";
+    public static final String CMD_USER = "--user";
 
     /** Option is used for auto confirmation. */
     public static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** */
-    static final String CMD_PING_INTERVAL = "--ping-interval";
+    public static final String CMD_PING_INTERVAL = "--ping-interval";
 
     /** */
-    static final String CMD_PING_TIMEOUT = "--ping-timeout";
+    public static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
     /** Verbose mode. */
     public static final String CMD_VERBOSE = "--verbose";
@@ -71,34 +71,34 @@ public class CommonArgParser {
     // SSL configuration section
 
     /** */
-    static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
+    public static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
 
     /** */
-    static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
+    public static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
 
     /** */
-    static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
+    public static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
 
     /** */
-    static final String CMD_KEYSTORE = "--keystore";
+    public static final String CMD_KEYSTORE = "--keystore";
 
     /** */
-    static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
+    public static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
 
     /** */
-    static final String CMD_KEYSTORE_TYPE = "--keystore-type";
+    public static final String CMD_KEYSTORE_TYPE = "--keystore-type";
 
     /** */
-    static final String CMD_TRUSTSTORE = "--truststore";
+    public static final String CMD_TRUSTSTORE = "--truststore";
 
     /** */
-    static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
+    public static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
 
     /** */
-    static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
+    public static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
     /** */
-    static final String CMD_ENABLE_EXPERIMENTAL = "--enable-experimental";
+    public static final String CMD_ENABLE_EXPERIMENTAL = "--enable-experimental";
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
@@ -243,7 +243,6 @@ public class CommonArgParser {
                 command = cmd;
             }
             else {
-
                 switch (str) {
                     case CMD_HOST:
                         host = argIter.nextArg("Expected host name");

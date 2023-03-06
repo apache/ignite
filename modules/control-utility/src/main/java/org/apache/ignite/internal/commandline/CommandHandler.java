@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -71,7 +70,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  */
 public class CommandHandler {
     /** */
-    static final String CMD_HELP = "--help";
+    public static final String CMD_HELP = "--help";
 
     /** */
     public static final String CONFIRM_MSG = "y";
@@ -120,9 +119,6 @@ public class CommandHandler {
 
     /** */
     private Object lastOperationRes;
-
-    /** Date format. */
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /**
      * @param args Arguments to parse and apply.
@@ -179,7 +175,7 @@ public class CommandHandler {
         logger.info("Control utility [ver. " + ACK_VER_STR + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
-        logger.info("Time: " + startTime.format(formatter));
+        logger.info("Time: " + startTime.format(U.CLI_FORMAT));
 
         String commandName = "";
 
@@ -330,7 +326,7 @@ public class CommandHandler {
             if (nonNull(err))
                 logger.info("Error stack trace:" + System.lineSeparator() + X.getFullStackTrace(err));
 
-            logger.info("Control utility has completed execution at: " + endTime.format(formatter));
+            logger.info("Control utility has completed execution at: " + endTime.format(U.CLI_FORMAT));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
             if (logger instanceof IgniteLoggerEx)
@@ -339,7 +335,7 @@ public class CommandHandler {
     }
 
     /** @return {@code True} if arguments means "print help" command. */
-    private boolean isHelp(List<String> rawArgs) {
+    public static boolean isHelp(List<String> rawArgs) {
         if (F.isEmpty(rawArgs))
             return true;
 

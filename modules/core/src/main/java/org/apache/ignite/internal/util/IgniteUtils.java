@@ -547,6 +547,9 @@ public abstract class IgniteUtils {
     private static final DateTimeFormatter THREAD_DUMP_FMT =
         DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss z").withZone(ZoneId.systemDefault());
 
+    /** Date format for CLI utils. */
+    public static final DateTimeFormatter CLI_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
 
@@ -12448,5 +12451,29 @@ public abstract class IgniteUtils {
         catch (ClassNotFoundException e) {
             return true;
         }
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
     }
 }

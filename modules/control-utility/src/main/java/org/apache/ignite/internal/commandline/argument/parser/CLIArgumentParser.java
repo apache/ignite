@@ -154,35 +154,53 @@ public class CLIArgumentParser {
      * @return Usage.
      */
     public String usage() {
-        GridStringBuilder sb = new GridStringBuilder("Usage: ");
+        return usage(true, "Usage:", "");
+    }
+
+    /**
+     * Returns usage description.
+     *
+     * @return Usage.
+     */
+    public String usage(boolean includeDetailedDesc, String utilName, String additional) {
+        GridStringBuilder sb = new GridStringBuilder(utilName + " ");
 
         for (CLIArgument<?> arg : argConfiguration.values())
-            sb.a(argNameForUsage(arg)).a(" ");
+            sb.a(argNameForUsage(arg, includeDetailedDesc)).a(" ");
 
-        for (CLIArgument<?> arg : argConfiguration.values()) {
-            Object dfltVal = null;
+        if (includeDetailedDesc) {
+            for (CLIArgument<?> arg : argConfiguration.values()) {
+                Object dfltVal = null;
 
-            try {
-                dfltVal = arg.defaultValueSupplier().apply(this);
+                try {
+                    dfltVal = arg.defaultValueSupplier().apply(this);
+                }
+                catch (Exception ignored) {
+                    /* No op. */
+                }
+
+                sb.a("\n\n").a(arg.name()).a(": ").a(arg.usage());
+
+                if (arg.optional())
+                    sb.a(" Default value: ").a(dfltVal instanceof String[] ? Arrays.toString((Object[])dfltVal) : dfltVal);
             }
-            catch (Exception ignored) {
-                /* No op. */
-            }
-
-            sb.a("\n\n").a(arg.name()).a(": ").a(arg.usage());
-
-            if (arg.optional())
-                sb.a(" Default value: ").a(dfltVal instanceof String[] ? Arrays.toString((Object[])dfltVal) : dfltVal);
         }
+
+        sb.a(additional);
 
         return sb.toString();
     }
 
     /** */
-    private String argNameForUsage(CLIArgument<?> arg) {
+    private String argNameForUsage(CLIArgument<?> arg, boolean inclueDetailedDesc) {
+        String name = arg.name();
+
+        if (!inclueDetailedDesc && arg.type() != Boolean.class && arg.type() != boolean.class)
+            name += " " + arg.usage();
+
         if (arg.optional())
-            return "[" + arg.name() + "]";
+            return "[" + name + "]";
         else
-            return arg.name();
+            return name;
     }
 }
