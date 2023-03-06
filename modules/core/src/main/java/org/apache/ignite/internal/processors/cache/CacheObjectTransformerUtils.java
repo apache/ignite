@@ -161,8 +161,15 @@ public class CacheObjectTransformerUtils {
 
             restored.get(res);
         }
-        else
+        else {
+            if (restored.remaining() != restored.capacity())
+                throw new IllegalStateException("Unexpected Heap Byte Buffer state. " +
+                    "Wrapped array must contain the data without any offsets. " +
+                    "Position must be 0, limit must be equal to the capacity." +
+                    " [buf=" + restored + "]");
+
             res = restored.array();
+        }
 
         if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
             ctx.kernalContext().event().record(
