@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -27,7 +28,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -36,14 +36,15 @@ import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRe
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
 class IncrementalSnapshotFutureTask
@@ -126,8 +127,8 @@ class IncrementalSnapshotFutureTask
         try {
             File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
-            if (!incSnpDir.mkdirs()) {
-                onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
+            if (!incSnpDir.mkdirs() && !incSnpDir.exists()) {
+                onDone(new IgniteException("Can't create snapshot directory [dir=" + incSnpDir.getAbsolutePath() + ']'));
 
                 return false;
             }
@@ -140,21 +141,19 @@ class IncrementalSnapshotFutureTask
                 }
 
                 try {
-                    copyWal(incSnpDir, fut.result());
+                    String folderName = cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName();
 
-                    File snpMarshallerDir = incrementalSnapshotMarshallerDir(incSnpDir);
+                    copyWal(incrementalSnapshotWalsDir(incSnpDir, folderName), fut.result());
 
                     copyFiles(
                         MarshallerContextImpl.mappingFileStoreWorkDir(cctx.gridConfig().getWorkDirectory()),
-                        snpMarshallerDir,
+                        mappingFileStoreWorkDir(incSnpDir.getAbsolutePath()),
                         BinaryUtils::notTmpFile
                     );
 
-                    PdsFolderSettings<?> pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
-
                     copyFiles(
-                        binaryWorkDir(cctx.gridConfig().getWorkDirectory(), pdsSettings.folderName()),
-                        incrementalSnapshotBinaryDir(incSnpDir),
+                        binaryWorkDir(cctx.gridConfig().getWorkDirectory(), folderName),
+                        binaryWorkDir(incSnpDir.getAbsolutePath(), folderName),
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
@@ -177,12 +176,12 @@ class IncrementalSnapshotFutureTask
     /**
      * Copies WAL segments to the incremental snapshot directory.
      *
-     * @param incSnpDir Incremental snapshot directory.
+     * @param incSnpWalDir Incremental snapshot directory.
      * @param highPtr High WAL pointer to copy.
      * @throws IgniteInterruptedCheckedException If failed.
      * @throws IOException If failed.
      */
-    private void copyWal(File incSnpDir, WALPointer highPtr) throws IgniteInterruptedCheckedException, IOException {
+    private void copyWal(File incSnpWalDir, WALPointer highPtr) throws IgniteInterruptedCheckedException, IOException {
         // First increment must include low segment, because full snapshot knows nothing about WAL.
         // All other begins from the next segment because lowPtr already saved inside previous increment.
         long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
@@ -202,13 +201,16 @@ class IncrementalSnapshotFutureTask
                 "highIdx=" + highIdx + ']');
         }
 
+        if (!incSnpWalDir.mkdirs() && !incSnpWalDir.exists())
+            throw new IgniteException("Failed to create snapshot WAL directory [idx=" + incSnpWalDir + ']');
+
         for (; lowIdx <= highIdx; lowIdx++) {
             File seg = cctx.wal().compactedSegment(lowIdx);
 
             if (!seg.exists())
                 throw new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']');
 
-            Path segLink = incSnpDir.toPath().resolve(seg.getName());
+            Path segLink = incSnpWalDir.toPath().resolve(seg.getName());
 
             if (log.isDebugEnabled())
                 log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
@@ -227,11 +229,17 @@ class IncrementalSnapshotFutureTask
     private void copyFiles(File fromDir, File toDir, FileFilter filter) throws IOException {
         assert fromDir.exists() && fromDir.isDirectory();
 
-        if (!toDir.isDirectory() && !toDir.exists() && !toDir.mkdirs())
+        if (!toDir.isDirectory() && !toDir.mkdirs() && !toDir.exists())
             throw new IgniteException("Target directory can't be created [target=" + toDir.getAbsolutePath() + ']');
 
-        for (File from : fromDir.listFiles(filter))
-            Files.copy(from.toPath(), new File(toDir, from.getName()).toPath());
+        for (File from : fromDir.listFiles(filter)) {
+            try {
+                Files.copy(from.toPath(), new File(toDir, from.getName()).toPath());
+            }
+            catch (FileAlreadyExistsException e) {
+                // Skip, file might exist in case the marshaller directory is shared between multiple Ignite nodes.
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -244,15 +252,5 @@ class IncrementalSnapshotFutureTask
     /** {@inheritDoc} */
     @Override public void accept(String name, File file) {
         onDone(new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name)));
-    }
-
-    /** @return File of binary directory for specified incremental snapshot directory. */
-    public static File incrementalSnapshotBinaryDir(File incSnpDir) {
-        return new File(incSnpDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
-    }
-
-    /** @return File of marshaller directory for specified incremental snapshot directory. */
-    public static File incrementalSnapshotMarshallerDir(File incSnpDir) {
-        return new File(incSnpDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
     }
 }

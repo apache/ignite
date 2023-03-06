@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.junit.Assume.assumeFalse;
 
 /**
@@ -134,7 +134,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         U.delete(new File(
             snp(srv).snapshotLocalDir(SNP),
-            IgniteSnapshotManager.snapshotMetaFileName((String)srv.localNode().consistentId())));
+            snapshotMetaFileName((String)srv.localNode().consistentId())));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
@@ -235,8 +235,8 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(1, 3);
 
-        File[] segments = snp(srv).incrementalSnapshotLocalDir(SNP, null, 1)
-                .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
+        File[] segments = incrementalSnapshotWalsDir()
+            .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
 
         Arrays.sort(segments);
 
@@ -255,11 +255,9 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = snp(srv)
-                .incrementalSnapshotLocalDir(SNP, null, 1)
-                .toPath()
-                .resolve(incrementalSnapshotMetaFileName(1))
-                .toFile();
+        File incMetaFile = new File(
+            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
+            snapshotMetaFileName(srv.localNode().consistentId().toString()));
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
@@ -288,11 +286,9 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
-        File incMetaFile = snp(srv)
-                .incrementalSnapshotLocalDir(SNP, null, 1)
-                .toPath()
-                .resolve(incrementalSnapshotMetaFileName(1))
-                .toFile();
+        File incMetaFile = new File(
+            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
+            snapshotMetaFileName(srv.localNode().consistentId().toString()));
 
         IncrementalSnapshotMetadata meta = snp(srv).readFromFile(incMetaFile);
 
@@ -342,8 +338,8 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     private void deleteWalSegment(int idx) {
-        File[] segments = snp(srv).incrementalSnapshotLocalDir(SNP, null, 1)
-                .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
+        File[] segments = incrementalSnapshotWalsDir()
+            .listFiles(f -> FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(f.getName()).matches());
 
         Arrays.sort(segments);
 
@@ -364,5 +360,12 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         finally {
             srv.context().cache().context().database().checkpointReadUnlock();
         }
+    }
+
+    /** */
+    private File incrementalSnapshotWalsDir() {
+        return IgniteSnapshotManager.incrementalSnapshotWalsDir(
+            snp(srv).incrementalSnapshotLocalDir(SNP, null, 1),
+            srv.localNode().consistentId().toString());
     }
 }

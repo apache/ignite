@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -188,10 +189,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        File toRmv = snp(ignite(GRID_CNT - 1)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 2);
+        File toRmv = new File(
+            snp(ignite(GRID_CNT - 1)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 2),
+            snapshotMetaFileName(ignite(GRID_CNT - 1).localNode().consistentId().toString()));
 
         assertTrue(toRmv.exists());
-        assertTrue(toRmv.isDirectory());
 
         U.delete(toRmv);
 
@@ -331,11 +333,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             null,
             () -> snp(srv).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
             IgniteException.class,
-            "Can't create snapshot directory"
+            "Failed to create snapshot WAL directory"
         );
 
         for (int i = 0; i < GRID_CNT; i++)
-            assertFalse(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
+            assertFalse(snp(grid(i)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
     }
 
     /** */

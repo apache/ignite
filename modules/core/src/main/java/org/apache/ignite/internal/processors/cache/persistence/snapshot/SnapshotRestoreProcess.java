@@ -127,8 +127,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotFutureTask.incrementalSnapshotBinaryDir;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotFutureTask.incrementalSnapshotMarshallerDir;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
@@ -972,22 +971,15 @@ public class SnapshotRestoreProcess {
                 CompletableFuture.runAsync(
                     () -> {
                         try {
-                            File binDir;
-                            File marshallerDir;
+                            SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
 
-                            if (opCtx0.incIdx > 0) {
-                                File incSnpDir = ctx.cache().context().snapshotMgr()
-                                    .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx);
+                            File dir = opCtx0.incIdx > 0 ?
+                                ctx.cache().context().snapshotMgr()
+                                    .incrementalSnapshotLocalDir(opCtx0.snpName, opCtx0.snpPath, opCtx0.incIdx)
+                                : snpDir;
 
-                                binDir = incrementalSnapshotBinaryDir(incSnpDir);
-                                marshallerDir = incrementalSnapshotMarshallerDir(incSnpDir);
-                            }
-                            else {
-                                SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
-
-                                binDir = binaryWorkDir(snpDir.getAbsolutePath(), meta.folderName());
-                                marshallerDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
-                            }
+                            File binDir = binaryWorkDir(dir.getAbsolutePath(), meta.folderName());
+                            File marshallerDir = mappingFileStoreWorkDir(dir.getAbsolutePath());
 
                             ctx.cacheObjects().updateMetadata(binDir, opCtx0.stopChecker);
 
@@ -1444,13 +1436,14 @@ public class SnapshotRestoreProcess {
     ) throws IgniteCheckedException, IOException {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        File[] segments = walSegments(snpName, snpPath, incIdx);
+        IncrementalSnapshotMetadata meta = ctx.cache().context().snapshotMgr()
+            .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
+
+        File[] segments = walSegments(snpName, snpPath, incIdx, meta.folderName());
 
         opCtx0.totalWalSegments = segments.length;
 
-        UUID incSnpId = ctx.cache().context().snapshotMgr()
-            .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx)
-            .requestId();
+        UUID incSnpId = meta.requestId();
 
         File lastSeg = Arrays.stream(segments)
             .map(File::toPath)
@@ -1608,7 +1601,7 @@ public class SnapshotRestoreProcess {
     }
 
     /** @return WAL segments to restore for specified incremental index since the base snapshot. */
-    private File[] walSegments(String snpName, String snpPath, int incIdx) throws IgniteCheckedException {
+    private File[] walSegments(String snpName, String snpPath, int incIdx, String folderName) throws IgniteCheckedException {
         File[] segments = null;
 
         for (int i = 1; i <= incIdx; i++) {
@@ -1617,7 +1610,12 @@ public class SnapshotRestoreProcess {
             if (!incSnpDir.exists())
                 throw new IgniteCheckedException("Incremental snapshot doesn't exists [dir=" + incSnpDir + ']');
 
-            File[] incSegs = incSnpDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+            File incSnpWalDir = incrementalSnapshotWalsDir(incSnpDir, folderName);
+
+            if (!incSnpWalDir.exists())
+                throw new IgniteCheckedException("Incremental snapshot WAL directory doesn't exists [dir=" + incSnpWalDir + ']');
+
+            File[] incSegs = incSnpWalDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
 
             if (incSegs == null)
                 throw new IgniteCheckedException("Failed to list WAL segments from snapshot directory [dir=" + incSnpDir + ']');
