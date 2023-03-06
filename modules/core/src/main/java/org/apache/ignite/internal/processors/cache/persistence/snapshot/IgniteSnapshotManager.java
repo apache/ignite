@@ -2258,7 +2258,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> restoreIncrementalSnapshot(
+    @Override public IgniteFuture<Void> restoreSnapshot(
         String name,
         @Nullable Collection<String> grpNames,
         int incIdx

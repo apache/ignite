@@ -115,7 +115,7 @@ public class IncrementalSnapshotRebalanceTest extends AbstractIncrementalSnapsho
 
         restartWithCleanPersistence(nodes(), F.asList(CACHE, CACHE2));
 
-        snp(grid(0)).restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        snp(grid(0)).restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         GridTestUtils.assertThrows(log, () -> snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout()),
             IgniteException.class, "WAL was disabled");
@@ -131,7 +131,7 @@ public class IncrementalSnapshotRebalanceTest extends AbstractIncrementalSnapsho
 
         restartWithCleanPersistence(nodes(), F.asList(CACHE, CACHE2));
 
-        snp(grid(0)).restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        snp(grid(0)).restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         GridTestUtils.assertThrows(log, () -> snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout()),
             IgniteException.class, "WAL was disabled");

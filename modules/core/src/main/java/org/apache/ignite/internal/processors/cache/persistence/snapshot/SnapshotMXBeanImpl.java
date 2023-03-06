@@ -87,7 +87,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void restoreIncrementalSnapshot(String name, String path, String grpNames, int incIdx) {
+    @Override public void restoreSnapshot(String name, String path, String grpNames, int incIdx) {
         Set<String> grpNamesSet = F.isEmpty(grpNames) ? null :
             Arrays.stream(grpNames.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 

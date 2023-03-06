@@ -3676,7 +3676,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        fut = srv.snapshot().restoreIncrementalSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME), 1);
+        fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME), 1);
 
         spi.waitForBlocked();
 

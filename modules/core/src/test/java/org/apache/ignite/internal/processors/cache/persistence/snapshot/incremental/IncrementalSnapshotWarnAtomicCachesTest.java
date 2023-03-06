@@ -227,7 +227,7 @@ public class IncrementalSnapshotWarnAtomicCachesTest extends GridCommonAbstractT
 
         lsnLogger.registerListener(lsnr);
 
-        g.snapshot().restoreIncrementalSnapshot(SNP, restoreCacheGrps, 1).get(getTestTimeout());
+        g.snapshot().restoreSnapshot(SNP, restoreCacheGrps, 1).get(getTestTimeout());
 
         assertTrue(warnAtomicCaches + " " + restoreCacheGrps, lsnr.check());
     }

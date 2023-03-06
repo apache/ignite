@@ -92,7 +92,8 @@ public interface SnapshotMXBean {
     );
 
     /**
-     * Restore cluster-wide incremental snapshot.
+     * Restore cluster-wide snapshot and its increments. Snapshot is restored first and after that all increments
+     * are restored sequentially from the {@code 1} to the specified {@code incIdx}.
      *
      * @param name Snapshot name.
      * @param path Snapshot directory path.
@@ -100,8 +101,8 @@ public interface SnapshotMXBean {
      * @param incIdx Incremental snapshot index.
      * @see IgniteSnapshot#restoreSnapshot(String, Collection)
      */
-    @MXBeanDescription("Restore cluster-wide incremental snapshot.")
-    public void restoreIncrementalSnapshot(
+    @MXBeanDescription("Restore cluster-wide snapshot and its increments.")
+    public void restoreSnapshot(
         @MXBeanParameter(name = "snpName", description = "Snapshot name.")
             String name,
         @MXBeanParameter(name = "snpPath", description = "Optional snapshot directory path.")

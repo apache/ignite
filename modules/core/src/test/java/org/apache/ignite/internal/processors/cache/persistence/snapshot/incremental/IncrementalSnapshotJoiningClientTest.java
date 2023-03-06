@@ -209,7 +209,7 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
 
         awaitPartitionMapExchange();
 
-        g.snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        g.snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         assertPartitionsSame(idleVerify(grid(0)));
 

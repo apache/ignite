@@ -154,7 +154,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         for (int i = 1; i <= 2; i++) {
             restartWithCleanPersistence();
 
-            grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, i).get(getTestTimeout());
+            grid(0).snapshot().restoreSnapshot(SNP, null, i).get(getTestTimeout());
 
             checkData(Collections.emptyMap(), CACHE);
         }
@@ -187,13 +187,13 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, -1),
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, -1),
             IllegalArgumentException.class,
             "Incremental snapshot index must be greater than 0.");
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 0),
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 0),
             IllegalArgumentException.class,
             "Incremental snapshot index must be greater than 0.");
     }
@@ -207,7 +207,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -231,7 +231,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -253,7 +253,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence(backups() + 2, F.asList(CACHE, CACHE2));
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -271,7 +271,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 2).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -300,7 +300,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, Collections.singleton(CACHE), 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, Collections.singleton(CACHE), 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
 
@@ -308,7 +308,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, Collections.singleton(CACHE2), 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, Collections.singleton(CACHE2), 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE2);
 
@@ -324,7 +324,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -337,7 +337,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         restartWithCleanPersistence();
 
         GridTestUtils.assertThrowsAnyCause(log, () ->
-            grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 2).get(getTestTimeout()),
+            grid(0).snapshot().restoreSnapshot(SNP, null, 2).get(getTestTimeout()),
             IgniteSnapshotVerifyException.class,
             "No incremental snapshot found");
     }
@@ -361,7 +361,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         assertTrue(U.delete(rm));
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
             IgniteSnapshotVerifyException.class,
             "No WAL segments found for incremental snapshot");
 
@@ -380,7 +380,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         corruptIncrementalSnapshot(1, 1, 0);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
             IgniteException.class, "System WAL record for incremental snapshot wasn't found");
 
         awaitPartitionMapExchange();
@@ -414,7 +414,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         corruptIncrementalSnapshot(crptNodeIdx, 1, 1);
 
         Throwable ex = GridTestUtils.assertThrows(log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
             Throwable.class, null);
 
         boolean expExc = false;
@@ -471,7 +471,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -515,7 +515,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -564,7 +564,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -594,7 +594,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
     }
@@ -613,12 +613,12 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         restartWithCleanPersistence();
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(),
+            () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
             IgniteException.class, "Force to fail snapshot restore.");
 
         awaitPartitionMapExchange();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get();
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get();
 
         checkData(expSnpData, CACHE);
 
@@ -687,7 +687,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData, CACHE);
 
@@ -789,7 +789,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         restartWithCleanPersistence();
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         binaryMetaCheck.accept(true);
 

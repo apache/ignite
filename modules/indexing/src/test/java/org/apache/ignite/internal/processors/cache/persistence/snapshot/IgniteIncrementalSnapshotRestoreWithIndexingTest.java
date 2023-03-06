@@ -78,7 +78,7 @@ public class IgniteIncrementalSnapshotRestoreWithIndexingTest extends AbstractIn
 
         restartWithCleanPersistence(nodes(), F.asList(CACHE));
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         checkData(expSnpData);
     }

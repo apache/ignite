@@ -154,7 +154,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertEquals(0, (long)getMetric("endTime", mReg1));
 
         getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
-            .restoreIncrementalSnapshot(SNAPSHOT_NAME, "", "", 1);
+            .restoreSnapshot(SNAPSHOT_NAME, "", "", 1);
 
         assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, getTestTimeout()));
         assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, getTestTimeout()));
@@ -279,7 +279,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
             spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-            fut = srv.snapshot().restoreIncrementalSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME), 1);
+            fut = srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME), 1);
 
             spi.waitForBlocked();
 

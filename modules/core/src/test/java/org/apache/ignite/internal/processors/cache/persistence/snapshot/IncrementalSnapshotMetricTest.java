@@ -155,7 +155,7 @@ public class IncrementalSnapshotMetricTest extends AbstractIncrementalSnapshotTe
         assertEquals(-1, procWalSeg.value());
         assertEquals(-1, procEntries.value());
 
-        grid(0).snapshot().restoreIncrementalSnapshot(SNP, null, 1).get(getTestTimeout());
+        grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(getTestTimeout());
 
         assertEquals(1, incIdx.value());
         assertEquals(2, totalWalSeg.value());
