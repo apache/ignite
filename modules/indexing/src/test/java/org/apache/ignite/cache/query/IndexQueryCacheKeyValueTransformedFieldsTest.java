@@ -23,6 +23,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerManagerAdapter;
 import org.apache.ignite.internal.processors.cache.transform.TestCacheObjectTransformerPluginProvider;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
+
 /** Test checks that indexing works (including inlining) with enabled cache objects transformer. */
 public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCacheKeyValueFieldsTest {
     /** {@inheritDoc} */
@@ -37,10 +39,11 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
     protected static final class RandomShiftCacheObjectTransformer extends TestCacheObjectTransformerManagerAdapter {
         /** {@inheritDoc} */
         @Override public ByteBuffer transform(ByteBuffer original) {
-            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 4]);
+            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 5]);
 
             int shift = ThreadLocalRandom.current().nextInt();
 
+            transformed.put(TRANSFORMED);
             transformed.putInt(shift);
 
             while (original.hasRemaining())
@@ -53,7 +56,11 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 5]);
+
+            byte check = transformed.get();
+
+            assertEquals(check, TRANSFORMED);
 
             int shift = transformed.getInt();
 

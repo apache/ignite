@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
  *
@@ -307,8 +308,9 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
 
             tCntr.computeIfAbsent(shift, key -> new AtomicInteger()).incrementAndGet();
 
-            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 4]);
+            ByteBuffer transformed = ByteBuffer.wrap(new byte[original.remaining() + 5]);
 
+            transformed.put(TRANSFORMED);
             transformed.putInt(shift);
 
             while (original.hasRemaining())
@@ -321,7 +323,11 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 5]);
+
+            byte check = transformed.get();
+
+            assertEquals(check, TRANSFORMED);
 
             int origShift = transformed.getInt();
 

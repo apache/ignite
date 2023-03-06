@@ -27,13 +27,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 
 /** */
 public class CacheObjectTransformerUtils {
-    /** Additional space required to store the transformed data. */
-    public static final int OVERHEAD = 2;
-
-    /** Version. */
-    private static final byte VER = 0;
-
-    /***/
+     /** */
     private static CacheObjectTransformerManager transformer(CacheObjectValueContext ctx) {
         return ctx.kernalContext().cache().context().transformer();
     }
@@ -68,18 +62,9 @@ public class CacheObjectTransformerUtils {
         if (transformed != null) {
             assert transformed.remaining() > 0 : transformed.remaining();
 
-            byte[] res = new byte[OVERHEAD + transformed.remaining()];
+            byte[] res = toArray(transformed);
 
-            if (transformed.isDirect())
-                transformed.get(res, OVERHEAD, transformed.remaining());
-            else {
-                byte[] arr = transformed.array();
-
-                U.arrayCopy(arr, transformed.position(), res, OVERHEAD, transformed.remaining());
-            }
-
-            res[0] = TRANSFORMED;
-            res[1] = VER;
+            assert res[0] == TRANSFORMED : "Transformed array must begin with transformed flag.";
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
@@ -134,42 +119,12 @@ public class CacheObjectTransformerUtils {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        byte transformed = bytes[0];
-        byte ver = bytes[1];
-
-        assert transformed == TRANSFORMED;
-
-        int offset;
-
-        if (ver == 0) {
-            offset = 1 /*transformed*/ + 1 /*ver*/;
-
-            assert offset == OVERHEAD : offset; // Correct while VER == 0;
-        }
-        else
-            throw new IllegalStateException("Unknown version " + ver);
-
         CacheObjectTransformerManager transformer = transformer(ctx);
 
-        ByteBuffer src = ByteBuffer.wrap(bytes, offset, bytes.length - offset);
+        ByteBuffer src = ByteBuffer.wrap(bytes);
         ByteBuffer restored = transformer.restore(src);
 
-        byte[] res;
-
-        if (restored.isDirect()) {
-            res = new byte[restored.remaining()];
-
-            restored.get(res);
-        }
-        else {
-            if (restored.remaining() != restored.capacity())
-                throw new IllegalStateException("Unexpected Heap Byte Buffer state. " +
-                    "Wrapped array must contain the data without any offsets. " +
-                    "Position must be 0, limit must be equal to the capacity." +
-                    " [buf=" + restored + "]");
-
-            res = restored.array();
-        }
+        byte[] res = toArray(restored);
 
         if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
             ctx.kernalContext().event().record(
@@ -182,5 +137,27 @@ public class CacheObjectTransformerUtils {
         }
 
         return res;
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    private static byte[] toArray(ByteBuffer buf) {
+        if (buf.isDirect()) {
+            byte[] res = new byte[buf.remaining()];
+
+            buf.get(res);
+
+            return res;
+        }
+        else {
+            if (buf.remaining() != buf.capacity())
+                throw new IllegalStateException("Unexpected Heap Byte Buffer state. " +
+                    "Wrapped array must contain the data without any offsets. " +
+                    "Position must be 0, limit must be equal to the capacity." +
+                    " [buf=" + buf + "]");
+
+            return buf.array();
+        }
     }
 }

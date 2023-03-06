@@ -27,8 +27,9 @@ import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
-import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.xerial.snappy.Snappy;
+
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
  *
@@ -112,11 +113,10 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
             if (type == CompressionType.DISABLED)
                 return null;
 
-            int locOverhead = 8; // Compression type + length.
-            int totalOverhead = CacheObjectTransformerUtils.OVERHEAD + locOverhead;
+            int overhead = 9; // Transformed flag + compression type + length.
 
             int origSize = original.remaining();
-            int lim = origSize - totalOverhead;
+            int lim = origSize - overhead;
 
             if (lim <= 0)
                 return null;
@@ -145,12 +145,13 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
 
             original = toDirect(original);
 
-            ByteBuffer compressed = dst.get(locOverhead + maxCompLen);
+            ByteBuffer compressed = dst.get(overhead + maxCompLen);
 
+            compressed.put(TRANSFORMED);
             compressed.putInt(type.ordinal());
             compressed.putInt(origSize);
 
-            assertEquals(locOverhead, compressed.position());
+            assertEquals(overhead, compressed.position());
 
             int size;
 
@@ -165,7 +166,7 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
                 case LZ4:
                     lz4Compressor.compress(original, compressed);
 
-                    size = compressed.position() - locOverhead;
+                    size = compressed.position() - overhead;
 
                     compressed.flip();
 
@@ -195,6 +196,10 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
+            byte check = transformed.get();
+
+            assertEquals(check, TRANSFORMED);
+
             CompressionType type = CompressionType.values()[transformed.getInt()];
             int length = transformed.getInt();
 
