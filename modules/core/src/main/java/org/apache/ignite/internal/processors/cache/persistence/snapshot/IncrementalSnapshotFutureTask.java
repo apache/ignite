@@ -47,9 +47,7 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 
 /** */
-class IncrementalSnapshotFutureTask
-    extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult>
-    implements BiConsumer<String, File> {
+class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Void> implements BiConsumer<String, File> {
     /** Index of incremental snapshot. */
     private final int incIdx;
 
@@ -157,7 +155,7 @@ class IncrementalSnapshotFutureTask
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
-                    onDone(new IncrementalSnapshotFutureTaskResult());
+                    onDone();
                 }
                 catch (Throwable e) {
                     onDone(e);
@@ -187,8 +185,7 @@ class IncrementalSnapshotFutureTask
         long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
         long highIdx = highPtr.index();
 
-        assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()
-            : "WAL Compaction must be enabled";
+        assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled() : "WAL Compaction must be enabled";
         assert lowIdx <= highIdx;
 
         if (log.isInfoEnabled())
@@ -196,10 +193,8 @@ class IncrementalSnapshotFutureTask
 
         cctx.wal().awaitCompacted(highPtr.index());
 
-        if (log.isInfoEnabled()) {
-            log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " +
-                "highIdx=" + highIdx + ']');
-        }
+        if (log.isInfoEnabled())
+            log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " + "highIdx=" + highIdx + ']');
 
         if (!incSnpWalDir.mkdirs() && !incSnpWalDir.exists())
             throw new IgniteException("Failed to create snapshot WAL directory [idx=" + incSnpWalDir + ']');

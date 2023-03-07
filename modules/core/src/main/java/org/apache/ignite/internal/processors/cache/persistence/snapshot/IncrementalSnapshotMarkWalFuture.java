@@ -111,7 +111,7 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
                     return;
 
                 if (Boolean.FALSE.equals(finish.result())) {
-                    onDone(new IgniteCheckedException("Incremental snapshot is inconsistent."));
+                    onDone(new IgniteCheckedException("Incremental snapshot is inconsistent [id=" + id + ']'));
 
                     return;
                 }
@@ -125,7 +125,7 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
                     ptr = cctx.wal().log(new IncrementalSnapshotFinishRecord(id, included, excluded), RolloverType.CURRENT_SEGMENT);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write IncrementalSnapshotFinishRecord to WAL for [id= " + id + ']', e);
+                    U.error(log, "Failed to write IncrementalSnapshotFinishRecord to WAL for [id=" + id + ']', e);
 
                     err = e;
                 }
@@ -139,7 +139,7 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
         catch (IgniteCheckedException e) {
             onDone(e);
 
-            U.error(log, "Failed to init incremental snapshot: " + id, e);
+            U.error(log, "Failed to init incremental snapshot [id=" + id + ']', e);
         }
         finally {
             cctx.tm().onCommitCallback(null);
@@ -166,13 +166,15 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
                     return true;
 
                 if (tx.state() != COMMITTED) {
-                    U.warn(log, "Incremental snapshot is inconsistent due to transaction is in unexpected state: " + tx);
+                    U.warn(log, "Incremental snapshot is inconsistent due to transaction is in unexpected state " +
+                        "[id=" + id + ", tx=" + tx + ']');
 
                     return false;
                 }
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
-                    U.warn(log, "Incremental snapshot is inconsistent due to transaction committed after recovery process: " + tx);
+                    U.warn(log, "Incremental snapshot is inconsistent due to transaction committed after recovery process " +
+                        "[id=" + id + ", tx=" + tx + ']');
 
                     return false;
                 }
@@ -180,12 +182,13 @@ class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
                 AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
 
                 if (txTopVer == null) {
-                    U.warn(log, "Incremental snapshot is inconsistent due to transaction doesn't map to topology: " + tx);
+                    U.warn(log, "Incremental snapshot is inconsistent due to transaction doesn't map to topology " +
+                        "[id=" + id + ", tx=" + tx + ']');
 
                     return false;
                 }
 
-                if (id.equals(tx.incSnpId()) || txTopVer.topologyVersion() > topVer)
+                if (id.equals(tx.incrementalSnapshotId()) || txTopVer.topologyVersion() > topVer)
                     excluded.add(tx.nearXidVersion());
                 else
                     included.add(tx.nearXidVersion());

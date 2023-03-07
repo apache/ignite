@@ -62,7 +62,7 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
         SnapshotStatus status = (SnapshotStatus)res;
 
         boolean isCreating = status.operation() == VisorSnapshotStatusTask.SnapshotOperation.CREATE;
-        boolean isIncremental = status.incrementalIndex() > 0;
+        boolean isIncremental = status.incrementIndex() > 0;
 
         GridStringBuilder s = new GridStringBuilder();
 
@@ -75,7 +75,7 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
         s.a("Incremental: ").a(isIncremental).nl();
 
         if (isIncremental)
-            s.a("Incremental index: ").a(status.incrementalIndex()).nl();
+            s.a("Increment index: ").a(status.incrementIndex()).nl();
 
         s.a("Operation request ID: ").a(status.requestId()).nl();
         s.a("Started at: ").a(DateFormat.getDateTimeInstance().format(new Date(status.startTime()))).nl();

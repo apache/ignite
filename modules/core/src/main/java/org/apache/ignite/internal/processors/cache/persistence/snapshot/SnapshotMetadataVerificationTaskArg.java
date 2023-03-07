@@ -72,7 +72,7 @@ public class SnapshotMetadataVerificationTaskArg extends VisorDataTransferObject
     /**
      * @return Incremental snapshot index.
      */
-    public int incrementalIndex() {
+    public int incrementIndex() {
         return incIdx;
     }
 

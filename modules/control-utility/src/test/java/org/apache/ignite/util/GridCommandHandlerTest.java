@@ -3808,7 +3808,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, out, "Snapshot name: " + expName);
 
         if (isIncremental)
-            assertContains(log, out, "Incremental index: 1");
+            assertContains(log, out, "Increment index: 1");
 
         srvs.forEach(srv -> assertContains(log, out, srv.cluster().localNode().id().toString()));
     }

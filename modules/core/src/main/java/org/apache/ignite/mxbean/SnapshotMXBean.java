@@ -41,7 +41,7 @@ public interface SnapshotMXBean {
     );
 
     /**
-     * Create the cluster-wide incremental snapshot for the given base snapshot.
+     * Create the cluster-wide incremental snapshot for the given full snapshot.
      *
      * @param fullSnapshot Full snapshot name to attach incremental snapshot to.
      * @param fullSnapshotPath Full snapshot directory path.

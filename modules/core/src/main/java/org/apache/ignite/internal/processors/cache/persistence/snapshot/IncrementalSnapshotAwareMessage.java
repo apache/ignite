@@ -71,7 +71,7 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     }
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    public UUID txSnpId() {
+    public UUID txInrementalSnapshotId() {
         return txSnpId;
     }
 

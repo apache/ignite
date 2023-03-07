@@ -28,9 +28,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * This record is written to WAL after incremental snapshot finished on a baseline node.
  * <p>
  * During recovery node must apply:
- * 1. Transactions committed before {@link IncrementalSnapshotStartRecord} except those contained in {@link #excluded()}.
- * 2. Transactions committed between {@link IncrementalSnapshotStartRecord} and {@link IncrementalSnapshotFinishRecord}
- *    and contained in {@link #included()}.
+ * <ul>
+ *     <li>1. Transactions committed before {@link IncrementalSnapshotStartRecord} except those contained in {@link #excluded()}.</li>
+ *     <li>2. Transactions committed between {@link IncrementalSnapshotStartRecord} and {@link IncrementalSnapshotFinishRecord}
+ *    and contained in {@link #included()}.</li>
+ * </ul>
  */
 public class IncrementalSnapshotFinishRecord extends WALRecord {
     /** Incremental snapshot ID. */

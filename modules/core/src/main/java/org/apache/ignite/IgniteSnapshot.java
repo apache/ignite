@@ -45,12 +45,12 @@ public interface IgniteSnapshot {
     public IgniteFuture<Void> createSnapshot(String name);
 
     /**
-     * Create an incremental snapshot for a given full snapshot.
+     * Create an incremental snapshot for an existing snapshot.
      *
-     * @param fullSnapshot Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
+     * @param snapshotName Snapshot name.
      * @return Future which will be completed when the process ends.
      */
-    public IgniteFuture<Void> createIncrementalSnapshot(String fullSnapshot);
+    public IgniteFuture<Void> createIncrementalSnapshot(String snapshotName);
 
     /**
      * Cancel running snapshot operation. All intermediate results of cancelled snapshot operation will be deleted.

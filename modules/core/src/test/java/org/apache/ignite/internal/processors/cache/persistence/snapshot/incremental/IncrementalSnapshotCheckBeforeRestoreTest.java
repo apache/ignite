@@ -266,10 +266,10 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         snp(srv).storeSnapshotMeta(new IncrementalSnapshotMetadata(
             meta.requestId(),
             meta.snapshotName() + "1",
-            meta.incrementalIndex(),
+            meta.incrementIndex(),
             meta.consistentId(),
             null,
-            meta.incSnpPointer()), incMetaFile);
+            meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
@@ -282,7 +282,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     @Test
-    public void testIncrementalIndexMismatch() throws Exception {
+    public void testIncrementIndexMismatch() throws Exception {
         createFullSnapshot();
         createIncrementalSnapshots(2);
 
@@ -297,10 +297,10 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         snp(srv).storeSnapshotMeta(new IncrementalSnapshotMetadata(
             meta.requestId(),
             meta.snapshotName(),
-            meta.incrementalIndex() + 1,
+            meta.incrementIndex() + 1,
             meta.consistentId(),
             null,
-            meta.incSnpPointer()), incMetaFile);
+            meta.incrementalSnapshotPointer()), incMetaFile);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(

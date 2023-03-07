@@ -80,8 +80,8 @@ public class SnapshotView {
         type = SnapshotType.INCREMENTAL;
         name = incMeta.snapshotName();
         consistentId = incMeta.consistentId();
-        snpRecSeg = incMeta.incSnpPointer().index();
-        incIdx = incMeta.incrementalIndex();
+        snpRecSeg = incMeta.incrementalSnapshotPointer().index();
+        incIdx = incMeta.incrementIndex();
 
         baselineNodes = null;
         cacheGrps = null;
@@ -131,7 +131,7 @@ public class SnapshotView {
      * @return Incremental snapshot index, {@code null} for full snapshot.
      */
     @Order(5)
-    public Integer incrementalIndex() {
+    public Integer incrementIndex() {
         return incIdx;
     }
 

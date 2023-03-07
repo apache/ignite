@@ -271,12 +271,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private @Nullable UUID incSnpId;
 
     /** {@inheritDoc} */
-    @Override public UUID incSnpId() {
+    @Override public UUID incrementalSnapshotId() {
         return incSnpId;
     }
 
     /** {@inheritDoc} */
-    @Override public void incSnpId(UUID id) {
+    @Override public void incrementalSnapshotId(UUID id) {
         incSnpId = id;
     }
 
@@ -2098,12 +2098,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public UUID incSnpId() {
+        @Override public UUID incrementalSnapshotId() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void incSnpId(UUID id) {
+        @Override public void incrementalSnapshotId(UUID id) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

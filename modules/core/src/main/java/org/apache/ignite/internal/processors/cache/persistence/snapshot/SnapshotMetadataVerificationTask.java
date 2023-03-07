@@ -93,7 +93,7 @@ public class SnapshotMetadataVerificationTask
 
             List<SnapshotMetadata> snpMeta = snpMgr.readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
 
-            if (arg.incrementalIndex() > 0) {
+            if (arg.incrementIndex() > 0) {
                 List<SnapshotMetadata> metas = snpMeta.stream()
                     .filter(m -> m.consistentId().equals(ignite.localNode().consistentId()))
                     .collect(Collectors.toList());
@@ -117,12 +117,12 @@ public class SnapshotMetadataVerificationTask
                 // Incremental snapshot must contain ClusterSnapshotRecord.
                 long startSeg = fullMeta.snapshotRecordPointer().index();
 
-                for (int inc = 1; inc <= arg.incrementalIndex(); inc++) {
+                for (int inc = 1; inc <= arg.incrementIndex(); inc++) {
                     File incSnpDir = snpMgr.incrementalSnapshotLocalDir(arg.snapshotName(), arg.snapshotPath(), inc);
 
                     if (!incSnpDir.exists()) {
                         throw new IgniteException("No incremental snapshot found " +
-                            "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incIdx=" + inc + ']');
+                            "[snpName=" + arg.snapshotName() + ", snpPath=" + arg.snapshotPath() + ", incrementIndex=" + inc + ']');
                     }
 
                     String metaFileName = IgniteSnapshotManager.snapshotMetaFileName(ignite.localNode().consistentId().toString());
@@ -136,7 +136,7 @@ public class SnapshotMetadataVerificationTask
                             "[incMeta=" + incMeta + ", fullMeta=" + fullMeta + ']');
                     }
 
-                    if (incMeta.incrementalIndex() != inc) {
+                    if (incMeta.incrementIndex() != inc) {
                         throw new IgniteException(
                             "Incremental snapshot meta has wrong index [expectedIdx=" + inc + ", meta=" + incMeta + ']');
                     }
@@ -144,7 +144,7 @@ public class SnapshotMetadataVerificationTask
                     checkWalSegments(incMeta, startSeg, incrementalSnapshotWalsDir(incSnpDir, incMeta.folderName()));
 
                     // Incremental snapshots must not cross each other.
-                    startSeg = incMeta.incSnpPointer().index() + 1;
+                    startSeg = incMeta.incrementalSnapshotPointer().index() + 1;
                 }
             }
             catch (IgniteCheckedException | IOException e) {
@@ -171,7 +171,7 @@ public class SnapshotMetadataVerificationTask
                     + ", actualFirstSegment=" + actFirstSeg + ", meta=" + meta + ']');
             }
 
-            long expLastSeg = meta.incSnpPointer().index();
+            long expLastSeg = meta.incrementalSnapshotPointer().index();
             long actLastSeg = walSeg.get(walSeg.size() - 1).idx();
 
             if (actLastSeg != expLastSeg) {

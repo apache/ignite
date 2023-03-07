@@ -2120,12 +2120,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(4, views.size());
 
             for (SnapshotView v: views) {
-                assertTrue(exp.remove(new T2<>(v.name(), v.incrementalIndex())));
+                assertTrue(exp.remove(new T2<>(v.name(), v.incrementIndex())));
 
                 assertEquals(ignite.localNode().consistentId().toString(), v.consistentId());
                 assertNotNull(v.snapshotRecordSegment());
 
-                Integer incIdx = v.incrementalIndex();
+                Integer incIdx = v.incrementIndex();
 
                 if (incIdx == null) {
                     assertEquals(ignite.localNode().consistentId().toString(), v.baselineNodes());

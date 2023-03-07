@@ -95,12 +95,12 @@ public class IncrementalSnapshotMetadata implements Serializable {
     }
 
     /** @return Pointer to {@link IncrementalSnapshotFinishRecord}. */
-    public WALPointer incSnpPointer() {
+    public WALPointer incrementalSnapshotPointer() {
         return incSnpRec;
     }
 
     /** @return Incremental snapshot index. */
-    public int incrementalIndex() {
+    public int incrementIndex() {
         return incIdx;
     }
 
