@@ -253,7 +253,7 @@ public class SnapshotRestoreProcess {
             "The system time when the restore operation of a cluster snapshot on this node ended.");
         mreg.register("snapshotName", () -> lastOpCtx.snpName, String.class,
             "The snapshot name of the last running cluster snapshot restore operation on this node.");
-        mreg.register("incrementalIndex", () -> lastOpCtx.incIdx,
+        mreg.register("incrementIndex", () -> lastOpCtx.incIdx,
             "The index of incremental snapshot of the last snapshot restore operation on this node.");
         mreg.register("requestId", () -> Optional.ofNullable(lastOpCtx.reqId).map(UUID::toString).orElse(""),
             String.class, "The request ID of the last running cluster snapshot restore operation on this node.");
@@ -339,7 +339,7 @@ public class SnapshotRestoreProcess {
         });
 
         String msg = "Cluster-wide snapshot restore operation started [reqId=" + fut0.rqId + ", snpName=" + snpName +
-            (cacheGrpNames == null ? "" : ", caches=" + cacheGrpNames) + (incIdx > 0 ? ", incIdx=" + incIdx : "") + ']';
+            (cacheGrpNames == null ? "" : ", caches=" + cacheGrpNames) + (incIdx > 0 ? ", incrementIndex=" + incIdx : "") + ']';
 
         if (log.isInfoEnabled())
             log.info(msg);
@@ -1339,7 +1339,7 @@ public class SnapshotRestoreProcess {
             .collect(Collectors.toSet());
 
         if (log.isInfoEnabled())
-            log.info("Stopping caches [reqId=" + opCtx0.reqId + ", snp=" + opCtx0.snpName + ", caches=" + stopCaches + ']');
+            log.info("Stopping caches [reqId=" + opCtx0.reqId + ", caches=" + stopCaches + ']');
 
         // Skip deleting cache files as they will be removed during rollback.
         return ctx.cache().dynamicDestroyCaches(stopCaches, false, false)
@@ -1363,8 +1363,7 @@ public class SnapshotRestoreProcess {
         if (!errs.isEmpty()) {
             SnapshotRestoreContext opCtx0 = opCtx;
 
-            log.error("Failed to stop caches during a snapshot rollback routine " +
-                "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ", err=" + errs + ']');
+            log.error("Failed to stop caches during a snapshot rollback routine [reqId=" + opCtx0.reqId + ", err=" + errs + ']');
         }
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
@@ -1385,7 +1384,7 @@ public class SnapshotRestoreProcess {
 
         if (log.isInfoEnabled()) {
             log.info("Starting incremental snapshot restore operation " +
-                "[reqId=" + opCtx0.reqId + ", snapshot=" + opCtx0.snpName + ", incIdx=" + opCtx0.incIdx +
+                "[reqId=" + opCtx0.reqId + ", snpName=" + opCtx0.snpName + ", incrementIndex=" + opCtx0.incIdx +
                 ", caches=" + F.viewReadOnly(opCtx0.cfgs, c -> c.config().getName()) + ']');
         }
 
@@ -1448,13 +1447,15 @@ public class SnapshotRestoreProcess {
         File lastSeg = Arrays.stream(segments)
             .map(File::toPath)
             .max(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex))
-            .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [id=" + incSnpId + ']'))
+            .orElseThrow(() -> new IgniteCheckedException("Last WAL segment wasn't found [snpName=" + snpName + ']'))
             .toFile();
 
         IncrementalSnapshotFinishRecord incSnpFinRec = readFinishRecord(lastSeg, incSnpId);
 
-        if (incSnpFinRec == null)
-            throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found [id=" + incSnpId + ']');
+        if (incSnpFinRec == null) {
+            throw new IgniteCheckedException("System WAL record for incremental snapshot wasn't found " +
+                "[id=" + incSnpId + ", walSegFile=" + lastSeg + ']');
+        }
 
         CacheStripedExecutor exec = new CacheStripedExecutor(ctx.pools().getStripedExecutorService());
 
@@ -1491,8 +1492,10 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            if (startIdx < 0)
-                throw new IgniteCheckedException("System WAL record for full snapshot wasn't found [snpName=" + snpName + ']');
+            if (startIdx < 0) {
+                throw new IgniteCheckedException("System WAL record for full snapshot wasn't found " +
+                    "[snpName=" + snpName + ", walSegFile=" + segments[0] + ']');
+            }
 
             UUID prevIncSnpId = incIdx > 1
                 ? ctx.cache().context().snapshotMgr().readIncrementalSnapshotMetadata(snpName, snpPath, incIdx - 1).requestId()
@@ -1581,8 +1584,8 @@ public class SnapshotRestoreProcess {
         exec.awaitApplyComplete();
 
         if (log.isInfoEnabled()) {
-            log.info("Finished restore incremental snapshot [updatesApplied=" + applied.longValue() +
-                ", time=" + (U.currentTimeMillis() - start) + " ms]");
+            log.info("Finished restore incremental snapshot [snpName=" + snpName + ", incrementIndex=" + incIdx +
+                ", id=" + incSnpId + ", updatesApplied=" + applied.longValue() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
         }
     }
 
@@ -1633,7 +1636,7 @@ public class SnapshotRestoreProcess {
 
         if (F.isEmpty(segments)) {
             throw new IgniteCheckedException("No WAL segments found for incremental snapshot " +
-                "[snpName=" + snpName + ", snpPath=" + snpPath + ", incIdx=" + incIdx + ']');
+                "[snpName=" + snpName + ", snpPath=" + snpPath + ", incrementIndex=" + incIdx + ']');
         }
 
         return segments;

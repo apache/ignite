@@ -668,12 +668,12 @@ public interface IgniteInternalTx {
     /**
      * @return ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
      */
-    public @Nullable UUID incSnpId();
+    public @Nullable UUID incrementalSnapshotId();
 
     /**
      * @param id ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
      */
-    public void incSnpId(@Nullable UUID id);
+    public void incrementalSnapshotId(@Nullable UUID id);
 
     /**
      * @return Transaction counters.

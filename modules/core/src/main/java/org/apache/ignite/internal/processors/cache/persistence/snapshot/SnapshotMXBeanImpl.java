@@ -109,7 +109,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
         if (req != null) {
             return "Create snapshot operation is in progress [name=" + req.snapshotName() +
                 ", incremental=" + req.incremental() +
-                (req.incremental() ? (", incrementalIndex=" + req.incrementIndex()) : "") +
+                (req.incremental() ? (", incrementIndex=" + req.incrementIndex()) : "") +
                 ", id=" + req.requestId() + ']';
         }
 
@@ -117,13 +117,13 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
             MetricRegistry mreg = metricMgr.registry(SNAPSHOT_RESTORE_METRICS);
 
             String name = mreg.findMetric("snapshotName").getAsString();
-            int incIdx = mreg.<IntMetric>findMetric("incrementalIndex").value();
+            int incIdx = mreg.<IntMetric>findMetric("incrementIndex").value();
             String id = mreg.findMetric("requestId").getAsString();
 
             boolean incremental = incIdx > 0;
 
             return "Restore snapshot operation is in progress [name=" + name + ", incremental=" + incremental +
-                (incremental ? ", incrementalIndex=" + incIdx : "") + ", id=" + id + ']';
+                (incremental ? ", incrementIndex=" + incIdx : "") + ", id=" + id + ']';
         }
 
         return "There is no create or restore snapshot operation in progress.";

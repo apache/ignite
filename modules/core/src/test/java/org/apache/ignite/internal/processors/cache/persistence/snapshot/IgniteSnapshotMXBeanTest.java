@@ -328,7 +328,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             assertContains(log, status, "incremental=" + isIncremental);
 
             if (isIncremental)
-                assertContains(log, status, "incrementalIndex=1");
+                assertContains(log, status, "incrementIndex=1");
         }
     }
 

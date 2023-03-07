@@ -603,16 +603,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         incSnpMReg.register("snapshotName",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.name).orElse(""),
             String.class,
-            "The name of full snapshot for which the last incremental snapshot requested on this node.");
-        incSnpMReg.register("incrementalIndex",
+            "The name of full snapshot for which the last incremental snapshot created on this node.");
+        incSnpMReg.register("incrementIndex",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.incIdx).orElse(0),
-            "Ihe index of the last incremental snapshot requested on this node.");
+            "Ihe index of the last incremental snapshot created on this node.");
         incSnpMReg.register("startTime",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.startTime).orElse(0L),
-            "The system time of the last incremental snapshot request start time on this node.");
+            "The system time of the last incremental snapshot creation start time on this node.");
         incSnpMReg.register("endTime",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.endTime).orElse(0L),
-            "The system time of the last incremental snapshot request end time on this node.");
+            "The system time of the last incremental snapshot creation end time on this node.");
         incSnpMReg.register("error",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(GridFutureAdapter::error).map(Object::toString).orElse(""),
             String.class,
@@ -964,7 +964,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             if (incSnpId != null) {
                 if (!incSnpId.equals(id))
-                    U.warn(log, "Received incremental snapshot ID differs from current [rcvId=" + id + ", currId=" + incSnpId + ']');
+                    U.warn(log, "Received incremental snapshot ID differs from the current [rcvId=" + id + ", currId=" + incSnpId + ']');
 
                 return;
             }
@@ -972,7 +972,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             wrapMsgsFut = new GridFutureAdapter<>();
 
             cctx.tm().txMessageTransformer((msg, tx) -> new IncrementalSnapshotAwareMessage(
-                msg, id, tx == null ? null : tx.incSnpId(), topVer));
+                msg, id, tx == null ? null : tx.incrementalSnapshotId(), topVer));
 
             markWalFut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
                 ? new IncrementalSnapshotMarkWalFuture(cctx, id, topVer) : null;
@@ -1010,7 +1010,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new GridFinishedFuture<>(e);
             }
 
-            lowPtr = prevIncSnpMeta.incSnpPointer();
+            lowPtr = prevIncSnpMeta.incrementalSnapshotPointer();
         }
 
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
@@ -1051,7 +1051,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return task0;
 
         if (log.isDebugEnabled()) {
-            log.debug("Incremental snapshot operation submited for execution" +
+            log.debug("Incremental snapshot operation submited for execution " +
                 "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
         }
 
@@ -1064,7 +1064,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
 
             if (log.isDebugEnabled()) {
-                log.debug("Incremental snapshot operation started" +
+                log.debug("Incremental snapshot operation started " +
                     "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
             }
 
@@ -1753,7 +1753,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Checks full and incremental snapshot.
+     * Checks snapshot and its increments.
      *
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
@@ -2016,8 +2016,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             for (File smf : smfs) {
                 SnapshotMetadata curr = readSnapshotMetadata(smf);
 
-                if (prev != null && !prev.sameSnapshot(curr))
-                    throw new IgniteException("Snapshot metadata files are from different snapshots [prev=" + prev + ", curr=" + curr);
+                if (prev != null && !prev.sameSnapshot(curr)) {
+                    throw new IgniteException("Snapshot metadata files are from different snapshots " +
+                        "[prev=" + prev + ", curr=" + curr + ']');
+                }
 
                 metasMap.put(curr.consistentId(), curr);
 
@@ -2205,7 +2207,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             String msg =
                 "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
-                    (incremental ? "" : (", incremental=true, index=" + incIdx)) +
+                    (incremental ? "" : (", incremental=true, incrementIndex=" + incIdx)) +
                 ']';
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
@@ -2940,19 +2942,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteWriteAheadLogManager wal = cctx.wal();
 
-        if (wal == null) {
-            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                "WAL must be eanbled."
-            );
-        }
+        if (wal == null)
+            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL must be enabled.");
 
         File archiveDir = wal.archiveDir();
 
-        if (archiveDir == null) {
-            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                "WAL archive must be eanbled."
-            );
-        }
+        if (archiveDir == null)
+            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. WAL archive must be enabled.");
 
         ensureHardLinkAvailable(archiveDir.toPath(), snpDir.toPath());
 

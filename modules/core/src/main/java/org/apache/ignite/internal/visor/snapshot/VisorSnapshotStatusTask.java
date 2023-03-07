@@ -146,7 +146,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
                 return new SnapshotStatus(
                     SnapshotOperation.RESTORE,
                     mreg.findMetric("snapshotName").getAsString(),
-                    mreg.<IntMetric>findMetric("incrementalIndex").value(),
+                    mreg.<IntMetric>findMetric("incrementIndex").value(),
                     mreg.findMetric("requestId").getAsString(),
                     mreg.<LongMetric>findMetric("startTime").value(),
                     F.asMap(
@@ -217,7 +217,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
         }
 
         /** @return Incremental snapshot index. */
-        public int incrementalIndex() {
+        public int incrementIndex() {
             return incIdx;
         }
 

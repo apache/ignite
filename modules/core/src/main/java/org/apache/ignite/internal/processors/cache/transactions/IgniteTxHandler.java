@@ -320,11 +320,11 @@ public class IgniteTxHandler {
      * @param msg Finish message signed with incremental snapshot ID.
      */
     private void setIncrementalSnapshotIdIfRequired(IncrementalSnapshotAwareMessage msg) {
-        if (msg.txSnpId() != null) {
+        if (msg.txInrementalSnapshotId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
-                tx.incSnpId(msg.txSnpId());
+                tx.incrementalSnapshotId(msg.txInrementalSnapshotId());
         }
     }
 
@@ -1132,7 +1132,7 @@ public class IgniteTxHandler {
             tx.storeEnabled(req.storeEnabled());
 
             if (locTx != null)
-                tx.incSnpId(locTx.incSnpId());
+                tx.incrementalSnapshotId(locTx.incrementalSnapshotId());
 
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
@@ -1299,7 +1299,7 @@ public class IgniteTxHandler {
                     if (dhtTx != null) {
                         dhtTx.onePhaseCommit(true);
                         dhtTx.needReturnValue(req.needReturnValue());
-                        dhtTx.incSnpId(ctx.snapshotMgr().incrementalSnapshotId());
+                        dhtTx.incrementalSnapshotId(ctx.snapshotMgr().incrementalSnapshotId());
 
                         finish(dhtTx, req);
                     }
