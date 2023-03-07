@@ -37,13 +37,12 @@ public class DataRecord extends TimeStampRecord {
     @GridToStringInclude
     private Object writeEntries;
 
-    /** If {@code true} then {@code ttl != 0} will be written. */
-    @GridToStringInclude
-    private boolean writeTtl;
+    /** */
+    private RecordType type = DATA_RECORD_V2;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return writeTtl ? DATA_RECORD_V2_WITH_TTL : DATA_RECORD_V2;
+        return type;
     }
 
     /**
@@ -78,9 +77,9 @@ public class DataRecord extends TimeStampRecord {
 
         this.writeEntries = writeEntries;
 
-        boolean writeTtl = false;
-
         if (writeTtlIfExists) {
+            boolean writeTtl = false;
+
             if (writeEntries instanceof DataEntry)
                 writeTtl = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
             else {
@@ -92,9 +91,10 @@ public class DataRecord extends TimeStampRecord {
                     }
                 }
             }
-        }
 
-        this.writeTtl = writeTtl;
+            if (writeTtl)
+                type = DATA_RECORD_V2_WITH_TTL;
+        }
     }
 
     /**
@@ -136,11 +136,6 @@ public class DataRecord extends TimeStampRecord {
         }
 
         return ((List<DataEntry>)writeEntries).get(idx);
-    }
-
-    /** @return {@code True} if TTL data must be written, {@code false} otherwise. */
-    public boolean writeTtl() {
-        return writeTtl;
     }
 
     /** {@inheritDoc} */

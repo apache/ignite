@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 
 /**
  * Record data V2 serializer.
@@ -94,6 +95,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 return 4/*entry count*/ + 8/*timestamp*/ + dataSize((DataRecord)rec);
 
             case DATA_RECORD_V2:
+            case DATA_RECORD_V2_WITH_TTL:
                 return super.plainSize(rec) + 8/*timestamp*/;
 
             case SNAPSHOT:
@@ -170,7 +172,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                     return new DataRecord(
                         readPlainDataEntry(in, type),
                         timeStamp,
-                        type == RecordType.DATA_RECORD_V2_WITH_TTL
+                        type == DATA_RECORD_V2_WITH_TTL
                     );
                 }
                 else {
@@ -179,7 +181,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                     for (int i = 0; i < entryCnt; i++)
                         entries.add(readPlainDataEntry(in, type));
 
-                    return new DataRecord(entries, timeStamp, type == RecordType.DATA_RECORD_V2_WITH_TTL);
+                    return new DataRecord(entries, timeStamp, type == DATA_RECORD_V2_WITH_TTL);
                 }
 
             case MVCC_DATA_RECORD:
@@ -292,9 +294,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                     DataEntry dataEntry = dataRec.get(i);
 
                     if (encrypted)
-                        putEncryptedDataEntry(buf, dataEntry, false);
+                        putEncryptedDataEntry(buf, dataEntry, dataRec.type() == DATA_RECORD_V2_WITH_TTL);
                     else
-                        putPlainDataEntry(buf, dataEntry, dataRec.writeTtl());
+                        putPlainDataEntry(buf, dataEntry, dataRec.type() == DATA_RECORD_V2_WITH_TTL);
                 }
 
                 break;
@@ -352,7 +354,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
     /** {@inheritDoc} */
     @Override void putPlainDataEntry(ByteBuffer buf, DataEntry entry, boolean writeTtl) throws IgniteCheckedException {
         if (entry instanceof MvccDataEntry)
-            putMvccDataEntry(buf, (MvccDataEntry)entry, writeTtl);
+            putMvccDataEntry(buf, (MvccDataEntry)entry);
         else
             super.putPlainDataEntry(buf, entry, writeTtl);
     }
@@ -361,8 +363,8 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
      * @param buf Buffer to write to.
      * @param entry Data entry.
      */
-    private void putMvccDataEntry(ByteBuffer buf, MvccDataEntry entry, boolean writeTtl) throws IgniteCheckedException {
-        super.putPlainDataEntry(buf, entry, writeTtl);
+    private void putMvccDataEntry(ByteBuffer buf, MvccDataEntry entry) throws IgniteCheckedException {
+        super.putPlainDataEntry(buf, entry, false);
 
         txRecordSerializer.putMvccVersion(buf, entry.mvccVer());
     }
