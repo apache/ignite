@@ -62,8 +62,15 @@ public class CdcEventImpl implements CdcEvent {
      * @param ord Order of the entry change.
      * @param cacheId Cache id.
      */
-    public CdcEventImpl(Object key, Object val, boolean primary, int part,
-        CacheEntryVersion ord, int cacheId, long ttl) {
+    public CdcEventImpl(
+        Object key,
+        Object val,
+        boolean primary,
+        int part,
+        CacheEntryVersion ord,
+        int cacheId,
+        long ttl
+    ) {
         this.key = key;
         this.val = val;
         this.primary = primary;
