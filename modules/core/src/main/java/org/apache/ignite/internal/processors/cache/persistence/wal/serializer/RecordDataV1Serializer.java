@@ -130,6 +130,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
 
@@ -2137,6 +2139,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     op,
                     nearXidVer,
                     writeVer,
+                    TTL_ETERNAL, //TODO: FIXME
                     expireTime,
                     partId,
                     partCntr,
@@ -2335,7 +2338,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
+            super(0, null, null, READ, null, null, TTL_ETERNAL, EXPIRE_TIME_ETERNAL, 0, 0, EMPTY_FLAGS);
         }
     }
 }

@@ -104,6 +104,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
@@ -889,7 +891,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                         GridCacheOperation.DELETE,
                         new GridCacheVersion(0, 1, 1, 0),
                         new GridCacheVersion(0, 1, 1, 0),
-                        0,
+                        TTL_ETERNAL,
+                        EXPIRE_TIME_ETERNAL,
                         0,
                         0,
                         DataEntry.EMPTY_FLAGS

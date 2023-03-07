@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 
 /**
  * Test methods for storage manipulation.
@@ -63,7 +65,8 @@ public class TestStorageUtils {
             GridCacheOperation.UPDATE,
             new GridCacheVersion(),
             new GridCacheVersion(),
-            0L,
+            TTL_ETERNAL,
+            EXPIRE_TIME_ETERNAL,
             partId,
             breakCntr ? locPart.updateCounter() + 1 : locPart.updateCounter(),
             DataEntry.EMPTY_FLAGS);

@@ -56,6 +56,8 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.wal.record.RecordUtils.isIncludeIntoLog;
@@ -297,7 +299,8 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
             GridCacheOperation.CREATE,
             new GridCacheVersion(),
             new GridCacheVersion(),
-            0,
+            TTL_ETERNAL,
+            EXPIRE_TIME_ETERNAL,
             0,
             0,
             DataEntry.EMPTY_FLAGS
