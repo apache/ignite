@@ -51,6 +51,9 @@ public class CdcEventImpl implements CdcEvent {
     /** Cache id. */
     private final int cacheId;
 
+    /** TTL. */
+    private final long ttl;
+
     /**
      * @param key Key.
      * @param val Value.
@@ -59,14 +62,22 @@ public class CdcEventImpl implements CdcEvent {
      * @param ord Order of the entry change.
      * @param cacheId Cache id.
      */
-    public CdcEventImpl(Object key, Object val, boolean primary, int part,
-        CacheEntryVersion ord, int cacheId) {
+    public CdcEventImpl(
+        Object key,
+        Object val,
+        boolean primary,
+        int part,
+        CacheEntryVersion ord,
+        int cacheId,
+        long ttl
+    ) {
         this.key = key;
         this.val = val;
         this.primary = primary;
         this.part = part;
         this.ord = ord;
         this.cacheId = cacheId;
+        this.ttl = ttl;
     }
 
     /** {@inheritDoc} */
@@ -97,6 +108,11 @@ public class CdcEventImpl implements CdcEvent {
     /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long ttl() {
+        return ttl;
     }
 
     /** {@inheritDoc} */

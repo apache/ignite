@@ -18,6 +18,8 @@
 package org.apache.ignite.cdc;
 
 import java.io.Serializable;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -76,4 +78,11 @@ public interface CdcEvent extends Serializable {
      * @see CacheView#cacheId()
      */
     public int cacheId();
+
+    /**
+     * @return Time to live for cache entry. If {@code 0} then entry will be cached until removed.
+     * @see org.apache.ignite.IgniteCache#withExpiryPolicy(ExpiryPolicy)
+     * @see org.apache.ignite.configuration.CacheConfiguration#setExpiryPolicyFactory(Factory)
+     */
+    public long ttl();
 }

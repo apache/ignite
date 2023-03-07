@@ -2012,6 +2012,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
+        buf.putLong(entry.ttl());
         buf.putLong(entry.expireTime());
 
         if (!(entry instanceof MvccDataEntry))
@@ -2117,6 +2118,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         int partId = in.readInt();
         long partCntr = in.readLong();
+        long ttl = in.readLong();
         long expireTime = in.readLong();
         byte flags = type == DATA_RECORD_V2 ? in.readByte() : (byte)0;
 
@@ -2139,7 +2141,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     op,
                     nearXidVer,
                     writeVer,
-                    TTL_ETERNAL, //TODO: FIXME
+                    ttl,
                     expireTime,
                     partId,
                     partCntr,
@@ -2157,7 +2159,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     op,
                     nearXidVer,
                     writeVer,
-                    TTL_ETERNAL, //TODO: FIXME
+                    ttl,
                     expireTime,
                     partId,
                     partCntr,
@@ -2304,6 +2306,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*near xid ver*/CacheVersionIO.size(entry.nearXidVersion(), true) +
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
+            /*ttl*/8 +
             /*expire Time*/8 +
             /*part cnt*/8 +
             /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,6 +43,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest.TestPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -1359,53 +1358,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         /** {@inheritDoc} */
         @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
             return e.getValue();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TestPolicy implements ExpiryPolicy, Serializable {
-        /** */
-        private Long create;
-
-        /** */
-        private Long access;
-
-        /** */
-        private Long update;
-
-        /**
-         * @param create TTL for creation.
-         * @param access TTL for access.
-         * @param update TTL for update.
-         */
-        TestPolicy(@Nullable Long create,
-            @Nullable Long update,
-            @Nullable Long access) {
-            this.create = create;
-            this.update = update;
-            this.access = access;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForCreation() {
-            return create != null ? new Duration(TimeUnit.MILLISECONDS, create) : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForAccess() {
-            return access != null ? new Duration(TimeUnit.MILLISECONDS, access) : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Duration getExpiryForUpdate() {
-            return update != null ? new Duration(TimeUnit.MILLISECONDS, update) : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TestPolicy.class, this);
         }
     }
 }

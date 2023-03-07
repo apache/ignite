@@ -53,6 +53,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest.TestPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -89,6 +91,12 @@ import static org.junit.Assume.assumeTrue;
 public class CdcSelfTest extends AbstractCdcTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
+
+    /** */
+    public static final long CREATE_TTL = 60_000L;
+
+    /** */
+    public static final long UPDATE_TTL = 120_000L;
 
     /** */
     @Parameterized.Parameter
@@ -147,14 +155,14 @@ public class CdcSelfTest extends AbstractCdcTest {
     @Test
     public void testReadAllKeysCommitAll() throws Exception {
         // Read all records from iterator.
-        readAll(new UserCdcConsumer(), true);
+        readAll(CdcSelfTest::addData, new UserCdcConsumer(), true);
     }
 
     /** Simplest CDC test but read one event at a time to check correct iterator work. */
     @Test
     public void testReadAllKeysWithoutCommit() throws Exception {
         // Read one record per call.
-        readAll(new UserCdcConsumer() {
+        readAll(CdcSelfTest::addData, new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 if (evts.hasNext())
                     super.onEvents(Collections.singleton(evts.next()).iterator());
@@ -168,7 +176,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     @Test
     public void testReadAllKeysCommitEachEvent() throws Exception {
         // Read one record per call and commit.
-        readAll(new UserCdcConsumer() {
+        readAll(CdcSelfTest::addData, new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 if (evts.hasNext())
                     super.onEvents(Collections.singleton(evts.next()).iterator());
@@ -179,7 +187,40 @@ public class CdcSelfTest extends AbstractCdcTest {
     }
 
     /** */
-    private void readAll(UserCdcConsumer cnsmr, boolean offsetCommit) throws Exception {
+    @Test
+    public void testReadTtl() throws Exception {
+        readAll((cache, from, to) -> {
+            IgniteCache<Integer, User> withExpiry =
+                cache.withExpiryPolicy(new TestPolicy(CREATE_TTL, UPDATE_TTL, 0L));
+
+            for (int i = from; i < to; i++) {
+                if (i % 2 == 0)
+                    withExpiry.put(i, createUser(i));
+                else
+                    cache.put(i, createUser(i));
+            }
+        }, new UserCdcConsumer() {
+            /** {@inheritDoc} */
+            @Override public void checkEvent(CdcEvent evt) {
+                super.checkEvent(evt);
+
+                if (evt.value() == null)
+                    return;
+
+                Integer key = (Integer)evt.key();
+
+                if (key % 2 == 0)
+                    assertEquals("Entry TTL must be set[key=" + key + ']', CREATE_TTL, evt.ttl());
+            }
+        }, true);
+    }
+
+    /** */
+    private void readAll(
+        CI3<IgniteCache<Integer, User>, Integer, Integer> addData,
+        UserCdcConsumer cnsmr,
+        boolean offsetCommit
+    ) throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
@@ -194,7 +235,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg,
             cache,
             txCache,
-            CdcSelfTest::addData,
+            addData,
             0,
             KEYS_CNT + 3,
             offsetCommit
