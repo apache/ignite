@@ -80,14 +80,16 @@ public class DataRecord extends TimeStampRecord {
 
         boolean writeTtl0 = false;
 
-        if (writeEntries instanceof DataEntry)
-            writeTtl0 = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
-        else {
-            for (DataEntry dataEntry : ((Iterable<DataEntry>)writeEntries)) {
-                if (dataEntry.ttl() != TTL_ETERNAL) {
-                    writeTtl0 = true;
+        if (cdcEnabled) {
+            if (writeEntries instanceof DataEntry)
+                writeTtl0 = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
+            else {
+                for (DataEntry dataEntry : ((Iterable<DataEntry>)writeEntries)) {
+                    if (dataEntry.ttl() != TTL_ETERNAL) {
+                        writeTtl0 = true;
 
-                    break;
+                        break;
+                    }
                 }
             }
         }
