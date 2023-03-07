@@ -56,37 +56,37 @@ public class DataRecord extends TimeStampRecord {
     /**
      * @param writeEntry Write entry.
      */
-    public DataRecord(DataEntry writeEntry, boolean cdcEnabled) {
-        this(writeEntry, U.currentTimeMillis(), cdcEnabled);
+    public DataRecord(DataEntry writeEntry, boolean writeTtlIfExists) {
+        this(writeEntry, U.currentTimeMillis(), writeTtlIfExists);
     }
 
     /**
      * @param writeEntries Write entries.
      */
-    public DataRecord(List<DataEntry> writeEntries, boolean cdcEnabled) {
-        this(writeEntries, U.currentTimeMillis(), cdcEnabled);
+    public DataRecord(List<DataEntry> writeEntries, boolean writeTtlIfExists) {
+        this(writeEntries, U.currentTimeMillis(), writeTtlIfExists);
     }
 
     /**
      * @param writeEntries Write entries.
      * @param timestamp TimeStamp.
      */
-    public DataRecord(Object writeEntries, long timestamp, boolean cdcEnabled) {
+    public DataRecord(Object writeEntries, long timestamp, boolean writeTtlIfExists) {
         super(timestamp);
 
         A.notNull(writeEntries, "writeEntries");
 
         this.writeEntries = writeEntries;
 
-        boolean writeTtl0 = false;
+        boolean writeTtl = false;
 
-        if (cdcEnabled) {
+        if (writeTtlIfExists) {
             if (writeEntries instanceof DataEntry)
-                writeTtl0 = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
+                writeTtl = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
             else {
                 for (DataEntry dataEntry : ((Iterable<DataEntry>)writeEntries)) {
                     if (dataEntry.ttl() != TTL_ETERNAL) {
-                        writeTtl0 = true;
+                        writeTtl = true;
 
                         break;
                     }
@@ -94,7 +94,7 @@ public class DataRecord extends TimeStampRecord {
             }
         }
 
-        this.writeTtl = cdcEnabled && writeTtl0;
+        this.writeTtl = writeTtl;
     }
 
     /**
