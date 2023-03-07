@@ -64,8 +64,6 @@ public class CacheObjectTransformerUtils {
 
             byte[] res = toArray(transformed);
 
-            assert res[0] == TRANSFORMED : "Transformed array must begin with transformed flag.";
-
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
@@ -121,7 +119,7 @@ public class CacheObjectTransformerUtils {
 
         CacheObjectTransformerManager transformer = transformer(ctx);
 
-        ByteBuffer src = ByteBuffer.wrap(bytes);
+        ByteBuffer src = ByteBuffer.wrap(bytes, 1, bytes.length - 1); // Skipping TRANSFORMED.
         ByteBuffer restored = transformer.restore(src);
 
         byte[] res = toArray(restored);
@@ -153,7 +151,7 @@ public class CacheObjectTransformerUtils {
         else {
             if (buf.remaining() != buf.capacity())
                 throw new IllegalStateException("Unexpected Heap Byte Buffer state. " +
-                    "Wrapped array must contain the data without any offsets. " +
+                    "Wrapped array must contain the data without any offsets to avoid unnecessary copying. " +
                     "Position must be 0, limit must be equal to the capacity." +
                     " [buf=" + buf + "]");
 

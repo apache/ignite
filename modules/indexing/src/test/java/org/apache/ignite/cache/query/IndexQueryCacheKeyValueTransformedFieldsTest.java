@@ -56,11 +56,7 @@ public class IndexQueryCacheKeyValueTransformedFieldsTest extends IndexQueryCach
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 5]);
-
-            byte check = transformed.get();
-
-            assertEquals(check, TRANSFORMED);
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
 
             int shift = transformed.getInt();
 

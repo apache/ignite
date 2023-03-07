@@ -30,7 +30,7 @@ public interface CacheObjectTransformerManager extends GridCacheSharedManager {
      * Transforms the data.
      *
      * @param original Original data.
-     * @return Transformed data started with {@link GridBinaryMarshaller#TRANSFORMED}
+     * @return Transformed data (started with {@link GridBinaryMarshaller#TRANSFORMED} when restorable)
      * or {@code null} when transformation is not possible/suitable.
      */
     public @Nullable ByteBuffer transform(ByteBuffer original);
@@ -38,7 +38,7 @@ public interface CacheObjectTransformerManager extends GridCacheSharedManager {
     /**
      * Restores the data.
      *
-     * @param transformed Transformed data started with {@link GridBinaryMarshaller#TRANSFORMED}.
+     * @param transformed Transformed data.
      * @return Restored data.
      */
     public ByteBuffer restore(ByteBuffer transformed);

@@ -196,10 +196,6 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            byte check = transformed.get();
-
-            assertEquals(check, TRANSFORMED);
-
             CompressionType type = CompressionType.values()[transformed.getInt()];
             int length = transformed.getInt();
 

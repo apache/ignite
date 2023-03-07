@@ -323,11 +323,7 @@ public abstract class AbstractCacheObjectTransformationTest extends GridCommonAb
 
         /** {@inheritDoc} */
         @Override public ByteBuffer restore(ByteBuffer transformed) {
-            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 5]);
-
-            byte check = transformed.get();
-
-            assertEquals(check, TRANSFORMED);
+            ByteBuffer restored = ByteBuffer.wrap(new byte[transformed.remaining() - 4]);
 
             int origShift = transformed.getInt();
 
