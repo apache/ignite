@@ -43,7 +43,7 @@ public class DataRecord extends TimeStampRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return writeTtl ? DATA_RECORD_V2 : DATA_RECORD_V2_WITH_TTL;
+        return writeTtl ? DATA_RECORD_V2_WITH_TTL : DATA_RECORD_V2;
     }
 
     /**
