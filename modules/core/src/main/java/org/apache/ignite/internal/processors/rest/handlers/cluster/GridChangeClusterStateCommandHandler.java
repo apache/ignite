@@ -25,8 +25,9 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_STATE;
@@ -54,18 +55,12 @@ public class GridChangeClusterStateCommandHandler extends GridRestCommandHandler
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq) {
         GridRestClusterStateRequest req = (GridRestClusterStateRequest)restReq;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
-
-        final GridRestResponse res = new GridRestResponse();
-
         try {
             switch (req.command()) {
                 case CLUSTER_STATE:
                     assert req.isReqCurrentMode() : req;
 
-                    res.setResponse(ctx.grid().cluster().state());
-
-                    break;
+                    return new GridFinishedFuture<>(new GridRestResponse(ctx.grid().cluster().state()));
 
                 default:
                     assert req.state() != null : req;
@@ -76,18 +71,14 @@ public class GridChangeClusterStateCommandHandler extends GridRestCommandHandler
                     ctx.state().changeGlobalState(req.state(), req.forceDeactivation(),
                         ctx.cluster().get().forServers().nodes(), false).get();
 
-                    res.setResponse(req.command().key() + " done");
-
-                    break;
+                    return new GridFinishedFuture<>(new GridRestResponse(req.command().key() + " done"));
             }
-
-            fut.onDone(res);
+        }
+        catch (SecurityException e) {
+            throw e;
         }
         catch (Exception e) {
-            res.setError(errorMessage(e));
-
-            fut.onDone(res);
+            return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, errorMessage(e)));
         }
-        return fut;
     }
 }
