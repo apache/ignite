@@ -121,8 +121,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.INVOKE_NO_OP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome.REMOVE_NO_VAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareIgnoreOpCounter;
@@ -502,7 +500,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long ttl;
 
-                ttl = expireTime == CU.EXPIRE_TIME_ETERNAL ? TTL_ETERNAL : expireTime - U.currentTimeMillis();
+                ttl = expireTime == CU.EXPIRE_TIME_ETERNAL ? CU.TTL_ETERNAL : expireTime - U.currentTimeMillis();
 
                 if (ttl < 0)
                     ttl = CU.TTL_MINIMUM;
@@ -1790,8 +1788,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     tx,
                     null,
                     addConflictVersion(tx.writeVersion(), newVer),
-                    TTL_ETERNAL,
-                    EXPIRE_TIME_ETERNAL,
+                    CU.TTL_ETERNAL,
+                    CU.EXPIRE_TIME_ETERNAL,
                     updateCntr0
                 );
             }
@@ -2227,7 +2225,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             initExpireTime = CU.expireTimeInPast();
         }
         else if (initTtl == CU.TTL_NOT_CHANGED) {
-            initTtl = TTL_ETERNAL;
+            initTtl = CU.TTL_ETERNAL;
             initExpireTime = CU.EXPIRE_TIME_ETERNAL;
         }
         else
@@ -2259,13 +2257,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (ttl == CU.TTL_ZERO) {
             rmv = true;
 
-            ttl = TTL_ETERNAL;
+            ttl = CU.TTL_ETERNAL;
         }
 
         // 3. If TTL is still not changed, then either use old entry TTL or set it to "ETERNAL".
         if (ttl == CU.TTL_NOT_CHANGED) {
             if (isStartVersion())
-                ttl = TTL_ETERNAL;
+                ttl = CU.TTL_ETERNAL;
             else {
                 ttl = ttlExtras();
                 expireTime = expireTimeExtras();
@@ -5590,7 +5588,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             CacheObject expiredVal = row.value();
 
             if (cctx.deferredDelete() && !entry.detached() && !entry.isInternal()) {
-                entry.update(null, TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, entry.ver, true);
+                entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, entry.ver, true);
 
                 if (!entry.deletedUnlocked() && !entry.isStartVersion())
                     entry.deletedUnlocked(true);
@@ -5882,7 +5880,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         oldVal,
                         null,
                         invokeRes,
-                        TTL_ETERNAL,
+                        CU.TTL_ETERNAL,
                         CU.EXPIRE_TIME_ETERNAL,
                         null,
                         null,
@@ -5901,7 +5899,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         oldVal,
                         null,
                         invokeRes,
-                        TTL_ETERNAL,
+                        CU.TTL_ETERNAL,
                         CU.EXPIRE_TIME_ETERNAL,
                         null,
                         null,
@@ -5921,7 +5919,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             oldVal,
                             null,
                             new IgniteBiTuple<>(null, e),
-                            TTL_ETERNAL,
+                            CU.TTL_ETERNAL,
                             CU.EXPIRE_TIME_ETERNAL,
                             null,
                             null,
@@ -5970,7 +5968,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             CacheObject expiredVal = row.value();
 
             if (cctx.deferredDelete() && !entry.detached() && !entry.isInternal()) {
-                entry.update(null, TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, entry.ver, true);
+                entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, entry.ver, true);
 
                 if (!entry.deletedUnlocked())
                     entry.deletedUnlocked(true);
@@ -6020,7 +6018,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     initExpireTime = initTtlAndExpireTime.get2();
                 }
                 else {
-                    initTtl = TTL_ETERNAL;
+                    initTtl = CU.TTL_ETERNAL;
                     initExpireTime = CU.EXPIRE_TIME_ETERNAL;
                 }
 
@@ -6157,7 +6155,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         oldVal,
                         null,
                         invokeRes,
-                        TTL_ETERNAL,
+                        CU.TTL_ETERNAL,
                         CU.EXPIRE_TIME_ETERNAL,
                         null,
                         null,
@@ -6265,7 +6263,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2())),
                         null,
                         invokeRes,
-                        TTL_ETERNAL,
+                        CU.TTL_ETERNAL,
                         CU.EXPIRE_TIME_ETERNAL,
                         null,
                         null,
@@ -6282,7 +6280,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, null, newVer, TTL_ETERNAL, EXPIRE_TIME_ETERNAL, updateCntr0, primary);
+            entry.logUpdate(op, null, newVer, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, updateCntr0, primary);
 
             if (oldVal != null) {
                 assert !entry.deletedUnlocked();
@@ -6304,7 +6302,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheVersion enqueueVer = newVer;
 
-            entry.update(null, TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer, true);
+            entry.update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer, true);
 
             treeOp = (oldRow == null || readFromStore) ? IgniteTree.OperationType.NOOP :
                 IgniteTree.OperationType.REMOVE;
@@ -6399,7 +6397,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         entry.val,
                         null,
                         invokeRes,
-                        TTL_ETERNAL,
+                        CU.TTL_ETERNAL,
                         CU.EXPIRE_TIME_ETERNAL,
                         null,
                         null,
@@ -6466,7 +6464,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         entry.val,
                         null,
                         invokeRes,
-                        TTL_ETERNAL,
+                        CU.TTL_ETERNAL,
                         CU.EXPIRE_TIME_ETERNAL,
                         null,
                         null,
