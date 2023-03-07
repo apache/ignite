@@ -59,7 +59,7 @@ public class MvccDataRecord extends DataRecord {
      * @param timestamp TimeStamp.
      */
     public MvccDataRecord(List<DataEntry> writeEntries, long timestamp) {
-        super(writeEntries, timestamp);
+        super(writeEntries, timestamp, false);
     }
 
     /** {@inheritDoc} */

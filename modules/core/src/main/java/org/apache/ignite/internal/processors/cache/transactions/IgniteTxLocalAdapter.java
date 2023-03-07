@@ -850,18 +850,22 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     CacheGroupContext grp = cacheCtx.group();
 
                                     if (grp.logDataRecords() && cctx.snapshot().needTxReadLogging()) {
-                                        ptr = grp.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            TTL_ETERNAL,
-                                            EXPIRE_TIME_ETERNAL,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter(),
-                                            DataEntry.flags(CU.txOnPrimary(this)))));
+                                        ptr = grp.wal().log(new DataRecord(
+                                            new DataEntry(
+                                                cacheCtx.cacheId(),
+                                                txEntry.key(),
+                                                val,
+                                                op,
+                                                nearXidVersion(),
+                                                writeVersion(),
+                                                TTL_ETERNAL,
+                                                EXPIRE_TIME_ETERNAL,
+                                                txEntry.key().partition(),
+                                                txEntry.updateCounter(),
+                                                DataEntry.flags(CU.txOnPrimary(this))
+                                            ),
+                                            grp.cdcEnabled()
+                                        ));
                                     }
 
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

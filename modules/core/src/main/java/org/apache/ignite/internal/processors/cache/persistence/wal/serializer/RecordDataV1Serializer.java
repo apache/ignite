@@ -127,7 +127,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
@@ -686,23 +685,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case ENCRYPTED_DATA_RECORD:
             case ENCRYPTED_DATA_RECORD_V2:
             case ENCRYPTED_DATA_RECORD_V3:
-            case ENCRYPTED_DATA_RECORD_V3_WITH_TTL:
                 entryCnt = in.readInt();
 
-                if (entryCnt == 1) {
-                    res = new DataRecord(
-                        readEncryptedDataEntry(in, type),
-                        0L,
-                        type == ENCRYPTED_DATA_RECORD_V3_WITH_TTL
-                    );
-                }
+                if (entryCnt == 1)
+                    res = new DataRecord(readEncryptedDataEntry(in, type), 0L, false);
                 else {
                     List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                     for (int i = 0; i < entryCnt; i++)
                         entries.add(readEncryptedDataEntry(in, type));
 
-                    res = new DataRecord(entries, 0L, type == ENCRYPTED_DATA_RECORD_V3_WITH_TTL);
+                    res = new DataRecord(entries, 0L, false);
                 }
 
                 break;
@@ -1403,7 +1396,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 for (int i = 0; i < entryCnt; i++) {
                     if (encrypted)
-                        putEncryptedDataEntry(buf, dataRec.get(i), dataRec.writeTtl());
+                        putEncryptedDataEntry(buf, dataRec.get(i), false);
                     else
                         putPlainDataEntry(buf, dataRec.get(i), dataRec.writeTtl());
                 }
@@ -2084,14 +2077,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     DataEntry readEncryptedDataEntry(ByteBufferBackedDataInput in, RecordType recType) throws IOException, IgniteCheckedException {
         boolean needDecryption = in.readByte() == ENCRYPTED;
 
-        RecordType dataRecordType = recType == ENCRYPTED_DATA_RECORD_V3
-            ? DATA_RECORD_V2
-            : (recType == ENCRYPTED_DATA_RECORD_V3_WITH_TTL ? DATA_RECORD_V2_WITH_TTL : DATA_RECORD);
+        RecordType dataRecordType = recType == ENCRYPTED_DATA_RECORD_V3 ? DATA_RECORD_V2 : DATA_RECORD;
 
         if (needDecryption) {
-            boolean readKeyId = recType == ENCRYPTED_DATA_RECORD_V2
-                || recType == ENCRYPTED_DATA_RECORD_V3
-                || recType == ENCRYPTED_DATA_RECORD_V3_WITH_TTL;
+            boolean readKeyId = recType == ENCRYPTED_DATA_RECORD_V2 || recType == ENCRYPTED_DATA_RECORD_V3;
 
             DecryptionResult decryptionResult = readEncryptedData(in, false, readKeyId);
 
@@ -2198,11 +2187,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (rec.type() != DATA_RECORD && rec.type() != DATA_RECORD_V2)
             return rec.type();
 
-        DataRecord rec0 = (DataRecord)rec;
-
-        return isDataRecordEncrypted(rec0)
-            ? (rec0.writeTtl() ? ENCRYPTED_DATA_RECORD_V3_WITH_TTL : ENCRYPTED_DATA_RECORD_V3)
-            : rec.type();
+        return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V3 : rec.type();
     }
 
     /**

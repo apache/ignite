@@ -44,7 +44,6 @@ public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataE
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
-     * @param ttl TTL.
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
@@ -59,14 +58,13 @@ public class UnwrapMvccDataEntry extends MvccDataEntry implements UnwrappedDataE
         final GridCacheOperation op,
         final GridCacheVersion nearXidVer,
         final GridCacheVersion writeVer,
-        final long ttl,
         final long expireTime,
         final int partId,
         final long partCnt,
         MvccVersion mvccVer,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, ttl, expireTime, partId, partCnt, mvccVer);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
 
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;

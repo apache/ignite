@@ -308,7 +308,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         byte[] sensitiveDataBytes = SENSITIVE_DATA_VALUE_PREFIX.getBytes(StandardCharsets.UTF_8);
 
-        walRecords.add(new DataRecord(dataEntry));
+        walRecords.add(new DataRecord(dataEntry, false));
         walRecords.add(new MetastoreDataRecord(SENSITIVE_DATA_VALUE_PREFIX, sensitiveDataBytes));
 
         return walRecords;

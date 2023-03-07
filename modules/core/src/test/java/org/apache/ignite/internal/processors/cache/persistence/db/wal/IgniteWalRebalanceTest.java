@@ -884,19 +884,22 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     // Corrupt wal record in order to fail historical rebalance from supplier1 node.
                     IgniteWriteAheadLogManager walMgr = supplier1.context().cache().context().wal();
 
-                    WALPointer ptr = walMgr.log(new DataRecord(new DataEntry(
-                        CU.cacheId("test-cache-1"),
-                        new KeyCacheObjectImpl(0, null, 0),
-                        null,
-                        GridCacheOperation.DELETE,
-                        new GridCacheVersion(0, 1, 1, 0),
-                        new GridCacheVersion(0, 1, 1, 0),
-                        TTL_ETERNAL,
-                        EXPIRE_TIME_ETERNAL,
-                        0,
-                        0,
-                        DataEntry.EMPTY_FLAGS
-                    )));
+                    WALPointer ptr = walMgr.log(new DataRecord(
+                        new DataEntry(
+                            CU.cacheId("test-cache-1"),
+                            new KeyCacheObjectImpl(0, null, 0),
+                            null,
+                            GridCacheOperation.DELETE,
+                            new GridCacheVersion(0, 1, 1, 0),
+                            new GridCacheVersion(0, 1, 1, 0),
+                            TTL_ETERNAL,
+                            EXPIRE_TIME_ETERNAL,
+                            0,
+                            0,
+                            DataEntry.EMPTY_FLAGS
+                        ),
+                        false
+                    ));
 
                     File walDir = U.field(walMgr, "walWorkDir");
 

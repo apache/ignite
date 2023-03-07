@@ -357,7 +357,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             entries.add(mvcc ?
                 new MvccDataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
-                    TTL_ETERNAL, EXPIRE_TIME_ETERNAL,
+                    0L,
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
                 new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
                     TTL_ETERNAL, EXPIRE_TIME_ETERNAL,
@@ -371,7 +371,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         wal.flush(start, false);
 
         for (DataEntry entry : entries)
-            wal.log(mvcc ? new MvccDataRecord((MvccDataEntry)entry) : new DataRecord(entry));
+            wal.log(mvcc ? new MvccDataRecord((MvccDataEntry)entry) : new DataRecord(entry, false));
 
         // Data will not be written to the page store.
         stopAllGrids();

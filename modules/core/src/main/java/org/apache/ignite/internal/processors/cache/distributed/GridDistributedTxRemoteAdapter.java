@@ -504,6 +504,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         // Data entry to write to WAL.
                         List<DataEntry> dataEntries = null;
+                        boolean cdcEnabled = false;
 
                         batchStoreCommit(writeMap().values());
 
@@ -624,6 +625,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         );
 
                                         dataEntries.add(dataEntry);
+                                        cdcEnabled |= cacheCtx.group().cdcEnabled();
                                     }
 
                                     if (op == CREATE || op == UPDATE) {
@@ -790,7 +792,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         cctx.mvccCaching().onTxFinished(this, true);
 
                         if (!near() && !F.isEmpty(dataEntries) && cctx.wal(true) != null)
-                            ptr = cctx.wal(true).log(new DataRecord(dataEntries));
+                            ptr = cctx.wal(true).log(new DataRecord(dataEntries, cdcEnabled));
 
                         if (ptr != null)
                             cctx.wal(true).flush(ptr, false);

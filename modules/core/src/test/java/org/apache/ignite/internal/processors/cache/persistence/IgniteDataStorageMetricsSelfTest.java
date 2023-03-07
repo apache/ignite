@@ -384,7 +384,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         setFieldValue(walDisableCtx, "disableWal", true);
 
         assertTrue(walDisableCtx.check());
-        assertNull(walMgr(n).log(new DataRecord(emptyList())));
+        assertNull(walMgr(n).log(new DataRecord(emptyList(), false)));
 
         assertEquals(-1, walMgr(n).lastArchivedSegment());
 

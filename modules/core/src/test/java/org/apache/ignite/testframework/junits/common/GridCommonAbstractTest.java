@@ -2730,7 +2730,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertEquals(disable, walDisableCtx.check());
 
-        WALPointer logPtr = walMgr(n).log(new DataRecord(emptyList()));
+        WALPointer logPtr = walMgr(n).log(new DataRecord(emptyList(), false));
 
         if (disable)
             assertNull(logPtr);
