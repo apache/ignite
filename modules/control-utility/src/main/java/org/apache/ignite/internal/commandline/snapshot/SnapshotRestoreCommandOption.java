@@ -32,8 +32,8 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
         SnapshotCheckCommandOption.SOURCE.description()),
 
     /** Incremental snapshot index. */
-    INCREMENT("--increment", "incrementIndex", "Incremental snapshot index. The command will restore full " +
-        "snapshot and then all its increments sequentially from 1 to the specified index."),
+    INCREMENT("--increment", "incrementIndex", "Incremental snapshot index. The command will restore " +
+        "snapshot and after that all its increments sequentially from 1 to the specified index."),
 
     /** Synchronous execution flag. */
     SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.arg(),

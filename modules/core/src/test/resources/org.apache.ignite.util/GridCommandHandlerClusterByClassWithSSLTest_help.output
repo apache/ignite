@@ -173,11 +173,11 @@ This utility can do the following commands:
     control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync]
 
     Parameters:
-      snapshot_name              - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
-      --groups group1,...groupN  - Cache group names.
-      --src path                 - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
-      --increment incrementIndex - Incremental snapshot index. The command will restore full snapshot and then all its increments sequentially from 1 to the specified index.
-      --sync                     - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
+      snapshot_name               - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
+      --groups group1,...groupN   - Cache group names.
+      --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      --increment incrementIndex  - Incremental snapshot index. The command will restore snapshot and after that all its increments sequentially from 1 to the specified index.
+      --sync                      - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead):
     control.(sh|bat) --snapshot restore snapshot_name --status
