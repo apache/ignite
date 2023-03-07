@@ -253,7 +253,7 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  * These major actions available:
  * <ul>
  *     <li>Create snapshot of the whole cluster cache groups by triggering PME to achieve consistency.</li>
- *     <li>Create incremental snapshot of transactional cache groups by using Consistent Cut algorithm.</li>
+ *     <li>Create incremental snapshot using lightweight, non-blocking Consistent Cut algorithm.</li>
  * </ul>
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
