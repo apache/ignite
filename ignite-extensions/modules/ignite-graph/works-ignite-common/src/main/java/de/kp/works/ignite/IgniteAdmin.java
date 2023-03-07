@@ -469,12 +469,6 @@ public class IgniteAdmin {
     	if(ignite.cacheNames().contains(cacheName)) {
     		return true;
     	}
-    	try {
-    		ignite.cache(cacheName);
-    		return true;
-    	}
-    	catch(CacheException e) {
-    		return false;
-    	}
+    	return false;
     }
 }

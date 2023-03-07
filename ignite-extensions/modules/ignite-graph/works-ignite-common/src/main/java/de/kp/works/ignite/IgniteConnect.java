@@ -9,7 +9,7 @@ import org.apache.ignite.*;
 
 public class IgniteConnect
 {
-	private static Ignite defaultIgnite = null;
+	public static Ignite defaultIgnite = null;
 	private final Ignite ignite;
     private final String graphNS;
     
@@ -53,13 +53,18 @@ public class IgniteConnect
     
     public Ignite getOrStart(String instanceName) {
     	try {
+    		if(defaultIgnite==null) {
+    			if(Ignition.allGrids().size()==0) {
+    				defaultIgnite = Ignition.start(IgniteConf.fromFile());
+    			}
+    			else {
+    				defaultIgnite = Ignition.allGrids().get(0);
+    			}
+    		}
     		Ignite ignite = Ignition.ignite(instanceName);
     		return ignite;
     	}
     	catch(Exception e) {
-    		if(defaultIgnite==null) {
-    			defaultIgnite= Ignition.getOrStart(IgniteConf.fromConfig());
-    		}
     		return defaultIgnite;
     	}
         

@@ -161,9 +161,9 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
             int numberToReturn) {
         List<Document> matchedDocuments = new ArrayList<>();
         
-        IgniteBiPredicate<Object, BinaryObject> filter = new BinaryObjectMatch(query,"id");
+        IgniteBiPredicate<Object, BinaryObject> filter = new BinaryObjectMatch(query,this.idField);
         
-        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>();
+        ScanQuery<Object, BinaryObject> scan = new ScanQuery<>(query.isEmpty()? null: filter);
 	 
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
@@ -181,6 +181,12 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
 	    sortDocumentsInMemory(matchedDocuments, orderBy);
         return applySkipAndLimit(matchedDocuments, numberToSkip, numberToReturn);
+    }
+    
+    @Override
+    public void drop() {
+        log.debug("Dropping collection {}", getFullName());
+        dataMap.destroy();
     }
 
     @Override
@@ -225,7 +231,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		shortName = pos>0? typeName.substring(pos+1): typeName;
     	}    	
     	
-    	String keyField = "id";
+    	String keyField = "_id";
     	CacheConfiguration<Object,BinaryObject> cfg = dataMap.getConfiguration(CacheConfiguration.class);
     	if(!cfg.getQueryEntities().isEmpty()) {
     		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();

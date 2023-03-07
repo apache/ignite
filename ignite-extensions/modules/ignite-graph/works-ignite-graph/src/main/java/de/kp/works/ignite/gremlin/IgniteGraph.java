@@ -18,9 +18,10 @@ package de.kp.works.ignite.gremlin;
  *
  */
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConf;
 import de.kp.works.ignite.IgniteConstants;
@@ -150,19 +151,19 @@ public class IgniteGraph implements Graph {
         this.vertexModel = new VertexModel(this,
                 admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.VERTICES),ElementType.VERTEX));
 
-        this.edgeCache = CacheBuilder.newBuilder()
+        this.edgeCache = Caffeine.newBuilder()
                 .maximumSize(config.getElementCacheMaxSize())
                 .expireAfterAccess(config.getElementCacheTtlSecs(), TimeUnit.SECONDS)
-                .removalListener((RemovalListener<String, Edge>) notif -> ((IgniteEdge) notif.getValue()).setCached(false))
+                .removalListener((RemovalListener<String, Edge>) (k,v,cause) -> ((IgniteEdge) v).setCached(false))
                 .build();
 
-        this.vertexCache = CacheBuilder.newBuilder()
+        this.vertexCache = Caffeine.newBuilder()
                 .maximumSize(config.getElementCacheMaxSize())
                 .expireAfterAccess(config.getElementCacheTtlSecs(), TimeUnit.SECONDS)
-                .removalListener((RemovalListener<String, Vertex>) notif -> ((IgniteVertex) notif.getValue()).setCached(false))
+                .removalListener((RemovalListener<String, Vertex>) (k,v,cause) -> ((IgniteVertex) v).setCached(false))
                 .build();
         
-        this.vertexReletionCache = CacheBuilder.newBuilder()
+        this.vertexReletionCache = Caffeine.newBuilder()
                 .maximumSize(config.getRelationshipCacheMaxSize())
                 .expireAfterAccess(config.getRelationshipCacheTtlSecs(), TimeUnit.SECONDS)
                 .build();
@@ -405,6 +406,7 @@ public class IgniteGraph implements Graph {
     	}
     	return vertexModel.verticesInRange(label, key, inclusiveFromValue, exclusiveToValue);
     }
+    
 
     public Iterator<Vertex> verticesWithLimit(String label, String key, Object fromValue, int limit) {
     	if(this.isDocumentModel(label)) {

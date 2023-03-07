@@ -165,7 +165,7 @@ public class MongoSecurityPluginProvider implements PluginProvider<MongoPluginCo
 
 	@Override
 	public void onIgniteStart() throws IgniteCheckedException {
-		if(cfg!=null && MongoServerPluginProvider.backend!=null) {			
+		if(MongoServerPluginProvider.backend!=null) {			
 				
 			SecurityPermissionSetBuilder permsBuilder = new SecurityPermissionSetBuilder()  
 	   	  			.appendCachePermissions("INDEX.*", CACHE_READ)
@@ -187,10 +187,30 @@ public class MongoSecurityPluginProvider implements PluginProvider<MongoPluginCo
 				   	   
 				   	    Iterable<Document> users = collection.handleQuery(selector, 0, 1000, null);
 					   	for(Document user: users) {
-					   		List<Document> privileges = MongoServerPluginProvider.backend.getUserPrivileges(user,"");
+					   		List<Document> privileges = MongoServerPluginProvider.backend.getUserPrivileges(user,databaseName);
 					   		for(Document privilege: privileges) {
-					   			Object actions = privilege.get("actions");
+					   			List<String> actions = (List<String>)privilege.get("actions");
 					   			Document resource = privilege.getDocumnet("resource");
+					   			String collectionName = resource.get("collection").toString();
+					   			for(String action: actions) {
+					   				if(action.equals("find") || action.equals("count")) {
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_READ);
+					   				}
+					   				else if(action.equals("dbStats")) {
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_READ);
+					   				}
+					   				else if(action.equals("insert")) {
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_CREATE);
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_PUT);
+					   				}
+					   				else if(action.equals("remove")) {
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_REMOVE);
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_DESTROY);
+					   				}
+					   				else if(action.equals("update")) {
+					   					permsBuilder.appendCachePermissions(collectionName, CACHE_PUT);
+					   				}					   				
+					   			}
 					   		}
 					   		
 					   		
@@ -199,14 +219,14 @@ public class MongoSecurityPluginProvider implements PluginProvider<MongoPluginCo
 					   		this.clientData.add(data);
 					   		
 				  		 }
-					   	break;
+					   	 break;
 					   	
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+						break;
 					}
-				}
-				
+				}				
 				
 			});
 			t.start();

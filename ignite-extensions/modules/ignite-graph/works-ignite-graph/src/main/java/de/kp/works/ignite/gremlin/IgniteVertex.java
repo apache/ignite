@@ -18,8 +18,6 @@ package de.kp.works.ignite.gremlin;
  *
  */
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
 import de.kp.works.ignite.gremlin.models.EdgeModel;

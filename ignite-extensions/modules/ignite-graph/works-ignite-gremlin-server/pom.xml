@@ -2,63 +2,34 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>ignite-graph</artifactId>
+        <groupId>de.kp.works</groupId>
+        <version>0.5.0</version>
+        <relativePath>..</relativePath>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.kp.works</groupId>
-    <artifactId>ignite-graph</artifactId>
-    <packaging>pom</packaging>
-    <version>0.5.0</version>
-    <modules>
-        <module>works-ignite-common</module>
-        <module>works-ignite-graph</module>
-        <module>works-ignite-gremlin-server</module>
-        <!-- 
-        <module>works-ignite-streamer</module>
-        <module>works-ignite-spark</module> 
-        -->
-    </modules>
-
-    <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <scala.binary.version>2.11</scala.binary.version>
-
-        <ignite.version>2.14.0</ignite.version>        
-		<jackson.version>2.12.7</jackson.version>
-        <kryo.version>5.1.1</kryo.version>
-        <okhttp.version>3.14.4</okhttp.version>
-        <scala.version>2.11.12</scala.version>
-        <spark.version>2.4.7</spark.version>
-        <tinkerpop.version>3.5.3</tinkerpop.version>
-		<gremlin.version>3.5.3</gremlin.version>
-
-     </properties>
+    <artifactId>works-ignite-gremlin-server</artifactId>
 
     <dependencies>
 
+        <dependency>
+            <groupId>de.kp.works</groupId>
+            <artifactId>works-ignite-graph</artifactId>
+            <version>0.5.0</version>
+        </dependency>
         
-        <!-- APACHE IGNITE
-		-->
-		<dependency>
-		    <groupId>org.apache.ignite</groupId>
-		    <artifactId>ignite-core</artifactId>
-		    <version>${ignite.version}</version>
-		    <scope>provided</scope>
-		</dependency>
-        
-
-        <!-- GREMLIN CORE
-        -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-core</artifactId>
+            <artifactId>gremlin-server</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+
+    </dependencies>
+
+    <build>
        
-     </dependencies>
-     <build>              
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -76,11 +47,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>                    
+                    <version>3.8.1</version>                   
                 </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -92,7 +64,24 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>             
+            </plugin>
+             <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration >
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>false</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 

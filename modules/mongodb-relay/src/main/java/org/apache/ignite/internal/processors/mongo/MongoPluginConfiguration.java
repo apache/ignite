@@ -23,7 +23,7 @@ import org.apache.ignite.plugin.PluginConfiguration;
  * Configuration of ML plugin that defines which ML inference services should be start up on Ignite startup.
  */
 public class MongoPluginConfiguration implements PluginConfiguration {
-    private boolean isWithBinaryStorage  = false;
+    private boolean isWithBinaryStorage  = true;
     
     /** Host. */
     private String host = "0.0.0.0";

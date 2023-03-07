@@ -362,7 +362,7 @@ public class DocumentUtil {
 						$value = readOtherBinaryField($value,field.typeId());
 					}
 				}
-				if($key==keyField) {
+				if($key.equals(keyField)) {
 					keyValue = $value;
 				}
 				else {

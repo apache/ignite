@@ -18,7 +18,6 @@ package de.kp.works.ignite.gremlin.models;
  *
  */
 
-import com.google.common.collect.Streams;
 
 import de.kp.works.ignite.query.IgniteQuery;
 import de.kp.works.ignite.IgniteResultTransform;
@@ -27,13 +26,18 @@ import de.kp.works.ignite.gremlin.IgniteGraph;
 import de.kp.works.ignite.gremlin.IgniteVertex;
 import de.kp.works.ignite.gremlin.mutators.*;
 import de.kp.works.ignite.gremlin.readers.EdgeReader;
+
+import org.apache.commons.lang3.Streams;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class EdgeModel extends ElementModel {
 
@@ -58,6 +62,42 @@ public class EdgeModel extends ElementModel {
     }
 
     /** READ **/
+    public Iterator<Edge> edgesByLabel(String label, int offset, int limit) {
+        /*
+         * The parser converts results from Ignite
+         * queries to vertices.
+         */
+        final EdgeReader parser = new EdgeReader(graph);
+        /*
+         * The query is responsible for retrieving the
+         * requested vertices from the Ignite cache.
+         */
+        IgniteQuery igniteQuery = table.getLabelQuery(label);
+        
+        if(limit>0) {
+        	igniteQuery.withRange(offset,limit);
+        }
+
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
+    }
+    
+    /** READ **/
+    public Iterator<Edge> edgesByLabel(String label, String key, Object value) {
+        /*
+         * The parser converts results from Ignite
+         * queries to vertices.
+         */
+        final EdgeReader parser = new EdgeReader(graph);
+        /*
+         * The query is responsible for retrieving the
+         * requested vertices from the Ignite cache.
+         */
+        IgniteQuery igniteQuery = table.getPropertyQuery(label, key, value);       
+
+        return IgniteResultTransform
+                .map(igniteQuery.getResult(),parser::parse);
+    }
 
     public Iterator<Edge> edges(int offset,int limit) {
         /*
@@ -213,7 +253,7 @@ public class EdgeModel extends ElementModel {
          * Retrieve the vertex from the respective
          * in or out vertex
          */
-        List<Vertex> vertices = Streams.stream(edges).map(edge -> {
+        List<Vertex> vertices = StreamSupport.stream(Spliterators.spliteratorUnknownSize(edges, Spliterator.ORDERED), true).map(edge -> {
 
             Object inVertexId = edge.inVertex().id();
             Object outVertexId = edge.outVertex().id();

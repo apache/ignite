@@ -169,7 +169,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 		String typeName = collection.getCollectionName();
 		Object key = null;
-		String keyField = "id";
+		String keyField = "_id";
 		if (collection instanceof IgniteBinaryCollection) {
 
 			if (!this.isFirstIndex)

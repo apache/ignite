@@ -19,6 +19,12 @@
             <artifactId>works-ignite-common</artifactId>
             <version>0.5.0</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-server</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
 
     </dependencies>
 
@@ -58,7 +64,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>             
         </plugins>
     </build>
 
