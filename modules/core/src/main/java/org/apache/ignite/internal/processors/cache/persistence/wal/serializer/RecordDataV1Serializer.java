@@ -2157,6 +2157,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     op,
                     nearXidVer,
                     writeVer,
+                    TTL_ETERNAL, //TODO: FIXME
                     expireTime,
                     partId,
                     partCntr,

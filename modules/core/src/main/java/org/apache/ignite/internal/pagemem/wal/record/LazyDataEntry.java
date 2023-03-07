@@ -57,6 +57,7 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
+     * @param ttl TTL.
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
@@ -72,12 +73,13 @@ public class LazyDataEntry extends DataEntry implements MarshalledDataEntry {
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
+        long ttl,
         long expireTime,
         int partId,
         long partCnt,
         byte flags
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
+        super(cacheId, null, null, op, nearXidVer, writeVer, ttl, expireTime, partId, partCnt, flags);
 
         this.cctx = cctx;
         this.keyType = keyType;

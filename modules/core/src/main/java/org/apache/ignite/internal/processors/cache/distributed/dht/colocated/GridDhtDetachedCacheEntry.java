@@ -77,6 +77,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
         GridCacheOperation op,
         CacheObject val,
         GridCacheVersion writeVer,
+        long ttl,
         long expireTime,
         long updCntr,
         boolean primary
@@ -89,6 +90,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
         IgniteInternalTx tx,
         CacheObject val,
         GridCacheVersion writeVer,
+        long ttl,
         long expireTime,
         long updCntr
     ) {

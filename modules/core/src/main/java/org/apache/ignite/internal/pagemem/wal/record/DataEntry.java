@@ -100,6 +100,7 @@ public class DataEntry {
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
+     * @param ttl TTL.
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.

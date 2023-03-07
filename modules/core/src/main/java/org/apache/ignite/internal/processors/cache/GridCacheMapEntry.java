@@ -1221,6 +1221,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                     tx.nearXidVersion(),
                     newVer,
+                    ttl,
                     expireTime,
                     key.partition(),
                     0L,
@@ -1342,7 +1343,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (cctx.group().logDataRecords())
-                logPtr = logMvccUpdate(tx, null, 0, 0L, mvccVer);
+                logPtr = logMvccUpdate(tx, null, 0, TTL_ETERNAL, EXPIRE_TIME_ETERNAL, mvccVer);
 
             update(null, 0, 0, newVer, true);
 
@@ -3130,6 +3131,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             val == null ? DELETE : GridCacheOperation.CREATE,
                             null,
                             ver,
+                            ttl,
                             expireTime,
                             partition(),
                             updateCntr,
@@ -4079,12 +4081,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param tx Transaction.
      * @param val Value.
+     * @param ttl TTL.
      * @param expireTime Expire time (or 0 if not applicable).     *
      * @param updCntr Update counter.
      * @param mvccVer Mvcc version.
      * @throws IgniteCheckedException In case of log failure.
      */
-    protected WALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr,
+    protected WALPointer logMvccUpdate(IgniteInternalTx tx, CacheObject val, long ttl, long expireTime, long updCntr,
         MvccSnapshot mvccVer)
         throws IgniteCheckedException {
         assert mvccVer != null;
@@ -4104,6 +4107,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 op,
                 tx.nearXidVersion(),
                 tx.writeVersion(),
+                ttl,
                 expireTime,
                 key.partition(),
                 updCntr,
@@ -4999,7 +5003,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 if (cctx.group().logDataRecords())
-                    entry.logMvccUpdate(tx, null, 0, 0, mvccVer);
+                    entry.logMvccUpdate(tx, null, TTL_ETERNAL, EXPIRE_TIME_ETERNAL, 0, mvccVer);
 
                 entry.update(null, 0, 0, newVer, true);
 
@@ -5356,6 +5360,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             (res.resultType() == ResultType.REMOVED_NOT_NULL) ? DELETE : UPDATE,
                         tx.nearXidVersion(),
                         newVer,
+                        ttl,
                         expireTime,
                         entry.key().partition(),
                         0L,
@@ -6606,6 +6611,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         DELETE,
                         tx.nearXidVersion(),
                         last.version(),
+                        last.ttl(),
                         last.expireTime(),
                         key.partition(),
                         0,
@@ -6707,6 +6713,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             CREATE,
             tx == null ? null : tx.nearXidVersion(),
             info.version(),
+            info.ttl(),
             info.expireTime(),
             key.partition(),
             0,

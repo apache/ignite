@@ -63,6 +63,7 @@ class DataEntryWrapper extends DataEntry {
             dataEntry.op(),
             dataEntry.nearXidVersion(),
             dataEntry.writeVersion(),
+            dataEntry.ttl(),
             dataEntry.expireTime(),
             dataEntry.partitionId(),
             dataEntry.partitionCounter(),

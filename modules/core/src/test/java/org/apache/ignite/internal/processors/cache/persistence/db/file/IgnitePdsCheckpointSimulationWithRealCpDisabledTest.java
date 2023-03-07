@@ -357,7 +357,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
             entries.add(mvcc ?
                 new MvccDataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
-                    0L,
+                    TTL_ETERNAL, EXPIRE_TIME_ETERNAL,
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
                 new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
                     TTL_ETERNAL, EXPIRE_TIME_ETERNAL,

@@ -43,6 +43,7 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
+     * @param ttl TTL.
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
@@ -57,13 +58,14 @@ public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
         final GridCacheOperation op,
         final GridCacheVersion nearXidVer,
         final GridCacheVersion writeVer,
+        final long ttl,
         final long expireTime,
         final int partId,
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary,
         final byte flags) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, flags);
+        super(cacheId, key, val, op, nearXidVer, writeVer, ttl, expireTime, partId, partCnt, flags);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }

@@ -73,12 +73,13 @@ public class LazyMvccDataEntry extends MvccDataEntry implements MarshalledDataEn
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
+        long ttl,
         long expireTime,
         int partId,
         long partCnt,
         MvccVersion mvccVer
     ) {
-        super(cacheId, null, null, op, nearXidVer, writeVer, expireTime, partId, partCnt, mvccVer);
+        super(cacheId, null, null, op, nearXidVer, writeVer, ttl, expireTime, partId, partCnt, mvccVer);
 
         this.cctx = cctx;
         this.keyType = keyType;

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBac
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  * Record data V2 serializer.
@@ -415,6 +416,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 op,
                 nearXidVer,
                 writeVer,
+                CU.TTL_ETERNAL, //TODO: FIXME
                 expireTime,
                 partId,
                 partCntr,
@@ -432,6 +434,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 op,
                 nearXidVer,
                 writeVer,
+                CU.TTL_ETERNAL, //TODO: FIXME
                 expireTime,
                 partId,
                 partCntr,
