@@ -135,6 +135,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -2725,9 +2726,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Disables creation of incremental snapshots for the given cache group.
      *
+     * @param metaStorage External metastorage, useful if the flag is set before cluster activation.
      * @param grpId Group ID.
      */
-    public void disableIncrementalSnapshotsCreation(int grpId) {
+    public void disableIncrementalSnapshotsCreation(MetaStorage metaStorage, int grpId) {
         cctx.database().checkpointReadLock();
 
         try {

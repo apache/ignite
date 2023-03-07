@@ -3301,7 +3301,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "--sync"));
         assertContains(log, testOut.toString(), "Invalid argument: --sync. Action \"--status\" does not support specified option.");
@@ -3310,7 +3310,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --start.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync.");
 
         autoConfirmation = true;
 
@@ -3377,7 +3377,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(),
-            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --sync.");
+            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));
@@ -3459,6 +3459,85 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
             assertEquals(cacheName3, Integer.valueOf(i), cache2.get(i));
         }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testIncrementalSnapshotRestore() throws Exception {
+        walCompactionEnabled(true);
+
+        int keysCnt = 100;
+        String snpName = "snapshot_06032023";
+        String cacheName1 = "cache1";
+
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        createCacheAndPreload(ig, cacheName1, keysCnt, 32, null);
+
+        ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
+
+        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(cacheName1)) {
+            for (int i = keysCnt; i < keysCnt * 2; i++)
+                streamer.addData(i, i);
+        }
+
+        ig.snapshot().createIncrementalSnapshot(snpName).get(getTestTimeout());
+
+        IgniteCache<Integer, Integer> cache1 = ig.cache(cacheName1);
+
+        cache1.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+
+        CommandHandler h = new CommandHandler();
+
+        // Missed increment index.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--increment"));
+        assertContains(log, testOut.toString(), "Expected incremental snapshot index");
+
+        // Wrong params.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--increment", "wrong"));
+        assertContains(log, testOut.toString(), "Invalid value for incremental snapshot index");
+
+        // Missed increment index.
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--increment", "1", "--increment", "2"));
+        assertContains(log, testOut.toString(), "increment arg specified twice");
+
+        // Non existent increment.
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+
+        // Succesfull restore.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--increment", "1", "--sync"));
+
+        cache1 = ig.cache(cacheName1);
+
+        assertNotNull(cache1);
+
+        for (int i = 0; i < 2 * keysCnt; i++)
+            assertEquals(Integer.valueOf(i), cache1.get(i));
+
+        cache1.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+
+        // Specify full increment index value.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--increment", "0000000000000001", "--sync"));
+
+        cache1 = ig.cache(cacheName1);
+
+        assertNotNull(cache1);
+
+        for (int i = 0; i < 2 * keysCnt; i++)
+            assertEquals(Integer.valueOf(i), cache1.get(i));
     }
 
     /** @throws Exception If fails. */

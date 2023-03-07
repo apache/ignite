@@ -38,6 +38,9 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     /** Snapshot restore operation management action. */
     private VisorSnapshotRestoreTaskAction action;
 
+    /** Incremental snapshot index. */
+    private int incIdx;
+
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
         // No-op.
@@ -45,6 +48,8 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
 
     /**
      * @param snpName Snapshot name.
+     * @param snpPath Snapshot path.
+     * @param incIdx Incremental snapshot index, {@code null} if no increments should be restored.
      * @param sync Synchronous execution flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
@@ -52,6 +57,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     public VisorSnapshotRestoreTaskArg(
         String snpName,
         String snpPath,
+        @Nullable Integer incIdx,
         boolean sync,
         VisorSnapshotRestoreTaskAction action,
         @Nullable Collection<String> grpNames
@@ -60,6 +66,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
 
         this.action = action;
         this.grpNames = grpNames;
+        this.incIdx = incIdx == null ? 0 : incIdx;
     }
 
     /** @return Cache group names. */
@@ -72,12 +79,17 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         return action;
     }
 
+    /** @return Incremental snapshot index. */
+    public int incrementIndex() {
+        return incIdx;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
         U.writeEnum(out, action);
         U.writeCollection(out, grpNames);
+        out.writeInt(incIdx);
     }
 
     /** {@inheritDoc} */
@@ -85,6 +97,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         super.readExternalData(ver, in);
         action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
         grpNames = U.readCollection(in);
+        incIdx = in.readInt();
     }
 
     /** {@inheritDoc} */
