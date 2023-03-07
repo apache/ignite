@@ -52,7 +52,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest.TestPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -80,6 +79,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -290,7 +291,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         );
 
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
-            .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
+            .filter((type, pointer) -> type == DATA_RECORD_V2 || type == DATA_RECORD_V2_WITH_TTL);
 
         assertTrue("DataRecord(List<DataEntry>) should be logged.", waitForCondition(() -> {
             try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {

@@ -55,6 +55,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.development.utils.IgniteWalConverter.convert;
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parse;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
@@ -320,7 +322,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
 
                     final int len = Integer.reverseBytes(raf.readInt());
 
-                    if (recordTypeIndex == WALRecord.RecordType.DATA_RECORD_V2.index()) {
+                    if (recordTypeIndex == DATA_RECORD_V2.index()
+                        || recordTypeIndex == DATA_RECORD_V2_WITH_TTL.index()) {
                         int i = 0;
 
                         int b;
@@ -431,7 +434,8 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
                 if (recordTypeIndex > 0) {
                     recordTypeIndex--;
 
-                    if (recordTypeIndex == WALRecord.RecordType.DATA_RECORD_V2.index()) {
+                    if (recordTypeIndex == DATA_RECORD_V2.index()
+                        || recordTypeIndex == DATA_RECORD_V2_WITH_TTL.index()) {
                         find++;
 
                         if (find == 2) {

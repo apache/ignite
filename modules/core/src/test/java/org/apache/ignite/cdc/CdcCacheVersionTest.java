@@ -80,6 +80,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.DATA_VER_CLUSTER_ID;
@@ -198,7 +199,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public void testConflictVersionWritten() throws Exception {
         walProvider = (ctx) -> new FileWriteAheadLogManager(ctx) {
             @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-                if (rec.type() != DATA_RECORD_V2)
+                if (rec.type() != DATA_RECORD_V2 && rec.type() != DATA_RECORD_V2_WITH_TTL)
                     return super.log(rec);
 
                 DataRecord dataRec = (DataRecord)rec;
@@ -352,7 +353,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
             private long prevOrder = -1;
 
             @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-                if (rec.type() != DATA_RECORD_V2)
+                if (rec.type() != DATA_RECORD_V2 && rec.type() != DATA_RECORD_V2_WITH_TTL)
                     return super.log(rec);
 
                 DataRecord dataRec = (DataRecord)rec;

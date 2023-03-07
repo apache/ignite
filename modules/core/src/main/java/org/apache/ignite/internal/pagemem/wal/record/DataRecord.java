@@ -23,6 +23,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 
 /**
  * Logical data record with cache operation description.
@@ -34,9 +37,13 @@ public class DataRecord extends TimeStampRecord {
     @GridToStringInclude
     private Object writeEntries;
 
+    /** If {@code true} then {@code ttl != 0} will be written. */
+    @GridToStringInclude
+    private boolean writeTtl;
+
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.DATA_RECORD_V2;
+        return writeTtl ? DATA_RECORD_V2 : DATA_RECORD_V2_WITH_TTL;
     }
 
     /**
@@ -49,27 +56,43 @@ public class DataRecord extends TimeStampRecord {
     /**
      * @param writeEntry Write entry.
      */
-    public DataRecord(DataEntry writeEntry) {
-        this(writeEntry, U.currentTimeMillis());
+    public DataRecord(DataEntry writeEntry, boolean cdcEnabled) {
+        this(writeEntry, U.currentTimeMillis(), cdcEnabled);
     }
 
     /**
      * @param writeEntries Write entries.
      */
-    public DataRecord(List<DataEntry> writeEntries) {
-        this(writeEntries, U.currentTimeMillis());
+    public DataRecord(List<DataEntry> writeEntries, boolean cdcEnabled) {
+        this(writeEntries, U.currentTimeMillis(), cdcEnabled);
     }
 
     /**
      * @param writeEntries Write entries.
      * @param timestamp TimeStamp.
      */
-    public DataRecord(Object writeEntries, long timestamp) {
+    public DataRecord(Object writeEntries, long timestamp, boolean cdcEnabled) {
         super(timestamp);
 
         A.notNull(writeEntries, "writeEntries");
 
         this.writeEntries = writeEntries;
+
+        boolean writeTtl0 = false;
+
+        if (writeEntries instanceof DataEntry)
+            writeTtl0 = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
+        else {
+            for (DataEntry dataEntry : ((Iterable<DataEntry>)writeEntries)) {
+                if (dataEntry.ttl() != TTL_ETERNAL) {
+                    writeTtl0 = true;
+
+                    break;
+                }
+            }
+        }
+
+        this.writeTtl = cdcEnabled && writeTtl0;
     }
 
     /**
@@ -111,6 +134,11 @@ public class DataRecord extends TimeStampRecord {
         }
 
         return ((List<DataEntry>)writeEntries).get(idx);
+    }
+
+    /** @return {@code True} if TTL data must be written, {@code false} otherwise. */
+    public boolean writeTtl() {
+        return writeTtl;
     }
 
     /** {@inheritDoc} */

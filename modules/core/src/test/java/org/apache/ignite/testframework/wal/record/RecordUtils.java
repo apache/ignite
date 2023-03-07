@@ -118,9 +118,11 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
@@ -185,6 +187,7 @@ public class RecordUtils {
         put(PAGE_RECORD, RecordUtils::buildPageSnapshot);
         put(DATA_RECORD, RecordUtils::buildDataRecord);
         put(DATA_RECORD_V2, RecordUtils::buildDataRecord);
+        put(DATA_RECORD_V2_WITH_TTL, RecordUtils::buildDataRecord);
         put(CHECKPOINT_RECORD, RecordUtils::buildCheckpointRecord);
         put(HEADER_RECORD, buildUpsupportedWalRecord(HEADER_RECORD));
         put(INIT_NEW_PAGE_RECORD, RecordUtils::buildInitNewPageRecord);
@@ -248,6 +251,7 @@ public class RecordUtils {
         put(ENCRYPTED_RECORD_V2, buildUpsupportedWalRecord(ENCRYPTED_RECORD_V2));
         put(ENCRYPTED_DATA_RECORD_V2, buildUpsupportedWalRecord(ENCRYPTED_DATA_RECORD_V2));
         put(ENCRYPTED_DATA_RECORD_V3, buildUpsupportedWalRecord(ENCRYPTED_DATA_RECORD_V3));
+        put(ENCRYPTED_DATA_RECORD_V3_WITH_TTL, buildUpsupportedWalRecord(ENCRYPTED_DATA_RECORD_V3));
         put(MVCC_DATA_RECORD, RecordUtils::buildMvccDataRecord);
         put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
         put(CONSISTENT_CUT, buildUpsupportedWalRecord(CONSISTENT_CUT));
@@ -291,7 +295,7 @@ public class RecordUtils {
 
     /** **/
     public static DataRecord buildDataRecord() {
-        return new DataRecord(Collections.emptyList());
+        return new DataRecord(Collections.emptyList(), false);
     }
 
     /** **/

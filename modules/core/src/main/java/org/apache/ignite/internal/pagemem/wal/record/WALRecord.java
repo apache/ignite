@@ -282,7 +282,13 @@ public abstract class WALRecord {
         ENCRYPTED_OUT_OF_ORDER_UPDATE(74, LOGICAL),
 
         /** ClusterSnapshot start. */
-        CLUSTER_SNAPSHOT(75, LOGICAL);
+        CLUSTER_SNAPSHOT(75, LOGICAL),
+
+        /** Data record V2 with TTL. */
+        DATA_RECORD_V2_WITH_TTL(76, LOGICAL),
+
+        /** Ecnrypted data record with TTL. */
+        ENCRYPTED_DATA_RECORD_V3_WITH_TTL(77, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

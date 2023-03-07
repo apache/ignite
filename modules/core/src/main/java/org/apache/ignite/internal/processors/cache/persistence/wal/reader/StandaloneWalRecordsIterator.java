@@ -360,6 +360,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         if (processor != null && (rec.type() == RecordType.DATA_RECORD
             || rec.type() == RecordType.DATA_RECORD_V2
+            || rec.type() == RecordType.DATA_RECORD_V2_WITH_TTL
             || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
@@ -417,7 +418,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         DataRecord res = dataRec instanceof MvccDataRecord ?
             new MvccDataRecord(postProcessedEntries, dataRec.timestamp()) :
-            new DataRecord(postProcessedEntries, dataRec.timestamp());
+            new DataRecord(postProcessedEntries, dataRec.timestamp(), true);
 
         res.size(dataRec.size());
         res.position(dataRec.position());
