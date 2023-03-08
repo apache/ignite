@@ -365,9 +365,9 @@ class ControlUtility:
     def __parse_cluster_state(output):
         state_pattern = re.compile("Cluster state: (?P<cluster_state>[^\\s]+)")
         topology_pattern = re.compile("Current topology version: (?P<topology_version>\\d+)")
-        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s]+)"
-                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s]+))?"
-                                      ",\\sS(tate|TATE)=(?P<state>[^\\s]+)"
+        baseline_pattern = re.compile("Consistent(Id|ID)=(?P<consistent_id>[^\\s,]+)"
+                                      "(,\\sA(ddress|DDRESS)=(?P<address>[^\\s,]+))?"
+                                      ",\\sS(tate|TATE)=(?P<state>[^\\s,]+)"
                                       "(,\\sOrder=(?P<order>\\d+))?")
 
         match = state_pattern.search(output)

@@ -32,7 +32,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -40,6 +39,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 
 /**
  * SSL connection test with security plugin.
@@ -93,13 +93,23 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
      * @return Test data.
      */
     protected TestSecurityData[] clientData() {
-        return new TestSecurityData[]{new TestSecurityData(CLIENT,
-            "pwd",
-            SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS)
-                .build(),
-            new Permissions()
-        )};
+        return new TestSecurityData[]{
+            new TestSecurityData(
+                CLIENT,
+                "pwd",
+                create()
+                    .defaultAllowAll(false)
+                    .appendSystemPermissions(ADMIN_OPS)
+                    .build(),
+                new Permissions()
+            ),
+            new TestSecurityData(
+                "client_admin_oper",
+                "pwd",
+                ALL_PERMISSIONS,
+                new Permissions()
+            )
+        };
     }
 
     /**
