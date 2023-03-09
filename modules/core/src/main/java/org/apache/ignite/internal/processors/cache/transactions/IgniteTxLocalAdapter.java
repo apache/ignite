@@ -94,8 +94,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -850,22 +848,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     CacheGroupContext grp = cacheCtx.group();
 
                                     if (grp.logDataRecords() && cctx.snapshot().needTxReadLogging()) {
-                                        ptr = grp.wal().log(new DataRecord(
-                                            new DataEntry(
-                                                cacheCtx.cacheId(),
-                                                txEntry.key(),
-                                                val,
-                                                op,
-                                                nearXidVersion(),
-                                                writeVersion(),
-                                                TTL_ETERNAL,
-                                                EXPIRE_TIME_ETERNAL,
-                                                txEntry.key().partition(),
-                                                txEntry.updateCounter(),
-                                                DataEntry.flags(CU.txOnPrimary(this))
-                                            ),
-                                            grp.cdcEnabled()
-                                        ));
+                                        ptr = grp.wal().log(new DataRecord(new DataEntry(
+                                            cacheCtx.cacheId(),
+                                            txEntry.key(),
+                                            val,
+                                            op,
+                                            nearXidVersion(),
+                                            writeVersion(),
+                                            0,
+                                            txEntry.key().partition(),
+                                            txEntry.updateCounter(),
+                                            DataEntry.flags(CU.txOnPrimary(this)))));
                                     }
 
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

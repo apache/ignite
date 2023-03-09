@@ -52,6 +52,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest.TestPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
-import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -80,8 +80,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -95,10 +93,10 @@ public class CdcSelfTest extends AbstractCdcTest {
     public static final String TX_CACHE_NAME = "tx-cache";
 
     /** */
-    public static final long CREATE_TTL = 60_000L;
+    public static final long CREATE_TTL = 500_000L;
 
     /** */
-    public static final long UPDATE_TTL = 120_000L;
+    public static final long UPDATE_TTL = 60_000L;
 
     /** */
     @Parameterized.Parameter
@@ -157,14 +155,14 @@ public class CdcSelfTest extends AbstractCdcTest {
     @Test
     public void testReadAllKeysCommitAll() throws Exception {
         // Read all records from iterator.
-        readAll(CdcSelfTest::addData, new UserCdcConsumer(), true);
+        readAll(new UserCdcConsumer(), true);
     }
 
     /** Simplest CDC test but read one event at a time to check correct iterator work. */
     @Test
     public void testReadAllKeysWithoutCommit() throws Exception {
         // Read one record per call.
-        readAll(CdcSelfTest::addData, new UserCdcConsumer() {
+        readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 if (evts.hasNext())
                     super.onEvents(Collections.singleton(evts.next()).iterator());
@@ -178,7 +176,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     @Test
     public void testReadAllKeysCommitEachEvent() throws Exception {
         // Read one record per call and commit.
-        readAll(CdcSelfTest::addData, new UserCdcConsumer() {
+        readAll(new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 if (evts.hasNext())
                     super.onEvents(Collections.singleton(evts.next()).iterator());
@@ -190,7 +188,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testReadTtl() throws Exception {
+    public void testReadExpireTime() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
@@ -225,15 +223,19 @@ public class CdcSelfTest extends AbstractCdcTest {
                 Integer key = (Integer)evt.key();
 
                 if (evt.value() == null || key % 2 != 0) {
-                    assertEquals("TTL must not be set [key=" + key + ']', CU.TTL_ETERNAL, evt.ttl());
+                    assertEquals("TTL must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
 
                     return;
                 }
 
-                assertEquals(
+                assertTrue(
                     "TTL must be set [key=" + key + ']',
-                    seen.contains(key) ? UPDATE_TTL : CREATE_TTL,
-                    evt.ttl()
+                    evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
+                );
+
+                assertTrue(
+                    "TTL for operation",
+                    evt.expireTime() <= System.currentTimeMillis() + (seen.contains(key) ? UPDATE_TTL : CREATE_TTL)
                 );
 
                 seen.add(key);
@@ -259,11 +261,7 @@ public class CdcSelfTest extends AbstractCdcTest {
     }
 
     /** */
-    private void readAll(
-        CI3<IgniteCache<Integer, User>, Integer, Integer> addData,
-        UserCdcConsumer cnsmr,
-        boolean offsetCommit
-    ) throws Exception {
+    private void readAll(UserCdcConsumer cnsmr, boolean offsetCommit) throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
@@ -278,7 +276,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             cfg,
             cache,
             txCache,
-            addData,
+            CdcSelfTest::addData,
             0,
             KEYS_CNT + 3,
             offsetCommit
@@ -333,7 +331,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         );
 
         IteratorParametersBuilder param = new IteratorParametersBuilder().filesOrDirs(archive)
-            .filter((type, pointer) -> type == DATA_RECORD_V2 || type == DATA_RECORD_V2_WITH_TTL);
+            .filter((type, pointer) -> type == WALRecord.RecordType.DATA_RECORD_V2);
 
         assertTrue("DataRecord(List<DataEntry>) should be logged.", waitForCondition(() -> {
             try (WALIterator iter = new IgniteWalIteratorFactory(log).iterator(param)) {

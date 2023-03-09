@@ -80,9 +80,10 @@ public interface CdcEvent extends Serializable {
     public int cacheId();
 
     /**
-     * @return Time to live for cache entry. If {@code 0} then entry will be cached until removed.
+     * @return Time when entry will be removed from cache. If {@code 0} then entry will be cached until removed.
      * @see org.apache.ignite.IgniteCache#withExpiryPolicy(ExpiryPolicy)
      * @see org.apache.ignite.configuration.CacheConfiguration#setExpiryPolicyFactory(Factory)
+     * @see org.apache.ignite.internal.processors.cache.GridCacheUtils#EXPIRE_TIME_ETERNAL
      */
-    public long ttl();
+    public long expireTime();
 }

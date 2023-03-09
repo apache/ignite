@@ -87,8 +87,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 
 /**
  * Test simulated checkpoints, Disables integrated check pointer thread
@@ -360,7 +358,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     0L,
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
                 new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
-                    TTL_ETERNAL, EXPIRE_TIME_ETERNAL,
+                    0L,
                     cctx.affinity().partition(i), i, DataEntry.EMPTY_FLAGS));
         }
 
@@ -371,7 +369,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         wal.flush(start, false);
 
         for (DataEntry entry : entries)
-            wal.log(mvcc ? new MvccDataRecord((MvccDataEntry)entry) : new DataRecord(entry, false));
+            wal.log(mvcc ? new MvccDataRecord((MvccDataEntry)entry) : new DataRecord(entry));
 
         // Data will not be written to the page store.
         stopAllGrids();

@@ -124,15 +124,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
 
@@ -395,7 +392,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cacheId*/4 + /*partId*/4;
 
             case DATA_RECORD_V2:
-            case DATA_RECORD_V2_WITH_TTL:
                 DataRecord dataRec = (DataRecord)record;
 
                 return 4 + dataSize(dataRec);
@@ -666,18 +662,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case DATA_RECORD:
             case DATA_RECORD_V2:
-            case DATA_RECORD_V2_WITH_TTL:
                 int entryCnt = in.readInt();
 
                 if (entryCnt == 1)
-                    res = new DataRecord(readPlainDataEntry(in, type), 0L, type == DATA_RECORD_V2_WITH_TTL);
+                    res = new DataRecord(readPlainDataEntry(in, type), 0L);
                 else {
                     List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                     for (int i = 0; i < entryCnt; i++)
                         entries.add(readPlainDataEntry(in, type));
 
-                    res = new DataRecord(entries, 0L, type == DATA_RECORD_V2_WITH_TTL);
+                    res = new DataRecord(entries, 0L);
                 }
 
                 break;
@@ -688,14 +683,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 entryCnt = in.readInt();
 
                 if (entryCnt == 1)
-                    res = new DataRecord(readEncryptedDataEntry(in, type), 0L, false);
+                    res = new DataRecord(readEncryptedDataEntry(in, type), 0L);
                 else {
                     List<DataEntry> entries = new ArrayList<>(entryCnt);
 
                     for (int i = 0; i < entryCnt; i++)
                         entries.add(readEncryptedDataEntry(in, type));
 
-                    res = new DataRecord(entries, 0L, false);
+                    res = new DataRecord(entries, 0L);
                 }
 
                 break;
@@ -1386,7 +1381,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case DATA_RECORD_V2:
-            case DATA_RECORD_V2_WITH_TTL:
                 DataRecord dataRec = (DataRecord)rec;
 
                 int entryCnt = dataRec.entryCount();
@@ -1397,9 +1391,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 for (int i = 0; i < entryCnt; i++) {
                     if (encrypted)
-                        putEncryptedDataEntry(buf, dataRec.get(i), dataRec.type() == DATA_RECORD_V2_WITH_TTL);
+                        putEncryptedDataEntry(buf, dataRec.get(i));
                     else
-                        putPlainDataEntry(buf, dataRec.get(i), dataRec.type() == DATA_RECORD_V2_WITH_TTL);
+                        putPlainDataEntry(buf, dataRec.get(i));
                 }
 
                 break;
@@ -1971,15 +1965,15 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param entry Data entry.
      * @throws IgniteCheckedException If failed.
      */
-    void putEncryptedDataEntry(ByteBuffer buf, DataEntry entry, boolean writeTtl) throws IgniteCheckedException {
+    void putEncryptedDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(entry.cacheId());
 
         if (desc != null && needEncryption(desc.groupId())) {
-            int clSz = entrySize(entry, writeTtl);
+            int clSz = entrySize(entry);
 
             ByteBuffer clData = ByteBuffer.allocate(clSz);
 
-            putPlainDataEntry(clData, entry, false);
+            putPlainDataEntry(clData, entry);
 
             clData.rewind();
 
@@ -1990,7 +1984,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         else {
             buf.put(PLAIN);
 
-            putPlainDataEntry(buf, entry, writeTtl);
+            putPlainDataEntry(buf, entry);
         }
     }
 
@@ -1998,7 +1992,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param buf Buffer to write to.
      * @param entry Data entry.
      */
-    void putPlainDataEntry(ByteBuffer buf, DataEntry entry, boolean writeTtl) throws IgniteCheckedException {
+    void putPlainDataEntry(ByteBuffer buf, DataEntry entry) throws IgniteCheckedException {
         buf.putInt(entry.cacheId());
 
         if (!entry.key().putValue(buf))
@@ -2016,10 +2010,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         buf.putInt(entry.partitionId());
         buf.putLong(entry.partitionCounter());
-
-        if (writeTtl)
-            buf.putLong(entry.ttl());
-
         buf.putLong(entry.expireTime());
 
         if (!(entry instanceof MvccDataEntry))
@@ -2125,9 +2115,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         int partId = in.readInt();
         long partCntr = in.readLong();
-        long ttl = type == DATA_RECORD_V2_WITH_TTL ? in.readLong() : TTL_ETERNAL;
         long expireTime = in.readLong();
-        byte flags = (type == DATA_RECORD_V2 || type == DATA_RECORD_V2_WITH_TTL) ? in.readByte() : (byte)0;
+        byte flags = type == DATA_RECORD_V2 ? in.readByte() : (byte)0;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2148,7 +2137,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     op,
                     nearXidVer,
                     writeVer,
-                    ttl,
                     expireTime,
                     partId,
                     partCntr,
@@ -2166,7 +2154,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     op,
                     nearXidVer,
                     writeVer,
-                    ttl,
                     expireTime,
                     partId,
                     partCntr,
@@ -2185,11 +2172,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (needEncryption(rec))
             return ENCRYPTED_RECORD_V2;
 
-        if (rec.type() != DATA_RECORD
-            && rec.type() != DATA_RECORD_V2
-            && rec.type() != DATA_RECORD_V2_WITH_TTL) {
+        if (rec.type() != DATA_RECORD && rec.type() != DATA_RECORD_V2)
             return rec.type();
-        }
 
         return isDataRecordEncrypted((DataRecord)rec) ? ENCRYPTED_DATA_RECORD_V3 : rec.type();
     }
@@ -2284,7 +2268,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         for (int i = 0; i < entryCnt; i++) {
             DataEntry entry = dataRec.get(i);
 
-            int clSz = entrySize(entry, dataRec.type() == DATA_RECORD_V2_WITH_TTL);
+            int clSz = entrySize(entry);
 
             if (!encryptionDisabled && needEncryption(cctx.cacheContext(entry.cacheId()).groupId()))
                 sz += encSpi.encryptedSize(clSz) + 1 /*encrypted flag*/ + 4 /*groupId*/ + 4 /*data size*/ + 1 /*key ID*/;
@@ -2304,7 +2288,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @return Entry size.
      * @throws IgniteCheckedException If failed to get key or value bytes length.
      */
-    protected int entrySize(DataEntry entry, boolean writeTtl) throws IgniteCheckedException {
+    protected int entrySize(DataEntry entry) throws IgniteCheckedException {
         GridCacheContext cctx = this.cctx.cacheContext(entry.cacheId());
         CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -2316,7 +2300,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*near xid ver*/CacheVersionIO.size(entry.nearXidVersion(), true) +
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
-            (writeTtl ? /*ttl*/8 : 0) +
             /*expire Time*/8 +
             /*part cnt*/8 +
             /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);
@@ -2352,7 +2335,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, TTL_ETERNAL, EXPIRE_TIME_ETERNAL, 0, 0, EMPTY_FLAGS);
+            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
         }
     }
 }

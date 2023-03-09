@@ -23,9 +23,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 
 /**
  * Logical data record with cache operation description.
@@ -37,12 +34,9 @@ public class DataRecord extends TimeStampRecord {
     @GridToStringInclude
     private Object writeEntries;
 
-    /** */
-    private RecordType type = DATA_RECORD_V2;
-
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return type;
+        return RecordType.DATA_RECORD_V2;
     }
 
     /**
@@ -55,46 +49,27 @@ public class DataRecord extends TimeStampRecord {
     /**
      * @param writeEntry Write entry.
      */
-    public DataRecord(DataEntry writeEntry, boolean writeTtlIfExists) {
-        this(writeEntry, U.currentTimeMillis(), writeTtlIfExists);
+    public DataRecord(DataEntry writeEntry) {
+        this(writeEntry, U.currentTimeMillis());
     }
 
     /**
      * @param writeEntries Write entries.
      */
-    public DataRecord(List<DataEntry> writeEntries, boolean writeTtlIfExists) {
-        this(writeEntries, U.currentTimeMillis(), writeTtlIfExists);
+    public DataRecord(List<DataEntry> writeEntries) {
+        this(writeEntries, U.currentTimeMillis());
     }
 
     /**
      * @param writeEntries Write entries.
      * @param timestamp TimeStamp.
      */
-    public DataRecord(Object writeEntries, long timestamp, boolean writeTtlIfExists) {
+    public DataRecord(Object writeEntries, long timestamp) {
         super(timestamp);
 
         A.notNull(writeEntries, "writeEntries");
 
         this.writeEntries = writeEntries;
-
-        if (writeTtlIfExists) {
-            boolean writeTtl = false;
-
-            if (writeEntries instanceof DataEntry)
-                writeTtl = ((DataEntry)writeEntries).ttl() != TTL_ETERNAL;
-            else {
-                for (DataEntry dataEntry : ((Iterable<DataEntry>)writeEntries)) {
-                    if (dataEntry.ttl() != TTL_ETERNAL) {
-                        writeTtl = true;
-
-                        break;
-                    }
-                }
-            }
-
-            if (writeTtl)
-                type = DATA_RECORD_V2_WITH_TTL;
-        }
     }
 
     /**

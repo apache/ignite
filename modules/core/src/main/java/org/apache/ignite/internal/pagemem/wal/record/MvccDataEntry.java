@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +56,7 @@ public class MvccDataEntry extends DataEntry {
         long partCnt,
         MvccVersion mvccVer
     ) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, CU.TTL_ETERNAL, expireTime, partId, partCnt, EMPTY_FLAGS);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, EMPTY_FLAGS);
 
         this.mvccVer = mvccVer;
     }

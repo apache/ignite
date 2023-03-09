@@ -125,7 +125,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     public void testCheckDifferentSerializerVersionsAndLogTimestamp() throws Exception {
         IgniteCallable<List<WALRecord>> recordsFactory = new IgniteCallable<List<WALRecord>>() {
             @Override public List<WALRecord> call() throws Exception {
-                WALRecord rec0 = new DataRecord(Collections.<DataEntry>emptyList(), false);
+                WALRecord rec0 = new DataRecord(Collections.<DataEntry>emptyList());
 
                 WALRecord rec1 = new TxRecord(PREPARED, null, null, null);
 

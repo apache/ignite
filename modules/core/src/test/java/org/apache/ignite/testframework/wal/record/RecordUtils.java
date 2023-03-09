@@ -118,7 +118,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V3;
@@ -186,7 +185,6 @@ public class RecordUtils {
         put(PAGE_RECORD, RecordUtils::buildPageSnapshot);
         put(DATA_RECORD, RecordUtils::buildDataRecord);
         put(DATA_RECORD_V2, RecordUtils::buildDataRecord);
-        put(DATA_RECORD_V2_WITH_TTL, RecordUtils::buildDataRecord);
         put(CHECKPOINT_RECORD, RecordUtils::buildCheckpointRecord);
         put(HEADER_RECORD, buildUpsupportedWalRecord(HEADER_RECORD));
         put(INIT_NEW_PAGE_RECORD, RecordUtils::buildInitNewPageRecord);
@@ -293,7 +291,7 @@ public class RecordUtils {
 
     /** **/
     public static DataRecord buildDataRecord() {
-        return new DataRecord(Collections.emptyList(), false);
+        return new DataRecord(Collections.emptyList());
     }
 
     /** **/

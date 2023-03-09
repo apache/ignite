@@ -287,7 +287,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
         setFieldValue(walDisableCtx, "disableWal", true);
 
         assertTrue(walDisableCtx.check());
-        assertNull(walMgr(n).log(new DataRecord(emptyList(), false)));
+        assertNull(walMgr(n).log(new DataRecord(emptyList())));
     }
 
     /**

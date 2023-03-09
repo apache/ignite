@@ -97,7 +97,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2_WITH_TTL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -282,9 +281,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 WALRecord walRecord = tup.get2();
 
-                if (walRecord.type() == DATA_RECORD_V2
-                    || walRecord.type() == DATA_RECORD_V2_WITH_TTL
-                    || walRecord.type() == MVCC_DATA_RECORD) {
+                if (walRecord.type() == DATA_RECORD_V2 || walRecord.type() == MVCC_DATA_RECORD) {
                     DataRecord record = (DataRecord)walRecord;
 
                     for (int i = 0; i < record.entryCount(); i++) {
@@ -292,8 +289,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         KeyCacheObject key = entry.key();
                         CacheObject val = entry.value();
 
-                        if (walRecord.type() == DATA_RECORD_V2
-                            || walRecord.type() == DATA_RECORD_V2_WITH_TTL) {
+                        if (walRecord.type() == DATA_RECORD_V2) {
                             assertEquals(primary, (entry.flags() & DataEntry.PRIMARY_FLAG) != 0);
                             assertEquals(rebalance, (entry.flags() & DataEntry.PRELOAD_FLAG) != 0);
                         }
@@ -1639,7 +1635,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 //noinspection EnumSwitchStatementWhichMissesCases
                 switch (type) {
                     case DATA_RECORD_V2:
-                    case DATA_RECORD_V2_WITH_TTL:
                         // Fallthrough.
                     case MVCC_DATA_RECORD: {
                         assert walRecord instanceof DataRecord;
@@ -1652,8 +1647,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         for (int i = 0; i < dataRecord.entryCount(); i++) {
                             DataEntry entry = dataRecord.get(i);
 
-                            if (walRecord.type() == DATA_RECORD_V2
-                                || walRecord.type() == DATA_RECORD_V2_WITH_TTL) {
+                            if (walRecord.type() == DATA_RECORD_V2) {
                                 assertEquals(primary, (entry.flags() & DataEntry.PRIMARY_FLAG) != 0);
                                 assertEquals(rebalance, (entry.flags() & DataEntry.PRELOAD_FLAG) != 0);
                             }

@@ -66,9 +66,6 @@ public class DataEntry {
     /** Expire time. */
     protected long expireTime;
 
-    /** TTL. */
-    protected long ttl;
-
     /** Partition ID. */
     @GridToStringInclude
     protected int partId;
@@ -100,7 +97,6 @@ public class DataEntry {
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
-     * @param ttl TTL.
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
@@ -113,7 +109,6 @@ public class DataEntry {
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
-        long ttl,
         long expireTime,
         int partId,
         long partCnt,
@@ -125,7 +120,6 @@ public class DataEntry {
         this.op = op;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
-        this.ttl = ttl;
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
@@ -228,13 +222,6 @@ public class DataEntry {
         this.partCnt = partCnt;
 
         return this;
-    }
-
-    /**
-     * @return TTL.
-     */
-    public long ttl() {
-        return ttl;
     }
 
     /**

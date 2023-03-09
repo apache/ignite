@@ -104,8 +104,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
@@ -884,22 +882,18 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     // Corrupt wal record in order to fail historical rebalance from supplier1 node.
                     IgniteWriteAheadLogManager walMgr = supplier1.context().cache().context().wal();
 
-                    WALPointer ptr = walMgr.log(new DataRecord(
-                        new DataEntry(
-                            CU.cacheId("test-cache-1"),
-                            new KeyCacheObjectImpl(0, null, 0),
-                            null,
-                            GridCacheOperation.DELETE,
-                            new GridCacheVersion(0, 1, 1, 0),
-                            new GridCacheVersion(0, 1, 1, 0),
-                            TTL_ETERNAL,
-                            EXPIRE_TIME_ETERNAL,
-                            0,
-                            0,
-                            DataEntry.EMPTY_FLAGS
-                        ),
-                        false
-                    ));
+                    WALPointer ptr = walMgr.log(new DataRecord(new DataEntry(
+                        CU.cacheId("test-cache-1"),
+                        new KeyCacheObjectImpl(0, null, 0),
+                        null,
+                        GridCacheOperation.DELETE,
+                        new GridCacheVersion(0, 1, 1, 0),
+                        new GridCacheVersion(0, 1, 1, 0),
+                        0,
+                        0,
+                        0,
+                        DataEntry.EMPTY_FLAGS
+                    )));
 
                     File walDir = U.field(walMgr, "walWorkDir");
 

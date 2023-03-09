@@ -51,8 +51,8 @@ public class CdcEventImpl implements CdcEvent {
     /** Cache id. */
     private final int cacheId;
 
-    /** TTL. */
-    private final long ttl;
+    /** Expire time. */
+    private final long expireTime;
 
     /**
      * @param key Key.
@@ -61,6 +61,7 @@ public class CdcEventImpl implements CdcEvent {
      * @param part Partition.
      * @param ord Order of the entry change.
      * @param cacheId Cache id.
+     * @param expireTime Expire time.
      */
     public CdcEventImpl(
         Object key,
@@ -69,7 +70,7 @@ public class CdcEventImpl implements CdcEvent {
         int part,
         CacheEntryVersion ord,
         int cacheId,
-        long ttl
+        long expireTime
     ) {
         this.key = key;
         this.val = val;
@@ -77,7 +78,7 @@ public class CdcEventImpl implements CdcEvent {
         this.part = part;
         this.ord = ord;
         this.cacheId = cacheId;
-        this.ttl = ttl;
+        this.expireTime = expireTime;
     }
 
     /** {@inheritDoc} */
@@ -111,8 +112,8 @@ public class CdcEventImpl implements CdcEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public long ttl() {
-        return ttl;
+    @Override public long expireTime() {
+        return expireTime;
     }
 
     /** {@inheritDoc} */

@@ -100,7 +100,7 @@ public class WalRecordsConsumer<K, V> {
             e.partitionId(),
             e.writeVersion(),
             e.cacheId(),
-            e.ttl()
+            e.expireTime()
         );
     };
 

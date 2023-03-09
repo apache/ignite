@@ -56,8 +56,6 @@ import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.wal.record.RecordUtils.isIncludeIntoLog;
@@ -299,8 +297,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
             GridCacheOperation.CREATE,
             new GridCacheVersion(),
             new GridCacheVersion(),
-            TTL_ETERNAL,
-            EXPIRE_TIME_ETERNAL,
+            0,
             0,
             0,
             DataEntry.EMPTY_FLAGS
@@ -308,7 +305,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         byte[] sensitiveDataBytes = SENSITIVE_DATA_VALUE_PREFIX.getBytes(StandardCharsets.UTF_8);
 
-        walRecords.add(new DataRecord(dataEntry, false));
+        walRecords.add(new DataRecord(dataEntry));
         walRecords.add(new MetastoreDataRecord(SENSITIVE_DATA_VALUE_PREFIX, sensitiveDataBytes));
 
         return walRecords;
