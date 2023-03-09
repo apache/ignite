@@ -43,6 +43,10 @@ public class CacheClear extends AbstractCommand<ClearCachesTaskArg> {
     /** Message that contains not-cleared caches (they don't exist). */
     public static final String SKIP_CLEAR_MSG = "The following caches don't exist: %s";
 
+    /** Confirmation message format. */
+    public static final String CONFIRM_MSG = "Warning! The command will clear all data from %d caches: %s.\n" +
+        "If you continue, it will be impossible to recover cleared data.";
+
     /** Comma-separated list of cache names. */
     public static final String CACHES = "--caches";
 
@@ -62,6 +66,11 @@ public class CacheClear extends AbstractCommand<ClearCachesTaskArg> {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt() {
+        return String.format(CONFIRM_MSG, arg.caches().size(), String.join(", ", arg.caches()));
     }
 
     /** {@inheritDoc} */
