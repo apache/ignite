@@ -121,7 +121,7 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** @throws Exception If fails. */
     @Test
     public void testWithExpiryPolicy() throws Exception {
-        long ttl = 1000;
+        long expireTime = System.currentTimeMillis() + 1000;
 
         ClientCacheConfiguration ccfgWithTtlEntries = new ClientCacheConfiguration()
             .setName("cache-with-ttl-entries");
@@ -132,7 +132,7 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
         TcpClientCache<Object, Object> cacheWithTtlEntries = binary ?
             (TcpClientCache<Object, Object>)cache.withKeepBinary() : cache;
 
-        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(ttl);
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(expireTime);
 
         cacheWithTtlEntries.putAllConflict(data);
 
@@ -140,7 +140,7 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
 
         assertTrue(waitForCondition(
             () -> data.keySet().stream().noneMatch(cacheWithTtlEntries::containsKey),
-            2 * ttl
+            2 * expireTime
         ));
     }
 
