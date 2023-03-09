@@ -24,11 +24,6 @@ import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.transactions.Transaction;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
@@ -84,17 +79,10 @@ public class IgniteIncrementalSnapshotsBenchmark extends IgniteCacheAbstractBenc
         nextStartTime = System.currentTimeMillis() + incSnpPeriod;
 
         ignite().snapshot().createIncrementalSnapshot(SNP).listen((snpFut) -> {
-            MetricRegistry reg = ((IgniteEx)ignite()).context().metric().registry(IgniteSnapshotManager.INCREMENTAL_SNAPSHOT_METRICS);
-
-            long startTime = ((LongMetric)reg.findMetric("startTime")).value();
-            long endTime = ((LongMetric)reg.findMetric("endTime")).value();
-            int incIdx = ((IntMetric)reg.findMetric("incrementIndex")).value();
-
             try {
                 snpFut.get();
 
-                BenchmarkUtils.println("Incremental snapshot succeed " +
-                    "[incIdx=" + incIdx + ", duration=" + (endTime - startTime) + "ms, startTime=" + startTime + "]");
+                BenchmarkUtils.println("Incremental snapshot succeed");
             }
             catch (Throwable th) {
                 BenchmarkUtils.error("Incremental snapshot failed", th);
