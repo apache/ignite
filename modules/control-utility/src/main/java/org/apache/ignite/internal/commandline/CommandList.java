@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
@@ -134,7 +135,8 @@ public enum CommandList {
      * @return Map with commands.
      */
     public static Map<String, Command<?>> commands() {
-        return Arrays.stream(VALUES).collect(Collectors.toMap(CommandList::text, CommandList::command));
+        return Arrays.stream(VALUES).collect(
+            Collectors.toMap(CommandList::text, CommandList::command, (a, b) -> a, LinkedHashMap::new));
     }
 
     /**

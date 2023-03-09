@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -170,7 +170,7 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        cmds = new HashMap<>();
+        cmds = new LinkedHashMap<>();
 
         CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
 
