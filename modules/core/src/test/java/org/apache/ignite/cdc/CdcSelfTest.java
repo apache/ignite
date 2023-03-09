@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
@@ -190,30 +191,71 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReadTtl() throws Exception {
-        readAll((cache, from, to) -> {
-            IgniteCache<Integer, User> withExpiry =
-                cache.withExpiryPolicy(new TestPolicy(CREATE_TTL, UPDATE_TTL, 0L));
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-            for (int i = from; i < to; i++) {
-                if (i % 2 == 0)
-                    withExpiry.put(i, createUser(i));
-                else
-                    cache.put(i, createUser(i));
+        Ignite ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteCache<Integer, User> withExpiry =
+            cache.withExpiryPolicy(new TestPolicy(CREATE_TTL, UPDATE_TTL, 0L));
+
+        for (int i = 0; i < KEYS_CNT; i++) {
+            if (i % 2 == 0) {
+                withExpiry.put(i, createUser(i)); // Create.
+                withExpiry.put(i, createUser(i)); // Update.
             }
-        }, new UserCdcConsumer() {
+            else {
+                cache.put(i, createUser(i)); // Create.
+                cache.put(i, createUser(i)); // Update.
+            }
+        }
+
+        removeData(cache, 0, KEYS_CNT);
+
+        Set<Integer> seen = new HashSet<>();
+
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
             /** {@inheritDoc} */
             @Override public void checkEvent(CdcEvent evt) {
                 super.checkEvent(evt);
 
-                if (evt.value() == null)
-                    return;
-
                 Integer key = (Integer)evt.key();
 
-                if (key % 2 == 0)
-                    assertEquals("Entry TTL must be set[key=" + key + ']', CREATE_TTL, evt.ttl());
+                if (evt.value() == null || key % 2 != 0) {
+                    assertEquals("TTL must not be set [key=" + key + ']', CU.TTL_ETERNAL, evt.ttl());
+
+                    return;
+                }
+
+                assertEquals(
+                    "TTL must be set [key=" + key + ']',
+                    seen.contains(key) ? UPDATE_TTL : CREATE_TTL,
+                    evt.ttl()
+                );
+
+                seen.add(key);
             }
-        }, true);
+        };
+
+        CdcMain cdcMain = createCdc(cnsmr, cfg);
+
+        IgniteInternalFuture<?> cdcFut = runAsync(cdcMain);
+
+        waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
+
+        cdcFut.cancel();
+
+        assertTrue(cnsmr.stopped());
+
+        assertEquals(KEYS_CNT / 2, seen.size());
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */

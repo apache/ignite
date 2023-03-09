@@ -2308,8 +2308,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         GridCacheContext cctx = this.cctx.cacheContext(entry.cacheId());
         CacheObjectContext coCtx = cctx.cacheObjectContext();
 
-        int ttlSz = (writeTtl ? /*ttl*/8 : 0);
-
         return
             /*cache ID*/4 +
             /*key*/entry.key().valueBytesLength(coCtx) +
@@ -2318,7 +2316,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             /*near xid ver*/CacheVersionIO.size(entry.nearXidVersion(), true) +
             /*write ver*/CacheVersionIO.size(entry.writeVersion(), false) +
             /*part ID*/4 +
-            ttlSz +
+            (writeTtl ? /*ttl*/8 : 0) +
             /*expire Time*/8 +
             /*part cnt*/8 +
             /*flags*/(entry instanceof MvccDataEntry ? 0 : 1);
