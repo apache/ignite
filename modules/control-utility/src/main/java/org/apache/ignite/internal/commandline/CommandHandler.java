@@ -170,17 +170,20 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        cmds = new LinkedHashMap<>();
+        Map<String, Command<?>> cmds = new LinkedHashMap<>();
 
         CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
 
         if (!F.isEmpty(it)) {
             for (CommandsProvider provider : it) {
                 if (logger.isDebugEnabled())
-                    logger.debug("Pluggable commands provider registered: " + provider);
+                    logger.debug("Registering pluggable commands provider: " + provider);
 
                 provider.commands().forEach((k, v) -> {
                     k = k.toLowerCase();
+
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registering command: " + k);
 
                     if (cmds.containsKey(k)) {
                         throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
@@ -192,6 +195,8 @@ public class CommandHandler {
                 });
             }
         }
+
+        this.cmds = Collections.unmodifiableMap(cmds);
     }
 
     /**
