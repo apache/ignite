@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -25,14 +26,7 @@ import java.util.stream.Collectors;
  */
 public class CommandsProviderImpl implements CommandsProvider {
     /** {@inheritDoc} */
-    @Override public Command<?> parse(String str) {
-        CommandList cmd = CommandList.of(str);
-
-        return cmd == null ? null : cmd.command();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<Command<?>> commands() {
-        return Arrays.stream(CommandList.values()).map(CommandList::command).collect(Collectors.toList());
+    @Override public Map<String, Command<?>> commands() {
+        return Arrays.stream(CommandList.values()).collect(Collectors.toMap(CommandList::text, CommandList::command));
     }
 }

@@ -20,10 +20,11 @@ package org.apache.ignite.internal.commandline;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -113,8 +114,8 @@ public class CommandHandler {
     /** JULs logger. */
     private final IgniteLogger logger;
 
-    /** Commands provider. */
-    private final CommandsProvider cmdProvider;
+    /** Supported commands. */
+    private final Map<String, Command<?>> cmds;
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -169,13 +170,23 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        if (F.isEmpty(it))
-            cmdProvider = new CommandsProviderImpl();
-        else {
-            List<CommandsProvider> providers = new ArrayList<>();
-            providers.add(new CommandsProviderImpl());
-            it.forEach(providers::add);
-            cmdProvider = new CompoundCommandsProvider(providers);
+        cmds = new HashMap<>();
+
+        new CommandsProviderImpl().commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
+
+        if (!F.isEmpty(it)) {
+            for (CommandsProvider provider : it) {
+                provider.commands().forEach((k, v) -> {
+                    k = k.toLowerCase();
+
+                    if (cmds.containsKey(k)) {
+                        throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
+                            v + ", " + cmds.get(k));
+                    }
+                    else
+                        cmds.put(k, v);
+                });
+            }
         }
     }
 
@@ -209,7 +220,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger, cmdProvider).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs.iterator());
 
             Command command = args.command();
             commandName = command.name();
@@ -719,7 +730,7 @@ public class CommandHandler {
 
         logger.info("This utility can do the following commands:");
 
-        cmdProvider.commands().forEach(c -> {
+        cmds.values().forEach(c -> {
             if (experimentalEnabled || !c.experimental())
                 c.printUsage(logger);
         });

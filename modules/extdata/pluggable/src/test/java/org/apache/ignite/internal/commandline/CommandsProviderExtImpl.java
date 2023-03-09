@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,16 +40,8 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     public static final String TEST_COMMAND_ARG = "test-print";
 
     /** {@inheritDoc} */
-    @Override public Command<?> parse(String str) {
-        if (TEST_COMMAND.name().equalsIgnoreCase(str))
-            return TEST_COMMAND;
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<Command<?>> commands() {
-        return Collections.singletonList(TEST_COMMAND);
+    @Override public Map<String, Command<?>> commands() {
+        return Collections.singletonMap(TEST_COMMAND.name(), TEST_COMMAND);
     }
 
     /** */

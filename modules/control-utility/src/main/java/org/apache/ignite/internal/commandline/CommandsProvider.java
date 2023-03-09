@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Map;
+
 /**
  * Pluggable Ignite component that is responsible for providing list of commands for control utility.
  */
 public interface CommandsProvider {
-    /** Parses text to command. */
-    public Command<?> parse(String str);
-
     /** Gets all supported by this provider commands. */
-    public Iterable<Command<?>> commands();
+    public Map<String, Command<?>> commands();
 }

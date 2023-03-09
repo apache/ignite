@@ -21,6 +21,7 @@ package org.apache.ignite.internal.commandline;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
@@ -34,7 +35,7 @@ public class CommandArgIterator {
     private final Iterator<String> argsIt;
 
     /** */
-    private final CommandsProvider cmdProvider;
+    private final Map<String, Command<?>> cmds;
 
     /** */
     private String peekedArg;
@@ -51,11 +52,11 @@ public class CommandArgIterator {
     public CommandArgIterator(
         Iterator<String> argsIt,
         Set<String> commonArgumentsAndHighLevelCommandSet,
-        CommandsProvider cmdProvider
+        Map<String, Command<?>> cmds
     ) {
         this.argsIt = argsIt;
         this.commonArgumentsAndHighLevelCommandSet = commonArgumentsAndHighLevelCommandSet;
-        this.cmdProvider = cmdProvider;
+        this.cmds = cmds;
     }
 
     /**
@@ -69,7 +70,7 @@ public class CommandArgIterator {
      * @return <code>true</code> if there's next argument for subcommand.
      */
     public boolean hasNextSubArg() {
-        return hasNextArg() && cmdProvider.parse(peekNextArg()) == null &&
+        return hasNextArg() && !cmds.containsKey(peekNextArg().toLowerCase()) &&
             !commonArgumentsAndHighLevelCommandSet.contains(peekNextArg());
     }
 

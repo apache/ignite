@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -45,7 +46,7 @@ public class CommonArgParser {
     private final IgniteLogger logger;
 
     /** */
-    private final CommandsProvider cmdProvider;
+    private final Map<String, Command<?>> cmds;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -149,10 +150,11 @@ public class CommonArgParser {
 
     /**
      * @param logger Logger.
+     * @param cmds Supported commands.
      */
-    public CommonArgParser(IgniteLogger logger, CommandsProvider cmdProvider) {
+    public CommonArgParser(IgniteLogger logger, Map<String, Command<?>> cmds) {
         this.logger = logger;
-        this.cmdProvider = cmdProvider;
+        this.cmds = cmds;
     }
 
     /**
@@ -228,14 +230,14 @@ public class CommonArgParser {
 
         boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmdProvider);
+        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
 
         Command<?> command = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            Command<?> cmd = cmdProvider.parse(str);
+            Command<?> cmd = cmds.get(str);
 
             if (cmd != null) {
                 if (command != null)
