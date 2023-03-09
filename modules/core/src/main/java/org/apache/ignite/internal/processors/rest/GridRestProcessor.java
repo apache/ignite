@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -322,11 +320,19 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         GridRestCommandHandler hnd = handlers.get(req.command());
 
-        IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
-
-        if (res == null)
+        if (hnd == null) {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to find registered handler for command: " + req.command()));
+        }
+
+        IgniteInternalFuture<GridRestResponse> res;
+
+        try {
+            res = hnd.handleAsync(req);
+        }
+        catch (Exception e) {
+            res = new GridFinishedFuture<>(e);
+        }
 
         return res.chain(new C1<IgniteInternalFuture<GridRestResponse>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<GridRestResponse> f) {
@@ -340,7 +346,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 catch (Exception e) {
                     failed = true;
 
-                    if (X.hasCause(e, IllegalArgumentException.class)) {
+                    if (X.hasCause(e, SecurityException.class))
+                        res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
+                    else if (X.hasCause(e, IllegalArgumentException.class)) {
                         IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
                         res = new GridRestResponse(STATUS_ILLEGAL_ARGUMENT, iae.getMessage());
@@ -367,7 +375,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                         sb.a(", err=")
                             .a(e.getMessage() != null ? e.getMessage() : e.getClass().getName())
                             .a(", trace=")
-                            .a(getErrorMessage(e))
+                            .a(X.getFullStackTrace(e))
                             .a(']');
 
                         res = new GridRestResponse(STATUS_FAILED, sb.toString());
@@ -384,21 +392,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 return res;
             }
         });
-    }
-
-    /**
-     * @param th Th.
-     * @return Stack trace
-     */
-    private String getErrorMessage(Throwable th) {
-        if (th == null)
-            return "";
-
-        StringWriter writer = new StringWriter();
-
-        th.printStackTrace(new PrintWriter(writer));
-
-        return writer.toString();
     }
 
     /**
