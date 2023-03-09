@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.cache;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,7 +39,7 @@ public class IgniteIncrementalSnapshotsBenchmark extends IgniteCacheAbstractBenc
     private static final String SNP = "testSnapshot";
 
     /** Coordinate threads to start incremental snapshot. */
-    private final AtomicBoolean busyLock = new AtomicBoolean();
+    private volatile AtomicBoolean busyLock;
 
     /** Schedules time for next incremental snapshot creation. */
     private volatile long nextStartTime;
@@ -47,19 +48,26 @@ public class IgniteIncrementalSnapshotsBenchmark extends IgniteCacheAbstractBenc
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        BenchmarkUtils.println("Start creating full snapshot.");
+        // Choose single node to coordinate snapshot creation.
+        IgniteAtomicReference<Boolean> snpCrdNode = ignite().atomicReference("snpCrdNodeChoosed", false, true);
 
-        long startTime = System.nanoTime();
+        if (snpCrdNode.compareAndSet(false, true)) {
+            BenchmarkUtils.println("This node will coordinate snapshots creation.");
 
-        ignite().snapshot().createSnapshot(SNP).get();
+            ignite().snapshot().createSnapshot(SNP).get();
 
-        BenchmarkUtils.println("Full snapshot creation time = " + (System.nanoTime() - startTime) + "ns.");
+            nextStartTime = System.currentTimeMillis();
+
+            busyLock = new AtomicBoolean();
+        }
+        else
+            BenchmarkUtils.println("This node wasn't choosed to coordinate snapshots creation.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        if (System.currentTimeMillis() > nextStartTime && busyLock.compareAndSet(false, true))
-            createIncrementalSnapshot((IgniteEx)ignite(), args.getIntParameter("incSnpPeriod", 60 * 1_000));
+        if (busyLock != null && System.currentTimeMillis() > nextStartTime && busyLock.compareAndSet(false, true))
+            createIncrementalSnapshot(args.getIntParameter("incSnpPeriod", 60 * 1_000));
 
         try (Transaction tx = ignite().transactions().txStart(args.txConcurrency(), args.txIsolation())) {
             for (int i = 0; i < args.scaleFactor(); i++)
@@ -72,11 +80,11 @@ public class IgniteIncrementalSnapshotsBenchmark extends IgniteCacheAbstractBenc
     }
 
     /** Creates incremental snapshot. */
-    private void createIncrementalSnapshot(IgniteEx ign, long incSnpPeriod) {
+    private void createIncrementalSnapshot(long incSnpPeriod) {
         nextStartTime = System.currentTimeMillis() + incSnpPeriod;
 
         ignite().snapshot().createIncrementalSnapshot(SNP).listen((snpFut) -> {
-            MetricRegistry reg = ign.context().metric().registry(IgniteSnapshotManager.INCREMENTAL_SNAPSHOT_METRICS);
+            MetricRegistry reg = ((IgniteEx)ignite()).context().metric().registry(IgniteSnapshotManager.INCREMENTAL_SNAPSHOT_METRICS);
 
             long startTime = ((LongMetric)reg.findMetric("startTime")).value();
             long endTime = ((LongMetric)reg.findMetric("endTime")).value();
