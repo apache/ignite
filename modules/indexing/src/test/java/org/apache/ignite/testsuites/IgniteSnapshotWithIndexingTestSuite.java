@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCl
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreWithIndexingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithIndexesTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteIncrementalSnapshotRestoreWithIndexingTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -46,5 +47,6 @@ public class IgniteSnapshotWithIndexingTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotCheckWithIndexesTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotRestoreWithIndexingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotMetricsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteIncrementalSnapshotRestoreWithIndexingTest.class, ignoredTests);
     }
 }

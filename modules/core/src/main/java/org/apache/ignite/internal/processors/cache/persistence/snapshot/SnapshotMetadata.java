@@ -30,7 +30,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,9 +50,11 @@ public class SnapshotMetadata implements Serializable {
     private final UUID rqId;
 
     /** Snapshot name. */
+    @GridToStringInclude
     private final String snpName;
 
     /** Consistent id of a node to which this metadata relates. */
+    @GridToStringInclude
     private final String consId;
 
     /**
@@ -69,6 +73,9 @@ public class SnapshotMetadata implements Serializable {
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
     private final Set<String> bltNodes;
+
+    /** WAL pointer to {@link ClusterSnapshotRecord} if exists. */
+    private final @Nullable WALPointer snpRecPtr;
 
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
@@ -92,12 +99,14 @@ public class SnapshotMetadata implements Serializable {
     private boolean hasComprGrps;
 
     /**
-     * F@param snpName Snapshot name.
+     * @param rqId Unique request id.
+     * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
@@ -110,6 +119,7 @@ public class SnapshotMetadata implements Serializable {
         Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
+        @Nullable WALPointer snpRecPtr,
         @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
@@ -119,6 +129,7 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
+        this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
 
         if (!F.isEmpty(compGrpIds)) {
@@ -197,6 +208,13 @@ public class SnapshotMetadata implements Serializable {
     /** */
     public boolean hasCompressedGroups() {
         return hasComprGrps;
+    }
+
+    /**
+     * @return WAL pointer to {@link ClusterSnapshotRecord} if exists.
+     */
+    public @Nullable WALPointer snapshotRecordPointer() {
+        return snpRecPtr;
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
