@@ -27,7 +27,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 
 /** */
 public class CacheObjectTransformerUtils {
-     /** */
+    /** */
     private static CacheObjectTransformerManager transformer(CacheObjectValueContext ctx) {
         return ctx.kernalContext().cache().context().transformer();
     }
