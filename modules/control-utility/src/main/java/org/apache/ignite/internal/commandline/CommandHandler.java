@@ -172,16 +172,20 @@ public class CommandHandler {
 
         cmds = new HashMap<>();
 
-        new CommandsProviderImpl().commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
+        CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
 
         if (!F.isEmpty(it)) {
             for (CommandsProvider provider : it) {
+                if (logger.isDebugEnabled())
+                    logger.debug("Pluggable commands provider registered: " + provider);
+
                 provider.commands().forEach((k, v) -> {
                     k = k.toLowerCase();
 
                     if (cmds.containsKey(k)) {
-                        throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
-                            v + ", " + cmds.get(k));
+                        throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
+                            provider + " tries to register command " + v + ", but this command has already been " +
+                            "registered " + cmds.get(k));
                     }
                     else
                         cmds.put(k, v);

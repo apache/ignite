@@ -48,6 +48,7 @@ public class CommandArgIterator {
     /**
      * @param argsIt Raw argument iterator.
      * @param commonArgumentsAndHighLevelCommandSet All known subcomands.
+     * @param cmds Supported commands.
      */
     public CommandArgIterator(
         Iterator<String> argsIt,

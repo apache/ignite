@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cdc.CdcCommand;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
@@ -128,16 +131,10 @@ public enum CommandList {
     }
 
     /**
-     * @param text Command text.
-     * @return Command for the text.
+     * @return Map with commands.
      */
-    public static CommandList of(String text) {
-        for (CommandList cmd : VALUES) {
-            if (cmd.text().equalsIgnoreCase(text))
-                return cmd;
-        }
-
-        return null;
+    public static Map<String, Command<?>> commands() {
+        return Arrays.stream(VALUES).collect(Collectors.toMap(CommandList::text, CommandList::command));
     }
 
     /**

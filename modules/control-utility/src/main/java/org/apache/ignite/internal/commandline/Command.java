@@ -150,8 +150,7 @@ public interface Command<T> {
             logger.info(INDENT + "[EXPERIMENTAL]");
 
         logger.info(INDENT + desc);
-        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd,
-            CommandLogger.join(" ", args)));
+        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));
 
         if (!F.isEmpty(paramsDesc)) {
             logger.info("");
