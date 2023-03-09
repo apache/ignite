@@ -24,9 +24,9 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -92,7 +92,7 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testPutAllConflict() {
-        Map<Object, T2<Object, GridCacheVersion>> data = createPutAllData();
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(CU.TTL_ETERNAL);
 
         cache.putAllConflict(data);
 
@@ -121,39 +121,39 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** @throws Exception If fails. */
     @Test
     public void testWithExpiryPolicy() throws Exception {
-        PlatformExpiryPolicy expPlc = new PlatformExpiryPolicy(1000, 1000, 1000);
+        long ttl = 1000;
 
-        ClientCacheConfiguration ccfgWithExpPlc = new ClientCacheConfiguration()
-            .setName("cache-with-expiry-policy")
-            .setExpiryPolicy(expPlc);
+        ClientCacheConfiguration ccfgWithTtlEntries = new ClientCacheConfiguration()
+            .setName("cache-with-ttl-entries");
 
-        TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)client.getOrCreateCache(ccfgWithExpPlc);
+        TcpClientCache<Object, Object> cache =
+            (TcpClientCache<Object, Object>)client.getOrCreateCache(ccfgWithTtlEntries);
 
-        TcpClientCache<Object, Object> cacheWithExpPlc = binary ?
+        TcpClientCache<Object, Object> cacheWithTtlEntries = binary ?
             (TcpClientCache<Object, Object>)cache.withKeepBinary() : cache;
 
-        Map<Object, T2<Object, GridCacheVersion>> data = createPutAllData();
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(ttl);
 
-        cacheWithExpPlc.putAllConflict(data);
+        cacheWithTtlEntries.putAllConflict(data);
 
-        assertTrue(cacheWithExpPlc.containsKeys(data.keySet()));
+        assertTrue(cacheWithTtlEntries.containsKeys(data.keySet()));
 
         assertTrue(waitForCondition(
-            () -> data.keySet().stream().noneMatch(cacheWithExpPlc::containsKey),
-            2 * expPlc.getExpiryForCreation().getDurationAmount()
+            () -> data.keySet().stream().noneMatch(cacheWithTtlEntries::containsKey),
+            2 * ttl
         ));
     }
 
     /** */
-    private Map<Object, T2<Object, GridCacheVersion>> createPutAllData() {
-        Map<Object, T2<Object, GridCacheVersion>> map = new HashMap<>();
+    private Map<Object, T3<Object, GridCacheVersion, Long>> createPutAllData(long ttl) {
+        Map<Object, T3<Object, GridCacheVersion, Long>> map = new HashMap<>();
 
         for (int i = 0; i < KEYS_CNT; i++) {
             Person key = new Person(i, "Person-" + i);
             Person val = new Person(i, "Person-" + i);
 
             map.put(binary ? client.binary().toBinary(key) : key,
-                new T2<>(binary ? client.binary().toBinary(val) : val, otherVer));
+                new T3<>(binary ? client.binary().toBinary(val) : val, otherVer, ttl));
         }
 
         return map;
