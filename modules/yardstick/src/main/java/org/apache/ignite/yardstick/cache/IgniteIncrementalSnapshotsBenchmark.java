@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -96,6 +98,8 @@ public class IgniteIncrementalSnapshotsBenchmark extends IgniteCacheAbstractBenc
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("tx");
+        return ignite().getOrCreateCache(new CacheConfiguration<Integer, Object>()
+            .setName("testTxCache")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
     }
 }

@@ -47,8 +47,6 @@
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="name" value="Default_Region"/>
-                        <!-- Setting the size of the default region to 4GB. -->
-                        <property name="maxSize" value="#{10L * 1024 * 1024 * 1024}"/>
 
                         <property name="persistenceEnabled" value="true"/>
                     </bean>
@@ -56,19 +54,6 @@
                 <property name="walCompactionEnabled" value="true"/>
                 <property name="maxWalArchiveSize" value="-1"/>
             </bean>
-        </property>
-
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="tx"/>
-
-                    <property name="cacheMode" value="PARTITIONED"/>
-
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                </bean>
-            </list>
         </property>
     </bean>
 </beans>
