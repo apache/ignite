@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -310,6 +312,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Distributed transaction configuration. */
     private DistributedTransactionConfiguration distributedTransactionConfiguration;
+
+    /** Transforms transaction message. */
+    private volatile BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> txMsgTransform;
+
+    /** Callback invoked on transaction commit. */
+    private volatile Consumer<IgniteInternalTx> onCommitCallback;
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
@@ -1607,6 +1615,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 ", committed0=" + committed0 +
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
+
+        Consumer<IgniteInternalTx> onCommitCallback0 = onCommitCallback;
+
+        if (onCommitCallback0 != null)
+            onCommitCallback0.accept(tx);
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
@@ -3130,6 +3143,45 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public DistributedTransactionConfiguration getDistributedTransactionConfiguration() {
         return distributedTransactionConfiguration;
+    }
+
+    /** @param transform Transaction message transformer. */
+    public void txMessageTransformer(BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform) {
+        txMsgTransform = transform;
+    }
+
+    /** @param callback Callback invoked on transaction commit. */
+    public void onCommitCallback(Consumer<IgniteInternalTx> callback) {
+        onCommitCallback = callback;
+    }
+
+    /**
+     * Sends transaction message after transforming it.
+     *
+     * @param nodeId Node ID to send message.
+     * @param msg Original message to transform.
+     * @param tx Transaction.
+     * @param plc IO policy.
+     */
+    public void sendTransactionMessage(UUID nodeId, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
+        BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform = txMsgTransform;
+
+        if (transform != null)
+            msg = transform.apply(msg, tx);
+
+        cctx.io().send(nodeId, msg, plc);
+    }
+
+    /**
+     * Sends transaction message after transforming it.
+     *
+     * @param n Node to send message.
+     * @param msg Original message to transform.
+     * @param tx Transaction.
+     * @param plc IO policy.
+     */
+    public void sendTransactionMessage(ClusterNode n, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
+        sendTransactionMessage(n.id(), msg, tx, plc);
     }
 
     /** Tx key collisions info holder. */

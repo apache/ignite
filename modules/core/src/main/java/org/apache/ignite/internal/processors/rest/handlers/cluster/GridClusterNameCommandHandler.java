@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_NAME;
@@ -53,20 +53,8 @@ public class GridClusterNameCommandHandler extends GridRestCommandHandlerAdapter
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq) {
         assert restReq instanceof GridRestClusterNameRequest : restReq;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
+        String name = ctx.cluster().clusterName();
 
-        final GridRestResponse res = new GridRestResponse();
-
-        try {
-            res.setResponse(ctx.cluster().clusterName());
-
-            fut.onDone(res);
-        }
-        catch (Exception e) {
-            res.setError(errorMessage(e));
-
-            fut.onDone(res);
-        }
-        return fut;
+        return new GridFinishedFuture<>(new GridRestResponse(name));
     }
 }

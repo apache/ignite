@@ -21,9 +21,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -42,8 +45,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.systemview.view.SnapshotView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 
 /** */
 public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest {
@@ -58,23 +65,33 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
         CountDownLatch loadStopLatch = new CountDownLatch(1);
 
         // Start changing data concurrently with performing the ClusterSnapshot operation.
-        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-            Random r = new Random();
+        IgniteInternalFuture<?> loadFut = null;
 
-            while (loadStopLatch.getCount() > 0) {
-                int key = r.nextInt(CACHE_KEYS_RANGE);
+        try {
+            loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+                Random r = new Random();
 
-                Account acc = new Account(r.nextInt(), r.nextInt());
+                while (loadStopLatch.getCount() > 0 && !Thread.interrupted()) {
+                    int key = r.nextInt(CACHE_KEYS_RANGE);
 
-                ign.cache(DEFAULT_CACHE_NAME).put(key, acc);
-            }
-        }, 5, "cache-loader-");
+                    Account acc = new Account(r.nextInt(), r.nextInt());
 
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get();
+                    ign.cache(DEFAULT_CACHE_NAME).put(key, acc);
+                }
+            }, 5, "cache-loader-");
 
-        loadStopLatch.countDown();
+            snp(ign).createSnapshot(SNAPSHOT_NAME).get();
 
-        loadFut.get();
+            loadStopLatch.countDown();
+
+            loadFut.get();
+        }
+        catch (Throwable err) {
+            if (loadFut != null)
+                loadFut.cancel();
+
+            throw err;
+        }
 
         T2<Map<Integer, Account>, Map<Integer, Account>> data = parseWalCacheState(ign, SNAPSHOT_NAME);
 
@@ -91,6 +108,58 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
         IgniteEx snpIgn = startGridsFromSnapshot(1, SNAPSHOT_NAME);
 
         assertCacheKeys(snpIgn.cache(DEFAULT_CACHE_NAME), snpData);
+    }
+
+    /** */
+    @Test
+    public void testClusterSnapshotRecordIsWrittenToSnapshotMetadata() throws Exception {
+        int nodes = 3;
+        int snapshots = 10;
+
+        startGridsWithCache(nodes, 1, key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        for (int i = 0; i < snapshots; i++) {
+            // Start changing data concurrently with performing the ClusterSnapshot operation.
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME + i).get();
+        }
+
+        for (int i = 0; i < nodes; i++) {
+            IgniteEx ign = grid(i);
+
+            ign.context().cache().context().wal().flush(null, true);
+
+            WALIterator walIt = wal(grid(i));
+
+            long snpCnt = 0;
+
+            SystemView<SnapshotView> snpView = ign.context().systemView().view(SNAPSHOT_SYS_VIEW);
+
+            for (IgniteBiTuple<WALPointer, WALRecord> tuple: walIt) {
+                WALRecord rec = tuple.getValue();
+
+                if (rec.type() == WALRecord.RecordType.CLUSTER_SNAPSHOT) {
+                    SnapshotMetadata metadata = snp(grid(i)).readSnapshotMetadata(
+                        snp(grid(i)).snapshotLocalDir(SNAPSHOT_NAME + snpCnt),
+                        (String)grid(i).configuration().getConsistentId());
+
+                    assertEquals(tuple.getKey(), metadata.snapshotRecordPointer());
+
+                    List<SnapshotView> snpNodesView = StreamSupport.stream(snpView.spliterator(), false)
+                        .filter(v -> v.name().equals(metadata.snapshotName()))
+                        .filter(v -> v.consistentId().equals(ign.localNode().consistentId()))
+                        .filter(v -> v.snapshotRecordSegment().equals(tuple.getKey().index()))
+                        .collect(Collectors.toList());
+
+                    assertEquals(1, snpNodesView.size());
+
+                    snpCnt++;
+                }
+            }
+
+            assertEquals(snapshots, snpCnt);
+        }
     }
 
     /**
