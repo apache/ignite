@@ -97,7 +97,8 @@ class IgniteSpec(metaclass=ABCMeta):
         Return a set of default JVM options.
         """
         default_jvm_opts = create_jvm_settings(gc_dump_path=os.path.join(self.service.log_dir, "gc.log"),
-                                               oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"))
+                                               oom_path=os.path.join(self.service.log_dir, "out_of_mem.hprof"),
+                                               vm_error_path=os.path.join(self.service.log_dir, "hs_err_pid%p.log"))
 
         default_jvm_opts = merge_jvm_settings(
             default_jvm_opts, ["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
