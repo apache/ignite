@@ -421,11 +421,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         if (create) {
             if (expWrn == null)
-                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get();
+                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false).get();
             else {
                 Throwable snpWrn = assertThrows(
                     null,
-                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get(),
+                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false).get(),
                     IgniteException.class,
                     expWrn
                 );

@@ -68,5 +68,6 @@ public class IgniteSnapshotTestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotStreamerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteSnapshotConsistencyTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotDeltaTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IncrementalSnapshotsTestSuite.class, ignoredTests);
     }
 }
