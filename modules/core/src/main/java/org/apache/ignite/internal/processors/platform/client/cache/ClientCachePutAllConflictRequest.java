@@ -64,15 +64,9 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
             CacheObject val = readCacheObject(reader, false);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
             long expireTime = reader.readLong();
-            long ttl = expireTime == CU.EXPIRE_TIME_ETERNAL
-                ? CU.TTL_ETERNAL
-                : (expireTime - U.currentTimeMillis());
-
-            if (ttl < 0) // If replication lag more than TTL then `ttl < 0` and we must expire entry immediately.
-                ttl = CU.TTL_ZERO;
 
             GridCacheDrInfo info = expireTime != CU.EXPIRE_TIME_ETERNAL ?
-                new GridCacheDrExpirationInfo(val, ver, ttl, expireTime) :
+                new GridCacheDrExpirationInfo(val, ver, CU.TTL_ETERNAL, expireTime) :
                 (expPlc
                     ? new GridCacheDrExpirationInfo(val, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE)
                     : new GridCacheDrInfo(val, ver));
