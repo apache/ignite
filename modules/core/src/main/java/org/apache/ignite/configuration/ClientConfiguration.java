@@ -34,6 +34,7 @@ import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
+import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -531,18 +532,20 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
+     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.</p>
+     * When {@code false}, only one connection is established at a given moment to a random server node.
+     * <p>
      * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
      * <ul>
      *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those
-     *     operations within explicit transactions {@code ClientTransactions#txStart()}.</li>
+     *     operations within explicit transactions {@link ClientTransactions#txStart()}.</li>
      *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept a
      *     partition number as a parameter with which the query is routed to a particular server node that stores
      *     the requested data.</li>
      * </ul>
+     * </p>
      * @return A value indicating whether partition awareness should be enabled.
-     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.</p>
-     * When {@code false}, only one connection is established at a given moment to a random server node.
      */
     public boolean isPartitionAwarenessEnabled() {
         return partitionAwarenessEnabled;
@@ -550,18 +553,19 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Sets a value indicating whether partition awareness should be enabled.
+     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.</p>
+     * When {@code false}, only one connection is established at a given moment to a random server node.
+     * <p>
      * Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
      * <ul>
      *     <li>1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on
-     *     those operations within explicit transactions {@code ClientTransactions#txStart()}.</li>
+     *     those operations within explicit transactions {@link ClientTransactions#txStart()}.</li>
      *     <li>2. {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} accept
      *     a partition number as a parameter with which the query is routed to a particular server node that stores
      *     the requested data.</li>
      * </ul>
-     * <p>Default is {@code true}: client sends requests directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.</p>
-     * When {@code false}, only one connection is established at a given moment to a random server node.
-     *
+     * </p>
      * @param partitionAwarenessEnabled Value indicating whether partition awareness should be enabled.
      * @return {@code this} for chaining.
      */
