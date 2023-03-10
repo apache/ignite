@@ -223,20 +223,19 @@ public class CdcSelfTest extends AbstractCdcTest {
                 Integer key = (Integer)evt.key();
 
                 if (evt.value() == null || key % 2 != 0) {
-                    assertEquals("TTL must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
+                    assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
 
                     return;
                 }
 
                 assertTrue(
-                    "TTL must be set [key=" + key + ']',
+                    "Expire must be set [key=" + key + ']',
                     evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
                 );
 
-                assertTrue(
-                    "TTL for operation",
-                    evt.expireTime() <= System.currentTimeMillis() + (seen.contains(key) ? UPDATE_TTL : CREATE_TTL)
-                );
+                long ttl = evt.expireTime() - System.currentTimeMillis();
+
+                assertTrue("Expire for operation", ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL));
 
                 seen.add(key);
             }
