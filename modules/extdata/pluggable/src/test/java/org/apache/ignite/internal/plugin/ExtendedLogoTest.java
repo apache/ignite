@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.plugin;
 
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -25,7 +25,7 @@ import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class IgniteExtendedLogoTest extends GridCommonAbstractTest {
+public class ExtendedLogoTest extends GridCommonAbstractTest {
     /** @throws Exception If fails. */
     @Test
     public void testExtendedLogo() throws Exception {
