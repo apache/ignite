@@ -65,7 +65,8 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req)
+        throws IgniteCheckedException {
         assert req != null;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
@@ -75,74 +76,65 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
             log.debug("Handling baseline REST request: " + req);
 
         GridRestBaselineRequest req0 = (GridRestBaselineRequest)req;
-        
-        try {
-            IgniteClusterEx cluster = ctx.grid().cluster();
 
-            List<Object> consistentIds = req0.consistentIds();
+        IgniteClusterEx cluster = ctx.grid().cluster();
 
-            switch (req0.command()) {
-                case BASELINE_CURRENT_STATE: {
-                    // No-op.
+        List<Object> consistentIds = req0.consistentIds();
 
-                    break;
-                }
+        switch (req0.command()) {
+            case BASELINE_CURRENT_STATE: {
+                // No-op.
 
-                case BASELINE_SET: {
-                    Long topVer = req0.topologyVersion();
-
-                    if (topVer == null && consistentIds == null)
-                        throw new IgniteCheckedException("Failed to handle request (either topVer or consistentIds should be specified).");
-
-                    if (topVer != null)
-                        cluster.setBaselineTopology(topVer);
-                    else
-                        cluster.setBaselineTopology(filterServerNodesByConsId(consistentIds));
-
-                    break;
-                }
-
-                case BASELINE_ADD: {
-                    if (consistentIds == null)
-                        throw new IgniteCheckedException(missingParameter("consistentIds"));
-
-                    Set<BaselineNode> baselineTop = new HashSet<>(currentBaseLine());
-
-                    baselineTop.addAll(filterServerNodesByConsId(consistentIds));
-
-                    cluster.setBaselineTopology(baselineTop);
-
-                    break;
-                }
-
-                case BASELINE_REMOVE: {
-                    if (consistentIds == null)
-                        throw new IgniteCheckedException(missingParameter("consistentIds"));
-
-                    Collection<BaselineNode> baseline = currentBaseLine();
-
-                    Set<BaselineNode> baselineTop = new HashSet<>(baseline);
-
-                    baselineTop.removeAll(filterNodesByConsId(baseline, consistentIds));
-
-                    cluster.setBaselineTopology(baselineTop);
-
-                    break;
-                }
-
-                default:
-                    assert false : "Invalid command for baseline handler: " + req;
+                break;
             }
 
-            return new GridFinishedFuture<>(new GridRestResponse(currentState()));
+            case BASELINE_SET: {
+                Long topVer = req0.topologyVersion();
+
+                if (topVer == null && consistentIds == null)
+                    throw new IgniteCheckedException("Failed to handle request (either topVer or consistentIds should be specified).");
+
+                if (topVer != null)
+                    cluster.setBaselineTopology(topVer);
+                else
+                    cluster.setBaselineTopology(filterServerNodesByConsId(consistentIds));
+
+                break;
+            }
+
+            case BASELINE_ADD: {
+                if (consistentIds == null)
+                    throw new IgniteCheckedException(missingParameter("consistentIds"));
+
+                Set<BaselineNode> baselineTop = new HashSet<>(currentBaseLine());
+
+                baselineTop.addAll(filterServerNodesByConsId(consistentIds));
+
+                cluster.setBaselineTopology(baselineTop);
+
+                break;
+            }
+
+            case BASELINE_REMOVE: {
+                if (consistentIds == null)
+                    throw new IgniteCheckedException(missingParameter("consistentIds"));
+
+                Collection<BaselineNode> baseline = currentBaseLine();
+
+                Set<BaselineNode> baselineTop = new HashSet<>(baseline);
+
+                baselineTop.removeAll(filterNodesByConsId(baseline, consistentIds));
+
+                cluster.setBaselineTopology(baselineTop);
+
+                break;
+            }
+
+            default:
+                assert false : "Invalid command for baseline handler: " + req;
         }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-        finally {
-            if (log.isDebugEnabled())
-                log.debug("Handled baseline REST request: " + req);
-        }
+
+        return new GridFinishedFuture<>(new GridRestResponse(currentState()));
     }
 
     /**
