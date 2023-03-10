@@ -68,7 +68,7 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
                 ? CU.TTL_ETERNAL
                 : (expireTime - U.currentTimeMillis());
 
-            if (ttl < 0) // Happens if replication lag more than TTL.
+            if (ttl < 0) // If replication lag more than TTL then `ttl < 0` and we must expire entry immediately.
                 ttl = CU.TTL_ZERO;
 
             GridCacheDrInfo info = expireTime != CU.EXPIRE_TIME_ETERNAL ?
