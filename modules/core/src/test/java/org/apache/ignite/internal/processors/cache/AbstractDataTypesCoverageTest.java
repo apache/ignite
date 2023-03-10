@@ -319,7 +319,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
     /**
      *
      */
-    public static class TestPolicy implements ExpiryPolicy, Serializable {
+    private static class TestPolicy implements ExpiryPolicy, Serializable {
         /** */
         private final Long create;
 
@@ -334,7 +334,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
          * @param access TTL for access.
          * @param update TTL for update.
          */
-        public TestPolicy(@Nullable Long create,
+        TestPolicy(@Nullable Long create,
             @Nullable Long update,
             @Nullable Long access) {
             this.create = create;

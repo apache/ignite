@@ -53,12 +53,12 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest.TestPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -198,7 +198,7 @@ public class CdcSelfTest extends AbstractCdcTest {
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteCache<Integer, User> withExpiry =
-            cache.withExpiryPolicy(new TestPolicy(CREATE_TTL, UPDATE_TTL, 0L));
+            cache.withExpiryPolicy(new PlatformExpiryPolicy(CREATE_TTL, UPDATE_TTL, 0L));
 
         for (int i = 0; i < KEYS_CNT; i++) {
             if (i % 2 == 0) {
