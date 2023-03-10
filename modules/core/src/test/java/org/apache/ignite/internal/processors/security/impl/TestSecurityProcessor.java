@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security.impl;
 import java.net.InetSocketAddress;
 import java.security.Permissions;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -53,6 +54,9 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** */
     private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
+
+    /** */
+    private static final Collection<Class<?>> EXT_SYS_CLASSES = ConcurrentHashMap.newKeySet();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
@@ -103,6 +107,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public boolean isGlobalNodeAuthentication() {
         return globalAuth;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSystemType(Class<?> cls) {
+        return EXT_SYS_CLASSES.contains(cls);
     }
 
     /** {@inheritDoc} */
@@ -204,5 +213,10 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public void dropUser(String login) {
         USERS.remove(login);
+    }
+
+    /** */
+    public static void registerExternalSystemTypes(Class<?>... cls) {
+        EXT_SYS_CLASSES.addAll(Arrays.asList(cls));
     }
 }

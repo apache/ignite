@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatusSnapshot;
@@ -1589,7 +1588,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     ) {
         taskCls = resolveTaskClass(taskName, taskCls, task);
 
-        if (taskCls == null || !SecurityUtils.isSystemType(ctx, taskCls)) {
+        if (taskCls == null || !ctx.security().isSystemType(taskCls)) {
             assert opts.isPublicRequest();
 
             ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), TASK_EXECUTE);

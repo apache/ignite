@@ -87,6 +87,7 @@ import static org.apache.ignite.common.AbstractEventSecurityContextTest.sendRest
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.registerExternalSystemTypes;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
@@ -137,9 +138,11 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        registerSystemType(SystemRunnable.class);
-        registerSystemType(PublicAccessSystemTask.class);
-        registerSystemType(PublicAccessSystemJob.class);
+        registerExternalSystemTypes(
+            SystemRunnable.class,
+            PublicAccessSystemTask.class,
+            PublicAccessSystemJob.class
+        );
 
         for (int idx = 0; idx < SRV_NODES_CNT; idx++)
             startGrid(idx, false);
