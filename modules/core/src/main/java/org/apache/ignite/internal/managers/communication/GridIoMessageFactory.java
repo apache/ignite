@@ -136,6 +136,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
@@ -382,6 +383,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
 
+        // Incremental snapshot.
+        factory.register(IncrementalSnapshotAwareMessage.TYPE_CODE, IncrementalSnapshotAwareMessage::new);
+
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
         factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new);
@@ -390,8 +394,11 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
 
-        // [-3..119] [124..129] [-23..-28] [-36..-55] - this
+        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
+        // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
+        // [300..307, 350..352] - CalciteMessageFactory.
+        // [400] - Incremental snapshot.
         // [-4..-22, -30..-35, -54..-57] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.

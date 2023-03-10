@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
-import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -110,10 +109,10 @@ public class VisorCdcDeleteLostSegmentsTask extends VisorMultiNodeTask<Void, Voi
 
                     cdcFiles
                         .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()))
-                        .sorted(Comparator.comparingLong(CdcMain::segmentIndex)
+                        .sorted(Comparator.comparingLong(FileWriteAheadLogManager::segmentIndex)
                             .reversed()) // Sort by segment index.
                         .forEach(path -> {
-                            long idx = CdcMain.segmentIndex(path);
+                            long idx = FileWriteAheadLogManager.segmentIndex(path);
 
                             if (lastSgmnt.get() == -1 || lastSgmnt.get() - idx == 1) {
                                 lastSgmnt.set(idx);

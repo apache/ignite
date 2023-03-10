@@ -40,9 +40,17 @@ public interface IgniteSnapshot {
      * Create a consistent copy of all persistence cache groups from the whole cluster.
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
-     * @return Future which will be completed when a process ends.
+     * @return Future which will be completed when the process ends.
      */
     public IgniteFuture<Void> createSnapshot(String name);
+
+    /**
+     * Create an incremental snapshot for an existing snapshot.
+     *
+     * @param snapshotName Snapshot name.
+     * @return Future which will be completed when the process ends.
+     */
+    public IgniteFuture<Void> createIncrementalSnapshot(String snapshotName);
 
     /**
      * Cancel running snapshot operation. All intermediate results of cancelled snapshot operation will be deleted.
@@ -64,6 +72,20 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when restore operation finished.
      */
     public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> cacheGroupNames);
+
+    /**
+     * Restore cache group(s) from the snapshot and its increments. Snapshot is restored first and after that all increments
+     * are restored sequentially from the {@code 1} to the specified {@code incIdx}.
+     * <p>
+     * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,
+     * they must be destroyed by the user (eg with {@link IgniteCache#destroy()}) before starting this operation.
+     *
+     * @param name Snapshot name.
+     * @param cacheGroupNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
+     * @param incIdx Index of incremental snapshot.
+     * @return Future which will be completed when restore operation finished.
+     */
+    public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> cacheGroupNames, int incIdx);
 
     /**
      * Cancel snapshot restore operation.

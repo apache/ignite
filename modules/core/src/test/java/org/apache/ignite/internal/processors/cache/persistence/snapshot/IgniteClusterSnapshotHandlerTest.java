@@ -394,7 +394,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            snpMgr.createSnapshot(snpName, snpDir.getAbsolutePath()).get(TIMEOUT);
+            snpMgr.createSnapshot(snpName, snpDir.getAbsolutePath(), false).get(TIMEOUT);
 
             ignite.destroyCache(DEFAULT_CACHE_NAME);
             awaitPartitionMapExchange();

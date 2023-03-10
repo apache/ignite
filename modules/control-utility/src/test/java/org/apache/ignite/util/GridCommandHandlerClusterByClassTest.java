@@ -1306,6 +1306,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), CacheClear.CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Invalid argument \"Z\", no more arguments are expected.");
 
+        autoConfirmation = false;
+
+        String expConfirmation = String.format(CacheClear.CONFIRM_MSG, 2, "cache1, cache2");
+
+        // Ensure we cannot delete a cache groups.
+        injectTestSystemIn(CONFIRM_MSG);
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CacheClear.CACHES, "cache1,cache2"));
+        assertContains(log, testOut.toString(), expConfirmation);
+
+        autoConfirmation = true;
+
         List<String> caches = F.asList("cache1", "cache2", "cache3");
 
         for (boolean sql: new boolean[] {false, true}) {
