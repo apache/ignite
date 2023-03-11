@@ -169,6 +169,8 @@ public interface IgniteSecurity {
      * can be considered controlled by the Ignite administrator and to which less stringent security checks can be
      * applied. By default, Ignite considers only classes from its own codebase as system but their pool can be extended
      * by custom Security Plugin.
+     *
+     * @see GridSecurityProcessor#isSystemType(Class)
      */
     public boolean isSystemType(Class<?> cls);
 }

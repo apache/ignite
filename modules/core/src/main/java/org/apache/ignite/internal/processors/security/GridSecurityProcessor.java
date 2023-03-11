@@ -171,8 +171,8 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return Whether the specified class can be considered system. System classes are classes whose source code
      * can be considered controlled by the Ignite administrator and to which less stringent security checks can be
      * applied. This method will be called on classes that are not part of the Ignite codebase. This allows the
-     * security plugin to extend the pool of system classes with user-defined ones
-     * (e.g. classes that belongs to custom Ignite plugins).
+     * Security Plugin to extend the pool of system classes with user-defined ones
+     * (e.g. classes that belongs to custom Ignite Plugins).
      */
     public default boolean isSystemType(Class<?> cls) {
         return false;
