@@ -878,7 +878,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
 
             try {
-                cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(tx.nearNodeId(), res, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
@@ -1514,7 +1514,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +

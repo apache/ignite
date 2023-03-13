@@ -612,13 +612,13 @@ Possible parameters:
 * SIZE - Average size of column values (in bytes).
 * DISTINCT - Number of distinct non-null values in column.
 
-== REFRESH
+== REFRESH STATISTICS
 
 The command refreshes link:SQL/sql-statistics[statistics,window=_blank].
 
 [source,sql]
 ----
-REFRESH 'schemaName'.'tableName'(column1, column2);
+REFRESH STATISTICS 'schemaName'.'tableName'(column1, column2);
 ----
 
 Parameters:
@@ -633,7 +633,7 @@ Example:
 
 [source,sql]
 ----
-REFRESH PRODUCTS, SALE(productId, discount)
+REFRESH STATISTICS PRODUCTS, SALE(productId, discount)
 ----
 
 == DROP STATISTICS

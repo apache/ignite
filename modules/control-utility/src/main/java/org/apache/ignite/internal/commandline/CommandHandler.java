@@ -21,7 +21,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -111,6 +113,9 @@ public class CommandHandler {
     /** JULs logger. */
     private final IgniteLogger logger;
 
+    /** Supported commands. */
+    private final Map<String, Command<?>> cmds;
+
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
 
@@ -151,7 +156,7 @@ public class CommandHandler {
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger("control-utility", CommandHandler.class);
+        this(setupJavaLogger("control-utility", CommandHandler.class));
     }
 
     /**
@@ -159,6 +164,35 @@ public class CommandHandler {
      */
     public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
+        Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
+
+        Map<String, Command<?>> cmds = new LinkedHashMap<>();
+
+        CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
+
+        if (!F.isEmpty(it)) {
+            for (CommandsProvider provider : it) {
+                if (logger.isDebugEnabled())
+                    logger.debug("Registering pluggable commands provider: " + provider);
+
+                provider.commands().forEach((k, v) -> {
+                    k = k.toLowerCase();
+
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registering command: " + k);
+
+                    if (cmds.containsKey(k)) {
+                        throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
+                            provider + " tries to register command " + v + ", but this command has already been " +
+                            "registered " + cmds.get(k));
+                    }
+                    else
+                        cmds.put(k, v);
+                });
+            }
+        }
+
+        this.cmds = Collections.unmodifiableMap(cmds);
     }
 
     /**
@@ -191,7 +225,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs.iterator());
 
             Command command = args.command();
             commandName = command.name();
@@ -701,9 +735,10 @@ public class CommandHandler {
 
         logger.info("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values())
-            .filter(c -> experimentalEnabled || !c.command().experimental())
-            .forEach(c -> c.command().printUsage(logger));
+        cmds.values().forEach(c -> {
+            if (experimentalEnabled || !c.experimental())
+                c.printUsage(logger);
+        });
 
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");

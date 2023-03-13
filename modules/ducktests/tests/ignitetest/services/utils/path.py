@@ -243,13 +243,20 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         return os.path.join(self.home_dir, "bin", script_name)
 
+    @staticmethod
+    def consistent_dir(consistent_id):
+        """
+        :param consistent_id: consistent ID
+        :return: correct file name for consistent ID directory
+        """
+        return "".join([c if c.isdigit() or c.isalpha() else '_' for c in consistent_id])
+
     def cache_dir(self, consistent_dir, cache_name):
         """
         :param consistent_dir: consistent ID directory.
         :param cache_name: cache name.
         :return: absolute path to the cache directory.
         """
-        consistent_dir = consistent_dir.replace('.', '_')
         return os.path.join(self.database_dir, consistent_dir, f'cache-{cache_name}')
 
     def index_file(self, consistent_dir, cache_name):

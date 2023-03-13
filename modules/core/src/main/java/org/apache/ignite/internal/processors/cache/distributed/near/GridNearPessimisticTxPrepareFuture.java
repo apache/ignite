@@ -407,7 +407,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
-                    cctx.io().send(primary, req, tx.ioPolicy());
+                    cctx.tm().sendTransactionMessage(primary, req, tx, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +

@@ -1411,6 +1411,20 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Finds cache message handler by its ID and message class.
+     *
+     * @param hndId Message handler ID.
+     * @param msgCls Message class.
+     * @return Message handler.
+     */
+    public <Msg extends GridCacheMessage> IgniteBiInClosure<UUID, ? super Msg> cacheHandler(
+        int hndId,
+        Class<? extends GridCacheMessage> msgCls
+    ) {
+        return cacheHandlers.clsHandlers.get(new ListenerKey(hndId, msgCls));
+    }
+
+    /**
      * @param hndId Message handler ID.
      * @param type Type of message.
      * @param c Handler.

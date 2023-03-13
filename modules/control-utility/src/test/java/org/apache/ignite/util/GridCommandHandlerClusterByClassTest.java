@@ -44,6 +44,7 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.commandline.cache.CacheClear;
 import org.apache.ignite.internal.commandline.cache.CacheDestroy;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -114,6 +116,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheDestroy.CACHE_NAMES_ARG;
 import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_ALL_ARG;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cdc.CdcCommand.DELETE_LOST_SEGMENT_LINKS;
@@ -1288,6 +1291,107 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), String.format(CacheDestroy.RESULT_MSG, "sql-cache"));
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testCacheClear() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text()));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), "cacheX"));
+        assertContains(log, testOut.toString(), "Unknown argument: cacheX");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), CacheClear.CACHES, "X,Y", "Z"));
+        assertContains(log, testOut.toString(), "Invalid argument \"Z\", no more arguments are expected.");
+
+        autoConfirmation = false;
+
+        String expConfirmation = String.format(CacheClear.CONFIRM_MSG, 2, "cache1, cache2");
+
+        // Ensure we cannot delete a cache groups.
+        injectTestSystemIn(CONFIRM_MSG);
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CacheClear.CACHES, "cache1,cache2"));
+        assertContains(log, testOut.toString(), expConfirmation);
+
+        autoConfirmation = true;
+
+        List<String> caches = F.asList("cache1", "cache2", "cache3");
+
+        for (boolean sql: new boolean[] {false, true}) {
+            for (String cache: caches)
+                checkCacheClearCommand(caches, F.asList(cache), sql);
+
+            checkCacheClearCommand(caches, F.asList("cache1", "cache2"), sql);
+            checkCacheClearCommand(caches, F.asList("cache1", "cache2", "cache3"), sql);
+            checkCacheClearCommand(caches, F.asList("cacheX"), sql);
+            checkCacheClearCommand(caches, F.asList("cacheX", "cache1"), sql);
+        }
+    }
+
+    /** */
+    private void checkCacheClearCommand(List<String> caches, List<String> clearCaches, boolean sql) {
+        int cnt = 100;
+
+        for (String cache: caches) {
+            if (sql) {
+                sql("CREATE TABLE tbl_" + cache + "(id INT PRIMARY KEY, val INT) WITH \"CACHE_NAME=" + cache + "\";");
+
+                for (int i = 0; i < cnt; i++)
+                    sql("insert into tbl_" + cache + "(id, val) values (?, ?)", i, i);
+            }
+            else {
+                IgniteCache<Integer, Integer> c = crd.createCache(new CacheConfiguration<>(cache));
+
+                for (int i = 0; i < cnt; i++)
+                    c.put(i, i);
+            }
+        }
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CacheClear.CACHES, String.join(",", clearCaches)));
+
+        List<String> nonExistentCaches = clearCaches.stream()
+            .filter(c -> !caches.contains(c))
+            .collect(Collectors.toList());
+
+        List<String> clearedCaches = clearCaches.stream()
+            .filter(caches::contains)
+            .collect(Collectors.toList());
+
+        if (!nonExistentCaches.isEmpty())
+            assertContains(log, testOut.toString(), String.format(CacheClear.SKIP_CLEAR_MSG, String.join(", ", nonExistentCaches)));
+        else
+            assertNotContains(log, testOut.toString(), String.format(CacheClear.SKIP_CLEAR_MSG, ""));
+
+        if (!clearedCaches.isEmpty())
+            assertContains(log, testOut.toString(), String.format(CacheClear.CLEAR_MSG, String.join(", ", clearedCaches)));
+        else
+            assertNotContains(log, testOut.toString(), String.format(CacheClear.CLEAR_MSG, ""));
+
+        for (String cache: caches) {
+            int count;
+
+            if (sql)
+                count = sql("select * from tbl_" + cache).size();
+            else
+                count = crd.cache(cache).size();
+
+            assertEquals(cache, clearCaches.contains(cache) ? 0 : cnt, count);
+        }
+
+        if (sql) {
+            for (String cache: caches)
+                sql("drop table tbl_" + cache);
+        }
+        else
+            crd.destroyCaches(caches);
+    }
+
+    /** */
+    private List<?> sql(String sql, Object... args) {
+        return crd.context().query().querySqlFields(new SqlFieldsQuery(sql).setArgs(args), false, false)
+            .get(0).getAll();
     }
 
     /**

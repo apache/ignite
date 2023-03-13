@@ -666,6 +666,16 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
+     * @return ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
+     */
+    public @Nullable UUID incrementalSnapshotId();
+
+    /**
+     * @param id ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
+     */
+    public void incrementalSnapshotId(@Nullable UUID id);
+
+    /**
      * @return Transaction counters.
      * @param createIfAbsent {@code True} if non-null instance is needed.
      */

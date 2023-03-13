@@ -87,7 +87,10 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
      * @return General usage options.
      */
     protected Map<String, String> generalUsageOptions() {
-        return F.asMap(SNAPSHOT_NAME_ARG, "Snapshot name.");
+        return F.asMap(
+            SNAPSHOT_NAME_ARG,
+            "Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided."
+        );
     }
 
     /**
