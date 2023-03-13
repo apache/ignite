@@ -63,8 +63,9 @@ import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.ServiceContextResource;
@@ -448,8 +449,8 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             }
         }
 
-        if (clientVer.compareTo(VER_2_14_0) >= 0)
-            testDataReplicationOperations(serverVer.compareTo(VER_2_14_0) >= 0);
+        if (clientVer.compareTo(VER_2_15_0) >= 0)
+            testDataReplicationOperations(serverVer.compareTo(VER_2_15_0) >= 0);
 
         if (clientVer.compareTo(VER_2_14_0) >= 0)
             new JavaThinIndexQueryCompatibilityTest().testIndexQueries(ADDR, serverVer.compareTo(VER_2_14_0) >= 0);
@@ -515,7 +516,8 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)client
                 .getOrCreateCache("test-cache-replication");
 
-            Map<Object, T2<Object, GridCacheVersion>> puts = F.asMap(1, new T2<>(1, new GridCacheVersion(1, 1, 1, 2)));
+            Map<Object, T3<Object, GridCacheVersion, Long>> puts =
+                F.asMap(1, new T3<>(1, new GridCacheVersion(1, 1, 1, 2), U.currentTimeMillis() + 1000));
 
             Map<Object, GridCacheVersion> rmvs = F.asMap(1, new GridCacheVersion(1, 1, 1, 2));
 
