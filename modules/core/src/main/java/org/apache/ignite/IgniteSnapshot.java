@@ -45,6 +45,15 @@ public interface IgniteSnapshot {
     public IgniteFuture<Void> createSnapshot(String name);
 
     /**
+     * Create a consistent copy of all persistence cache groups from the whole cluster.
+     *
+     * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
+     * @return Future which will be completed when the process ends.
+     */
+    public IgniteFuture<Void> createSnapshot(String name, boolean onlyPrimary);
+
+    /**
      * Create an incremental snapshot for an existing snapshot.
      *
      * @param snapshotName Snapshot name.

@@ -1114,7 +1114,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (cctx.cache().cacheGroup(grpId) == null)
                 continue;
 
-            parts.put(grpId, null);
+            Set<Integer> include = null;
+
+            if (req.onlyPrimary()) {
+                // TODO: make primary set here. Check SnapshotFutureTask#onMarkCheckpointBegin
+            }
+
+            parts.put(grpId, include);
         }
 
         IgniteInternalFuture<?> task0;
@@ -2073,12 +2079,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        return createSnapshot(name, null, false);
+        return createSnapshot(name, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> createSnapshot(String name, boolean onlyPrimary) {
+        return createSnapshot(name, null, false, onlyPrimary);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createIncrementalSnapshot(String name) {
-        return createSnapshot(name, null, true);
+        return createSnapshot(name, null, true, false);
     }
 
     /**
@@ -2086,11 +2097,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @param snpPath Snapshot directory path.
+     * @param incremental Incremental snapshot flag.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      * @return Future which will be completed when a process ends.
      */
-    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath, boolean incremental) {
+    public IgniteFutureImpl<Void> createSnapshot(
+        String name,
+        @Nullable String snpPath,
+        boolean incremental,
+        boolean onlyPrimary
+    ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(!(incremental && onlyPrimary), "Only primary not supported for incremental snapshots");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -2120,7 +2139,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsync(
                         BALANCE,
-                        new CreateSnapshotCallable(name, incremental),
+                        new CreateSnapshotCallable(name, incremental, onlyPrimary),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
             }
@@ -2202,7 +2221,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 grps,
                 bltNodeIds,
                 incremental,
-                incIdx
+                incIdx,
+                onlyPrimary
             ));
 
             String msg =
@@ -4470,6 +4490,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Incremental flag. */
         private final boolean incremental;
 
+        /** . */
+        private final boolean onlyPrimary;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -4477,9 +4500,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpName Snapshot name.
          */
-        public CreateSnapshotCallable(String snpName, boolean incremental) {
+        public CreateSnapshotCallable(String snpName, boolean incremental, boolean onlyPrimary) {
             this.snpName = snpName;
             this.incremental = incremental;
+            this.onlyPrimary = onlyPrimary;
         }
 
         /** {@inheritDoc} */
@@ -4487,7 +4511,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (incremental)
                 ignite.snapshot().createIncrementalSnapshot(snpName).get();
             else
-                ignite.snapshot().createSnapshot(snpName).get();
+                ignite.snapshot().createSnapshot(snpName, onlyPrimary).get();
 
             return null;
         }
