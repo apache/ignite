@@ -2067,6 +2067,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putLong(entry.partitionCounter());
         buf.putLong(entry.expireTime());
 
+        System.out.println("WAL.write.key = " + entry.key() + ", expireTime = " + entry.expireTime());
+
         if (!(entry instanceof MvccDataEntry))
             buf.put(entry.flags());
     }
