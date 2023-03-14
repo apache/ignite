@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.ToStringClosure;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -793,13 +790,6 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         authCtx.subjectId(UUID.randomUUID());
 
         return grid(0).context().security().authenticate(authCtx);
-    }
-
-    /** */
-    private void registerSystemType(Class<?> cls) throws Exception {
-        ConcurrentMap<Class<?>, Boolean> sysTypes = U.field(SecurityUtils.class, "SYSTEM_TYPES");
-
-        sysTypes.put(cls, true);
     }
 
     /** */
