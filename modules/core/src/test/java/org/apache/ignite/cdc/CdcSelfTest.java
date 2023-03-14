@@ -279,7 +279,7 @@ public class CdcSelfTest extends AbstractCdcTest {
                 }
 
                 /** {@inheritDoc} */
-                @Override protected boolean onlyPrimary() {
+                @Override protected boolean checkOnlyPrimary() {
                     return false;
                 }
             };

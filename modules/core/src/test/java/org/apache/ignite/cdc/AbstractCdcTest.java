@@ -305,7 +305,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     assertTrue(caches.containsKey(evt.cacheId()));
                 }
 
-                if (!onlyPrimary() || evt.primary())
+                if (!checkOnlyPrimary() || evt.primary())
                     checkEvent(evt);
             });
 
@@ -343,7 +343,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         }
 
         /** */
-        protected boolean onlyPrimary() {
+        protected boolean checkOnlyPrimary() {
             return true;
         }
 
