@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
@@ -68,7 +67,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_AC
  *     <li>Managing sandbox and proving point of entry to the internal sandbox API.</li>
  * </ul>
  */
-public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
+public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     /**  */
     private static final String FAILED_OBTAIN_SEC_CTX_MSG = "Failed to obtain a security context.";
 
@@ -87,9 +86,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Current security context if differs from {@link #dfltSecCtx}. */
     private final ThreadLocal<SecurityContext> curSecCtx = new ThreadLocal<>();
-
-    /** Grid kernal context. */
-    private final GridKernalContext ctx;
 
     /** Security processor. */
     private final GridSecurityProcessor secPrc;
@@ -121,10 +117,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @param secPrc Security processor.
      */
     public IgniteSecurityProcessor(GridKernalContext ctx, GridSecurityProcessor secPrc) {
-        assert ctx != null;
+        super(ctx);
+
         assert secPrc != null;
 
-        this.ctx = ctx;
         this.secPrc = secPrc;
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
@@ -247,6 +243,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        super.start();
+
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
         secPrc.start();
@@ -407,6 +405,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             marsh,
             U.resolveClassLoader(ctx.config()),
             ctx.discovery().localNode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSystemType(Class<?> cls) {
+        return super.isSystemType(cls) || secPrc.isSystemType(cls);
     }
 
     /**
