@@ -15,26 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.compute;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.internal.PlatformSecurityAwareJob;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
- * Platform closure job interface.
+ * Represents the base interface for all Platform Compute Jobs that wrap and execute user code. The execution and
+ * cancellation of tasks marked with this interface will be preceded by authorization with the specified name and
+ * {@link SecurityPermission#TASK_EXECUTE} permission.
  */
-public interface PlatformJob extends ComputeJob, PlatformSecurityAwareJob {
+public interface PlatformSecurityAwareJob {
     /**
-     * Gets native pointer to deployed job.
-     *
-     * @return Pointer.
+     * @return The name of the Platform Compute Job that will be used when authorizing its launch and cancellation.
      */
-    public long pointer();
-
-    /**
-     * Gets native job.
-     *
-     * @return Native job.
-     */
-    public Object job();
+    public String name();
 }

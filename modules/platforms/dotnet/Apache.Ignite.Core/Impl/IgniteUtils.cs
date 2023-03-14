@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Compute;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
@@ -230,6 +231,12 @@ namespace Apache.Ignite.Core.Impl
             hasPlatformCache = (res & platformCache) == platformCache || (res & all) == all;
             
             return res & ~platformCache;
+        }
+
+        /// <summary/>
+        public static string GetComputeExecutableName(object obj)
+        {
+            return obj.GetType().FullName;
         }
     }
 }

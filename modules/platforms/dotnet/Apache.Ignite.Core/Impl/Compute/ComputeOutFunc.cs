@@ -27,13 +27,15 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Resource;
+    using static IgniteUtils;
 
     /// <summary>
     /// Non-generic version of IComputeFunc{T}.
     /// </summary>
     internal interface IComputeOutFunc : IComputeFunc<object>
     {
-        // No-op.
+        /// <summary />
+        string GetName();
     }
 
     /// <summary>
@@ -105,6 +107,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             // Propagate injection
             ResourceProcessor.Inject(_func, (Ignite)ignite);
+        }
+
+        /** <inheritDoc /> */
+        public string GetName()
+        {
+            return GetComputeExecutableName(_func);
         }
     }
 
