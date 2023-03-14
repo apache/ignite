@@ -855,9 +855,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             op,
                                             nearXidVersion(),
                                             writeVersion(),
-                                            txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE
-                                                ? CU.toExpireTime(txEntry.ttl())
-                                                : txEntry.conflictExpireTime(),
+                                            0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
                                             DataEntry.flags(CU.txOnPrimary(this)))));

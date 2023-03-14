@@ -915,8 +915,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
-        System.out.println(rec.type());
-
         if (serializer == null || mode == WALMode.NONE)
             return null;
 

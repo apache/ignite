@@ -79,7 +79,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
     /** Keys count. */
-    public static final int KEYS_CNT = 2;
+    public static final int KEYS_CNT = 50;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -297,16 +297,16 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
-                if (onlyPrimary() && !evt.primary())
-                    return;
+                if (evt.primary()) {
+                    data.computeIfAbsent(
+                        F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                        k -> new ArrayList<>()).add(extract(evt));
 
-                data.computeIfAbsent(
-                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()).add(extract(evt));
+                    assertTrue(caches.containsKey(evt.cacheId()));
+                }
 
-                assertTrue(caches.containsKey(evt.cacheId()));
-
-                checkEvent(evt);
+                if (!onlyPrimary() || evt.primary())
+                    checkEvent(evt);
             });
 
             return commit();

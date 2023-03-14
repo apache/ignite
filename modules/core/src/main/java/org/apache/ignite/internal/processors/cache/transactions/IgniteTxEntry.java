@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
@@ -58,8 +59,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Transaction entry. Note that it is essential that this class does not override
@@ -765,6 +768,33 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors() {
         return entryProcessorsCol;
+    }
+
+    /** */
+    public void applyExpiryPolicy() throws IgniteCheckedException, GridCacheEntryRemovedException {
+        if (conflictExpireTime() != CU.EXPIRE_TIME_CALCULATE)
+            return;
+
+        if (op() != UPDATE && op() != CREATE)
+            return;
+
+        ExpiryPolicy expiry = context().expiryForTxEntry(this);
+
+        if (expiry != null) {
+            cached().unswap(true);
+
+            Duration duration = cached().hasValue() ?
+                expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+            ttl(CU.toTtl(duration));
+
+            if (ttl() >= CU.TTL_ETERNAL)
+                conflictExpireTime(CU.toExpireTime(ttl()));
+        }
+        else {
+            ttl(CU.TTL_ETERNAL);
+            conflictExpireTime(CU.EXPIRE_TIME_ETERNAL);
+        }
     }
 
     /**

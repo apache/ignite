@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -196,29 +195,17 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReadExpireTimeAtomic() throws Exception {
-        doTestReadExpireTime(ATOMIC, false);
+        doTestReadExpireTime(ATOMIC);
     }
 
     /** */
     @Test
     public void testReadExpireTimeTransactional() throws Exception {
-        doTestReadExpireTime(TRANSACTIONAL, false);
+        doTestReadExpireTime(TRANSACTIONAL);
     }
 
     /** */
-    @Test
-    public void testReadExpireTimeAtomicClient() throws Exception {
-        doTestReadExpireTime(ATOMIC, true);
-    }
-
-    /** */
-    @Test
-    public void testReadExpireTimeTransactionalClient() throws Exception {
-        doTestReadExpireTime(TRANSACTIONAL, true);
-    }
-
-    /** */
-    private void doTestReadExpireTime(CacheAtomicityMode mode, boolean client) throws Exception {
+    private void doTestReadExpireTime(CacheAtomicityMode mode) throws Exception {
         IgniteConfiguration[] cfgs = new IgniteConfiguration[NODE_CNT];
 
         Ignite[] nodes = new Ignite[NODE_CNT];
@@ -235,9 +222,7 @@ public class CdcSelfTest extends AbstractCdcTest {
             .setCacheMode(CacheMode.REPLICATED)
             .setAtomicityMode(mode);
 
-        IgniteCache<Integer, User> cache = client
-            ? startClientGrid(NODE_CNT + 1).createCache(ccfg)
-            : nodes[0].createCache(ccfg);
+        IgniteCache<Integer, User> cache = startClientGrid(NODE_CNT + 1).createCache(ccfg);
 
         IgniteCache<Integer, User> withExpiry =
             cache.withExpiryPolicy(new PlatformExpiryPolicy(CREATE_TTL, UPDATE_TTL, 0L));
@@ -255,8 +240,6 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         removeData(cache, 0, KEYS_CNT);
 
-        Set<Integer> seen = new GridConcurrentHashSet<>();
-
         UserCdcConsumer[] cnsmrs = new UserCdcConsumer[NODE_CNT];
 
         CdcMain[] cdcMain = new CdcMain[NODE_CNT];
@@ -265,6 +248,8 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         for (int i = 0; i < NODE_CNT; i++) {
             cnsmrs[i] = new UserCdcConsumer() {
+                Set<Integer> seen = new HashSet<>();
+
                 /** {@inheritDoc} */
                 @Override public void checkEvent(CdcEvent evt) {
                     super.checkEvent(evt);
@@ -304,17 +289,14 @@ public class CdcSelfTest extends AbstractCdcTest {
             cdcFuts[i] = runAsync(cdcMain[i]);
         }
 
-        //waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmrs);
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmrs);
-        //waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmrs);
+        waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmrs);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmrs);
 
         for (int i = 0; i < NODE_CNT; i++) {
             cdcFuts[i].cancel();
 
             assertTrue(cnsmrs[i].stopped());
         }
-
-        assertEquals(KEYS_CNT / 2, seen.size());
 
         stopAllGrids();
 
