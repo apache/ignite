@@ -73,7 +73,6 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -126,18 +125,13 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                         return null;
 
                     return new AbstractCachePluginProvider() {
-                        @Override
-                        public @Nullable Object createComponent(Class cls) {
+                        @Override public Object createComponent(Class cls) {
                             if (cls != CacheConflictResolutionManager.class)
                                 return null;
 
                             return new TestCacheConflictResolutionManager();
                         }
                     };
-                }
-
-                @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-                    return null;
                 }
             });
         }
