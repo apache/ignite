@@ -297,16 +297,16 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
-                if (evt.primary()) {
-                    data.computeIfAbsent(
-                        F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                        k -> new ArrayList<>()).add(extract(evt));
+                if (!evt.primary())
+                    return;
 
-                    assertTrue(caches.containsKey(evt.cacheId()));
-                }
+                data.computeIfAbsent(
+                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    k -> new ArrayList<>()).add(extract(evt));
 
-                if (!checkOnlyPrimary() || evt.primary())
-                    checkEvent(evt);
+                assertTrue(caches.containsKey(evt.cacheId()));
+
+                checkEvent(evt);
             });
 
             return commit();
@@ -339,11 +339,6 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** */
         protected boolean commit() {
-            return true;
-        }
-
-        /** */
-        protected boolean checkOnlyPrimary() {
             return true;
         }
 

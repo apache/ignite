@@ -39,8 +39,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -75,7 +73,6 @@ import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
@@ -100,9 +97,6 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     public static final long UPDATE_TTL = 60_000L;
-
-    /** */
-    public static final int NODE_CNT = 2;
 
     /** */
     @Parameterized.Parameter
@@ -194,35 +188,14 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testReadExpireTimeAtomic() throws Exception {
-        doTestReadExpireTime(ATOMIC);
-    }
+    public void testReadExpireTime() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-    /** */
-    @Test
-    public void testReadExpireTimeTransactional() throws Exception {
-        doTestReadExpireTime(TRANSACTIONAL);
-    }
+        Ignite ign = startGrid(cfg);
 
-    /** */
-    private void doTestReadExpireTime(CacheAtomicityMode mode) throws Exception {
-        IgniteConfiguration[] cfgs = new IgniteConfiguration[NODE_CNT];
+        ign.cluster().state(ACTIVE);
 
-        Ignite[] nodes = new Ignite[NODE_CNT];
-
-        for (int i = 0; i < NODE_CNT; i++) {
-            cfgs[i] = getConfiguration("ignite-" + i);
-
-            nodes[i] = startGrid(cfgs[i]);
-        }
-
-        nodes[0].cluster().state(ACTIVE);
-
-        CacheConfiguration<Integer, User> ccfg = new CacheConfiguration<Integer, User>(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.REPLICATED)
-            .setAtomicityMode(mode);
-
-        IgniteCache<Integer, User> cache = startClientGrid(NODE_CNT + 1).createCache(ccfg);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteCache<Integer, User> withExpiry =
             cache.withExpiryPolicy(new PlatformExpiryPolicy(CREATE_TTL, UPDATE_TTL, 0L));
@@ -240,62 +213,46 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         removeData(cache, 0, KEYS_CNT);
 
-        UserCdcConsumer[] cnsmrs = new UserCdcConsumer[NODE_CNT];
+        Set<Integer> seen = new HashSet<>();
 
-        CdcMain[] cdcMain = new CdcMain[NODE_CNT];
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+            /** {@inheritDoc} */
+            @Override public void checkEvent(CdcEvent evt) {
+                super.checkEvent(evt);
 
-        IgniteInternalFuture[] cdcFuts = new IgniteInternalFuture[NODE_CNT];
+                Integer key = (Integer)evt.key();
 
-        for (int i = 0; i < NODE_CNT; i++) {
-            cnsmrs[i] = new UserCdcConsumer() {
-                Set<Integer> seen = new HashSet<>();
+                if (evt.value() == null || key % 2 != 0) {
+                    assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
 
-                /** {@inheritDoc} */
-                @Override public void checkEvent(CdcEvent evt) {
-                    super.checkEvent(evt);
-
-                    Integer key = (Integer)evt.key();
-
-                    if (evt.value() == null || key % 2 != 0) {
-                        assertEquals(
-                            "Expire time must not be set [key=" + key + ']',
-                            CU.EXPIRE_TIME_ETERNAL,
-                            evt.expireTime()
-                        );
-
-                        return;
-                    }
-
-                    assertTrue(
-                        "Expire must be set [key=" + key + ']',
-                        evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
-                    );
-
-                    long ttl = evt.expireTime() - System.currentTimeMillis();
-
-                    assertTrue("Expire for operation", ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL));
-
-                    seen.add(key);
+                    return;
                 }
 
-                /** {@inheritDoc} */
-                @Override protected boolean checkOnlyPrimary() {
-                    return false;
-                }
-            };
+                assertTrue(
+                    "Expire must be set [key=" + key + ']',
+                    evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
+                );
 
-            cdcMain[i] = createCdc(cnsmrs[i], cfgs[i]);
-            cdcFuts[i] = runAsync(cdcMain[i]);
-        }
+                long ttl = evt.expireTime() - System.currentTimeMillis();
 
-        waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmrs);
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmrs);
+                assertTrue("Expire for operation", ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL));
 
-        for (int i = 0; i < NODE_CNT; i++) {
-            cdcFuts[i].cancel();
+                seen.add(key);
+            }
+        };
 
-            assertTrue(cnsmrs[i].stopped());
-        }
+        CdcMain cdcMain = createCdc(cnsmr, cfg);
+
+        IgniteInternalFuture<?> cdcFut = runAsync(cdcMain);
+
+        waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
+
+        cdcFut.cancel();
+
+        assertTrue(cnsmr.stopped());
+
+        assertEquals(KEYS_CNT / 2, seen.size());
 
         stopAllGrids();
 
