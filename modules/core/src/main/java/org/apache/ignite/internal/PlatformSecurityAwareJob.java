@@ -22,11 +22,11 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 /**
  * Represents the base interface for all Platform Compute Jobs that wrap and execute user code. The execution and
  * cancellation of tasks marked with this interface will be preceded by authorization with the specified name and
- * {@link SecurityPermission#TASK_EXECUTE} permission.
+ * {@link SecurityPermission#TASK_EXECUTE} / {@link SecurityPermission#TASK_CANCEL} permission.
  */
 public interface PlatformSecurityAwareJob {
     /**
-     * @return The name of the Platform Compute Job that will be used when authorizing its launch and cancellation.
+     * @return The name of the Platform Compute Job that will be used when authorizing its start and cancellation.
      */
     public String name();
 }

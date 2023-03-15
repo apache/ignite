@@ -26,23 +26,6 @@
             http://www.springframework.org/schema/util
             https://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="localHost" value="127.0.0.1"/>
-
-        <property name="discoverySpi">
-            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
-                <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
-                        <property name="shared" value="false"/>
-                        <property name="addresses">
-                            <list>
-                                <value>127.0.0.1:47500</value>
-                            </list>
-                        </property>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-        
         <property name="pluginProviders">
             <list>
                 <bean class="org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider">

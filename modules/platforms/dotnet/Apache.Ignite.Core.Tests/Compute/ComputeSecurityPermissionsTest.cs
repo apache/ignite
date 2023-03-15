@@ -47,10 +47,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"Config/Compute/compute-security.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
             _grid = Ignition.Start(cfg);
