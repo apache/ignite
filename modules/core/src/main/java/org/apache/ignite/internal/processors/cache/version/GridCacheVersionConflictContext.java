@@ -49,6 +49,9 @@ public class GridCacheVersionConflictContext<K, V> {
     /** TTL. */
     private long ttl;
 
+    /** Expire time. */
+    private long expireTime;
+
     /** Manual resolve flag. */
     private boolean manualResolve;
 
@@ -122,8 +125,9 @@ public class GridCacheVersionConflictContext<K, V> {
      *
      * @param mergeVal Merge value or {@code null} to force remove.
      * @param ttl Time to live in milliseconds (must be non-negative).
+     * @param expireTime Expire time.
      */
-    public void merge(@Nullable V mergeVal, long ttl) {
+    public void merge(@Nullable V mergeVal, long ttl, long expireTime) {
         if (ttl < 0)
             throw new IllegalArgumentException("TTL must be non-negative: " + ttl);
 
@@ -131,6 +135,7 @@ public class GridCacheVersionConflictContext<K, V> {
 
         this.mergeVal = mergeVal;
         this.ttl = ttl;
+        this.expireTime = expireTime;
     }
 
     /**
@@ -186,7 +191,7 @@ public class GridCacheVersionConflictContext<K, V> {
      * @return Expire time.
      */
     public long expireTime() {
-        return isUseNew() ? newEntry.expireTime() : isUseOld() ? oldEntry.expireTime() : CU.toExpireTime(ttl);
+        return isUseNew() ? newEntry.expireTime() : isUseOld() ? oldEntry.expireTime() : expireTime;
     }
 
     /** {@inheritDoc} */
