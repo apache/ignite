@@ -120,7 +120,7 @@ public class GridCacheVersionConflictContext<K, V> {
      * Force cache to use neither old, nor new, but some other value passed as argument. In this case old
      * value will be replaced with merge value and update will be considered as local.
      * <p>
-     * Also in case of merge you have to specify new TTL explicitly. For unlimited TTL use {@code 0}.
+     * Also in case of merge you have to specify new TTL and expire time explicitly. For unlimited TTL use {@code 0}.
      *
      * @param mergeVal Merge value or {@code null} to force remove.
      * @param ttl Time to live in milliseconds (must be non-negative).
