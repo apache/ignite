@@ -75,9 +75,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
             // It seems that using system properties should be fine.
             System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
-            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
-            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
-
+            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "ON");
+            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "ON");
         }
     }
 
@@ -385,8 +384,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		        	continue;
 		        }
 			    
-			    webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
-				webApp.setParentLoaderPriority(false);
+			    //-webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
+				webApp.setParentLoaderPriority(true);
 				webApp.setServer(httpSrv);
 				webApp.setErrorHandler(new ErrorHandler());
 				webApp.setAttribute("gridKernalContext", ctx);

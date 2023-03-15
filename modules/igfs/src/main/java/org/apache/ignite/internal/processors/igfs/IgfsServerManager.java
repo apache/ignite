@@ -203,6 +203,9 @@ public class IgfsServerManager extends IgfsManager {
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to bind IGFS endpoint [cfg=" + cfg + ", err=" + e.getMessage() + ']');
+                        // add@byron incr port
+                        cfg.getKey().setPort(cfg.getKey().getPort()+1);
+                        // end@
                     }
                 }
 

@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -30,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableModel;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -859,4 +862,165 @@ public class PartitionExtractor {
 
         return ((GridSqlOperation)ast).operationType();
     }
+    
+
+    /**
+     * Extract lucene query.  add@byron
+     *
+     * @param qry
+     *     the qry
+     * @param params
+     *     the params
+     * @return the ignite bi tuple
+     */
+    public static IgniteBiTuple<GridSqlColumn, String> extractLuceneQuery(GridSqlQuery qry, Object[] params){
+
+        if (!(qry instanceof GridSqlSelect))
+            return new IgniteBiTuple<>(null, null);
+
+        GridSqlSelect select = (GridSqlSelect)qry;
+
+        if (select.from() == null)
+            return new IgniteBiTuple<>(null, null);
+
+        return extractLuceneQueryFromConditions(select, select.where(), params);
+    }
+
+    
+    private static IgniteBiTuple<GridSqlColumn, String> extractLuceneQueryFromConditions(GridSqlSelect select, GridSqlAst el, Object[] params) {
+
+        if (!(el instanceof GridSqlOperation))
+            return new IgniteBiTuple<>(null, null);
+
+        GridSqlOperation op = (GridSqlOperation)el;
+
+        switch (op.operationType()) {
+
+            case IN:
+            case EQUAL: {
+
+                IgniteBiTuple<GridSqlColumn, String> condition = extractLuceneConditionFromEquality(select, op, params);
+
+                if (condition == null){
+                    return new IgniteBiTuple<>(null, null);
+                }
+
+                return condition;
+            }
+
+            case AND: {
+                assert op.size() == 2;
+
+                IgniteBiTuple<GridSqlColumn, String> conditionLeft = extractLuceneQueryFromConditions(select, op.child(0), params);
+                IgniteBiTuple<GridSqlColumn, String> conditionRight = extractLuceneQueryFromConditions(select, op.child(1), params);
+
+                if (conditionLeft != null && conditionRight != null && conditionLeft.getKey() != null && conditionRight.getKey() != null){
+                    // kind of conflict on advanced JSON condition (lucene = '{...}') and (lucene = '{...}')
+                    throw new IgniteException("Only one lucene filter condition is allowed on query filter");
+                }
+
+                if (conditionLeft != null && conditionLeft.getKey() != null)
+                    return conditionLeft;
+
+                if (conditionRight != null && conditionRight.getKey() != null)
+                    return conditionRight;
+
+                return new IgniteBiTuple<>(null, null);
+            }
+
+            default:
+                return new IgniteBiTuple<>(null, null);
+        }
+    }
+
+
+    /** return IgniteBiTuple<GridSqlColumn, Search> === lucene query column, advanced lucene JSON search */
+    public static IgniteBiTuple<GridSqlColumn, String> extractLuceneConditionFromEquality(GridSqlSelect select,
+        GridSqlAst el,
+        Object[] params) {
+
+        GridSqlOperation op = (GridSqlOperation)el;
+
+        if (op.operationType() != GridSqlOperationType.EQUAL && op.operationType() != GridSqlOperationType.IN) {
+            return null;
+        }
+
+        GridSqlElement left = op.child(0);
+
+        if (!(left instanceof GridSqlColumn)) {
+            return null;
+        }
+
+        GridSqlColumn column = (GridSqlColumn)left;
+
+        // find main query table on select statement
+        Set<GridSqlTable> tbls = new HashSet<>();
+
+        DmlAstUtils.collectAllGridTablesInTarget((GridSqlElement)select.from(), tbls);
+
+        if (tbls.isEmpty()) {
+            return null;
+        }
+
+        // first table
+        GridSqlTable tab = tbls.iterator().next();
+        GridH2Table table = tab.dataTable();
+
+        // internal H2 tables
+        if (table == null) {
+            return null;
+        }
+
+        Column luceneColumn = null;
+        try {
+            luceneColumn = table.getColumn(LUCENE_FIELD_NAME);
+        } catch (Exception e) {
+            //table has not a lucene column
+            return null;
+        }
+
+        // check if it is a lucene column
+        if (!column.column().equals(luceneColumn)) {
+            return null;
+        }
+
+        // lucene sort on reduce query will be required only if table is partitioned
+        if (!table.isPartitioned()) {
+            return new IgniteBiTuple<>(column, null);
+        }
+
+
+        String luceneQuery = null;
+
+        // search lucene query
+        // Add support to IN values on right element. See GridSqlQueryParser.parseExpression0
+        for (int i = 1; i < op.size(); i++) {
+
+            GridSqlElement right = op.child(i);
+
+            // check assign
+            if (!(right instanceof GridSqlConst) && !(right instanceof GridSqlParameter)) {
+                return null;
+            }
+
+            if (right instanceof GridSqlConst) {
+                GridSqlConst constant = (GridSqlConst)right;
+                luceneQuery = constant.value().getString();
+            } else {
+                GridSqlParameter param = (GridSqlParameter)right;
+                luceneQuery = params[param.index()].toString();
+            }
+            // found
+            if (luceneQuery != null && !luceneQuery.isEmpty()) {
+                break;
+            }
+        }
+        if (luceneQuery == null || luceneQuery.isEmpty()) {
+            return new IgniteBiTuple<>(column, null);
+        }        
+        return new IgniteBiTuple<>(column, luceneQuery);
+    }
+    
+    public static final String LUCENE_FIELD_NAME = "TEXT_MATCH";
+    public static final String LUCENE_SCORE_DOC = "DOC_SCORE";
 }
