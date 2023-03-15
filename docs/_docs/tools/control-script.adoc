@@ -942,6 +942,8 @@ control.bat --metric --configure-hitrate hitrate-metric-name 1000
 ----
 --
 
+NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+
 == Indexes Management
 
 The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
