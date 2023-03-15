@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -102,6 +103,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -380,7 +382,17 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             cctx.database().checkpointReadLock();
 
             try {
-                txEntry.applyExpiryPolicy();
+                if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
+                    txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
+                    if (expiry != null) {
+                        cached.unswap(true);
+
+                        Duration duration = cached.hasValue() ?
+                            expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                        txEntry.ttl(CU.toTtl(duration));
+                    }
+                }
 
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 

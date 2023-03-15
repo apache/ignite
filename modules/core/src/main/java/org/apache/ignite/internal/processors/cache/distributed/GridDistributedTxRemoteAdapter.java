@@ -596,12 +596,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             txEntry.conflictExpireTime(conflictCtx.expireTime());
                                         }
                                     }
-                                    else {
+                                    else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
-
-                                        txEntry.applyExpiryPolicy();
-                                    }
 
                                     GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
@@ -617,7 +614,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             op,
                                             nearXidVersion(),
                                             addConflictVersion(writeVersion(), txEntry.conflictVersion()),
-                                            Math.max(CU.EXPIRE_TIME_ETERNAL, txEntry.conflictExpireTime()),
+                                            0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
                                             DataEntry.flags(CU.txOnPrimary(this))

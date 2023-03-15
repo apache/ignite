@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1454,6 +1455,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
 
+        System.out.println("GridCacheMapEntry.innerSet - " + drExpireTime + ", date = " + new Date(drExpireTime));
+
         // Lock should be held by now.
         if (!cctx.isAll(this, filter))
             return new GridCacheUpdateTxResult(false);
@@ -1918,6 +1921,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic() && !detached();
+
+        System.out.println("GridCacheMapEntry.innerUpdate - " + explicitExpireTime + ", ttl = " + explicitTtl);
 
         AtomicCacheUpdateClosure c;
 
@@ -2983,6 +2988,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !primary || !(preload || fromStore);
+
+        System.out.println("GridCacheMapEntry.initialValue - " + expireTime + ", date = " + new Date(expireTime));
 
         ensureFreeSpace();
 

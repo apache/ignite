@@ -285,7 +285,6 @@ public class CdcSelfTest extends AbstractCdcTest {
             };
 
             cdcMain[i] = createCdc(cnsmrs[i], cfgs[i]);
-
             cdcFuts[i] = runAsync(cdcMain[i]);
         }
 

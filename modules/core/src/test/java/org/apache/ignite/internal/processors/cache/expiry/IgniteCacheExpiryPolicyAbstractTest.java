@@ -38,20 +38,30 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridPlainClosure2;
+import org.apache.ignite.internal.util.lang.GridPlainInClosure;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -207,6 +217,81 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cache.put(key, 2); // Update should expire entry.
 
         checkNoValue(F.asList(key));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testPutAllConflictTtlUpdateOrder() throws Exception {
+        startGrids();
+
+        final IgniteInternalCache<Integer, Object> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
+
+        GridCacheVersion ver = new GridCacheVersion(1, 1, 1, 2);
+
+        CacheObjectImpl val = new CacheObjectImpl(1, new byte[10]);
+
+        doTestTtlUpdateOrder(
+            key -> cache.putAllConflict(F.asMap(
+                new KeyCacheObjectImpl(key, null, -1),
+                new GridCacheDrInfo(val, ver)
+            )),
+            (key, ttl) -> {
+                cache.putAllConflict(F.asMap(
+                    new KeyCacheObjectImpl(key, null, -1),
+                    new GridCacheDrExpirationInfo(val, ver, ttl, CU.toExpireTime(ttl))
+                ));
+
+                return null;
+            }
+        );
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testTtlUpdateOrder() throws Exception {
+        startGrids();
+
+        final IgniteCache<Integer, Object> cache = jcache(0);
+
+        doTestTtlUpdateOrder(
+            key -> cache.put(key, 1),
+            (key, ttl) -> {
+                cache.withExpiryPolicy(new TestPolicy(ttl, ttl, ttl)).put(key, 1);
+
+                return null;
+            }
+        );
+    }
+
+    private void doTestTtlUpdateOrder(
+        GridPlainInClosure<Integer> withoutTtl,
+        GridPlainClosure2<Integer, Long, Void> withTtl
+    ) throws IgniteCheckedException {
+        final IgniteCache<Integer, Object> cache0 = jcache(0);
+
+        Integer key = primaryKey(cache0);
+
+        long ttl = 2_000;
+
+        withoutTtl.apply(key);
+
+        assertTrue(cache0.containsKey(key));
+
+        withTtl.apply(key, ttl);
+
+        assertTrue(cache0.containsKey(key));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> !cache0.containsKey(key), 3 * ttl));
+
+        withTtl.apply(key, ttl);
+
+        assertTrue(cache0.containsKey(key));
+
+        withoutTtl.apply(key);
+
+        assertTrue(cache0.containsKey(key));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> !cache0.containsKey(key), 3 * ttl));
     }
 
     /**
