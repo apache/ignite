@@ -58,9 +58,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
@@ -89,6 +91,12 @@ import static org.junit.Assume.assumeTrue;
 public class CdcSelfTest extends AbstractCdcTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
+
+    /** */
+    public static final long CREATE_TTL = 500_000L;
+
+    /** */
+    public static final long UPDATE_TTL = 60_000L;
 
     /** */
     @Parameterized.Parameter
@@ -176,6 +184,79 @@ public class CdcSelfTest extends AbstractCdcTest {
                 return true;
             }
         }, true);
+    }
+
+    /** */
+    @Test
+    public void testReadExpireTime() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        Ignite ign = startGrid(cfg);
+
+        ign.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteCache<Integer, User> withExpiry =
+            cache.withExpiryPolicy(new PlatformExpiryPolicy(CREATE_TTL, UPDATE_TTL, 0L));
+
+        for (int i = 0; i < KEYS_CNT; i++) {
+            if (i % 2 == 0) {
+                withExpiry.put(i, createUser(i)); // Create.
+                withExpiry.put(i, createUser(i)); // Update.
+            }
+            else {
+                cache.put(i, createUser(i)); // Create.
+                cache.put(i, createUser(i)); // Update.
+            }
+        }
+
+        removeData(cache, 0, KEYS_CNT);
+
+        Set<Integer> seen = new HashSet<>();
+
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+            /** {@inheritDoc} */
+            @Override public void checkEvent(CdcEvent evt) {
+                super.checkEvent(evt);
+
+                Integer key = (Integer)evt.key();
+
+                if (evt.value() == null || key % 2 != 0) {
+                    assertEquals("Expire time must not be set [key=" + key + ']', CU.EXPIRE_TIME_ETERNAL, evt.expireTime());
+
+                    return;
+                }
+
+                assertTrue(
+                    "Expire must be set [key=" + key + ']',
+                    evt.expireTime() != CU.EXPIRE_TIME_ETERNAL
+                );
+
+                long ttl = evt.expireTime() - System.currentTimeMillis();
+
+                assertTrue("Expire for operation", ttl <= (seen.contains(key) ? UPDATE_TTL : CREATE_TTL));
+
+                seen.add(key);
+            }
+        };
+
+        CdcMain cdcMain = createCdc(cnsmr, cfg);
+
+        IgniteInternalFuture<?> cdcFut = runAsync(cdcMain);
+
+        waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
+
+        cdcFut.cancel();
+
+        assertTrue(cnsmr.stopped());
+
+        assertEquals(KEYS_CNT / 2, seen.size());
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
