@@ -108,6 +108,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /** */
     private Integer lastKey = 0;
 
+    /** */
     private boolean conflictResolverPlugin;
 
     /** {@inheritDoc} */
@@ -288,7 +289,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     return null;
                 }
             );
-        } finally {
+        }
+        finally {
             conflictResolverPlugin = false;
         }
     }
