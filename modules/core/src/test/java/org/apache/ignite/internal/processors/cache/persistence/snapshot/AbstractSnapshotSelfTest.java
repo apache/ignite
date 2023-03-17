@@ -189,11 +189,16 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
+        cfg.setDiscoverySpi(discoSpi);
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
         if (dfltCacheCfg != null)
             cfg.setCacheConfiguration(dfltCacheCfg);
 
+        if (cfg.isClientMode())
+            return cfg;
+
         return cfg.setConsistentId(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(512L * 1024 * 1024)
@@ -202,8 +207,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(PAGE_SIZE)
                 .setWalCompactionEnabled(true))
             .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
-            .setDiscoverySpi(discoSpi);
+            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT);
     }
 
     /** {@inheritDoc} */
