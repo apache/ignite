@@ -31,37 +31,14 @@ using namespace ignite_test;
 
 using namespace boost::unit_test;
 
-// Currently we cannot validate exceptions produced by non "affinity" compute methods
-// see https://issues.apache.org/jira/browse/IGNITE-19055
-#define CHECK_COMPUTE_FAILED(doCompute)                                                                 \
-{                                                                                                       \
-    int32_t errCode = -1;                                                                               \
-                                                                                                        \
-    try {                                                                                               \
-        doCompute;                                                                                      \
-    }                                                                                                   \
-    catch (IgniteError& err) {                                                                          \
-        errCode = err.GetCode();                                                                        \
-                                                                                                        \
-        if (errCode == IgniteError::IGNITE_ERR_GENERIC) {                                               \
-            BOOST_ASSERT(std::string(err.GetText()).find("Authorization failed") != std::string::npos); \
-        }                                                                                               \
-    }                                                                                                   \
-                                                                                                        \
-    BOOST_ASSERT(errCode != -1);                                                                        \
-}                                                                                                       \
-
 /** */
 struct ComputeSecurityTestSuiteFixture {
-    /** */
     Ignite node;
 
-    /** */
     ComputeSecurityTestSuiteFixture() : node(StartNode("compute-security.xml", "test-node")) {
         // No-op.
     }
 
-    /** */
     ~ComputeSecurityTestSuiteFixture()
     {
         Ignition::StopAll(true);
@@ -74,23 +51,16 @@ struct AbstractCallable : ComputeFunc<int> {
     }
 };
 
-/** */
 struct AllowedCallable : AbstractCallable { };
-
-/** */
 struct ForbiddenCallable : AbstractCallable { };
 
-/** */
 struct AbstractRunnable : ComputeFunc<void> {
     virtual void Call() {
         // No-op.
     }
 };
 
-/** */
 struct AllowedRunnable : AbstractRunnable { };
-
-/** */
 struct ForbiddenRunnable : AbstractRunnable { };
 
 namespace ignite {
@@ -142,46 +112,46 @@ namespace ignite {
 }
 
 BOOST_FIXTURE_TEST_SUITE(ComputeSecurityTestSuite, ComputeSecurityTestSuiteFixture)
-
+    // Currently we cannot validate security exception messages produced by non "affinity" compute methods
+    // see https://issues.apache.org/jira/browse/IGNITE-19055
     BOOST_AUTO_TEST_CASE(TestComputeSecurity) {
         Compute compute = node.GetCompute();
 
+        BOOST_CHECK_EQUAL(42, compute.Call<int>(AllowedCallable()));
+        BOOST_CHECK_THROW(compute.Call<int>(ForbiddenCallable()), IgniteError);
 
-        BOOST_ASSERT(42 == compute.Call<int>(AllowedCallable()));
-        CHECK_COMPUTE_FAILED(compute.Call<int>(ForbiddenCallable()));
+        BOOST_CHECK_EQUAL(42, compute.CallAsync<int>(AllowedCallable()).GetValue());
+        BOOST_CHECK_THROW(compute.CallAsync<int>(ForbiddenCallable()).GetValue(), IgniteError);
 
-        BOOST_ASSERT(42 == compute.CallAsync<int>(AllowedCallable()).GetValue());
-        CHECK_COMPUTE_FAILED(compute.CallAsync<int>(ForbiddenCallable()).GetValue());
+        BOOST_CHECK_EQUAL(42, compute.AffinityCall<int>("default", 0, AllowedCallable()));
+        BOOST_CHECK_THROW(compute.AffinityCall<int>("default", 0, ForbiddenCallable()), IgniteError);
 
-        BOOST_ASSERT(42 == compute.AffinityCall<int>("default", 0, AllowedCallable()));
-        CHECK_COMPUTE_FAILED(compute.AffinityCall<int>("default", 0, ForbiddenCallable()));
-
-        BOOST_ASSERT(42 == compute.AffinityCallAsync<int>("default", 0, AllowedCallable()).GetValue());
-        CHECK_COMPUTE_FAILED(compute.AffinityCallAsync<int>("default", 0, ForbiddenCallable()).GetValue());
+        BOOST_CHECK_EQUAL(42, compute.AffinityCallAsync<int>("default", 0, AllowedCallable()).GetValue());
+        BOOST_CHECK_THROW(compute.AffinityCallAsync<int>("default", 0, ForbiddenCallable()).GetValue(), IgniteError);
 
         compute.Run(AllowedRunnable());
-        CHECK_COMPUTE_FAILED(compute.Run(ForbiddenRunnable()));
+        BOOST_CHECK_THROW(compute.Run(ForbiddenRunnable()), IgniteError);
 
         compute.RunAsync(AllowedRunnable()).GetValue();
-        CHECK_COMPUTE_FAILED(compute.RunAsync(ForbiddenRunnable()).GetValue());
+        BOOST_CHECK_THROW(compute.RunAsync(ForbiddenRunnable()).GetValue(), IgniteError);
 
         compute.AffinityRun("default", 0, AllowedRunnable());
-        CHECK_COMPUTE_FAILED(compute.AffinityRun("default", 0, ForbiddenRunnable()));
+        BOOST_CHECK_THROW(compute.AffinityRun("default", 0, ForbiddenRunnable()), IgniteError);
 
         compute.AffinityRunAsync("default", 0, AllowedRunnable()).GetValue();
-        CHECK_COMPUTE_FAILED(compute.AffinityRunAsync("default", 0, ForbiddenRunnable()).GetValue());
+        BOOST_CHECK_THROW(compute.AffinityRunAsync("default", 0, ForbiddenRunnable()).GetValue(), IgniteError);
 
-        BOOST_ASSERT(42 == compute.Broadcast<int>(AllowedCallable()).front());
-        CHECK_COMPUTE_FAILED(compute.Broadcast<int>(ForbiddenCallable()));
+        BOOST_CHECK_EQUAL(42, compute.Broadcast<int>(AllowedCallable()).front());
+        BOOST_CHECK_THROW(compute.Broadcast<int>(ForbiddenCallable()), IgniteError);
 
-        BOOST_ASSERT(42 == compute.BroadcastAsync<int>(AllowedCallable()).GetValue().front());
-        CHECK_COMPUTE_FAILED(compute.BroadcastAsync<int>(ForbiddenCallable()).GetValue());
+        BOOST_CHECK_EQUAL(42, compute.BroadcastAsync<int>(AllowedCallable()).GetValue().front());
+        BOOST_CHECK_THROW(compute.BroadcastAsync<int>(ForbiddenCallable()).GetValue(), IgniteError);
 
         compute.Broadcast(AllowedRunnable());
-        CHECK_COMPUTE_FAILED(compute.Broadcast(ForbiddenRunnable()));
+        BOOST_CHECK_THROW(compute.Broadcast(ForbiddenRunnable()), IgniteError);
 
         compute.BroadcastAsync(AllowedRunnable()).GetValue();
-        CHECK_COMPUTE_FAILED(compute.BroadcastAsync(ForbiddenRunnable()).GetValue());
+        BOOST_CHECK_THROW(compute.BroadcastAsync(ForbiddenRunnable()).GetValue(), IgniteError);
     }
 
 BOOST_AUTO_TEST_SUITE_END()
