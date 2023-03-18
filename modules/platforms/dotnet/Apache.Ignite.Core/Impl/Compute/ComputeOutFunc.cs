@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// </summary>
     internal interface IComputeOutFunc : IComputeFunc<object>
     {
-        /// <summary />
+        /// <returns>Name of the wrapped function.</returns> 
         string GetName();
     }
 

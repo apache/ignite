@@ -233,7 +233,8 @@ namespace Apache.Ignite.Core.Impl
             return res & ~platformCache;
         }
 
-        /// <summary/>
+        /// <param name="obj">Compute executable.</param>
+        /// <returns>FQN of the specified compute executable.</returns> 
         public static string GetComputeExecutableName(object obj)
         {
             return obj.GetType().FullName;

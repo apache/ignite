@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     /// </summary>
     internal interface IComputeJob : IComputeJob<object>
     {
+        /// <returns>Name of the wrapped job.</returns>
         string GetName();
     }
 

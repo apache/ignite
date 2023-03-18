@@ -28,22 +28,19 @@ namespace Apache.Ignite.Core.Tests.Compute
     using static AbstractTask.Job;
     using static ComputeSecurityPermissionsTest;
 
-    /// <summary/> 
+    /// <summary>
+    /// Tests authorization of DotNet native Compute tasks execution.
+    /// </summary> 
     public class ComputeSecurityPermissionsTest
     {
-        /// <summary/> 
         private const string CacheName = "DEFAULT_CACHE_NAME";
         
-        /// <summary/> 
         public static int ExecutedJobCounter;
         
-        /// <summary/> 
         public static int CancelledJobCounter;
         
-        /// <summary/> 
         private IIgnite _grid;
 
-        /// <summary/> 
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -57,14 +54,12 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid.CreateCache<object, object>(CacheName);
         }
 
-        /// <summary/>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
         }
 
-        /// <summary/>
         [Test]
         public void TestComputeSecurityExecutePermission()
         {
@@ -145,7 +140,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             CheckFunction((func, ct) => _grid.GetCompute().ApplyAsync(func, new[] { 0 }, new TestReducer(), ct).GetResult());
         }
         
-        /// <summary/>
         [Test]
         public void TestComputeTaskSecurityCancelPermission()
         {
@@ -155,21 +149,18 @@ namespace Apache.Ignite.Core.Tests.Compute
             CheckTaskCancel((task, ct) => _grid.GetCompute().ExecuteAsync<int, int>(task.GetType(), ct));
         }
 
-        /// <summary/> 
         private void CheckFunction(Action<IComputeFunc<int, int>, CancellationToken> executor)
         {
             CheckExecutionSucceeded(token => executor(new ExecuteAllowedFunction(), token));
             CheckExecutionFailed(token => executor(new ExecuteForbiddenFunction(), token));
         }
 
-        /// <summary/> 
         private void CheckCallable(Action<IComputeFunc<int>, CancellationToken> executor)
         {
             CheckExecutionSucceeded(token => executor(new ExecuteAllowedCallable(), token));
             CheckExecutionFailed(token => executor(new ExecuteForbiddenCallable(), token));
         }
 
-        /// <summary/> 
         private void CheckCallables(Action<IEnumerable<IComputeFunc<int>>, CancellationToken> executor)
         {
             CheckExecutionSucceeded(token => executor(new[] { new ExecuteAllowedCallable() }, token));
@@ -177,14 +168,12 @@ namespace Apache.Ignite.Core.Tests.Compute
                 executor(new IComputeFunc<int>[] { new ExecuteAllowedCallable(), new ExecuteForbiddenCallable() }, token));
         }
 
-        /// <summary/> 
         private void CheckAction(Action<IComputeAction, CancellationToken> executor)
         {
             CheckExecutionSucceeded(token => executor(new ExecuteAllowedAction(), token));
             CheckExecutionFailed(token => executor(new ExecuteForbiddenAction(), token));
         }
 
-        /// <summary/> 
         private void CheckActions(Action<IEnumerable<IComputeAction>, CancellationToken> executor)
         {
             CheckExecutionSucceeded(token => executor(new[] { new ExecuteAllowedAction() }, token));
@@ -192,21 +181,18 @@ namespace Apache.Ignite.Core.Tests.Compute
                 executor(new IComputeAction[] { new ExecuteAllowedAction(), new ExecuteForbiddenAction() }, token));
         }
 
-        /// <summary/> 
         private void CheckTask(Action<IComputeTask<int, int>, CancellationToken> executor)
         {
             CheckExecutionSucceeded(token => executor(new ExecuteAllowedTask(), token));
             CheckExecutionFailed(token => executor(new ExecuteForbiddenTask(), token));
         }
         
-        /// <summary/> 
         private void CheckTaskCancel(Func<IComputeTask<int, int>, CancellationToken, Task<int>> executor)
         {
             CheckTaskCancelSucceeded(executor);
             CheckTaskCancelFailed(executor);
         }
         
-        /// <summary/>
         private void CheckTaskCancelFailed(Func<IComputeTask<int, int>, CancellationToken, Task<int>> executor)
         {
            CancelledJobCounter = 0;
@@ -231,7 +217,6 @@ namespace Apache.Ignite.Core.Tests.Compute
            TestUtils.WaitForTrueCondition(() => 1 == ExecutedJobCounter); 
         }
 
-        /// <summary/>
         private void CheckTaskCancelSucceeded(Func<IComputeTask<int, int>, CancellationToken, Task<int>> executor)
         {
             CancelledJobCounter = 0;
@@ -256,7 +241,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(0, ExecutedJobCounter);
         }
 
-        /// <summary/>
         private void CheckExecutionSucceeded(Action<CancellationToken> action)
         {
             ExecutedJobCounter = 0;
@@ -268,7 +252,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, ExecutedJobCounter);
         }
 
-        /// <summary/>
         private void CheckExecutionFailed(Action<CancellationToken> action)
         {
             ExecutedJobCounter = 0;
@@ -282,50 +265,34 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(0, ExecutedJobCounter);
         }
 
-        /// <summary/>
-        private void AssertAuthorizationException(Action action)
+        private void AssertAuthorizationException(TestDelegate action)
         {
-            Exception ex = null;
+            var ex = Assert.Catch(action) ;
 
-            try
-            {
-                action();
-            }
-            catch (AggregateException aggregateException)
-            {
-                ex = aggregateException.GetBaseException();
-            }
-            catch (Exception exception)
-            {
-                ex = exception;
-            }
-            
             Assert.NotNull(ex);
-            Assert.True(ex.GetBaseException().Message.Contains("Authorization failed"));
+            StringAssert.Contains("Authorization failed", ex.GetBaseException().Message);
         }
     }
 
-    /// <summary/>
     public class TestReducer : IComputeReducer<int, object>
     {
+        /** <inheritdoc /> */
         public bool Collect(int res)
         {
             return true;
         }
 
+        /** <inheritdoc /> */
         public object Reduce()
         {
             return null;
         }
     }
 
-    /// <summary/>
     public class ExecuteAllowedAction : AbstractAction { }
 
-    /// <summary/>
     public class ExecuteForbiddenAction : AbstractAction { }
 
-    /// <summary/>
     public abstract class AbstractAction : IComputeAction
     {
         /** <inheritDoc /> */
@@ -335,13 +302,10 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    /// <summary/>
     public class ExecuteAllowedFunction : AbstractFunction { }
 
-    /// <summary/>
     public class ExecuteForbiddenFunction : AbstractFunction { }
 
-    /// <summary/>
     public abstract class AbstractFunction : IComputeFunc<int, int>
     {
         /** <inheritDoc /> */
@@ -353,16 +317,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    /// <summary/>
     public class ExecuteAllowedCallable : AbstractCallable { }
 
-    /// <summary/>
     public class ExecuteForbiddenCallable : AbstractCallable { }
 
-    /// <summary/>
     public abstract class AbstractCallable : IComputeFunc<int>
     {
-        /** <inheritDoc /> */
         public int Invoke()
         {
             Interlocked.Increment(ref ExecutedJobCounter);
@@ -371,32 +331,25 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    /// <summary/>
     public class ExecuteAllowedTask : AbstractTask { }
     
-    /// <summary/>
     public class ExecuteCancelAllowedTask : AbstractTask { }
 
-    /// <summary/>
     public class ExecuteForbiddenTask : AbstractTask { }
 
-    /// <summary/>
     [Serializable]
     public abstract class AbstractTask : IComputeTask<int, int>
     {
-        /// <summary/>
         public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
         {
             return subgrid.ToDictionary(x => (IComputeJob<int>)new Job(), x => x);
         }
 
-        /// <summary/>
         public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
         }
 
-        /// <summary/>
         public int Reduce(IList<IComputeJobResult<int>> results)
         {
             foreach (var res in results)
@@ -412,17 +365,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             return 42;
         }
 
-        /// <summary/>
         [Serializable]
         public class Job : IComputeJob<int>
         {
-            /// <summary/> 
             public static CountdownEvent JobStartedLatch;
         
-            /// <summary/> 
             public static CountdownEvent JobUnblockedLatch;
             
-            /// <summary/>
             private bool isCancelled;
             
             /** <inheritdoc /> */
