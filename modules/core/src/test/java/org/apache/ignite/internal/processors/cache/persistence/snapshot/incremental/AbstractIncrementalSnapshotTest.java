@@ -75,13 +75,16 @@ public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
+        cfg.setCacheConfiguration(cacheConfiguration(CACHE));
+
+        if (cfg.isClientMode())
+            return cfg;
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalCompactionEnabled(true)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("incremental-snapshot-persist")
                 .setPersistenceEnabled(true)));
-
-        cfg.setCacheConfiguration(cacheConfiguration(CACHE));
 
         cfg.setConsistentId(instanceName);
 
