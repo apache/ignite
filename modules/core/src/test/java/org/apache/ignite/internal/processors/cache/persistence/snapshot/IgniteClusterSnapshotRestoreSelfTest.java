@@ -139,7 +139,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
             ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, snpDir.toString(), false)
+                .createSnapshot(SNAPSHOT_NAME, snpDir.toString(), false, onlyPrimary)
                 .get(TIMEOUT);
 
             // Check snapshot.

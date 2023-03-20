@@ -98,6 +98,9 @@ public class SnapshotMetadata implements Serializable {
     /** */
     private boolean hasComprGrps;
 
+    /** If {@code true} snapshot only primary copies of partitions. */
+    private boolean onlyPrimary;
+
     /**
      * @param rqId Unique request id.
      * @param snpName Snapshot name.
@@ -108,6 +111,7 @@ public class SnapshotMetadata implements Serializable {
      * @param bltNodes The set of affected by snapshot baseline nodes.
      * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -120,7 +124,8 @@ public class SnapshotMetadata implements Serializable {
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
         @Nullable WALPointer snpRecPtr,
-        @Nullable byte[] masterKeyDigest
+        @Nullable byte[] masterKeyDigest,
+        boolean onlyPrimary
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -131,6 +136,7 @@ public class SnapshotMetadata implements Serializable {
         this.bltNodes = bltNodes;
         this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
+        this.onlyPrimary = onlyPrimary;
 
         if (!F.isEmpty(compGrpIds)) {
             hasComprGrps = true;
@@ -217,6 +223,11 @@ public class SnapshotMetadata implements Serializable {
         return snpRecPtr;
     }
 
+    /** @return If {@code true} snapshot only primary copies of partitions. */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
+    }
+
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
@@ -282,7 +293,8 @@ public class SnapshotMetadata implements Serializable {
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
             Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
-            Objects.equals(baselineNodes(), compare.baselineNodes());
+            Objects.equals(baselineNodes(), compare.baselineNodes()) &&
+            onlyPrimary == compare.onlyPrimary;
     }
 
     /**
@@ -325,13 +337,14 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
             Objects.equals(warnings, meta.warnings) &&
-            Objects.equals(hasComprGrps, hasComprGrps) &&
-            Objects.equals(comprGrpIds, comprGrpIds);
+            Objects.equals(hasComprGrps, meta.hasComprGrps) &&
+            Objects.equals(comprGrpIds, meta.comprGrpIds) &&
+            onlyPrimary == meta.onlyPrimary;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes);
+        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes, onlyPrimary);
     }
 
     /** {@inheritDoc} */

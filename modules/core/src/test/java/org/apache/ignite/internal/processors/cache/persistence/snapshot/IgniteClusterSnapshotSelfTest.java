@@ -215,7 +215,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }, 3, "cache-put-");
 
         try {
-            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(snpName);
+            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(snpName, onlyPrimary);
 
             U.await(loadLatch, 10, TimeUnit.SECONDS);
 
@@ -288,7 +288,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }, 5, "atomic-cache-put-");
 
         try {
-            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
             fut.get();
         }
@@ -390,7 +390,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         try {
             U.await(txStarted);
 
-            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
         }
         finally {
             stop.set(true);
@@ -422,7 +422,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.getOrCreateCache(ccfg).put(i, i);
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ig0.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
         stopAllGrids();
 
@@ -466,7 +466,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             return false;
         });
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
         spi.waitBlocked(TIMEOUT);
 
@@ -502,7 +502,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
         spi.block((msg) -> msg instanceof FullMessage);
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
         spi.waitBlocked(TIMEOUT);
 
@@ -535,7 +535,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             if (inc) {
                 assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
-                ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+                ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
             }
 
             BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
@@ -543,7 +543,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             IgniteFuture<Void> fut = inc
                 ? ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME)
-                : ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+                : ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
             spi.waitBlocked(TIMEOUT);
 
@@ -765,7 +765,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
             ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath(), false).get();
+                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath(), false, onlyPrimary).get();
 
             stopAllGrids();
 
@@ -792,7 +792,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             assertThrowsAnyCause(log,
                 () -> kctx.cache().context().snapshotMgr()
-                    .createSnapshot(SNAPSHOT_NAME, invalidPath, false)
+                    .createSnapshot(SNAPSHOT_NAME, invalidPath, false, onlyPrimary)
                     .get(TIMEOUT),
                 IgniteCheckedException.class,
                 invalidPath);

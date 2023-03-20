@@ -1116,8 +1116,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             Set<Integer> include = null;
 
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+            AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
+
             if (req.onlyPrimary()) {
-                // TODO: make primary set here. Check SnapshotFutureTask#onMarkCheckpointBegin
+                include = new HashSet<>(
+                    cctx.cacheContext(grpId).affinity().primaryPartitions(cctx.localNodeId(), topVer)
+                );
+
+                include.remove(INDEX_PARTITION);
+
+                if (log.isInfoEnabled())
+                    log.info("Snapshot only primary partitions " +
+                        "[grpId=" + grpId + ", grpName=" + grpCtx.cacheOrGroupName() + ", parts=" + include + ']');
             }
 
             parts.put(grpId, include);
@@ -1166,7 +1178,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     blts,
                     res.parts(),
                     res.snapshotPointer(),
-                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
+                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                    req.onlyPrimary()
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
@@ -4490,7 +4503,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Incremental flag. */
         private final boolean incremental;
 
-        /** . */
+        /** If {@code true} snapshot only primary copies of partitions. */
         private final boolean onlyPrimary;
 
         /** Auto-injected grid instance. */

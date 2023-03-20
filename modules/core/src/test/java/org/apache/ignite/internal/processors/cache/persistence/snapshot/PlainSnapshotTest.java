@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -47,9 +48,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
  */
 public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
     /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption is disabled.")
-    public static Iterable<Boolean> disableEncryption() {
-        return Collections.singletonList(false);
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static List<Object[]> disableEncryption() {
+        return Arrays.asList(
+            new Object[]{false, false},
+            new Object[]{false, true}
+        );
     }
 
     /** {@link AbstractSnapshotSelfTest.Account} with custom toString method. */
@@ -151,7 +155,7 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteEx clnt = startClientGrid(1);
 
-        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
         assertThrowsAnyCause(log,
             fut::get,

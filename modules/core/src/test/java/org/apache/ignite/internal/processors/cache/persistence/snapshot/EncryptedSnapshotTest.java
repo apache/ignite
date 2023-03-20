@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -53,9 +55,12 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     private static final String CACHE2 = "cache2";
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption is enabled.")
-    public static Iterable<Boolean> enableEncryption() {
-        return Collections.singletonList(true);
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static List<Object[]> disableEncryption() {
+        return Arrays.asList(
+            new Object[]{true, false},
+            new Object[]{true, true}
+        );
     }
 
     /** {@inheritDoc} */

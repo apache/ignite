@@ -81,7 +81,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(ignite.context().cache().jcache(indexedCcfg.getName()),
             selectStartSQLStatement(Account.class.getSimpleName()))));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
             .get();
 
         stopAllGrids();
@@ -141,7 +141,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         // Blocking configuration local snapshot sender.
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
         List<String> idxNames = Arrays.asList("SNP_IDX_1", "SNP_IDX_2");
 

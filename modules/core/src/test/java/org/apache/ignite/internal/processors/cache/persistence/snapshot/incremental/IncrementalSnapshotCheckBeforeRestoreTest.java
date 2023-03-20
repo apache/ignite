@@ -313,7 +313,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     private void createFullSnapshot() {
-        snp(grid(0)).createSnapshot(SNP).get(TIMEOUT);
+        snp(grid(0)).createSnapshot(SNP, onlyPrimary).get(TIMEOUT);
     }
 
     /** */

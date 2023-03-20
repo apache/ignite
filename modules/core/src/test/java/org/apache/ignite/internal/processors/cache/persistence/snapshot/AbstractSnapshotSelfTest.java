@@ -28,7 +28,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -172,13 +171,24 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean encryption;
 
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Collection<Boolean> encryptionParams() {
-        if (DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED)
-            return Collections.singletonList(false);
+    /** . */
+    @Parameterized.Parameter(1)
+    public boolean onlyPrimary;
 
-        return Arrays.asList(false, true);
+    /** Parameters. */
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static Collection<Object[]> params() {
+        boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
+            ? new boolean[] {false}
+            : new boolean[] {false, true};
+
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean enc: encVals)
+            for (boolean onlyPrimary: new boolean[] {true, false})
+                res.add(new Object[] { enc, onlyPrimary});
+
+        return res;
     }
 
     /** {@inheritDoc} */

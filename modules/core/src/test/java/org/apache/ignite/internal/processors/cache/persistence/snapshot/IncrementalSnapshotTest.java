@@ -109,7 +109,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 if (snpPath == null)
                     snpCreate.createSnapshot(snpName).get(TIMEOUT);
                 else
-                    snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), false).get(TIMEOUT);
+                    snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), false, onlyPrimary).get(TIMEOUT);
 
                 for (int incIdx = 1; incIdx < 3; incIdx++) {
                     addData(cli);
@@ -117,7 +117,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     if (snpPath == null)
                         snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
                     else
-                        snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), true).get(TIMEOUT);
+                        snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), true, onlyPrimary).get(TIMEOUT);
 
                     for (int gridIdx = 0; gridIdx < GRID_CNT; gridIdx++) {
                         assertTrue("Incremental snapshot must exists on node " + gridIdx, checkIncremental(

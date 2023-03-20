@@ -371,6 +371,21 @@ public class SnapshotRestoreProcess {
             Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
                 cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
+            Optional<SnapshotMetadata> firstMeta = metas.values().iterator().next()
+                .stream()
+                .findFirst();
+
+            if (!firstMeta.isPresent()) {
+                finishProcess(
+                    fut0.rqId,
+                    new IllegalArgumentException(OP_REJECT_MSG + "No snapshot metadata read")
+                );
+
+                return;
+            }
+
+            boolean onlyPrimary = firstMeta.get().onlyPrimary();
+
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
                 dataNodes.add(entry.getKey().id());
 
@@ -381,6 +396,16 @@ public class SnapshotRestoreProcess {
                         snpBltNodes = new HashSet<>(meta.baselineNodes());
 
                     reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+
+                    if (onlyPrimary != meta.onlyPrimary()) {
+                        finishProcess(
+                            fut0.rqId,
+                            new IllegalArgumentException(OP_REJECT_MSG + "Only primary value different on nodes")
+                        );
+
+                        return;
+                    }
+
                 }
             }
 
@@ -408,7 +433,8 @@ public class SnapshotRestoreProcess {
                 cacheGrpNames,
                 new HashSet<>(bltNodes),
                 false,
-                incIdx
+                incIdx,
+                onlyPrimary
             );
 
             prepareRestoreProc.start(req.requestId(), req);
