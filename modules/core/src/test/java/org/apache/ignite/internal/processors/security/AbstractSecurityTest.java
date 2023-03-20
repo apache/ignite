@@ -27,6 +27,7 @@ import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -44,6 +45,9 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** Empty array of permissions. */
     protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
+
+    /** */
+    public static final TestSecurityData[] EMPTY_SECURITY_DATA = new TestSecurityData[0];
 
     /** Global authentication flag. */
     protected boolean globalAuth;
@@ -88,9 +92,15 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
         Permissions sandboxPerms, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login,
-            new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms, globalAuth))
-            .setClientMode(isClient));
+        return startGrid(getConfiguration(
+            login,
+            new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms, globalAuth, securityData())
+        ).setClientMode(isClient));
+    }
+
+    /** */
+    protected TestSecurityData[] securityData() {
+        return EMPTY_SECURITY_DATA;
     }
 
     /** */

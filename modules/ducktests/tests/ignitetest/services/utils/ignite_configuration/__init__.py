@@ -133,12 +133,13 @@ class IgniteThinClientConfiguration(NamedTuple):
     """
     Thin client configuration.
     """
-    addresses: str = None
+    addresses: list = []
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
     username: str = None
     password: str = None
     ext_beans: list = []
+    partition_awareness_enabled: bool = None
 
     def prepare_ssl(self, test_globals, shared_root):
         """

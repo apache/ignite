@@ -115,7 +115,7 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
         logger.info("");
         logger.info(INDENT + "Subcommands:");
 
-        Arrays.stream(CacheCommandList.values()).forEach(c -> {
+        Arrays.stream(CacheSubcommands.values()).forEach(c -> {
             if (c.subcommand() != null) c.subcommand().printUsage(logger);
         });
 

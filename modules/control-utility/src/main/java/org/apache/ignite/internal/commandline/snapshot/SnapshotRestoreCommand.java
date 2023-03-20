@@ -32,6 +32,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.GROUPS;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.INCREMENT;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SOURCE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SYNC;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.RESTORE;
@@ -86,6 +87,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         String snpName = argIter.nextArg("Expected snapshot name.");
         VisorSnapshotRestoreTaskAction restoreAction = parseAction(argIter.peekNextArg());
         String snpPath = null;
+        Integer incIdx = null;
         Set<String> grpNames = null;
         boolean sync = false;
 
@@ -128,6 +130,17 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
                 snpPath = argIter.nextArg(errMsg);
             }
+            else if (option == INCREMENT) {
+                if (incIdx != null)
+                    throw new IllegalArgumentException(INCREMENT.argName() + " arg specified twice.");
+
+                String errMsg = "incremental snapshot index";
+
+                if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
+                    throw new IllegalArgumentException("Expected " + errMsg + '.');
+
+                incIdx = argIter.nextIntArg(errMsg);
+            }
             else if (option == SYNC) {
                 if (sync)
                     throw new IllegalArgumentException(SYNC.argName() + " arg specified twice.");
@@ -136,7 +149,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
             }
         }
 
-        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, sync, restoreAction, grpNames);
+        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, incIdx, sync, restoreAction, grpNames);
     }
 
     /** {@inheritDoc} */
@@ -146,10 +159,14 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
         startParams.put(GROUPS.argName() + " " + GROUPS.arg(), GROUPS.description());
         startParams.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
+        startParams.put(INCREMENT.argName() + " " + INCREMENT.arg(), INCREMENT.description());
         startParams.put(SYNC.argName(), SYNC.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG,
-            optional(GROUPS.argName(), GROUPS.arg()), optional(SOURCE.argName(), SOURCE.arg()), optional(SYNC.argName()));
+            optional(INCREMENT.argName(), INCREMENT.arg()),
+            optional(GROUPS.argName(), GROUPS.arg()),
+            optional(SOURCE.argName(), SOURCE.arg()),
+            optional(SYNC.argName()));
         usage(log, "Snapshot restore operation status (Command deprecated. Use '" + SNAPSHOT + ' '
             + SnapshotSubcommands.STATUS + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
         usage(log, "Cancel snapshot restore operation (Command deprecated. Use '" + SNAPSHOT + ' '

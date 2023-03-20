@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRemoveTe
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRemoveWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
@@ -166,6 +167,8 @@ import org.junit.runners.Suite;
 
     BinaryTxCacheLocalEntriesSelfTest.class,
     BinaryAtomicCacheLocalEntriesSelfTest.class,
+
+    GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest.class,
 
     // Byte order
     BinaryHeapStreamByteOrderSelfTest.class,

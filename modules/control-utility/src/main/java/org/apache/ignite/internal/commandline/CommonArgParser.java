@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -43,6 +44,9 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 public class CommonArgParser {
     /** */
     private final IgniteLogger logger;
+
+    /** */
+    private final Map<String, Command<?>> cmds;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -146,9 +150,11 @@ public class CommonArgParser {
 
     /**
      * @param logger Logger.
+     * @param cmds Supported commands.
      */
-    public CommonArgParser(IgniteLogger logger) {
+    public CommonArgParser(IgniteLogger logger, Map<String, Command<?>> cmds) {
         this.logger = logger;
+        this.cmds = cmds;
     }
 
     /**
@@ -224,26 +230,25 @@ public class CommonArgParser {
 
         boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
+        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
 
-        CommandList command = null;
+        Command<?> command = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            CommandList cmd = CommandList.of(str);
+            Command<?> cmd = cmds.get(str);
 
             if (cmd != null) {
                 if (command != null)
                     throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
                         cmd.toString() + ", " + command.toString());
 
-                cmd.command().parseArguments(argIter);
+                cmd.parseArguments(argIter);
 
                 command = cmd;
             }
             else {
-
                 switch (str) {
                     case CMD_HOST:
                         host = argIter.nextArg("Expected host name");
@@ -358,14 +363,14 @@ public class CommonArgParser {
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-        if (!experimentalEnabled && command.command().experimental()) {
+        if (!experimentalEnabled && command.experimental()) {
             logger.warning(String.format("To use experimental command add --enable-experimental parameter for %s",
                 UTILITY_NAME));
 
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
+        return new ConnectionAndSslParameters(command, host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation, verbose,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,

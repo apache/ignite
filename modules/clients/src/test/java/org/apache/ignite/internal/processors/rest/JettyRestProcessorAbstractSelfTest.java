@@ -286,10 +286,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         else
             assertTrue("Unexpected error: " + errNode.asText(), errNode.isNull());
 
-        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
+        if (errorExpected)
+            assertEquals(STATUS_FAILED, node.get("successStatus").asInt());
+        else
+            assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
 
-        if (!canBeUnauthenticated)
-            assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
+        if (!canBeUnauthenticated) {
+            if (errorExpected)
+                assertTrue(node.get("sessionToken").isNull());
+            else
+                assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
+        }
 
         return node.get(errorExpected ? "error" : "response");
     }

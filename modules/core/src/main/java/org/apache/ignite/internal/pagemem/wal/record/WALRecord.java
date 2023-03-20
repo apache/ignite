@@ -284,8 +284,14 @@ public abstract class WALRecord {
         /** ClusterSnapshot start. */
         CLUSTER_SNAPSHOT(75, LOGICAL),
 
+        /** Incremental snapshot start record. */
+        INCREMENTAL_SNAPSHOT_START_RECORD(76, LOGICAL),
+
+        /** Incremental snapshot finish record. */
+        INCREMENTAL_SNAPSHOT_FINISH_RECORD(77, LOGICAL),
+
         /** CDC data record. */
-        CDC_DATA_RECORD(76, CUSTOM);
+        CDC_DATA_RECORD(78, CUSTOM);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

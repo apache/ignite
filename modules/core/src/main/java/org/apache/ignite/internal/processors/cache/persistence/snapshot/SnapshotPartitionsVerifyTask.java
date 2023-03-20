@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -119,7 +120,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 return new SnapshotPartitionsVerifyHandler(cctx)
                     .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
             }
         }

@@ -364,18 +364,18 @@ Register name: `io.dataregion.{data_region_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name |    Type |    Description
-|AllocationRate | long|    Allocation rate (pages per second) averaged across rateTimeInterval.
+|AllocationRate | hitrate|    Allocation rate (pages per second) averaged across rateTimeInterval.
 |CheckpointBufferSize |    long |    Checkpoint buffer size in bytes.
 |DirtyPages |  long|    Number of pages in memory not yet synchronized with persistent storage.
 |EmptyDataPages|  long|    Calculates empty data pages count for region. It counts only totally free pages that can be reused (e. g. pages that are contained in reuse bucket of free list).
-|EvictionRate|    long|    Eviction rate (pages per second).
+|EvictionRate|    hitrate|    Eviction rate (pages per second).
 |LargeEntriesPagesCount|  long|    Count of pages that fully ocupied by large entries that go beyond page size
 |OffHeapSize| long|    Offheap size in bytes.
 |OffheapUsedSize| long|    Offheap used size in bytes.
 |PagesFillFactor| double|  The percentage of the used space.
 |PagesRead|   long|    Number of pages read from last restart.
-|PagesReplaceAge| long|    Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).
-|PagesReplaceRate|    long|    Rate at which pages in memory are replaced with pages from persistent storage (pages per second).
+|PagesReplaceAge| hitrate|    Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).
+|PagesReplaceRate|    hitrate|    Rate at which pages in memory are replaced with pages from persistent storage (pages per second).
 |PagesReplaced|   long|    Number of pages replaced from last restart.
 |PagesWritten|    long|    Number of pages written from last restart.
 |PhysicalMemoryPages| long|    Number of pages residing in physical RAM.
@@ -427,13 +427,13 @@ Register name: `io.datastorage`
 |SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
 |StorageSize | long|    Storage space allocated, in bytes.
 |WalArchiveSegments | integer| Current number of WAL segments in the WAL archive.
-|WalBuffPollSpinsRate|    long  |  WAL buffer poll spins number over the last time interval.
-|WalFsyncTimeDuration |   long |   Total duration of fsync
-|WalFsyncTimeNum |long  |  Total count of fsync
+|WalBuffPollSpinsRate|    hitrate  |  WAL buffer poll spins number over the last time interval.
+|WalFsyncTimeDuration |   hitrate |   Total duration of fsync
+|WalFsyncTimeNum |hitrate  |  Total count of fsync
 |WalLastRollOverTime |long |   Time of the last WAL segment rollover.
-|WalLoggingRate | long|    Average number of WAL records per second written during the last time interval.
+|WalLoggingRate | hitrate|    Average number of WAL records per second written during the last time interval.
 |WalTotalSize|    long  |  Total size in bytes for storage wal files.
-|WalWritingRate|  long  |  Average number of bytes per second written during the last time interval.
+|WalWritingRate|  hitrate  |  Average number of bytes per second written during the last time interval.
 |===
 
 

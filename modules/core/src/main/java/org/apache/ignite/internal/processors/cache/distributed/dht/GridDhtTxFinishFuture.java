@@ -509,7 +509,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         + n.id()));
                 }
                 else {
-                    cctx.io().send(n, req, tx.ioPolicy());
+                    cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +

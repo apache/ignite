@@ -99,7 +99,8 @@ public class WalRecordsConsumer<K, V> {
             (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
             e.partitionId(),
             e.writeVersion(),
-            e.cacheId()
+            e.cacheId(),
+            e.expireTime()
         );
     };
 

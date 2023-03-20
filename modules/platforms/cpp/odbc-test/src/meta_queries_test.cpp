@@ -733,28 +733,30 @@ BOOST_AUTO_TEST_CASE(TestDdlTablesMetaTableTypeList)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    SQLCHAR empty[] = "";
-    SQLCHAR table[] = "TestTable";
-    SQLCHAR typeList[] = "TABLE,VIEW";
+    SQLCHAR* typeLists[] = {(SQLCHAR*)"'TABLE'", (SQLCHAR*)"TABLE,VIEW"};
+    for (size_t i = 0; i < sizeof(typeLists) / sizeof(*typeLists); ++i) {
+        SQLCHAR empty[] = "";
+        SQLCHAR table[] = "TestTable";
 
-    ret = SQLTables(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, typeList, SQL_NTS);
+        ret = SQLTables(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, typeLists[i], SQL_NTS);
 
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    ret = SQLFetch(stmt);
+        ret = SQLFetch(stmt);
 
-    if (!SQL_SUCCEEDED(ret))
-        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    CheckStringColumn(stmt, 1, "");
-    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
-    CheckStringColumn(stmt, 3, "TESTTABLE");
-    CheckStringColumn(stmt, 4, "TABLE");
+        CheckStringColumn(stmt, 1, "");
+        CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+        CheckStringColumn(stmt, 3, "TESTTABLE");
+        CheckStringColumn(stmt, 4, "TABLE");
 
-    ret = SQLFetch(stmt);
+        ret = SQLFetch(stmt);
 
-    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+        BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(TestDdlColumnsMeta)

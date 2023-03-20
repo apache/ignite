@@ -24,9 +24,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -39,6 +41,8 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
@@ -556,6 +560,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case CLUSTER_SNAPSHOT:
                 return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
+
+            case INCREMENTAL_SNAPSHOT_START_RECORD:
+                return 16;
+
+            case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
+                return ((IncrementalSnapshotFinishRecord)record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1294,6 +1304,25 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INCREMENTAL_SNAPSHOT_START_RECORD:
+                long mst = in.readLong();
+                long lst = in.readLong();
+
+                res = new IncrementalSnapshotStartRecord(new UUID(mst, lst));
+
+                break;
+
+            case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
+                long mstSignBits = in.readLong();
+                long lstSignBits = in.readLong();
+
+                Set<GridCacheVersion> included = readVersions(in);
+                Set<GridCacheVersion> excluded = readVersions(in);
+
+                res = new IncrementalSnapshotFinishRecord(new UUID(mstSignBits, lstSignBits), included, excluded);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1939,6 +1968,32 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case INCREMENTAL_SNAPSHOT_START_RECORD:
+                IncrementalSnapshotStartRecord startRec = (IncrementalSnapshotStartRecord)rec;
+
+                buf.putLong(startRec.id().getMostSignificantBits());
+                buf.putLong(startRec.id().getLeastSignificantBits());
+
+                break;
+
+            case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
+                IncrementalSnapshotFinishRecord incSnpFinRec = (IncrementalSnapshotFinishRecord)rec;
+
+                buf.putLong(incSnpFinRec.id().getMostSignificantBits());
+                buf.putLong(incSnpFinRec.id().getLeastSignificantBits());
+
+                buf.putInt(incSnpFinRec.included().size());
+
+                for (GridCacheVersion v: incSnpFinRec.included())
+                    putVersion(buf, v, false);
+
+                buf.putInt(incSnpFinRec.excluded().size());
+
+                for (GridCacheVersion v: incSnpFinRec.excluded())
+                    putVersion(buf, v, false);
+
+                break;
+
             case CLUSTER_SNAPSHOT:
                 byte[] snpName = ((ClusterSnapshotRecord)rec).clusterSnapshotName().getBytes();
 
@@ -2253,6 +2308,26 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
+    }
+
+    /**
+     * Read set of versions.
+     *
+     * @param in Data input to read from.
+     * @return Read set of cache versions.
+     */
+    private Set<GridCacheVersion> readVersions(ByteBufferBackedDataInput in) throws IOException {
+        int txsSize = in.readInt();
+
+        Set<GridCacheVersion> txs = new HashSet<>();
+
+        for (int i = 0; i < txsSize; i++) {
+            GridCacheVersion v = readVersion(in, false);
+
+            txs.add(v);
+        }
+
+        return txs;
     }
 
     /**
