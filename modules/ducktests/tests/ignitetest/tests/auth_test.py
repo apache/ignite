@@ -68,7 +68,7 @@ class AuthenticationTests(IgniteTest):
         ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD).activate()
 
         client_cfg = IgniteThinClientConfiguration(
-            addresses=servers.nodes[0].account.hostname + ":" + str(config.client_connector_configuration.port),
+            addresses=[servers.nodes[0].account.hostname + ":" + str(config.client_connector_configuration.port)],
             version=IgniteVersion(ignite_version),
             username=DEFAULT_AUTH_USERNAME,
             password=DEFAULT_AUTH_PASSWORD)
