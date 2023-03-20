@@ -90,6 +90,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setCacheConfiguration(null);
+
+        if (cfg.isClientMode())
+            return cfg;
+
         // In-memory data region.
         DataRegionConfiguration inMemDr = new DataRegionConfiguration();
         inMemDr.setPersistenceEnabled(false);
@@ -98,8 +103,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         inMemDr.setName(INMEM_DATA_REGION);
         inMemDr.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(inMemDr);
-
-        cfg.setCacheConfiguration(null);
 
         return cfg;
     }
@@ -421,11 +424,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         if (create) {
             if (expWrn == null)
-                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get();
+                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false).get();
             else {
                 Throwable snpWrn = assertThrows(
                     null,
-                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get(),
+                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false).get(),
                     IgniteException.class,
                     expWrn
                 );

@@ -44,6 +44,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
@@ -72,7 +73,7 @@ public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     protected TestSecurityData[] clientData() {
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
+                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE, ADMIN_CLUSTER_STATE)
                 .build()
         )};
     }

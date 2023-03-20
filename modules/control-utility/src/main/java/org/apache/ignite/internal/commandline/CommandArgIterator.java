@@ -21,6 +21,7 @@ package org.apache.ignite.internal.commandline;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
@@ -31,7 +32,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class CommandArgIterator {
     /** */
-    private Iterator<String> argsIt;
+    private final Iterator<String> argsIt;
+
+    /** */
+    private final Map<String, Command<?>> cmds;
 
     /** */
     private String peekedArg;
@@ -44,10 +48,16 @@ public class CommandArgIterator {
     /**
      * @param argsIt Raw argument iterator.
      * @param commonArgumentsAndHighLevelCommandSet All known subcomands.
+     * @param cmds Supported commands.
      */
-    public CommandArgIterator(Iterator<String> argsIt, Set<String> commonArgumentsAndHighLevelCommandSet) {
+    public CommandArgIterator(
+        Iterator<String> argsIt,
+        Set<String> commonArgumentsAndHighLevelCommandSet,
+        Map<String, Command<?>> cmds
+    ) {
         this.argsIt = argsIt;
         this.commonArgumentsAndHighLevelCommandSet = commonArgumentsAndHighLevelCommandSet;
+        this.cmds = cmds;
     }
 
     /**
@@ -61,7 +71,7 @@ public class CommandArgIterator {
      * @return <code>true</code> if there's next argument for subcommand.
      */
     public boolean hasNextSubArg() {
-        return hasNextArg() && CommandList.of(peekNextArg()) == null &&
+        return hasNextArg() && !cmds.containsKey(peekNextArg().toLowerCase()) &&
             !commonArgumentsAndHighLevelCommandSet.contains(peekNextArg());
     }
 

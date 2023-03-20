@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -52,12 +51,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataCollectorTask;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataVerificationTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.RunnableWrapperClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.ToStringClosure;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -87,6 +84,7 @@ import static org.apache.ignite.common.AbstractEventSecurityContextTest.sendRest
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.COMPUTE_JOB_WORKER_INTERRUPT_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
+import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.registerExternalSystemTypes;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
@@ -113,7 +111,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private static final IgniteClosure SYSTEM_CLOSURE = new ToStringClosure<>();
 
     /** */
-    private static final ComputeTask SYSTEM_TASK = new SnapshotMetadataCollectorTask();
+    private static final ComputeTask SYSTEM_TASK = new SnapshotMetadataVerificationTask();
 
     /** */
     private static final AtomicInteger EXECUTED_TASK_CNTR = new AtomicInteger();
@@ -137,9 +135,11 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        registerSystemType(SystemRunnable.class);
-        registerSystemType(PublicAccessSystemTask.class);
-        registerSystemType(PublicAccessSystemJob.class);
+        registerExternalSystemTypes(
+            SystemRunnable.class,
+            PublicAccessSystemTask.class,
+            PublicAccessSystemJob.class
+        );
 
         for (int idx = 0; idx < SRV_NODES_CNT; idx++)
             startGrid(idx, false);
@@ -468,11 +468,11 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             taskUnblockedLatch.countDown();
         }
     }
-    
+
     /** */
     private IgniteCompute compute(int initiator, int executor) {
         IgniteEx ignite = grid(initiator);
-        
+
         return ignite.compute(ignite.cluster().forNodeId(grid(executor).localNode().id()));
     }
 
@@ -790,13 +790,6 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         authCtx.subjectId(UUID.randomUUID());
 
         return grid(0).context().security().authenticate(authCtx);
-    }
-
-    /** */
-    private void registerSystemType(Class<?> cls) throws Exception {
-        ConcurrentMap<Class<?>, Boolean> sysTypes = U.field(SecurityUtils.class, "SYSTEM_TYPES");
-
-        sysTypes.put(cls, true);
     }
 
     /** */

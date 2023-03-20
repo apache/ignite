@@ -125,6 +125,25 @@ public interface Command<T> {
         @Nullable Map<String, String> paramsDesc,
         String... args
     ) {
+        usage(logger, desc, cmd.text(), paramsDesc, args);
+    }
+
+    /**
+     * Print command usage.
+     *
+     * @param logger Logger to use.
+     * @param desc Command description.
+     * @param cmd Command.
+     * @param paramsDesc Description of parameters (optional).
+     * @param args Arguments.
+     */
+    public default void usage(
+        IgniteLogger logger,
+        String desc,
+        String cmd,
+        @Nullable Map<String, String> paramsDesc,
+        String... args
+    ) {
         logger.info("");
 
         if (experimental())

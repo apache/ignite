@@ -122,7 +122,9 @@ class SegmentReservationStorage extends SegmentObservable {
         Long oldMin = oldMinE == null ? null : oldMinE.getKey();
         Long newMin = newMinE == null ? null : newMinE.getKey();
 
-        return Objects.equals(oldMin, newMin) ? null : newMin == null ? -1 : newMin;
+        return Objects.equals(oldMin, newMin)
+            ? null
+            : newMin == null ? -1 : newMin;
     }
 
     /**

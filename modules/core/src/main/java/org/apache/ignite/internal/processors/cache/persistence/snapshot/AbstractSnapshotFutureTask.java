@@ -122,6 +122,13 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     }
 
     /**
+     * @return Set of cache groups included into snapshot operation.
+     */
+    public Set<Integer> affectedCacheGroups() {
+        return parts.keySet();
+    }
+
+    /**
      * Initiates snapshot task.
      *
      * @return {@code true} if task started by this call.
