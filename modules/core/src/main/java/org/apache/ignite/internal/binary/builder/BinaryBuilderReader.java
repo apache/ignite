@@ -843,8 +843,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr,
-                    pos - 4 - size + start);
+                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }
