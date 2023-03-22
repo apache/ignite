@@ -157,6 +157,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Master key name. */
     protected String masterKeyName;
 
+    /** */
+    protected int primaryPart = -1;
+
     /** Cache value builder. */
     protected Function<Integer, Object> valBuilder = String::valueOf;
 
@@ -451,6 +454,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         forceCheckpoint();
 
         ig.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
+
+        primaryPart = ig.affinity(dfltCacheCfg.getName()).primaryPartitions(ig.localNode())[0];
 
         return ig;
     }
