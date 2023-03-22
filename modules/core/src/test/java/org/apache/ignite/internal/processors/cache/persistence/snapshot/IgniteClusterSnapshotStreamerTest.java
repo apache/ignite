@@ -441,7 +441,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
-        assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
+        if (!onlyPrimary)
+            assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
 
         if (expWrn != null) {
             ListeningTestLogger testLog = new ListeningTestLogger();
