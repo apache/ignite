@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
+
 import static org.apache.ignite.testframework.junits.GridAbstractTest.defaultCacheConfiguration;
 
 /**
@@ -85,7 +86,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null,
                 null,
                 null,
-                new CacheDiagnosticManager()
+                new CacheDiagnosticManager(),
+                null
             ),
             defaultCacheConfiguration(),
             null,
