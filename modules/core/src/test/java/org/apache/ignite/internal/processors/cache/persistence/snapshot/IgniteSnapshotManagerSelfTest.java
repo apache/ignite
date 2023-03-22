@@ -425,6 +425,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2,
             dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)), keys);
 
+        ignite = grid(ignite.affinity(dfltCacheCfg.getName()).mapPartitionToNode(0));
+
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
         int rows = 0;
@@ -465,6 +467,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
+
+        ignite = grid(ignite.affinity(ccfg.getName()).mapPartitionToNode(0));
 
         forceCheckpoint();
 
