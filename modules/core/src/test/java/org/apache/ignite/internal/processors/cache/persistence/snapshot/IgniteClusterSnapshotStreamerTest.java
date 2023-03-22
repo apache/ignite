@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -182,6 +183,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoDefaultClient() throws Exception {
+        Assume.assumeFalse("Test check !onlyPrimary mode", onlyPrimary);
+
         doTestDataStreamerFailedBeforeSnapshot(client, false);
     }
 
@@ -191,6 +194,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoDefaultCoordinator() throws Exception {
+        Assume.assumeFalse("Test !onlyPrimary mode", onlyPrimary);
+
         doTestDataStreamerFailedBeforeSnapshot(grid(0), false);
     }
 
@@ -432,6 +437,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                     IgniteException.class,
                     expWrn
                 );
+
+                snpWrn.printStackTrace();
 
                 if (notExpWrn != null)
                     assertTrue(!snpWrn.getMessage().contains(notExpWrn));
