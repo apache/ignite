@@ -127,7 +127,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testSnapshotRestoringFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+        snp(ig).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -190,7 +190,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testValidatingSnapshotFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -265,7 +265,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testStartFromSnapshotFailedWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -318,7 +318,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         addCache(encryptedFirst);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         awaitPartitionMapExchange();
 
@@ -344,7 +344,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
                 grid(g).context().encryption().reencryptionFuture(CU.cacheId(dfltCacheCfg.getName())).get();
         }
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         ig.cache(dfltCacheCfg.getName()).destroy();
 
@@ -379,7 +379,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteFuture<Void> fut;
 
         if (restore) {
-            grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
             grid(1).cache(dfltCacheCfg.getName()).destroy();
 
@@ -392,7 +392,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         else {
             spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
 
-            fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
+            fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
         }
 
         spi0.waitBlocked(TIMEOUT);
@@ -422,7 +422,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         startGrid(G.allGrids().size());
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         grid(2).destroyCache(dfltCacheCfg.getName());
 
@@ -445,7 +445,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             expectedError);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2").get(TIMEOUT), IgniteCheckedException.class,
+            () -> grid(2).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2", onlyPrimary).get(TIMEOUT), IgniteCheckedException.class,
             expectedError);
 
         discoSpi.unblock();
@@ -487,7 +487,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         CacheConfiguration<?, ?> ccfg = addCache(false);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         grid(1).cache(DEFAULT_CACHE_NAME).destroy();
         grid(1).cache(CACHE2).destroy();

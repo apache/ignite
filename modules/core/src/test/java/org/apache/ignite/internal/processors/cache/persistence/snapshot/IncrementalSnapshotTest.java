@@ -110,7 +110,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 String snpName = SNAPSHOT_NAME + "_" + client + "_" + (snpPath == null ? "" : snpPath.getName());
 
                 if (snpPath == null)
-                    snpCreate.createSnapshot(snpName).get(TIMEOUT);
+                    snpCreate.createSnapshot(snpName, onlyPrimary).get(TIMEOUT);
                 else
                     snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), false, onlyPrimary).get(TIMEOUT);
 
@@ -161,7 +161,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             IgniteException.class
         );
 
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snp(ign).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         assertThrowsWithCause(
             () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
@@ -187,7 +187,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
         );
 
-        cli.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        cli.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
         cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
@@ -218,7 +218,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
         );
 
-        srv.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        srv.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         addData(srv);
 
@@ -250,7 +250,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager snpCreate = snp(srv);
 
-        snpCreate.createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snpCreate.createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         String consId = grid(1).context().discovery().localNode().consistentId().toString();
 
@@ -293,7 +293,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteEx srv = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg);
 
-        snp(srv).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snp(srv).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         GridLocalConfigManager locCfgMgr = srv.context().cache().configManager();
 
@@ -327,7 +327,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
         );
 
-        snp(srv).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snp(srv).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         assertTrue(snp(srv).incrementalSnapshotsLocalRootDir(SNAPSHOT_NAME, null).mkdirs());
         assertTrue(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).createNewFile());
@@ -358,7 +358,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             );
 
-            srv.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            srv.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
             assertThrows(
                 null,
@@ -387,7 +387,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteSnapshotManager snpCreate = snp(srv);
 
-        snpCreate.createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snpCreate.createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 

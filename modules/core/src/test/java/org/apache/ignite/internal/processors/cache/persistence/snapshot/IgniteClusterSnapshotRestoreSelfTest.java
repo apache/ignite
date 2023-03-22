@@ -220,7 +220,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(),
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         ignite.cache(CACHE1).destroy();
         ignite.cache(CACHE2).destroy();
@@ -312,7 +312,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> grid(1).snapshot().createSnapshot("NEW_SNAPSHOT").get(TIMEOUT),
+            () -> grid(1).snapshot().createSnapshot("NEW_SNAPSHOT", onlyPrimary).get(TIMEOUT),
             IgniteException.class,
             "Cache group restore operation is currently in progress."
         );
@@ -419,7 +419,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
@@ -460,7 +460,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         ignite.cache(CACHE1).destroy();
 

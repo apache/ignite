@@ -544,7 +544,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         if (startClient)
             ignite = startClientGrid("client");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         ignite.cache(dfltCacheCfg.getName()).destroy();
 

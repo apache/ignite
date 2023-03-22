@@ -134,7 +134,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(dfltCacheCfg.getName())) {
             for (int i = CACHE_KEYS_RANGE; i < 2 * CACHE_KEYS_RANGE; i++)
@@ -225,7 +225,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
 
         spi.waitForBlocked();
 

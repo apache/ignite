@@ -1119,25 +1119,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (cctx.cache().cacheGroup(grpId) == null)
                 continue;
 
-            Set<Integer> include = null;
-
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
 
             AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
 
             if (req.onlyPrimary()) {
-                include = new HashSet<>(
-                    cctx.cacheContext(grpId).affinity().primaryPartitions(cctx.localNodeId(), topVer)
-                );
+                Set<Integer> include = new HashSet<>(grpCtx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
 
                 include.remove(INDEX_PARTITION);
 
                 if (log.isInfoEnabled())
                     log.info("Snapshot only primary partitions " +
                         "[grpId=" + grpId + ", grpName=" + grpCtx.cacheOrGroupName() + ", parts=" + include + ']');
-            }
 
-            parts.put(grpId, include);
+                parts.put(grpId, include);
+            }
+            else
+                parts.put(grpId, null);
         }
 
         IgniteInternalFuture<?> task0;
