@@ -186,7 +186,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         String failingFilePath = Paths.get(FilePageStoreManager.cacheDirName(dfltCacheCfg),
-            PART_FILE_PREFIX + primaryPart + FILE_SUFFIX).toString();
+            PART_FILE_PREFIX + primaries[0] + FILE_SUFFIX).toString();
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
