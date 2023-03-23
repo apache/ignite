@@ -699,7 +699,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         stopAllGrids();
 
-        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+        IgniteEx snp = startGridsFromSnapshot(onlyPrimary ? 3 : 2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }

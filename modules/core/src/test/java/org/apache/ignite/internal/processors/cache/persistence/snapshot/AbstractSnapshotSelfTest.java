@@ -455,9 +455,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         ig.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
 
-        primaries = ig.cacheNames().contains(dfltCacheCfg.getName())
-            ? ig.affinity(dfltCacheCfg.getName()).primaryPartitions(ig.localNode())
-            : null;
+        if (dfltCacheCfg != null) {
+            primaries = ig.cacheNames().contains(dfltCacheCfg.getName())
+                ? ig.affinity(dfltCacheCfg.getName()).primaryPartitions(ig.localNode())
+                : null;
+        }
 
         return ig;
     }
