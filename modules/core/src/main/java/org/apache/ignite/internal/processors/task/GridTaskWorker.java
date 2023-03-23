@@ -63,6 +63,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.PlatformSecurityAwareJob;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -1774,6 +1775,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             ctx.security().authorize(executable.getClass().getName(), TASK_EXECUTE);
         }
+        else if (executable instanceof PlatformSecurityAwareJob)
+            ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_EXECUTE);
         else if (executable instanceof PublicAccessJob)
             authorizeAll(ctx.security(), ((PublicAccessJob)executable).requiredPermissions());
         else if (opts.isPublicRequest()) {
@@ -1800,6 +1803,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                 if (!ctx.security().isSystemType(executable.getClass()))
                     ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
+                else if (executable instanceof PlatformSecurityAwareJob)
+                    ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_CANCEL);
                 else if (!isClosedByInitiator)
                     ctx.security().authorize(ADMIN_KILL);
             }
