@@ -1142,8 +1142,14 @@ public class SnapshotRestoreProcess {
                             m.getValue(),
                             opCtx0.stopChecker,
                             (snpFile, t) -> {
-                                if (opCtx0.stopChecker.getAsBoolean())
-                                    throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
+                                if (opCtx0.stopChecker.getAsBoolean()) {
+                                    completeListExceptionally(
+                                        rmtAwaitParts,
+                                        new IgniteInterruptedException("Snapshot remote operation request cancelled.")
+                                    );
+
+                                    return;
+                                }
 
                                 if (t != null) {
                                     opCtx0.errHnd.accept(t);

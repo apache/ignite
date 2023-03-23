@@ -3564,8 +3564,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (isDone())
                 return;
 
-            if (stopChecker.getAsBoolean())
-                throw new TransmissionCancelledException("Future cancelled prior to the all requested partitions processed.");
+            if (stopChecker.getAsBoolean()) {
+                TransmissionCancelledException err =
+                    new TransmissionCancelledException("Future cancelled prior to the all requested partitions processed.");
+
+                acceptException(err);
+
+                throw err;
+            }
 
             try {
                 partHnd.accept(part, null);

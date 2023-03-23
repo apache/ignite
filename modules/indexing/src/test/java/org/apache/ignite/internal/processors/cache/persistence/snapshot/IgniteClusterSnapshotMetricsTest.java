@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -191,18 +192,23 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
 
+        AtomicBoolean failFlag = new AtomicBoolean();
+
         ignite.context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
             FileIO delegate = ioFactory.create(file, modes);
 
-            if (file.getPath().endsWith(failingFilePath))
+            if (file.getPath().endsWith(failingFilePath)) {
+                failFlag.set(true);
+
                 throw new RuntimeException(testErrMsg);
+            }
 
             return delegate;
         });
 
         checkMetricsDefaults();
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+        IgniteFuture<Void> restoreFut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
         for (Ignite grid : G.allGrids()) {
             DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);
@@ -222,6 +228,8 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             assertTrue(nodeNameMsg, endTime >= startTime);
             assertTrue(nodeNameMsg, ((String)mReg.getAttribute("error")).contains(testErrMsg));
         }
+
+        assertTrue(failFlag.get());
     }
 
     /** @throws Exception If fails. */
