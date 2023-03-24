@@ -383,6 +383,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         Map<Integer, Value> iterated = new HashMap<>();
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
@@ -429,6 +431,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         int rows = 0;
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
@@ -473,6 +477,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         forceCheckpoint();
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         int rows = 0;
 
@@ -554,6 +560,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
+
+        checkSnapshot(SNAPSHOT_NAME);
     }
 
     /** @throws Exception If fails. */
@@ -564,6 +572,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
 
         ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         ThreadMXBean tMb = ManagementFactory.getThreadMXBean();
 

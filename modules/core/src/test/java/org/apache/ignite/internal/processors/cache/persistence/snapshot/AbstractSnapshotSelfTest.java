@@ -73,6 +73,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -110,10 +111,14 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
@@ -158,7 +163,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected String masterKeyName;
 
     /** */
-    protected int[] primaries = null;
+    protected int[] primaries;
 
     /** Cache value builder. */
     protected Function<Integer, Object> valBuilder = String::valueOf;
@@ -555,11 +560,104 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         ignite.cache(dfltCacheCfg.getName()).destroy();
 
         awaitPartitionMapExchange();
 
         return ignite;
+    }
+
+    /** @param snpName Snapshot name. */
+    protected void checkSnapshot(String snpName) throws IgniteCheckedException {
+        checkSnapshot(snpName, null);
+    }
+
+    /** @param snpName Snapshot name. */
+    protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
+        Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
+
+        for (Ignite node: G.allGrids()) {
+            if (node.configuration().isClientMode())
+                continue;
+
+            IgniteEx node0 = (IgniteEx)node;
+
+            File nodeSnapDir = new File(
+                snp(node0).snapshotLocalDir(snpName, snpPath).getAbsolutePath(),
+                databaseRelativePath(node0.context().pdsFolderResolver().resolveFolders().folderName())
+            );
+
+            assertTrue(nodeSnapDir.exists());
+
+            File[] cacheDirs = nodeSnapDir.listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
+
+            for (File cacheDir : cacheDirs) {
+                String name = cacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX)
+                    ? cacheDir.getName().substring(CACHE_GRP_DIR_PREFIX.length())
+                    : cacheDir.getName().substring(CACHE_DIR_PREFIX.length());
+
+                Map<Integer, Integer> cacheParts = cachesParts.compute(name, (k, v) -> v == null ? new HashMap<>() : v);
+
+                File[] parts = cacheDir.listFiles(f ->
+                    f.getName().startsWith(PART_FILE_PREFIX)
+                        && f.getName().endsWith(FILE_SUFFIX));
+
+                for (File partFile : parts) {
+                    int part = Integer.parseInt(partFile.getName()
+                        .substring(PART_FILE_PREFIX.length())
+                        .replace(FILE_SUFFIX, ""));
+
+                    cacheParts.compute(part, (part0, cnt) -> (cnt == null ? 0 : cnt) + 1);
+                }
+            }
+        }
+
+        for (Map.Entry<String, Map<Integer, Integer>> entry : cachesParts.entrySet()) {
+            String cache = entry.getKey();
+
+            int parts = -1;
+            Integer expPartCopiesInSnp;
+
+            if (onlyPrimary)
+                expPartCopiesInSnp = 1;
+            else {
+                int backups = -1;
+                int affinityNodes = 0;
+
+                for (Ignite node: G.allGrids()) {
+                    if (node.configuration().isClientMode())
+                        continue;
+
+                    CacheGroupContext grpCtx = ((IgniteEx)node).context().cache().cacheGroup(CU.cacheId(cache));
+
+                    if (grpCtx != null) {
+                        backups = grpCtx.config().getBackups();
+                        parts = grpCtx.affinity().partitions();
+
+                        affinityNodes++;
+                    }
+                }
+
+                assertTrue(backups != -1);
+                assertTrue(parts != -1);
+                assertTrue(affinityNodes > 0);
+
+                expPartCopiesInSnp = onlyPrimary
+                    ? 1
+                    : (backups == Integer.MAX_VALUE
+                        ? affinityNodes
+                        : Math.min(backups + 1, affinityNodes));
+            }
+
+            Map<Integer, Integer> cacheParts = entry.getValue();
+
+            for (int i = 0; i < parts; i++) {
+                assertTrue("[cache=" + cache + ", part=" + i + ']', cacheParts.containsKey(i));
+                assertEquals("[cache=" + cache + ", part=" + i + ']', expPartCopiesInSnp, cacheParts.get(i));
+            }
+        }
     }
 
     /**

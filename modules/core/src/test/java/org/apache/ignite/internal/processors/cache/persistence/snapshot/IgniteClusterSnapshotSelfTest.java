@@ -221,6 +221,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             fut.get();
 
+            checkSnapshot(SNAPSHOT_NAME);
+
             waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
         }
         finally {
@@ -288,9 +290,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }, 5, "atomic-cache-put-");
 
         try {
-            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+            ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
-            fut.get();
+            checkSnapshot(SNAPSHOT_NAME);
         }
         finally {
             txLoadFut.cancel();
@@ -397,6 +399,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             U.await(txStarted);
 
             grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+            checkSnapshot(SNAPSHOT_NAME);
         }
         finally {
             stop.set(true);
@@ -429,6 +433,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ig0.getOrCreateCache(ccfg).put(i, i);
 
         ig0.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -542,6 +548,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
                 ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
+
+                checkSnapshot(SNAPSHOT_NAME);
             }
 
             BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
@@ -571,6 +579,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(),
@@ -697,6 +707,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
             .get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(onlyPrimary ? 3 : 2, SNAPSHOT_NAME);
@@ -723,6 +735,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         commSpi.stopBlock(true);
 
         fut.get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -772,6 +786,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             ignite.context().cache().context().snapshotMgr()
                 .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath(), false, onlyPrimary).get();
+
+            checkSnapshot(SNAPSHOT_NAME);
 
             stopAllGrids();
 
@@ -918,6 +934,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
             .get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
@@ -941,6 +959,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, Integer::new, ccfg1, ccfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -1123,6 +1143,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         for (Ignite ig : G.allGrids()) {
             ((IgniteEx)ig).context().cache().context().exchange()
                 .unregisterExchangeAwareComponent(comps.get(((IgniteEx)ig).localNode().id()));
@@ -1155,6 +1177,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         snp(nonBaseLineNode).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
@@ -1171,6 +1195,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx clnt = startClientGrid(2);
 
         clnt.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -1241,6 +1267,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
+
         ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
 
         stopAllGrids();

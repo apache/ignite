@@ -142,6 +142,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
                 .createSnapshot(SNAPSHOT_NAME, snpDir.toString(), false, onlyPrimary)
                 .get(TIMEOUT);
 
+            checkSnapshot(SNAPSHOT_NAME, snpDir.toString());
+
             // Check snapshot.
             IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT)
                 .idleVerifyResult();
@@ -221,6 +223,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         ignite.cache(CACHE1).destroy();
         ignite.cache(CACHE2).destroy();
@@ -421,6 +425,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         ignite.cluster().state(ClusterState.INACTIVE);
 
         IgniteFuture<Void> fut =
@@ -461,6 +467,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         ignite.cache(CACHE1).destroy();
 

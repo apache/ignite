@@ -68,6 +68,8 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
@@ -119,6 +121,8 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
             });
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         stop.set(true);
         updFut.get();

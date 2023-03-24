@@ -82,6 +82,8 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
 
             snp(ign).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
 
+            checkSnapshot(SNAPSHOT_NAME);
+
             loadStopLatch.countDown();
 
             loadFut.get();
@@ -123,6 +125,8 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
         for (int i = 0; i < snapshots; i++) {
             // Start changing data concurrently with performing the ClusterSnapshot operation.
             snp(grid(0)).createSnapshot(SNAPSHOT_NAME + i, onlyPrimary).get();
+
+            checkSnapshot(SNAPSHOT_NAME + i);
         }
 
         for (int i = 0; i < nodes; i++) {

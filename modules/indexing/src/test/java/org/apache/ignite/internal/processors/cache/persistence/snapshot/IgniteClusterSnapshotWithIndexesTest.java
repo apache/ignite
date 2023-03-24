@@ -84,6 +84,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
             .get();
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
@@ -152,6 +154,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
             exec.unblock();
 
         fut.get();
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         stopAllGrids();
 

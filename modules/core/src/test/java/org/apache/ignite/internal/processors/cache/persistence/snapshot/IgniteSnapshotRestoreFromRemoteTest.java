@@ -146,6 +146,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
             ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
+            checkSnapshot(SNAPSHOT_NAME);
+
             awaitPartitionMapExchange();
             stopAllGrids();
 

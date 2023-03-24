@@ -136,6 +136,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
+        checkSnapshot(SNAPSHOT_NAME);
+
         try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(dfltCacheCfg.getName())) {
             for (int i = CACHE_KEYS_RANGE; i < 2 * CACHE_KEYS_RANGE; i++)
                 ds.addData(i, valueBuilder().apply(i));
@@ -234,6 +236,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         spi.stopBlock();
 
         fut.get(getTestTimeout());
+
+        checkSnapshot(SNAPSHOT_NAME);
 
         checkSnapshotStatus(false, false, false, null);
 
