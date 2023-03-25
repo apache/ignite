@@ -115,7 +115,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testRestoreWithEmptyPartitions() throws Exception {
         int keysCnt = dfltCacheCfg.getAffinity().partitions() / 2;
 
-        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false);
+        // Skip check because some partitions will be empty - keysCnt == parts/2.
+        Ignite ignite = startGridsWithSnapshot(1, keysCnt, false, true);
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
@@ -797,7 +798,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         valBuilder = Account::new;
 
-        startGridsWithSnapshot(nodes, keysCnt);
+        // Skip check because some partitions will be empty - keysCnt < parts.
+        startGridsWithSnapshot(nodes, keysCnt, false, true);
 
         stopAllGrids();
 

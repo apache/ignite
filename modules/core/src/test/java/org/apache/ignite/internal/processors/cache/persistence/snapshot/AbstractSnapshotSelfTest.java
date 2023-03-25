@@ -553,6 +553,23 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
+        return startGridsWithSnapshot(nodesCnt, keysCnt, startClient, false);
+    }
+
+    /**
+     * @param nodesCnt Nodes count.
+     * @param keysCnt Number of keys to create.
+     * @param startClient {@code True} to start an additional client node.
+     * @param skipCheck Skip check of snapshot.
+     * @return Ignite coordinator instance.
+     * @throws Exception if failed.
+     */
+    protected IgniteEx startGridsWithSnapshot(
+        int nodesCnt,
+        int keysCnt,
+        boolean startClient,
+        boolean skipCheck
+    ) throws Exception {
         IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg);
 
         if (startClient)
@@ -560,7 +577,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
-        checkSnapshot(SNAPSHOT_NAME);
+        if (!skipCheck)
+            checkSnapshot(SNAPSHOT_NAME);
 
         ignite.cache(dfltCacheCfg.getName()).destroy();
 
