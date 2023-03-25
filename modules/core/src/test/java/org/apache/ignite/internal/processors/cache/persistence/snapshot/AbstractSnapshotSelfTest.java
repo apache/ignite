@@ -40,6 +40,7 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -596,8 +597,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
         Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
 
+        Predicate<Ignite> filter = node -> !node.configuration().isClientMode()
+            && node.cluster().currentBaselineTopology().contains(node.cluster().localNode());
+
         for (Ignite node: G.allGrids()) {
-            if (node.configuration().isClientMode())
+            if (!filter.test(node))
                 continue;
 
             IgniteEx node0 = (IgniteEx)node;
@@ -645,7 +649,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 int affinityNodes = 0;
 
                 for (Ignite node: G.allGrids()) {
-                    if (node.configuration().isClientMode())
+                    if (!filter.test(node))
                         continue;
 
                     CacheGroupContext grpCtx = ((IgniteEx)node).context().cache().cacheGroup(CU.cacheId(cache));

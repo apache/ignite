@@ -784,10 +784,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath(), false, onlyPrimary).get();
+            String snpPath = cfgPath ? null : snpDir.getAbsolutePath();
 
-            checkSnapshot(SNAPSHOT_NAME);
+            ignite.context().cache().context().snapshotMgr()
+                .createSnapshot(SNAPSHOT_NAME, snpPath, false, onlyPrimary).get();
+
+            checkSnapshot(SNAPSHOT_NAME, snpPath);
 
             stopAllGrids();
 
