@@ -331,9 +331,11 @@ class IgniteApplicationSpec(IgniteSpec):
 
     def __jackson(self):
         if not self.service.config.version.is_dev:
-            ducktests = self._module("ducktests")
             return self.service.context.cluster.nodes[0].account.ssh_capture(
-                "find %s -type f -name '*.jar' | grep jackson | tr '\n' ':' " % ducktests)
+                "find %s -type f -name 'jackson-databind*.jar' | head -1 "
+                "| sed 's/jackson-databind.*/*/' | tr '\n' ':'"
+                % get_home_dir(self.service.install_root, self.service.product)
+            )
 
         return []
 
