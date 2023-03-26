@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
-import org.apache.ignite.internal.processors.security.PublicAccessJob;
+import org.apache.ignite.internal.processors.security.PublicAccessPermissionsProvider;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -27,7 +27,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_
 /**
  * Absolute closure that does nothing.
  */
-public class NoOpClosure extends GridAbsClosure implements PublicAccessJob {
+public class NoOpClosure extends GridAbsClosure implements PublicAccessPermissionsProvider {
     /** */
     private static final long serialVersionUID = 0L;
 

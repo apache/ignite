@@ -54,7 +54,7 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataVerificationTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.PublicAccessJob;
+import org.apache.ignite.internal.processors.security.PublicAccessPermissionsProvider;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -271,6 +271,13 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         try (IgniteClient cli = startClient("no-permissions-login-0")) {
             assertFailed(() -> cli.compute().executeAsync2(PublicAccessSystemTask.class.getName(), null).get());
         }
+
+        // Internal tasks with public access permissions explicitly specified still can be executed via Private API
+        // without permission checks.
+        assertCompleted(
+            () -> grid(0).context().task().execute(PublicAccessSystemTask.class, null).get(getTestTimeout()),
+            SRV_NODES_CNT
+        );
     }
 
     /** */
@@ -702,7 +709,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private static class PublicAccessSystemJob extends TestJob implements PublicAccessJob {
+    private static class PublicAccessSystemJob extends TestJob implements PublicAccessPermissionsProvider {
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet requiredPermissions() {
             return SecurityPermissionSetBuilder.systemPermissions(ADMIN_OPS);

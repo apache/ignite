@@ -20,7 +20,7 @@ package org.apache.ignite.internal.visor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.PublicAccessJob;
+import org.apache.ignite.internal.processors.security.PublicAccessPermissionsProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -37,7 +37,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * @param <A> Job argument type.
  * @param <R> Job result type.
  */
-public abstract class VisorJob<A, R> extends ComputeJobAdapter implements PublicAccessJob {
+public abstract class VisorJob<A, R> extends ComputeJobAdapter implements PublicAccessPermissionsProvider {
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
     protected transient IgniteEx ignite;

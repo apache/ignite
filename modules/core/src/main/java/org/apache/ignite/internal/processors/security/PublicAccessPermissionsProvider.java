@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  * Represents an interface that must be implemented by any internal {@link ComputeJob} that should be accessible for a
  * user to be executed through the Ignite public API.
  */
-public interface PublicAccessJob {
+public interface PublicAccessPermissionsProvider {
     /** @return Set of permissions to be authorized before job execution. */
     public SecurityPermissionSet requiredPermissions();
 }
