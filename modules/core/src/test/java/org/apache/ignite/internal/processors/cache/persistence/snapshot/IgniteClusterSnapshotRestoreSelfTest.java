@@ -311,7 +311,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> grid(1).snapshot().createSnapshot("NEW_SNAPSHOT", onlyPrimary).get(TIMEOUT),
+            () -> snp(grid(1)).createSnapshot("NEW_SNAPSHOT", null, false, onlyPrimary).get(TIMEOUT),
             IgniteException.class,
             "Cache group restore operation is currently in progress."
         );

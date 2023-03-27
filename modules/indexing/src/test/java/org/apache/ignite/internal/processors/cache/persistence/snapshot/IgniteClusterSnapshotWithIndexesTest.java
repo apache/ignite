@@ -140,7 +140,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         // Blocking configuration local snapshot sender.
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         List<String> idxNames = Arrays.asList("SNP_IDX_1", "SNP_IDX_2");
 

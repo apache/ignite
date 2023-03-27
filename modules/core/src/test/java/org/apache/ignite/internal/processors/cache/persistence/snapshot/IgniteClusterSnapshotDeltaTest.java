@@ -153,7 +153,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         });
 
         // 2. Start a snapshot and block copy of a partitions.
-        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut = snp(srv).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.waitForCondition(() -> mgr.currentCreateRequest() != null, getTestTimeout());
 

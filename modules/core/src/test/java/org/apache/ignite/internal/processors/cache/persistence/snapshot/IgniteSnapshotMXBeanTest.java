@@ -225,7 +225,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut = snp(srv).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         spi.waitForBlocked();
 

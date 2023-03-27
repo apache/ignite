@@ -109,10 +109,9 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
                 String snpName = SNAPSHOT_NAME + "_" + client + "_" + (snpPath == null ? "" : snpPath.getName());
 
-                if (snpPath == null)
-                    snpCreate.createSnapshot(snpName, onlyPrimary).get(TIMEOUT);
-                else
-                    snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), false, onlyPrimary).get(TIMEOUT);
+                snpCreate
+                    .createSnapshot(snpName, snpPath == null ? null : snpPath.getAbsolutePath(), false, onlyPrimary)
+                    .get(TIMEOUT);
 
                 checkSnapshot(snpName, snpPath == null ? null : snpPath.getAbsolutePath());
 

@@ -544,7 +544,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         beforeCpEnter.await(testTimeout, TimeUnit.MILLISECONDS);
 
-        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> snpFut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         // Wait until the snapshot task checkpoint listener is registered.
         assertTrue(GridTestUtils.waitForCondition(lsnr::check, testTimeout));

@@ -203,7 +203,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expMsg);
 
@@ -254,7 +254,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         resetBaselineTopology();
 
         // Case 1: handler is loaded on only one of the two nodes.
-        IgniteFuture<Void> fut0 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut0 = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         UUID nodeId1 = grid(1).localNode().id();
 
@@ -276,7 +276,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGrid(1);
 
-        IgniteFuture<Void> fut1 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut1 = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut1.get(TIMEOUT), IgniteCheckedException.class,
             "Snapshot handlers configuration mismatch (number of local snapshot handlers differs from the remote one)");
@@ -288,7 +288,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGrid(1);
 
-        IgniteFuture<Void> fut2 = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut2 = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut2.get(TIMEOUT), IgniteCheckedException.class,
             "Snapshot handlers configuration mismatch (number of local snapshot handlers differs from the remote one)");
@@ -335,7 +335,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        IgniteFuture<Void> fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<Void> fut = snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         latch.await();
 
@@ -347,7 +347,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
             "Snapshot operation interrupted, because baseline node left the cluster: " + crdNodeId);
 
         startGrid(0);
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
     }
 
     /**

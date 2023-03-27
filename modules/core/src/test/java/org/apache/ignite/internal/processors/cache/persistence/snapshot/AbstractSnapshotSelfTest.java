@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -576,7 +577,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         if (startClient)
             ignite = startClientGrid("client");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
+        snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
 
         if (!skipCheck)
             checkSnapshot(SNAPSHOT_NAME, null);
@@ -605,10 +606,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpPath,
         long timeout
     ) throws IgniteCheckedException {
+        IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, null, false, onlyPrimary);
+
         if (timeout == 0)
-            ig.snapshot().createSnapshot(snpName, onlyPrimary).get();
+            fut.get();
         else
-            ig.snapshot().createSnapshot(snpName, onlyPrimary).get(timeout);
+            fut.get(timeout);
 
         checkSnapshot(snpName, snpPath);
     }

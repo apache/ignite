@@ -4523,7 +4523,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (incremental)
                 ignite.snapshot().createIncrementalSnapshot(snpName).get();
             else
-                ignite.snapshot().createSnapshot(snpName, onlyPrimary).get();
+                ignite.context().cache().context().snapshotMgr().createSnapshot(snpName, null, false, onlyPrimary).get();
 
             return null;
         }

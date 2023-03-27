@@ -392,7 +392,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         else {
             spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
 
-            fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+            fut = snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
         }
 
         spi0.waitBlocked(TIMEOUT);
@@ -445,7 +445,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             expectedError);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2", onlyPrimary).get(TIMEOUT), IgniteCheckedException.class,
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME + "_v2", null, false, onlyPrimary).get(TIMEOUT), IgniteCheckedException.class,
             expectedError);
 
         discoSpi.unblock();

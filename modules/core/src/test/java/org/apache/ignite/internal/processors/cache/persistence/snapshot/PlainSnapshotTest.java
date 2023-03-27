@@ -155,7 +155,7 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
 
         IgniteEx clnt = startClientGrid(1);
 
-        IgniteFuture<?> fut = clnt.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<?> fut = snp(clnt).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         assertThrowsAnyCause(log,
             fut::get,

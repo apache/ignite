@@ -183,7 +183,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                 }
             });
 
-        IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary);
+        IgniteFuture<?> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, fut::get, IgniteCheckedException.class, "Test exception");
 
