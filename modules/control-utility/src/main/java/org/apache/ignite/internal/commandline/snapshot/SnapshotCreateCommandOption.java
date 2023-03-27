@@ -34,10 +34,7 @@ public enum SnapshotCreateCommandOption implements CommandArg {
 
     /** Incremental snapshot flag. */
     INCREMENTAL("--incremental", null, "Create an incremental snapshot for previously created full snapshot. " +
-        "Full snapshot must be accessible via --dest and snapshot_name."),
-
-    /** Backup only primary partitions. */
-    ONLY_PRIMARY("--only-primary", null, "Only primary copies of partitions will be included in full snapshot.");
+        "Full snapshot must be accessible via --dest and snapshot_name.");
 
     /** Name. */
     private final String name;

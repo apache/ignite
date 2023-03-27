@@ -2095,12 +2095,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        return createSnapshot(name, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> createSnapshot(String name, boolean onlyPrimary) {
-        return createSnapshot(name, null, false, onlyPrimary);
+        return createSnapshot(name, null, false, false);
     }
 
     /** {@inheritDoc} */

@@ -30,7 +30,6 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.DESTINATION;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.INCREMENTAL;
-import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.ONLY_PRIMARY;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.SYNC;
 
 /**
@@ -48,7 +47,6 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
         String snpPath = null;
         boolean sync = false;
         boolean incremental = false;
-        boolean onlyPrimary = false;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
@@ -82,28 +80,20 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
 
                 incremental = true;
             }
-            else if (option == ONLY_PRIMARY) {
-                onlyPrimary = true;
-            }
         }
 
-        if (onlyPrimary && incremental)
-            throw new IllegalArgumentException(ONLY_PRIMARY.argName() + " not supported for incremental snapshots.");
-
-        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync, incremental, onlyPrimary);
+        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync, incremental, false);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
-        params.put(ONLY_PRIMARY.argName(), ONLY_PRIMARY.description());
         params.put(DESTINATION.argName() + " " + DESTINATION.arg(), DESTINATION.description());
         params.put(SYNC.argName(), SYNC.description());
         params.put(INCREMENTAL.argName(), INCREMENTAL.description());
 
         usage(log, "Create cluster snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
-            optional(ONLY_PRIMARY.argName()), optional(DESTINATION.argName(), DESTINATION.arg()),
-            optional(SYNC.argName()), optional(INCREMENTAL.argName()));
+            optional(DESTINATION.argName(), DESTINATION.arg()), optional(SYNC.argName()), optional(INCREMENTAL.argName()));
     }
 }
