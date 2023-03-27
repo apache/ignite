@@ -405,7 +405,6 @@ public class SnapshotRestoreProcess {
 
                         return;
                     }
-
                 }
             }
 
