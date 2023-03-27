@@ -54,7 +54,7 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataVerificationTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.internal.processors.security.PublicAccessPermissionsProvider;
+import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -709,7 +709,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     }
 
     /** */
-    private static class PublicAccessSystemJob extends TestJob implements PublicAccessPermissionsProvider {
+    private static class PublicAccessSystemJob extends TestJob implements PublicAccessJob {
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet requiredPermissions() {
             return SecurityPermissionSetBuilder.systemPermissions(ADMIN_OPS);
