@@ -209,9 +209,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         failCreateFlag.set(false);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         ignite.cache(DEFAULT_CACHE_NAME).destroy();
 
@@ -303,9 +301,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
         startGrid(1);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
     }
 
     /**
@@ -398,12 +394,9 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
 
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            snpMgr.createSnapshot(snpName, snpDir.getAbsolutePath(), false, onlyPrimary).get(TIMEOUT);
-
-            checkSnapshot(snpName, snpDir.getAbsolutePath());
+            createAndCheckSnapshot(ignite, snpName, snpDir.getAbsolutePath(), TIMEOUT);
 
             ignite.destroyCache(DEFAULT_CACHE_NAME);
-
             awaitPartitionMapExchange();
 
             snpMgr.restoreSnapshot(snpName, snpDir.getAbsolutePath(), null).get(TIMEOUT);

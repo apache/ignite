@@ -208,7 +208,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
         checkMetricsDefaults();
 
-        IgniteFuture<Void> restoreFut = ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
 
         for (Ignite grid : G.allGrids()) {
             DynamicMBean mReg = metricRegistry(grid.name(), null, SNAPSHOT_RESTORE_METRICS);

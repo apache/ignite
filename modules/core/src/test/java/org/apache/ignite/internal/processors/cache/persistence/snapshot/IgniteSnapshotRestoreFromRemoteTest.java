@@ -144,9 +144,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
             IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, GRIDS, CACHE_KEYS_RANGE, valBuilder,
                 dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2, cacheCfg3);
 
-            ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-            checkSnapshot(SNAPSHOT_NAME);
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
             awaitPartitionMapExchange();
             stopAllGrids();

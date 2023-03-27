@@ -81,9 +81,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME), grid(1).localNode().id());
 
@@ -127,9 +125,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
     public void testSnapshotRemoteRequestEachOther() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         IgniteSnapshotManager mgr0 = snp(ignite);
         IgniteSnapshotManager mgr1 = snp(grid(1));
@@ -165,9 +161,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
     public void testRemoteRequestedInitiatorNodeLeft() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         awaitPartitionMapExchange();
 
@@ -234,9 +228,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
     public void testSnapshotRequestRemoteSourceNodeLeft() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME),
             grid(1).localNode().id());
@@ -283,9 +275,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
     public void testSnapshotRequestRemoteCancel() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         Map<Integer, Set<Integer>> parts = owningParts(ignite, CU.cacheId(DEFAULT_CACHE_NAME),
             grid(1).localNode().id());
@@ -341,9 +331,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         UUID sndNode = sndr.localNode().id();
 
-        sndr.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(sndr, SNAPSHOT_NAME, null, TIMEOUT);
 
         IgniteSnapshotManager mgr0 = snp(grid(0));
 

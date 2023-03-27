@@ -316,9 +316,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
     /** */
     private void createFullSnapshot() throws IgniteCheckedException {
-        snp(grid(0)).createSnapshot(SNP, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(grid(0), SNAPSHOT_NAME);
     }
 
     /** */

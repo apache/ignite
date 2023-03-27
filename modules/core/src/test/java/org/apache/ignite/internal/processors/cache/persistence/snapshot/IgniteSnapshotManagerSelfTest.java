@@ -381,9 +381,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Map<Integer, Value> iterated = new HashMap<>();
 
@@ -429,9 +427,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         ignite = grid(ignite.affinity(dfltCacheCfg.getName()).mapPartitionToNode(0));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
@@ -476,9 +472,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         forceCheckpoint();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
@@ -561,7 +555,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
 
-        checkSnapshot(SNAPSHOT_NAME);
+        checkSnapshot(SNAPSHOT_NAME, null);
     }
 
     /** @throws Exception If fails. */
@@ -571,9 +565,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
 
         ThreadMXBean tMb = ManagementFactory.getThreadMXBean();
 

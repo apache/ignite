@@ -123,9 +123,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         startClientGrid();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
@@ -142,10 +140,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheckMissedPart() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
-            .get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(0));
@@ -168,10 +163,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheckMissedGroup() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
-            .get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path dir = Files.walk(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath())
             .filter(d -> d.toFile().getName().equals(cacheDirName(dfltCacheCfg)))
@@ -195,10 +187,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheckMissedMeta() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
-            .get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         File[] smfs = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).listFiles((dir, name) ->
             name.toLowerCase().endsWith(SNAPSHOT_METAFILE_EXT));
@@ -226,9 +215,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 .setNodeFilter(node -> node.consistentId().toString().endsWith("0"))).put(i, i);
         }
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
         IdleVerifyResultV2 res = snp(ig0).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
@@ -249,9 +236,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(PART_ID));
@@ -325,9 +310,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 setAffinity(new RendezvousAffinityFunction(false, 1)),
             CACHE_KEYS_RANGE);
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -379,9 +362,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
                 setAffinity(new RendezvousAffinityFunction(false, 1)), CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
@@ -485,9 +466,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         db.waitForCheckpoint("test-checkpoint");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(PART_ID));
@@ -513,9 +492,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(1, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]), ccfg);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
             new VisorIdleVerifyTaskArg(new HashSet<>(singletonList(ccfg.getName())),
@@ -591,9 +568,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         startClientGrid();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int iterations = 10;
 
@@ -646,9 +621,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]),
             ccfg1, ccfg2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 

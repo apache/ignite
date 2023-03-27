@@ -127,9 +127,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testSnapshotRestoringFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        snp(ig).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME);
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -192,9 +190,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testValidatingSnapshotFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME);
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -269,9 +265,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testStartFromSnapshotFailedWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME);
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -324,9 +318,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         addCache(encryptedFirst);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
         awaitPartitionMapExchange();
 
@@ -352,9 +344,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
                 grid(g).context().encryption().reencryptionFuture(CU.cacheId(dfltCacheCfg.getName())).get();
         }
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
 
         ig.cache(dfltCacheCfg.getName()).destroy();
 
@@ -389,9 +379,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteFuture<Void> fut;
 
         if (restore) {
-            grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-            checkSnapshot(SNAPSHOT_NAME);
+            createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
             grid(1).cache(dfltCacheCfg.getName()).destroy();
 
@@ -434,9 +422,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         startGrid(G.allGrids().size());
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
         grid(2).destroyCache(dfltCacheCfg.getName());
 
@@ -501,9 +487,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         CacheConfiguration<?, ?> ccfg = addCache(false);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
         grid(1).cache(DEFAULT_CACHE_NAME).destroy();
         grid(1).cache(CACHE2).destroy();

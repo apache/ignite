@@ -221,7 +221,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             fut.get();
 
-            checkSnapshot(SNAPSHOT_NAME);
+            checkSnapshot(SNAPSHOT_NAME, null);
 
             waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
         }
@@ -290,9 +290,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }, 5, "atomic-cache-put-");
 
         try {
-            ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-            checkSnapshot(SNAPSHOT_NAME);
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
         }
         finally {
             txLoadFut.cancel();
@@ -398,9 +396,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         try {
             U.await(txStarted);
 
-            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-            checkSnapshot(SNAPSHOT_NAME);
+            createAndCheckSnapshot(grid(0), SNAPSHOT_NAME);
         }
         finally {
             stop.set(true);
@@ -432,9 +428,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.getOrCreateCache(ccfg).put(i, i);
 
-        ig0.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -547,9 +541,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             if (inc) {
                 assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
-                ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-                checkSnapshot(SNAPSHOT_NAME);
+                createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
             }
 
             BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
@@ -578,9 +570,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testSnapshotExistsException() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(),
@@ -704,10 +694,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty()
         );
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
-            .get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -736,7 +723,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        checkSnapshot(SNAPSHOT_NAME);
+        checkSnapshot(SNAPSHOT_NAME, null);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -786,10 +773,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             String snpPath = cfgPath ? null : snpDir.getAbsolutePath();
 
-            ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, snpPath, false, onlyPrimary).get();
-
-            checkSnapshot(SNAPSHOT_NAME, snpPath);
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME, snpPath);
 
             stopAllGrids();
 
@@ -933,10 +917,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         stopGrid(2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary)
-            .get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -960,9 +941,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, Integer::new, ccfg1, ccfg2);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -1143,9 +1122,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             comps.put(((IgniteEx)ig).localNode().id(), comp);
         }
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         for (Ignite ig : G.allGrids()) {
             ((IgniteEx)ig).context().cache().context().exchange()
@@ -1177,9 +1154,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         // Yet another non-baseline.
         startGrid(G.allGrids().size());
 
-        snp(nonBaseLineNode).createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(nonBaseLineNode, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -1196,9 +1171,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
         IgniteEx clnt = startClientGrid(2);
 
-        clnt.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(clnt, SNAPSHOT_NAME);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
@@ -1268,10 +1241,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotFinishedTryCancel() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
-
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
         ignite.snapshot().cancelSnapshot(SNAPSHOT_NAME).get();
 
         stopAllGrids();

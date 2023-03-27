@@ -579,7 +579,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
 
         if (!skipCheck)
-            checkSnapshot(SNAPSHOT_NAME);
+            checkSnapshot(SNAPSHOT_NAME, null);
 
         ignite.cache(dfltCacheCfg.getName()).destroy();
 
@@ -588,9 +588,29 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return ignite;
     }
 
-    /** @param snpName Snapshot name. */
-    protected void checkSnapshot(String snpName) throws IgniteCheckedException {
-        checkSnapshot(snpName, null);
+    /** */
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName) throws IgniteCheckedException {
+        createAndCheckSnapshot(ig, snpName, null);
+    }
+
+    /** */
+    protected void createAndCheckSnapshot(IgniteEx ig, String snpName, String snpPath) throws IgniteCheckedException {
+        createAndCheckSnapshot(ig, snpName, snpPath, 0);
+    }
+
+    /** */
+    protected void createAndCheckSnapshot(
+        IgniteEx ig,
+        String snpName,
+        String snpPath,
+        long timeout
+    ) throws IgniteCheckedException {
+        if (timeout == 0)
+            ig.snapshot().createSnapshot(snpName, onlyPrimary).get();
+        else
+            ig.snapshot().createSnapshot(snpName, onlyPrimary).get(timeout);
+
+        checkSnapshot(snpName, snpPath);
     }
 
     /** @param snpName Snapshot name. */

@@ -60,9 +60,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key),
             txFilteredCache("indexed"));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
         IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
@@ -89,9 +87,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
             cache2.put(i, new Account(i, i));
         }
 
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get(TIMEOUT);
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(grid(0), SNAPSHOT_NAME, null, TIMEOUT);
 
         IdleVerifyResultV2 res = grid(0).context().cache().context().snapshotMgr()
             .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();

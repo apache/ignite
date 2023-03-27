@@ -66,9 +66,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         ignite.context().distributedMetastorage().write("key", "value");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -120,9 +118,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                 }
             });
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME, onlyPrimary).get();
-
-        checkSnapshot(SNAPSHOT_NAME);
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stop.set(true);
         updFut.get();
