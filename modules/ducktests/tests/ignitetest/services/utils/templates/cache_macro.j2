@@ -1,0 +1,47 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+{% import 'misc_macro.j2' as misc_utils %}
+
+{% macro cache_configs(caches) %}
+    {% if caches %}
+        <property name="cacheConfiguration">
+            <list>
+                {% for cache in caches %}
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="{{ cache.name }}"/>
+                    {% if cache.cache_mode == 'PARTITIONED' %}
+                        <property name="backups" value="{{ cache.backups or 0 }}"/>
+                    {% endif %}
+                    <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
+                    <property name="statisticsEnabled" value="{{ cache.statistics_enabled }}"/>
+                    {% if cache.affinity %}
+                    <property name="affinity">
+                        {{ misc_utils.bean(cache.affinity) }}
+                    </property>
+                    {% endif %}
+                    {% if cache.affinity_mapper %}
+                    <property name="affinityMapper">
+                        {{ misc_utils.bean(cache.affinity_mapper) }}
+                    </property>
+                    {% endif %}
+                </bean>
+                {% endfor %}
+            </list>
+        </property>
+    {% endif %}
+{% endmacro %}

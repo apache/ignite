@@ -22,9 +22,9 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -39,7 +39,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Interop data streamer wrapper.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** Policy: continue. */
     private static final int PLC_CONTINUE = 0;
@@ -85,6 +85,18 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_LISTEN_TOPOLOGY = 11;
+
+    /** */
+    private static final int OP_GET_TIMEOUT = 12;
+
+    /** */
+    private static final int OP_SET_TIMEOUT = 13;
+
+    /** */
+    private static final int OP_PER_THREAD_BUFFER_SIZE = 14;
+
+    /** */
+    private static final int OP_SET_PER_THREAD_BUFFER_SIZE = 15;
 
     /** Cache name. */
     private final String cacheName;
@@ -177,7 +189,12 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_SET_PER_NODE_BUFFER_SIZE:
-                ldr.perNodeBufferSize((int) val);
+                ldr.perNodeBufferSize((int)val);
+
+                return TRUE;
+            
+            case OP_SET_PER_THREAD_BUFFER_SIZE:
+                ldr.perThreadBufferSize((int)val);
 
                 return TRUE;
 
@@ -187,7 +204,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_SET_PER_NODE_PARALLEL_OPS:
-                ldr.perNodeParallelOperations((int) val);
+                ldr.perNodeParallelOperations((int)val);
 
                 return TRUE;
 
@@ -209,7 +226,8 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
 
-                AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
+                AffinityTopologyVersion topVer =
+                    platformCtx.kernalContext().cache().context().exchange().lastTopologyFuture().get();
 
                 int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
 
@@ -223,12 +241,23 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
             case OP_PER_NODE_BUFFER_SIZE:
                 return ldr.perNodeBufferSize();
+            
+            case OP_PER_THREAD_BUFFER_SIZE:
+                return ldr.perThreadBufferSize();
 
             case OP_SKIP_STORE:
                 return ldr.skipStore() ? TRUE : FALSE;
 
             case OP_PER_NODE_PARALLEL_OPS:
                 return ldr.perNodeParallelOperations();
+
+            case OP_GET_TIMEOUT:
+                return ldr.timeout();
+
+            case OP_SET_TIMEOUT:
+                ldr.timeout(val);
+
+                return TRUE;
         }
 
         return super.processInLongOutLong(type, val);

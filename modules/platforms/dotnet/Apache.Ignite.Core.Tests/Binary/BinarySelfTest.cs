@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
@@ -44,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// Binary tests.
     /// </summary>
     [TestFixture]
-    public class BinarySelfTest { 
+    public class BinarySelfTest {
         /** */
         private Marshaller _marsh;
 
@@ -58,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         };
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [TestFixtureSetUp]
         public void BeforeTest()
@@ -85,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             return BinaryBasicNameMapper.FullNameInstance;
         }
-        
+
         /**
          * <summary>Check write of primitive boolean.</summary>
          */
@@ -592,7 +593,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(marsh.Unmarshal<TestEnum>(data), val);
 
-            var binEnum = marsh.Unmarshal<IBinaryObject>(data, true);
+            var binEnum = marsh.Unmarshal<IBinaryObject>(data, BinaryMode.ForceBinary);
 
             Assert.AreEqual(val, (TestEnum) binEnum.EnumValue);
         }
@@ -626,7 +627,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(vals, newVals);
         }
-        
+
         /// <summary>
         /// Test object with dates.
         /// </summary>
@@ -649,7 +650,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             DateTimeType otherObj = marsh.Unmarshal<DateTimeType>(marsh.Marshal(obj));
 
             Assert.AreEqual(obj.Utc, otherObj.Utc);
-            Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);            
+            Assert.AreEqual(obj.UtcNull, otherObj.UtcNull);
             Assert.AreEqual(obj.UtcArr, otherObj.UtcArr);
 
             Assert.AreEqual(obj.UtcRaw, otherObj.UtcRaw);
@@ -672,7 +673,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Check exception with non-UTC date
             var stream = new BinaryHeapStream(128);
             var writer = _marsh.StartMarshal(stream);
-            Assert.Throws<InvalidOperationException>(() => writer.WriteTimestamp(DateTime.Now));
+            Assert.Throws<BinaryObjectException>(() => writer.WriteTimestamp(DateTime.Now));
         }
 
         /**
@@ -722,7 +723,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 },
                 Objects = new object[] {1, 2, "3", 4.4}
             };
-            
+
             var data = marsh.Marshal(obj);
 
             var result = marsh.Unmarshal<GenericCollectionsType<PrimitiveFieldType, SerializableObject>>(data);
@@ -785,7 +786,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestProperty()
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
+            ICollection<BinaryTypeConfiguration> typeCfgs =
                 new List<BinaryTypeConfiguration>();
 
             typeCfgs.Add(new BinaryTypeConfiguration(typeof(PropertyType)));
@@ -1079,7 +1080,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 },
                 CompactFooter = GetCompactFooter()
             });
-            
+
             var obj = new CollectionsType
             {
                 Hashtable = new Hashtable {{1, 2}, {3, 4}},
@@ -1128,6 +1129,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(obj, marsh.Unmarshal<CollectionsType>(marsh.Marshal(obj)));
 
             obj.Col2 = new TestList();
+            obj.Hashtable = new TestHashTable();
+
+            Assert.AreEqual(obj, marsh.Unmarshal<CollectionsType>(marsh.Marshal(obj)));
+
+            // Test custom collections.
+            obj.Col3 = new TestList {1, "2"};
+            obj.Hashtable2 = new TestHashTable {{1, "2"}};
 
             Assert.AreEqual(obj, marsh.Unmarshal<CollectionsType>(marsh.Marshal(obj)));
         }
@@ -1294,8 +1302,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             HandleOuter newOuter = outerObj.Deserialize<HandleOuter>();
 
-            Assert.IsFalse(newOuter == newOuter.Inner.Outer);
-            Assert.IsFalse(newOuter == newOuter.Inner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
             Assert.IsFalse(newOuter == newOuter.RawInner.RawOuter);
 
@@ -1305,7 +1311,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner.Outer == newOuter.RawInner.RawOuter);
 
             Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.Inner);
-            Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.RawInner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.Inner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
@@ -1527,47 +1532,98 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Writes objects of various sizes to test schema compaction 
-        /// (where field offsets can be stored as 1, 2 or 4 bytes).
+        /// Tests the jagged arrays.
         /// </summary>
         [Test]
-        public void TestCompactSchema()
+        public void TestJaggedArrays()
         {
-            var marsh = new Marshaller(new BinaryConfiguration
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>
-                {
-                    new BinaryTypeConfiguration(typeof (SpecialArray)),
-                    new BinaryTypeConfiguration(typeof (SpecialArrayMarshalAware))
-                }
-            });
+            int[][] ints = {new[] {1, 2, 3}, new[] {4, 5, 6}};
+            Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
 
-            var dt = new SpecialArrayMarshalAware();
+            uint[][][] uints = {new[] {new uint[] {1, 2, 3}, new uint[] {4, 5}}};
+            Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
 
-            foreach (var i in new[] {1, 5, 10, 13, 14, 15, 100, 200, 1000, 5000, 15000, 30000})
-            {
-                dt.NGuidArr = Enumerable.Range(1, i).Select(x => (Guid?) Guid.NewGuid()).ToArray();
-                dt.NDateArr = Enumerable.Range(1, i).Select(x => (DateTime?) DateTime.Now.AddDays(x)).ToArray();
+            PropertyType[][][] objs = {new[] {new[] {new PropertyType {Field1 = 42}}}};
+            Assert.AreEqual(42, TestUtils.SerializeDeserialize(objs)[0][0][0].Field1);
 
-                var bytes = marsh.Marshal(dt);
+            var obj = new MultidimArrays { JaggedInt = ints, JaggedUInt = uints };
+            var resObj = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj.JaggedInt, resObj.JaggedInt);
+            Assert.AreEqual(obj.JaggedUInt, resObj.JaggedUInt);
 
-                var res = marsh.Unmarshal<SpecialArrayMarshalAware>(bytes);
-
-                CollectionAssert.AreEquivalent(dt.NGuidArr, res.NGuidArr);
-                CollectionAssert.AreEquivalent(dt.NDateArr, res.NDateArr);
-            }
+            var obj2 = new MultidimArraysBinarizable { JaggedInt = ints, JaggedUInt = uints };
+            var resObj2 = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj2.JaggedInt, resObj2.JaggedInt);
+            Assert.AreEqual(obj2.JaggedUInt, resObj2.JaggedUInt);
         }
 
+        /// <summary>
+        /// Tests the multidimensional arrays.
+        /// </summary>
         [Test]
-        public void TestBinaryConfigurationValidation()
+        public void TestMultidimensionalArrays()
         {
-            var cfg = new BinaryConfiguration(typeof (PropertyType))
+            int[,] ints = {{1, 2, 3}, {4, 5, 6}};
+            Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
+
+            uint[,,] uints = {{{1, 2, 3}, {4, 5, 6}}, {{7, 8, 9}, {10, 11, 12}}};
+            Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
+
+            PropertyType[,] objs = {{new PropertyType {Field1 = 123}}};
+            Assert.AreEqual(123, TestUtils.SerializeDeserialize(objs)[0, 0].Field1);
+
+            var obj = new MultidimArrays { MultidimInt = ints, MultidimUInt = uints };
+            var resObj = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj.MultidimInt, resObj.MultidimInt);
+            Assert.AreEqual(obj.MultidimUInt, resObj.MultidimUInt);
+
+            var obj2 = new MultidimArraysBinarizable { MultidimInt = ints, MultidimUInt = uints };
+            var resObj2 = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj2.MultidimInt, resObj2.MultidimInt);
+            Assert.AreEqual(obj2.MultidimUInt, resObj2.MultidimUInt);
+        }
+
+        /// <summary>
+        /// Tests pointer types.
+        /// </summary>
+        [Test]
+        public unsafe void TestPointers([Values(false, true)] bool raw)
+        {
+            // Values.
+            var vals = new[] {IntPtr.Zero, new IntPtr(long.MinValue), new IntPtr(long.MaxValue)};
+            foreach (var intPtr in vals)
             {
-                Types = new[] {typeof(PropertyType).AssemblyQualifiedName}
+                Assert.AreEqual(intPtr, TestUtils.SerializeDeserialize(intPtr));
+            }
+
+            var uvals = new[] {UIntPtr.Zero, new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)};
+            foreach (var uintPtr in uvals)
+            {
+                Assert.AreEqual(uintPtr, TestUtils.SerializeDeserialize(uintPtr));
+            }
+
+            // Type fields.
+            var ptrs = new Pointers
+            {
+                ByteP = (byte*) 123,
+                IntP = (int*) 456,
+                VoidP = (void*) 789,
+                IntPtr = new IntPtr(long.MaxValue),
+                UIntPtr = new UIntPtr(ulong.MaxValue),
+                IntPtrs = new[] {new IntPtr(long.MinValue)},
+                UIntPtrs = new[] {new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)}
             };
 
-            // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
+            var res = TestUtils.SerializeDeserialize(ptrs, raw);
+
+            Assert.IsTrue(ptrs.ByteP == res.ByteP);
+            Assert.IsTrue(ptrs.IntP == res.IntP);
+            Assert.IsTrue(ptrs.VoidP == res.VoidP);
+
+            Assert.AreEqual(ptrs.IntPtr, res.IntPtr);
+            Assert.AreEqual(ptrs.IntPtrs, res.IntPtrs);
+            Assert.AreEqual(ptrs.UIntPtr, res.UIntPtr);
+            Assert.AreEqual(ptrs.UIntPtrs, res.UIntPtrs);
         }
 
         /// <summary>
@@ -1577,6 +1633,49 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestCompactFooterSetting()
         {
             Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
+        }
+
+        /// <summary>
+        /// Tests serializing/deserializing objects with IBinaryObject fields.
+        /// </summary>
+        [Test]
+        public void TestBinaryField()
+        {
+            byte[] dataInner = _marsh.Marshal(new BinaryObjectWrapper());
+
+            IBinaryObject innerObject = _marsh.Unmarshal<IBinaryObject>(dataInner, BinaryMode.ForceBinary);
+            BinaryObjectWrapper inner = innerObject.Deserialize<BinaryObjectWrapper>();
+
+            Assert.NotNull(inner);
+
+            byte[] dataOuter = _marsh.Marshal(new BinaryObjectWrapper() { Val = innerObject });
+
+            IBinaryObject outerObject = _marsh.Unmarshal<IBinaryObject>(dataOuter, BinaryMode.ForceBinary);
+            BinaryObjectWrapper outer = outerObject.Deserialize<BinaryObjectWrapper>();
+
+            Assert.NotNull(outer);
+            Assert.IsTrue(outer.Val.Equals(innerObject));
+        }
+
+        /// <summary>
+        /// Tests serializing/deserializing object lists with nested lists.
+        /// </summary>
+        [Test]
+        public void TestNestedLists()
+        {
+            var list = new[]
+            {
+                new NestedList {Inner = new List<object>()},
+                new NestedList {Inner = new List<object>()}
+            };
+
+            var bytes = _marsh.Marshal(list);
+            var res = _marsh.Unmarshal<NestedList[]>(bytes);
+
+            Assert.AreEqual(2, res.Length);
+            Assert.AreEqual(0, res[0].Inner.Count);
+            Assert.AreEqual(0, res[1].Inner.Count);
+            Assert.AreNotSame(res[0].Inner, res[1].Inner);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
@@ -1603,7 +1702,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(expKeep, deserialized1 == deserialized2);
         }
 
-        private void CheckHandlesConsistency(HandleOuter outer, HandleInner inner, HandleOuter newOuter, 
+        private void CheckHandlesConsistency(HandleOuter outer, HandleInner inner, HandleOuter newOuter,
             HandleInner newInner)
         {
             Assert.True(newOuter != null);
@@ -1620,7 +1719,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(inner.After, newInner.After);
             Assert.AreEqual(inner.RawBefore, newInner.RawBefore);
             Assert.True(newInner.RawOuter == newOuter);
-            Assert.AreEqual(inner.RawAfter, newInner.RawAfter);            
+            Assert.AreEqual(inner.RawAfter, newInner.RawAfter);
         }
 
         private static void CheckObject(Marshaller marsh, OuterObjectType outObj, InnerObjectType inObj)
@@ -1650,7 +1749,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     return true;
 
                 var type = obj as OuterObjectType;
-                
+
                 return type != null && Equals(InObj, type.InObj);
             }
 
@@ -1698,7 +1797,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public ArrayList Col2 { get; set; }
 
+            public TestList Col3 { get; set; }
+
             public Hashtable Hashtable { get; set; }
+
+            public TestHashTable Hashtable2 { get; set; }
 
             public Dictionary<int, string> Dict { get; set; }
 
@@ -1716,8 +1819,8 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 var that = obj as CollectionsType;
 
-                return that != null 
-                    && CompareCollections(Col1, that.Col1) 
+                return that != null
+                    && CompareCollections(Col1, that.Col1)
                     && CompareCollections(Col2, that.Col2)
                     && CompareCollections(Hashtable, that.Hashtable)
                     && CompareCollections(Dict, that.Dict)
@@ -1767,7 +1870,21 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         public class TestList : ArrayList
         {
+            // No-op.
+        }
 
+        public class TestHashTable : Hashtable
+        {
+            public TestHashTable()
+            {
+                // No-op.
+            }
+
+            // ReSharper disable once UnusedMember.Global
+            protected TestHashTable(SerializationInfo info, StreamingContext context) : base(info, context)
+            {
+                // No-op.
+            }
         }
 
         private static bool CompareCollections(ICollection col1, ICollection col2)
@@ -1876,7 +1993,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         [Serializable]
-        public class PrimitiveFieldType 
+        public class PrimitiveFieldType
         {
             public PrimitiveFieldType()
             {
@@ -2359,15 +2476,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 writer.WriteString("before", Before);
 
-                writer0.WithDetach(w => w.WriteObject("inner", Inner));
-                
+                writer0.WriteObject("inner", Inner);
+
                 writer.WriteString("after", After);
 
                 IBinaryRawWriter rawWriter = writer.GetRawWriter();
 
                 rawWriter.WriteString(RawBefore);
 
-                writer0.WithDetach(w => w.WriteObject(RawInner));
+                writer0.WriteObjectDetached(RawInner);
 
                 rawWriter.WriteString(RawAfter);
             }
@@ -2436,12 +2553,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
-        public enum TestEnum
-        {
-            Val1, Val2, Val3 = 10
-        }
-
-        public enum TestEnum2
+        public enum TestEnum : short
         {
             Val1, Val2, Val3 = 10
         }
@@ -2629,6 +2741,64 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 return !left.Equals(right);
             }
+        }
+
+        private class MultidimArrays
+        {
+            public int[][] JaggedInt { get; set; }
+            public uint[][][] JaggedUInt { get; set; }
+
+            public int[,] MultidimInt { get; set; }
+            public uint[,,] MultidimUInt { get; set; }
+        }
+
+        private class MultidimArraysBinarizable : IBinarizable
+        {
+            public int[][] JaggedInt { get; set; }
+            public uint[][][] JaggedUInt { get; set; }
+
+            public int[,] MultidimInt { get; set; }
+            public uint[,,] MultidimUInt { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteObject("JaggedInt", JaggedInt);
+                writer.WriteObject("JaggedUInt", JaggedUInt);
+
+                writer.WriteObject("MultidimInt", MultidimInt);
+                writer.WriteObject("MultidimUInt", MultidimUInt);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                JaggedInt = reader.ReadObject<int[][]>("JaggedInt");
+                JaggedUInt = reader.ReadObject<uint[][][]>("JaggedUInt");
+
+                MultidimInt = reader.ReadObject<int[,]>("MultidimInt");
+                MultidimUInt = reader.ReadObject<uint[,,]>("MultidimUInt");
+            }
+        }
+
+        private unsafe class Pointers
+        {
+            public IntPtr IntPtr { get; set; }
+            public IntPtr[] IntPtrs { get; set; }
+            public UIntPtr UIntPtr { get; set; }
+            public UIntPtr[] UIntPtrs { get; set; }
+            public byte* ByteP { get; set; }
+            public int* IntP { get; set; }
+            public void* VoidP { get; set; }
+        }
+
+        private class BinaryObjectWrapper
+        {
+            public IBinaryObject Val;
+        }
+
+        private class NestedList
+        {
+            // ReSharper disable once CollectionNeverUpdated.Local
+            public IList<object> Inner { get; set; }
         }
     }
 }

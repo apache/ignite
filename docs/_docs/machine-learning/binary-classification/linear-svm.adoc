@@ -1,0 +1,52 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Linear SVM (Support Vector Machine)
+
+Support Vector Machines (SVMs) are supervised learning models with associated learning algorithms that analyze data used for classification and regression analysis.
+
+Given a set of training examples, each marked as belonging to one or the other of two categories, an SVM training algorithm builds a model that assigns new examples to one category or the other, making it a non-probabilistic binary linear classifier.
+
+Apache Ignite Machine Learning module only supports Linear SVM. For more information look at SVM in link:https://en.wikipedia.org/wiki/Support_vector_machine[Wikipedia].
+
+== Model
+
+A Model in the case of SVM is represented by the class `SVMLinearClassificationModel`. It enables a prediction to be made for a given vector of features, in the following way:
+
+
+[source, java]
+----
+SVMLinearClassificationModel model = ...;
+
+double prediction = model.predict(observation);
+----
+
+Presently Ignite supports a few parameters for SVMLinearClassificationModel:
+
+* `isKeepingRawLabels` - controls the output label format: -1 and +1 for false value and raw distances from the separating hyperplane (default value: false)
+* `threshold` - a threshold to assign +1 label to the observation if the raw value is more than this threshold (default value: 0.0)
+
+
+[source, java]
+----
+SVMLinearClassificationModel model = ...;
+
+double prediction = model
+  .withRawLabels(true)
+  .withThreshold(5)
+  .predict(observation);
+----
+
+
+

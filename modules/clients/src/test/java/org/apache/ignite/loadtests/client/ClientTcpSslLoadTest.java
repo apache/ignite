@@ -20,10 +20,14 @@ package org.apache.ignite.loadtests.client;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Makes a long run to ensure stability and absence of memory leaks.
  */
+// Load test.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /** Test duration. */
     private static final long TEST_RUN_TIME = 8 * 60 * 60 * 1000;
@@ -37,6 +41,7 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongRun() throws Exception {
         long start = System.currentTimeMillis();
 
@@ -74,12 +79,12 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /**
      * Clears caches on all nodes.
      */
-    @SuppressWarnings("ConstantConditions")
     private void clearCaches() {
         for (int i = 0; i < NODES_CNT; i++)
             try {
                 grid(i).cache(PARTITIONED_CACHE_NAME).clear();
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 log.error("Cache clear failed.", e);
             }
     }

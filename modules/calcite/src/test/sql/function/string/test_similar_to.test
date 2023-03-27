@@ -1,0 +1,137 @@
+# name: test/sql/function/string/test_similar_to.test
+# description: Test SIMILAR TO statement
+# group: [string]
+
+query T
+SELECT 'aaa' SIMILAR TO 'bbb'
+----
+false
+
+query T
+SELECT 'aaa' SIMILAR TO 'aaa'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO '.*'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO 'a.*'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO '.*a'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO '.*b'
+----
+false
+
+query T
+SELECT 'aaa' SIMILAR TO 'b.*'
+----
+false
+
+query T
+SELECT 'aaa' SIMILAR TO 'a[a-z]a'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO 'a[a-z]{2}'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO 'a[a-z].*'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO '[a-z][a-z].*'
+----
+true
+
+query T
+SELECT 'aaa' SIMILAR TO '[a-z]{3}'
+----
+true
+
+query T
+SELECT 'aaa' NOT SIMILAR TO '[b-z]{3}'
+----
+true
+
+query T
+SELECT 'aaa' ~ 'aaa'
+----
+true
+
+query T
+SELECT 'aaa' !~ 'bbb'
+----
+true
+
+# posix regex can match any part of expression
+query T
+SELECT 'aaa' ~ '^a'
+----
+true
+
+query T
+SELECT 'aaa' ~ '^a+'
+----
+true
+
+query T
+SELECT 'aaa' ~ '(a|b)*'
+----
+true
+
+query T
+SELECT 'abc' ~ '^(b|c)'
+----
+false
+
+# Test SIMILAR TO statement with expressions
+statement ok
+CREATE TABLE strings (id INTEGER, s VARCHAR, p VARCHAR);
+
+statement ok
+INSERT INTO strings VALUES(0, 'aaa', 'a[a-z]a'), (1, 'abab', 'ab.*'), (2, 'aaa', 'a[a-z]a'), (3, 'aaa', '.*b.*');
+
+
+query T
+SELECT s FROM strings WHERE s SIMILAR TO 'ab.*' ORDER BY id
+----
+abab
+
+query T
+SELECT s FROM strings WHERE 'aba' SIMILAR TO p ORDER BY id
+----
+aaa
+abab
+aaa
+aaa
+
+query T
+SELECT s FROM strings WHERE s SIMILAR TO p ORDER BY id
+----
+aaa
+abab
+aaa
+
+query T
+SELECT s FROM strings WHERE s NOT SIMILAR TO p ORDER BY id
+----
+aaa
+
+# invalid SIMILAR TO expression
+statement error
+SELECT s FROM strings WHERE s SIMILAR TO 'ab.*%' {escape ''}
+

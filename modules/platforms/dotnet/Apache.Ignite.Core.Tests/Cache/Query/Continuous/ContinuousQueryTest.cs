@@ -21,27 +21,62 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests continuous queries.
+    /// Tests continuous queries with security enabled and disabled.
     /// </summary>
+    [TestFixture(false)]
+    [TestFixture(true)]
     [Category(TestUtils.CategoryIntensive)]
     public class ContinuousQueryTest
     {
+        /** Flag to enable Ignite security. */
+        private readonly bool _enableSecurity;
+
+        /** Logger for tracking errors. */
+        private readonly ListLogger _logger = new ListLogger(new ConsoleLogger())
+        {
+            EnabledLevels = new[] {LogLevel.Error}
+        };
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ContinuousQueryTest"/>. 
+        /// </summary>
+        public ContinuousQueryTest(bool enableSecurity)
+        {
+            _enableSecurity = enableSecurity;
+        }
+        
+        /// <summary>
+        /// Clears persistence directory before and after the test.
+        /// </summary>
+        [TestFixtureSetUp]
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            TestUtils.ClearWorkDir();
+        }
+
         /// <summary>
         /// Tests same query on multiple nodes.
         /// This tests verifies that there are no exception on Java side during event delivery.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSameQueryMultipleNodes()
         {
             using (var ignite = StartIgnite())
             {
+                ignite.GetCluster().SetActive(true);
+
                 var cache = ignite.GetOrCreateCache<Guid, Data>("data");
                 cache.QueryContinuous(new ContinuousQuery<Guid, Data>(new Listener()));
 
@@ -57,6 +92,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     }
                 }
             }
+
+            Assert.AreEqual(0,
+                _logger.Entries.FindAll(e => e.Message.Contains("CacheEntryEventFilter failed")).Count);
         }
 
         /// <summary>
@@ -69,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             cache.Put(entry.Id, entry);
 
             // Wait for events.
-            Thread.Sleep(100);
+            TestUtils.WaitForTrueCondition(() => Listener.Events.Count == 2);
 
             ICacheEntryEvent<Guid, Data> e;
 
@@ -84,13 +122,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Starts the ignite.
         /// </summary>
-        private static IIgnite StartIgnite()
+        private IIgnite StartIgnite()
         {
-            return Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new Core.Binary.BinaryConfiguration(typeof(Data)),
-                AutoGenerateIgniteInstanceName = true
+                BinaryConfiguration = new BinaryConfiguration(typeof(Data)),
+                AutoGenerateIgniteInstanceName = true,
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        PersistenceEnabled = _enableSecurity,
+                        Name = DataStorageConfiguration.DefaultDataRegionName,
+                    }
+                },
+                AuthenticationEnabled = _enableSecurity,
+                Logger = _logger,
+                IsActiveOnStart = false
             });
+            
+            ignite.GetCluster().SetBaselineAutoAdjustEnabledFlag(true);
+
+            return ignite;
         }
 
         private class Data
@@ -100,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
         private class Listener : ICacheEntryEventListener<Guid, Data>
         {
-            public static readonly ConcurrentStack<ICacheEntryEvent<Guid, Data>> Events 
+            public static readonly ConcurrentStack<ICacheEntryEvent<Guid, Data>> Events
                 = new ConcurrentStack<ICacheEntryEvent<Guid, Data>>();
 
             public void OnEvent(IEnumerable<ICacheEntryEvent<Guid, Data>> evts)

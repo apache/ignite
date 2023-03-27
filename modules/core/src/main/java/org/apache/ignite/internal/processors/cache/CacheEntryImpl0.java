@@ -47,9 +47,8 @@ public class CacheEntryImpl0<K, V> implements Cache.Entry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
-        if(cls.isAssignableFrom(getClass()))
+        if (cls.isAssignableFrom(getClass()))
             return cls.cast(this);
         else if (cls.isAssignableFrom(CacheEntry.class) && e instanceof GridCacheVersionAware)
             return (T)new CacheEntryImplEx<>(e.getKey(), e.getValue(), ((GridCacheVersionAware)e).version());
@@ -58,7 +57,7 @@ public class CacheEntryImpl0<K, V> implements Cache.Entry<K, V> {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "CacheEntry [key=" + getKey() + ", val=" + getValue() + ']';
     }
 }

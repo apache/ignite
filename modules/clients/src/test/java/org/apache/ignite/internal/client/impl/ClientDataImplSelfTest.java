@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.impl;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.client.GridClientData;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
@@ -33,6 +34,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -54,6 +56,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -75,6 +78,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -88,6 +92,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -101,6 +106,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -112,6 +118,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -123,6 +130,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -134,6 +142,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -145,6 +154,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -158,6 +168,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -169,6 +180,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAll() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -182,6 +194,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAllAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -195,6 +208,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -216,6 +230,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplaceAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -233,6 +248,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCas() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -246,6 +262,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCasAsync() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -257,6 +274,7 @@ public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

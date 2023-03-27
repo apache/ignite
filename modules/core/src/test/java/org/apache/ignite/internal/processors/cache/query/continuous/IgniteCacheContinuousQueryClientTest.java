@@ -18,24 +18,28 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.PersonBinarylizable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -47,28 +51,36 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
+    private AtomicBoolean failure = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        cfg.setFailureHandler(new AbstractFailureHandler() {
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                failure.set(true);
+
+                return true;
+            }
+        });
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setAtomicityMode(atomicityMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setClientMode(client);
-
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */
@@ -81,16 +93,13 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoins() throws Exception {
         startGrids(2);
 
-        client = true;
-
         final int CLIENT_ID = 3;
 
-        Ignite clientNode = startGrid(CLIENT_ID);
-
-        client = false;
+        Ignite clientNode = startClientGrid(CLIENT_ID);
 
         final CacheEventListener lsnr = new CacheEventListener();
 
@@ -107,6 +116,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined1 = startGrid(4);
 
+            awaitPartitionMapExchange();
+
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
             joinedCache1.put(primaryKey(joinedCache1), 1);
@@ -116,6 +127,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined2 = startGrid(5);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache2 = joined2.cache(DEFAULT_CACHE_NAME);
 
@@ -134,16 +147,13 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinsRestartQuery() throws Exception {
         startGrids(2);
 
-        client = true;
-
         final int CLIENT_ID = 3;
 
-        Ignite clientNode = startGrid(CLIENT_ID);
-
-        client = false;
+        Ignite clientNode = startClientGrid(CLIENT_ID);
 
         for (int i = 0; i < 10; i++) {
             log.info("Start iteration: " + i);
@@ -159,6 +169,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined1 = startGrid(4);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
@@ -191,16 +203,13 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeft() throws Exception {
         startGrids(3);
 
-        client = true;
-
         final int CLIENT_ID = 3;
 
-        Ignite clnNode = startGrid(CLIENT_ID);
-
-        client = false;
+        Ignite clnNode = startClientGrid(CLIENT_ID);
 
         IgniteOutClosure<IgniteCache<Integer, Integer>> rndCache =
             new IgniteOutClosure<IgniteCache<Integer, Integer>>() {
@@ -248,6 +257,35 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
         }
 
         tryClose(cur);
+    }
+
+
+    /**
+     * Checks that deserialization error after client node leaves does not fail server node.
+     */
+    @Test
+    public void testFailedSerializationAfterNodeLeaves() throws Exception {
+        startGrids(1);
+
+        final int CLIENT_ID = 1;
+
+        Ignite clientNode = startClientGrid(CLIENT_ID);
+
+        IgniteCache<Integer, PersonBinarylizable> cache = clientNode.cache(DEFAULT_CACHE_NAME);
+
+        PersonBinarylizable bin = new PersonBinarylizable("1", false, true, true);
+
+        cache.query(new ScanQuery<>((k, v) -> !v.equals(bin)));
+
+        stopGrid(1);
+
+        Thread.sleep(1100);
+
+        assertNotNull(grid(0).cache(DEFAULT_CACHE_NAME));
+
+        assertFalse(failure.get());
+
+        stopGrid(0);
     }
 
     /**

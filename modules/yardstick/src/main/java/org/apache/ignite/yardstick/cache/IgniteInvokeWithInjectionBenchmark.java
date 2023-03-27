@@ -17,14 +17,13 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.Map;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
-
-import javax.cache.processor.MutableEntry;
-import java.util.Map;
 
 /**
  * Ignite benchmark that performs invoke operations.
@@ -33,6 +32,8 @@ public class IgniteInvokeWithInjectionBenchmark extends IgniteCacheAbstractBench
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.invoke(key, new SetValueEntryProcessor(new SampleValue(key)));
 

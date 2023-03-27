@@ -1,0 +1,96 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Installing Using DEP and RPM Package
+
+Apache Ignite can be installed from the official link:https://www.apache.org/dist/ignite/rpm[RPM] or link:https://www.apache.org/dist/ignite/deb[DEB] repositories.
+
+== Installing Deb Package
+
+Configure the repository:
+
+[source, shell]
+----
+sudo apt update
+sudo apt install gnupg ca-certificates --no-install-recommends -y
+----
+
+
+[source, shell]
+----
+sudo bash -c 'cat <<EOF > /etc/apt/sources.list.d/ignite.list
+deb http://apache.org/dist/ignite/deb/ apache-ignite main
+EOF'
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0EE62FB37A00258D
+sudo apt update
+sudo apt install apache-ignite --no-install-recommends
+----
+
+Install the Apache Ignite package:
+
+[source, shell]
+----
+sudo apt install apache-ignite --no-install-recommends
+----
+
+This will install the following files into your system:
+
+[cols="1,1,1",opts="header"]
+|===
+
+|Folder|  Mapped To|   Description
+|/usr/share/apache-ignite||        The root of Apache Ignite's installation
+|/usr/share/apache-ignite/bin||        Bin folder (scripts and executables)
+|/etc/apache-ignite | /usr/share/apache-ignite/config| Default configuration files
+|/var/log/apache-ignite|  /var/lib/apache-ignite/log|  Log directory
+|/usr/lib/apache-ignite|  /usr/share/apache-ignite/libs|   Core and optional libraries
+|/var/lib/apache-ignite|  /usr/share/apache-ignite/work|   Ignite work directory
+|/usr/share/doc/apache-ignite     ||   Documentation
+|/usr/share/license/apache-ignite-{version} ||     Licenses
+|/etc/systemd/system |    systemd service configuration
+
+|===
+
+== Running Ignite as a Service
+
+NOTE: If running on Windows 10 WSL or Docker, you should start Apache Ignite as a stand-alone process (not as a service).
+//See the next section.
+
+To start an Ignite node with a custom configuration, run the following command:
+
+[source, shell]
+----
+sudo systemctl start apache-ignite@<config_name>
+----
+
+The `<config_name>` parameter specifies the path to the configuration file relative to the `/etc/apache-ignite folder`.
+
+To launch the node at system startup, run the following command:
+
+[source, shell]
+----
+sudo systemctl enable apache-ignite@<config name>
+----
+
+
+////
+== Running Ignite as a Stand-Alone Process
+
+Use the commands below to start Ignite as a stand-alone process (cd to /usr/share/apache-ignite previously).
+To change the default configuration, you can update the /etc/apache-ignite/default-config.xml file.
+The default configuration uses Multicast IP Finder; if you want to use Static IP Finder, you need to change the default config file.
+Learn more about TCP/IP Discovery in the corresponding page.
+
+////
+

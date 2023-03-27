@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+#include <iomanip>
+#include <sstream>
+
+#include <ignite/ignite_error.h>
 #include <ignite/common/utils.h>
 
 namespace ignite
@@ -87,10 +91,12 @@ namespace ignite
             return value;
         }
 
-        Date MakeDateGmt(int year, int month, int day, int hour,
+        IGNITE_FRIEND_EXPORT Date MakeDateGmt(int year, int month, int day, int hour,
             int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -102,10 +108,12 @@ namespace ignite
             return CTmToDate(date);
         }
 
-        Date MakeDateLocal(int year, int month, int day, int hour,
+        IGNITE_FRIEND_EXPORT Date MakeDateLocal(int year, int month, int day, int hour,
             int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -119,9 +127,11 @@ namespace ignite
             return CTimeToDate(localTime);
         }
 
-        Time MakeTimeGmt(int hour, int min, int sec)
+        IGNITE_FRIEND_EXPORT Time MakeTimeGmt(int hour, int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = 70;
             date.tm_mon = 0;
@@ -133,9 +143,11 @@ namespace ignite
             return CTmToTime(date);
         }
 
-        Time MakeTimeLocal(int hour, int min, int sec)
+        IGNITE_FRIEND_EXPORT Time MakeTimeLocal(int hour, int min, int sec)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = 70;
             date.tm_mon = 0;
@@ -149,10 +161,12 @@ namespace ignite
             return CTimeToTime(localTime);
         }
 
-        Timestamp MakeTimestampGmt(int year, int month, int day,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampGmt(int year, int month, int day,
             int hour, int min, int sec, long ns)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -164,10 +178,12 @@ namespace ignite
             return CTmToTimestamp(date, ns);
         }
 
-        Timestamp MakeTimestampLocal(int year, int month, int day,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampLocal(int year, int month, int day,
             int hour, int min, int sec, long ns)
         {
-            tm date = { 0 };
+            tm date;
+
+            std::memset(&date, 0, sizeof(date));
 
             date.tm_year = year - 1900;
             date.tm_mon = month - 1;
@@ -180,5 +196,81 @@ namespace ignite
 
             return CTimeToTimestamp(localTime, ns);
         }
+
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const std::string& name)
+        {
+            std::stringstream libNameBuffer;
+
+            libNameBuffer << name << Dle;
+
+            return libNameBuffer.str();
+        }
+
+        IGNITE_IMPORT_EXPORT bool AllDigits(const std::string &val)
+        {
+            std::string::const_iterator i = val.begin();
+
+            while (i != val.end() && isdigit(*i))
+                ++i;
+
+            return i == val.end();
+        }
+
+        std::string HexDump(const void *data, size_t count)
+        {
+            std::stringstream  dump;
+            size_t cnt = 0;
+            for(const uint8_t* p = (const uint8_t*)data, *e = (const uint8_t*)data + count; p != e; ++p)
+            {
+                if (cnt++ % 16 == 0)
+                {
+                    dump << std::endl;
+                }
+                dump << std::hex << std::setfill('0') << std::setw(2) << (int)*p << " ";
+            }
+            return dump.str();
+        }
+
+        void ThrowSystemError(const std::string &msg)
+        {
+            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, msg.c_str());
+        }
+
+        void ThrowLastSystemError(const std::string& description, const std::string& advice)
+        {
+            ThrowSystemError(GetLastSystemError(description, advice));
+        }
+
+        void ThrowLastSystemError(const std::string& description)
+        {
+            std::string empty;
+            ThrowLastSystemError(description, empty);
+        }
+
+        std::string FormatErrorMessage(const std::string &description, const std::string &details,
+            const std::string &advice)
+        {
+            std::stringstream messageBuilder;
+            messageBuilder << description;
+            if (!details.empty())
+                messageBuilder << ": " << details;
+
+            if (!advice.empty())
+                messageBuilder << ". " << advice;
+
+            return messageBuilder.str();
+        }
+
+        std::string GetLastSystemError(const std::string& description, const std::string& advice)
+        {
+            return FormatErrorMessage(description, GetLastSystemError(), advice);
+        }
+
+        std::string GetLastSystemError(const std::string &description)
+        {
+            std::string empty;
+            return GetLastSystemError(description, empty);
+        }
+
     }
 }

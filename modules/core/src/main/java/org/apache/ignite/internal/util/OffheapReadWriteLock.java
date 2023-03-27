@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -33,15 +34,28 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     +----------------+---------------+---------+----------+
  * </pre>
  */
-@SuppressWarnings({"NakedNotify", "SynchronizationOnLocalVariableOrMethodParameter", "CallToThreadYield", "WaitWhileNotSynced"})
 public class OffheapReadWriteLock {
+    /** @see #IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT */
+    public static final int DFLT_OFFHEAP_RWLOCK_SPIN_COUNT = 32;
+
+    /** */
+    @SystemProperty(value = "A number of spin-lock iterations to take before falling back to the blocking approach",
+        type = Long.class, defaults = "" + DFLT_OFFHEAP_RWLOCK_SPIN_COUNT)
+    public static final String IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT = "IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT";
+
+    /** */
+    @SystemProperty(value = "The OffheapReadWriteLock flag that switches between signal to writers and signal to " +
+        "random policy", defaults = "Default is false that means always signal to writers")
+    public static final String IGNITE_OFFHEAP_RANDOM_RW_POLICY = "IGNITE_OFFHEAP_RANDOM_RW_POLICY";
+
     /**
      * TODO benchmark optimal spin count.
      */
-    public static final int SPIN_CNT = IgniteSystemProperties.getInteger("IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT", 32);
+    public static final int SPIN_CNT = IgniteSystemProperties.getInteger(IGNITE_OFFHEAP_RWLOCK_SPIN_COUNT,
+        DFLT_OFFHEAP_RWLOCK_SPIN_COUNT);
 
     /** */
-    public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean("IGNITE_OFFHEAP_RANDOM_RW_POLICY", false);
+    public static final boolean USE_RANDOM_RW_POLICY = IgniteSystemProperties.getBoolean(IGNITE_OFFHEAP_RANDOM_RW_POLICY);
 
     /** Always lock tag. */
     public static final int TAG_LOCK_ALWAYS = -1;
@@ -171,6 +185,8 @@ public class OffheapReadWriteLock {
                     lockObj.lock();
 
                     try {
+                        // Note that we signal all waiters for this stripe. Since not all waiters in this
+                        // stripe/index belong to this particular lock, we can't wake up just one of them.
                         writeConditions[idx].signalAll();
                     }
                     finally {
@@ -197,6 +213,8 @@ public class OffheapReadWriteLock {
      * @param lock Lock address.
      */
     public boolean writeLock(long lock, int tag) {
+        assert tag != 0;
+
         for (int i = 0; i < SPIN_CNT; i++) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
@@ -252,12 +270,14 @@ public class OffheapReadWriteLock {
     public void writeUnlock(long lock, int tag) {
         long updated;
 
+        assert tag != 0;
+
         while (true) {
             long state = GridUnsafe.getLongVolatile(null, lock);
 
             if (lockCount(state) != -1)
                 throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
-                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
             updated = releaseWithTag(state, tag);
 
@@ -292,6 +312,8 @@ public class OffheapReadWriteLock {
      * @param idx Lock index.
      */
     private void signalNextWaiter(int writeWaitCnt, int readWaitCnt, int idx) {
+        // Note that we signal all waiters for this stripe. Since not all waiters in this stripe/index belong
+        // to this particular lock, we can't wake up just one of them.
         if (writeWaitCnt == 0) {
             Condition readCondition = readConditions[idx];
 
@@ -492,8 +514,10 @@ public class OffheapReadWriteLock {
     }
 
     /**
+     * Returns index of lock object corresponding to the stripe of this lock address.
+     *
      * @param lock Lock address.
-     * @return Lock monitor object.
+     * @return Lock monitor object that corresponds to the stripe for this lock address.
      */
     private int lockIndex(long lock) {
         return U.safeAbs(U.hash(lock)) & monitorsMask;
@@ -617,7 +641,7 @@ public class OffheapReadWriteLock {
     private long buildState(int writersWait, int readersWait, int tag, int lock) {
         assert (tag & 0xFFFF0000) == 0;
 
-        return ((long)writersWait << 48) | ((long)readersWait << 32) | ((tag & 0x0000FFFFL)  << 16) | (lock & 0xFFFFL);
+        return ((long)writersWait << 48) | ((long)readersWait << 32) | ((tag & 0x0000FFFFL) << 16) | (lock & 0xFFFFL);
     }
 
     /**

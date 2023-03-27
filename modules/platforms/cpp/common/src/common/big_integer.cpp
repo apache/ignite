@@ -56,7 +56,7 @@ namespace ignite
             mag()
         {
             assert(val != 0);
-            assert(len > 0);
+            assert(len >= 0);
             assert(sign == 1 || sign == 0 || sign == -1);
 
             if (bigEndian)
@@ -64,6 +64,13 @@ namespace ignite
                 int32_t firstNonZero = 0;
                 while (firstNonZero < len && val[firstNonZero] == 0)
                     ++firstNonZero;
+
+                if (firstNonZero == len)
+                {
+                    AssignInt64(0);
+
+                    return;
+                }
 
                 int32_t intLength = (len - firstNonZero + 3) / 4;
 
@@ -89,15 +96,19 @@ namespace ignite
                 {
                     case 4:
                         mag[intLength - 1] |= (val[b - 3] & 0xFF) << 24;
+                        // Fall-through.
 
                     case 3:
                         mag[intLength - 1] |= (val[b - 2] & 0xFF) << 16;
+                        // Fall-through.
 
                     case 2:
                         mag[intLength - 1] |= (val[b - 1] & 0xFF) << 8;
+                        // Fall-through.
 
                     case 1:
                         mag[intLength - 1] |= val[b] & 0xFF;
+                        // Fall-through.
 
                     default:
                         break;
@@ -106,8 +117,16 @@ namespace ignite
             else
             {
                 int32_t firstNonZero = len - 1;
+
                 while (firstNonZero >= 0 && val[firstNonZero] == 0)
                     --firstNonZero;
+
+                if (firstNonZero == -1)
+                {
+                    AssignInt64(0);
+
+                    return;
+                }
 
                 int32_t intLength = (firstNonZero + 4) / 4;
 
@@ -133,15 +152,19 @@ namespace ignite
                 {
                     case 4:
                         mag[intLength - 1] |= (val[b + 3] & 0xFF) << 24;
+                        // Fall-through.
 
                     case 3:
                         mag[intLength - 1] |= (val[b + 2] & 0xFF) << 16;
+                        // Fall-through.
 
                     case 2:
                         mag[intLength - 1] |= (val[b + 1] & 0xFF) << 8;
+                        // Fall-through.
 
                     case 1:
                         mag[intLength - 1] |= val[b] & 0xFF;
+                        // Fall-through.
 
                     default:
                         break;
@@ -176,7 +199,7 @@ namespace ignite
         {
             if (val < 0)
             {
-                AssignUint64(static_cast<uint64_t>(-val));
+                AssignUint64(val > INT64_MIN ? static_cast<uint64_t>(-val) : static_cast<uint64_t>(val));
 
                 sign = -1;
             }
@@ -257,7 +280,7 @@ namespace ignite
                 return 1;
 
             int32_t r = static_cast<uint32_t>(((
-                static_cast<uint64_t>(GetBitLength()) + 1) * 646456993ULL) >> 31);
+                static_cast<uint64_t>(GetBitLength()) + 1) * 646456993) >> 31);
 
             BigInteger prec;
             BigInteger::GetPowerOfTen(r, prec);
@@ -268,6 +291,13 @@ namespace ignite
         void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
         {
             int32_t bytesNum = static_cast<int32_t>((GetBitLength() + 7) / 8);
+
+            if (bytesNum == 0)
+            {
+                buffer.Reset(1);
+
+                return;
+            }
 
             buffer.Reset(bytesNum);
 
@@ -291,15 +321,19 @@ namespace ignite
             {
                 case 4:
                     buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1] >> 24);
+                    // Fall-through.
 
                 case 3:
                     buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1] >> 16);
+                    // Fall-through.
 
                 case 2:
                     buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1] >> 8);
+                    // Fall-through.
 
                 case 1:
                     buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1]);
+                    // Fall-through.
 
                 default:
                     break;
@@ -742,7 +776,7 @@ namespace ignite
 
                 // Adjusting result if needed.
                 while (qhat > UINT32_MAX ||
-                      ((qhat * nv[vlen - 2]) > ((UINT32_MAX + 1ULL) * rhat + nu[i + vlen - 2])))
+                      ((qhat * nv[vlen - 2]) > ((UINT32_MAX + static_cast<uint64_t>(1)) * rhat + nu[i + vlen - 2])))
                 {
                     --qhat;
                     rhat += nv[vlen - 1];

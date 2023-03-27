@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -104,13 +104,39 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            _services.DeployAsync(configuration).Wait();
+            try
+            {
+                _services.DeployAsync(configuration).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException ?? ex;
+            }
         }
 
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
             return _services.DeployAsync(configuration);
+        }
+
+        /** <inheritDoc /> */
+        public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
+        {
+            try
+            {
+                _services.DeployAllAsync(configurations).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException ?? ex;
+            }
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
+        {
+            return _services.DeployAllAsync(configurations);
         }
 
         /** <inheritDoc /> */
@@ -143,17 +169,18 @@ namespace Apache.Ignite.Core.Tests.Services
             return _services.GetServiceDescriptors();
         }
 
+#pragma warning disable 618 
         /** <inheritDoc /> */
         public T GetService<T>(string name)
         {
             return _services.GetService<T>(name);
         }
-
         /** <inheritDoc /> */
         public ICollection<T> GetServices<T>(string name)
         {
             return _services.GetServices<T>(name);
         }
+#pragma warning restore 618
 
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name) where T : class
@@ -165,6 +192,30 @@ namespace Apache.Ignite.Core.Tests.Services
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
             return _services.GetServiceProxy<T>(name, sticky);
+        }
+
+        /** <inheritDoc /> */
+        public T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class
+        {
+            return _services.GetServiceProxy<T>(name, sticky, callCtx);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name)
+        {
+            return _services.GetDynamicServiceProxy(name);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky)
+        {
+            return _services.GetDynamicServiceProxy(name, sticky);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx)
+        {
+            return _services.GetDynamicServiceProxy(name, sticky, callCtx);
         }
 
         /** <inheritDoc /> */

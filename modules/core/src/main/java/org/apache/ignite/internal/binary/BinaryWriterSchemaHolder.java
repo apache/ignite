@@ -98,7 +98,7 @@ public class BinaryWriterSchemaHolder {
             }
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx + 1; curIdx < idx; curIdx += 2)
-                    out.unsafeWriteShort((short) data[curIdx]);
+                    out.unsafeWriteShort((short)data[curIdx]);
 
                 res = BinaryUtils.OFFSET_2;
             }
@@ -113,7 +113,7 @@ public class BinaryWriterSchemaHolder {
             if (lastOffset < MAX_OFFSET_1) {
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteByte((byte) data[curIdx++]);
+                    out.unsafeWriteByte((byte)data[curIdx++]);
                 }
 
                 res = BinaryUtils.OFFSET_1;
@@ -121,7 +121,7 @@ public class BinaryWriterSchemaHolder {
             else if (lastOffset < MAX_OFFSET_2) {
                 for (int curIdx = startIdx; curIdx < idx;) {
                     out.unsafeWriteInt(data[curIdx++]);
-                    out.unsafeWriteShort((short) data[curIdx++]);
+                    out.unsafeWriteShort((short)data[curIdx++]);
                 }
 
                 res = BinaryUtils.OFFSET_2;

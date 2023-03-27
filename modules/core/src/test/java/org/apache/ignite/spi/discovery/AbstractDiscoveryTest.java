@@ -29,12 +29,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
 
 /**
  * Base discovery test class.
  * @param <T> SPI implementation class.
  */
-@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
     /** */
     @SuppressWarnings({"ClassExplicitlyExtendsThread"})
@@ -47,7 +47,6 @@ public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends Grid
         private boolean isCanceled;
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"UnusedCatchParameter"})
         @Override public void run() {
             Random rnd = new Random();
 
@@ -127,6 +126,7 @@ public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscovery() throws Exception {
         GridLocalEventListener discoLsnr = new DiscoveryListener();
 

@@ -52,19 +52,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the result.
         /// </summary>
+        /// <exception cref="AggregateException" />
         public T Get()
         {
-            try
-            {
-                return Task.Result;
-            }
-            catch (AggregateException ex)
-            {
-                if (ex.InnerException != null)
-                    throw ex.InnerException;
-
-                throw;
-            }
+            return Task.Result;
         }
 
         /// <summary>

@@ -82,6 +82,6 @@ abstract class IgniteBinaryIdentityBenchmark extends IgniteCacheAbstractBenchmar
 
         builder.setField("f2", "SomeString");
 
-        builder.setField("f3", (long) key);
+        builder.setField("f3", (long)key);
     }
 }

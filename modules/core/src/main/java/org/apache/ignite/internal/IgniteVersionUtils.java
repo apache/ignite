@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /**
@@ -31,23 +34,29 @@ public class IgniteVersionUtils {
     /** Ignite version. */
     public static final IgniteProductVersion VER;
 
+    /** UTC build date formatter. */
+    private static final DateTimeFormatter BUILD_TSTAMP_DATE_FORMATTER;
+
     /** Formatted build date. */
     public static final String BUILD_TSTAMP_STR;
 
     /** Build timestamp in seconds. */
     public static final long BUILD_TSTAMP;
 
+    /** Build timestamp string property value. */
+    private static final String BUILD_TSTAMP_FROM_PROPERTY;
+
     /** Revision hash. */
     public static final String REV_HASH_STR;
 
     /** Release date. */
-    public static final String RELEASE_DATE_STR;
+    public static final LocalDate RELEASE_DATE;
 
     /** Compound version. */
     public static final String ACK_VER_STR;
 
     /** Copyright blurb. */
-    public static final String COPYRIGHT = "2017 Copyright(C) Apache Software Foundation";
+    public static final String COPYRIGHT;
 
     /**
      * Static initializer.
@@ -58,17 +67,41 @@ public class IgniteVersionUtils {
             .replace(".b", "-b")
             .replace(".final", "-final");
 
-        BUILD_TSTAMP = Long.valueOf(IgniteProperties.get("ignite.build"));
-        BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
+        BUILD_TSTAMP_FROM_PROPERTY = IgniteProperties.get("ignite.build");
+
+        //Development ignite.properties file contains ignite.build = 0, so we will add the check for it.
+        BUILD_TSTAMP = !BUILD_TSTAMP_FROM_PROPERTY.isEmpty() && Long.parseLong(BUILD_TSTAMP_FROM_PROPERTY) != 0
+            ? Long.parseLong(BUILD_TSTAMP_FROM_PROPERTY) : System.currentTimeMillis() / 1000;
+
+        BUILD_TSTAMP_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("UTC"));
+
+        BUILD_TSTAMP_STR = formatBuildTimeStamp(BUILD_TSTAMP * 1000);
+
+        COPYRIGHT = BUILD_TSTAMP_STR.substring(0, 4) + " Copyright(C) Apache Software Foundation";
 
         REV_HASH_STR = IgniteProperties.get("ignite.revision");
-        RELEASE_DATE_STR = IgniteProperties.get("ignite.rel.date");
+
+        String releaseDateStr = IgniteProperties.get("ignite.rel.date");
+
+        DateTimeFormatter releaseDateFormatter = DateTimeFormatter.ofPattern("ddMMyyyy", Locale.US);
+
+        RELEASE_DATE = LocalDate.parse(releaseDateStr, releaseDateFormatter);
 
         String rev = REV_HASH_STR.length() > 8 ? REV_HASH_STR.substring(0, 8) : REV_HASH_STR;
 
         ACK_VER_STR = VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
 
         VER = IgniteProductVersion.fromString(VER_STR + '-' + BUILD_TSTAMP + '-' + REV_HASH_STR);
+    }
+
+    /**
+     * Builds string date representation in "yyyyMMdd" format.
+     *
+     * @param ts Timestamp.
+     * @return Timestamp date in UTC timezone.
+     */
+    public static String formatBuildTimeStamp(long ts) {
+        return BUILD_TSTAMP_DATE_FORMATTER.format(Instant.ofEpochMilli(ts));
     }
 
     /**

@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -43,10 +44,13 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private readonly List<Expression> _parameterExpressions = new List<Expression>();
+        private readonly AliasDictionary _aliases = new AliasDictionary();
 
         /** */
-        private readonly AliasDictionary _aliases = new AliasDictionary();
+        private static readonly Type DefaultIfEmptyEnumeratorType = new object[0]
+            .DefaultIfEmpty()
+            .GetType()
+            .GetGenericTypeDefinition();
 
         /// <summary>
         /// Generates the query.
@@ -63,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var qryText = _builder.ToString();
 
-            return new QueryData(qryText, _parameters, _parameterExpressions);
+            return new QueryData(qryText, _parameters);
         }
 
         /// <summary>
@@ -83,14 +87,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the parameters.
-        /// </summary>
-        public IList<Expression> ParameterExpressions
-        {
-            get { return _parameterExpressions; }
-        }
-
-        /// <summary>
         /// Gets the aliases.
         /// </summary>
         public AliasDictionary Aliases
@@ -107,23 +103,100 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
+        internal void VisitQueryModel(QueryModel queryModel, bool includeAllFields, bool copyAliases = false)
         {
-            _aliases.Push();
+            _aliases.Push(copyAliases);
 
-            // SELECT
-            _builder.Append("select ");
+            var lastResultOp = queryModel.ResultOperators.LastOrDefault();
+            if (lastResultOp is RemoveAllResultOperator)
+            {
+                VisitRemoveOperator(queryModel);
+            }
+            else if(lastResultOp is UpdateAllResultOperator)
+            {
+                VisitUpdateAllOperator(queryModel);
+            }
+            else
+            {
+                // SELECT
+                _builder.Append("select ");
 
-            // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, includeAllFields);
+                // TOP 1 FLD1, FLD2
+                VisitSelectors(queryModel, includeAllFields);
+
+                // FROM ... WHERE ... JOIN ...
+                base.VisitQueryModel(queryModel);
+
+                // UNION ...
+                ProcessResultOperatorsEnd(queryModel);
+            }
+
+            _aliases.Pop();
+        }
+
+        /// <summary>
+        /// Visits the remove operator.
+        /// </summary>
+        private void VisitRemoveOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            _builder.Append("delete ");
+
+            if (resultOps.Count == 2)
+            {
+                var resOp = resultOps[0] as TakeResultOperator;
+
+                if (resOp == null)
+                    throw new NotSupportedException(
+                        "RemoveAll can not be combined with result operators (other than Take): " +
+                        resultOps[0].GetType().Name);
+
+                _builder.Append("top ");
+                BuildSqlExpression(resOp.Count);
+                _builder.Append(' ');
+            }
+            else if (resultOps.Count > 2)
+            {
+                throw new NotSupportedException(
+                    "RemoveAll can not be combined with result operators (other than Take): " +
+                    string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+            }
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
+        }
 
-            // UNION ...
-            ProcessResultOperatorsEnd(queryModel);
+        /// <summary>
+        /// Visits the UpdateAll operator.
+        /// </summary>
+        private void VisitUpdateAllOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
 
-            _aliases.Pop();
+            _builder.Append("update ");
+
+            // FROM ... WHERE ...
+            base.VisitQueryModel(queryModel);
+
+            if (resultOps.Count == 2)
+            {
+                var resOp = resultOps[0] as TakeResultOperator;
+
+                if (resOp == null)
+                    throw new NotSupportedException(
+                        "UpdateAll can not be combined with result operators (other than Take): " +
+                        resultOps[0].GetType().Name);
+
+                _builder.Append("limit ");
+                BuildSqlExpression(resOp.Count);
+            }
+            else if (resultOps.Count > 2)
+            {
+                throw new NotSupportedException(
+                    "UpdateAll can not be combined with result operators (other than Take): " +
+                    string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+            }
         }
 
         /// <summary>
@@ -137,7 +210,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 // FIELD1, FIELD2
                 BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0, includeAllFields);
-                _builder.Append(')', parenCount).Append(" ");
+                _builder.Append(')', parenCount).Append(' ');
             }
         }
 
@@ -151,7 +224,7 @@ namespace Apache.Ignite.Linq.Impl
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
-                if (op is CountResultOperator || op is AnyResultOperator)
+                if (op is CountResultOperator || op is AnyResultOperator || op is LongCountResultOperator)
                 {
                     _builder.Append("count (");
                     parenCount++;
@@ -252,7 +325,7 @@ namespace Apache.Ignite.Linq.Impl
                         VisitQueryModel(queryable.GetQueryModel());
                     }
 
-                    _builder.Append(")");
+                    _builder.Append(')');
                 }
             }
         }
@@ -275,7 +348,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 // Workaround for unlimited offset (IGNITE-2602)
                 // H2 allows NULL & -1 for unlimited, but Ignite indexing does not
-                // Maximum limit that works is (int.MaxValue - offset) 
+                // Maximum limit that works is (int.MaxValue - offset)
 
                 if (offset.Count is ParameterExpression)
                     throw new NotSupportedException("Skip() without Take() is not supported in compiled queries.");
@@ -331,6 +404,10 @@ namespace Apache.Ignite.Linq.Impl
             foreach (var join in subQuery.QueryModel.BodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
 
+            i = 0;
+            foreach (var where in subQuery.QueryModel.BodyClauses.OfType<WhereClause>())
+                VisitWhereClause(where, i++, false);
+
             // Append grouping
             _builder.Append("group by (");
 
@@ -347,15 +424,27 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            _builder.AppendFormat("from ");
-            ValidateFromClause(fromClause);
-            _aliases.AppendAsClause(_builder, fromClause).Append(" ");
+            var isUpdateQuery = queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator;
+            if (!isUpdateQuery)
+            {
+                _builder.Append("from ");
+            }
 
+            ValidateFromClause(fromClause);
+            _aliases.AppendAsClause(_builder, fromClause).Append(' ');
+
+            var i = 0;
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
             {
-                _builder.AppendFormat(", ");
+                _builder.Append(", ");
                 ValidateFromClause(additionalFrom);
-                _aliases.AppendAsClause(_builder, additionalFrom).Append(" ");
+
+                VisitAdditionalFromClause(additionalFrom, queryModel, i++);
+            }
+
+            if (isUpdateQuery)
+            {
+                BuildSetClauseForUpdateAll(queryModel);
             }
         }
 
@@ -394,7 +483,7 @@ namespace Apache.Ignite.Linq.Impl
 
             BuildSqlExpression(whereClause.Predicate);
 
-            _builder.Append(" ");
+            _builder.Append(' ');
         }
 
         /** <inheritdoc /> */
@@ -412,16 +501,16 @@ namespace Apache.Ignite.Linq.Impl
                 if (i > 0)
                     _builder.Append(", ");
 
-                _builder.Append("(");
+                _builder.Append('(');
 
                 BuildSqlExpression(ordering.Expression);
 
-                _builder.Append(")");
+                _builder.Append(')');
 
                 _builder.Append(ordering.OrderingDirection == OrderingDirection.Asc ? " asc" : " desc");
             }
 
-            _builder.Append(" ");
+            _builder.Append(' ');
         }
 
         /** <inheritdoc /> */
@@ -429,31 +518,120 @@ namespace Apache.Ignite.Linq.Impl
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
+            var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
 
-            var subQuery = joinClause.InnerSequence as SubQueryExpression;
-
-            if (subQuery != null)
+            if (queryable != null)
             {
-                var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                var subQuery = joinClause.InnerSequence as SubQueryExpression;
 
-                _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
+                if (subQuery != null)
+                {
+                    var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
 
-                VisitQueryModel(subQuery.QueryModel, true);
+                    _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
 
-                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
-                _builder.AppendFormat(") as {0} on (", alias);
+                    VisitQueryModel(subQuery.QueryModel, true);
+
+                    var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                    _builder.AppendFormat(") as {0} on (", alias);
+                }
+                else
+                {
+                    var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
+                    var alias = _aliases.GetTableAlias(joinClause);
+                    _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                }
             }
             else
             {
-                var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
-                var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                var alias = _aliases.GetTableAlias(joinClause);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                VisitJoinWithLocalCollectionClause(joinClause);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
 
             _builder.Append(") ");
+        }
+
+        /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel,
+            int index)
+        {
+            base.VisitAdditionalFromClause(fromClause, queryModel, index);
+
+            var subQuery = fromClause.FromExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                _builder.Append('(');
+
+                VisitQueryModel(subQuery.QueryModel, true);
+
+                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                _builder.AppendFormat(") as {0} ", alias);
+            }
+            else
+            {
+                _aliases.AppendAsClause(_builder, fromClause).Append(' ');
+            }
+        }
+
+        /// <summary>
+        /// Visists Join clause in case of join with local collection
+        /// </summary>
+        private void VisitJoinWithLocalCollectionClause(JoinClause joinClause)
+        {
+            var type = joinClause.InnerSequence.Type;
+
+            var itemType = EnumerableHelper.GetIEnumerableItemType(type);
+
+            var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
+
+            if (string.IsNullOrWhiteSpace(sqlTypeName))
+            {
+                throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
+            }
+
+            var isOuter = false;
+            var sequenceExpression = joinClause.InnerSequence;
+            object values;
+
+            var subQuery = sequenceExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                sequenceExpression = subQuery.QueryModel.MainFromClause.FromExpression;
+            }
+
+            switch (sequenceExpression.NodeType)
+            {
+                case ExpressionType.Constant:
+                    var constantValueType = ((ConstantExpression)sequenceExpression).Value.GetType();
+                    if (constantValueType.IsGenericType)
+                    {
+                        isOuter = DefaultIfEmptyEnumeratorType == constantValueType.GetGenericTypeDefinition();
+                    }
+                    values = ExpressionWalker.EvaluateEnumerableValues(sequenceExpression);
+                    break;
+
+                case ExpressionType.Parameter:
+                    values = ExpressionWalker.EvaluateExpression<object>(sequenceExpression);
+                    break;
+
+                default:
+                    throw new NotSupportedException("Expression not supported for Join with local collection: "
+                                                    + sequenceExpression);
+            }
+
+            var tableAlias = _aliases.GetTableAlias(joinClause);
+            var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
+
+            _builder.AppendFormat("{0} join table ({1} {2} = ?) {3} on (",
+                isOuter ? "left outer" : "inner",
+                fieldAlias,
+                sqlTypeName,
+                tableAlias);
+
+            Parameters.Add(values);
         }
 
         /// <summary>
@@ -512,9 +690,33 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false,
+            bool visitSubqueryModel = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields, visitSubqueryModel).Visit(expression);
+        }
+
+        /// <summary>
+        /// Builds SET clause of UPDATE statement
+        /// </summary>
+        private void BuildSetClauseForUpdateAll(QueryModel queryModel)
+        {
+            var updateAllResultOperator = queryModel.ResultOperators.LastOrDefault() as UpdateAllResultOperator;
+            if (updateAllResultOperator != null)
+            {
+                _builder.Append("set ");
+                var first = true;
+                foreach (var update in updateAllResultOperator.Updates)
+                {
+                    if (!first) _builder.Append(", ");
+                    first = false;
+                    BuildSqlExpression(update.Selector);
+                    _builder.Append(" = ");
+                    BuildSqlExpression(update.Value, visitSubqueryModel: true);
+                }
+
+                _builder.Append(' ');
+            }
         }
     }
 }

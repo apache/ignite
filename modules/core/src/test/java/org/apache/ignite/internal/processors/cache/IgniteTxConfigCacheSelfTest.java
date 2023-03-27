@@ -41,24 +41,21 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test checks that grid transaction configuration doesn't influence system caches.
  */
 public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test cache name. */
     private static final String CACHE_NAME = "cache_name";
 
@@ -67,9 +64,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = new TestCommunicationSpi();
 
@@ -103,17 +98,15 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Success if user tx was timed out.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUserTxTimeout() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
+
         final Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
@@ -127,6 +120,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemCacheTx() throws Exception {
         final Ignite ignite = grid(0);
 
@@ -134,11 +128,6 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
         checkImplicitTxSuccess(utilCache);
         checkStartTxSuccess(utilCache);
-
-        final IgniteInternalCache<Object, Object> atomicsCache = getSystemCache(ignite, CU.ATOMICS_CACHE_NAME);
-
-        checkImplicitTxSuccess(atomicsCache);
-        checkStartTxSuccess(atomicsCache);
     }
 
     /**
@@ -149,7 +138,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @return Internal cache instance.
      */
     protected IgniteInternalCache<Object, Object> getSystemCache(final Ignite ignite, final String cacheName) {
-        return ((IgniteKernal) ignite).context().cache().cache(cacheName);
+        return ((IgniteKernal)ignite).context().cache().cache(cacheName);
     }
 
     /**
@@ -190,6 +179,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         try (final Transaction tx = ignite.transactions().txStart()) {
             assert tx != null;
 
+            cache.put("key0", "val0");
+
             sleepForTxFailure();
 
             cache.put("key", "val");
@@ -200,7 +191,19 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
             assert e.getCause() instanceof TransactionTimeoutException;
         }
 
+        assertNull(ignite.transactions().tx());
+
+        assert !cache.containsKey("key0");
         assert !cache.containsKey("key");
+
+        // New transaction must succeed.
+        try (final Transaction tx = ignite.transactions().txStart()) {
+            cache.put("key", "val");
+
+            tx.commit();
+        }
+
+        assert cache.containsKey("key");
     }
 
     /**
@@ -210,7 +213,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkStartTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
-        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
+        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, REPEATABLE_READ)) {
             assert tx != null;
 
             sleepForTxFailure();
@@ -237,7 +240,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
                 throws EntryProcessorException {
                 try {
                     sleepForTxFailure();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
                 return null;

@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -37,16 +39,35 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     private int ioType;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param ioType IO type.
+     * @param ioVer Io version.
+     * @param treeRoot Tree root.
+     * @param reuseListRoot Reuse list root.
+     */
+    public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
+        this(grpId, pageId, ioType, ioVer, treeRoot, reuseListRoot, null);
+    }
+
+    /**
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param ioType IO type.
      * @param treeRoot Tree root.
      * @param reuseListRoot Reuse list root.
+     * @param log Logger for case data is invalid. Can be {@code null}, but is needed when processing existing storage.
      */
-    public MetaPageInitRecord(int cacheId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
-        super(cacheId, pageId, ioType, ioVer, pageId);
-
-        assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
+    public MetaPageInitRecord(
+        int grpId,
+        long pageId,
+        int ioType,
+        int ioVer,
+        long treeRoot,
+        long reuseListRoot,
+        @Nullable IgniteLogger log
+    ) {
+        super(grpId, pageId, ioType, ioVer, pageId, log);
 
         this.treeRoot = treeRoot;
         this.reuseListRoot = reuseListRoot;
@@ -67,20 +88,18 @@ public class MetaPageInitRecord extends InitNewPageRecord {
         return reuseListRoot;
     }
 
-    /**
-     * @return IO type.
-     */
-    public int ioType() {
+    /** {@inheritDoc} */
+    @Override public int ioType() {
         return ioType;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        PageMetaIO io = ioType == PageIO.T_META ?
-            PageMetaIO.VERSIONS.forPage(pageAddr) :
-            PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+        PageMetaIO io = PageMetaIO.getPageIO(ioType, ioVer);
 
-        io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
+        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(groupId());
+
+        io.initNewPage(pageAddr, newPageId, pageMem.realPageSize(groupId()), metrics);
 
         io.setTreeRoot(pageAddr, treeRoot);
         io.setReuseListRoot(pageAddr, reuseListRoot);
@@ -89,5 +108,10 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.META_PAGE_INIT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageInitRecord.class, this, "super", super.toString());
     }
 }

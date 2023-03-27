@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,6 +37,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteCallable;
@@ -46,13 +51,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -81,6 +85,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphore() throws Exception {
         checkSemaphore();
         checkSemaphoreSerialization();
@@ -89,10 +94,8 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailover() throws Exception {
-        if (atomicsCacheMode() == LOCAL)
-            return;
-
         checkFailover(true);
         checkFailover(false);
     }
@@ -103,6 +106,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -220,7 +224,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         checkFailoverSafe();
 
         // Test main functionality.
-        IgniteSemaphore semaphore1 = grid(0).semaphore("semaphore", -2, true, true);
+        final IgniteSemaphore semaphore1 = grid(0).semaphore("semaphore", -2, true, true);
 
         assertEquals(-2, semaphore1.availablePermits());
 
@@ -240,11 +244,13 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
 
                             assert semaphore != null && semaphore.availablePermits() == -2;
 
-                            log.info("Thread is going to wait on semaphore: " + Thread.currentThread().getName());
+                            log.info("Thread is going to wait on semaphore: " + Thread.currentThread().getName() +
+                                ", node = " + ignite.cluster().localNode() + ", sem = " + semaphore);
 
                             assert semaphore.tryAcquire(1, 1, MINUTES);
 
-                            log.info("Thread is again runnable: " + Thread.currentThread().getName());
+                            log.info("Thread is again runnable: " + Thread.currentThread().getName() +
+                                ", node = " + ignite.cluster().localNode() + ", sem = " + semaphore);
 
                             semaphore.release();
 
@@ -281,6 +287,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreClosing() throws Exception {
         IgniteConfiguration cfg;
         GridStringLogger stringLogger;
@@ -295,6 +302,97 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         }
 
         assertFalse(stringLogger.toString().contains(NullPointerException.class.getName()));
+    }
+
+    /**
+     * Test to verify the {@link IgniteSemaphore#acquireAndExecute(IgniteCallable, int)}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAcquireAndExecute() throws Exception {
+        IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecute", 1, true, true);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
+            @Override public Integer call() {
+                assert (semaphore.availablePermits() == 0);
+
+                return 5;
+            }
+        };
+
+        IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+
+        Runnable runnable = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFuture;
+
+                GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
+                fut.onDone(true);
+            }
+        };
+
+        executorService.submit(runnable);
+
+        Thread.sleep(1000);
+        igniteFuture.get(7000, MILLISECONDS);
+
+        assertTrue(igniteFuture.isDone());
+
+        assertTrue(semaphore.availablePermits() == 1);
+
+        executorService.shutdown();
+    }
+
+    /**
+     * Test to verify the {@link IgniteSemaphore#acquireAndExecute(IgniteCallable, int)}'s behaviour in case of a failure.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAcquireAndExecuteIfFailure() {
+        IgniteSemaphore semaphore = ignite(0).semaphore("testAcquireAndExecuteIfFailure", 1, true, true);
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        IgniteCallable<Integer> callable = new IgniteCallable<Integer>() {
+            @Override public Integer call() {
+                throw new RuntimeException("Foobar");
+            }
+        };
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                IgniteFuture igniteFuture = semaphore.acquireAndExecute(callable, 1);
+
+                Runnable runnable = new Runnable() {
+                    /** {@inheritDoc} */
+                    @Override public void run() {
+                        try {
+                            Thread.sleep(1000);
+                            IgniteFutureImpl impl = (IgniteFutureImpl<Integer>)igniteFuture;
+
+                            GridFutureAdapter fut = (GridFutureAdapter)(impl.internalFuture());
+                            fut.onDone(true);
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e.getMessage());
+                        }
+                    }
+                };
+
+                executorService.submit(runnable);
+
+                ((IgniteFutureImpl)igniteFuture).internalFuture().get();
+
+                assertTrue(igniteFuture.isDone());
+
+                return null;
+            }
+        }, RuntimeException.class, "Foobar");
+
+        executorService.shutdown();
     }
 
     /**
@@ -437,8 +535,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      * @param semaphoreName Semaphore name.
      * @throws Exception If failed.
      */
-    private void removeSemaphore(String semaphoreName)
-        throws Exception {
+    private void removeSemaphore(final String semaphoreName) throws Exception {
         IgniteSemaphore semaphore = grid(RND.nextInt(NODES_CNT)).semaphore(semaphoreName, 10, false, true);
 
         assert semaphore != null;
@@ -454,8 +551,17 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         semaphore0.close();
 
         // Ensure semaphore is removed on all nodes.
-        for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().semaphore(semaphoreName, 10, true, false));
+        assert GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @Override public boolean applyx() throws IgniteCheckedException {
+                for (Ignite g : G.allGrids()) {
+                    if (((IgniteKernal)g).context().dataStructures().semaphore(
+                        semaphoreName, null, 10, true, false) != null)
+                        return false;
+                }
+
+                return true;
+            }
+        }, 5_000);
 
         checkRemovedSemaphore(semaphore);
     }
@@ -463,6 +569,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSemaphoreMultinode1() throws Exception {
         if (gridCount() == 1)
             return;

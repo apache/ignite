@@ -17,37 +17,62 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.binary.BinaryUtils.typeName;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.KEY_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
-    /** Space. */
-    private final String space;
+    /** Cache name. */
+    private final String cacheName;
 
     /** */
     private String name;
+
+    /** Schema name. */
+    private String schemaName;
 
     /** */
     private String tblName;
 
     /** Value field names and types with preserved order. */
     @GridToStringInclude
-    private final Map<String, Class<?>> fields = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -91,6 +116,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private String affKey;
 
     /** */
+    private boolean customAffKeyMapper;
+
+    /** */
     private String keyFieldName;
 
     /** */
@@ -99,25 +127,58 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Obsolete. */
     private volatile boolean obsolete;
 
+    /** */
+    private List<GridQueryProperty> validateProps;
+
+    /** */
+    private List<GridQueryProperty> propsWithDefaultValue;
+
+    /** */
+    private final CacheObjectContext coCtx;
+
+    /** Primary key fields. */
+    private Set<String> pkFields;
+
+    /** */
+    private boolean implicitPk;
+
+    /** Whether absent PK parts should be filled with defaults or not. */
+    private boolean fillAbsentPKsWithDefaults;
+
+    /** */
+    private int pkInlineSize;
+
+    /** */
+    private int affFieldInlineSize;
+
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Constructor.
      *
-     * @param space Cache name.
+     * @param cacheName Cache name.
+     * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String space) {
-        this.space = space;
+    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
+        this.cacheName = cacheName;
+        this.coCtx = coCtx;
+        this.log = coCtx.kernalContext().log(getClass());
     }
 
-    /**
-     * @return Space.
-     */
-    public String space() {
-        return space;
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -147,7 +208,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
+    @Override public LinkedHashMap<String, Class<?>> fields() {
         return fields;
     }
 
@@ -161,15 +222,12 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return res;
     }
 
-    /**
-     * @return Properties.
-     */
-    public Map<String, GridQueryProperty> properties() {
+    /** {@inheritDoc} */
+    @Override public Map<String, GridQueryProperty> properties() {
         return props;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
         assert field != null;
 
@@ -182,7 +240,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void setValue(String field, Object key, Object val, Object propVal)
         throws IgniteCheckedException {
         assert field != null;
@@ -205,6 +262,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean matchType(CacheObject val) {
+        if (val instanceof BinaryObject)
+            return ((BinaryObject)val).type().typeId() == typeId;
+
+        // Value type name can be manually set in QueryEntity to any random value,
+        // also for some reason our conversion from setIndexedTypes sets a full class name
+        // instead of a simple name there, thus we can have a typeId mismatch.
+        // Also, if the type is not in binary format, we always must have it's class available.
+        return val.value(coCtx, false).getClass() == valCls;
     }
 
     /**
@@ -352,6 +421,19 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @throws IgniteCheckedException In case of error.
      */
     public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        addProperty(prop, failOnDuplicate, true);
+    }
+
+    /**
+     * Adds property to the type descriptor.
+     *
+     * @param prop Property.
+     * @param failOnDuplicate Fail on duplicate flag.
+     * @param isField {@code True} if {@code prop} if field, {@code False} if prop is "_KEY" or "_VAL".
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void addProperty(GridQueryProperty prop, boolean failOnDuplicate, boolean isField)
+        throws IgniteCheckedException {
         String name = prop.name();
 
         if (props.put(name, prop) != null && failOnDuplicate)
@@ -360,7 +442,49 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
-        fields.put(name, prop.type());
+        if ((prop.notNull() && !prop.name().equals(KEY_FIELD_NAME) && !prop.name().equals(VAL_FIELD_NAME))
+            || prop.precision() != -1 || coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
+            if (validateProps == null)
+                validateProps = new ArrayList<>();
+
+            validateProps.add(prop);
+        }
+
+        if (prop.defaultValue() != null) {
+            if (propsWithDefaultValue == null)
+                propsWithDefaultValue = new ArrayList<>();
+
+            propsWithDefaultValue.add(prop);
+        }
+
+        if (isField)
+            fields.put(name, prop.type());
+    }
+
+    /**
+     * Removes a property with specified name.
+     *
+     * @param name Name of a property to remove.
+     */
+    public void removeProperty(String name) throws IgniteCheckedException {
+        GridQueryProperty prop = props.remove(name);
+
+        if (prop == null)
+            throw new IgniteCheckedException("Property with name '" + name + "' does not exist.");
+
+        if (validateProps != null)
+            validateProps.remove(prop);
+
+        uppercaseProps.remove(name.toUpperCase());
+
+        fields.remove(name);
+    }
+
+    /**
+     * @param schemaName Schema name.
+     */
+    public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */
@@ -387,6 +511,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      */
     public void affinityKey(String affKey) {
         this.affKey = affKey;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean customAffinityKeyMapper() {
+        return customAffKeyMapper;
+    }
+
+    /**
+     * @param customAffKeyMapper Whether custom affinity key mapper is set.
+     */
+    public void customAffinityKeyMapper(boolean customAffKeyMapper) {
+        this.customAffKeyMapper = customAffKeyMapper;
     }
 
     /**
@@ -426,7 +562,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Sets key field name.
      * @param keyFieldName Key field name.
      */
-    public void keyFieldName(String keyFieldName) {
+    void keyFieldName(String keyFieldName) {
         this.keyFieldName = keyFieldName;
     }
 
@@ -437,14 +573,231 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /**
      * Sets value field name.
-     * @param valueFieldName value field name.
+     * @param valFieldName value field name.
      */
-    public void valueFieldName(String valueFieldName) {
-        this.valFieldName = valueFieldName;
+    void valueFieldName(String valFieldName) {
+        this.valFieldName = valFieldName;
     }
 
     /** {@inheritDoc} */
     @Override public String valueFieldName() {
         return valFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String keyFieldAlias() {
+        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String valueFieldAlias() {
+        return valFieldName != null ? aliases.get(valFieldName) : null;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(validateProps) && F.isEmpty(idxs))
+            return;
+
+        validateProps(key, val);
+
+        validateIndexes(key, val);
+    }
+
+    /** Validate properties. */
+    private void validateProps(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(validateProps))
+            return;
+
+        final boolean validateTypes = coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled();
+
+        for (int i = 0; i < validateProps.size(); ++i) {
+            GridQueryProperty prop = validateProps.get(i);
+
+            Object propVal;
+
+            boolean isKey = false;
+
+            if (F.eq(prop.name(), keyFieldAlias()) || (keyFieldName == null && F.eq(prop.name(), KEY_FIELD_NAME))) {
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
+
+                isKey = true;
+            }
+            else if (F.eq(prop.name(), valueFieldAlias()) ||
+                (valFieldName == null && F.eq(prop.name(), VAL_FIELD_NAME)))
+                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+            else
+                propVal = prop.value(key, val);
+
+            if (propVal == null && prop.notNull()) {
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
+                    isKey ? NULL_KEY : NULL_VALUE);
+            }
+
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
+                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
+                    " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
+            }
+
+            if (propVal == null || prop.precision() == -1)
+                continue;
+
+            if (String.class == propVal.getClass() || byte[].class == propVal.getClass()) {
+                int propValLen = String.class == propVal.getClass() ? ((String)propVal).length()
+                    : ((byte[])propVal).length;
+
+                if (propValLen > prop.precision()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " +
+                        "Maximum length: " + prop.precision() + ", actual length: " + propValLen,
+                        isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+                }
+            }
+            else if (BigDecimal.class == propVal.getClass()) {
+                BigDecimal dec = (BigDecimal)propVal;
+
+                if (dec.precision() > prop.precision()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is out of range. " +
+                        "Maximum precision: " + prop.precision() + ", actual precision: " + dec.precision(),
+                        isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+                }
+                else if (prop.scale() != -1 &&
+                    dec.scale() > prop.scale()) {
+                    throw new IgniteSQLException("Value for a column '" + prop.name() + "' is out of range. " +
+                        "Maximum scale : " + prop.scale() + ", actual scale: " + dec.scale(),
+                        isKey ? KEY_SCALE_OUT_OF_RANGE : VALUE_SCALE_OUT_OF_RANGE);
+                }
+            }
+        }
+    }
+
+    /** Validate indexed values. */
+    private void validateIndexes(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(idxs))
+            return;
+
+        for (QueryIndexDescriptorImpl idx : idxs.values()) {
+            for (String idxField : idx.fields()) {
+                GridQueryProperty prop = props.get(idxField);
+
+                Object propVal;
+                Class<?> propType;
+
+                if (F.eq(idxField, keyFieldAlias()) || F.eq(idxField, KEY_FIELD_NAME)) {
+                    propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else if (F.eq(idxField, valueFieldAlias()) || F.eq(idxField, VAL_FIELD_NAME)) {
+                    propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+
+                    propType = propVal == null ? null : propVal.getClass();
+                }
+                else {
+                    propVal = prop.value(key, val);
+
+                    propType = prop.type();
+                }
+
+                if (propVal == null)
+                    continue;
+
+                if (!isCompatibleWithPropertyType(propVal, propType)) {
+                    throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
+                        " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if the specified object is compatible with the type of the column through which this object will be accessed.
+     *
+     * @param val Object to check.
+     * @param expColType Type of the column based on Query Property info.
+     */
+    private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType) {
+        if (!(val instanceof BinaryObject) || val instanceof BinaryArray) {
+            if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
+                return true;
+
+            if (QueryUtils.isConvertibleTypes(val, expColType))
+                return true;
+
+            return expColType.isArray()
+                && BinaryUtils.isObjectArray(val.getClass())
+                && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
+                    .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
+        }
+        else if (coCtx.kernalContext().cacheObjects().typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
+            final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
+
+            return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(propsWithDefaultValue))
+            return;
+
+        for (int i = 0; i < propsWithDefaultValue.size(); ++i) {
+            GridQueryProperty prop = propsWithDefaultValue.get(i);
+
+            prop.setValue(key, val, prop.defaultValue());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> primaryKeyFields() {
+        return pkFields == null ? Collections.emptySet() : pkFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyFields(Set<String> keys) {
+        pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fillAbsentPKsWithDefaults() {
+        return fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setFillAbsentPKsWithDefaults(boolean fillAbsentPKsWithDefaults) {
+        this.fillAbsentPKsWithDefaults = fillAbsentPKsWithDefaults;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int primaryKeyInlineSize() {
+        return pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void primaryKeyInlineSize(int pkInlineSize) {
+        this.pkInlineSize = pkInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int affinityFieldInlineSize() {
+        return affFieldInlineSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityFieldInlineSize(int affFieldInlineSize) {
+        this.affFieldInlineSize = affFieldInlineSize;
     }
 }

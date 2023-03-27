@@ -1,0 +1,55 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Working with SQL
+
+Ignite comes with ANSI-99 compliant, horizontally scalable and fault-tolerant distributed SQL database. The distribution is provided either by partitioning the data across cluster nodes or by full replication, depending on the use case.
+
+As a SQL database, Ignite supports all DML commands including SELECT, UPDATE, INSERT, and DELETE queries and also implements a subset of DDL commands relevant for distributed systems.
+
+You can interact with Ignite as you would with any other SQL enabled storage by connecting with link:SQL/JDBC/jdbc-driver/[JDBC] or link:SQL/ODBC/odbc-driver[ODBC] drivers from both external tools and applications. Java, .NET and C++ developers can leverage native  link:SQL/sql-api[SQL APIs].
+
+Internally, SQL tables have the same data structure as link:data-modeling/data-modeling#key-value-cache-vs-sql-table[key-value caches]. It means that you can change partition distribution of your data and leverage link:data-modeling/affinity-collocation[affinity colocation techniques] for better performance.
+
+Ignite's default SQL engine uses H2 Database to parse and optimize queries and generate execution plans, but also the Apache Calcite-based SQL engine can be enabled to execute queries.
+
+WARNING: Apache Calcite-based SQL engine is an experimental feature. For more information, see the link:SQL/sql-calcite[Calcite-based SQL engine, window=_blank] section.
+
+== Distributed Queries
+
+Queries against link:data-modeling/data-partitioning#partitioned[partitioned] tables are executed in a distributed manner:
+
+- The query is parsed and split into multiple “map” queries and a single “reduce” query.
+- All the map queries are executed on all the nodes where required data resides.
+- All the nodes provide result sets of local execution to the query initiator that, in turn, will merge provided result sets into the final results.
+
+You can force a query to be processed locally, i.e. on the subset of data that is stored on the node where the query is executed.
+
+== Local Queries
+
+If a query is executed over a link:data-modeling/data-partitioning#replicated[replicated] table, it will be run against the local data.
+
+Queries over partitioned tables are executed in a distributed manner.
+However, you can force local execution of a query over a partitioned table.
+See link:SQL/sql-api#local-execution[Local Execution] for details.
+
+
+////
+== Known Limitations
+TODO
+
+https://apacheignite-sql.readme.io/docs/how-ignite-sql-works#section-known-limitations
+
+https://issues.apache.org/jira/browse/IGNITE-7822 - describe this if not fixed
+////

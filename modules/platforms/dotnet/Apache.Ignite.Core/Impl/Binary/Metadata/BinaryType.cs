@@ -17,9 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
+    using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -30,19 +31,19 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     {
         /** Empty metadata. */
         public static readonly BinaryType Empty =
-            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
-
-        /** Empty dictionary. */
-        private static readonly IDictionary<string, BinaryField> EmptyDict = new Dictionary<string, BinaryField>();
-
-        /** Empty list. */
-        private static readonly ICollection<string> EmptyList = new List<string>().AsReadOnly();
+            new BinaryType(BinaryTypeId.Object, BinaryTypeNames.TypeNameObject, null, null, false, null, null, null);
 
         /** Type name map. */
         private static readonly string[] TypeNames = new string[byte.MaxValue];
 
         /** Fields. */
         private readonly IDictionary<string, BinaryField> _fields;
+
+        /** Enum values. */
+        private readonly IDictionary<string, int> _enumNameToValue;
+
+        /** Enum names. */
+        private readonly IDictionary<int, string> _enumValueToName;
 
         /** Enum flag. */
         private readonly bool _isEnum;
@@ -59,6 +60,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Type descriptor. */
         private readonly IBinaryTypeDescriptor _descriptor;
 
+        /** Marshaller. */
+        private readonly Marshaller _marshaller;
+
+        /** Schema. */
+        private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
+
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
         /// </summary>
@@ -66,36 +73,36 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             Justification = "Readability.")]
         static BinaryType()
         {
-            TypeNames[BinaryUtils.TypeBool] = BinaryTypeNames.TypeNameBool;
-            TypeNames[BinaryUtils.TypeByte] = BinaryTypeNames.TypeNameByte;
-            TypeNames[BinaryUtils.TypeShort] = BinaryTypeNames.TypeNameShort;
-            TypeNames[BinaryUtils.TypeChar] = BinaryTypeNames.TypeNameChar;
-            TypeNames[BinaryUtils.TypeInt] = BinaryTypeNames.TypeNameInt;
-            TypeNames[BinaryUtils.TypeLong] = BinaryTypeNames.TypeNameLong;
-            TypeNames[BinaryUtils.TypeFloat] = BinaryTypeNames.TypeNameFloat;
-            TypeNames[BinaryUtils.TypeDouble] = BinaryTypeNames.TypeNameDouble;
-            TypeNames[BinaryUtils.TypeDecimal] = BinaryTypeNames.TypeNameDecimal;
-            TypeNames[BinaryUtils.TypeString] = BinaryTypeNames.TypeNameString;
-            TypeNames[BinaryUtils.TypeGuid] = BinaryTypeNames.TypeNameGuid;
-            TypeNames[BinaryUtils.TypeTimestamp] = BinaryTypeNames.TypeNameTimestamp;
-            TypeNames[BinaryUtils.TypeEnum] = BinaryTypeNames.TypeNameEnum;
-            TypeNames[BinaryUtils.TypeObject] = BinaryTypeNames.TypeNameObject;
-            TypeNames[BinaryUtils.TypeArrayBool] = BinaryTypeNames.TypeNameArrayBool;
-            TypeNames[BinaryUtils.TypeArrayByte] = BinaryTypeNames.TypeNameArrayByte;
-            TypeNames[BinaryUtils.TypeArrayShort] = BinaryTypeNames.TypeNameArrayShort;
-            TypeNames[BinaryUtils.TypeArrayChar] = BinaryTypeNames.TypeNameArrayChar;
-            TypeNames[BinaryUtils.TypeArrayInt] = BinaryTypeNames.TypeNameArrayInt;
-            TypeNames[BinaryUtils.TypeArrayLong] = BinaryTypeNames.TypeNameArrayLong;
-            TypeNames[BinaryUtils.TypeArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
-            TypeNames[BinaryUtils.TypeArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
-            TypeNames[BinaryUtils.TypeArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
-            TypeNames[BinaryUtils.TypeArrayString] = BinaryTypeNames.TypeNameArrayString;
-            TypeNames[BinaryUtils.TypeArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
-            TypeNames[BinaryUtils.TypeArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
-            TypeNames[BinaryUtils.TypeArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
-            TypeNames[BinaryUtils.TypeArray] = BinaryTypeNames.TypeNameArrayObject;
-            TypeNames[BinaryUtils.TypeCollection] = BinaryTypeNames.TypeNameCollection;
-            TypeNames[BinaryUtils.TypeDictionary] = BinaryTypeNames.TypeNameMap;
+            TypeNames[BinaryTypeId.Bool] = BinaryTypeNames.TypeNameBool;
+            TypeNames[BinaryTypeId.Byte] = BinaryTypeNames.TypeNameByte;
+            TypeNames[BinaryTypeId.Short] = BinaryTypeNames.TypeNameShort;
+            TypeNames[BinaryTypeId.Char] = BinaryTypeNames.TypeNameChar;
+            TypeNames[BinaryTypeId.Int] = BinaryTypeNames.TypeNameInt;
+            TypeNames[BinaryTypeId.Long] = BinaryTypeNames.TypeNameLong;
+            TypeNames[BinaryTypeId.Float] = BinaryTypeNames.TypeNameFloat;
+            TypeNames[BinaryTypeId.Double] = BinaryTypeNames.TypeNameDouble;
+            TypeNames[BinaryTypeId.Decimal] = BinaryTypeNames.TypeNameDecimal;
+            TypeNames[BinaryTypeId.String] = BinaryTypeNames.TypeNameString;
+            TypeNames[BinaryTypeId.Guid] = BinaryTypeNames.TypeNameGuid;
+            TypeNames[BinaryTypeId.Timestamp] = BinaryTypeNames.TypeNameTimestamp;
+            TypeNames[BinaryTypeId.Enum] = BinaryTypeNames.TypeNameEnum;
+            TypeNames[BinaryTypeId.Object] = BinaryTypeNames.TypeNameObject;
+            TypeNames[BinaryTypeId.ArrayBool] = BinaryTypeNames.TypeNameArrayBool;
+            TypeNames[BinaryTypeId.ArrayByte] = BinaryTypeNames.TypeNameArrayByte;
+            TypeNames[BinaryTypeId.ArrayShort] = BinaryTypeNames.TypeNameArrayShort;
+            TypeNames[BinaryTypeId.ArrayChar] = BinaryTypeNames.TypeNameArrayChar;
+            TypeNames[BinaryTypeId.ArrayInt] = BinaryTypeNames.TypeNameArrayInt;
+            TypeNames[BinaryTypeId.ArrayLong] = BinaryTypeNames.TypeNameArrayLong;
+            TypeNames[BinaryTypeId.ArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
+            TypeNames[BinaryTypeId.ArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
+            TypeNames[BinaryTypeId.ArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
+            TypeNames[BinaryTypeId.ArrayString] = BinaryTypeNames.TypeNameArrayString;
+            TypeNames[BinaryTypeId.ArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
+            TypeNames[BinaryTypeId.ArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
+            TypeNames[BinaryTypeId.ArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
+            TypeNames[BinaryTypeId.Array] = BinaryTypeNames.TypeNameArrayObject;
+            TypeNames[BinaryTypeId.Collection] = BinaryTypeNames.TypeNameCollection;
+            TypeNames[BinaryTypeId.Dictionary] = BinaryTypeNames.TypeNameMap;
         }
 
         /// <summary>
@@ -117,7 +124,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Initializes a new instance of the <see cref="BinaryType" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public BinaryType(IBinaryRawReader reader)
+        /// <param name="readSchemas">Whether to read schemas.</param>
+        public BinaryType(BinaryReader reader, bool readSchemas = false)
         {
             _typeId = reader.ReadInt();
             _typeName = reader.ReadString();
@@ -136,15 +144,52 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             }
             
             _isEnum = reader.ReadBoolean();
+
+            if (_isEnum)
+            {
+                var count = reader.ReadInt();
+
+                _enumNameToValue = new Dictionary<string, int>(count);
+
+                for (var i = 0; i < count; i++)
+                {
+                    _enumNameToValue[reader.ReadString()] = reader.ReadInt();
+                }
+
+                _enumValueToName = _enumNameToValue.ToDictionary(x => x.Value, x => x.Key);
+            }
+
+            if (readSchemas)
+            {
+                var cnt = reader.ReadInt();
+
+                for (var i = 0; i < cnt; i++)
+                {
+                    var schemaId = reader.ReadInt();
+                    
+                    var ids = new int[reader.ReadInt()];
+                    for (var j = 0; j < ids.Length; j++)
+                    {
+                        ids[j] = reader.ReadInt();
+                    }
+
+                    _schema.Add(schemaId, ids);
+                }
+            }
+
+            _marshaller = reader.Marshaller;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryType"/> class.
+        /// Initializes a new instance of the <see cref="BinaryType" /> class.
         /// </summary>
         /// <param name="desc">Descriptor.</param>
+        /// <param name="marshaller">Marshaller.</param>
         /// <param name="fields">Fields.</param>
-        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, BinaryField> fields = null) 
-            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
+        public BinaryType(IBinaryTypeDescriptor desc, Marshaller marshaller, 
+            IDictionary<string, BinaryField> fields = null) 
+            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum, 
+                  GetEnumValues(desc), marshaller, null)
         {
             _descriptor = desc;
         }
@@ -157,14 +202,29 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
+        /// <param name="enumValues">Enum values.</param>
+        /// <param name="marshaller">Marshaller.</param>
+        /// <param name="schema"></param>
         public BinaryType(int typeId, string typeName, IDictionary<string, BinaryField> fields,
-            string affKeyFieldName, bool isEnum)
+            string affKeyFieldName, bool isEnum, IDictionary<string, int> enumValues, Marshaller marshaller,
+            BinaryObjectSchema schema)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affinityKeyFieldName = affKeyFieldName;
-            _fields = fields;
+
+            _fields = fields ?? new Dictionary<string, BinaryField>();
+
             _isEnum = isEnum;
+            _enumNameToValue = enumValues;
+
+            if (_enumNameToValue != null)
+            {
+                _enumValueToName = _enumNameToValue.ToDictionary(x => x.Value, x => x.Key);
+            }
+
+            _marshaller = marshaller;
+            _schema = schema;
         }
 
         /// <summary>
@@ -189,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// </summary>
         public ICollection<string> Fields
         {
-            get { return _fields != null ? _fields.Keys : EmptyList; }
+            get { return _fields.Keys; }
         }
 
         /// <summary>
@@ -203,19 +263,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         {
             IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
 
-            if (_fields != null)
+            BinaryField fieldMeta;
+
+            if (!_fields.TryGetValue(fieldName, out fieldMeta))
             {
-                BinaryField fieldMeta;
-
-                if (!_fields.TryGetValue(fieldName, out fieldMeta))
-                {
-                    throw new BinaryObjectException("BinaryObject field does not exist: " + fieldName);
-                }
-
-                return GetTypeName(fieldMeta.TypeId);
+                throw new BinaryObjectException("BinaryObject field does not exist: " + fieldName);
             }
-            
-            return null;
+
+            return GetTypeName(fieldMeta.TypeId);
         }
 
         /// <summary>
@@ -232,6 +287,27 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             get { return _isEnum; }
         }
 
+        /** <inheritdoc /> */
+        public IEnumerable<IBinaryObject> GetEnumValues()
+        {
+            if (!_isEnum)
+            {
+                throw new NotSupportedException(
+                    "IBinaryObject.Value is only supported for enums. " +
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
+            }
+
+            if (_marshaller == null)
+            {
+                yield break;
+            }
+
+            foreach (var pair in _enumValueToName)
+            {
+                yield return new BinaryEnum(_typeId, pair.Key, _marshaller);
+            }
+        }
+
         /// <summary>
         /// Gets the descriptor.
         /// </summary>
@@ -246,7 +322,23 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <returns>Fields map.</returns>
         public IDictionary<string, BinaryField> GetFieldsMap()
         {
-            return _fields ?? EmptyDict;
+            return _fields;
+        }
+
+        /// <summary>
+        /// Gets the enum values map.
+        /// </summary>
+        public IDictionary<string, int> EnumValuesMap
+        {
+            get { return _enumNameToValue; }
+        }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        public BinaryObjectSchema Schema
+        {
+            get { return _schema; }
         }
 
         /// <summary>
@@ -257,10 +349,53 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             if (fields == null || fields.Count == 0)
                 return;
 
-            Debug.Assert(_fields != null);
-
             foreach (var field in fields)
                 _fields[field.Key] = field.Value;
+        }
+
+        /// <summary>
+        /// Gets the enum value by name.
+        /// </summary>
+        public int? GetEnumValue(string valueName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(valueName, "valueName");
+
+            if (!_isEnum)
+            {
+                throw new NotSupportedException("Can't get enum value for a non-enum type: " + _typeName);
+            }
+
+            int res;
+
+            return _enumNameToValue != null && _enumNameToValue.TryGetValue(valueName, out res) ? res : (int?) null;
+        }
+
+        /// <summary>
+        /// Gets the name of the enum value.
+        /// </summary>
+        public string GetEnumName(int value)
+        {
+            if (!_isEnum)
+            {
+                throw new NotSupportedException("Can't get enum value for a non-enum type: " + _typeName);
+            }
+
+            string res;
+
+            return _enumValueToName != null && _enumValueToName.TryGetValue(value, out res) ? res : null;
+        }
+
+        /// <summary>
+        /// Gets the enum values.
+        /// </summary>
+        private static IDictionary<string, int> GetEnumValues(IBinaryTypeDescriptor desc)
+        {
+            if (desc == null || desc.Type == null || !desc.IsEnum)
+            {
+                return null;
+            }
+
+            return BinaryUtils.GetEnumValues(desc.Type);
         }
     }
 }

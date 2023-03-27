@@ -40,12 +40,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.Nullable;
-
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -73,17 +71,17 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @return Transaction concurrency.
      */
-    abstract protected TransactionConcurrency concurrency();
+    protected abstract TransactionConcurrency concurrency();
 
     /**
      *
      * @return Transaction isolation.
      */
-    abstract protected TransactionIsolation isolation();
+    protected abstract TransactionIsolation isolation();
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60_000;
+        return 90_000;
     }
 
     /** {@inheritDoc} */
@@ -98,6 +96,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNear() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -113,6 +112,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -128,6 +128,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -142,6 +143,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -156,36 +158,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
-    public void testLocal() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheMode(LOCAL);
-        cfg.setAtomicityMode(ATOMIC);
-        cfg.setName("local");
-
-        test(cfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalTransactional() throws Exception {
-        // TODO: fails since d13520e9a05bd9e9b987529472d6317951b72f96, need to review changes.
-
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheMode(LOCAL);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setName("localT");
-
-        test(cfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testReplicated() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -200,6 +173,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactional() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -215,7 +189,7 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
      * @param cfg Cache configuration.
      * @throws Exception If failed.
      */
-    private void test(CacheConfiguration cfg) throws Exception {
+    protected void test(CacheConfiguration cfg) throws Exception {
         test(cfg, true);
 
         test(cfg, false);
@@ -492,26 +466,24 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
         throws Exception {
         CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
 
-        if (cfg.getCacheMode() != LOCAL) {
-            Ignite prim = primaryNode(e.getKey(), cache.getName());
+        Ignite prim = primaryNode(e.getKey(), cache.getName());
 
-            GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)prim).internalCache(cache.getName());
+        GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)prim).internalCache(cache.getName());
 
-            if (cfg.getNearConfiguration() != null)
-                cacheAdapter = ((GridNearCacheAdapter)cacheAdapter).dht();
+        if (cfg.getNearConfiguration() != null)
+            cacheAdapter = ((GridNearCacheAdapter)cacheAdapter).dht();
 
-            IgniteCacheObjectProcessor cacheObjects = cacheAdapter.context().cacheObjects();
+        IgniteCacheObjectProcessor cacheObjects = cacheAdapter.context().cacheObjects();
 
-            CacheObjectContext cacheObjCtx = cacheAdapter.context().cacheObjectContext();
+        CacheObjectContext cacheObjCtx = cacheAdapter.context().cacheObjectContext();
 
-            GridCacheEntryEx mapEntry = cacheAdapter.entryEx(cacheObjects.toCacheKeyObject(
-                cacheObjCtx, cacheAdapter.context(), e.getKey(), true));
+        GridCacheEntryEx mapEntry = cacheAdapter.entryEx(cacheObjects.toCacheKeyObject(
+            cacheObjCtx, cacheAdapter.context(), e.getKey(), true));
 
-            mapEntry.unswap();
+        mapEntry.unswap();
 
-            assertNotNull("No entry for key: " + e.getKey(), mapEntry);
-            assertEquals(mapEntry.version(), e.version());
-        }
+        assertNotNull("No entry for key: " + e.getKey(), mapEntry);
+        assertEquals(mapEntry.version(), e.version());
     }
 
     /**

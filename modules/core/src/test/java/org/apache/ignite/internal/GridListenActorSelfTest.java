@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.ignite.messaging.MessagingListenActor}.
@@ -43,12 +44,6 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected void afterTest() throws Exception {
         ((IgniteKernal)grid()).context().io().
             removeMessageListener(GridTopic.TOPIC_COMM_USER.name());
@@ -58,6 +53,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if failed.
      */
+    @Test
     public void testBasicFlow() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -69,7 +65,8 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     // "Exit" after 1st message.
                     // Should never receive any more messages.
                     stop();
-                } else {
+                }
+                else {
                     assert false : "Unknown message: " + rcvMsg;
 
                     stop();
@@ -81,7 +78,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
         // Flood it.
         for (int i = 0; i < 100; i++)
-           grid().message().send(null, "TEST"); // This message should be lost...
+            grid().message().send(null, "TEST"); // This message should be lost...
 
         Thread.sleep(2000);
 
@@ -91,6 +88,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImmediateStop() throws Exception {
         doSendReceive(MSG_QTY, 1);
     }
@@ -98,6 +96,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReceiveAll() throws Exception {
         doSendReceive(MSG_QTY, MSG_QTY);
     }
@@ -107,6 +106,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRespondToRemote() throws Exception {
         startGrid(1);
 
@@ -150,6 +150,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingPong() throws Exception {
         final AtomicInteger pingCnt = new AtomicInteger();
         final AtomicInteger pongCnt = new AtomicInteger();
@@ -164,7 +165,8 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     pingCnt.incrementAndGet();
 
                     respond("PONG");
-                } else if ("PONG".equals(rcvMsg)) {
+                }
+                else if ("PONG".equals(rcvMsg)) {
                     pongCnt.incrementAndGet();
 
                     latch.countDown();
@@ -206,7 +208,8 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
                     System.out.println(Thread.currentThread().getName() + "Calling stop...");
 
                     stop();
-                } else if (cnt.intValue() < rcv)
+                }
+                else if (cnt.intValue() < rcv)
                     skip();
                 else
                     assert false;

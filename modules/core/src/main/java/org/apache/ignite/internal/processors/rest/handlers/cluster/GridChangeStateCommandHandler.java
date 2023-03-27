@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.cluster;
 
 import java.util.Collection;
-
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -26,12 +26,15 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_INACTIVE;
 
 /**
@@ -40,7 +43,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER
 public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
     private static final Collection<GridRestCommand> commands =
-        U.sealList(CLUSTER_ACTIVE, CLUSTER_INACTIVE, CLUSTER_CURRENT_STATE);
+        U.sealList(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE, CLUSTER_CURRENT_STATE, CLUSTER_ACTIVE, CLUSTER_INACTIVE);
 
     /**
      * @param ctx Context.
@@ -55,36 +58,24 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restRest) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restRest)
+        throws IgniteCheckedException {
         GridRestChangeStateRequest req = (GridRestChangeStateRequest)restRest;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
+        switch (req.command()) {
+            case CLUSTER_CURRENT_STATE:
+                Boolean currentState = ctx.state().publicApiActiveState(false);
 
-        final GridRestResponse res = new GridRestResponse();
+                return new GridFinishedFuture<>(new GridRestResponse(currentState));
 
-        try {
-            if (req.command().equals(CLUSTER_CURRENT_STATE)) {
-                Boolean currentState = ctx.state().active();
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
+                log.warning(req.command().key() + " is deprecated. Use newer commands.");
+            default:
+                ctx.state().changeGlobalState(req.active() ? ACTIVE : INACTIVE, req.forceDeactivation(),
+                    ctx.cluster().get().forServers().nodes(), false).get();
 
-                res.setResponse(currentState);
-            }
-            else
-                ctx.state().changeGlobalState(req.active()).get();
-
-            fut.onDone(res);
+                return new GridFinishedFuture<>(new GridRestResponse(req.command().key() + " started"));
         }
-        catch (Exception e) {
-            SB sb = new SB();
-
-            sb.a(e.getMessage()).a("\n").a("suppressed: \n");
-
-            for (Throwable t:e.getSuppressed())
-                sb.a(t.getMessage()).a("\n");
-
-            res.setError(sb.toString());
-
-            fut.onDone(res);
-        }
-        return fut;
     }
 }

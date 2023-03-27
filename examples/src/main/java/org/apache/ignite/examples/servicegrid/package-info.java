@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Demonstrates usage of grid-managed services.
  */
+
 package org.apache.ignite.examples.servicegrid;

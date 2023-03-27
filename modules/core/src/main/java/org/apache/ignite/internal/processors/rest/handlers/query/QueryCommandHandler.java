@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -62,7 +62,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.FETCH_S
  */
 public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /** Supported commands. */
-    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(EXECUTE_SQL_QUERY,
+    private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
+        EXECUTE_SQL_QUERY,
         EXECUTE_SQL_FIELDS_QUERY,
         EXECUTE_SCAN_QUERY,
         FETCH_SQL_QUERY,
@@ -219,12 +220,20 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         assert req instanceof RestQueryRequest : "Invalid type of query request.";
 
         if (req.command() != CLOSE_SQL_QUERY) {
-            Integer pageSize = ((RestQueryRequest) req).pageSize();
+            Integer pageSize = ((RestQueryRequest)req).pageSize();
 
             if (pageSize == null)
                 return new GridFinishedFuture<>(
-                        new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
+                    new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
                 );
+        }
+
+        if (req.command() != FETCH_SQL_QUERY && req.command() != CLOSE_SQL_QUERY) {
+            if (((RestQueryRequest)req).cacheName() == null) {
+                return new GridFinishedFuture<>(
+                    new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("cacheName"))
+                );
+            }
         }
 
         switch (req.command()) {
@@ -232,17 +241,17 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
             case EXECUTE_SQL_FIELDS_QUERY:
             case EXECUTE_SCAN_QUERY: {
                 return ctx.closure().callLocalSafe(
-                        new ExecuteQueryCallable(ctx, (RestQueryRequest) req, qryCurs), false);
+                    new ExecuteQueryCallable(ctx, (RestQueryRequest)req, qryCurs), false);
             }
 
             case FETCH_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                        new FetchQueryCallable((RestQueryRequest) req, qryCurs), false);
+                    new FetchQueryCallable((RestQueryRequest)req, qryCurs), false);
             }
 
             case CLOSE_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                        new CloseQueryCallable((RestQueryRequest) req, qryCurs), false);
+                    new CloseQueryCallable((RestQueryRequest)req, qryCurs), false);
             }
         }
 
@@ -252,7 +261,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Execute query callable.
      */
-    private static class ExecuteQueryCallable implements Callable<GridRestResponse> {
+    private static class ExecuteQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Kernal context. */
         private GridKernalContext ctx;
 
@@ -275,7 +284,6 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         @Override public GridRestResponse call() throws Exception {
             final long qryId = qryIdGen.getAndIncrement();
 
@@ -317,9 +325,13 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
                 IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 
-                if (cache == null)
+                if (cache == null) {
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
                         "Failed to find cache with name: " + req.cacheName());
+                }
+
+                if (req.keepBinary())
+                    cache = cache.withKeepBinary();
 
                 final QueryCursor qryCur = cache.query(qry);
 
@@ -389,7 +401,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Close query callable.
      */
-    private static class CloseQueryCallable implements Callable<GridRestResponse> {
+    private static class CloseQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Current queries cursors. */
         private final ConcurrentHashMap<Long, QueryCursorIterator> qryCurs;
 
@@ -440,7 +452,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Fetch query callable.
      */
-    private static class FetchQueryCallable implements Callable<GridRestResponse> {
+    private static class FetchQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Current queries cursors. */
         private final ConcurrentHashMap<Long, QueryCursorIterator> qryCurs;
 

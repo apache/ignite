@@ -52,12 +52,11 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -70,9 +69,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /** Total grid count within the cloud. */
     private static final int GRID_CNT = 2;
-
-    /** Default IP finder for single-JVM cloud grid. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Counts how many times master-leave interface implementation was called. */
     private static volatile CountDownLatch invokeLatch;
@@ -96,17 +92,12 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         awaitMasterLeaveCallback = true;
         latch = new CountDownLatch(1);
         jobLatch = new CountDownLatch(GRID_CNT - 1);
-        invokeLatch  = new CountDownLatch(GRID_CNT - 1);
+        invokeLatch = new CountDownLatch(GRID_CNT - 1);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCommunicationSpi(new CommunicationSpi());
 
@@ -145,8 +136,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalJobOnMaster() throws Exception {
-        invokeLatch  = new CountDownLatch(1);
+        invokeLatch = new CountDownLatch(1);
         jobLatch = new CountDownLatch(1);
 
         Ignite g = startGrid(0);
@@ -177,10 +169,12 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked when master node leaves topology normally.
+     * Ensure that {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware} callback is invoked
+     * when master node leaves topology normally.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterStoppedNormally() throws Exception {
         // Start grids.
         for (int i = 0; i < GRID_CNT; i++)
@@ -206,6 +200,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterStoppedAbruptly() throws Exception {
         // Start grids.
         for (int i = 0; i < GRID_CNT; i++)
@@ -233,6 +228,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCannotSendJobExecuteResponse() throws Exception {
         awaitMasterLeaveCallback = false;
 
@@ -259,6 +255,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         // Now we stop master grid.
         stopGrid(lastGridIdx, true);
 
+        waitForTopology(GRID_CNT - 1);
+
         // Release communication SPI wait latches. As master node is stopped, job worker will receive and exception.
         for (int i = 0; i < lastGridIdx; i++)
             ((CommunicationSpi)grid(i).configuration().getCommunicationSpi()).releaseWaitLatch();
@@ -269,6 +267,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
@@ -280,6 +279,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
@@ -291,6 +291,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply3() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
@@ -312,6 +313,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -323,6 +325,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -334,6 +337,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -345,6 +349,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -356,6 +361,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall3() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -377,6 +383,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -388,6 +395,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast2() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -399,6 +407,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast3() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -410,6 +419,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -425,6 +435,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
@@ -468,7 +479,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private void testMasterLeaveAwareCallback(int expJobs, IgniteClosure<ClusterGroup, IgniteFuture<?>> taskStarter)
         throws Exception {
         jobLatch = new CountDownLatch(expJobs);
-        invokeLatch  = new CountDownLatch(expJobs);
+        invokeLatch = new CountDownLatch(expJobs);
 
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
@@ -485,12 +496,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         assert invokeLatch.await(5000, MILLISECONDS);
 
-        try {
-            fut.get();
-        }
-        catch (IgniteException e) {
-            log.debug("Task failed: " + e);
-        }
+        GridTestUtils.assertThrows(log, () -> fut.get(), IgniteException.class, null);
     }
 
     /**

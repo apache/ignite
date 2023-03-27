@@ -23,7 +23,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 /**
  * Tests correct start of {@link RoundRobinLoadBalancingSpi}.
  */
-@SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "LoadBalancing SPI")
 public class GridRoundRobinLoadBalancingSpiStartStopSelfTest
     extends GridSpiStartStopAbstractTest<RoundRobinLoadBalancingSpi> {

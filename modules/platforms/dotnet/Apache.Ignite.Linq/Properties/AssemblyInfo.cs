@@ -21,20 +21,10 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Linq")]
 [assembly: AssemblyDescription("Apache Ignite.NET LINQ Provider")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright 2017")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("5b571661-17f4-4f29-8c7d-0edb38ca9b55")]
-
-[assembly: AssemblyVersion("2.1.0.19388")]
-[assembly: AssemblyFileVersion("2.1.0.19388")]
-[assembly: AssemblyInformationalVersion("2.1.0")]
 
 [assembly: CLSCompliant(true)]

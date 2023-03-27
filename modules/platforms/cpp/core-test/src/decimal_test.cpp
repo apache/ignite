@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/common/bits.h>
@@ -95,7 +91,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
 
         BOOST_CHECK_EQUAL(mag.GetSize(), 1);
 
-        BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
+        BOOST_CHECK_EQUAL(mag[0], 152399025UL);
     }
 
     // 152399025
@@ -107,7 +103,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
 
         BOOST_CHECK_EQUAL(mag.GetSize(), 1);
 
-        BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
+        BOOST_CHECK_EQUAL(mag[0], 152399025UL);
     }
 
     // 152399025
@@ -119,7 +115,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
 
         BOOST_CHECK_EQUAL(mag.GetSize(), 1);
 
-        BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
+        BOOST_CHECK_EQUAL(mag[0], 152399025UL);
     }
 
     // 152399025
@@ -131,7 +127,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
 
         BOOST_CHECK_EQUAL(mag.GetSize(), 1);
 
-        BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
+        BOOST_CHECK_EQUAL(mag[0], 152399025UL);
     }
 }
 
@@ -199,7 +195,7 @@ BOOST_AUTO_TEST_CASE(TestPowBigInteger)
 
         BOOST_CHECK_EQUAL(mag.GetSize(), 1);
 
-        BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
+        BOOST_CHECK_EQUAL(mag[0], 152399025UL);
     }
 
     // 3539537889086624823140625
@@ -296,7 +292,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyDivideSimple)
     BigInteger res;
     BigInteger rem;
 
-    val.AssignInt64(23225462820950625LL);
+    val.AssignInt64(23225462820950625L);
 
     // 23225462820 and 950625
     BigInteger bi1;
@@ -308,9 +304,9 @@ BOOST_AUTO_TEST_CASE(TestMultiplyDivideSimple)
     BigInteger bi4;
     bi1.Divide(BigInteger(1000000), bi3, bi4);
 
-    BOOST_CHECK_EQUAL(bi2.ToInt64(), 950625LL);
-    BOOST_CHECK_EQUAL(bi3.ToInt64(), 23225LL);
-    BOOST_CHECK_EQUAL(bi4.ToInt64(), 462820LL);
+    BOOST_CHECK_EQUAL(bi2.ToInt64(), 950625L);
+    BOOST_CHECK_EQUAL(bi3.ToInt64(), 23225L);
+    BOOST_CHECK_EQUAL(bi4.ToInt64(), 462820L);
 
     BigInteger(0).Divide(BigInteger(1), res, rem);
     
@@ -403,15 +399,15 @@ BOOST_AUTO_TEST_CASE(TestDivideBigger)
     BigInteger res;
     BigInteger rem;
 
-    BigInteger("4790467782742318458842833081").Divide(BigInteger(1000000000000000000LL), res, rem);
+    BigInteger("4790467782742318458842833081").Divide(BigInteger(1000000000000000000L), res, rem);
 
-    BOOST_CHECK_EQUAL(res.ToInt64(), 4790467782LL);
-    BOOST_CHECK_EQUAL(rem.ToInt64(), 742318458842833081LL);
+    BOOST_CHECK_EQUAL(res.ToInt64(), 4790467782L);
+    BOOST_CHECK_EQUAL(rem.ToInt64(), 742318458842833081L);
 
     BigInteger("4790467782742318458842833081").Divide(BigInteger("10000000000000000000"), res, rem);
 
-    BOOST_CHECK_EQUAL(res.ToInt64(), 479046778LL);
-    BOOST_CHECK_EQUAL(rem.ToInt64(), 2742318458842833081LL);
+    BOOST_CHECK_EQUAL(res.ToInt64(), 479046778L);
+    BOOST_CHECK_EQUAL(rem.ToInt64(), 2742318458842833081L);
 
     BigInteger("328569986734256745892025106351608546013457217305539845689265945043650274304152384502658961485730864386").Divide(
         BigInteger("759823640567289574925305534862590863490856903465"), res, rem);
@@ -463,11 +459,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleBigInteger)
     CheckOutputSimple<BigInteger>(12345678909876543);
     CheckOutputSimple<BigInteger>(123456789098765432);
     CheckOutputSimple<BigInteger>(1234567890987654321);
-    CheckOutputSimple<BigInteger>(999999999999999999LL);
-    CheckOutputSimple<BigInteger>(999999999099999999LL);
-    CheckOutputSimple<BigInteger>(1000000000000000000LL);
-    CheckOutputSimple<BigInteger>(1000000000000000001LL);
-    CheckOutputSimple<BigInteger>(1000000005000000000LL);
+    CheckOutputSimple<BigInteger>(999999999999999999L);
+    CheckOutputSimple<BigInteger>(999999999099999999L);
+    CheckOutputSimple<BigInteger>(1000000000000000000L);
+    CheckOutputSimple<BigInteger>(1000000000000000001L);
+    CheckOutputSimple<BigInteger>(1000000005000000000L);
     CheckOutputSimple<BigInteger>(INT64_MAX);
 
     CheckOutputSimple<BigInteger>(-1);
@@ -492,11 +488,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleBigInteger)
     CheckOutputSimple<BigInteger>(-12345678909876543);
     CheckOutputSimple<BigInteger>(-123456789098765432);
     CheckOutputSimple<BigInteger>(-1234567890987654321);
-    CheckOutputSimple<BigInteger>(-999999999999999999LL);
-    CheckOutputSimple<BigInteger>(-999999999999999999LL);
-    CheckOutputSimple<BigInteger>(-1000000000000000000LL);
-    CheckOutputSimple<BigInteger>(-1000000000000000001LL);
-    CheckOutputSimple<BigInteger>(-1000000000000000000LL);
+    CheckOutputSimple<BigInteger>(-999999999999999999L);
+    CheckOutputSimple<BigInteger>(-999999999999999999L);
+    CheckOutputSimple<BigInteger>(-1000000000000000000L);
+    CheckOutputSimple<BigInteger>(-1000000000000000001L);
+    CheckOutputSimple<BigInteger>(-1000000000000000000L);
     CheckOutputSimple<BigInteger>(INT64_MIN);
 }
 
@@ -526,11 +522,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleDecimal)
     CheckOutputSimple<Decimal>(12345678909876543);
     CheckOutputSimple<Decimal>(123456789098765432);
     CheckOutputSimple<Decimal>(1234567890987654321);
-    CheckOutputSimple<Decimal>(999999999999999999LL);
-    CheckOutputSimple<Decimal>(999999999099999999LL);
-    CheckOutputSimple<Decimal>(1000000000000000000LL);
-    CheckOutputSimple<Decimal>(1000000000000000001LL);
-    CheckOutputSimple<Decimal>(1000000005000000000LL);
+    CheckOutputSimple<Decimal>(999999999999999999L);
+    CheckOutputSimple<Decimal>(999999999099999999L);
+    CheckOutputSimple<Decimal>(1000000000000000000L);
+    CheckOutputSimple<Decimal>(1000000000000000001L);
+    CheckOutputSimple<Decimal>(1000000005000000000L);
     CheckOutputSimple<Decimal>(INT64_MAX);
 
     CheckOutputSimple<Decimal>(-1);
@@ -555,11 +551,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleDecimal)
     CheckOutputSimple<Decimal>(-12345678909876543);
     CheckOutputSimple<Decimal>(-123456789098765432);
     CheckOutputSimple<Decimal>(-1234567890987654321);
-    CheckOutputSimple<Decimal>(-999999999999999999LL);
-    CheckOutputSimple<Decimal>(-999999999099999999LL);
-    CheckOutputSimple<Decimal>(-1000000000000000000LL);
-    CheckOutputSimple<Decimal>(-1000000000000000001LL);
-    CheckOutputSimple<Decimal>(-1000000005000000000LL);
+    CheckOutputSimple<Decimal>(-999999999999999999L);
+    CheckOutputSimple<Decimal>(-999999999099999999L);
+    CheckOutputSimple<Decimal>(-1000000000000000000L);
+    CheckOutputSimple<Decimal>(-1000000000000000001L);
+    CheckOutputSimple<Decimal>(-1000000005000000000L);
     CheckOutputSimple<Decimal>(INT64_MIN);
 }
 BOOST_AUTO_TEST_CASE(TestInputOutputSimpleBigInteger)
@@ -782,11 +778,11 @@ BOOST_AUTO_TEST_CASE(TestInputSimpleDecimal)
     CheckOutputInput(Decimal(12345678909876543));
     CheckOutputInput(Decimal(123456789098765432));
     CheckOutputInput(Decimal(1234567890987654321));
-    CheckOutputInput(Decimal(999999999999999999LL));
-    CheckOutputInput(Decimal(999999999099999999LL));
-    CheckOutputInput(Decimal(1000000000000000000LL));
-    CheckOutputInput(Decimal(1000000000000000001LL));
-    CheckOutputInput(Decimal(1000000005000000000LL));
+    CheckOutputInput(Decimal(999999999999999999L));
+    CheckOutputInput(Decimal(999999999099999999L));
+    CheckOutputInput(Decimal(1000000000000000000L));
+    CheckOutputInput(Decimal(1000000000000000001L));
+    CheckOutputInput(Decimal(1000000005000000000L));
     CheckOutputInput(Decimal(INT64_MAX));
 
     CheckOutputInput(Decimal(-1));
@@ -811,11 +807,11 @@ BOOST_AUTO_TEST_CASE(TestInputSimpleDecimal)
     CheckOutputInput(Decimal(-12345678909876543));
     CheckOutputInput(Decimal(-123456789098765432));
     CheckOutputInput(Decimal(-1234567890987654321));
-    CheckOutputInput(Decimal(-999999999999999999LL));
-    CheckOutputInput(Decimal(-999999999099999999LL));
-    CheckOutputInput(Decimal(-1000000000000000000LL));
-    CheckOutputInput(Decimal(-1000000000000000001LL));
-    CheckOutputInput(Decimal(-1000000005000000000LL));
+    CheckOutputInput(Decimal(-999999999999999999L));
+    CheckOutputInput(Decimal(-999999999099999999L));
+    CheckOutputInput(Decimal(-1000000000000000000L));
+    CheckOutputInput(Decimal(-1000000000000000001L));
+    CheckOutputInput(Decimal(-1000000005000000000L));
     CheckOutputInput(Decimal(INT64_MIN));
 }
 
@@ -884,7 +880,7 @@ BOOST_AUTO_TEST_CASE(TestScalingBig)
     decimal.SetScale(0, decimal);
 
     BOOST_CHECK_EQUAL(decimal.GetPrecision(), 17);
-    BOOST_CHECK_EQUAL(decimal.ToInt64(), 63647190455381106LL);
+    BOOST_CHECK_EQUAL(decimal.ToInt64(), 63647190455381106L);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrecisionSimple)
@@ -911,16 +907,16 @@ BOOST_AUTO_TEST_CASE(TestPrecisionSimple)
     BOOST_CHECK_EQUAL(Decimal(8).GetPrecision(), 1);
     BOOST_CHECK_EQUAL(Decimal(9).GetPrecision(), 1);
 
-    BOOST_CHECK_EQUAL(Decimal(2147483648LL).GetPrecision(),           10); // 2^31:       10 digits
-    BOOST_CHECK_EQUAL(Decimal(-2147483648LL).GetPrecision(),          10); // -2^31:      10 digits
-    BOOST_CHECK_EQUAL(Decimal(98893745455LL).GetPrecision(),          11); // random:     11 digits
-    BOOST_CHECK_EQUAL(Decimal(3455436789887LL).GetPrecision(),        13); // random:     13 digits
-    BOOST_CHECK_EQUAL(Decimal(140737488355328LL).GetPrecision(),      15); // 2^47:       15 digits
-    BOOST_CHECK_EQUAL(Decimal(-140737488355328LL).GetPrecision(),     15); // -2^47:      15 digits
-    BOOST_CHECK_EQUAL(Decimal(7564232235739573LL).GetPrecision(),     16); // random:     16 digits
-    BOOST_CHECK_EQUAL(Decimal(25335434990002322LL).GetPrecision(),    17); // random:     17 digits
-    BOOST_CHECK_EQUAL(Decimal(9223372036854775807LL).GetPrecision(),  19); // 2^63 - 1:   19 digits
-    BOOST_CHECK_EQUAL(Decimal(-9223372036854775807LL).GetPrecision(), 19); // -2^63 + 1:  19 digits
+    BOOST_CHECK_EQUAL(Decimal(2147483648L).GetPrecision(),           10); // 2^31:       10 digits
+    BOOST_CHECK_EQUAL(Decimal(-2147483647L).GetPrecision(),          10); // -2^31+1:    10 digits
+    BOOST_CHECK_EQUAL(Decimal(98893745455L).GetPrecision(),          11); // random:     11 digits
+    BOOST_CHECK_EQUAL(Decimal(3455436789887L).GetPrecision(),        13); // random:     13 digits
+    BOOST_CHECK_EQUAL(Decimal(140737488355328L).GetPrecision(),      15); // 2^47:       15 digits
+    BOOST_CHECK_EQUAL(Decimal(-140737488355328L).GetPrecision(),     15); // -2^47:      15 digits
+    BOOST_CHECK_EQUAL(Decimal(7564232235739573L).GetPrecision(),     16); // random:     16 digits
+    BOOST_CHECK_EQUAL(Decimal(25335434990002322L).GetPrecision(),    17); // random:     17 digits
+    BOOST_CHECK_EQUAL(Decimal(9223372036854775807L).GetPrecision(),  19); // 2^63 - 1:   19 digits
+    BOOST_CHECK_EQUAL(Decimal(-9223372036854775807L).GetPrecision(), 19); // -2^63 + 1:  19 digits
 }
 
 BOOST_AUTO_TEST_CASE(TestPrecisionChange)

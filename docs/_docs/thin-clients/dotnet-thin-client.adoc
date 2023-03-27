@@ -1,0 +1,267 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= .NET Thin Client
+
+:sourceCodeFile: code-snippets/dotnet/ThinClient.cs
+
+== Prerequisites
+- Supported runtimes: .NET 4.0+, .NET Core 2.0+
+- Supported OS: Windows, Linux, macOS (any OS supported by .NET Core 2.0+)
+
+== Installation
+
+The .NET thin client API is provided by the Ignite.NET API library, which is located in the `{IGNITE_HOME}/platforms/dotnet` directory of the Ignite distribution package.
+The API is located in the `Apache.Ignite.Core` assembly.
+
+== Connecting to Cluster
+
+The thin client API entry point is the `Ignition.StartClient(IgniteClientConfiguration)` method.
+The `IgniteClientConfiguration.Endpoints` property is mandatory; it must point to the host where the server node is running.
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=connecting,indent=0]
+----
+
+=== Failover
+
+You can provide multiple node addresses. In this case thin client connects to a random node in the list, and *failover mechanism* is enabled: if a server node fails, client tries other known addresses and reconnects automatically.
+Note that `IgniteClientException` can be thrown if a server node fails while client operation is being performed -
+user code should handle this exception and implement retry logic accordingly.
+
+[[discovery]]
+=== Automatic Server Node Discovery
+
+Thin client can discover server nodes in the cluster automatically.
+This behavior is enabled when link:#partition_awareness[Partition Awareness] is enabled.
+
+Server discovery is an asynchronous process - it happens in the background.
+Additionally, thin client receives topology updates only when it performs some operations (to minimize server load and network traffic from idle connections).
+
+You can observe the discovery process by enabling logging and/or calling `IIgniteClient.GetConnections`:
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=discovery,indent=0]
+----
+
+[WARNING]
+====
+[discrete]
+Server discovery may not work when servers are behind a NAT server or a proxy.
+Server nodes provide their addresses and ports to the client, but when the client is in a different subnet, those addresses won't work.
+====
+
+[[partition_awareness]]
+== Partition Awareness
+
+Partition awareness allows the thin client to send query requests directly to the node that owns the queried data.
+
+Without partition awareness, an application that is connected to the cluster via a thin client executes all queries and operations via a single server node that acts as a proxy for the incoming requests.
+These operations are then re-routed to the node that stores the data that is being requested.
+This results in a bottleneck that could prevent the application from scaling linearly.
+
+image::images/partitionawareness01.png[Without Partition Awareness]
+
+Notice how queries must pass through the proxy server node, where they are routed to the correct node.
+
+With partition awareness in place, the thin client can directly route queries and operations to the primary nodes that own the data required for the queries.
+This eliminates the bottleneck, allowing the application to scale more easily.
+
+image::images/partitionawareness02.png[With Partition Awareness]
+
+To enable partition awareness, set the `IgniteClientConfiguration.EnablePartitionAwareness` property to `true`.
+This enables link:#discovery[server discovery] as well.
+If the client is behind a NAT or a proxy, automatic server discovery may not work.
+In this case provide addresses of all server nodes in the client's connection configuration.
+
+
+== Using Key-Value API
+
+
+=== Getting Cache Instance
+The `ICacheClient` interface provides the key-value API. You can use the following methods to obtain an instance of `ICacheClient`:
+
+- `GetCache(cacheName)` — returns an instance of an existing cache.
+- `CreateCache(cacheName)` — creates a cache with the given name.
+- `GetOrCreateCache(CacheClientConfiguration)` — gets or creates a cache with the given configuration.
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=createCache,indent=0]
+----
+
+Use `IIgniteClient.GetCacheNames()` to obtain a list of all existing caches.
+
+=== Basic Operations
+The following code snippet demonstrates how to execute basic cache operations on a specific cache.
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=basicOperations,indent=0]
+----
+
+////
+=== Asynchronous Execution
+////
+
+
+=== Working With Binary Objects
+The .NET thin client supports the Binary Object API described in the link:key-value-api/binary-objects[Working with Binary Objects] section. Use `ICacheClient.WithKeepBinary()` to switch the cache to binary mode and start working directly with binary objects avoiding serialization/deserialization. Use `IIgniteClient.GetBinary()` to get an instance of `IBinary` and build an object from scratch.
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=binaryObj,indent=0]
+----
+
+== Scan Queries
+Use a scan query to get a set of entries that satisfy a given condition.
+The thin client sends the query to the cluster node where it is executed as a normal scan query.
+
+The query condition is specified by an `ICacheEntryFilter` object that is passed to the query constructor as an argument.
+
+Define a query filter as follows:
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=scanQry,indent=0]
+----
+
+Then execute the scan query:
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=scanQry2,indent=0]
+----
+
+
+== Executing SQL Statements
+
+The thin client provides a SQL API to execute SQL statements. SQL statements are declared using `SqlFieldsQuery` objects and executed through the `ICacheClient.Query(SqlFieldsQuery)` method.
+Alternatively, SQL queries can be performed via Ignite LINQ provider.
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=executingSql,indent=0]
+----
+
+
+== Using Cluster API
+
+The cluster APIs let you create a group of cluster nodes and run various operations against the group. The `IClientCluster`
+interface is the entry-point to the APIs that can be used as follows:
+
+* Get or change the state of a cluster
+* Get a list of all cluster nodes
+* Create logical groups our of cluster nodes and use other Ignite APIs to perform certain operations on the group
+
+Use the instance of `IClientCluster` to obtain a reference to the `IClientCluster` that comprises all cluster nodes, and
+activate the whole cluster as well as write-ahead-logging for the `my-cache` cache:
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-cluster,indent=0]
+-------------------------------------------------------------------------------
+
+=== Logical nodes grouping
+
+You can use the `IClientClusterGroup` interface of the cluster APIs to create various groups of cluster nodes. For instance,
+one group can comprise all servers nodes, while the other group can include only those nodes that match a specific
+TCP/IP address format. The example below shows how to create a group of server nodes located in the `dc1` data center:
+
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-cluster-groups,indent=0]
+-------------------------------------------------------------------------------
+
+Note, the `IClientCluster` instance implements `IClientClusterGroup` which is the root cluster group that includes all
+nodes of the cluster.
+
+Refer to the main link:distributed-computing/cluster-groups[cluster groups] documentation page for more details on the capability.
+
+== Executing Compute Tasks
+
+Presently, the .NET thin client supports basic link:distributed-computing/distributed-computing[compute capabilities]
+by letting you execute those compute tasks that are *already deployed* in the cluster. You can either run a task across all
+cluster nodes or a specific link:thin-clients/dotnet-thin-client#logical-nodes-grouping[cluster group].
+
+By default, the execution of tasks, triggered by the thin client, is disabled on the cluster side. You need to set the
+`ThinClientConfiguration.MaxActiveComputeTasksPerConnection` parameter to a non-zero value in the configuration of your
+server nodes and thick clients:
+
+[tabs]
+--
+tab:Spring XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
+  <property name="clientConnectorConfiguration">
+    <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+      <property name="thinClientConfiguration">
+        <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+          <property name="maxActiveComputeTasksPerConnection" value="100" />
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+tab:C#[]
+[source,csharp]
+----
+include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
+----
+--
+
+The example below shows how to get access to the compute APIs via the `IComputeClient` interface and execute the compute
+task named `org.foo.bar.AddOneTask` passing `1` as an input parameter:
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-compute-task,indent=0]
+-------------------------------------------------------------------------------
+
+== Executing Ignite Services
+
+You can use the `IServicesClient` API to invoke an link:services/services[Ignite Service] that
+is *already deployed* in the cluster. See link:services/services[Using Ignite Services] for more information on service deployment.
+
+The example below shows how to invoke the service named `MyService`:
+[source, csharp]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-services,indent=0]
+-------------------------------------------------------------------------------
+
+The thin client allows to execute services implemented in Java or .NET.
+
+
+== Security
+
+=== SSL/TLS
+
+To use encrypted communication between the thin client and the cluster, you have to enable SSL/TLS in both the cluster configuration and the client configuration. Refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls-for-thin-clients[Enabling SSL/TLS for Thin Clients] section for the instruction on the cluster configuration.
+
+The following code example demonstrates how to configure SSL parameters in the thin client.
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=ssl,indent=0]
+----
+
+
+=== Authentication
+
+
+Configure link:security/authentication[authentication on the cluster side] and provide a valid user name and password in the client configuration.
+
+[source, csharp]
+----
+include::{sourceCodeFile}[tag=auth,indent=0]
+----

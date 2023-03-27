@@ -18,23 +18,30 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
  */
-public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
-        extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "1000000")
+public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
+    IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /**
      * Tests join query within region on unstable topology.
      */
+    @Test
     public void testJoinQueryUnstableTopology() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -45,8 +52,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
         final AtomicInteger cnt = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 while (!stop.get()) {
                     doTestJoinQuery(client, rnd.nextInt(PARTS_PER_REGION.length) + 1);
 
@@ -61,8 +67,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
         final AtomicIntegerArray restartStats = new AtomicIntegerArray(GRIDS_COUNT);
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 while (!stop.get()) {
                     int grid = rnd.nextInt(GRIDS_COUNT);
 
@@ -82,10 +87,19 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
 
-                            startGrid(grid);
+                            IgniteEx g = startGrid(grid);
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
-                        } finally {
+
+                            // Avoid data loss on random restarts.
+                            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                                @Override public boolean apply() {
+                                    return !g.cachex("cl").context().topology().hasMovingPartitions() ||
+                                        !g.cachex("de").context().topology().hasMovingPartitions();
+                                }
+                            }, 30_000));
+                        }
+                        finally {
                             states.set(grid, 0);
                         }
                     }
@@ -95,15 +109,17 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
             }
         }, RESTART_THREADS_CNT);
 
-        try {
-            fut2.get(60, TimeUnit.SECONDS);
-        } catch (IgniteFutureTimeoutCheckedException ignored) {
-            stop.set(true);
-        }
+        // Test duration.
+        U.sleep(GridTestUtils.SF.applyLB(60_000, 20_000));
+
+        stop.set(true);
 
         try {
             fut.get();
-        } finally {
+
+            fut2.get();
+        }
+        finally {
             log().info("Queries count: " + cnt.get());
 
             for (int i = 0; i < GRIDS_COUNT; i++)

@@ -26,7 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
  * Initial message sent by a node that wants to enter topology.
  * Sent to random node during SPI start. Then forwarded directly to coordinator.
  */
-public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,9 +58,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
         return node;
     }
 
-    /**
-     *
-     */
+    /** @return Discovery data container that collects data from all cluster nodes. */
     public DiscoveryDataPacket gridDiscoveryData() {
         return dataPacket;
     }

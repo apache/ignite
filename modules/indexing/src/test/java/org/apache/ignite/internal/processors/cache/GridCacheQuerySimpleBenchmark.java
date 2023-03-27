@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -35,19 +36,16 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
  */
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private Ignite ignite;
 
@@ -55,13 +53,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("offheap-cache");
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -95,10 +87,11 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         Random rnd = new GridRandom();
 
-        final IgniteCache<Long,Person> c = ignite.cache("offheap-cache");
+        final IgniteCache<Long, Person> c = ignite.cache("offheap-cache");
 
         X.println("___ PUT start");
 
@@ -112,7 +105,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
 
         final AtomicBoolean end = new AtomicBoolean();
 
-        final LongAdder8 puts = new LongAdder8();
+        final LongAdder puts = new LongAdder();
 
         IgniteInternalFuture<?> fut0 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -130,7 +123,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
             }
         }, 10);
 
-        final LongAdder8 qrys = new LongAdder8();
+        final LongAdder qrys = new LongAdder();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {

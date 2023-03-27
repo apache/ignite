@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.marshaller.optimized;
 
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -38,8 +36,6 @@ public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         // Reset static registry.
         new OptimizedMarshaller().setPoolSize(0);
     }

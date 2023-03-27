@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,28 +54,34 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy) {
+        return value(ctx, cpy, null);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
         cpy = cpy && needCopy(ctx);
 
         try {
+            GridKernalContext kernalCtx = ctx.kernalContext();
+
+            IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
+
             if (cpy) {
                 if (valBytes == null) {
                     assert val != null;
 
-                    valBytes = ctx.processor().marshal(ctx, val);
+                    valBytes = valueBytesFromValue(ctx);
                 }
 
-                ClassLoader clsLdr;
+                if (ldr == null) {
+                    if (val != null)
+                        ldr = val.getClass().getClassLoader();
+                    else if (kernalCtx.config().isPeerClassLoadingEnabled())
+                        ldr = kernalCtx.cache().context().deploy().globalLoader();
+                }
 
-                if (val != null)
-                    clsLdr = val.getClass().getClassLoader();
-                else if (ctx.kernalContext().config().isPeerClassLoadingEnabled())
-                    clsLdr = ctx.kernalContext().cache().context().deploy().globalLoader();
-                else
-                    clsLdr = null;
-
-                return (T)ctx.processor().unmarshal(ctx, valBytes, clsLdr);
+                return (T)proc.unmarshal(ctx, valBytes, ldr);
             }
 
             if (val != null)
@@ -81,9 +89,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            Object val = ctx.processor().unmarshal(ctx, valBytes,
-                ctx.kernalContext().config().isPeerClassLoadingEnabled() ?
-                    ctx.kernalContext().cache().context().deploy().globalLoader() : null);
+            Object val = valueFromValueBytes(ctx, kernalCtx.config().isPeerClassLoadingEnabled() ?
+                kernalCtx.cache().context().deploy().globalLoader() : null);
 
             if (ctx.storeValue())
                 this.val = val;
@@ -96,27 +103,27 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.processor().marshal(ctx, val);
+            valBytes = valueBytesFromValue(ctx);
 
         return valBytes;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = valueBytesFromValue(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
         if (val == null && ctx.storeValue())
-            val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+            val = valueFromValueBytes(ctx, ldr);
     }
 
     /** {@inheritDoc} */

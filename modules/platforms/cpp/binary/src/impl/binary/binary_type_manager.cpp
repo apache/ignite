@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+#include <vector>
+#include <map>
+#include <algorithm>
+
 #include <ignite/common/concurrent.h>
 
 #include "ignite/impl/binary/binary_type_manager.h"
-#include <algorithm>
 
 using namespace ignite::common::concurrent;
 
@@ -41,31 +44,37 @@ namespace ignite
 
             BinaryTypeManager::~BinaryTypeManager()
             {
-                pending->erase(pending->begin(), pending->end());
-
+                delete snapshots;
                 delete pending;
             }
 
-            SharedPointer<BinaryTypeHandler> BinaryTypeManager::GetHandler(const std::string& typeName, int32_t typeId)
+            SharedPointer<BinaryTypeHandler> BinaryTypeManager::GetHandler(const std::string& typeName,
+                const std::string& affFieldName, int32_t typeId)
             {
-                std::map<int32_t, SPSnap>& snapshots0 = *snapshots.Get();
-
                 { // Locking scope.
                     CsLockGuard guard(cs);
 
-                    std::map<int32_t, SPSnap>::iterator it = snapshots0.find(typeId);
-                    if (it != snapshots0.end())
+                    std::map<int32_t, SPSnap>::iterator it = snapshots->find(typeId);
+                    if (it != snapshots->end())
                         return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(it->second));
+
+                    for (size_t i = 0; i < pending->size(); ++i)
+                    {
+                        SPSnap& snap = (*pending)[i];
+
+                        if (snap.Get()->GetTypeId() == typeId)
+                            return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(snap));
+                    }
                 }
 
-                SPSnap snapshot = SPSnap(new Snap(typeName ,typeId));
+                SPSnap snapshot = SPSnap(new Snap(typeName, affFieldName, typeId));
 
                 return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(snapshot));
             }
 
             void BinaryTypeManager::SubmitHandler(BinaryTypeHandler& hnd)
             {
-                // If this is the very first write of a class or difference exists, 
+                // If this is the very first write of a class or difference exists,
                 // we need to enqueue it for write.
                 if (hnd.HasUpdate())
                 {
@@ -93,54 +102,47 @@ namespace ignite
 
             bool BinaryTypeManager::ProcessPendingUpdates(IgniteError& err)
             {
-                if (!updater)
-                    return false;
-
                 CsLockGuard guard(cs);
+
+                if (!updater)
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Updater is not set");
+
+                    return false;
+                }
 
                 for (std::vector<SPSnap>::iterator it = pending->begin(); it != pending->end(); ++it)
                 {
                     Snap* pendingSnap = it->Get();
 
+                    if (!pendingSnap)
+                        continue; // Snapshot has been processed already.
+
                     if (!updater->Update(*pendingSnap, err))
-                        return false; // Stop as we cannot move further.
-
-                    // Perform copy-on-write update of snapshot collection.
-                    SharedPointer< std::map<int32_t, SPSnap> > newSnapshots(new std::map<int32_t, SPSnap>());
-                    std::map<int32_t, SPSnap>& newSnapshots0 = *newSnapshots.Get();
-
-                    bool snapshotFound = false;
-
-                    for (std::map<int32_t, SPSnap>::iterator snapIt = snapshots.Get()->begin();
-                        snapIt != snapshots.Get()->end(); ++snapIt)
                     {
-                        int32_t curTypeId = snapIt->first;
-                        Snap* curSnap = snapIt->second.Get();
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not send update");
 
-                        if (pendingSnap->GetTypeId() != curTypeId)
-                        {
-                            // Just transfer exising snapshot.
-                            newSnapshots0[curTypeId] = snapIt->second;
-
-                            continue;
-                        }
-
-                        // Create new snapshot.
-                        SPSnap newSnap(new Snap(*pendingSnap));
-
-                        // Add old fields.
-                        newSnap.Get()->CopyFieldsFrom(curSnap);
-
-                        newSnapshots0[curTypeId].Swap(newSnap);
-
-                        snapshotFound = true;
+                        return false; // Stop as we cannot move further.
                     }
 
-                    // Handle situation when completely new snapshot is found.
-                    if (!snapshotFound)
-                        newSnapshots0[pendingSnap->GetTypeId()] = *it;
+                    std::map<int32_t, SPSnap>::iterator elem = snapshots->lower_bound(pendingSnap->GetTypeId());
 
-                    snapshots.Swap(newSnapshots);
+                    if (elem == snapshots->end() || elem->first != pendingSnap->GetTypeId())
+                        snapshots->insert(elem, std::make_pair(pendingSnap->GetTypeId(), *it));
+                    else
+                    {
+                        // Temporary snapshot.
+                        SPSnap tmp;
+
+                        // Move all values from pending update.
+                        tmp.Swap(*it);
+
+                        // Add old fields. Only non-existing values added.
+                        tmp.Get()->CopyFieldsFrom(elem->second.Get());
+
+                        // Move to snapshots storage.
+                        tmp.Swap(elem->second);
+                    }
                 }
 
                 pending->clear();
@@ -150,14 +152,23 @@ namespace ignite
                 return true;
             }
 
+            void BinaryTypeManager::SetUpdater(BinaryTypeUpdater* updater)
+            {
+                CsLockGuard guard(cs);
+
+                this->updater = updater;
+            }
+
             SPSnap BinaryTypeManager::GetMeta(int32_t typeId)
             {
-                std::map<int32_t, SPSnap>::iterator it = snapshots.Get()->find(typeId);
+                CsLockGuard guard(cs);
 
-                if (it != snapshots.Get()->end() && it->second.Get())
+                std::map<int32_t, SPSnap>::iterator it = snapshots->find(typeId);
+
+                if (it != snapshots->end() && it->second.Get())
                     return it->second;
 
-                for (int32_t i = 0; i < pending->size(); ++i)
+                for (size_t i = 0; i < pending->size(); ++i)
                 {
                     SPSnap& snap = (*pending)[i];
 
@@ -165,11 +176,17 @@ namespace ignite
                         return snap;
                 }
 
+                if (!updater)
+                    throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "Metadata updater is not available.");
+
                 IgniteError err;
 
                 SPSnap snap = updater->GetMeta(typeId, err);
 
                 IgniteError::ThrowIfNeeded(err);
+
+                // Caching meta snapshot for faster access in future.
+                snapshots->insert(std::make_pair(typeId, snap));
 
                 return snap;
             }

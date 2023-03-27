@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.beans.PropertyDescriptor;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.w3c.dom.Element;
 
 /**
@@ -80,10 +80,30 @@ public class PojoValueField extends PojoField {
     /**
      * Constructs Ignite cache value field descriptor.
      *
-     * @param desc field property descriptor.
+     * @param accessor field property accessor.
      */
-    public PojoValueField(PropertyDescriptor desc) {
-        super(desc);
+    public PojoValueField(PojoFieldAccessor accessor) {
+        super(accessor);
+
+        QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
+
+        isIndexed = sqlField != null && sqlField.index();
+    }
+
+    /**
+     * Constructs instance of {@code PojoValueField} based on the other instance and java class
+     * to initialize accessor.
+     *
+     * @param field PojoValueField instance
+     * @param pojoCls java class of the corresponding POJO
+     */
+    public PojoValueField(PojoValueField field, Class<?> pojoCls) {
+        super(field, pojoCls);
+
+        isStatic = field.isStatic;
+        isIndexed = field.isIndexed;
+        idxCls = field.idxCls;
+        idxOptions = field.idxOptions;
     }
 
     /** {@inheritDoc} */

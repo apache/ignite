@@ -1,0 +1,649 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= JDBC Driver
+:javaFile: {javaCodeDir}/JDBCThinDriver.java
+
+Ignite is shipped with JDBC drivers that allow processing of distributed data using standard SQL statements like `SELECT`, `INSERT`, `UPDATE` or `DELETE` directly from the JDBC side.
+
+Presently, there are two drivers supported by Ignite: the lightweight and easy to use JDBC Thin Driver described in this document and link:SQL/JDBC/jdbc-client-driver[JDBC Client Driver] that interacts with the cluster by means of a client node.
+
+== JDBC Thin Driver
+
+The JDBC Thin driver is a default, lightweight driver provided by Ignite. To start using the driver, just add `ignite-core-{version}.jar` to your application's classpath.
+
+The driver connects to one of the cluster nodes and forwards all the queries to it for final execution. The node handles the query distribution and the result's aggregations. Then the result is sent back to the client application.
+
+The JDBC connection string may be formatted with one of two patterns: `URL query` or `semicolon`:
+
+
+
+.Connection String Syntax
+[source,text]
+----
+// URL query pattern
+jdbc:ignite:thin://<hostAndPortRange0>[,<hostAndPortRange1>]...[,<hostAndPortRangeN>][/schema][?<params>]
+
+hostAndPortRange := host[:port_from[..port_to]]
+
+params := param1=value1[&param2=value2]...[&paramN=valueN]
+
+// Semicolon pattern
+jdbc:ignite:thin://<hostAndPortRange0>[,<hostAndPortRange1>]...[,<hostAndPortRangeN>][;schema=<schema_name>][;param1=value1]...[;paramN=valueN]
+----
+
+
+- `host` is required and defines the host of the cluster node to connect to.
+- `port_from` is the beginning of the port range to use to open the connection. 10800 is used by default if this parameter is omitted.
+- `port_to` is optional. It is set to the `port_from` value by default if this parameter is omitted.
+- `schema` is the schema name to access. PUBLIC is used by default. This name should correspond to the SQL ANSI-99 standard. Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive. When semicolon format is used, the schema may be defined as a parameter with name schema.
+- `<params>` are optional.
+
+The name of the driver's class is `org.apache.ignite.IgniteJdbcThinDriver`. For instance, this is how you can open a JDBC connection to the cluster node listening on IP address 192.168.0.50:
+
+[source,java]
+----
+include::{javaFile}[tags=get-connection, indent=0]
+----
+
+
+[NOTE]
+====
+[discrete]
+=== Put the JDBC URL in quotes when connecting from bash
+
+Make sure to put the connection URL in double quotes (" ") when connecting from a bash environment, for example: `"jdbc:ignite:thin://[address]:[port];user=[username];password=[password]"`
+====
+
+=== Parameters
+The following table lists all the parameters that are supported by the JDBC connection string:
+
+[width="100%",cols="30%,40%,30%"]
+|=======================================================================
+|Parameter |Description |Default Value
+
+|`user`
+|Username for the SQL Connection. This parameter is required if authentication is enabled on the server.
+See the link:security/authentication[Authentication] and link:sql-reference/ddl#create-user[CREATE user] documentation for more details.
+|ignite
+
+|`password`
+|Password for SQL Connection. Required if authentication is enabled on the server.
+See the link:security/authentication[Authentication] and link:sql-reference/ddl#create-user[CREATE user] documentation for more details.
+|`ignite`
+
+|`distributedJoins`
+|Whether to execute distributed joins in link:SQL/distributed-joins#non-colocated-joins[non-colocated mode].
+|false
+
+|`enforceJoinOrder`
+
+|Whether to enforce join order of tables in the query. If set to `true`, the query optimizer does not reorder tables in the join.
+
+|`false`
+
+|`collocated`
+
+| Set this parameter to `true` if your SQL statement includes a GROUP BY clause that groups the results by either primary
+  or affinity key. Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members. If
+  you know in advance that the elements of your query selection are colocated together on the same node and you group by
+  a primary or affinity key, then Ignite makes significant performance and network optimizations by grouping data locally
+   on each node participating in the query.
+|`false`
+
+|`replicatedOnly`
+
+|Whether the query contains only replicated tables. This is a hint for potentially more effective execution.
+
+|`false`
+
+|`autoCloseServerCursor`
+|Whether to close server-side cursors automatically when the last piece of a result set is retrieved. When this property is enabled, calling `ResultSet.close()` does not require a network call, which could improve performance. However, if the server-side cursor is already closed, you may get an exception when trying to call `ResultSet.getMetadata()`. This is why it defaults to `false`.
+|`false`
+
+| `partitionAwareness`
+| Enables xref:partition-awareness[] mode. In this mode, the driver tries to determine the nodes where the data that is being queried is located and send the query to these nodes.
+| `false`
+
+|`partitionAwarenessSQLCacheSize` [[partitionAwarenessSQLCacheSize]]
+| The number of distinct SQL queries that the driver keeps locally for optimization. When a query is executed for the first time, the driver receives the partition distribution for the table that is being queried and saves it for future use locally. When you query this table next time, the driver uses the partition distribution to determine where the data being queried is located to send the query to the right nodes. This local storage with SQL queries invalidates when the cluster topology changes. The optimal value for this parameter should equal the number of distinct SQL queries you are going to perform.
+| 1000
+
+|`partitionAwarenessPartitionDistributionsCacheSize` [[partitionAwarenessPartitionDistributionsCacheSize]]
+| The number of distinct objects that represent partition distribution that the driver keeps locally for optimization. See the description of the previous parameter for details. This local storage with partition distribution objects invalidates when the cluster topology changes. The optimal value for this parameter should equal the number of distinct tables (link:configuring-caches/cache-groups[cache groups]) you are going to use in your queries.
+| 1000
+
+|`socketSendBuffer`
+|Socket send buffer size. When set to 0, the OS default is used.
+|0
+
+|`socketReceiveBuffer`
+|Socket receive buffer size. When set to 0, the OS default is used.
+|0
+
+|`tcpNoDelay`
+| Whether to use `TCP_NODELAY` option.
+|`true`
+
+|`lazy`
+|Lazy query execution.
+By default, Ignite attempts to get and load the whole query result set into memory and then send it to the client. For small and medium result sets, this provides optimal performance and minimizes the duration of internal database locks, thus increasing concurrency.
+However, if the result set is too big to fit in the available memory, then it can lead to excessive GC pauses and even 'OutOfMemoryError's. Use this flag to tell Ignite to fetch the result set lazily, thus minimizing memory consumption at the cost of a moderate performance hit.
+|`false`
+
+|`skipReducerOnUpdate`
+|Enables server side updates.
+When Ignite executes a DML operation, it fetches all the affected intermediate rows and sends them to the query initiator (also known as reducer) for analysis. Then it prepares batches of updated values to be sent to remote nodes.
+This approach might impact performance and it can saturate the network if a DML operation has to move many entries over it.
+Use this flag to tell Ignite to perform all intermediate row analysis and updates "in-place" on corresponding remote data nodes.
+Defaults to `false`, meaning that the intermediate results are fetched to the query initiator first.
+|`false`
+
+
+|=======================================================================
+
+For the list of security parameters, refer to the <<Using SSL>> section.
+
+=== Connection String Examples
+
+- `jdbc:ignite:thin://myHost` - connect to myHost on the port 10800 with all defaults.
+- `jdbc:ignite:thin://myHost:11900` - connect to myHost on custom port 11900 with all defaults.
+- `jdbc:ignite:thin://myHost:11900;user=ignite;password=ignite` - connect to myHost on custom port 11900 with user credentials for authentication.
+- `jdbc:ignite:thin://myHost:11900;distributedJoins=true&autoCloseServerCursor=true` - connect to myHost on custom port 11900 with enabled distributed joins and autoCloseServerCursor optimization.
+- `jdbc:ignite:thin://myHost:11900/myschema;` - connect to myHost on custom port 11900 and access to MYSCHEMA.
+- `jdbc:ignite:thin://myHost:11900/"MySchema";lazy=false` - connect to myHost on custom port 11900 with disabled lazy query execution and access to MySchema (schema name is case sensitive).
+
+=== Multiple Endpoints
+
+You can enable automatic failover if a current connection is broken by setting multiple connection endpoints in the connection string.
+The JDBC Driver randomly picks an address from the list to connect to. If the connection fails, the JDBC Driver selects another address from the list until the connection is restored.
+The Driver stops reconnecting and throws an exception if all the endpoints are unreachable.
+
+The example below shows how to pass three addresses via the connection string:
+
+[source,java]
+----
+include::{javaFile}[tags=multiple-endpoints, indent=0]
+----
+
+
+=== Partition Awareness [[partition-awareness]]
+
+[WARNING]
+====
+[discrete]
+Partition awareness is an experimental feature whose API or design architecture might be changed
+before a GA version is released.
+====
+
+Partition awareness is a feature that makes the JDBC driver "aware" of the partition distribution in the cluster.
+It allows the driver to pick the nodes that own the data that is being queried and send the query directly to those nodes
+(if the addresses of the nodes are provided in the driver's configuration). Partition awareness can increase average
+performance of queries that use the affinity key.
+
+Without partition awareness, the JDBC driver connects to a single node, and all queries are executed through that node.
+If the data is hosted on a different node, the query has to be rerouted within the cluster, which adds an additional network hop.
+Partition awareness eliminates that hop by sending the query to the right node.
+
+To make use of the partition awareness feature, provide the addresses of all the server nodes in the connection properties.
+The driver will route requests to the nodes that store the data requested by the query.
+
+[WARNING]
+====
+[discrete]
+Note that presently you need to provide the addresses of all server nodes in the connection properties because the driver does not load them automatically after a connection is opened.
+It also means that if a new server node joins the cluster, you are advised to reconnect the driver and add the node's address to the connection properties.
+Otherwise, the driver will not be able to send direct requests to this node.
+====
+
+To enable partition awareness, add the `partitionAwareness=true` parameter to the connection string and provide the
+endpoints of multiple server nodes:
+
+[source, java]
+----
+include::{javaFile}[tags=partition-awareness, indent=0]
+----
+
+NOTE: Partition Awareness can be used only with the default affinity function.
+
+Also see the description of the two related parameters: xref:partitionAwarenessSQLCacheSize[partitionAwarenessSQLCacheSize] and xref:partitionAwarenessPartitionDistributionsCacheSize[partitionAwarenessPartitionDistributionsCacheSize].
+
+
+=== Cluster Configuration
+
+In order to accept and process requests from JDBC Thin Driver, a cluster node binds to a local network interface on port 10800 and listens to incoming requests.
+
+Use an instance of `ClientConnectorConfiguration` to change the connection parameters:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+  <property name="clientConnectorConfiguration">
+    <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration" />
+  </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration()
+    .setClientConnectorConfiguration(new ClientConnectorConfiguration());
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+The following parameters are supported:
+
+[width="100%",cols="30%,55%,15%"]
+|=======================================================================
+|Parameter |Description |Default Value
+
+|`host`
+
+|Host name or IP address to bind to. When set to `null`, binding is made to `localhost`.
+
+|`null`
+
+|`port`
+
+|TCP port to bind to. If the specified port is already in use, Ignite tries to find another available port using the `portRange` property.
+
+|`10800`
+
+|`portRange`
+
+| Defines the number of ports to try to bind to. E.g. if the port is set to `10800` and `portRange` is `100`, then the server tries to bind consecutively to any port in the `[10800, 10900]` range until it finds a free port.
+
+|`100`
+
+|`maxOpenCursorsPerConnection`
+
+|Maximum number of cursors that can be opened simultaneously for a single connection.
+
+|`128`
+
+|`threadPoolSize`
+
+|Number of request-handling threads in the thread pool.
+
+|`MAX(8, CPU cores)`
+
+|`socketSendBufferSize`
+
+|Size of the TCP socket send buffer. When set to 0, the system default value is used.
+
+|`0`
+
+|`socketReceiveBufferSize`
+
+|Size of the TCP socket receive buffer. When set to 0, the system default value is used.
+
+|`0`
+
+|`tcpNoDelay`
+
+|Whether to use `TCP_NODELAY` option.
+
+|`true`
+
+|`idleTimeout`
+
+|Idle timeout for client connections.
+Clients are disconnected automatically from the server after remaining idle for the configured timeout.
+When this parameter is set to zero or a negative value, the idle timeout is disabled.
+
+|`0`
+
+|`isJdbcEnabled`
+
+|Whether access through JDBC is enabled.
+
+|`true`
+
+|`isThinClientEnabled`
+
+|Whether access through thin client is enabled.
+
+|`true`
+
+
+|`sslEnabled`
+
+|If SSL is enabled, only SSL client connections are allowed. The node allows only one mode of connection: `SSL` or `plain`. A node cannot receive both types of client connections. But this option can be different for different nodes in the cluster.
+
+|`false`
+
+|`useIgniteSslContextFactory`
+
+|Whether to use SSL context factory from the node's configuration (see `IgniteConfiguration.sslContextFactory`).
+
+|`true`
+
+|`sslClientAuth`
+
+|Whether client authentication is required.
+
+|`false`
+
+|`sslContextFactory`
+
+|The class name that implements `Factory<SSLContext>` to provide node-side SSL. See link:security/ssl-tls[this] for more information.
+
+|`null`
+|=======================================================================
+
+[WARNING]
+====
+[discrete]
+=== JDBC Thin Driver is not thread safe
+
+The JDBC objects `Connections`, `Statements`, and `ResultSet` are not thread safe.
+Do not use statements and results sets from a single JDBC Connection in multiple threads.
+
+JDBC Thin Driver guards against concurrency. If concurrent access is detected, an exception
+(`SQLException`) is produced with the following message:
+
+....
+"Concurrent access to JDBC connection is not allowed
+[ownThread=<guard_owner_thread_name>, curThread=<current_thread_name>]",
+SQLSTATE="08006"
+....
+====
+
+
+=== Using SSL
+
+You can configure the JDBC Thin Driver to use SSL to secure communication with the cluster.
+SSL must be configured both on the cluster side and in the JDBC Driver.
+Refer to the  link:security/ssl-tls#ssl-for-clients[SSL for Thin Clients and JDBC/ODBC] section for the information about cluster configuration.
+
+To enable SSL in the JDBC Driver, pass the `sslMode=require` parameter in the connection string and provide the key store and trust store parameters:
+
+[source, java]
+----
+include::{javaFile}[tags=ssl,indent=0]
+----
+
+The following table lists all parameters that affect SSL/TLS connection:
+
+[width="100%",cols="30%,40%,30%"]
+|====
+|Parameter |Description |Default Value
+|`sslMode`
+a|Enables SSL connection. Available modes:
+
+* `require`: SSL protocol is enabled on the client. Only SSL connection is available.
+* `disable`: SSL protocol is disabled on the client. Only plain connection is supported.
+
+|`disable`
+
+|`sslProtocol`
+|Protocol name for secure transport. Protocol implementations supplied by JSSE: `SSLv3 (SSL)`, `TLSv1 (TLS)`, `TLSv1.1`, `TLSv1.2`
+|`TLS`
+
+|`sslKeyAlgorithm`
+
+|The Key manager algorithm to be used to create a key manager. Note that in most cases the default value is sufficient.
+Algorithms implementations supplied by JSSE: `PKIX (X509 or SunPKIX)`, `SunX509`.
+
+| `None`
+
+|`sslClientCertificateKeyStoreUrl`
+
+|URL of the client key store file.
+This is a mandatory parameter since SSL context cannot be initialized without a key manager.
+If `sslMode` is `require` and the key store URL isn't specified in the Ignite properties, the value of the JSSE property `javax.net.ssl.keyStore` is used.
+
+|The value of the
+`javax.net.ssl.keyStore`
+system property.
+
+|`sslClientCertificateKeyStorePassword`
+
+|Client key store password.
+
+If `sslMode` is `require` and the key store password isn't specified in the Ignite properties, the JSSE property `javax.net.ssl.keyStorePassword` is used.
+
+|The value of the `javax.net.ssl.
+keyStorePassword` system property.
+
+|`sslClientCertificateKeyStoreType`
+
+|Client key store type used in context initialization.
+
+If `sslMode` is `require` and the key store type isn't specified in the Ignite properties, the JSSE property `javax.net.ssl.keyStoreType` is used.
+
+|The value of the
+`javax.net.ssl.keyStoreType`
+system property.
+If the system property is not defined, the default value is `JKS`.
+
+|`sslTrustCertificateKeyStoreUrl`
+
+|URL of the trust store file. This is an optional parameter; however, one of these properties must be set: `sslTrustCertificateKeyStoreUrl` or `sslTrustAll`
+
+If `sslMode` is `require` and the trust store URL isn't specified in the Ignite properties, the JSSE property `javax.net.ssl.trustStore` is used.
+
+|The value of the
+`javax.net.ssl.trustStore` system property.
+
+|`sslTrustCertificateKeyStorePassword`
+
+|Trust store password.
+
+If `sslMode` is `require` and the trust store password isn't specified in the Ignite properties, the JSSE property `javax.net.ssl.trustStorePassword` is used.
+
+|The value of the
+`javax.net.ssl.trustStorePassword` system property
+
+|`sslTrustCertificateKeyStoreType`
+
+|Trust store type.
+
+If `sslMode` is `require` and the trust store type isn't specified in the Ignite properties, the JSSE property `javax.net.ssl.trustStoreType` is used.
+
+|The value of the
+`javax.net.ssl.trustStoreType`
+system property. If the system property is not defined the default value is `JKS`
+
+|`sslTrustAll`
+
+a|Disables server's certificate validation. Set to `true` to trust any server certificate (revoked, expired, or self-signed SSL certificates).
+
+CAUTION: Do not enable this option in production on a network you do not entirely trust. Especially anything using the public internet.
+
+|`false`
+
+|`sslFactory`
+
+|Class name of the custom implementation of the
+`Factory<SSLSocketFactory>`.
+
+If `sslMode` is `require` and a factory is specified, the custom factory is used instead of the JSSE socket factory. In this case, other SSL properties are ignored.
+
+|`null`
+|====
+
+
+//See the `ssl*` parameters of the JDBC driver, and `ssl*` parameters and `useIgniteSslContextFactory` of the `ClientConnectorConfiguration` for more detailed information.
+
+The default implementation is based on JSSE, and works through two Java keystore files:
+
+- `sslClientCertificateKeyStoreUrl` - the client certificate keystore holds the keys and certificate for the client.
+- `sslTrustCertificateKeyStoreUrl` - the trusted certificate keystore contains the certificate information to validate the server's certificate.
+
+The trusted store is an optional parameter, however one of the following parameters: `sslTrustCertificateKeyStoreUrl` or `sslTrustAll` must be configured.
+
+[WARNING]
+====
+[discrete]
+=== Using the "sslTrustAll" option
+
+Do not enable this option in production on a network you do not entirely trust, especially anything using the public internet.
+====
+
+If you want to use your own implementation or method to configure the `SSLSocketFactory`, you can use JDBC Driver's `sslFactory` parameter. It is a string that must contain the name of the class that implements the interface `Factory<SSLSocketFactory>`. The class must be available for JDBC Driver's class loader.
+
+== Ignite DataSource
+
+The DataSource object is used as a deployed object that can be located by logical name via the JNDI naming service. JDBC Driver's `org.apache.ignite.IgniteJdbcThinDataSource` implements a JDBC DataSource interface allowing you to utilize the DataSource interface instead.
+
+In addition to generic DataSource properties, `IgniteJdbcThinDataSource` supports all the Ignite-specific properties that can be passed into a JDBC connection string. For instance, the `distributedJoins` property can be (re)set via the `IgniteJdbcThinDataSource#setDistributedJoins()` method.
+
+Refer to the link:{javadoc_base_url}/org/apache/ignite/IgniteJdbcThinDataSource.html[JavaDocs] for more details.
+
+== Examples
+
+To start processing the data located in the cluster, you need to create a JDBC Connection object via one of the methods below:
+
+[source, java]
+----
+// Open the JDBC connection via DriverManager.
+Connection conn = DriverManager.getConnection("jdbc:ignite:thin://192.168.0.50");
+----
+
+or
+
+[source,java]
+----
+include::{javaFile}[tags=connection-from-data-source,indent=0]
+----
+
+Then you can execute SQL SELECT queries as follows:
+
+[source,java]
+----
+include::{javaFile}[tags=select,indent=0]
+----
+
+You can also modify the data via DML statements.
+
+=== INSERT
+
+[source,java]
+----
+include::{javaFile}[tags=insert,indent=0]
+----
+
+
+=== MERGE
+
+
+[source,java]
+----
+include::{javaFile}[tags=merge,indent=0]
+
+----
+
+
+=== UPDATE
+
+
+[source,java]
+----
+// Update a Person.
+conn.createStatement().
+  executeUpdate("UPDATE Person SET age = age + 1 WHERE age = 25");
+----
+
+
+=== DELETE
+
+
+[source,java]
+----
+conn.createStatement().execute("DELETE FROM Person WHERE age = 25");
+----
+
+
+== Streaming
+
+JDBC Driver allows streaming data in bulk using the `SET` command. See the `SET` command link:sql-reference/operational-commands#set-streaming[documentation] for more information.
+
+
+
+
+
+
+== Error Codes
+
+The JDBC drivers pass error codes in the `java.sql.SQLException` class, used to facilitate exception handling on the application side. To get an error code, use the `java.sql.SQLException.getSQLState()` method. It returns a string containing the ANSI SQLSTATE error code defined:
+
+
+[source,java]
+----
+include::{javaFile}[tags=handle-exception,indent=0]
+----
+
+
+
+The table below lists all the link:https://en.wikipedia.org/wiki/SQLSTATE[ANSI SQLSTATE] error codes currently supported by Ignite. Note that the list may be extended in the future.
+
+[width="100%",cols="20%,80%"]
+|=======================================================================
+|Code |Description
+
+|0700B|Conversion failure (for example, a string expression cannot be parsed as a number or a date).
+
+|0700E|Invalid transaction isolation level.
+
+|08001|The driver failed to open a connection to the cluster.
+
+|08003|The connection is in the closed state. Happened unexpectedly.
+
+|08004|The connection was rejected by the cluster.
+
+|08006|I/O error during communication.
+
+|22004|Null value not allowed.
+
+|22023|Unsupported parameter type.
+
+|23000|Data integrity constraint violation.
+
+|24000|Invalid result set state.
+
+|0A000|Requested operation is not supported.
+
+|40001|Concurrent update conflict. See link:transactions/mvcc#concurrent-updates[Concurrent Updates].
+
+|42000|Query parsing exception.
+
+|50000| Internal error.
+The code is not defined by ANSI and refers to an Ignite specific error. Refer to the `java.sql.SQLException` error message for more information.
+|=======================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

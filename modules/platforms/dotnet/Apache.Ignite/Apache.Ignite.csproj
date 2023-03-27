@@ -1,82 +1,41 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</ProjectGuid>
+    <TargetFramework>net461</TargetFramework>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Apache.Ignite</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AssemblyName>Apache.Ignite</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup>
+    <RootNamespace>Apache.Ignite</RootNamespace>
     <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
     <AssemblyOriginatorKeyFile>Apache.Ignite.snk</AssemblyOriginatorKeyFile>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>true</IsPublishable>
+    <PackageId>Apache.Ignite.Executable</PackageId>
+
+    <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\Release\</OutputPath>
-    <Optimize>true</Optimize>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Config\AppSettingsConfigurator.cs" />
-    <Compile Include="Config\ArgsConfigurator.cs" />
-    <Compile Include="Config\Configurator.cs" />
-    <Compile Include="Config\ConfigValueParser.cs" />
-    <Compile Include="IgniteRunner.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Service\IgniteService.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Service\ServiceDescription.cs" />
-    <Compile Include="Service\IgniteServiceInstaller.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+
+    <!--
+    NOTE: Microsoft.CodeAnalysis.NetAnalyzers is the new replacement for FxCopAnalyzers,
+    but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
+    NOTE: Don't upgrade to 3.x - it does not work on some older 2.x SDKs
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12" PrivateAssets="all" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
-      <Project>{4cd2f726-7e2b-46c4-a5ba-057bb82eecb6}</Project>
-      <Name>Apache.Ignite.Core</Name>
-    </ProjectReference>
+    <Compile Remove="Service\IgniteService.DotNetCore.cs" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Apache.Ignite.snk" />
-    <None Include="App.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

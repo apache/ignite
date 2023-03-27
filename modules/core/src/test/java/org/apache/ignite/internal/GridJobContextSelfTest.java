@@ -34,6 +34,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Job context test.
@@ -43,6 +44,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If anything failed.
      */
+    @Test
     public void testJobContext() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -56,7 +58,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
                 stopGrid(2);
             }
         }
-        finally{
+        finally {
             stopGrid(1);
         }
     }
@@ -64,6 +66,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("PublicInnerClass")
     public static class JobContextTask extends ComputeTaskSplitAdapter<Object, Object> {
+        /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 

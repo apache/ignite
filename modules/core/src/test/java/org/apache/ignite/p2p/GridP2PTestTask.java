@@ -27,9 +27,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.compute.gridify.GridifyArgument;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * P2P test task.
@@ -47,15 +47,13 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
         Integer arg1 = null;
 
-        if (arg instanceof GridifyArgument)
-            arg1 = (Integer)((GridifyArgument)arg).getMethodParameters()[0];
-        else if (arg instanceof Integer)
+        if (arg instanceof Integer)
             arg1 = (Integer)arg;
         else
             assert false : "Failed to map task (unknown argument type) [type=" + arg.getClass() + ", val=" + arg + ']';

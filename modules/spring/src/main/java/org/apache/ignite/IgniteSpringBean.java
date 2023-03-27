@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,12 +36,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 /**
  * Ignite Spring bean allows to bypass {@link Ignition} methods.
@@ -47,9 +52,20 @@ import org.springframework.context.ApplicationContextAware;
  * Spring configuration file directly without invoking static
  * {@link Ignition} methods. This class can be wired directly from
  * Spring and can be referenced from within other Spring beans.
- * By virtue of implementing {@link DisposableBean} and {@link InitializingBean}
+ * By virtue of implementing {@link DisposableBean} and {@link SmartInitializingSingleton}
  * interfaces, {@code IgniteSpringBean} automatically starts and stops underlying
  * grid instance.
+ *
+ * <p>
+ * A note should be taken that Ignite instance is started after all other
+ * Spring beans have been initialized and right before Spring context is refreshed.
+ * That implies that it's not valid to reference IgniteSpringBean from
+ * any kind of Spring bean init methods like {@link javax.annotation.PostConstruct}.
+ * If it's required to reference IgniteSpringBean for other bean
+ * initialization purposes, it should be done from a {@link ContextRefreshedEvent}
+ * listener method declared in that bean.
+ * </p>
+ *
  * <p>
  * <h1 class="header">Spring Configuration Example</h1>
  * Here is a typical example of describing it in Spring file:
@@ -78,7 +94,7 @@ import org.springframework.context.ApplicationContextAware;
  * </pre>
  * <p>
  */
-public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBean,
+public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializingSingleton,
     ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -144,7 +160,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Override public void destroy() throws Exception {
-        // If there were some errors when afterPropertiesSet() was called.
         if (g != null) {
             // Do not cancel started tasks, wait for them.
             G.stop(g.name(), false);
@@ -152,11 +167,16 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public void afterPropertiesSet() throws Exception {
+    @Override public void afterSingletonsInstantiated() {
         if (cfg == null)
             cfg = new IgniteConfiguration();
 
-        g = IgniteSpring.start(cfg, appCtx);
+        try {
+            g = IgniteSpring.start(cfg, appCtx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to start IgniteSpringBean", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -272,10 +292,46 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         checkIgnite();
 
-        return g.memoryMetrics();
+        return g.dataRegionMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        checkIgnite();
+
+        return g.dataRegionMetrics(memPlcName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
+        checkIgnite();
+
+        return g.encryption();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteSnapshot snapshot() {
+        return g.snapshot();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
+        checkIgnite();
+
+        return g.tracingConfiguration();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
@@ -400,20 +456,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(String name) {
-        checkIgnite();
-
-        return g.fileSystem(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteFileSystem> fileSystems() {
-        checkIgnite();
-
-        return g.fileSystems();
-    }
-
-    /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
         checkIgnite();
 
@@ -440,6 +482,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicSequence(name, cfg, initVal, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         checkIgnite();
 
@@ -447,32 +497,56 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicLong(name, cfg, initVal, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.atomicReference(name, initVal, create);
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicReference(name, cfg, initVal, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.atomicStamped(name, initVal, initStamp, create);
     }
 
     /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
+        checkIgnite();
+
+        return g.atomicStamped(name, cfg, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.countDownLatch(name, cnt, autoDel, create);
@@ -482,8 +556,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     @Nullable @Override public IgniteSemaphore semaphore(String name,
         int cnt,
         boolean failoverSafe,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.semaphore(name, cnt,
@@ -494,8 +568,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean fair,
-        boolean create)
-    {
+        boolean create
+    ) {
         checkIgnite();
 
         return g.reentrantLock(name, failoverSafe, fair, create);
@@ -504,8 +578,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         checkIgnite();
 
         return g.queue(name, cap, cfg);
@@ -513,8 +587,8 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         checkIgnite();
 
         return g.set(name, cfg);
@@ -529,14 +603,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     @Override public boolean active() {
         checkIgnite();
 
-        return g.active();
+        return g.cluster().state().active();
     }
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
         checkIgnite();
 
-        g.active(active);
+        g.cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -560,7 +634,9 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     protected void checkIgnite() throws IllegalStateException {
         if (g == null) {
             throw new IllegalStateException("Ignite is in invalid state to perform this operation. " +
-                "It either not started yet or has already being or have stopped " +
+                "It either not started yet or has already being or have stopped.\n" +
+                "Make sure that IgniteSpringBean is not referenced from any kind of Spring bean init methods " +
+                "like @PostConstruct}.\n" +
                 "[ignite=" + g + ", cfg=" + cfg + ']');
         }
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,14 +31,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
-import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionFilter;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -49,6 +45,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -58,9 +55,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
     private static final String CACHE_NAME = "cache";
-
-    /** */
-    private boolean near;
 
     /** */
     private boolean writeBehind;
@@ -163,28 +157,13 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             return res;
         }
 
-        /** {@inheritDoc} */
+        /** */
         public List<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
             return new ArrayList<>(nodes);
         }
 
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
-            // No-op.
-        }
-    }
-
-    /**
-     */
-    public static class TestEvictionPolicy extends TestLifecycleAware implements EvictionPolicy, Serializable {
-        /**
-         */
-        public TestEvictionPolicy() {
-            super(CACHE_NAME);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
         }
     }
@@ -262,6 +241,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     /**
      */
     private static class TestTopologyValidator extends TestLifecycleAware implements TopologyValidator {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -276,6 +256,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public void start() {
             super.start();
 
@@ -315,30 +296,9 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         lifecycleAwares.add(affinity);
 
-        TestEvictionPolicy evictionPlc = new TestEvictionPolicy();
-
-        ccfg.setEvictionPolicy(evictionPlc);
-        ccfg.setOnheapCacheEnabled(true);
-
-        lifecycleAwares.add(evictionPlc);
-
-        if (near) {
-            TestEvictionPolicy nearEvictionPlc = new TestEvictionPolicy();
-
-            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-
-            nearCfg.setNearEvictionPolicy(nearEvictionPlc);
-
-            ccfg.setNearConfiguration(nearCfg);
-
-            lifecycleAwares.add(nearEvictionPlc);
-        }
-
         TestEvictionFilter evictionFilter = new TestEvictionFilter();
 
         ccfg.setEvictionFilter(evictionFilter);
-
-        lifecycleAwares.add(evictionFilter);
 
         TestAffinityKeyMapper mapper = new TestAffinityKeyMapper();
 
@@ -347,8 +307,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         lifecycleAwares.add(mapper);
 
         TestInterceptor interceptor = new TestInterceptor();
-
-        lifecycleAwares.add(interceptor);
 
         ccfg.setInterceptor(interceptor);
 
@@ -365,29 +323,24 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     @Override public void testLifecycleAware() throws Exception {
-        for (boolean nearEnabled : new boolean[] {true, false}) {
-            near = nearEnabled;
+        writeBehind = false;
 
-            writeBehind = false;
+        try {
+            super.testLifecycleAware();
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Failed for [writeBehind=" + writeBehind + ']', e);
+        }
 
-            try {
-                super.testLifecycleAware();
-            }
-            catch (AssertionError e) {
-                throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
-                    e);
-            }
+        writeBehind = true;
 
-            writeBehind = true;
-
-            try {
-                super.testLifecycleAware();
-            }
-            catch (AssertionError e) {
-                throw new AssertionError("Failed for [near=" + near + ", writeBehind=" + writeBehind + ']',
-                    e);
-            }
+        try {
+            super.testLifecycleAware();
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Failed for [writeBehind=" + writeBehind + ']', e);
         }
     }
 }

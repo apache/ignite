@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query descriptor.
@@ -26,17 +31,23 @@ public class GridRunningQueryInfo {
     /** */
     private final long id;
 
+    /** Originating Node ID. */
+    private final UUID nodeId;
+
     /** */
     private final String qry;
 
     /** Query type. */
     private final GridCacheQueryType qryType;
 
-    /** */
-    private final String cache;
+    /** Schema name. */
+    private final String schemaName;
 
     /** */
     private final long startTime;
+
+    /** Query start time in nanoseconds to measure duration. */
+    private final long startTimeNanos;
 
     /** */
     private final GridQueryCancel cancel;
@@ -44,31 +55,94 @@ public class GridRunningQueryInfo {
     /** */
     private final boolean loc;
 
+    /** */
+    @GridToStringExclude
+    private final QueryRunningFuture fut = new QueryRunningFuture();
+
+    /** Span of the running query. */
+    private final Span span;
+
+    /** Originator. */
+    private final String qryInitiatorId;
+
+    /** Enforce join order flag. */
+    private final boolean enforceJoinOrder;
+
+    /** Lazy flag. */
+    private final boolean lazy;
+
+    /** Distributed joins flag. */
+    private final boolean distributedJoins;
+
+    /** Request ID. */
+    private long reqId;
+
+    /** Subject ID. */
+    private final UUID subjId;
+
     /**
+     * Constructor.
+     *
      * @param id Query ID.
+     * @param nodeId Originating node ID.
      * @param qry Query text.
      * @param qryType Query type.
-     * @param cache Cache where query was executed.
+     * @param schemaName Schema name.
      * @param startTime Query start time.
+     * @param startTimeNanos Query start time in nanoseconds.
      * @param cancel Query cancel.
      * @param loc Local query flag.
+     * @param qryInitiatorId Query's initiator identifier.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param lazy Lazy flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param subjId Subject ID.
      */
-    public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String cache, long startTime,
-        GridQueryCancel cancel, boolean loc) {
+    public GridRunningQueryInfo(
+        long id,
+        UUID nodeId,
+        String qry,
+        GridCacheQueryType qryType,
+        String schemaName,
+        long startTime,
+        long startTimeNanos,
+        GridQueryCancel cancel,
+        boolean loc,
+        String qryInitiatorId,
+        boolean enforceJoinOrder,
+        boolean lazy,
+        boolean distributedJoins,
+        UUID subjId
+    ) {
         this.id = id;
+        this.nodeId = nodeId;
         this.qry = qry;
         this.qryType = qryType;
-        this.cache = cache;
+        this.schemaName = schemaName;
         this.startTime = startTime;
+        this.startTimeNanos = startTimeNanos;
         this.cancel = cancel;
         this.loc = loc;
+        this.span = MTC.span();
+        this.qryInitiatorId = qryInitiatorId;
+        this.enforceJoinOrder = enforceJoinOrder;
+        this.lazy = lazy;
+        this.distributedJoins = distributedJoins;
+        this.subjId = subjId;
     }
 
     /**
      * @return Query ID.
      */
-    public Long id() {
+    public long id() {
         return id;
+    }
+
+    /**
+     * @return Global query ID.
+     */
+    public String globalQueryId() {
+        return QueryUtils.globalQueryId(nodeId, id);
     }
 
     /**
@@ -86,10 +160,10 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Cache where query was executed.
+     * @return Schema name.
      */
-    public String cache() {
-        return cache;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -97,6 +171,13 @@ public class GridRunningQueryInfo {
      */
     public long startTime() {
         return startTime;
+    }
+
+    /**
+     * @return Query start time in nanoseconds.
+     */
+    public long startTimeNanos() {
+        return startTimeNanos;
     }
 
     /**
@@ -117,6 +198,13 @@ public class GridRunningQueryInfo {
     }
 
     /**
+     * @return Query running future.
+     */
+    public QueryRunningFuture runningFuture() {
+        return fut;
+    }
+
+    /**
      * @return {@code true} if query can be cancelled.
      */
     public boolean cancelable() {
@@ -128,5 +216,68 @@ public class GridRunningQueryInfo {
      */
     public boolean local() {
         return loc;
+    }
+
+    /**
+     * @return Originating node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @return Span of the running query.
+     */
+    public Span span() {
+        return span;
+    }
+
+    /** @return Request ID. */
+    public long requestId() {
+        return reqId;
+    }
+
+    /**
+     * @return Query's originator string (client host+port, user name,
+     * job name or any user's information about query initiator).
+     */
+    public String queryInitiatorId() {
+        return qryInitiatorId;
+    }
+
+    /**
+     * @return Distributed joins.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @return Lazy flag.
+     */
+    public boolean lazy() {
+        return lazy;
+    }
+
+    /** @param reqId Request ID. */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
+    }
+
+    /** @return Subject ID. */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**{@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRunningQueryInfo.class, this);
     }
 }

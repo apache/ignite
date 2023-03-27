@@ -19,8 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,13 +37,13 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
     private long fwdId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param mid Bisection index.
      * @param fwdId New forward page ID.
      */
-    public SplitExistingPageRecord(int cacheId, long pageId, int mid, long fwdId) {
-        super(cacheId, pageId);
+    public SplitExistingPageRecord(int grpId, long pageId, int mid, long fwdId) {
+        super(grpId, pageId);
 
         this.mid = mid;
         this.fwdId = fwdId;
@@ -61,16 +61,18 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
         return RecordType.BTREE_EXISTING_PAGE_SPLIT;
     }
 
+    /** */
     public int middleIndex() {
         return mid;
     }
 
+    /** */
     public long forwardId() {
         return fwdId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SplitExistingPageRecord.class, this, "fwId", U.hexLong(fwdId), "parent", super.toString());
+        return S.toString(SplitExistingPageRecord.class, this, "fwId", U.hexLong(fwdId), "super", super.toString());
     }
 }

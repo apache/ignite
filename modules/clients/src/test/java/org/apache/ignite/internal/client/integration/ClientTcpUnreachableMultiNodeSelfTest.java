@@ -120,6 +120,14 @@ public class ClientTcpUnreachableMultiNodeSelfTest extends ClientTcpMultiNodeSel
                 @Override public boolean connectable() {
                     return node.connectable();
                 }
+
+                @Override public long order() {
+                    return node.order();
+                }
+
+                @Override public boolean isClient() {
+                    return node.isClient();
+                }
             };
         }
 

@@ -50,7 +50,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return () => compiledQuery(new object[0]);
         }
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return x => compiledQuery(new object[] {x});
         }
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y) => compiledQuery(new object[] {x, y});
         }
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z) => compiledQuery(new object[] {x, y, z});
         }
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a) => compiledQuery(new object[] {x, y, z, a});
         }
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b) => compiledQuery(new object[] {x, y, z, a, b});
         }
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b, c) => compiledQuery(new object[] {x, y, z, a, b, c});
         }
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b, c, d) => compiledQuery(new object[] {x, y, z, a, b, c, d});
         }
@@ -213,7 +213,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery<T>(query, query.Compile());
+            var compiledQuery = GetCompiledQuery<T>(query);
 
             return (x, y, z, a, b, c, d, e) => compiledQuery(new object[] {x, y, z, a, b, c, d, e});
         }
@@ -221,20 +221,21 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets the compiled query.
         /// </summary>
-        private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(LambdaExpression expression, 
-            Delegate queryCaller)
+        private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(LambdaExpression expression)
         {
             Debug.Assert(expression != null);
-            Debug.Assert(queryCaller != null);
-
+            
             // Get default parameter values.
             var paramValues = expression.Parameters
                 .Select(x => x.Type)
                 .Select(x => x.IsValueType ? Activator.CreateInstance(x) : null)
                 .ToArray();
 
-            // Invoke the delegate to obtain the cacheQueryable.
-            var queryable = queryCaller.DynamicInvoke(paramValues);
+            var transformingxpressionVisitor = new JoinInnerSequenceParameterNotNullExpressionVisitor();
+            var queryCaller = (LambdaExpression)transformingxpressionVisitor.Visit(expression);
+
+            // Compile and invoke the delegate to obtain the cacheQueryable.
+            var queryable = queryCaller.Compile().DynamicInvoke(paramValues);
 
             var cacheQueryable = queryable as ICacheQueryableInternal;
 

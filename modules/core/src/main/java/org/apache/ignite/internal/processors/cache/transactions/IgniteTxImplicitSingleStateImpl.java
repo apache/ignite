@@ -23,14 +23,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -56,15 +59,26 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private boolean recovery;
 
+    /** */
+    private volatile boolean useMvccCaching;
+
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
+        assert tx.local();
 
         cacheCtx = ctx;
         this.recovery = recovery;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
+
+        useMvccCaching = cacheCtx.mvccEnabled() && (cacheCtx.isDrEnabled() || cacheCtx.hasContinuousQueryListeners(tx));
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridIntList cacheIds() {
+        return GridIntList.asList(cacheCtx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -91,7 +105,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitLastFut(GridCacheSharedContext ctx) {
+    @Override public void awaitLastFuture(GridCacheSharedContext ctx) {
         if (cacheCtx == null)
             return;
 
@@ -112,11 +126,19 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Throwable err = topFut.validateCache(cacheCtx, recovery, read, null, entry);
+        Throwable err = null;
+
+        if (entry != null) {
+            // An entry is a singleton list here, so a key is taken from a first element.
+            KeyCacheObject key = entry.get(0).key();
+
+            err = topFut.validateCache(cacheCtx, recovery, read, key, null);
+        }
 
         if (err != null) {
-            return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                U.maskName(cacheCtx.name()));
+            return new IgniteCheckedException(
+                "Failed to perform cache operation (cache topology is not valid): "
+                    + U.maskName(cacheCtx.name()), err);
         }
 
         if (CU.affinityNodes(cacheCtx, topFut.topologyVersion()).isEmpty()) {
@@ -133,20 +155,17 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNearCache(GridCacheSharedContext cctx) {
-        return cacheCtx != null && cacheCtx.isNear();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDhtTopologyFuture topologyReadLock(GridCacheSharedContext cctx, GridFutureAdapter<?> fut) {
-        if (cacheCtx == null || cacheCtx.isLocal())
+        if (cacheCtx == null)
             return cctx.exchange().lastTopologyFuture();
 
         cacheCtx.topology().readLock();
 
         if (cacheCtx.topology().stopping()) {
-            fut.onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
-                cacheCtx.name()));
+            fut.onDone(
+                cctx.cache().isCacheRestarting(cacheCtx.name()) ?
+                    new IgniteCacheRestartingException(cacheCtx.name()) :
+                    new CacheStoppedException(cacheCtx.name()));
 
             return null;
         }
@@ -156,7 +175,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void topologyReadUnlock(GridCacheSharedContext cctx) {
-        if (cacheCtx == null || cacheCtx.isLocal())
+        if (cacheCtx == null)
             return;
 
         cacheCtx.topology().readUnlock();
@@ -284,6 +303,11 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void removeEntry(IgniteTxKey key) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void seal() {
         // No-op.
     }
@@ -294,12 +318,26 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNearCacheConfigured(GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
-        return cacheCtx != null ? ctx.discovery().hasNearCache(cacheCtx.cacheId(), topVer) : false;
+    @Override public boolean mvccEnabled() {
+        GridCacheContext ctx0 = cacheCtx;
+
+        return ctx0 != null && ctx0.mvccEnabled();
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public boolean useMvccCaching(int cacheId) {
+        assert cacheCtx == null || cacheCtx.cacheId() == cacheId;
+
+        return useMvccCaching;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean recovery() {
+        return recovery;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return S.toString(IgniteTxImplicitSingleStateImpl.class, this);
     }
 }

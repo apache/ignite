@@ -18,9 +18,9 @@
 package org.apache.ignite.loadtests.job;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -36,12 +36,14 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskCancelledException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
@@ -107,7 +109,6 @@ public class GridJobExecutionSingleNodeLoadTest {
 
                 for (int i = 0; i < threadCnt; i++)
                     producers.add(new Callable<Object>() {
-                        @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
                         @Override public Object call() throws Exception {
                             while (!finish.get()) {
                                 try {
@@ -129,7 +130,7 @@ public class GridJobExecutionSingleNodeLoadTest {
 
                 // Thread that measures and outputs performance statistics.
                 collector = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @SuppressWarnings({"BusyWait"})
                     @Override public void run() {
                         GridCumulativeAverage avgTasksPerSec = new GridCumulativeAverage();
 
@@ -162,7 +163,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                                 GridLoadTestUtils.appendLineToFile(
                                     outputFileName,
                                     "%s,%d",
-                                    GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                                    IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                                     avgTasksPerSec.get());
                             }
                             catch (IOException e) {
@@ -218,7 +219,7 @@ public class GridJobExecutionSingleNodeLoadTest {
      */
     private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
 

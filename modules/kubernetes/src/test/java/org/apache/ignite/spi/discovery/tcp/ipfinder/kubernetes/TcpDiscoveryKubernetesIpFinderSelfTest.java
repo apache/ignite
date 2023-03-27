@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
 
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * TcpDiscoveryKubernetesIpFinder test.
@@ -34,17 +35,19 @@ public class TcpDiscoveryKubernetesIpFinderSelfTest extends
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // No-op.
     }
 
-    /* {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override protected TcpDiscoveryKubernetesIpFinder ipFinder() throws Exception {
         // No-op.
         return null;
     }
 
-    /* {@inheritDoc} */
+    /** {@inheritDoc} */
+    @Test
     @Override public void testIpFinder() throws Exception {
         TcpDiscoveryKubernetesIpFinder ipFinder = new TcpDiscoveryKubernetesIpFinder();
 

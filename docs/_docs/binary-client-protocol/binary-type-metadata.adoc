@@ -1,0 +1,421 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Binary Type Metadata
+
+== Operation Codes
+
+Upon a successful handshake with an Ignite server node a client can start performing binary-type related operations by sending a request (see request/response structure below) with a specific operation code:
+
+
+
+[cols="2,1",opts="header"]
+|===
+|Operation  | OP_CODE
+|OP_GET_BINARY_TYPE_NAME| 3000
+|OP_REGISTER_BINARY_TYPE_NAME|    3001
+|OP_GET_BINARY_TYPE | 3002
+|OP_PUT_BINARY_TYPE|  3003
+|OP_RESOURCE_CLOSE|   0
+|===
+
+
+Note that the above mentioned op_codes are part of the request header, as explained link:binary-client-protocol/binary-client-protocol#standard-message-header[here].
+
+[NOTE]
+====
+[discrete]
+=== Customs Methods Used in Sample Code Snippets Implementation
+
+Some of the code snippets below use `readDataObject(...)` introduced in link:binary-client-protocol/binary-client-protocol#data-objects[this section] and little-endian versions of methods for reading and writing multiple-byte values that are covered in link:binary-client-protocol/binary-client-protocol#data-objects[this example].
+====
+
+
+== OP_GET_BINARY_TYPE_NAME
+
+Gets the platform-specific full binary type name by id. For example, .NET and Java can map to the same type Foo, but classes will be Apache.Ignite.Foo in .NET and org.apache.ignite.Foo in Java.
+
+Names are registered with OP_REGISTER_BINARY_TYPE_NAME.
+
+
+[cols="1,2",opts="header"]
+|===
+|Request Type   | Description
+|Header |  Request header.
+|byte |    Platform id:
+JAVA = 0
+DOTNET = 1
+|int| Type id; Java-style hash code of the type name.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type  |Description
+|Header |  Response header.
+|String |  Binary type name.
+|===
+
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String type = "ignite.myexamples.model.Person";
+int typeLen = type.getBytes("UTF-8").length;
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5, OP_GET_BINARY_TYPE_NAME, 1, out);
+
+// Platform id
+writeByteLittleEndian(0, out);
+
+// Type id
+writeIntLittleEndian(type.hashCode(), out);
+----
+
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting String
+int typeCode = readByteLittleEndian(in); // type code
+int strLen = readIntLittleEndian(in); // length
+
+byte[] buf = new byte[strLen];
+
+readFully(in, buf, 0, strLen);
+
+String s = new String(buf);
+
+System.out.println(s);
+----
+
+
+--
+
+== OP_GET_BINARY_TYPE
+
+Gets the binary type information by id.
+
+
+[cols="1,2",opts="header"]
+|===
+|Request Type   | Description
+|Header |  Request header.
+|int | Type id; Java-style hash code of the type name.
+|===
+
+
+
+[cols="1,2",opts="header"]
+|===
+| Response Type | Description
+|Header|  Response header.
+|bool|    False: binary type does not exist, response end.
+True: binary type exists, response as follows.
+|int| Type id; Java-style hash code of the type name.
+|String|  Type name.
+|String|  Affinity key field name.
+|int| BinaryField count.
+|BinaryField * count| Structure of BinaryField:
+
+`String`  Field name
+
+`int` Type id; Java-style hash code of the type name.
+
+`int` Field id; Java-style hash code of the field name.
+
+|bool|    Is Enum or not.
+
+If set to true, then you have to pass the following 2 parameters. Otherwise, skip them.
+|int| _Pass only if 'is enum' parameter is 'true'_.
+
+Enum field count.
+|String + int|    _Pass only if 'is enum' parameter is 'true'_.
+
+Enum values. An enum value is a pair of a literal value (String) and numerical value (int).
+
+Repeat for as many times as the Enum field count that is obtained in the previous parameter.
+
+|int| Schema count.
+|BinarySchema|    Structure of BinarySchema:
+
+`int` Unique schema id.
+
+`int` Number of fields in the schema.
+
+`int` Field Id; Java-style hash code of the field name. Repeat for as many times as the total number of fields in the schema.
+
+Repeat for as many times as the BinarySchema count that is obtained in the previous parameter.
+|===
+
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String type = "ignite.myexamples.model.Person";
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(4, OP_BINARY_TYPE_GET, 1, out);
+
+// Type id
+writeIntLittleEndian(type.hashCode(), out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+
+boolean typeExist = readBooleanLittleEndian(in);
+
+int typeId = readIntLittleEndian(in);
+
+String typeName = readString(in);
+
+String affinityFieldName = readString(in);
+
+int fieldCount = readIntLittleEndian(in);
+
+for (int i = 0; i < fieldCount; i++)
+    readBinaryTypeField(in);
+
+boolean isEnum = readBooleanLittleEndian(in);
+
+int schemaCount = readIntLittleEndian(in);
+
+// Read binary schemas
+for (int i = 0; i < schemaCount; i++) {
+  int schemaId = readIntLittleEndian(in); // Schema Id
+
+  int fieldCount = readIntLittleEndian(in); // field count
+
+  for (int j = 0; j < fieldCount; j++) {
+    System.out.println(readIntLittleEndian(in)); // field id
+  }
+}
+
+private static void readBinaryTypeField (DataInputStream in) throws IOException{
+  String fieldName = readString(in);
+  int fieldTypeId = readIntLittleEndian(in);
+  int fieldId = readIntLittleEndian(in);
+  System.out.println(fieldName);
+}
+----
+--
+
+
+== OP_REGISTER_BINARY_TYPE_NAME
+
+Registers the platform-specific full binary type name by id. For example, .NET and Java can map to the same type Foo, but classes will be Apache.Ignite.Foo in .NET and org.apache.ignite.Foo in Java.
+
+
+[cols="1,2",opts="header"]
+|===
+|Request Type  | Description
+|Header |  Request header.
+|byte|    Platform id:
+JAVA = 0
+DOTNET = 1
+|int| Type id; Java-style hash code of the type name.
+|String|  Type name.
+|===
+
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type  |Description
+|Header | Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String type = "ignite.myexamples.model.Person";
+int typeLen = type.getBytes("UTF-8").length;
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(20 + typeLen, OP_PUT_BINARY_TYPE_NAME, 1, out);
+
+//Platform id
+writeByteLittleEndian(0, out);
+
+//Type id
+writeIntLittleEndian(type.hashCode(), out);
+
+// Type name
+writeString(type, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+----
+
+--
+
+== OP_PUT_BINARY_TYPE
+
+Registers binary type information in cluster.
+
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |  Description
+|Header|  Response header.
+|int| Type id; Java-style hash code of the type name.
+|String|  Type name.
+|String|  Affinity key field name.
+|int| BinaryField count.
+|BinaryField| Structure of BinaryField:
+
+`String`  Field name
+
+`int` Type id; Java-style hash code of the type name.
+
+`int` Field id; Java-style hash code of the field name.
+
+Repeat for as many times as the BinaryField count that is passed in the previous parameter.
+|bool|    Is Enum or not.
+
+If set to true, then you have to pass the following 2 parameters. Otherwise, skip them.
+|int| Pass only if 'is enum' parameter is 'true'.
+
+Enum field count.
+|String + int|    Pass only if 'is enum' parameter is 'true'.
+
+Enum values. An enum value is a pair of a literal value (String) and numerical value (int).
+
+Repeat for as many times as the Enum field count that is passed in the previous parameter.
+|int| BinarySchema count.
+|BinarySchema|    Structure of BinarySchema:
+
+`int` Unique schema id.
+
+`int` Number of fields in the schema.
+
+`int` Field id; Java-style hash code of the field name. Repeat for as many times as the total number of fields in the schema.
+
+Repeat for as many times as the BinarySchema count that is passed in the previous parameter.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+| Response Type | Description
+|Header |  Response header.
+|===
+
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String type = "ignite.myexamples.model.Person";
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(120, OP_BINARY_TYPE_PUT, 1, out);
+
+// Type id
+writeIntLittleEndian(type.hashCode(), out);
+
+// Type name
+writeString(type, out);
+
+// Affinity key field name
+writeByteLittleEndian(101, out);
+
+// Field count
+writeIntLittleEndian(3, out);
+
+// Field 1
+String field1 = "id";
+writeBinaryTypeField(field1, "long", out);
+
+// Field 2
+String field2 = "name";
+writeBinaryTypeField(field2, "String", out);
+
+// Field 3
+String field3 = "salary";
+writeBinaryTypeField(field3, "int", out);
+
+// isEnum
+out.writeBoolean(false);
+
+// Schema count
+writeIntLittleEndian(1, out);
+
+// Schema
+writeIntLittleEndian(657, out);  // Schema id; can be any custom value
+writeIntLittleEndian(3, out);  // field count
+writeIntLittleEndian(field1.hashCode(), out);
+writeIntLittleEndian(field2.hashCode(), out);
+writeIntLittleEndian(field3.hashCode(), out);
+
+private static void writeBinaryTypeField (String field, String fieldType, DataOutputStream out) throws IOException{
+  writeString(field, out);
+  writeIntLittleEndian(fieldType.hashCode(), out);
+  writeIntLittleEndian(field.hashCode(), out);
+}
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+----
+
+--
+

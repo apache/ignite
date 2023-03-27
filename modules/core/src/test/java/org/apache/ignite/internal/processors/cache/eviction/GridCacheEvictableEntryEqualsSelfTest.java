@@ -26,6 +26,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for EvictableEntry.equals().
@@ -34,6 +35,7 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEquals() throws Exception {
         try (Ignite ignite = startGrid()) {
             CacheConfiguration<TestKey, String> cfg = new CacheConfiguration<>("test");
@@ -48,9 +50,12 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
     private static class TestEvictionPolicy implements EvictionPolicy<TestKey, String>, Serializable {
+        /** */
         private final Collection<EvictableEntry> entries = new ArrayList<>();
 
+        /** {@inheritDoc} */
         @Override public synchronized void onEntryAccessed(boolean rmv, EvictableEntry<TestKey, String> e) {
             for (EvictableEntry e0 : entries)
                 assertTrue(e0.equals(e));
@@ -59,13 +64,17 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
         }
     }
 
+    /** */
     private static class TestKey {
+        /** */
         private final int key;
 
+        /** */
         public TestKey(int key) {
             this.key = key;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object other) {
             if (this == other)
                 return true;
@@ -79,6 +88,7 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
 
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return key;
         }

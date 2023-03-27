@@ -32,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Light-weight interop job. Comparing to regular job, this guy has simpler logic because we should not
  * bother with delayed serialization and cancellation.
+ *
+ * NOTE: Legacy. New implementations should use {@link PlatformAbstractFunc} and derivatives instead.
  */
 public class PlatformClosureJob extends PlatformAbstractJob {
     /** */
@@ -51,8 +53,8 @@ public class PlatformClosureJob extends PlatformAbstractJob {
      * @param ptr Job pointer.
      * @param job Job.
      */
-    public PlatformClosureJob(PlatformAbstractTask task, long ptr, Object job) {
-        super(task, ptr, job);
+    public PlatformClosureJob(PlatformAbstractTask task, long ptr, Object job, String jobName) {
+        super(task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
@@ -103,10 +105,12 @@ public class PlatformClosureJob extends PlatformAbstractJob {
         assert job != null;
 
         out.writeObject(job);
+        out.writeObject(jobName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         job = in.readObject();
+        jobName = (String)in.readObject();
     }
 }

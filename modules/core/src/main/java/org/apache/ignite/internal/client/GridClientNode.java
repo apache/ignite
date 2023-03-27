@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -119,4 +120,19 @@ public interface GridClientNode {
      *  {@code false} if request may be passed through a router.
      */
     public boolean connectable();
+
+    /**
+     * Node order within grid topology.
+     *
+     * @return Node startup order.
+     */
+    public long order();
+
+    /**
+     * Whether this node is client (see {@link IgniteConfiguration#isClientMode()}).
+     *
+     * @return {@code True if client}.
+     * @see IgniteConfiguration#isClientMode()
+     */
+    public boolean isClient();
 }

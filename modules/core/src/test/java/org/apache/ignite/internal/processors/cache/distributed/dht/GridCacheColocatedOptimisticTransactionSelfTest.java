@@ -22,11 +22,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -50,9 +48,6 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     /** Value. */
     private static final String VAL = "val";
 
-    /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Grids. */
     private static Ignite[] ignites;
 
@@ -65,10 +60,6 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
         CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE);
@@ -78,7 +69,6 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 
         return c;
@@ -110,6 +100,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTransaction() throws Exception {
         for (IgniteCache<Integer, String> cache : caches) {
             Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(OPTIMISTIC, REPEATABLE_READ);

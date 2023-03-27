@@ -1,202 +1,53 @@
-# Apache Ignite In-Memory Data Fabric
+# Apache Ignite
 
-<img src="https://ignite.apache.org/images/logo3.png" hspace="20" />
+<a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/assets/images/apache_ignite_logo.svg" hspace="20"/></a>
 
-[![Join the chat at https://gitter.im/apacheignite/ignite](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/apacheignite/ignite?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
+[![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.ignite/ignite-core/badge.svg)](https://search.maven.org/search?q=org.apache.ignite)
+[![GitHub release](https://img.shields.io/badge/release-download-brightgreen.svg)](https://ignite.apache.org/download.cgi)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/apache/ignite)
+[![Twitter Follow](https://img.shields.io/twitter/follow/ApacheIgnite?style=social)](https://twitter.com/ApacheIgnite)
 
-<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests_IgniteBasic&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests_IgniteBasic)/statusIcon" /></a>
+## What is Apache Ignite?
 
-The [Apache Ignite][apache-homepage] In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 
 <p align="center">
-    <a href="https://apacheignite.readme.io/docs">
-        <img src="https://ignite.apache.org/images/apache-ignite.png" />
+    <a href="https://ignite.apache.org">
+        <img src="https://github.com/apache/ignite-website/blob/master/docs/2.9.0/images/ignite_clustering.png" width="400px"/>
     </a>
 </p>
 
-Apache Ignite In-Memory Data Fabric is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from [high performance computing](https://ignite.apache.org/features.html), to the industry most advanced [data grid](https://ignite.apache.org/features.html), highly available [service grid](https://ignite.apache.org/features.html), and [streaming](https://ignite.apache.org/features.html).
+* [Technical Documentation](https://ignite.apache.org/docs/latest/)
+* [JavaDoc](https://ignite.apache.org/releases/latest/javadoc/)
+* [C#/.NET APIs](https://ignite.apache.org/releases/latest/dotnetdoc/api/)
+* [C++ APIs](https://ignite.apache.org/releases/latest/cppdoc/)
 
-## Advanced Clustering
+## Multi-Tier Storage
 
-Ignite nodes can automatically discover each other. This helps to scale the cluster when needed, without having to restart the whole cluster. Developers can also leverage from Ignite’s hybrid cloud support that allows establishing connection between private cloud and public clouds such as Amazon Web Services, providing them with best of both worlds.
+Apache Ignite is designed to work with memory, disk, and Intel Optane as active storage tiers. The memory tier allows using DRAM and Intel® Optane™ operating in the Memory Mode for data storage and processing needs. The disk tier is optional with the support of two options -- you can persist data in an external database or keep it in the Ignite native persistence. SSD, Flash, HDD, or Intel Optane operating in the AppDirect Mode can be used as a storage device.
 
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/cluster">
-        <img src="https://ignite.apache.org/images/advanced-clustering.png" />
-    </a>
-</p>
+[Read More](https://ignite.apache.org/arch/multi-tier-storage.html)
 
-## Data Grid (JCache)
+## Ignite Native Persistence
 
-Ignite data grid is an in-memory distributed key-value store which can be viewed as a distributed partitioned hash map, with every cluster node owning a portion of the overall data. This way the more cluster nodes we add, the more data we can cache.
+Even though Apache Ignite is broadly used as a caching layer on top of external databases, it comes with its native persistence - a distributed, ACID, and SQL-compliant disk-based store. The native persistence integrates into the Ignite multi-tier storage as a disk tier that can be turned on to let Ignite store more data on disk than it can cache in memory and to enable fast cluster restarts.
 
-Unlike other key-value stores, Ignite determines data locality using a pluggable hashing algorithm. Every client can determine which node a key belongs to by plugging it into a hashing function, without a need for any special mapping servers or name nodes.
+[Read More](https://ignite.apache.org/arch/persistence.html)
 
-Ignite data grid supports local, replicated, and partitioned data sets and allows to freely cross query between these data sets using standard SQL syntax. Ignite supports standard SQL for querying in-memory data including support for distributed SQL joins.
+## ACID Compliance
+Data stored in Ignite is ACID-compliant both in memory and on disk, making Ignite a **strongly consistent** system. Ignite transactions work across the network and can span multiple servers.
 
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/data-grid">
-        <img src="https://ignite.apache.org/images/in-memory-data-grid.jpg" />
-    </a>
-</p>
+[Read More](https://ignite.apache.org/features/transactions.html)
 
-Our data grid offers many features, some of which are:
+## ANSI SQL Support
+Apache Ignite comes with a ANSI-99 compliant, horizontally scalable, and fault-tolerant SQL engine that allows you to interact with Ignite as with a regular SQL database using JDBC, ODBC drivers, or native SQL APIs available for Java, C#, C++, Python, and other programming languages. Ignite supports all DML commands, including SELECT, UPDATE, INSERT, and DELETE queries as well as a subset of DDL commands relevant for distributed systems.
 
-* Primary & Backup Copies.
-* Near Caches.
-* Cache queries and SQL queries.
-* Continuous Queries.
-* Transactions.
-* Off-Heap Memory.
-* Affinity Collocation.
-* Persistent Store.
-* Automatic Persistence.
-* Data Loading.
-* Eviction and Expiry Policies.
-* Data Rebalancing
-* Web Session Clustering.
-* Hibernate L2 Cache.
-* JDBC Driver.
-* Spring Caching.
-* Topology Validation.
+[Read More](https://ignite.apache.org/features/sql.html)
 
-## Streaming & CEP
+## Machine Learning and High-Performance Computing
+[Apache Ignite Machine Learning](https://ignite.apache.org/features/machinelearning.html) is a set of simple, scalable, and efficient tools that allow building predictive machine learning models without costly data transfers. The rationale for adding machine and deep learning to Apache Ignite is quite simple. Today's data scientists have to deal with two major factors that keep ML from mainstream adoption.
 
-Ignite streaming allows to process continuous never-ending streams of data in scalable and fault-tolerant fashion. The rates at which data can be injected into Ignite can be very high and easily exceed millions of events per second on a moderately sized cluster.
+High-performance computing (HPC) is the ability to process data and perform complex calculations at high speeds. Using Apache Ignite as a [high-performance compute cluster](https://ignite.apache.org/use-cases/hpc.html), you can turn a group of commodity machines or a cloud environment into a distributed supercomputer of interconnected Ignite nodes. Ignite enables speed and scale by processing records in memory and reducing network utilization with APIs for data and compute-intensive calculations. Those APIs implement the MapReduce paradigm and allow you to run arbitrary tasks across the cluster of nodes.
 
-Real-time data is ingested via data streamers. We offer streamers for JMS 1.1, Apache Kafka, MQTT, Twitter, Apache Flume and Apache Camel already, and we keep adding new ones every release.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/streaming--cep">
-        <img src="https://ignite.apache.org/images/data-streamers.png" />
-    </a>
-</p>
-
-The data can then be queried within sliding windows, if needed:
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/streaming--cep">
-        <img src="https://ignite.apache.org/images/sliding-event-window.png" />
-    </a>
-</p>
-
-## Compute Grid
-
-Distributed computations are performed in parallel fashion to gain high performance, low latency, and linear scalability. Ignite compute grid provides a set of simple APIs that allow users distribute computations and data processing across multiple computers in the cluster. Distributed parallel processing is based on the ability to take any computation and execute it on any set of cluster nodes and return the results back.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/compute-grid">
-        <img src="https://ignite.apache.org/images/in_memory_compute.png" />
-    </a>
-</p>
-
-We support these features, amongst others:
-
-* Distributed Closure Execution.
-* MapReduce & ForkJoin Processing.
-* Clustered Executor Service.
-* Collocation of Compute and Data.
-* Load Balancing.
-* Fault Tolerance.
-* Job State Checkpointing.
-* Job Scheduling.
-
-## Service Grid
-
-Service Grid allows for deployments of arbitrary user-defined services on the cluster. You can implement and deploy any service, such as custom counters, ID generators, hierarchical maps, etc.
-
-Ignite allows you to control how many instances of your service should be deployed on each cluster node and will automatically ensure proper deployment and fault tolerance of all the services.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/service-grid">
-        <img src="https://ignite.apache.org/images/ignite_service.png" vspace="15"/>
-    </a>
-</p>
-
-## Ignite File System
-
-Ignite File System (IGFS) is an in-memory file system allowing work with files and directories over existing cache infrastructure. IGFS can either work as purely in-memory file system, or delegate to another file system (e.g. various Hadoop file system implementations) acting as a caching layer.
-
-In addition, IGFS provides API to execute map-reduce tasks over file system data.
-
-## Distributed Data Structures
-
-Ignite supports complex data structures in a distributed fashion: 
-
-* Queues and sets: ordinary, bounded, collocated, non-collocated.
-* Atomic types: `AtomicLong` and `AtomicReference`.
-* `CountDownLatch`.
-* ID Generators.
-
-## Distributed Messaging
-
-Distributed messaging allows for topic based cluster-wide communication between all nodes. Messages with a specified message topic can be distributed to all or sub-group of nodes that have subscribed to that topic.
-
-Ignite messaging is based on publish-subscribe paradigm where publishers and subscribers are connected together by a common topic. When one of the nodes sends a message A for topic T, it is published on all nodes that have subscribed to T.
-
-## Distributed Events
-
-Distributed events allow applications to receive notifications when a variety of events occur in the distributed grid environment. You can automatically get notified for task executions, read, write or query operations occurring on local or remote nodes within the cluster.
-
-## Hadoop Accelerator
-
-Our Hadoop Accelerator provides a set of components allowing for in-memory Hadoop job execution and file system operations.
-
-### MapReduce
-
-An alternate high-performant implementation of job tracker which replaces standard Hadoop MapReduce. Use it to boost your Hadoop MapReduce job execution performance.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/map-reduce">
-        <img src="https://ignite.apache.org/images/hadoop-mapreduce.png" vspace="15" height="400"/>
-    </a>
-</p>
-
-### IGFS - In-Memory File System
-
-A Hadoop-compliant IGFS File System implementation over which Hadoop can run over in plug-n-play fashion and significantly reduce I/O and improve both, latency and throughput.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/file-system">
-        <img src="https://ignite.apache.org/images/ignite_filesystem.png" height="300" vspace="15"/>
-    </a>
-</p>
-
-### Secondary File System
-
-An implementation of `SecondaryFileSystem`. This implementation can be injected into existing IGFS allowing for read-through and write-through behavior over any other Hadoop FileSystem implementation (e.g. HDFS). Use it if you want your IGFS to become an in-memory caching layer over disk-based HDFS or any other Hadoop-compliant file system.
-
-### Supported Hadoop distributions
-
-* Apache Hadoop.
-* Cloudera CDH.
-* Hortonworks HDP.
-* Apache BigTop.
-
-## Spark Shared RDDs
-
-Apache Ignite provides an implementation of Spark RDD abstraction which allows to easily share state in memory across Spark jobs. The main difference between native Spark `RDD` and `IgniteRDD` is that Ignite RDD provides a shared in-memory view on data across different Spark jobs, workers, or applications, while native Spark RDD cannot be seen by other Spark jobs or applications.
-
-<p align="center">
-    <a href="https://apacheignite.readme.io/docs/shared-rdd">
-        <img src="https://ignite.apache.org/images/spark-ignite-rdd.png" height="400" vspace="15" />
-    </a>
-</p>
-
-## Ignite On Other Platforms
-
-<a href="modules/platforms/dotnet">Ignite.NET</a>
-
-<a href="modules/platforms/cpp">Ignite C++</a>
-
-## Getting Started
-
-For information on how to get started with Apache Ignite please visit: [Getting Started][getting-started].
-
-## Full Documentation
-
-You can find the full Apache Ignite documentation here: [Full documentation][docs].
-
-[apache-homepage]: https://ignite.apache.org/
-[getting-started]: https://apacheignite.readme.io/docs/getting-started
-[docs]: https://apacheignite.readme.io/docs

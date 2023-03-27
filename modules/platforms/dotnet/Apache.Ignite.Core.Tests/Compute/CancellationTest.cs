@@ -28,10 +28,13 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Cancellation tests.
     /// </summary>
-    public class CancellationTest : IgniteTestBase
+    public class CancellationTest : SpringTestBase
     {
-        public CancellationTest() 
-            : base("config\\compute\\compute-grid1.xml", "config\\compute\\compute-grid2.xml")
+        /** */
+        private const int MillisecondsTimeout = 50;
+
+        public CancellationTest()
+            : base("Config/Compute/compute-grid1.xml", "Config/Compute/compute-grid2.xml")
         {
             // No-op.
         }
@@ -40,8 +43,23 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestTask()
         {
             TestTask((c, t) => c.ExecuteAsync(new Task(), t));
+        }
+
+        [Test]
+        public void TestTaskWithArg()
+        {
             TestTask((c, t) => c.ExecuteAsync(new Task(), 1, t));
+        }
+
+        [Test]
+        public void TestTaskByType()
+        {
             TestTask((c, t) => c.ExecuteAsync<int, IList<IComputeJobResult<int>>>(typeof(Task), t));
+        }
+
+        [Test]
+        public void TestTaskByTypeWithArg()
+        {
             TestTask((c, t) => c.ExecuteAsync<object, int, IList<IComputeJobResult<int>>>(typeof(Task), 1, t));
         }
 
@@ -78,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             TestClosure((c, t) => c.CallAsync(new ComputeFunc(), t));
             TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()), t));
-            TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()), 
+            TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()),
                 new ComputeReducer(), t));
 
             TestClosure((c, t) => c.AffinityCallAsync("default", 0, new ComputeFunc(), t));
@@ -90,24 +108,40 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
         {
-            Job.CancelCount = 0;
+            Job.Cancelled = false;
+            Job.StartEvent.Reset();
+            Job.CancelEvent.Reset();
 
-            TestClosure(runner);
+            using (var cts = new CancellationTokenSource())
+            {
+                var task = runner(Compute, cts.Token);
+                Assert.IsFalse(task.IsCanceled);
 
-            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
+                Job.StartEvent.Wait();
+
+                cts.Cancel();
+                TestUtils.WaitForTrueCondition(() => task.IsCanceled);
+
+                // Pass cancelled token
+                Assert.IsTrue(runner(Compute, cts.Token).IsCanceled);
+            }
+
+            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.Cancelled, 5000));
         }
 
-        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
+        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner, int delay = 0)
         {
             using (var cts = new CancellationTokenSource())
             {
                 var task = runner(Compute, cts.Token);
 
+                Thread.Sleep(delay);
+
                 Assert.IsFalse(task.IsCanceled);
 
                 cts.Cancel();
 
-                Assert.IsTrue(task.IsCanceled);
+                TestUtils.WaitForTrueCondition(() => task.IsCanceled);
 
                 // Pass cancelled token
                 Assert.IsTrue(runner(Compute, cts.Token).IsCanceled);
@@ -118,9 +152,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
             {
-                return Enumerable.Range(1, 100)
-                    .SelectMany(x => subgrid)
-                    .ToDictionary(x => (IComputeJob<int>)new Job(), x => x);
+                return subgrid.Where(x => !x.IsLocal).Take(1).ToDictionary(x => (IComputeJob<int>)new Job(), x => x);
             }
 
             public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
@@ -138,23 +170,24 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Serializable]
         private class Job : IComputeJob<int>
         {
-            private static int _cancelCount;
+            public static readonly ManualResetEventSlim StartEvent = new ManualResetEventSlim(false);
 
-            public static int CancelCount
-            {
-                get { return Thread.VolatileRead(ref _cancelCount); }
-                set { Thread.VolatileWrite(ref _cancelCount, value); }
-            }
+            public static readonly ManualResetEventSlim CancelEvent = new ManualResetEventSlim(false);
+
+            public static volatile bool Cancelled;
 
             public int Execute()
             {
-                Thread.Sleep(50);
+                StartEvent.Set();
+                CancelEvent.Wait();
+
                 return 1;
             }
 
             public void Cancel()
             {
-                Interlocked.Increment(ref _cancelCount);
+                CancelEvent.Set();
+                Cancelled = true;
             }
         }
 
@@ -163,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public int Invoke(int arg)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(MillisecondsTimeout);
                 return arg;
             }
         }

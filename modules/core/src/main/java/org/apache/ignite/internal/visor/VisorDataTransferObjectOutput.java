@@ -20,12 +20,14 @@ package org.apache.ignite.internal.visor;
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Wrapper for object output.
+ * @deprecated Use {@link IgniteDataTransferObjectOutput} instead. This class may be removed in Ignite 3.0.
  */
 public class VisorDataTransferObjectOutput implements ObjectOutput {
     /** */

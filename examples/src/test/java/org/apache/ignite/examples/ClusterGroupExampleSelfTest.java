@@ -17,8 +17,9 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.cluster.ClusterGroupExample;
+import org.apache.ignite.examples.cluster.ClusterGroupExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  *
@@ -33,6 +34,7 @@ public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComputeClusterGroupsExample() throws Exception {
         ClusterGroupExample.main(EMPTY_ARGS);
     }

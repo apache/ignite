@@ -66,7 +66,6 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
      *
      * @return {@code This} for chaining.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public CassandraCacheStoreFactory<K, V> setDataSource(DataSource dataSrc) {
         this.dataSrc = dataSrc;
 
@@ -91,7 +90,6 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
      * @param settings Persistence settings.
      * @return {@code This} for chaining.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public CassandraCacheStoreFactory<K, V> setPersistenceSettings(KeyValuePersistenceSettings settings) {
         this.persistenceSettings = settings;
 
@@ -194,7 +192,10 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
             return spring.loadBeanFromAppContext(appCtx, beanName);
         }
         catch (Exception e) {
-            throw new IgniteException("Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appCtx + ']', e);
+            throw new IgniteException(
+                "Failed to load bean in application context [beanName=" + beanName + ", igniteConfig=" + appCtx + ']',
+                e
+            );
         }
     }
 }

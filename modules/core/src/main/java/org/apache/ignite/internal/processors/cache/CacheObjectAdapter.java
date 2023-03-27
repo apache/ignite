@@ -38,6 +38,9 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** */
     private static final long serialVersionUID = 2006765505127197251L;
 
+    /** Head size. */
+    protected static final int HEAD_SIZE = 5; // 4 bytes len + 1 byte type
+
     /** */
     @GridToStringInclude(sensitive = true)
     @GridDirectTransient
@@ -50,8 +53,26 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @param ctx Context.
      * @return {@code True} need to copy value returned to user.
      */
-    protected boolean needCopy(CacheObjectContext ctx) {
-        return ctx.copyOnGet() && val != null && !ctx.processor().immutable(val);
+    protected boolean needCopy(CacheObjectValueContext ctx) {
+        return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
+    }
+
+    /**
+     * @return Value bytes from value.
+     */
+    protected byte[] valueBytesFromValue(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        byte[] bytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+
+        return CacheObjectTransformerUtils.transformIfNecessary(bytes, ctx);
+    }
+
+    /**
+     * @return Value from value bytes.
+     */
+    protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        byte[] bytes = CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+
+        return ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -82,27 +103,38 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     @Override public int putValue(long addr) throws IgniteCheckedException {
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
-        return putValue(addr, cacheObjectType(), valBytes, 0);
+        return putValue(addr, cacheObjectType(), valBytes);
     }
 
     /**
      * @param addr Write address.
      * @param type Object type.
      * @param valBytes Value bytes array.
-     * @param valOff Value bytes array offset.
      * @return Offset shift compared to initial address.
      */
-    public static int putValue(long addr, byte type, byte[] valBytes, int valOff) {
+    public static int putValue(long addr, byte type, byte[] valBytes) {
+        return putValue(addr, type, valBytes, 0, valBytes.length);
+    }
+
+    /**
+     * @param addr Write address.
+     * @param type Object type.
+     * @param srcBytes Source value bytes array.
+     * @param srcOff Start position in sourceBytes.
+     * @param len Number of bytes for write.
+     * @return Offset shift compared to initial address.
+     */
+    public static int putValue(long addr, byte type, byte[] srcBytes, int srcOff, int len) {
         int off = 0;
 
-        PageUtils.putInt(addr, off, valBytes.length);
+        PageUtils.putInt(addr, off, len);
         off += 4;
 
         PageUtils.putByte(addr, off, type);
         off++;
 
-        PageUtils.putBytes(addr, off, valBytes, valOff);
-        off += valBytes.length - valOff;
+        PageUtils.putBytes(addr, off, srcBytes, srcOff, len);
+        off += len;
 
         return off;
     }
@@ -172,8 +204,8 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "CacheObject",
+    @Override public String toString() {
+        return S.toString(S.includeSensitive() ? getClass().getSimpleName() : "CacheObject",
             "val", val, true,
             "hasValBytes", valBytes != null, false);
     }
@@ -184,7 +216,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @see #putValue(byte, ByteBuffer, int, int, byte[], int)
      */
     public static int objectPutSize(int dataLen) {
-        return dataLen + 5;
+        return dataLen + HEAD_SIZE;
     }
 
     /**
@@ -202,27 +234,24 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         int off,
         int len,
         byte[] valBytes,
-        final int start)
-        throws IgniteCheckedException
-    {
+        final int start
+    ) throws IgniteCheckedException {
         int dataLen = valBytes.length;
 
         if (buf.remaining() < len)
             return false;
 
-        final int headSize = 5; // 4 bytes len + 1 byte type
-
-        if (off == 0 && len >= headSize) {
+        if (off == 0 && len >= HEAD_SIZE) {
             buf.putInt(dataLen);
             buf.put(cacheObjType);
 
-            len -= headSize;
+            len -= HEAD_SIZE;
         }
-        else if (off >= headSize)
-            off -= headSize;
+        else if (off >= HEAD_SIZE)
+            off -= HEAD_SIZE;
         else {
             // Partial header write.
-            final ByteBuffer head = ByteBuffer.allocate(headSize);
+            final ByteBuffer head = ByteBuffer.allocate(HEAD_SIZE);
 
             head.order(buf.order());
 
@@ -236,10 +265,10 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
             buf.put(head);
 
-            if (head.limit() < headSize)
+            if (head.limit() < HEAD_SIZE)
                 return true;
 
-            len -= headSize - off;
+            len -= HEAD_SIZE - off;
             off = 0;
         }
 

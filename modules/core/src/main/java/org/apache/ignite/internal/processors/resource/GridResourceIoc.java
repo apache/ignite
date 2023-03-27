@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,18 +38,17 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
-import org.apache.ignite.resources.FileSystemResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Resource container contains caches for classes used for injection.
@@ -56,7 +56,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridResourceIoc {
     /** Task class resource mapping. Used to efficiently cleanup resources related to class loader. */
-    private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap = new ConcurrentHashMap<>();
 
     /** Class descriptors cache. */
     private AtomicReference<Map<Class<?>, ClassDescriptor>> clsDescs = new AtomicReference<>();
@@ -107,8 +107,7 @@ public class GridResourceIoc {
      * @return {@code True} if resource was injected.
      * @throws IgniteCheckedException Thrown in case of any errors during injection.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
-    boolean inject(Object target,
+    public boolean inject(Object target,
         Class<? extends Annotation> annCls,
         GridResourceInjector injector,
         @Nullable GridDeployment dep,
@@ -133,7 +132,7 @@ public class GridResourceIoc {
                 break;
 
             if (dep != null) {
-                Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
+                Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.newCSet());
 
                 classes.add(cls);
 
@@ -266,7 +265,7 @@ public class GridResourceIoc {
 
             boolean allowImplicitInjection = !GridNoImplicitInjection.class.isAssignableFrom(cls);
 
-            for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
+            for (Class<?> cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Field field : cls0.getDeclaredFields()) {
                     Annotation[] fieldAnns = field.getAnnotations();
 
@@ -274,9 +273,7 @@ public class GridResourceIoc {
                         T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
 
                         if (t2 == null) {
-                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
+                            t2 = new T2<>(new ArrayList<>(), new ArrayList<>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -299,9 +296,7 @@ public class GridResourceIoc {
                         T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
 
                         if (t2 == null) {
-                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
+                            t2 = new T2<>(new ArrayList<>(), new ArrayList<>());
 
                             annMap.put(ann.annotationType(), t2);
                         }
@@ -515,7 +510,7 @@ public class GridResourceIoc {
         CACHE_STORE_SESSION(CacheStoreSessionResource.class),
 
         /** */
-        FILESYSTEM_RESOURCE(FileSystemResource.class);
+        SERVICE_CONTEXT(ServiceContextResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;

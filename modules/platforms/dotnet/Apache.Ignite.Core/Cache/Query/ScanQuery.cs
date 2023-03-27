@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Cache.Query
             writer.WriteInt(PageSize);
             
             writer.WriteBoolean(Partition.HasValue);
-            
+
             if (Partition.HasValue)
                 writer.WriteInt(Partition.Value);
 

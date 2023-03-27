@@ -29,12 +29,15 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVTS_JOB_EXECUTION;
@@ -55,12 +58,6 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -70,12 +67,15 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         cfg.setCollisionSpi(collision);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReject() throws Exception {
         grid(1).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -126,7 +126,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
         final ClusterNode node = grid(1).localNode();
 
         ComputeTaskFuture<?> fut = grid(1).compute().executeAsync(new ComputeTaskAdapter<Void, Void>() {
-            @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
                 @Nullable Void arg) {
                 return F.asMap(new SleepJob(), node, new SleepJob(), node);
             }

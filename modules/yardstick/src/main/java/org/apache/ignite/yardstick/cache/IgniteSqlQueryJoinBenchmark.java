@@ -40,9 +40,15 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark<In
 
         println(cfg, "Populating query data...");
 
-        long start = System.nanoTime();
+        loadCachesData();
+    }
 
-        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cache.getName())) {
+    /** {@inheritDoc} */
+    @Override protected void loadCacheData(String cacheName) {
+        if (args.range() < 100)
+            throw new IllegalArgumentException("Invalid range: " + args.range());
+
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
             final int orgRange = args.range() / 10;
 
             // Populate organizations.
@@ -61,8 +67,6 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark<In
                     println(cfg, "Populated persons: " + i);
             }
         }
-
-        println(cfg, "Finished populating join query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -100,6 +104,8 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark<In
      * @throws Exception If failed.
      */
     private Collection<List<?>> executeQueryJoin(double minSalary, double maxSalary) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
+
         SqlFieldsQuery qry = new SqlFieldsQuery(
             "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +
             "from Person p " +

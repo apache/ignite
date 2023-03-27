@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * </li>
  * </ul>
 */
-@SuppressWarnings("NullableProblems")
 public class GridClientPartitionAffinity implements GridClientDataAffinity, GridClientTopologyListener {
     /**
      * This resolver is used to provide alternate hash ID, other than node ID.
@@ -86,7 +85,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
     private GridClientPredicate<UUID> backupFilter;
 
     /** Optional backup filter. */
-    private final GridClientPredicate<NodeInfo> backupIdFilter =new GridClientPredicate<NodeInfo>() {
+    private final GridClientPredicate<NodeInfo> backupIdFilter = new GridClientPredicate<NodeInfo>() {
         @Override public boolean apply(NodeInfo info) {
             return backupFilter == null || backupFilter.apply(info.nodeId());
         }
@@ -248,7 +247,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         return lookup.get(nodeInfo);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private int partition(Object key) {
         return Math.abs(key.hashCode() % getPartitions());
     }

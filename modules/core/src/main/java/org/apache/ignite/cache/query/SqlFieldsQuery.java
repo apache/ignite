@@ -28,8 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
- * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
- * the whole key and value objects back.
+ * on SQL {@code 'select'} clause.
  * <h1 class="header">Collocated Flag</h1>
  * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
@@ -49,6 +48,19 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default value of the update internal batch size. */
+    private static final int DFLT_UPDATE_BATCH_SIZE = 1;
+
+    /** Default value of Query timeout. Default is -1 means no timeout is set. */
+    private static final int DFLT_QUERY_TIMEOUT = -1;
+
+    /** Threaded query originator. */
+    private static ThreadLocal<String> threadedQryInitiatorId = new ThreadLocal<>();
+
+    /** Do not remove. For tests only. */
+    @SuppressWarnings("NonConstantFieldWithUpperCaseName")
+    public static boolean DFLT_LAZY = true;
+
     /** SQL Query. */
     private String sql;
 
@@ -60,7 +72,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean collocated;
 
     /** Query timeout in millis. */
-    private int timeout;
+    private int timeout = DFLT_QUERY_TIMEOUT;
 
     /** */
     private boolean enforceJoinOrder;
@@ -71,8 +83,49 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
+    /**
+     * Lazy mode is default since Ignite v.2.8.
+     * @deprecated Use {@link #setPageSize(int)} instead.
+     */
+    private boolean lazy = DFLT_LAZY;
+
     /** Partitions for query */
     private int[] parts;
+
+    /** Schema. */
+    private String schema;
+
+    /**
+     * Update internal batch size. Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     */
+    private int updateBatchSize = DFLT_UPDATE_BATCH_SIZE;
+
+    /**
+     * Query's originator string (client host+port, user name,
+     * job name or any user's information about query initiator).
+     */
+    private String qryInitiatorId;
+
+    /**
+     * Copy constructs SQL fields query.
+     *
+     * @param qry SQL query.
+     */
+    public SqlFieldsQuery(SqlFieldsQuery qry) {
+        sql = qry.sql;
+        args = qry.args;
+        collocated = qry.collocated;
+        timeout = qry.timeout;
+        enforceJoinOrder = qry.enforceJoinOrder;
+        distributedJoins = qry.distributedJoins;
+        replicatedOnly = qry.replicatedOnly;
+        lazy = qry.lazy;
+        parts = qry.parts;
+        schema = qry.schema;
+        updateBatchSize = qry.updateBatchSize;
+        qryInitiatorId = qry.qryInitiatorId;
+    }
 
     /**
      * Constructs SQL fields query.
@@ -227,7 +280,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean isDistributedJoins() {
         return distributedJoins;
@@ -249,7 +302,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @param replicatedOnly The query contains only replicated tables.
      * @return {@code this} For chaining.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
         this.replicatedOnly = replicatedOnly;
 
@@ -260,13 +315,50 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * Check is the query contains only replicated tables.
      *
      * @return {@code true} If the query contains only replicated tables.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public boolean isReplicatedOnly() {
         return replicatedOnly;
     }
 
     /**
-     * Gets partitions for query, in ascending order.
+     * Sets lazy query execution flag.
+     * <p>
+     * If {@code lazy=false} Ignite will attempt to fetch the whole query result set to memory and send it to the client. For small
+     * and medium result sets this provides optimal performance and minimize duration of internal database locks, thus
+     * increasing concurrency.
+     * <p>
+     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+     * {@link OutOfMemoryError}. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+     * consumption at the cost of moderate performance hit.
+     * <p>
+     * Defaults to {@code true}, meaning that the only first page of result set is fetched to memory.
+     *
+     * @param lazy Lazy query execution flag.
+     * @return {@code this} For chaining.
+     * @deprecated Use {@link #setPageSize(int)} instead.
+     */
+    public SqlFieldsQuery setLazy(boolean lazy) {
+        this.lazy = lazy;
+
+        return this;
+    }
+
+    /**
+     * Gets lazy query execution flag.
+     * <p>
+     * See {@link #setLazy(boolean)} for more information.
+     *
+     * @return Lazy flag.
+     * @deprecated Use {@link #getPageSize()} instead.
+     */
+    public boolean isLazy() {
+        return lazy;
+    }
+
+    /**
+     * @return Partitions for query, in ascending order.
      */
     @Nullable public int[] getPartitions() {
         return parts;
@@ -285,6 +377,108 @@ public class SqlFieldsQuery extends Query<List<?>> {
         this.parts = prepare(parts);
 
         return this;
+    }
+
+    /**
+     * Get schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @return Schema. Null if schema is not set.
+     */
+    @Nullable public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Set schema for the query.
+     * If not set, current cache name is used, which means you can
+     * omit schema name for tables within the current cache.
+     *
+     * @param schema Schema. Null to unset schema.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setSchema(@Nullable String schema) {
+        this.schema = schema;
+
+        return this;
+    }
+
+    /**
+     * Gets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @return Update internal batch size
+     */
+    public int getUpdateBatchSize() {
+        return updateBatchSize;
+    }
+
+    /**
+     * Sets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @param updateBatchSize Update internal batch size.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        A.ensure(updateBatchSize >= 1, "updateBatchSize cannot be lower than 1");
+
+        this.updateBatchSize = updateBatchSize;
+
+        return this;
+    }
+
+    /**
+     * @return Query's initiator identifier string (client host+port, user name,
+     *       job name or any user's information about query initiator).
+     */
+    public String getQueryInitiatorId() {
+        return qryInitiatorId;
+    }
+
+    /**
+     * @param qryInitiatorId Query's initiator identifier string (client host+port, user name,
+     *      job name or any user's information about query initiator).
+     *
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setQueryInitiatorId(String qryInitiatorId) {
+        this.qryInitiatorId = qryInitiatorId;
+
+        return this;
+    }
+
+    /**
+     * @return Copy of this query.
+     */
+    public SqlFieldsQuery copy() {
+        return new SqlFieldsQuery(this);
+    }
+
+    /**
+     * Used at the Job worker to setup originator by default for current thread.
+     *
+     * @param originator Query's originator string.
+     */
+    public static void setThreadedQueryInitiatorId(String originator) {
+        threadedQryInitiatorId.set(originator);
+    }
+
+    /**
+     * Used at the job worker to clear originator for current thread.
+     */
+    public static void resetThreadedQueryInitiatorId() {
+        threadedQryInitiatorId.remove();
+    }
+
+    /**
+     * @return originator set up by the job worker.
+     */
+    public static String threadedQueryInitiatorId() {
+        return threadedQryInitiatorId.get();
     }
 
     /** {@inheritDoc} */

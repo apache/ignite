@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
@@ -35,6 +36,10 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
     /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
+
+    /** Service context. */
+    @ServiceContextResource
+    private ServiceContext ctx;
 
     /** Underlying cache map. */
     private IgniteCache<K, V> cache;
@@ -60,14 +65,14 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(ServiceContext ctx) {
+    @Override public void cancel() {
         ignite.destroyCache(ctx.name());
 
         System.out.println("Service was cancelled: " + ctx.name());
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ServiceContext ctx) throws Exception {
+    @Override public void init() {
         // Create a new cache for every service deployment.
         // Note that we use service name as cache name, which allows
         // for each service deployment to use its own isolated cache.
@@ -77,7 +82,7 @@ public class SimpleMapServiceImpl<K, V> implements Service, SimpleMapService<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ServiceContext ctx) throws Exception {
+    @Override public void execute() throws Exception {
         System.out.println("Executing distributed service: " + ctx.name());
     }
 }

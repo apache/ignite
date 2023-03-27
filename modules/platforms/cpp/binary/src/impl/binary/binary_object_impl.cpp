@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <cassert>
+
 #include <ignite/impl/interop/interop_stream_position_guard.h>
 #include <ignite/impl/interop/interop_input_stream.h>
 
@@ -35,10 +37,29 @@ namespace ignite
                 mem(&mem),
                 start(start),
                 idRslvr(0),
-                metaMgr(metaMgr)
+                metaMgr(metaMgr),
+                binary(false)
             {
                 if (idRslvr)
                     this->idRslvr = idRslvr->Clone();
+
+                int8_t hdr = BinaryUtils::ReadInt8(mem, this->start);
+
+                if (hdr == IGNITE_TYPE_BINARY)
+                {
+                    binary = true;
+
+                    int32_t portLen = BinaryUtils::ReadInt32(mem, this->start + 1);
+                    int32_t portOff = BinaryUtils::ReadInt32(mem, this->start + 5 + portLen);
+
+                    this->start += portOff + 5;
+                }
+                else if (hdr != IGNITE_TYPE_OBJECT)
+                {
+                    IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_BINARY,
+                        "Memory layuout does not look like a binary object",
+                        "memPtr", mem.Data(), "pos", start, "header", hdr);
+                }
             }
 
             BinaryObjectImpl::~BinaryObjectImpl()
@@ -89,7 +110,7 @@ namespace ignite
             }
 
             template<>
-            BinaryObjectImpl BinaryObjectImpl::GetField(const char* name) const
+            IGNITE_IMPORT_EXPORT BinaryObjectImpl BinaryObjectImpl::GetField(const char* name) const
             {
                 CheckIdResolver();
 
@@ -165,7 +186,7 @@ namespace ignite
 
                 if ((mem->Length() - start) < footerEnd)
                 {
-                    IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_MEMORY,
+                    IGNITE_ERROR_FORMATTED_3(ignite::IgniteError::IGNITE_ERR_BINARY,
                         "Not enough data in the binary object", "memPtr", mem->PointerLong(),
                         "len", (mem->Length() - start), "footerEnd", footerEnd);
                 }

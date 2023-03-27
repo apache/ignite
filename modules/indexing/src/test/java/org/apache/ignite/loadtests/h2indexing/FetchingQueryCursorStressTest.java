@@ -34,7 +34,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * SQL query stress test.
@@ -61,6 +61,7 @@ public class FetchingQueryCursorStressTest {
     /** */
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
+    /** */
     public static final AtomicReference<Exception> error = new AtomicReference<>();
 
     /**
@@ -87,7 +88,7 @@ public class FetchingQueryCursorStressTest {
             for (Thread t : threads)
                 t.join();
 
-            if(error.get()!=null)
+            if (error.get() != null)
                 throw error.get();
         }
         finally {
@@ -158,7 +159,7 @@ public class FetchingQueryCursorStressTest {
 
         ccfg.setName(CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, Person.class);
-        cfg.setMarshaller(new OptimizedMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -186,6 +187,7 @@ public class FetchingQueryCursorStressTest {
         @QuerySqlField
         private String lastName;
 
+        /** */
         public Person(int id, String firstName, String lastName) {
             this.id = id;
             this.firstName = firstName;
@@ -214,12 +216,11 @@ public class FetchingQueryCursorStressTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override public void run() {
             System.out.println("Executor started: " + Thread.currentThread().getName());
 
             try {
-                while (error.get()==null && !Thread.currentThread().isInterrupted()) {
+                while (error.get() == null && !Thread.currentThread().isInterrupted()) {
                     long start = System.nanoTime();
 
                     SqlFieldsQuery qry = new SqlFieldsQuery(query);
@@ -239,7 +240,7 @@ public class FetchingQueryCursorStressTest {
                         System.out.println("[extIds=" + extIds.size() + ", dur=" + dur + ']');
                 }
             }
-            catch (CacheException ex){
+            catch (CacheException ex) {
                 error.compareAndSet(null, ex);
             }
         }
@@ -250,9 +251,8 @@ public class FetchingQueryCursorStressTest {
      */
     private static class ThroughputPrinter implements Runnable {
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override public void run() {
-            while (error.get()==null) {
+            while (error.get() == null) {
                 long before = CNT.get();
                 long beforeTime = System.currentTimeMillis();
 

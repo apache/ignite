@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.collision.priorityqueue;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobContext;
-import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.GridTaskSessionInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -239,7 +238,8 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     private volatile boolean preventStarvation = DFLT_PREVENT_STARVATION_ENABLED;
 
     /** Cached priority comparator instance. */
-    private Comparator<GridCollisionJobContextWrapper> priComp;
+    private final Comparator<GridCollisionJobContextWrapper> priComp =
+        Comparator.comparing(w -> getJobPriority(w.ctx), Comparator.reverseOrder());
 
     /** */
     @LoggerResource
@@ -262,7 +262,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
      */
     @IgniteSpiConfiguration(optional = true)
     public PriorityQueueCollisionSpi setParallelJobsNumber(int parallelJobsNum) {
-        A.ensure(parallelJobsNum > 0,  "parallelJobsNum > 0");
+        A.ensure(parallelJobsNum > 0, "parallelJobsNum > 0");
 
         this.parallelJobsNum = parallelJobsNum;
 
@@ -313,7 +313,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
         return runningCnt + heldCnt;
     }
 
-    /*
+    /**
      * Gets number of currently running (not {@code 'held}) jobs.
      *
      * @return Number of currently running (not {@code 'held}) jobs.
@@ -530,7 +530,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
                 }
             }
             else {
-                Collections.sort(waitSnap, priorityComparator());
+                waitSnap.sort(priComp);
                 waitSnapSorted = true;
 
                 if (preventStarvation)
@@ -551,7 +551,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
             int skip = waitSnap.size() - waitSize;
 
             if (!waitSnapSorted)
-                Collections.sort(waitSnap, priorityComparator());
+                waitSnap.sort(priComp);
 
             int i = 0;
 
@@ -604,7 +604,8 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
 
     /**
      * Gets job priority. At first tries to get from job context. If job context has no priority,
-     * then tries to get from task session. If task session has no priority default one will be used.
+     * then tries to get from task session. If task session does not support attributes or there
+     * is no priority in them, then the default priority is used.
      *
      * @param ctx Collision job context.
      * @return Job priority.
@@ -612,61 +613,54 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     private int getJobPriority(CollisionJobContext ctx) {
         assert ctx != null;
 
-        Integer p = null;
+        Integer pri = null;
 
-        ComputeJobContext jctx = ctx.getJobContext();
+        ComputeJobContext jobCtx = ctx.getJobContext();
 
         try {
-            p = (Integer)jctx.getAttribute(jobPriAttrKey);
+            pri = jobCtx.getAttribute(jobPriAttrKey);
         }
         catch (ClassCastException e) {
             LT.error(log, e, "Type of job context priority attribute '" + jobPriAttrKey +
-                "' is not java.lang.Integer [type=" + jctx.getAttribute(jobPriAttrKey).getClass() + ']');
+                "' is not java.lang.Integer [type=" + jobCtx.getAttribute(jobPriAttrKey).getClass() + ']');
         }
 
-        if (p == null) {
-            ComputeTaskSession ses = ctx.getTaskSession();
+        if (pri == null) {
+            GridTaskSessionInternal taskSes = (GridTaskSessionInternal)ctx.getTaskSession();
 
-            try {
-                p = (Integer)ses.getAttribute(taskPriAttrKey);
-            }
-            catch (ClassCastException e) {
-                LT.error(log, e, "Type of task session priority attribute '" + taskPriAttrKey +
-                    "' is not java.lang.Integer [type=" + ses.getAttribute(taskPriAttrKey).getClass() + ']');
-            }
+            if (!taskSes.isFullSupport()) {
+                if (log.isDebugEnabled())
+                    log.debug("Task does not support session attributes (will use default priority): " + dfltPri);
 
-            if (p == null) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Failed get priority from job context attribute '" + jobPriAttrKey +
-                        "' and task session attribute '" + taskPriAttrKey + "' (will use default priority): " +
-                        dfltPri);
+                pri = dfltPri;
+            }
+            else {
+                try {
+                    pri = taskSes.getAttribute(taskPriAttrKey);
+                }
+                catch (ClassCastException e) {
+                    LT.error(log, e, "Type of task session priority attribute '" + taskPriAttrKey +
+                        "' is not java.lang.Integer [type=" + taskSes.getAttribute(taskPriAttrKey).getClass() + ']');
                 }
 
-                p = dfltPri;
+                if (pri == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Failed get priority from job context attribute '" + jobPriAttrKey +
+                            "' and task session attribute '" + taskPriAttrKey + "' (will use default priority): " +
+                            dfltPri);
+                    }
+
+                    pri = dfltPri;
+                }
             }
         }
 
-        assert p != null;
-
-        return p;
+        return pri;
     }
 
     /** {@inheritDoc} */
     @Override protected List<String> getConsistentAttributeNames() {
         return Collections.singletonList(createSpiAttributeName(PRIORITY_ATTRIBUTE_KEY));
-    }
-
-    /**
-     * Returns (possibly shared) comparator fo sorting GridCollisionJobContextWrapper
-     * by priority.
-     *
-     * @return Comparator for priority sorting.
-     */
-    private Comparator<GridCollisionJobContextWrapper> priorityComparator() {
-        if (priComp == null)
-            priComp = new PriorityGridCollisionJobContextComparator();
-
-        return priComp;
     }
 
     /** {@inheritDoc} */
@@ -679,22 +673,6 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PriorityQueueCollisionSpi.class, this);
-    }
-
-    /**
-     * Comparator for by priority comparison of collision contexts.
-     */
-    private class PriorityGridCollisionJobContextComparator implements Comparator<GridCollisionJobContextWrapper>,Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public int compare(GridCollisionJobContextWrapper o1, GridCollisionJobContextWrapper o2) {
-            int p1 = getJobPriority(o1.getContext());
-            int p2 = getJobPriority(o2.getContext());
-
-            return p1 < p2 ? 1 : p1 == p2 ? 0 : -1;
-        }
     }
 
     /**

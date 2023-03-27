@@ -346,16 +346,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Equality operator.
+        /// </summary>
         public static bool operator ==(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return left.Equals(right);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Inequality operator.
+        /// </summary>
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("BinaryObjectHeader [Header={0}, Version={1}, Flags={2}, TypeId={3}, " +
+                                 "HashCode={4}, Length={5}, SchemaId={6}, SchemaOffset={7}]", 
+                                 Header, Version, Flags, TypeId, HashCode, Length, SchemaId, SchemaOffset);
         }
     }
 }

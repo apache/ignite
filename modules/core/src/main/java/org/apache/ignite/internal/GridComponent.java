@@ -61,7 +61,28 @@ public interface GridComponent {
         BINARY_PROC,
 
         /** Query processor. */
-        QUERY_PROC
+        QUERY_PROC,
+
+        /** Authentication processor. */
+        AUTH_PROC,
+
+        /** */
+        CACHE_CRD_PROC,
+
+        /** Encryption manager. */
+        ENCRYPTION_MGR,
+
+        /** Service processor. */
+        SERVICE_PROC,
+
+        /** Distributed MetaStorage processor. */
+        META_STORAGE,
+
+        /** Performance statistics processor. */
+        PERFORMANCE_STAT_PROC;
+
+        /** Cached values array. */
+        public static final DiscoveryDataExchangeType[] VALUES = values();
     }
 
     /**
@@ -69,7 +90,7 @@ public interface GridComponent {
      *
      * @throws IgniteCheckedException Throws in case of any errors.
      */
-    public void start(boolean activeOnStart) throws IgniteCheckedException;
+    public void start() throws IgniteCheckedException;
 
     /**
      * Stops grid component.
@@ -84,9 +105,11 @@ public interface GridComponent {
      * Callback that notifies that kernal has successfully started,
      * including all managers and processors.
      *
+     * @param active Cluster active flag (note: should be used carefully since state can
+     *     change concurrently).
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException;
+    public void onKernalStart(boolean active) throws IgniteCheckedException;
 
     /**
      * Callback to notify that kernal is about to stop.
@@ -143,6 +166,16 @@ public interface GridComponent {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+
+    /**
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
+     * @param node Joining node.
+     * @param discoData Joining node discovery data.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value

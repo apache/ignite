@@ -29,7 +29,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -37,14 +41,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.ShutdownPolicy;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedEnumProperty;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -56,14 +69,19 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
 
@@ -84,6 +102,26 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Client reconnect future. */
     private IgniteFuture<?> reconnecFut;
 
+    /** Minimal IgniteProductVersion supporting BaselineTopology */
+    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
+
+    /** Unique ID of cluster. Generated on start, shared by all nodes. */
+    private volatile UUID id;
+
+    /** User-defined human-readable tag. Generated automatically on start, can be changed later. */
+    private volatile String tag;
+
+    /** Ignite logger. */
+    private IgniteLogger log;
+
+    /** Property for update policy of shutdown. */
+    private DistributedEnumProperty<ShutdownPolicy> shutdown = new DistributedEnumProperty<>(
+        "shutdown.policy",
+        (ordinal) -> ordinal == null ? null : ShutdownPolicy.fromOrdinal(ordinal),
+        (policy) -> policy == null ? null : policy.index(),
+        ShutdownPolicy.class
+    );
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -95,11 +133,25 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @param ctx Kernal context.
      */
     public IgniteClusterImpl(GridKernalContext ctx) {
-        super(ctx, null, (IgnitePredicate<ClusterNode>)null);
+        super(ctx, (IgnitePredicate<ClusterNode>)null);
 
         cfg = ctx.config();
 
         nodeLoc = new ClusterNodeLocalMapImpl(ctx);
+
+        log = ctx.log(getClass());
+    }
+
+    /**
+     * Invoke when metastorage ready to start component.
+     */
+    public void start() {
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
+            shutdown.addListener((name, oldVal, newVal) ->
+                U.log(log, "Shutdown policy was updated [oldVal=" + oldVal + ", newVal=" + newVal + "]"));
+
+            dispatcher.registerProperty(shutdown);
+        });
     }
 
     /** {@inheritDoc} */
@@ -107,7 +159,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new ClusterGroupAdapter(ctx, null, Collections.singleton(cfg.getNodeId()));
+            return new ClusterGroupAdapter(ctx, Collections.singleton(ctx.discovery().localNode().id()));
         }
         finally {
             unguard();
@@ -182,8 +234,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteException
-    {
+        throws IgniteException {
         try {
             return startNodesAsync0(file, restart, timeout, maxConn).get();
         }
@@ -204,8 +255,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteException
-    {
+        throws IgniteException {
         try {
             return startNodesAsync0(hosts, dflts, restart, timeout, maxConn).get();
         }
@@ -226,7 +276,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            compute().execute(IgniteKillTask.class, false);
+            ctx.task().execute(IgniteKillTask.class, false, options().withProjection(nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -238,7 +291,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().compute(forNodeIds(ids)).execute(IgniteKillTask.class, false);
+            ctx.task().execute(IgniteKillTask.class, false, options().withProjection(forNodeIds(ids).nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -250,7 +306,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            compute().execute(IgniteKillTask.class, true);
+            ctx.task().execute(IgniteKillTask.class, true, options().withProjection(nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -262,7 +321,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.grid().compute(forNodeIds(ids)).execute(IgniteKillTask.class, true);
+            ctx.task().execute(IgniteKillTask.class, true, options().withProjection(forNodeIds(ids).nodes())).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -284,8 +346,484 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public boolean active() {
+        guard();
+
+        try {
+            return ctx.state().publicApiActiveState(true);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        guard();
+
+        try {
+            ctx.state().changeGlobalState(active ? ACTIVE : INACTIVE, true, serverNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterState state() {
+        guard();
+
+        try {
+            return ctx.state().publicApiState(true);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState) throws IgniteException {
+        guard();
+
+        try {
+            ctx.state().changeGlobalState(newState, true, serverNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** */
+    private Collection<BaselineNode> serverNodes() {
+        return new ArrayList<>(ctx.cluster().get().forServers().nodes());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+        guard();
+
+        try {
+            BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+
+            return blt != null ? blt.currentBaseline() : null;
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
+        guard();
+
+        try {
+            validateBeforeBaselineChange(baselineTop);
+
+            ctx.state().changeGlobalState(ACTIVE, false, baselineTop, true).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
+     * the cluster topology has not changed). All client nodes will be filtered out of the resulting
+     * baseline.
+     *
+     * @param topVer Topology version to set.
+     */
+    public void triggerBaselineAutoAdjust(long topVer) {
+        setBaselineTopology(topVer, true);
+    }
+
+    /**
+     * Verifies all nodes in current cluster topology support BaselineTopology feature so compatibilityMode flag is
+     * enabled to reset.
+     *
+     * @param discoCache
+     */
+    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
+        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
+            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
+
+            for (ClusterNode cn : discoCache.serverNodes()) {
+                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
+                    sb
+                        .a("[")
+                        .a(cn.consistentId())
+                        .a(":")
+                        .a(cn.version())
+                        .a("], ");
+            }
+
+            sb.d(sb.length() - 2, sb.length());
+
+            throw new IgniteException(sb.a("]").toString());
+        }
+    }
+
+    /**
+     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
+     */
+    private void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
+        verifyBaselineTopologySupport(ctx.discovery().discoCache());
+
+        if (!ctx.state().clusterState().active())
+            throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+
+        if (baselineTop != null) {
+            if (baselineTop.isEmpty())
+                throw new IgniteException("BaselineTopology must contain at least one node.");
+
+            List<BaselineNode> currBlT = Optional.ofNullable(ctx.state().clusterState().baselineTopology()).
+                map(BaselineTopology::currentBaseline).orElse(Collections.emptyList());
+
+            Collection<ClusterNode> srvrs = ctx.cluster().get().forServers().nodes();
+
+            for (BaselineNode node : baselineTop) {
+                Object consistentId = node.consistentId();
+
+                if (currBlT.stream().noneMatch(
+                    currBlTNode -> Objects.equals(currBlTNode.consistentId(), consistentId)) &&
+                    srvrs.stream().noneMatch(
+                        currServersNode -> Objects.equals(currServersNode.consistentId(), consistentId)))
+                    throw new IgniteException("Check arguments. Node with consistent ID [" + consistentId +
+                        "] not found in server nodes.");
+            }
+
+            Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
+
+            if (onlineNodes != null) {
+                if (!onlineNodes.isEmpty())
+                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " + onlineNodes);
+            }
+        }
+    }
+
+    /** */
+    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(
+        Collection<? extends BaselineNode> newBlt) {
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+        Set<Object> bltConsIds;
+
+        if (blt == null)
+            return null;
+        else
+            bltConsIds = blt.consistentIds();
+
+        ArrayList<Object> onlineNodesRequestedForRemoval = new ArrayList<>();
+
+        Collection<Object> aliveNodesConsIds = getConsistentIds(ctx.discovery().aliveServerNodes());
+
+        Collection<Object> newBltConsIds = getConsistentIds(newBlt);
+
+        for (Object oldBltConsId : bltConsIds) {
+            if (aliveNodesConsIds.contains(oldBltConsId)) {
+                if (!newBltConsIds.contains(oldBltConsId))
+                    onlineNodesRequestedForRemoval.add(oldBltConsId);
+            }
+        }
+
+        return onlineNodesRequestedForRemoval;
+    }
+
+    /** */
+    private Collection<Object> getConsistentIds(Collection<? extends BaselineNode> nodes) {
+        ArrayList<Object> res = new ArrayList<>(nodes.size());
+
+        for (BaselineNode n : nodes)
+            res.add(n.consistentId());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(long topVer) {
+        setBaselineTopology(topVer, false);
+    }
+
+    /**
+     * Set baseline topology.
+     *
+     * @param topVer Topology version.
+     * @param isBaselineAutoAdjust Whether this is an automatic update or not.
+     */
+    private void setBaselineTopology(long topVer, boolean isBaselineAutoAdjust) {
+        guard();
+
+        try {
+            Collection<ClusterNode> top = topology(topVer);
+
+            if (top == null)
+                throw new IgniteException("Topology version does not exist: " + topVer);
+
+            Collection<BaselineNode> target = new ArrayList<>(top.size());
+
+            for (ClusterNode node : top) {
+                if (!node.isClient())
+                    target.add(node);
+            }
+
+            validateBeforeBaselineChange(target);
+
+            ctx.state().changeGlobalState(ACTIVE, false, target, true, isBaselineAutoAdjust).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ShutdownPolicy shutdownPolicy() {
+        return shutdown.getOrDefault(ctx.config().getShutdownPolicy());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void shutdownPolicy(ShutdownPolicy shutdownPolicy) {
+        try {
+            shutdown.propagate(shutdownPolicy);
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Context is not initialized, the new policy was ignored: " + shutdownPolicy, e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
+        guard();
+
+        try {
+            ctx.cache().enableStatistics(caches, enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        guard();
+
+        try {
+            ctx.cache().clearStatistics(caches);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        guard();
+
+        try {
+            ctx.cache().context().tm().setTxTimeoutOnPartitionMapExchange(timeout);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCluster withAsync() {
         return new IgniteClusterAsyncImpl(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enableWal(String cacheName) throws IgniteException {
+        return changeWalMode(cacheName, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal(String cacheName) throws IgniteException {
+        return changeWalMode(cacheName, false);
+    }
+
+    /**
+     * Change WAL mode.
+     *
+     * @param cacheName Cache name.
+     * @param enabled Enabled flag.
+     * @return {@code True} if WAL mode was changed as a result of this call.
+     */
+    private boolean changeWalMode(String cacheName, boolean enabled) {
+        A.notNull(cacheName, "cacheName");
+
+        guard();
+
+        try {
+            return ctx.cache().context().walState().changeWalMode(Collections.singleton(cacheName), enabled).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled(String cacheName) throws IgniteException {
+        guard();
+
+        try {
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+            if (desc == null)
+                throw new IgniteException("Cache not found: " + cacheName);
+
+            return desc.groupDescriptor().walEnabled();
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID id() {
+        return id;
+    }
+
+    /**
+     * Not part of public API.
+     * Enables ClusterProcessor to set ID in the following cases:
+     * <ol>
+     *     <li>For the first time on node startup.</li>
+     *     <li>Set to null on client disconnect.</li>
+     *     <li>Set to some not-null value on client reconnect.</li>
+     * </ol>
+     *
+     * @param id ID to set.
+     */
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() {
+        return tag;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tag(String tag) throws IgniteCheckedException {
+        if (tag == null)
+            throw new IgniteCheckedException("Tag cannot be null.");
+
+        if (tag.isEmpty())
+            throw new IgniteCheckedException("Tag should not be empty.");
+
+        if (tag.length() > MAX_TAG_LENGTH) {
+            throw new IgniteCheckedException("Maximum tag length is exceeded, max length is " +
+                MAX_TAG_LENGTH +
+                " symbols, provided value has " +
+                tag.length() +
+                " symbols.");
+        }
+
+        if (!ctx.state().publicApiActiveState(true)) {
+            throw new IgniteCheckedException(
+                "Can not change cluster tag on inactive cluster. To activate the cluster call " +
+                    "Ignite.cluster().state(ClusterState.ACTIVE)."
+            );
+        }
+
+        ctx.cluster().updateTag(tag);
+    }
+
+    /**
+     * Not part of public API.
+     * Enables ClusterProcessor to set tag in the following cases:
+     * <ol>
+     *     <li>For the first time on node startup.</li>
+     *     <li>Set to null on client disconnect.</li>
+     *     <li>Set to some not-null value on client reconnect.</li>
+     * </ol>
+     *
+     * @param tag Tag to set.
+     */
+    public void setTag(@Nullable String tag) {
+        this.tag = tag;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBaselineAutoAdjustEnabled() {
+        return ctx.state().isBaselineAutoAdjustEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) {
+        baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled).get();
+    }
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
+        guard();
+
+        try {
+            return ctx.state().baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long baselineAutoAdjustTimeout() {
+        return ctx.state().baselineAutoAdjustTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) {
+        baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout).get();
+    }
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
+        A.ensure(baselineAutoAdjustTimeout >= 0, "timeout should be positive or zero");
+
+        guard();
+
+        try {
+            return ctx.state().baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
+        return ctx.state().baselineAutoAdjustStatus();
     }
 
     /** {@inheritDoc} */
@@ -307,10 +845,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      * @see IgniteCluster#startNodes(java.io.File, boolean, int, int)
      */
     IgniteInternalFuture<Collection<ClusterStartNodeResult>> startNodesAsync0(File file,
-      boolean restart,
-      int timeout,
-      int maxConn)
-    {
+        boolean restart,
+        int timeout,
+        int maxConn) {
         A.notNull(file, "file");
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
@@ -339,8 +876,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         @Nullable Map<String, Object> dflts,
         boolean restart,
         int timeout,
-        int maxConn)
-    {
+        int maxConn) {
         A.notNull(hosts, "hosts");
 
         guard();
@@ -385,7 +921,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (neighbors != null) {
                     if (restart && !neighbors.isEmpty()) {
                         try {
-                            ctx.grid().compute(forNodes(neighbors)).execute(IgniteKillTask.class, false);
+                            ctx.task().execute(IgniteKillTask.class, false, options(forNodes(neighbors).nodes())).get();
                         }
                         catch (ClusterGroupEmptyException ignored) {
                             // No-op, nothing to restart.
@@ -416,7 +952,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                     Collections.<ClusterStartNodeResult>emptyList());
 
             // Exceeding max line width for readability.
-            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut = 
+            GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>> fut =
                 new GridCompoundFuture<>(CU.<ClusterStartNodeResult>objectsReducer());
 
             AtomicInteger cnt = new AtomicInteger(nodeCallCnt);
@@ -440,12 +976,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /**
-     * Gets the all grid nodes that reside on the same physical computer as local grid node.
-     * Local grid node is excluded.
-     * <p>
-     * Detection of the same physical computer is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
-     * physical computer.
+     * Gets the all grid nodes that reside on the same physical computer as local grid node. Local grid node is
+     * excluded. <p> Detection of the same physical computer is based on comparing set of network interface MACs. If two
+     * nodes have the same set of MACs, Ignite considers these nodes running on the same physical computer.
+     *
      * @return Grid nodes that reside on the same physical computer as local grid node.
      */
     private Collection<ClusterNode> neighbors() {
@@ -473,9 +1007,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
      */
     private boolean runNextNodeCallable(final ConcurrentLinkedQueue<StartNodeCallable> queue,
         final GridCompoundFuture<ClusterStartNodeResult, Collection<ClusterStartNodeResult>>
-        comp,
-        final AtomicInteger cnt)
-    {
+            comp,
+        final AtomicInteger cnt) {
         StartNodeCallable call = queue.poll();
 
         if (call == null)
@@ -532,7 +1065,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "IgniteCluster [igniteInstanceName=" + ctx.igniteInstanceName() + ']';
     }
 }

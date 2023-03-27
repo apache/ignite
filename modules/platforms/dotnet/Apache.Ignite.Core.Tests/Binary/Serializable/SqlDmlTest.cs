@@ -17,17 +17,18 @@
 
 // ReSharper disable UnusedMember.Local
 // ReSharper disable UnusedParameter.Local
+
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
-    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -38,9 +39,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     {
         /** */
         private IIgnite _ignite;
-        
-        /** */
-        private StringBuilder _outSb;
 
         /// <summary>
         /// Sets up the test fixture.
@@ -48,15 +46,13 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _outSb = new StringBuilder();
-            Console.SetError(new StringWriter(_outSb));
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof(SimpleSerializable))
                 {
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
-                }
+                    NameMapper = new BinaryBasicNameMapper {IsSimpleName = true}
+                },
+                Logger = new ListLogger(new TestUtils.TestContextLogger()) {EnabledLevels = new[] {LogLevel.Warn}}
             };
 
             _ignite = Ignition.Start(cfg);
@@ -99,7 +95,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             };
 
             // Test SQL.
+#pragma warning disable 618
             var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where Int = 2")).GetAll().Single();
+#pragma warning restore 618
 
             Assert.AreEqual(2, res.Key);
             Assert.AreEqual(2, res.Value.Int);
@@ -107,9 +105,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             // Test DML.
             var guid = Guid.NewGuid();
-            var insertRes = cache.QueryFields(new SqlFieldsQuery(
+            var insertRes = cache.Query(new SqlFieldsQuery(
                 "insert into SimpleSerializable(_key, Byte, Bool, Short, Int, Long, Float, Double, " +
-                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                "Decimal, Guid, String) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 3, 45, true, 43, 33, 99, 4.5f, 6.7, 9.04m, guid, "bar33")).GetAll();
 
             Assert.AreEqual(1, insertRes.Count);
@@ -141,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(uint.MaxValue, cache[1].Uint);
 
             // Test SQL.
-            var sqlRes = cache.QueryFields(new SqlFieldsQuery(
+            var sqlRes = cache.Query(new SqlFieldsQuery(
                 "select uint from DotNetSpecificSerializable where uint <> 0")).GetAll();
 
             Assert.AreEqual(1, sqlRes.Count);
@@ -152,7 +150,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(uint.MaxValue, linqRes);
 
             // Test DML.
-            var dmlRes = cache.QueryFields(new SqlFieldsQuery(
+            var dmlRes = cache.Query(new SqlFieldsQuery(
                 "insert into DotNetSpecificSerializable(_key, uint) values (?, ?), (?, ?)",
                 2, uint.MaxValue, 3, 88)).GetAll();
             Assert.AreEqual(1, dmlRes.Count);
@@ -169,16 +167,17 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test]
         public void TestLogWarning()
         {
-            Thread.Sleep(10);  // Wait for logger update.
+            Thread.Sleep(10); // Wait for logger update.
 
             var expected =
-                string.Format("[WARN ][main][Marshaller] Type '{0}' implements '{1}'. " +
+                string.Format("Type '{0}' implements '{1}'. " +
                               "It will be written in Ignite binary format, however, " +
                               "the following limitations apply: DateTime fields would not work in SQL; " +
                               "sbyte, ushort, uint, ulong fields would not work in DML.",
                     typeof(SimpleSerializable), typeof(ISerializable));
 
-            Assert.IsTrue(_outSb.ToString().Contains(expected));
+            var messages = ((ListLogger) _ignite.Logger).Entries.Select(e => e.Message).ToList();
+            Assert.IsTrue(messages.Contains(expected), string.Join(Environment.NewLine, messages));
         }
 
         /// <summary>
@@ -194,25 +193,25 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
             [QuerySqlField]
             public short Short { get; set; }
-            
+
             [QuerySqlField]
             public int Int { get; set; }
-            
+
             [QuerySqlField]
             public long Long { get; set; }
-            
+
             [QuerySqlField]
             public float Float { get; set; }
-            
+
             [QuerySqlField]
             public double Double { get; set; }
-            
+
             [QuerySqlField]
             public decimal Decimal { get; set; }
-            
+
             [QuerySqlField]
             public Guid Guid { get; set; }
-            
+
             [QuerySqlField]
             public string String { get; set; }
 

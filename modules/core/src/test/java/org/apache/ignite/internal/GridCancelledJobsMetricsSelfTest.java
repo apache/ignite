@@ -31,7 +31,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.LoggerResource;
@@ -44,9 +43,13 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Cancelled jobs metrics self test.
@@ -80,8 +83,12 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelledJobs() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
+
+        // We change it because compute jobs will go to sleep.
+        assertTrue(computeJobWorkerInterruptTimeout(ignite).propagate(10L));
 
         Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 
@@ -89,19 +96,15 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
             futs.add(ignite.compute().executeAsync(CancelledTask.class, null));
 
         // Wait to be sure that metrics were updated.
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return ignite.cluster().localNode().metrics().getTotalCancelledJobs() > 0;
-            }
-        }, 5000);
+        waitForCondition(() -> ignite.cluster().localNode().metrics().getTotalCancelledJobs() > 0, 5000);
 
         colSpi.externalCollision();
 
         for (ComputeTaskFuture<?> fut : futs) {
             try {
-                fut.get();
+                fut.get(getTestTimeout());
 
-                assert false : "Job was not interrupted.";
+                fail("Job was not interrupted.");
             }
             catch (IgniteException e) {
                 if (e.hasCause(InterruptedException.class))
@@ -112,9 +115,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         // Job was cancelled and now we need to calculate metrics.
-        int totalCancelledJobs = ignite.cluster().localNode().metrics().getTotalCancelledJobs();
-
-        assert totalCancelledJobs == 10 : "Metrics were not updated. Expected 10 got " + totalCancelledJobs;
+        assertThat(ignite.cluster().localNode().metrics().getTotalCancelledJobs(), equalTo(10));
     }
 
     /**
@@ -128,7 +129,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) {
-            assert results.get(0).isCancelled() : "Wrong job result status.";
+            assertFalse(results.get(0).isCancelled());
 
             return null;
         }
@@ -146,13 +147,6 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
                 Thread.sleep(Long.MAX_VALUE);
             }
             catch (InterruptedException ignored) {
-                try {
-                    Thread.sleep(1000);
-                }
-                catch (InterruptedException e1) {
-                    throw new IgniteException("Unexpected exception: ", e1);
-                }
-
                 throw new IgniteException("Job got interrupted while waiting for cancellation.");
             }
             finally {

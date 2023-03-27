@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 /**
  *
  */
-@SuppressWarnings("deprecation")
 public class PageUtils {
     /**
      * @param addr Start address. 
@@ -34,6 +33,19 @@ public class PageUtils {
         assert off >= 0;
 
         return GridUnsafe.getByte(addr + off);
+    }
+
+    /**
+     *
+     * @param addr Start address.
+     * @param off Offset.
+     * @return Byte value from given address.
+     */
+    public static int getUnsignedByte(long addr, int off) {
+        assert addr > 0 : addr;
+        assert off >= 0;
+
+        return GridUnsafe.getByte(addr + off) & 0xFF;
     }
 
     /**
@@ -108,7 +120,7 @@ public class PageUtils {
     }
 
     /**
-     * @param addr Address/
+     * @param addr Address.
      * @param off Offset.
      * @param bytes Bytes.
      */
@@ -138,6 +150,22 @@ public class PageUtils {
     /**
      * @param addr Address.
      * @param off Offset.
+     * @param bytes Bytes array.
+     * @param bytesOff Bytes array offset.
+     * @param len Length.
+     */
+    public static void putBytes(long addr, int off, byte[] bytes, int bytesOff, int len) {
+        assert addr > 0 : addr;
+        assert off >= 0;
+        assert bytes != null;
+        assert bytesOff >= 0 && (bytesOff < bytes.length || bytes.length == 0) : bytesOff;
+
+        GridUnsafe.copyMemory(bytes, GridUnsafe.BYTE_ARR_OFF + bytesOff, null, addr + off, len);
+    }
+
+    /**
+     * @param addr Address.
+     * @param off Offset.
      * @param v Value.
      */
     public static void putByte(long addr, int off, byte v) {
@@ -145,6 +173,19 @@ public class PageUtils {
         assert off >= 0;
 
         GridUnsafe.putByte(addr + off, v);
+    }
+
+    /**
+     * @param addr Address.
+     * @param off Offset.
+     * @param v Value.
+     */
+    public static void putUnsignedByte(long addr, int off, int v) {
+        assert addr > 0 : addr;
+        assert off >= 0;
+        assert v >= 0 && v <= 255;
+
+        GridUnsafe.putByte(addr + off, (byte)v);
     }
 
     /**

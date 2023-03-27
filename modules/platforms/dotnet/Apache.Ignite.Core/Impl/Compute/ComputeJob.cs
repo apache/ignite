@@ -23,15 +23,18 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Resource;
+    using static IgniteUtils;
 
     /// <summary>
     /// Non-generic version of IComputeJob{T}.
     /// </summary>
     internal interface IComputeJob : IComputeJob<object>
     {
-        // No-op.
+        /// <returns>Name of the wrapped job.</returns>
+        string GetName();
     }
 
     /// <summary>
@@ -102,13 +105,19 @@ namespace Apache.Ignite.Core.Impl.Compute
                 throw;
             }
         }
+        
+        /** <inheritDoc /> */ 
+        public string GetName()
+        {
+            return GetComputeExecutableName(_job);
+        }
 
         /** <inheritDoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(Job));
+            writer0.WriteWithPeerDeployment(Job);
         }
 
         /// <summary>

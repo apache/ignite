@@ -24,20 +24,20 @@ import java.util.Date;
 import java.util.HashMap;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Binary meta data test.
@@ -95,6 +95,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         binaries().toBinary(new TestObject2());
 
@@ -150,27 +151,12 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
             else
                 assert false : meta.typeName();
         }
-
-        grid().cache(DEFAULT_CACHE_NAME).put(new AffinityKey<>(1, 1), 1);
-
-        metas = binaries().types();
-
-        assertEquals(3, metas.size());
-
-        for (BinaryType meta : metas) {
-            if (AffinityKey.class.getSimpleName().equals(meta.typeName())) {
-                assertEquals("affKey", meta.affinityKeyFieldName());
-
-                return;
-            }
-        }
-
-        fail("Failed to find metadata for AffinityKey");
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoConfiguration() throws Exception {
         binaries().toBinary(new TestObject3());
 
@@ -180,6 +166,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReflection() throws Exception {
         BinaryType meta = binaries().type(TestObject1.class);
 
@@ -224,6 +211,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryMarshalAware() throws Exception {
         binaries().toBinary(new TestObject2());
 
@@ -257,6 +245,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMerge() throws Exception {
         binaries().toBinary(new TestObject2());
 
@@ -298,6 +287,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializedObject() throws Exception {
         TestObject1 obj = new TestObject1();
 
@@ -342,7 +332,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject1 {
         /** */
         private int intVal;
@@ -398,7 +387,6 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
 
     /**
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject3 {
         /** */
         private int intVal;

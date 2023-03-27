@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Transactions
         /// <param name="timeout">Timeout. TimeSpan.Zero for indefinite timeout.</param>
         /// <param name="txSize">Number of entries participating in transaction (may be approximate).</param>
         /// <returns>New transaction.</returns>
-        ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation, 
+        ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize);
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Transactions
         /// Gets the default transaction concurrency.
         /// </summary>
         TransactionConcurrency DefaultTransactionConcurrency { get; }
-        
+
         /// <summary>
         /// Gets the default transaction isolation.
         /// </summary>
@@ -79,9 +79,14 @@ namespace Apache.Ignite.Core.Transactions
         TimeSpan DefaultTimeout { get; }
 
         /// <summary>
+        /// Gets the default transaction timeout on partition map exchange.
+        /// </summary>
+        TimeSpan DefaultTimeoutOnPartitionMapExchange { get; }
+
+        /// <summary>
         /// Gets the metrics.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", 
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Expensive operation.")]
         ITransactionMetrics GetMetrics();
 
@@ -89,5 +94,35 @@ namespace Apache.Ignite.Core.Transactions
         /// Resets the metrics.
         /// </summary>
         void ResetMetrics();
+
+        /// <summary>
+        /// Returns instance of Ignite Transactions to mark a transaction with a special label.
+        /// </summary>
+        /// <param name="label"></param>
+        /// <returns><see cref="ITransactions"/></returns>
+        ITransactions WithLabel(string label);
+
+        /// <summary>
+        /// Returns a list of active transactions initiated by this node.
+        /// <para/>
+        /// Returned transactions do not support next operations:
+        /// <list type="bullet">
+        ///     <item><description><see cref="ITransaction.Commit"/>.</description></item>
+        ///     <item><description><see cref="ITransaction.CommitAsync"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.ThreadId"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.StartTime"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.Meta{TV}"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.AddMeta{TV}"/>.</description></item>
+        ///     <item><description>Get <see cref="ITransaction.RemoveMeta{TV}"/>.</description></item>
+        /// </list>
+        /// </summary>
+        /// <returns>Collection of <see cref="ITransactionCollection"/></returns>
+        ITransactionCollection GetLocalActiveTransactions();
+
+        /// <summary>
+        /// Returns instance of Ignite Transactions to enable tracing for a transaction.
+        /// </summary>
+        /// <returns><see cref="ITransactions"/></returns>
+        ITransactions WithTracing();
     }
 }

@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Transactional write read consistency test.
  */
-public class CacheNearDisabledTransactionalWriteReadRestartSelfTest extends CacheAbstractRestartSelfTest{
+public class CacheNearDisabledTransactionalWriteReadRestartSelfTest extends CacheAbstractRestartSelfTest {
     /** */
     public static final int RANGE = 100;
 

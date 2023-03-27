@@ -23,7 +23,6 @@
 #ifndef _IGNITE_CACHE_QUERY_QUERY
 #define _IGNITE_CACHE_QUERY_QUERY
 
-#include "ignite/cache/query/query_argument.h"
 #include "ignite/cache/query/query_cursor.h"
 #include "ignite/cache/query/query_scan.h"
 #include "ignite/cache/query/query_sql.h"

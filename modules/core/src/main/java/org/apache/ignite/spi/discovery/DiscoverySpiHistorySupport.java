@@ -34,8 +34,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface DiscoverySpiHistorySupport {
     /**
-     * Whether or not target SPI supports topology snapshots history.
+     * @return Whether or not target SPI supports topology snapshots history.
      */
-    @SuppressWarnings({"JavaDoc"})
     public boolean value();
 }

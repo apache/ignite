@@ -1,0 +1,415 @@
+---
+published: false
+---
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Generic Kubernetes Instruction
+:safe: unsafe
+:command: kubectl
+:soft_name: Kubernetes
+:serviceName:
+
+
+//tag::kube-version[]
+CAUTION: This guide was written using `kubectl` version 1.17.
+//end::kube-version[]
+
+== Introduction
+
+//tag::intro[]
+We will consider two deployment modes: stateful and stateless.
+Stateless deployments are suitable for in-memory use cases where your cluster keeps the application data in RAM for better performance.
+A stateful deployment differs from a stateless deployment in that it includes setting up persistent volumes for the cluster's storage.
+
+CAUTION: This guide focuses on deploying server nodes on Kubernetes. If you want to run client nodes on Kubernetes while your cluster is deployed elsewhere, you need to enable the communication mode designed for client nodes running behind a NAT. Refer to link:clustering/running-client-nodes-behind-nat[this section].
+
+//end::intro[]
+
+
+== {soft_name} Configuration
+
+//tag::kubernetes-config[]
+
+{soft_name} configuration involves creating the following resources:
+
+* A namespace
+* A cluster role
+* A ConfigMap for the node configuration file
+* A service to be used for discovery and load balancing when external apps connect to the cluster
+* A configuration for pods running Ignite nodes
+
+=== Creating Namespace
+
+Create a unique namespace for your deployment.
+In our case, the namespace is called “ignite”.
+
+Create the namespace using the following command:
+
+[source, shell]
+----
+include::{script}[tags=create-namespace]
+----
+
+=== Creating Service
+
+The {soft_name} service is used for auto-discovery and as a load-balancer for external applications that will connect to your cluster.
+
+Every time a new node is started (in a separate pod), the IP finder connects to the service via the Kubernetes API to obtain the list of the existing pods' addresses.
+Using these addresses, the new node discovers all cluster nodes.
+
+.service.yaml
+[source, yaml]
+----
+include::{configDir}/service.yaml[tag=config-block]
+----
+
+Create the service:
+
+[source, shell]
+----
+include::{script}[tags=create-service]
+----
+
+=== Creating Cluster Role and Service Account
+
+Create a service account:
+
+[source, shell]
+----
+include::{script}[tags=create-service-account]
+----
+
+A cluster role is used to grant access to pods. The following file is an example of a cluster role:
+
+.cluster-role.yaml
+[source, yaml]
+----
+include::{configDir}/cluster-role.yaml[tag=config-block]
+----
+
+Run the following command to create the role and a role binding:
+
+[source, shell]
+----
+include::{script}[tags=create-cluster-role]
+----
+
+=== Creating ConfigMap for Node Configuration File
+We will create a ConfigMap, which will keep the node configuration file for every node to use.
+This will allow you to keep a single instance of the configuration file for all nodes.
+
+Let's create a configuration file first.
+Choose one of the tabs below, depending on whether you use persistence or not.
+
+:kubernetes-ip-finder-description: This IP finder connects to the service via the Kubernetes API and obtains the list of the existing pods' addresses. Using these addresses, the new node discovers all other cluster nodes.
+
+
+[tabs]
+--
+tab:Configuration without persistence[]
+We must use the `TcpDiscoveryKubernetesIpFinder` IP finder for node discovery.
+{kubernetes-ip-finder-description}
+
+The file will look like this:
+
+.node-configuration.xml
+[source, xml]
+----
+include::{configDir}/stateless/node-configuration.xml[tag=config-block]
+----
+
+tab:Configuration with persistence[]
+In the configuration file, we will:
+
+* Enable link:persistence/native-persistence[native persistence] and specify the `workDirectory`, `walPath`, and `walArchivePath`. These directories are mounted in each pod that runs an Ignite node. Volume configuration is part of the <<Creating Pod Configuration,pod configuration>>.
+* Use the `TcpDiscoveryKubernetesIpFinder` IP finder. {kubernetes-ip-finder-description}
+
+The file look like this:
+
+.node-configuration.xml
+[source, xml]
+----
+include::{configDir}/stateful/node-configuration.xml[tag=config-block]
+----
+--
+
+
+The `namespace` and `serviceName` properties of the IP finder configuration must be the same as specified in the <<Creating Service,service configuration>>.
+Add other properties as required for your use case.
+
+To create the ConfigMap, run the following command in the directory with the `node-configuration.xml` file.
+
+[source, shell]
+----
+include::{script}[tags=create-configmap]
+----
+
+
+=== Creating Pod Configuration
+
+Now we will create a configuration for pods.
+In the case of stateless deployment, we will use a link:https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[Deployment,window=_blank].
+For a stateful deployment, we will use a link:https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/[StatefulSet,window=_blank].
+
+
+[tabs]
+--
+tab:Configuration without persistence[]
+
+Our Deployment configuration will deploy a ReplicaSet with two pods running Ignite {version}.
+
+In the container's configuration, we will:
+
+* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installation/installing-using-docker#enabling-modules[modules].
+* Use the configuration file from the ConfigMap we created earlier.
+* Open a number of ports:
+** 47100 — the communication port
+** 47500 ­—­ the discovery port
+** 49112 — the default JMX port
+** 10800 — thin client/JDBC/ODBC port
+** 8080 — REST API port
+
+The deployment configuration file might look like as follows:
+
+.deployment.yaml
+[source, yaml,subs="attributes,specialchars"]
+----
+include::{configDir}/stateless/deployment-template.yaml[tag=config-block]
+----
+
+Create a deployment by running the following command:
+
+[source, shell]
+----
+include::{script}[tags=create-deployment]
+----
+
+tab:Configuration with persistence[]
+
+Our StatefulSet configuration deploys 2 pods running Ignite {version}.
+
+In the container's configuration we will:
+
+* Enable the “ignite-kubernetes” and “ignite-rest-http” link:installation/installing-using-docker#enabling-modules[modules].
+* Use the configuration file from the ConfigMap we created earlier.
+* Mount volumes for the work directory (where application data is stored), WAL files, and WAL archive.
+* Open a number of ports:
+** 47100 — the communication port
+** 47500 ­—­ the discovery port
+** 49112 — the default JMX port
+** 10800 — thin client/JDBC/ODBC port
+** 8080 — REST API port
+
+The StatefulSet configuration file might look like as follows:
+
+.statefulset.yaml
+[source,yaml,subs="attributes,specialchars"]
+----
+include::{configDir}/stateful/statefulset-template.yaml[tag=config-block]
+----
+
+Note the `spec.volumeClaimTemplates` section, which defines persistent volumes provisioned by a persistent volume provisioner.
+The volume type depends on the cloud provider.
+You can have more control over the volume type by defining https://kubernetes.io/docs/concepts/storage/storage-classes/[storage classes,window=_blank].
+
+Create the StatefulSet by running the following command:
+
+[source, shell]
+----
+include::{script}[tags=create-statefulset]
+----
+
+--
+
+Check if the pods were deployed correctly:
+
+[source, shell,subs="attributes"]
+----
+$ {command} get pods -n ignite
+NAME                                READY   STATUS    RESTARTS   AGE
+ignite-cluster-5b69557db6-lcglw   1/1     Running   0          44m
+ignite-cluster-5b69557db6-xpw5d   1/1     Running   0          44m
+----
+
+Check the logs of the nodes:
+
+[source, shell,subs="attributes"]
+----
+$ {command} logs ignite-cluster-5b69557db6-lcglw -n ignite
+...
+[14:33:50] Ignite documentation: http://gridgain.com
+[14:33:50]
+[14:33:50] Quiet mode.
+[14:33:50]   ^-- Logging to file '/opt/gridgain/work/log/ignite-b8622b65.0.log'
+[14:33:50]   ^-- Logging by 'JavaLogger [quiet=true, config=null]'
+[14:33:50]   ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or "-v" to ignite.{sh|bat}
+[14:33:50]
+[14:33:50] OS: Linux 4.19.81 amd64
+[14:33:50] VM information: OpenJDK Runtime Environment 1.8.0_212-b04 IcedTea OpenJDK 64-Bit Server VM 25.212-b04
+[14:33:50] Please set system property '-Djava.net.preferIPv4Stack=true' to avoid possible problems in mixed environments.
+[14:33:50] Initial heap size is 30MB (should be no less than 512MB, use -Xms512m -Xmx512m).
+[14:33:50] Configured plugins:
+[14:33:50]   ^-- None
+[14:33:50]
+[14:33:50] Configured failure handler: [hnd=StopNodeOrHaltFailureHandler [tryStop=false, timeout=0, super=AbstractFailureHandler [ignoredFailureTypes=UnmodifiableSet [SYSTEM_WORKER_BLOCKED, SYSTEM_CRITICAL_OPERATION_TIMEOUT]]]]
+[14:33:50] Message queue limit is set to 0 which may lead to potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes due to message queues growth on sender and receiver sides.
+[14:33:50] Security status [authentication=off, tls/ssl=off]
+[14:34:00] Nodes started on local machine require more than 80% of physical RAM what can lead to significant slowdown due to swapping (please decrease JVM heap size, data region size or checkpoint buffer size) [required=918MB, available=1849MB]
+[14:34:01] Performance suggestions for grid  (fix if possible)
+[14:34:01] To disable, set -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true
+[14:34:01]   ^-- Enable G1 Garbage Collector (add '-XX:+UseG1GC' to JVM options)
+[14:34:01]   ^-- Specify JVM heap max size (add '-Xmx<size>[g|G|m|M|k|K]' to JVM options)
+[14:34:01]   ^-- Set max direct memory size if getting 'OOME: Direct buffer memory' (add '-XX:MaxDirectMemorySize=<size>[g|G|m|M|k|K]' to JVM options)
+[14:34:01]   ^-- Disable processing of calls to System.gc() (add '-XX:+DisableExplicitGC' to JVM options)
+[14:34:01] Refer to this page for more performance suggestions: https://ignite.apache.org/docs/latest/perf-and-troubleshooting/general-perf-tips
+[14:34:01]
+[14:34:01] To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}
+[14:34:01] Data Regions Configured:
+[14:34:01]   ^-- default [initSize=256.0 MiB, maxSize=370.0 MiB, persistence=false, lazyMemoryAllocation=true]
+[14:34:01]
+[14:34:01] Ignite node started OK (id=b8622b65)
+[14:34:01] Topology snapshot [ver=2, locNode=b8622b65, servers=2, clients=0, state=ACTIVE, CPUs=2, offheap=0.72GB, heap=0.88GB]
+----
+
+The string `servers=2` in the last line indicates that the two nodes joined into a single cluster.
+
+== Activating the Cluster
+
+If you deployed a stateless cluster, skip this step: a cluster without persistence does not require activation.
+
+If you are using persistence, you must activate the cluster after it is started. To do that, connect to one of the pods:
+
+[source, shell,subs="attributes,specialchars"]
+----
+{command} exec -it <pod_name> -n ignite -- /bin/bash
+----
+
+Execute the following command:
+
+[source, shell]
+----
+/opt/ignite/apache-ignite/bin/control.sh --set-state ACTIVE --yes
+----
+
+You can also activate the cluster using the link:restapi#change-cluster-state[REST API].
+Refer to the <<Connecting to the Cluster>> section for details about connection to the cluster's REST API.
+
+== Scaling the Cluster
+
+You can add more nodes to the cluster by using the `{command} scale` command.
+
+CAUTION: Make sure your {serviceName} cluster has enough resources to add new pods.
+
+In the following example, we will bring up one more node (we had two).
+
+
+[tabs]
+--
+tab:Configuration without persistence[]
+To scale your Deployment, run the following command:
+
+[source, shell,subs="attributes,specialchars"]
+----
+{command} scale deployment ignite-cluster --replicas=3 -n ignite
+----
+
+tab:Configuration with persistence[]
+To scale your StatefulSet, run the following command:
+[source, shell,subs="attributes,specialchars"]
+----
+{command} scale sts ignite-cluster --replicas=3 -n ignite
+----
+
+After scaling the cluster, link:control-script#activation-deactivation-and-topology-management[change the baseline topology] accordingly.
+
+--
+
+CAUTION: If you reduce the number of nodes by more than the link:configuring-caches/configuring-backups[number of partition backups], you may lose data. The proper way to scale down is to redistribute the data after removing a node by changing the link:control-script#removing-nodes-from-baseline-topology[baseline topology].
+
+== Connecting to the Cluster
+
+If your application is also running in {soft_name}, you can use either thin clients or client nodes to connect to the cluster.
+
+Get the public IP of the service:
+
+[source, shell,subs="attributes,specialchars"]
+----
+$ {command} describe svc ignite-service -n ignite
+Name:                     ignite-service
+Namespace:                ignite
+Labels:                   app=ignite
+Annotations:              <none>
+Selector:                 app=ignite
+Type:                     LoadBalancer
+IP:                       10.0.144.19
+LoadBalancer Ingress:     13.86.186.145
+Port:                     rest  8080/TCP
+TargetPort:               8080/TCP
+NodePort:                 rest  31912/TCP
+Endpoints:                10.244.1.5:8080
+Port:                     thinclients  10800/TCP
+TargetPort:               10800/TCP
+NodePort:                 thinclients  31345/TCP
+Endpoints:                10.244.1.5:10800
+Session Affinity:         None
+External Traffic Policy:  Cluster
+----
+
+
+You can use the `LoadBalancer Ingress` address to connect to one of the open ports.
+The ports are also listed in the output of the command.
+
+
+=== Connecting Client Nodes
+
+A client node requires connection to every node in the cluster. The only way to achieve this is to start a client node within {soft_name}.
+You will need to configure the discovery mechanism to use `TcpDiscoveryKubernetesIpFinder`, as described in the <<Creating ConfigMap for Node Configuration File>> section.
+
+
+=== Connecting with Thin Clients
+
+The following code snippet illustrates how to connect to your cluster using the link:thin-clients/java-thin-client[java thin client]. You can use other thin clients in the same way.
+Note that we use the external IP address (LoadBalancer Ingress) of the service.
+
+[source, java]
+----
+include::{javaFile}[tags=connectThinClient, indent=0]
+----
+
+
+==== Partition Awareness
+
+include::../../includes/partition-awareness.adoc[]
+
+To enable the partition awareness feature within scaling Kubernetes enviroment, one should start a client within the cluster and configure it with `KubernetesConnectionConfiguration`.
+In this case, a client can connect to every pod in a cluster.
+
+[source, java]
+----
+include::{javaFile}[tags=connectThinClientWithKubernetesConfiguration, indent=0]
+----
+
+
+=== Connecting to REST API
+
+Connect to the cluster's REST API as follows:
+
+[source,shell,subs="attributes,specialchars"]
+----
+$ curl http://13.86.186.145:8080/ignite?cmd=version
+{"successStatus":0,"error":null,"response":"{version}","sessionToken":null}
+----
+
+//end::kubernetes-config[]

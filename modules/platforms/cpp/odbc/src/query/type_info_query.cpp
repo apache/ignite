@@ -29,7 +29,7 @@ namespace
     {
         enum Type
         {
-            /** Data source–dependent data-type name. */
+            /** Data source-dependent data-type name. */
             TYPE_NAME = 1,
 
             /** SQL data type. */
@@ -69,11 +69,11 @@ namespace
             /** Whether the data type has predefined fixed precision and scale. */
             FIXED_PREC_SCALE,
 
-            /** Whether the data type is autoincrementing. */
+            /** Whether the data type is auto-incrementing. */
             AUTO_UNIQUE_VALUE,
 
             /**
-             * Localized version of the data source–dependent name of the data
+             * Localized version of the data sourceâ€“dependent name of the data
              * type.
              */
             LOCAL_TYPE_NAME,
@@ -92,7 +92,7 @@ namespace
 
             /**
              * When the value of SQL_DATA_TYPE is SQL_DATETIME or SQL_INTERVAL,
-             * this column contains the datetime/interval subcode.
+             * this column contains the datetime/interval sub-code.
              */
             SQL_DATETIME_SUB,
 
@@ -118,10 +118,11 @@ namespace ignite
     {
         namespace query
         {
-            TypeInfoQuery::TypeInfoQuery(diagnostic::Diagnosable& diag, int16_t sqlType) :
+            TypeInfoQuery::TypeInfoQuery(diagnostic::DiagnosableAdapter& diag, int16_t sqlType) :
                 Query(diag, QueryType::TYPE_INFO),
                 columnsMeta(),
                 executed(false),
+                fetched(false),
                 types(),
                 cursor(types.end())
             {
@@ -132,8 +133,8 @@ namespace ignite
 
                 columnsMeta.reserve(19);
 
-                const std::string sch("");
-                const std::string tbl("");
+                const std::string sch;
+                const std::string tbl;
 
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "TYPE_NAME",          IGNITE_TYPE_STRING));
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "DATA_TYPE",          IGNITE_TYPE_SHORT));
@@ -155,7 +156,7 @@ namespace ignite
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX",     IGNITE_TYPE_INT));
                 columnsMeta.push_back(ColumnMeta(sch, tbl, "INTERVAL_PRECISION", IGNITE_TYPE_SHORT));
 
-                assert(IsSqlTypeSupported(sqlType));
+                assert(IsSqlTypeSupported(sqlType) || sqlType == SQL_ALL_TYPES);
 
                 if (sqlType == SQL_ALL_TYPES)
                 {
@@ -185,13 +186,14 @@ namespace ignite
                 cursor = types.begin();
 
                 executed = true;
+                fetched = false;
 
                 return SqlResult::AI_SUCCESS;
             }
 
-            const meta::ColumnMetaVector & TypeInfoQuery::GetMeta() const
+            const meta::ColumnMetaVector* TypeInfoQuery::GetMeta()
             {
-                return columnsMeta;
+                return &columnsMeta;
             }
 
             SqlResult::Type TypeInfoQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
@@ -203,6 +205,11 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                if (!fetched)
+                    fetched = true;
+                else
+                    ++cursor;
+
                 if (cursor == types.end())
                     return SqlResult::AI_NO_DATA;
 
@@ -210,8 +217,6 @@ namespace ignite
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
                     GetColumn(it->first, it->second);
-
-                ++cursor;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -228,7 +233,12 @@ namespace ignite
                 }
 
                 if (cursor == types.end())
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 int8_t currentType = *cursor;
 
@@ -317,12 +327,6 @@ namespace ignite
                     }
 
                     case ResultColumn::FIXED_PREC_SCALE:
-                    {
-                        buffer.PutInt16(SQL_FALSE);
-
-                        break;
-                    }
-
                     case ResultColumn::AUTO_UNIQUE_VALUE:
                     {
                         buffer.PutInt16(SQL_FALSE);
@@ -384,12 +388,17 @@ namespace ignite
 
             bool TypeInfoQuery::DataAvailable() const
             {
-                return cursor != types.end();;
+                return cursor != types.end();
             }
 
             int64_t TypeInfoQuery::AffectedRows() const
             {
                 return 0;
+            }
+
+            SqlResult::Type TypeInfoQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
             }
         }
     }

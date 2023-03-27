@@ -119,7 +119,7 @@ public class F0 {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>[] p1,
         @Nullable final IgnitePredicate<? super T>... p2) {
         if (F.isAlwaysFalse(p1) || F.isAlwaysFalse(p2))
@@ -194,7 +194,7 @@ public class F0 {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod", "ConstantConditions"})
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
     public static <T> IgnitePredicate<T> and(
         @Nullable final IgnitePredicate<? super T> p,
         @Nullable final IgnitePredicate<? super T>... ps

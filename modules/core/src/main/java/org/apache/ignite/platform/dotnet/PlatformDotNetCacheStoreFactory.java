@@ -17,10 +17,9 @@
 
 package org.apache.ignite.platform.dotnet;
 
-import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
-
-import javax.cache.configuration.Factory;
 import java.util.Map;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
 
 /**
  * Wrapper for .NET cache store implementations.

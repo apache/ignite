@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.List;
 import org.h2.util.StatementBuilder;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /** */
 public class GridSqlMerge extends GridSqlStatement {
     /** */
@@ -29,9 +31,6 @@ public class GridSqlMerge extends GridSqlStatement {
     private GridSqlColumn[] cols;
 
     /** */
-    private GridSqlColumn[] keys;
-
-    /** */
     private List<GridSqlElement[]> rows;
 
     /** Insert subquery. */
@@ -39,35 +38,26 @@ public class GridSqlMerge extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("MERGE INTO ")
             .append(into.getSQL())
-            .append("(");
+            .append('(');
 
         for (GridSqlColumn col : cols) {
             buff.appendExceptFirst(", ");
-            buff.append('\n')
+            buff.append(delim)
                 .append(col.getSQL());
         }
-        buff.append("\n)\n");
-
-        if (keys != null) {
-            buff.append("KEY(\n");
-            buff.resetCount();
-            for (GridSqlColumn c : keys) {
-                buff.appendExceptFirst(", ");
-                buff.append(c.getSQL())
-                    .append('\n');
-            }
-            buff.append(")\n");
-        }
+        buff.append(delim).append(')').append(delim);
 
         if (!rows.isEmpty()) {
-            buff.append("VALUES\n");
+            buff.append("VALUES").append(delim);
             StatementBuilder valuesBuff = new StatementBuilder();
 
             for (GridSqlElement[] row : rows()) {
-                valuesBuff.appendExceptFirst(",\n");
+                valuesBuff.appendExceptFirst("," + delim);
                 StatementBuilder rowBuff = new StatementBuilder("(");
                 for (GridSqlElement e : row) {
                     rowBuff.appendExceptFirst(", ");
@@ -79,7 +69,7 @@ public class GridSqlMerge extends GridSqlStatement {
             buff.append(valuesBuff.toString());
         }
         else
-            buff.append('\n')
+            buff.append(delim)
                 .append(qry.getSQL());
 
         return buff.toString();
@@ -127,17 +117,6 @@ public class GridSqlMerge extends GridSqlStatement {
     /** */
     public GridSqlMerge columns(GridSqlColumn[] cols) {
         this.cols = cols;
-        return this;
-    }
-
-    /** */
-    public GridSqlColumn[] keys() {
-        return keys;
-    }
-
-    /** */
-    public GridSqlMerge keys(GridSqlColumn[] keys) {
-        this.keys = keys;
         return this;
     }
 }

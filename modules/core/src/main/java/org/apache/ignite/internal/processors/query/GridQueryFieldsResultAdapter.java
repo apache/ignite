@@ -52,7 +52,7 @@ public class GridQueryFieldsResultAdapter implements GridQueryFieldsResult {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException{
+    @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
         return it;
     }
 }

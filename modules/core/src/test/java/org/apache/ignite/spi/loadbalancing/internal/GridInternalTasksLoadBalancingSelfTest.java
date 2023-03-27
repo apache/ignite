@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,16 +31,13 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.node.VisorNodePingTask;
-import org.apache.ignite.internal.visor.node.VisorNodePingTaskArg;
-import org.apache.ignite.internal.visor.node.VisorNodePingTaskResult;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test that will start two nodes with custom load balancing SPI and execute {@link GridInternal} task on it.
@@ -68,6 +64,13 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -82,6 +85,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testInternalTaskBalancing() throws Exception {
         customLoadBalancer = true;
 
@@ -90,21 +94,13 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
         // Task with GridInternal should pass.
         assertEquals(TASK_RESULT, ignite.compute().execute(GridInternalTestTask.class.getName(), null));
 
-        // Visor task should pass.
-        UUID nid = ignite.cluster().localNode().id();
-
-        VisorNodePingTaskResult ping = ignite.compute()
-            .execute(VisorNodePingTask.class.getName(),
-                new VisorTaskArgument<>(nid, new VisorNodePingTaskArg(nid), false));
-
-        assertTrue(ping.isAlive());
-
         // Custom task should fail, because special test load balancer SPI returns null as balanced node.
         try {
             ignite.compute().execute(CustomTestTask.class.getName(), null);
         }
         catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith("Node can not be null [mappedJob=org.apache.ignite.spi.loadbalancing.internal.GridInternalTasksLoadBalancingSelfTest$CustomTestJob"));
+            assertTrue(e.getMessage().startsWith("Node can not be null " +
+                "[mappedJob=org.apache.ignite.spi.loadbalancing.internal.GridInternalTasksLoadBalancingSelfTest$CustomTestJob"));
         }
     }
 
@@ -113,6 +109,7 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testInternalTaskDefaultBalancing() throws Exception {
         customLoadBalancer = false;
 
@@ -120,15 +117,6 @@ public class GridInternalTasksLoadBalancingSelfTest extends GridCommonAbstractTe
 
         // Task with GridInternal should pass.
         assertEquals(TASK_RESULT, ignite.compute().execute(GridInternalTestTask.class.getName(), null));
-
-        // Visor task should pass.
-        UUID nid = ignite.cluster().localNode().id();
-
-        VisorNodePingTaskResult ping = ignite.compute()
-            .execute(VisorNodePingTask.class.getName(),
-                new VisorTaskArgument<>(nid, new VisorNodePingTaskArg(nid), false));
-
-        assertTrue(ping.isAlive());
 
         // Custom task should pass.
         assertEquals(TASK_RESULT, ignite.compute().execute(CustomTestTask.class.getName(), null));

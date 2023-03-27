@@ -24,12 +24,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     /// Test with simple name mapper.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class CacheQueriesTestSimpleName : CacheQueriesTest
     {
         /** <inheritdoc /> */
         protected override IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.SimpleNameInstance;
+            return new BinaryBasicNameMapper { IsSimpleName = true };
         }
     }
 }

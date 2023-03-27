@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridSnapshotLock;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -34,6 +35,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSyncConsistent() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -58,7 +60,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
-                while(!stop.get()) {
+                while (!stop.get()) {
                     if (rnd.nextBoolean()) {
                         if (!lock.tryBeginUpdate())
                             continue;
@@ -84,7 +86,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                while(!stop.get()) {
+                while (!stop.get()) {
                     T3<Long, Long, Long> t;
 
                     try {

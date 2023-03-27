@@ -1,0 +1,213 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= New Metrics System
+
+:javaFile: {javaCodeDir}/ConfiguringMetrics.java
+
+== Overview
+
+Ignite 2.8 introduced a new mechanism for collecting metrics, which is intended to replace the link:monitoring-metrics/metrics[legacy metrics system].
+This section explains the new system and how you can use it to monitor your cluster.
+//the types of metrics and how to export them, but first let's explore the basic concepts of the new metrics mechanism in Ignite.
+
+Let's explore the basic concepts of the new metrics system in Ignite.
+First, there are different metrics.
+Each metric has a name and a return value.
+The return value can be a simple value like `String`, `long`, or `double`, or can represent a Java object.
+Some metrics represent <<histograms>>.
+
+And then there are different ways to export the metrics — what we call _exporters_.
+To put it another way, the exporter are different ways you can access the metrics.
+Each exporter always gives access to all available metrics.
+
+Ignite includes the following exporters:
+
+* JMX (default)
+* SQL Views
+* Log files
+* OpenCensus
+
+You can create a custom exporter by implementing the javadoc:org.apache.ignite.spi.metric.MetricExporterSpi[] interface.
+
+
+== Metric Registers
+
+Metrics are grouped into categories (called _registers_).
+Each register has a name.
+The full name of a specific metric within the register consists of the register name followed by a dot, followed by the name of the metric: `<register_name>.<metric_name>`.
+For example, the register for data storage metrics is called `io.datastorage`.
+The metric that return the storage size is called `io.datastorage.StorageSize`.
+
+The list of all registers and the metrics  they contain are described link:monitoring-metrics/new-metrics[here].
+
+== Metric Exporters
+
+If you want to enable metrics, configure one or multiple metric exporters in the node configuration.
+This is a node-specific configuration, which means it enables metrics only on the node where it is specified.
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/metrics.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=new-metric-framework, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+The following sections describe the exporters available in Ignite by default.
+
+
+=== JMX
+
+`org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi` exposes metrics via JMX beans.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=metrics-filter, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+[NOTE]
+====
+This exporter is enabled by default if nothing is set with `IgniteConfiguration.setMetricExporterSpi(...)`.
+====
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=disable-default-jmx-exporter, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+--
+
+=== SQL View
+
+`SqlViewMetricExporterSpi` is enabled by default, `SqlViewMetricExporterSpi` exposes metrics via the `SYS.METRICS` view.
+Each metric is displayed as a single record.
+You can use any supported SQL tool to view the metrics:
+
+[source, shell,subs="attributes"]
+----
+> select name, value from SYS.METRICS where name LIKE 'cache.myCache.%';
++-----------------------------------+--------------------------------+
+|                NAME               |             VALUE              |
++-----------------------------------+--------------------------------+
+| cache.myCache.CacheTxRollbacks    | 0                              |
+| cache.myCache.OffHeapRemovals     | 0                              |
+| cache.myCache.QueryCompleted      | 0                              |
+| cache.myCache.QueryFailed         | 0                              |
+| cache.myCache.EstimatedRebalancingKeys | 0                         |
+| cache.myCache.CacheEvictions      | 0                              |
+| cache.myCache.CommitTime          | [J@2eb66498                    |
+....
+----
+
+=== Log
+
+`org.apache.ignite.spi.metric.log.LogExporterSpi` prints the metrics to the log file at regular intervals (1 min by default) at INFO level.
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/metrics.xml[tags=!*;ignite-config;log-exporter, indent=0]
+----
+
+
+tab:Java[]
+
+If you use programmatic configuration, you can change the print frequency as follows:
+
+[source, java]
+----
+include::{javaFile}[tags=log-exporter, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+=== OpenCensus
+
+`org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi` adds integration with the OpenCensus library.
+
+To use the OpenCensus exporter:
+
+. link:setup#enabling-modules[Enable the 'ignite-opencensus' module].
+. Add `org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi` to the list of exporters in the node configuration.
+. Configure OpenCensus StatsCollector to export to a specific system. See link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/opencensus/OpenCensusMetricsExporterExample.java[OpenCensusMetricsExporterExample.java] for an example and OpenCensus documentation for additional information.
+
+
+Configuration parameters:
+
+* `filter` - predicate that filters metrics.
+* `period` - export period.
+* `sendInstanceName` - if enabled, a tag with the Ignite instance name is added to each metric.
+* `sendNodeId` - if enabled, a tag with the Ignite node id is added to each metric.
+* `sendConsistentId` - if enabled, a tag with the Ignite node consistent id is added to each metric.
+
+
+
+
+== Histograms
+
+The metrics that represent histograms are available in the JMX exporter only.
+Histogram metrics are exported as a set of values where each value corresponds to a specific bucket and is available through a separate JMX bean attribute.
+The attribute names of a histogram metric have the following format:
+
+```
+{metric_name}_{low_bound}_{high_bound}
+```
+
+where
+
+* `{metric_name}` - the name of the metric.
+* `{low_bound}` - start of the bound. `0` for the first bound.
+* `{high_bound}` - end of the bound. `inf` for the last bound.
+
+
+Example of the metric names if the bounds are [10,100]:
+
+* `histogram_0_10` - less than 10.
+* `histogram_10_100` - between 10 and 100.
+* `histogram_100_inf` - more than 100.
+
+
+

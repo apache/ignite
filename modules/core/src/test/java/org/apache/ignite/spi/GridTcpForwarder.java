@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -85,6 +86,10 @@ public final class GridTcpForwarder implements AutoCloseable {
                                 outputCon.getInputStream(), inputCon.getOutputStream()
                             );
 
+                            //Force closing sibling if one of thread failed.
+                            forwardThread1.setUncaughtExceptionHandler(new ForwarderExceptionHandler(forwardThread2));
+                            forwardThread2.setUncaughtExceptionHandler(new ForwarderExceptionHandler(forwardThread1));
+
                             forwardThread1.start();
                             forwardThread2.start();
 
@@ -128,6 +133,25 @@ public final class GridTcpForwarder implements AutoCloseable {
     }
 
     /**
+     *
+     */
+    private static class ForwarderExceptionHandler implements Thread.UncaughtExceptionHandler {
+        /** */
+        private Thread siblingThread;
+
+        /** */
+        public ForwarderExceptionHandler(Thread siblingThread) {
+
+            this.siblingThread = siblingThread;
+        }
+
+        /** */
+        @Override public void uncaughtException(Thread t, Throwable e) {
+            siblingThread.interrupt();
+        }
+    }
+
+    /**
      * Thread reads data from input stream and write to output stream.
      */
     private class ForwardThread extends Thread {
@@ -166,6 +190,8 @@ public final class GridTcpForwarder implements AutoCloseable {
             }
             catch (IOException e) {
                 log.error("IOException while forwarding data [threadName=" + getName() + "]", e);
+
+                throw new IgniteException(e);
             }
         }
     }

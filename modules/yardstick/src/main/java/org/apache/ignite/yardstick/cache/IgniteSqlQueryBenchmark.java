@@ -37,20 +37,22 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        println(cfg, "Populating query data...");
+        loadCachesData();
+    }
 
-        long start = System.nanoTime();
+    /** {@inheritDoc} */
+    @Override protected void loadCacheData(String cacheName) {
+        try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cacheName)) {
+            for (int i = 0; i < args.range(); i++) {
+                if (i % 100 == 0 && Thread.currentThread().isInterrupted())
+                    break;
 
-        try (IgniteDataStreamer<Integer, Person> dataLdr = ignite().dataStreamer(cache.getName())) {
-            for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
                 dataLdr.addData(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
 
                 if (i % 100000 == 0)
                     println(cfg, "Populated persons: " + i);
             }
         }
-
-        println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
     }
 
     /** {@inheritDoc} */
@@ -79,6 +81,8 @@ public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark<Intege
      * @throws Exception If failed.
      */
     private Collection<Cache.Entry<Integer, Object>> executeQuery(double minSalary, double maxSalary) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
+
         SqlQuery qry = new SqlQuery(Person.class, "salary >= ? and salary <= ?");
 
         qry.setArgs(minSalary, maxSalary);

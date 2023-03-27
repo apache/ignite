@@ -45,7 +45,6 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public T withAsync() {
         if (isAsync())
             return (T)this;
@@ -68,7 +67,6 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <R> IgniteFuture<R> future() {
         return future(true);
     }
@@ -80,7 +78,6 @@ public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements Ignite
      *
      * @return Future for previous asynchronous operation.
      */
-    @SuppressWarnings("unchecked")
     public <R> IgniteFuture<R> future(boolean reset) {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");

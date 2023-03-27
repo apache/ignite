@@ -29,6 +29,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,16 +51,16 @@ public class NoopTask implements ComputeTask<Object, Object> {
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(
         ComputeJobResult res,
-        List<ComputeJobResult> rcvd)
-    {
+        List<ComputeJobResult> rcvd
+    ) {
         return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable Object arg)
-    {
+        @Nullable Object arg
+    ) {
         Map<ComputeJob, ClusterNode> map = new HashMap<>((int)(subgrid.size() * jobs / 0.75));
 
         for (ClusterNode gridNode : subgrid) {

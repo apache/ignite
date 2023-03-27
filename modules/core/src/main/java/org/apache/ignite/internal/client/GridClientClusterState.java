@@ -17,17 +17,49 @@
 
 package org.apache.ignite.internal.client;
 
+import java.util.UUID;
+
+import org.apache.ignite.cluster.ClusterState;
+
 /**
- *  Interface for manage state of grid cluster.
+ *  Interface for managing state of grid cluster and obtaining information about it: ID and tag.
  */
 public interface GridClientClusterState {
     /**
-     * @param active {@code True} activate, {@code False} deactivate.
+     * @return Current cluster state.
+     * @throws GridClientException If the request to get the cluster state failed.
      */
-    public void active(boolean active) throws GridClientException;
+    public ClusterState state() throws GridClientException;
 
     /**
-     * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
+     * Unique identifier of cluster STATE command was sent to.
+     *
+     * @return ID of the cluster.
      */
-    public boolean active() throws GridClientException;
+    public UUID id() throws GridClientException;
+
+    /**
+     * User-defined tag of cluster STATE command was sent to.
+     *
+     * @return Tag of the cluster.
+     */
+    public String tag() throws GridClientException;
+
+    /**
+     * Changes cluster state to {@code newState}.
+     *
+     * @param newState New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws GridClientException If the request to change the cluster state failed.
+     * @see ClusterState#INACTIVE
+     */
+    public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException;
+
+    /**
+     * Get the cluster name.
+     *
+     * @return The name of the cluster.
+     * @throws GridClientException If the request to get the cluster name failed.
+     * */
+    String clusterName() throws GridClientException;
 }

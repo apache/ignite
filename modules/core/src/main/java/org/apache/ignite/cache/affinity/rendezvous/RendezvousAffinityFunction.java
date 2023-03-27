@@ -17,10 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,13 +33,19 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,7 +71,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
-public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
+public class RendezvousAffinityFunction implements AffinityFunction, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -83,7 +85,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private int parts;
 
     /** Mask to use in calculation when partitions count is power of 2. */
-    private transient int mask = -1;
+    private int mask = -1;
 
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
@@ -102,6 +104,39 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
+
+    /** Ignite instance. */
+    @GridToStringExclude
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key – Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return U.safeAbs(key.hashCode() % parts);
+    }
 
     /**
      * Empty constructor with all defaults.
@@ -163,7 +198,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private RendezvousAffinityFunction(boolean exclNeighbors, int parts,
         IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         A.ensure(parts > 0, "parts > 0");
-        A.ensure(parts <= CacheConfiguration.MAX_PARTITIONS_COUNT, "parts <=" + CacheConfiguration.MAX_PARTITIONS_COUNT);
 
         this.exclNeighbors = exclNeighbors;
 
@@ -179,8 +213,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * size should be relatively small. Try to avoid having partitions with more
      * than quarter million keys.
      * <p>
-     * Note that for fully replicated caches this method should always
-     * return {@code 1}.
+     * For fully replicated caches this method works the same way as a partitioned
+     * cache.
      *
      * @return Total partition count.
      */
@@ -203,7 +237,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         this.parts = parts;
 
-        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+        mask = calculateMask(parts);
 
         return this;
     }
@@ -245,7 +279,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}. 
      *
      * @return Optional backup filter.
      */
@@ -258,7 +292,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
      * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
-     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.     
+     * <p>
+     * For an example filter, see {@link ClusterNodeAttributeAffinityBackupFilter }.  
      *
      * @param affinityBackupFilter Optional backup filter.
      * @return {@code this} for chaining.
@@ -321,8 +357,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         if (nodes.size() <= 1)
             return nodes;
 
-        IgniteBiTuple<Long, ClusterNode> [] hashArr =
-            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
+        IgniteBiTuple<Long, ClusterNode>[] hashArr =
+            (IgniteBiTuple<Long, ClusterNode>[])new IgniteBiTuple[nodes.size()];
 
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
@@ -360,20 +396,23 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             while (it.hasNext() && res.size() < primaryAndBackups) {
                 ClusterNode node = it.next();
 
-                if (exclNeighbors) {
-                    if (!allNeighbors.contains(node)) {
-                        res.add(node);
+                try {
+                    if ((backupFilter != null && backupFilter.apply(primary, node))
+                            || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                            || (affinityBackupFilter == null && backupFilter == null)) {
+                        if (exclNeighbors) {
+                            if (!allNeighbors.contains(node)) {
+                                res.add(node);
 
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                                allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                            }
+                        }
+                        else
+                            res.add(node);
                     }
                 }
-                else if ((backupFilter != null && backupFilter.apply(primary, node))
-                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-                    || (affinityBackupFilter == null && backupFilter == null) ) {
-                    res.add(node);
-
-                    if (exclNeighbors)
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                catch (Exception ex) {
+                    ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
                 }
             }
         }
@@ -393,9 +432,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
             if (!exclNeighborsWarn) {
                 LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
-                        "because topology has no enough nodes to assign backups.",
-                    "Affinity function excludeNeighbors property is ignored " +
-                        "because topology has no enough nodes to assign backups.");
+                    "because topology has no enough nodes to assign backups.");
 
                 exclNeighborsWarn = true;
             }
@@ -469,13 +506,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
-        if (mask >= 0) {
-            int h;
-
-            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
-        }
-
-        return U.safeAbs(key.hashCode() % parts);
+        return calculatePartition(key, mask, parts);
     }
 
     /** {@inheritDoc} */
@@ -499,22 +530,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(parts);
-        out.writeBoolean(exclNeighbors);
-        out.writeObject(backupFilter);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        setPartitions(in.readInt());
-
-        exclNeighbors = in.readBoolean();
-        backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
     }
 
     /**
@@ -608,5 +623,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                 throw new UnsupportedOperationException("Remove doesn't supported");
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RendezvousAffinityFunction.class, this);
     }
 }

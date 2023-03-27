@@ -37,6 +37,23 @@
                     <property name="backups" value="0"/>
                     <property name="atomicityMode" value="ATOMIC"/>
                 </bean>
+                <bean id="cacheNear" class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cachePlatform"/>
+                    <property name="platformCacheConfiguration">
+                        <bean class="org.apache.ignite.configuration.PlatformCacheConfiguration">
+                            <property name="keyTypeName" value="System.Int32" />
+                            <property name="valueTypeName" value="Apache.Ignite.Benchmarks.Model.Employee" />
+                        </bean>
+                    </property>
+                </bean>
+                <bean id="cacheNear" class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cachePlatformObj"/>
+                    <property name="platformCacheConfiguration">
+                        <bean class="org.apache.ignite.configuration.PlatformCacheConfiguration">
+                            <!-- Do not specify types: platform cache defaults to ConcurrentDictionary<object, object> -->
+                        </bean>
+                    </property>
+                </bean>
             </list>
         </property>
 

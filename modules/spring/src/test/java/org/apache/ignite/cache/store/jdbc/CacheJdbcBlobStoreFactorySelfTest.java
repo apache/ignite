@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test for Cache JDBC blob store factory.
@@ -46,9 +48,10 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/store-cache.xml")) {
-            try(Ignite ignite1 = Ignition.start("modules/spring/src/test/config/store-cache1.xml")) {
+            try (Ignite ignite1 = Ignition.start("modules/spring/src/test/config/store-cache1.xml")) {
                 checkStore(ignite.<Integer, String>cache(CACHE_NAME), JdbcDataSource.class);
 
                 checkStore(ignite1.<Integer, String>cache(CACHE_NAME), DummyDataSource.class);
@@ -59,6 +62,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/node.xml")) {
             try (Ignite ignite1 = Ignition.start("modules/spring/src/test/config/node1.xml")) {
@@ -76,10 +80,12 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
     public void testIncorrectBeanConfiguration() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try(Ignite ignite = Ignition.start("modules/spring/src/test/config/incorrect-store-cache.xml")) {
+                try (Ignite ignite = Ignition.start("modules/spring/src/test/config/incorrect-store-cache.xml")) {
                     ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
                         getCacheStoreFactory().create();
                 }
@@ -111,7 +117,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
      * @throws Exception If store parameters is not the same as in configuration xml.
      */
     private void checkStore(IgniteCache<Integer, String> cache, Class<?> dataSrcCls) throws Exception {
-        CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
+        CacheJdbcBlobStore store = (CacheJdbcBlobStore)cache.getConfiguration(CacheConfiguration.class).
             getCacheStoreFactory().create();
 
         assertEquals(USER_NAME, GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));

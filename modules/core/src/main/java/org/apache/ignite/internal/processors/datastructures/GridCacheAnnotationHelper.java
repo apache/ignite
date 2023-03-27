@@ -124,7 +124,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
                 }
                 catch (IllegalAccessException e) {
                     throw new IgniteCheckedException("Failed to get annotated field value [cls=" + cls.getName() +
-                        ", ann=" + annCls.getSimpleName()+']', e);
+                        ", ann=" + annCls.getSimpleName() + ']', e);
                 }
 
                 if (needsRecursion(f)) {
@@ -163,7 +163,7 @@ public class GridCacheAnnotationHelper<A extends Annotation> {
                 }
                 catch (Exception e) {
                     throw new IgniteCheckedException("Failed to get annotated method value [cls=" + cls.getName() +
-                        ", ann=" + annCls.getSimpleName()+']', e);
+                        ", ann=" + annCls.getSimpleName() + ']', e);
                 }
 
                 annFound = true;

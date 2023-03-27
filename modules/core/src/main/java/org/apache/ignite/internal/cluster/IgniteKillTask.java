@@ -28,8 +28,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Special kill task that never fails over jobs.
@@ -43,7 +42,7 @@ class IgniteKillTask extends ComputeTaskAdapter<Boolean, Void> {
     private boolean restart;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart) {
         assert restart != null;
 
         this.restart = restart;
@@ -51,20 +50,9 @@ class IgniteKillTask extends ComputeTaskAdapter<Boolean, Void> {
         Map<ComputeJob, ClusterNode> jobs = U.newHashMap(subgrid.size());
 
         for (ClusterNode n : subgrid)
-            if (!daemon(n))
-                jobs.put(new IgniteKillJob(), n);
+            jobs.put(new IgniteKillJob(), n);
 
         return jobs;
-    }
-
-    /**
-     * Checks if given node is a daemon node.
-     *
-     * @param n Node.
-     * @return Whether node is daemon.
-     */
-    private boolean daemon(ClusterNode n) {
-        return "true".equalsIgnoreCase(n.<String>attribute(ATTR_DAEMON));
     }
 
     /** {@inheritDoc} */

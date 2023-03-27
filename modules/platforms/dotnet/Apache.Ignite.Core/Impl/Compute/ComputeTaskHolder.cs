@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -59,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="stream">Stream.</param>
         /// <returns>Policy.</returns>
         int JobResultRemote(ComputeJobHolder jobId, PlatformMemoryStream stream);
-        
+
         /// <summary>
         /// Perform task reduce.
         /// </summary>
@@ -70,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="taskHandle">Task handle.</param>
         void Complete(long taskHandle);
-        
+
         /// <summary>
         /// Complete task with error.
         /// </summary>
@@ -85,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     internal class ComputeTaskHolder<TA, T, TR> : IComputeTaskHolder
     {
         /** Empty results. */
-        private static readonly IList<IComputeJobResult<T>> EmptyRes =     
+        private static readonly IList<IComputeJobResult<T>> EmptyRes =
             new ReadOnlyCollection<IComputeJobResult<T>>(new List<IComputeJobResult<T>>());
 
         /** Compute instance. */
@@ -102,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
         /** Task future. */
         private readonly Future<TR> _fut = new Future<TR>();
-                
+
         /** Jobs whose results are cached. */
         private ISet<object> _resJobs;
 
@@ -111,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Compute
 
         /** Handles for jobs which are not serialized right away. */
         private volatile List<long> _jobHandles;
-        
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -241,7 +242,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 Finish(default(TR), e);
 
                 stream.Reset();
-                
+
                 writer.WriteBoolean(false); // Map failed.
                 writer.WriteString(e.Message); // Write error message.
             }
@@ -327,7 +328,13 @@ namespace Apache.Ignite.Core.Impl.Compute
                 var data = BinaryUtils.ReadInvocationResult(reader, out err);
 
                 // 2. Process the result.
-                return (int) JobResult0(new ComputeJobResultImpl(data, (Exception) err, job.Job, nodeId.Value, cancelled));
+                var exception = (Exception) err;
+                exception = exception == null
+                    ? null
+                    : new IgniteException("Compute job has failed on remote node, " +
+                                          "examine InnerException for details.", exception);
+
+                return (int) JobResult0(new ComputeJobResultImpl(data, exception, job.Job, nodeId.Value, cancelled));
             }
             catch (Exception e)
             {
@@ -339,7 +346,7 @@ namespace Apache.Ignite.Core.Impl.Compute
                 throw;
             }
         }
-        
+
         /** <inheritDoc /> */
         public void Reduce()
         {
@@ -483,7 +490,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="err">Error.</param>
         private void Finish(TR res, Exception err)
         {
-            _fut.OnDone(res, err);
+            // Always complete the future on a ThreadPool thread to avoid capturing Ignite "pub-" thread.
+            ThreadPool.QueueUserWorkItem(_ => _fut.OnDone(res, err));
         }
 
         /// <summary>
@@ -497,7 +505,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             var handleRegistry = _compute.Marshaller.Ignite.HandleRegistry;
 
             if (handles != null)
-                foreach (var handle in handles) 
+                foreach (var handle in handles)
                     handleRegistry.Release(handle, true);
 
             handleRegistry.Release(taskHandle, true);

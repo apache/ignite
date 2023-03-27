@@ -208,7 +208,6 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ToArrayCallWithZeroLengthArrayArgument"})
     @Override public Object[] toArray() {
         return toArray(EMPTY_ARR);
     }
@@ -263,7 +262,6 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
             }
 
             /** {@inheritDoc} */
-            @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
             @Override public E next() {
                 if (elem == null) {
                     if (!hasNext())
@@ -347,7 +345,7 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
     private void removeStale() {
         WeakReferenceElement<E> ref;
 
-        while ((ref = (WeakReferenceElement<E>) gcQ.poll()) != null) {
+        while ((ref = (WeakReferenceElement<E>)gcQ.poll()) != null) {
             store.remove(ref);
 
             onGc(ref.get());

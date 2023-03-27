@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -48,6 +49,7 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteNodeCallback() throws Exception {
         IgniteCache<Integer, Integer> cache1 = grid(0).cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cache2 = grid(1).cache(DEFAULT_CACHE_NAME);
@@ -87,6 +89,7 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCallback() throws Exception {
         // Prepare.
         IgniteCache<Integer, Integer> cache1 = grid(0).cache(DEFAULT_CACHE_NAME);

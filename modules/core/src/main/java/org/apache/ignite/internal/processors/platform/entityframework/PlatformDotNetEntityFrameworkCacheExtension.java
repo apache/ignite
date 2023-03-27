@@ -17,30 +17,33 @@
 
 package org.apache.ignite.internal.processors.platform.entityframework;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
-import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
-import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.resources.IgniteInstanceResource;
-
-import javax.cache.Cache;
-import javax.cache.processor.EntryProcessorResult;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.cache.Cache;
+import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * EntityFramework cache extension.
@@ -186,8 +189,11 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
         final ClusterGroup dataNodes = grid.cluster().forDataNodes(dataCacheName);
 
-        IgniteFuture f = grid.compute(dataNodes).broadcastAsync(
-            new RemoveOldEntriesRunnable(dataCacheName, currentVersions));
+        IgniteInternalFuture<?> f = ((IgniteEx)grid).context().closure().runAsync(
+            BROADCAST,
+            new RemoveOldEntriesRunnable(dataCacheName, currentVersions),
+            options(dataNodes.nodes())
+        );
 
         f.listen(new CleanupCompletionListener(metaCache, dataCacheName));
     }
@@ -318,7 +324,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
     /**
      * Cleanup completion listener.
      */
-    private class CleanupCompletionListener implements IgniteInClosure<IgniteFuture<Object>> {
+    private class CleanupCompletionListener implements IgniteInClosure<IgniteInternalFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -340,7 +346,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(IgniteFuture<Object> future) {
+        @Override public void apply(IgniteInternalFuture<?> future) {
             // Reset distributed cleanup flag.
             metaCache.remove(CLEANUP_NODE_ID);
 

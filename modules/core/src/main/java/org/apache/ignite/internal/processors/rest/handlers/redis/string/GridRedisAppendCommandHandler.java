@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -55,9 +56,10 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
+     * @param ctx Kernal context.
      */
-    public GridRedisAppendCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
-        super(log, hnd);
+    public GridRedisAppendCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */
@@ -81,7 +83,7 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
         appendReq.key(msg.key());
         appendReq.value(val);
         appendReq.command(CACHE_APPEND);
-        appendReq.cacheName(CACHE_NAME);
+        appendReq.cacheName(msg.cacheName());
 
         Object resp = hnd.handle(appendReq).getResponse();
         if (resp != null && !(boolean)resp) {
@@ -92,7 +94,7 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
             setReq.key(msg.key());
             setReq.value(val);
             setReq.command(CACHE_PUT);
-            setReq.cacheName(CACHE_NAME);
+            setReq.cacheName(msg.cacheName());
 
             hnd.handle(setReq);
         }
@@ -100,7 +102,7 @@ public class GridRedisAppendCommandHandler extends GridRedisRestCommandHandler {
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
-        getReq.cacheName(CACHE_NAME);
+        getReq.cacheName(msg.cacheName());
 
         return getReq;
     }

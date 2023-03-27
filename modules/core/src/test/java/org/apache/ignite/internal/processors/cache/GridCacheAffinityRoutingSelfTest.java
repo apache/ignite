@@ -32,12 +32,11 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -45,6 +44,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Affinity routing tests.
  */
+// Test have a special version for Binary Marshaller.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
@@ -58,9 +59,6 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int MAX_FAILOVER_ATTEMPTS = 5;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Constructs test.
      */
@@ -71,12 +69,6 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
         failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
@@ -124,21 +116,12 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            stopGrid(i);
-
-        assert G.allGrids().isEmpty();
-    }
-
     /**
      * JUnit.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
             grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, i, new CheckRunnable(i, i));
@@ -147,6 +130,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallRestartFails() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -160,6 +144,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallRestart() throws Exception {
         assertEquals(MAX_FAILOVER_ATTEMPTS,
             grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, "key",
@@ -169,6 +154,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunRestartFails() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -182,6 +168,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunRestart() throws Exception {
         grid(0).compute().affinityRun(NON_DFLT_CACHE_NAME, "key", new FailedRunnable("key", MAX_FAILOVER_ATTEMPTS));
     }
@@ -191,6 +178,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRunComplexKey() throws Exception {
         for (int i = 0; i < KEY_CNT; i++) {
             AffinityTestKey key = new AffinityTestKey(i);
@@ -205,6 +193,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         for (int i = 0; i < KEY_CNT; i++)
             grid(0).compute().affinityCall(NON_DFLT_CACHE_NAME, i, new CheckCallable(i, i));
@@ -215,6 +204,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallComplexKey() throws Exception {
         for (int i = 0; i < KEY_CNT; i++) {
             final AffinityTestKey key = new AffinityTestKey(i);

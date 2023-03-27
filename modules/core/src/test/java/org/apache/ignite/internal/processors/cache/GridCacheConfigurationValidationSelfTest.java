@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -35,9 +35,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Attribute validation self test.
  */
 public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final String NON_DFLT_CACHE_NAME = "non-dflt-cache";
-
     /** */
     private static final String WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME = "preloadModeCheckFails";
 
@@ -57,7 +54,22 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     private static final String DUP_DFLT_CACHES_IGNITE_INSTANCE_NAME = "duplicateDefaultCachesCheckFails";
 
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME =
+        "reservedForDsCacheNameCheckFails";
+
+    /** */
+    private static final String RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
+            "reservedForDsCacheGroupNameCheckFails";
+
+    /** */
+    private static final String RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME =
+        "reservedForVolatileDsCacheGroupNameCheckFails";
+
+    /** */
+    private static final String CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED = "--№=+:(replicated)";
+
+    /** */
+    private static final String CACHE_NAME_WITH_SPECIAL_CHARACTERS_PARTITIONED = ":_&:: (partitioned)";
 
     /**
      * Constructs test.
@@ -70,12 +82,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
         // Default cache config.
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
@@ -86,6 +92,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setIndexedTypes(
             Integer.class, String.class
         );
+        dfltCacheCfg.setName(CACHE_NAME_WITH_SPECIAL_CHARACTERS_PARTITIONED);
 
         // Non-default cache configuration.
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
@@ -93,7 +100,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setCacheMode(PARTITIONED);
         namedCacheCfg.setRebalanceMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
         namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
@@ -110,18 +116,26 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             cfg.setCacheConfiguration(namedCacheCfg, namedCacheCfg);
         else if (igniteInstanceName.contains(DUP_DFLT_CACHES_IGNITE_INSTANCE_NAME))
             cfg.setCacheConfiguration(dfltCacheCfg, dfltCacheCfg);
-        else
+        else {
             // Normal configuration.
-            cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg);
+            if (!cfg.isClientMode())
+                cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg);
+        }
+
+        if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setName(DataStructuresProcessor.ATOMICS_CACHE_NAME + "@abc");
+        else {
+            namedCacheCfg.setCacheMode(REPLICATED);
+            namedCacheCfg.setName(CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED);
+        }
+
+        if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setGroupName("default-ds-group");
+
+        if (igniteInstanceName.contains(RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME))
+            namedCacheCfg.setGroupName("default-volatile-ds-group@volatileDsMemPlc");
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**
@@ -129,6 +143,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDuplicateCacheConfigurations() throws Exception {
         // This grid should not start.
         startInvalidGrid(DUP_CACHES_IGNITE_INSTANCE_NAME);
@@ -140,6 +155,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testCacheAttributesValidation() throws Exception {
         try {
             startGrid(0);
@@ -156,8 +172,45 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             // This grid should not start.
             startInvalidGrid(WRONG_AFFINITY_MAPPER_IGNITE_INSTANCE_NAME);
 
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME);
+
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
+
+            // This grid should not start.
+            startInvalidGrid(RESERVED_FOR_VOLATILE_DATASTRUCTURES_CACHE_GROUP_NAME_IGNITE_INSTANCE_NAME);
+
             // This grid will start normally.
             startGrid(1);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testCacheNames() throws Exception {
+        try {
+            startGridsMultiThreaded(2);
+
+            Collection<String> names = grid(0).cacheNames();
+
+            assertEquals(2, names.size());
+
+            for (String name : names)
+                assertTrue(name.equals(CACHE_NAME_WITH_SPECIAL_CHARACTERS_PARTITIONED)
+                        || name.equals(CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED)
+                        || DEFAULT_CACHE_NAME.equals(name));
+
+            Ignite client = startClientGrid(2);
+
+            names = client.cacheNames();
+
+            assertEquals(2, names.size());
         }
         finally {
             stopAllGrids();

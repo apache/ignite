@@ -30,6 +30,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logFinish;
@@ -64,7 +65,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     protected abstract VisorJob<A, J> job(A arg);
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
         assert arg != null;
 
         start = U.currentTimeMillis();
@@ -80,6 +81,13 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     }
 
     /**
+     * @return Collection of nodes IDs where jobs should be mapped.
+     */
+    protected Collection<UUID> jobNodes(VisorTaskArgument<A> arg) {
+        return arg.getNodes();
+    }
+
+    /**
      * Actual map logic.
      *
      * @param arg Task execution argument.
@@ -88,7 +96,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @throws IgniteException If mapping could not complete successfully.
      */
     protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
-        Collection<UUID> nodeIds = arg.getNodes();
+        Collection<UUID> nodeIds = jobNodes(arg);
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
 
@@ -96,6 +104,12 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
             for (ClusterNode node : subgrid)
                 if (nodeIds.contains(node.id()))
                     map.put(job(taskArg), node);
+
+            if (map.isEmpty())
+                ignite.log().warning("No mapped jobs: [task=" + getClass().getName() +
+                    ", topVer=" + ignite.cluster().topologyVersion() +
+                    ", jobNids=" + nodeIds +
+                    ", subGrid=" + U.toShortString(subgrid) + "]");
 
             return map;
         }

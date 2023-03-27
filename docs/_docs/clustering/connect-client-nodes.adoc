@@ -1,0 +1,106 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Connecting Client Nodes
+:javaFile: {javaCodeDir}/ClientNodes.java
+
+
+== Reconnecting a Client Node
+
+A client node can get disconnected from the cluster in several cases:
+
+* The client node cannot re-establish the connection with the server node due to network issues.
+* Connection with the server node was broken for some time; the client node is able to re-establish the connection with the cluster, but the server already dropped the client node since the server did not receive client heartbeats.
+* Slow clients can be kicked out by the cluster.
+
+
+When a client determines that it is disconnected from the cluster, it assigns a new node ID to itself and tries to reconnect to the cluster.
+Note that this has a side effect: the ID property of the local `ClusterNode` changes in the case of a client reconnection.
+This means that any application logic that relied on the ID may be affected.
+
+You can disable client reconnection in the node configuration:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/client-node.xml[tags=ignite-config, indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=disable-reconnection, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[unsupported]
+--
+
+
+While a client is in a disconnected state and an attempt to reconnect is in progress, the Ignite API throws a `IgniteClientDisconnectedException`.
+The exception contains a `future` that represents a re-connection operation.
+You can use the `future` to wait until the operation is complete.
+//This future can also be obtained using the `IgniteCluster.clientReconnectFuture()` method.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=reconnect, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+//When the client node reconnects to the cluster,
+//This future can also be obtained using the `IgniteCluster.clientReconnectFuture()` method.
+
+
+== Client Disconnected/Reconnected Events
+
+There are two discovery events that are triggered on the client node when it is disconnected from or reconnected to the cluster:
+
+* `EVT_CLIENT_NODE_DISCONNECTED`
+* `EVT_CLIENT_NODE_RECONNECTED`
+
+You can listen to these events and execute custom actions in response.
+Please, refer to the link:events/listening-to-events[Listening to events] section for a code example.
+
+== Managing Slow Client Nodes
+
+In many deployments, client nodes are launched on slower machines with lower network throughput.
+In these scenarios, it is possible that the servers will generate the load (such as continuous queries notification, for example) that the clients cannot to handle.
+This can result in a growing queue of outbound messages on the servers, which may eventually cause either an out-of-memory situation on the server or block the whole cluster.
+
+To handle these situations, you can configure the maximum number of outgoing messages for client nodes.
+If the size of the outbound queue exceeds this value, the client node is disconnected from the cluster.
+
+The examples below show how to configure a slow client queue limit.
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/client-node.xml[tags=!*;ignite-config;slow-client, indent=0]
+----
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=slow-clients, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[unsupported]
+--

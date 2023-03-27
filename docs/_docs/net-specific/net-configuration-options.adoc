@@ -1,0 +1,190 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite.NET Configuration Options
+
+== Overview
+
+Ignite.NET nodes can be configured in a variety of ways and then started via configuration-specific `Ignition.Start*` methods.
+
+== Configure Programmatically in C#
+
+Use the `Ignition.Start(IgniteConfiguration)` method to configure an Ignite.NET node from your C# application.
+
+[tabs]
+--
+tab:Sample C# Configuration[]
+[source,csharp]
+----
+Ignition.Start(new IgniteConfiguration
+{
+    DiscoverySpi = new TcpDiscoverySpi
+    {
+        IpFinder = new TcpDiscoveryStaticIpFinder
+        {
+            Endpoints = new[] {"127.0.0.1:47500..47509"}
+        },
+        SocketTimeout = TimeSpan.FromSeconds(0.3)
+    },
+    IncludedEventTypes = EventType.CacheAll,
+    JvmOptions = new[] { "-Xms1024m", "-Xmx1024m" }
+});
+----
+--
+
+== Configure With Application or Web Config Files
+
+`Ignition.StartFromApplicationConfiguration` methods read configuration from `Apache.Ignite.Core.IgniteConfigurationSection`
+of the app.config or web.config files.
+
+The `IgniteConfigurationSection.xsd` schema file can be found next to Apache.Ignite.Core.dll in the binary distribution,
+and in `Apache.Ignite.Schema` NuGet package. Include it in your project with `None` build action to enable IntelliSense
+in Visual Studio while editing `IgniteConfigurationSection` in the config files.
+
+[tabs]
+--
+tab:Configure in app.config[]
+[source,xml]
+----
+<configuration>
+    <configSections>
+        <section name="igniteConfiguration" type="Apache.Ignite.Core.IgniteConfigurationSection, Apache.Ignite.Core" />
+    </configSections>
+
+    <runtime>
+        <gcServer enabled="true"/>
+    </runtime>
+
+    <igniteConfiguration xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection" gridName="myGrid1">
+        <discoverySpi type="TcpDiscoverySpi">
+            <ipFinder type="TcpDiscoveryStaticIpFinder">
+                <endpoints>
+                    <string>127.0.0.1:47500..47509</string>
+                </endpoints>
+            </ipFinder>
+        </discoverySpi>
+
+        <cacheConfiguration>
+            <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true' />
+            <cacheConfiguration name='secondCache' />
+        </cacheConfiguration>
+
+        <includedEventTypes>
+            <int>42</int>
+            <int>TaskFailed</int>
+            <int>JobFinished</int>
+        </includedEventTypes>
+
+        <userAttributes>
+            <pair key='myNode' value='true' />
+        </userAttributes>
+
+        <JvmOptions>
+          <string>-Xms1024m</string>
+          <string>-Xmx1024m</string>
+        </JvmOptions>
+    </igniteConfiguration>
+</configuration>
+----
+tab:Use in C#[]
+[source,csharp]
+----
+var ignite = Ignition.StartFromApplicationConfiguration("igniteConfiguration");
+----
+--
+
+[NOTE]
+====
+[discrete]
+To add the `IgniteConfigurationSection.xsd` schema file to a Visual Studio project go to `Projects` menu and click on
+`Add Existing Item...` menu item. After that locate `IgniteConfigurationSection.xsd` inside of the Apache Ignite distribution
+and pick it up. Alternatively, install NuGet package: `Install-Package Apache.Ignite.Schema`. This will add an xsd file to
+the project automatically. To improve editing, make sure that `Statement Completion` options are enabled in
+`Tools - Options - Text Editor - XML`.
+====
+
+=== Ignite Configuration Section Syntax
+
+The configuration section maps directly to `IgniteConfiguration` class:
+
+* Simple properties (strings, primitives, enums) map to XML attributes (attribute name = camelCased C# property name).
+* Complex properties map to nested XML elements (element name = camelCased C# property name).
+* When a complex property is an interface or abstract class, `type` attribute is used to specify the type, using *assembly-qualified name*. For built-in types (like TcpDiscoverySpi in the code sample above) assembly name and namespace can be omitted.
+* When in doubt, consult the schema in `IgniteConfigurationSection.xsd`.
+
+== Configure With Spring XML
+
+Spring XML enables the native java-based Ignite configuration method. A Spring config file can be provided via
+the `Ignition.Start(string)` method or the `IgniteConfiguration.SpringConfigUrl` property. This configuration method
+is useful when some Java property is not natively supported by Ignite.NET.
+
+When the `IgniteConfiguration.SpringConfigUrl` property is used, the Spring config is loaded first, and other
+`IgniteConfiguration` properties are applied on top of it.
+
+[tabs]
+--
+tab:Configure With Spring XML[]
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="gridName" value="grid1"/>
+        <property name="userAttributes">
+            <map>
+                <entry key="my_attr" value="value1"/>
+            </map>
+        </property>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache1"/>
+                    <property name="startSize" value="10"/>
+                </bean>
+            </list>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+                <property name="socketTimeout" value="300" />
+            </bean>
+        </property>
+    </bean>
+</beans>
+----
+tab:Use in C#[]
+[source,csharp]
+----
+var ignite = Ignition.Start("spring-config.xml");
+----
+--
+

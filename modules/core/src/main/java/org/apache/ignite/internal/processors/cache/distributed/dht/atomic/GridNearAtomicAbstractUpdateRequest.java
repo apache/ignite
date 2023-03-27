@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
+public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -66,6 +66,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     /** Recovery value flag. */
     private static final int RECOVERY_FLAG_MASK = 0x20;
 
+    /** */
+    private static final int NEAR_CACHE_FLAG_MASK = 0x40;
+
+    /** */
+    private static final int AFFINITY_MAPPING_FLAG_MASK = 0x80;
+
     /** Target node ID. */
     @GridDirectTransient
     protected UUID nodeId;
@@ -81,9 +87,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
     /** Update operation. */
     protected GridCacheOperation op;
-
-    /** Subject ID. */
-    protected UUID subjId;
 
     /** Task name hash. */
     protected int taskNameHash;
@@ -110,15 +113,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param needPrimaryRes {@code True} if near node waits for primary response.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      */
     protected GridNearAtomicAbstractUpdateRequest(
@@ -126,16 +124,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
-        @Nullable UUID subjId,
         int taskNameHash,
-        boolean needPrimaryRes,
-        boolean skipStore,
-        boolean keepBinary,
-        boolean recovery,
+        byte flags,
         boolean addDepInfo
     ) {
         this.cacheId = cacheId;
@@ -144,22 +136,74 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         this.topVer = topVer;
         this.syncMode = syncMode;
         this.op = op;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.flags = flags;
         this.addDepInfo = addDepInfo;
+    }
+
+    /**
+     * @param nearCache {@code True} if near cache enabled on originating node.
+     * @param topLocked Topology locked flag.
+     * @param retval Return value required flag.
+     * @param affMapping {@code True} if originating node detected that rebalancing finished and
+     *    expects that update is mapped using current affinity.
+     * @param needPrimaryRes {@code True} if near node waits for primary response.
+     * @param skipStore Skip write-through to a CacheStore flag.
+     * @param keepBinary Keep binary flag.
+     * @param recovery Recovery mode flag.
+     * @return Flags.
+     */
+    static byte flags(
+        boolean nearCache,
+        boolean topLocked,
+        boolean retval,
+        boolean affMapping,
+        boolean needPrimaryRes,
+        boolean skipStore,
+        boolean keepBinary,
+        boolean recovery) {
+        byte flags = 0;
+
+        if (nearCache)
+            flags |= NEAR_CACHE_FLAG_MASK;
+
+        if (topLocked)
+            flags |= TOP_LOCKED_FLAG_MASK;
+
+        if (retval)
+            flags |= RET_VAL_FLAG_MASK;
+
+        if (affMapping)
+            flags |= AFFINITY_MAPPING_FLAG_MASK;
 
         if (needPrimaryRes)
-            needPrimaryResponse(true);
-        if (topLocked)
-            topologyLocked(true);
-        if (retval)
-            returnValue(true);
+            flags |= NEED_PRIMARY_RES_FLAG_MASK;
+
         if (skipStore)
-            skipStore(true);
+            flags |= SKIP_STORE_FLAG_MASK;
+
         if (keepBinary)
-            keepBinary(true);
+            flags |= KEEP_BINARY_FLAG_MASK;
+
         if (recovery)
-            recovery(true);
+            flags |= RECOVERY_FLAG_MASK;
+
+        return flags;
+    }
+
+    /**
+     * @return {@code True} if originating node detected that rebalancing finished and
+     *    expects that update is mapped using current affinity.
+     */
+    boolean affinityMapping() {
+        return isFlag(AFFINITY_MAPPING_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if near cache is enabled on node initiated operation.
+     */
+    public boolean nearCache() {
+        return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
     /** {@inheritDoc} */
@@ -224,13 +268,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
      */
     public GridCacheOperation operation() {
         return op;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
     }
 
     /**
@@ -346,14 +383,14 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
     }
 
     /**
-     * @return Keep binary flag.
+     * @return Recovery flag.
      */
     public final boolean recovery() {
         return isFlag(RECOVERY_FLAG_MASK);
     }
 
     /**
-     * @param val Keep binary flag.
+     * @param val Recovery flag.
      */
     public void recovery(boolean val) {
         setFlag(val, RECOVERY_FLAG_MASK);
@@ -496,26 +533,20 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
-                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
             case 6:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
@@ -533,7 +564,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -554,7 +585,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -562,7 +593,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -570,7 +601,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 byte opOrd;
 
                 opOrd = reader.readByte("op");
@@ -579,14 +610,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
                     return false;
 
                 op = GridCacheOperation.fromOrdinal(opOrd);
-
-                reader.incrementState();
-
-            case 6:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
 
                 reader.incrementState();
 
@@ -611,7 +634,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheMessa
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -52,7 +52,6 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public void newSession(@Nullable Transaction tx) {
         this.tx = tx;
         props = null;
@@ -79,7 +78,7 @@ public class TestCacheSession implements CacheStoreSession {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T attachment() {
-        return (T) attach;
+        return (T)attach;
     }
 
     /** {@inheritDoc} */

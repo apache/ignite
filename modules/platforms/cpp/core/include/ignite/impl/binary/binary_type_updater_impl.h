@@ -56,7 +56,7 @@ namespace ignite
                 /** Handle to Java object. */
                 jobject javaRef;
 
-                IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeUpdaterImpl)
+                IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeUpdaterImpl);
             };
         }
     }

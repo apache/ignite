@@ -1,0 +1,127 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+
+    <StartupObject>Apache.Ignite.Core.Tests.TestRunner</StartupObject>
+
+    <ApplicationIcon />
+
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Apache.Ignite.Core.Tests</RootNamespace>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.Tests.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>1701;1702;1705;NU1701</NoWarn>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.DotNetCore.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
+    <PackageReference Include="System.CodeDom" Version="4.5.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj" />
+    <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Remove="Deployment\**" />
+
+    <None Update="Config\ignite-halthandler-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\native-client-test-cache-affinity.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\marshaller-explicit.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\native-client-test-cache-parallel-store.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\ssl.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Apache.Ignite.exe.config.test3" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\full-config.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Apache.Ignite.exe.config.test" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\spring-test.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-local-node.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\ignite-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\ignite-stophandler-dotnet-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-default.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\native-client-test-cache-store.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-query.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\marshaller-invalid.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-query-continuous.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\ignite-dotnet-cfg-logger.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-binarizables.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\reconnect-test.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\native-client-test-cache.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\marshaller-default.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Apache.Ignite.exe.config.test2" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Log\dotnet-log4j.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Log\custom-log.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\KeyStore\server.jks" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\KeyStore\trust.jks" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Lifecycle\lifecycle-beans.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Lifecycle\lifecycle-no-beans.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Client\server-with-ssl.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Client\server.jks" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Client\thin-client-cert.pfx" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Client\IgniteClientConfiguration.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Client\trust.jks" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-grid1.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-grid-custom-executor.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-standalone.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-grid2.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-grid3.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Compute\compute-security.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Dynamic\dynamic-data-no-cfg.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Dynamic\dynamic-client.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Dynamic\dynamic-data.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Cache\Store\cache-store-session.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Cache\Store\cache-store-session-shared-factory.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Cache\Affinity\affinity-function.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\Cache\Affinity\affinity-function2.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\cache-attribute-node-filter.xml" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="custom_app.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Remove="Compute\Forked\**" />
+    <None Update="Config\query-entity-metadata-registration.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\binary-custom-name-mapper.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\binary-custom-name-mapper2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Examples\ExpectedOutput\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config\Client\server-with-ssl-no-client-auth.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.cs" />
+    <Compile Remove="Deployment\**" />
+    <Compile Remove="Compute\Forked\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Deployment\**" />
+    <EmbeddedResource Remove="Compute\Forked\**" />
+  </ItemGroup>
+
+</Project>

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
@@ -24,6 +25,9 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.annotation.Documented;
@@ -36,33 +40,64 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
+import org.junit.Test;
 
+import static java.util.Arrays.asList;
+import static java.util.Objects.nonNull;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -72,6 +107,9 @@ import static org.junit.Assert.assertArrayEquals;
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
+
+    /** Maximum string length to be written at once. */
+    private static final int MAX_STR_LEN = 0xFFFF / 4;
 
     /**
      * @return 120 character length string.
@@ -87,6 +125,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsPow2() {
         assertTrue(U.isPow2(1));
         assertTrue(U.isPow2(2));
@@ -109,8 +148,28 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testNextPowOf2() {
+        assertEquals(1, U.nextPowerOf2(0));
+        assertEquals(1, U.nextPowerOf2(1));
+        assertEquals(2, U.nextPowerOf2(2));
+        assertEquals(4, U.nextPowerOf2(3));
+        assertEquals(4, U.nextPowerOf2(4));
+
+        assertEquals(8, U.nextPowerOf2(5));
+        assertEquals(8, U.nextPowerOf2(6));
+        assertEquals(8, U.nextPowerOf2(7));
+        assertEquals(8, U.nextPowerOf2(8));
+
+        assertEquals(32768, U.nextPowerOf2(32767));
+    }
+
+    /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllLocalIps() throws Exception {
         Collection<String> ips = U.allLocalIps();
 
@@ -120,6 +179,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllLocalMACs() throws Exception {
         Collection<String> macs = U.allLocalMACs();
 
@@ -131,6 +191,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAllLocalMACsMultiThreaded() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -146,6 +207,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteArray2String() throws Exception {
         assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
             U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
@@ -154,6 +216,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatMins() throws Exception {
         printFormatMins(0);
         printFormatMins(1);
@@ -181,6 +244,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDownloadUrlFromHttp() throws Exception {
         GridEmbeddedHttpServer srv = null;
         try {
@@ -204,6 +268,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDownloadUrlFromHttps() throws Exception {
         GridEmbeddedHttpServer srv = null;
         try {
@@ -227,6 +292,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDownloadUrlFromLocalFile() throws Exception {
         File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
@@ -240,6 +306,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOs() throws Exception {
         System.out.println("OS string: " + U.osString());
         System.out.println("JDK string: " + U.jdkString());
@@ -260,12 +327,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
         System.out.println("Is Solaris x86: " + U.isSolarisX86());
         System.out.println("Is Windows7: " + U.isWindows7());
-        System.out.println("Is Sufficiently Tested OS: " + U.isSufficientlyTestedOs());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJavaSerialization() throws Exception {
         ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
         ObjectOutputStream objOut = new ObjectOutputStream(byteOut);
@@ -284,6 +351,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHidePassword() {
         Collection<String> uriList = new ArrayList<>();
 
@@ -300,7 +368,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test job to test possible indefinite recursion in detecting peer deploy aware.
      */
-    @SuppressWarnings({"UnusedDeclaration"})
     private class SelfReferencedJob extends ComputeJobAdapter implements GridPeerDeployAware {
         /** */
         private SelfReferencedJob ref;
@@ -325,9 +392,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             ref = this;
 
-            arr = new SelfReferencedJob[] {this, this};
+            arr = new SelfReferencedJob[]{this, this};
 
-            col = Arrays.asList(this, this, this);
+            col = asList(this, this, this);
 
             newContext();
 
@@ -353,6 +420,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testDetectPeerDeployAwareInfiniteRecursion() throws Exception {
         Ignite g = startGrid(1);
 
@@ -385,50 +453,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     * @throws Exception If failed.
-     */
-    public void testParseIsoDate() throws Exception {
-        Calendar cal = U.parseIsoDate("2009-12-08T13:30:44.000Z");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 0 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-
-        cal = U.parseIsoDate("2009-12-08T13:30:44.000+03:00");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 3 * 60 * 60 * 1000 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-
-        cal = U.parseIsoDate("2009-12-08T13:30:44.000+0300");
-
-        assert cal.get(Calendar.YEAR) == 2009;
-        assert cal.get(Calendar.MONTH) == 11;
-        assert cal.get(Calendar.DAY_OF_MONTH) == 8;
-        assert cal.get(Calendar.HOUR_OF_DAY) == 13;
-        assert cal.get(Calendar.MINUTE) == 30;
-        assert cal.get(Calendar.SECOND) == 44;
-        assert cal.get(Calendar.MILLISECOND) == 0;
-        assert cal.get(Calendar.ZONE_OFFSET) == 3 * 60 * 60 * 1000 :
-            "Unexpected value: " + cal.get(Calendar.ZONE_OFFSET);
-    }
-
-    /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testPeerDeployAware0() throws Exception {
         Collection<Object> col = new ArrayList<>();
 
@@ -497,6 +524,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test UUID to bytes array conversion.
      */
+    @Test
     public void testsGetBytes() {
         for (int i = 0; i < 100; i++) {
             UUID id = UUID.randomUUID();
@@ -513,6 +541,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testReadByteArray() {
         assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0))));
         assertTrue(Arrays.equals(new byte[0], U.readByteArray(ByteBuffer.allocate(0), ByteBuffer.allocate(0))));
@@ -554,6 +583,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testHashCodeFromBuffers() {
         assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0)));
         assertEquals(Arrays.hashCode(new byte[0]), U.hashCode(ByteBuffer.allocate(0), ByteBuffer.allocate(0)));
@@ -578,6 +608,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test annotation look up.
      */
+    @Test
     public void testGetAnnotations() {
         assert U.getAnnotation(A1.class, Ann1.class) != null;
         assert U.getAnnotation(A2.class, Ann1.class) != null;
@@ -592,6 +623,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testUnique() {
         int[][][] arrays = new int[][][]{
             new int[][]{EMPTY, EMPTY, EMPTY},
@@ -618,6 +650,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testDifference() {
         int[][][] arrays = new int[][][]{
             new int[][]{EMPTY, EMPTY, EMPTY},
@@ -641,6 +674,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCopyIfExceeded() {
         int[][] arrays = new int[][]{new int[]{13, 14, 17, 11}, new int[]{13}, EMPTY};
 
@@ -658,6 +692,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsIncreasingArray() {
         assertTrue(U.isIncreasingArray(EMPTY, 0));
         assertTrue(U.isIncreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
@@ -676,6 +711,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testIsNonDecreasingArray() {
         assertTrue(U.isNonDecreasingArray(EMPTY, 0));
         assertTrue(U.isNonDecreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
@@ -694,6 +730,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Test InetAddress Comparator.
      */
+    @Test
     public void testInetAddressesComparator() {
         List<InetSocketAddress> ips = new ArrayList<InetSocketAddress>() {
             {
@@ -717,7 +754,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
 
-
+    /** */
+    @Test
     public void testMD5Calculation() throws Exception {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
 
@@ -727,6 +765,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testResolveLocalAddresses() throws Exception {
         InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
 
@@ -748,6 +787,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testToSocketAddressesNoDuplicates() {
         Collection<String> addrs = new ArrayList<>();
 
@@ -769,7 +809,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     private static String composeString(int len) {
         StringBuilder sb = new StringBuilder();
 
-        for (int i=0; i<len; i++)
+        for (int i = 0; i < len; i++)
             sb.append((char)i);
 
         String x = sb.toString();
@@ -789,13 +829,73 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput dout = new DataOutputStream(baos);
 
-        IgfsUtils.writeUTF(dout, s0);
+        writeUTF(dout, s0);
 
         DataInput din = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
 
-        String s1 = IgfsUtils.readUTF(din);
+        String s1 = readUTF(din);
 
         assertEquals(s0, s1);
+    }
+
+    /**
+     * Write UTF string which can be {@code null}.
+     *
+     * @param out Output stream.
+     * @param val Value.
+     * @throws IOException If failed.
+     */
+    public static void writeUTF(DataOutput out, @Nullable String val) throws IOException {
+        if (val == null)
+            out.writeInt(-1);
+        else {
+            out.writeInt(val.length());
+
+            if (val.length() <= MAX_STR_LEN)
+                out.writeUTF(val); // Optimized write in 1 chunk.
+            else {
+                int written = 0;
+
+                while (written < val.length()) {
+                    int partLen = Math.min(val.length() - written, MAX_STR_LEN);
+
+                    String part = val.substring(written, written + partLen);
+
+                    out.writeUTF(part);
+
+                    written += partLen;
+                }
+            }
+        }
+    }
+
+    /**
+     * Read UTF string which can be {@code null}.
+     *
+     * @param in Input stream.
+     * @return Value.
+     * @throws IOException If failed.
+     */
+    public static String readUTF(DataInput in) throws IOException {
+        int len = in.readInt(); // May be zero.
+
+        if (len < 0)
+            return null;
+        else {
+            if (len <= MAX_STR_LEN)
+                return in.readUTF();
+
+            StringBuilder sb = new StringBuilder(len);
+
+            do {
+                sb.append(in.readUTF());
+            }
+            while (sb.length() < len);
+
+            assert sb.length() == len;
+
+            return sb.toString();
+        }
     }
 
     /**
@@ -803,6 +903,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLongStringWriteUTF() throws Exception {
         checkString(null);
         checkString("");
@@ -822,27 +923,782 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testCeilPow2() throws Exception {
+        assertEquals(2, U.ceilPow2(2));
+        assertEquals(4, U.ceilPow2(3));
+        assertEquals(4, U.ceilPow2(4));
+        assertEquals(8, U.ceilPow2(5));
+        assertEquals(8, U.ceilPow2(6));
+        assertEquals(8, U.ceilPow2(7));
+        assertEquals(8, U.ceilPow2(8));
+        assertEquals(16, U.ceilPow2(9));
+        assertEquals(1 << 15, U.ceilPow2((1 << 15) - 1));
+        assertEquals(1 << 15, U.ceilPow2(1 << 15));
+        assertEquals(1 << 16, U.ceilPow2((1 << 15) + 1));
+        assertEquals(1 << 26, U.ceilPow2((1 << 26) - 100));
+        assertEquals(1 << 26, U.ceilPow2(1 << 26));
+        assertEquals(1 << 27, U.ceilPow2((1 << 26) + 100));
+
+        for (int i = (int)Math.pow(2, 30); i < Integer.MAX_VALUE; i++)
+            assertEquals((int)Math.pow(2, 30), U.ceilPow2(i));
+
+        for (int i = Integer.MIN_VALUE; i < 0; i++)
+            assertEquals(0, U.ceilPow2(i));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testIsOldestNodeVersionAtLeast() {
+        IgniteProductVersion v240 = IgniteProductVersion.fromString("2.4.0");
+        IgniteProductVersion v241 = IgniteProductVersion.fromString("2.4.1");
+        IgniteProductVersion v250 = IgniteProductVersion.fromString("2.5.0");
+        IgniteProductVersion v250ts = IgniteProductVersion.fromString("2.5.0-b1-3");
+
+        TcpDiscoveryNode node240 = new TcpDiscoveryNode();
+        node240.version(v240);
+
+        TcpDiscoveryNode node241 = new TcpDiscoveryNode();
+        node241.version(v241);
+
+        TcpDiscoveryNode node250 = new TcpDiscoveryNode();
+        node250.version(v250);
+
+        TcpDiscoveryNode node250ts = new TcpDiscoveryNode();
+        node250ts.version(v250ts);
+
+        assertTrue(U.isOldestNodeVersionAtLeast(v240, asList(node240, node241, node250, node250ts)));
+        assertFalse(U.isOldestNodeVersionAtLeast(v241, asList(node240, node241, node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250, asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250ts, asList(node250, node250ts)));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testDoInParallel() throws Throwable {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(3,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
+
+        try {
+            IgniteUtils.doInParallel(3,
+                executorService,
+                asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(1, SECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    return null;
+                }
+            );
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testDoInParallelBatch() {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(3,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
+
+        try {
+            IgniteUtils.doInParallel(2,
+                executorService,
+                asList(1, 2, 3),
+                i -> {
+                    try {
+                        barrier.await(400, TimeUnit.MILLISECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    return null;
+                }
+            );
+
+            fail("Should throw timeout exception");
+        }
+        catch (Exception e) {
+            assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     * Test optimal splitting on batch sizes.
+     */
+    @Test
+    public void testOptimalBatchSize() {
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(1, 1));
+
+        assertArrayEquals(new int[]{2}, IgniteUtils.calculateOptimalBatchSizes(1, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(6, 4));
+
+        assertArrayEquals(new int[]{1}, IgniteUtils.calculateOptimalBatchSizes(4, 1));
+
+        assertArrayEquals(new int[]{1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 2));
+
+        assertArrayEquals(new int[]{1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 3));
+
+        assertArrayEquals(new int[]{1, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 4));
+
+        assertArrayEquals(new int[]{2, 1, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 5));
+
+        assertArrayEquals(new int[]{2, 2, 1, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 6));
+
+        assertArrayEquals(new int[]{2, 2, 2, 1}, IgniteUtils.calculateOptimalBatchSizes(4, 7));
+
+        assertArrayEquals(new int[]{2, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 8));
+
+        assertArrayEquals(new int[]{3, 2, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 9));
+
+        assertArrayEquals(new int[]{3, 3, 2, 2}, IgniteUtils.calculateOptimalBatchSizes(4, 10));
+    }
+
+    /**
+     * Test parallel execution in order.
+     */
+    @Test
+    public void testDoInParallelResultsOrder() throws IgniteCheckedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(4,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
+
+        try {
+            for (int parallelism = 1; parallelism < 16; parallelism++)
+                for (int size = 0; size < 10_000; size++)
+                    testOrder(executorService, size, parallelism);
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     * Test parallel execution steal job.
+     */
+    @Test
+    public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
+        // Pool size should be less that input data collection.
+        ExecutorService executorService = Executors
+            .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
+
+        CountDownLatch mainThreadLatch = new CountDownLatch(1);
+        CountDownLatch poolThreadLatch = new CountDownLatch(1);
+
+        // Busy one thread from the pool.
+        executorService.submit(new Runnable() {
+            @Override public void run() {
+                try {
+                    poolThreadLatch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteInterruptedException(e);
+                }
+            }
+        });
+
+        List<Integer> data = asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        AtomicInteger taskProcessed = new AtomicInteger();
+
+        long threadId = Thread.currentThread().getId();
+
+        AtomicInteger curThreadCnt = new AtomicInteger();
+        AtomicInteger poolThreadCnt = new AtomicInteger();
+
+        Collection<Integer> res = U.doInParallel(10,
+            executorService,
+            data,
+            new IgniteThrowableFunction<Integer, Integer>() {
+                @Override public Integer apply(Integer cnt) throws IgniteInterruptedCheckedException {
+                    // Release thread in pool in the middle of range.
+                    if (taskProcessed.getAndIncrement() == (data.size() / 2) - 1) {
+                        poolThreadLatch.countDown();
+
+                        try {
+                            // Await thread in thread pool complete task.
+                            mainThreadLatch.await();
+                        }
+                        catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+
+                            throw new IgniteInterruptedCheckedException(e);
+                        }
+                    }
+
+                    // Increment if executed in current thread.
+                    if (Thread.currentThread().getId() == threadId)
+                        curThreadCnt.incrementAndGet();
+                    else {
+                        poolThreadCnt.incrementAndGet();
+
+                        if (taskProcessed.get() == data.size())
+                            mainThreadLatch.countDown();
+                    }
+
+                    return -cnt;
+                }
+            });
+
+        Assert.assertEquals(curThreadCnt.get() + poolThreadCnt.get(), data.size());
+        Assert.assertEquals(5, curThreadCnt.get());
+        Assert.assertEquals(5, poolThreadCnt.get());
+        Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
+    }
+
+    /**
+     * Test parallel execution steal job.
+     */
+    @Test
+    public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
+        // Pool size should be less that input data collection.
+        ExecutorService executorService = Executors.newFixedThreadPool(2,
+            new IgniteThreadFactory("testscope", "ignite-utils-test"));
+
+        Future<?> f1 = executorService.submit(() -> runTask(executorService));
+        Future<?> f2 = executorService.submit(() -> runTask(executorService));
+        Future<?> f3 = executorService.submit(() -> runTask(executorService));
+
+        f1.get();
+        f2.get();
+        f3.get();
+    }
+
+    /**
+     *
+     * @param executorService Executor service.
+     */
+    private void runTask(ExecutorService executorService) {
+        List<Integer> data = asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        long threadId = Thread.currentThread().getId();
+
+        AtomicInteger curThreadCnt = new AtomicInteger();
+
+        Collection<Integer> res;
+
+        // Future for avoiding fast execution in only executor threads.
+        // Here we try to pass a number of tasks more that executor size,
+        // but there is a case when all task will be completed after last submit return control and
+        // current thread can not steal task because all task will be already finished.
+        GridFutureAdapter fut = new GridFutureAdapter();
+
+        try {
+            res = U.doInParallel(10,
+                executorService,
+                data,
+                new IgniteThrowableFunction<Integer, Integer>() {
+                    @Override public Integer apply(Integer cnt) {
+                        if (Thread.currentThread().getId() == threadId) {
+                            fut.onDone();
+
+                            curThreadCnt.incrementAndGet();
+                        }
+                        else {
+                            try {
+                                fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw U.convertException(e);
+                            }
+                        }
+
+                        return -cnt;
+                    }
+                });
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        Assert.assertTrue(curThreadCnt.get() > 0);
+        Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
+    }
+
+    /**
+     * Template method to test parallel execution
+     * @param executorService ExecutorService.
+     * @param size Size.
+     * @param parallelism Parallelism.
+     * @throws IgniteCheckedException Exception.
+     */
+    private void testOrder(ExecutorService executorService, int size, int parallelism) throws IgniteCheckedException {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 0; i < size; i++)
+            list.add(i);
+
+        Collection<Integer> results = IgniteUtils.doInParallel(
+            parallelism,
+            executorService,
+            list,
+            i -> i * 2
+        );
+
+        assertEquals(list.size(), results.size());
+
+        final int[] i = {0};
+        results.forEach(new Consumer<Integer>() {
+            @Override public void accept(Integer integer) {
+                assertEquals(2 * list.get(i[0]), integer.intValue());
+                i[0]++;
+            }
+        });
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testDoInParallelException() {
+        String expectedException = "ExpectedException";
+
+        ExecutorService executorService = Executors
+            .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
+
+        try {
+            IgniteUtils.doInParallel(
+                1,
+                executorService,
+                asList(1, 2, 3),
+                i -> {
+                    if (Integer.valueOf(1).equals(i))
+                        throw new IgniteCheckedException(expectedException);
+
+                    return null;
+                }
+            );
+
+            fail("Should throw ParallelExecutionException");
+        }
+        catch (IgniteCheckedException e) {
+            assertEquals(expectedException, e.getMessage());
+        }
+        finally {
+            executorService.shutdownNow();
+        }
+    }
+
+    /**
+     * Testing methods {@link IgniteUtils#writeLongString} and
+     * {@link IgniteUtils#readLongString} using resource files, where each line is
+     * needed to test different cases:
+     * 1){@code null}. <br/>
+     *
+     * 2)Empty line. <br/>
+     *
+     * 3)Simple strings. <br/>
+     *
+     * 4)Various combinations of strings with one, two, and three-byte
+     * characters with size greater than {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadWriteBigUTF() throws Exception {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            readLines("org.apache.ignite.util/bigUtf.txt", readLine -> {
+                baos.reset();
+
+                DataOutput dOut = new DataOutputStream(baos);
+                U.writeLongString(dOut, readLine);
+
+                DataInputStream dIn = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
+                String readBigUTF = U.readLongString(dIn);
+
+                assertEquals(readLine, readBigUTF);
+            });
+        }
+    }
+
+    /**
+     * Testing method {@link IgniteUtils#writeCutString} using resource files,
+     * where each line is needed to test different cases: <br/>
+     * 1){@code null}. <br/>
+     *
+     * 2)Empty line. <br/>
+     *
+     * 3)Simple strings. <br/>
+     *
+     * 4)String containing single-byte characters of size
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * 5)String containing single-byte characters of size more than
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * 6)String containing two-byte characters of size
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * 7)String containing two-byte characters of size more than
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * 8)String containing three-byte characters of size
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * 9)String containing three-byte characters of size more than
+     * {@link IgniteUtils#UTF_BYTE_LIMIT}. <br/>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWriteLimitUTF() throws Exception {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            readLines("org.apache.ignite.util/limitUtf.txt", readLine -> {
+                baos.reset();
+
+                DataOutput dOut = new DataOutputStream(baos);
+                U.writeCutString(dOut, readLine);
+
+                DataInputStream dIn = new DataInputStream(new ByteArrayInputStream(baos.toByteArray()));
+                String readUTF = U.readString(dIn);
+
+                if (nonNull(readLine)) {
+                    AtomicInteger utfBytes = new AtomicInteger();
+
+                    readLine = readLine.chars()
+                        .filter(c -> utfBytes.addAndGet(U.utfBytes((char)c)) <= U.UTF_BYTE_LIMIT)
+                        .mapToObj(c -> String.valueOf((char)c)).collect(joining());
+                }
+
+                assertEquals(readLine, readUTF);
+            });
+        }
+    }
+
+    /**
+     * Test of {@link U#humanReadableDuration}.
+     */
+    @Test
+    public void testHumanReadableDuration() {
+        assertEquals("0ms", U.humanReadableDuration(0));
+        assertEquals("10ms", U.humanReadableDuration(10));
+
+        assertEquals("1s", U.humanReadableDuration(SECONDS.toMillis(1)));
+        assertEquals("1s", U.humanReadableDuration(SECONDS.toMillis(1) + 10));
+        assertEquals("12s", U.humanReadableDuration(SECONDS.toMillis(12)));
+
+        assertEquals("1m", U.humanReadableDuration(MINUTES.toMillis(1)));
+        assertEquals("2m", U.humanReadableDuration(MINUTES.toMillis(2)));
+        assertEquals("1m5s", U.humanReadableDuration(SECONDS.toMillis(65)));
+        assertEquals("1m5s", U.humanReadableDuration(SECONDS.toMillis(65) + 10));
+
+        assertEquals("1h", U.humanReadableDuration(HOURS.toMillis(1)));
+        assertEquals("3h", U.humanReadableDuration(HOURS.toMillis(3)));
+        assertEquals(
+            "1h5m12s",
+            U.humanReadableDuration(MINUTES.toMillis(65) + SECONDS.toMillis(12) + 10)
+        );
+
+        assertEquals("1d", U.humanReadableDuration(DAYS.toMillis(1)));
+        assertEquals("15d", U.humanReadableDuration(DAYS.toMillis(15)));
+        assertEquals("1d4h", U.humanReadableDuration(HOURS.toMillis(28)));
+        assertEquals(
+            "4d6h15m",
+            U.humanReadableDuration(DAYS.toMillis(4) + HOURS.toMillis(6) + MINUTES.toMillis(15))
+        );
+    }
+
+    /**
+     * Test of {@link U#humanReadableByteCount}.
+     */
+    @Test
+    public void testHumanReadableByteCount() {
+        assertEquals("0.0 B", U.humanReadableByteCount(0));
+        assertEquals("10.0 B", U.humanReadableByteCount(10));
+
+        assertEquals("1.0 KB", U.humanReadableByteCount(1024));
+        assertEquals("15.0 KB", U.humanReadableByteCount(15 * 1024));
+        assertEquals("15.0 KB", U.humanReadableByteCount(15 * 1024 + 10));
+
+        assertEquals("1.0 MB", U.humanReadableByteCount(1024 * 1024));
+        assertEquals("6.0 MB", U.humanReadableByteCount(6 * 1024 * 1024));
+        assertEquals("6.1 MB", U.humanReadableByteCount(6 * 1024 * 1024 + 130 * 1024));
+    }
+
+    /**
+     * Test to verify the {@link U#uncompressedSize}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUncompressedSize() throws Exception {
+        File zipFile = new File(System.getProperty("java.io.tmpdir"), "test.zip");
+
+        try {
+            assertThrows(log, () -> U.uncompressedSize(zipFile), IOException.class, null);
+
+            byte[] raw = IntStream.range(0, 10).mapToObj(i -> zipFile.getAbsolutePath() + i)
+                .collect(joining()).getBytes(StandardCharsets.UTF_8);
+
+            try (FileOutputStream fos = new FileOutputStream(zipFile)) {
+                fos.write(U.zip(raw));
+
+                fos.flush();
+            }
+
+            assertEquals(raw.length, U.uncompressedSize(zipFile));
+        }
+        finally {
+            assertTrue(U.delete(zipFile));
+        }
+    }
+
+    /**
+     * Reading lines from a resource file and passing them to consumer.
+     * If read string is {@code "null"}, it is converted to {@code null}.
+     *
+     * @param rsrcName Resource name.
+     * @param consumer Consumer.
+     * @throws Exception If failed.
+     */
+    private void readLines(String rsrcName, ThrowableConsumer<String> consumer) throws Exception {
+        byte[] content = readResource(getClass().getClassLoader(), rsrcName);
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)))) {
+            String readLine;
+
+            while (nonNull(readLine = reader.readLine())) {
+                if ("null".equals(readLine))
+                    readLine = null;
+
+                consumer.accept(readLine);
+            }
+        }
+    }
+
+    /**
+     * Tests that local hostname is ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code true}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "true")
+    public void testResolveLocalAddressesWithHostNameDefined() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests that local hostname is not ignored if {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME} is
+     * set to {@code false}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_LOCAL_HOST, value = "example.com")
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "false")
+    public void testResolveLocalAddressesWithHostNameDefinedAndLocalHostNameNotIgnored() throws Exception {
+        testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on lambdas.
+     */
+    @Test
+    public void testIsLambdaOnLambdas() {
+        Runnable someLambda = () -> {};
+
+        int localVar = 0;
+        Runnable capturingLocalLambda = () -> {
+            System.out.println(localVar);
+        };
+
+        Runnable capturingOuterClassLambda = () -> {
+            System.out.println(repeatRule);
+        };
+
+        Runnable methodReference = this::testIsLambdaOnLambdas;
+
+        assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingOuterClassLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
+    }
+
+    /** Test nested class. */
+    private static class TestNestedClass {
+    }
+
+    /** Test inner class. */
+    private class TestInnerClass {
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on non-lambda classes.
+     */
+    @Test
+    public void testIsLambdaOnOrdinaryClasses() throws Exception {
+        assertFalse(IgniteUtils.isLambda(Object.class));
+
+        Runnable anonCls = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                // No-op.
+            }
+        };
+
+        assertFalse(IgniteUtils.isLambda(anonCls.getClass()));
+        assertFalse(IgniteUtils.isLambda(TestEnum.class));
+
+        // Loading only inner class with test classloader, while outer class
+        // will be loaded with the default classloader. Thus, if we execute method like isAnonymousClass
+        // on the loaded class, it will fail with the IncompatibleClassChangeError. That's why order in
+        // IgniteUtils isLambda is important.
+        GridTestClassLoader clsLdr = new GridTestClassLoader(
+            TestNestedClass.class.getName(),
+            TestInnerClass.class.getName()
+        );
+
+        Class<?> nestedCls = clsLdr.loadClass(TestNestedClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(nestedCls));
+
+        Class<?> innerCls = clsLdr.loadClass(TestInnerClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(innerCls));
+    }
+
+    /**
+     * Tests {@link IgniteUtils#resolveLocalAddresses(InetAddress)} with different values set to
+     * {@link IgniteSystemProperties#IGNITE_LOCAL_HOST} and {@link IgniteSystemProperties#IGNITE_IGNORE_LOCAL_HOST_NAME}.
+     *
+     * @throws Exception If failed.
+     */
+    private void testAddressResolveWithLocalHostDefined() throws Exception {
+        try {
+            boolean ignoreLocalHostname = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME);
+            String userDefinedHost = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_LOCAL_HOST);
+
+            InetSocketAddress inetSocketAddress = new InetSocketAddress(userDefinedHost, 0);
+            InetAddress addr = inetSocketAddress.getAddress();
+            IgniteBiTuple<Collection<String>, Collection<String>> localAddresses = IgniteUtils.resolveLocalAddresses(addr);
+
+            if (ignoreLocalHostname) {
+                // If local hostname is ignored, then no hostname should be resolved.
+                assertTrue(localAddresses.get2().isEmpty());
+            }
+            else {
+                // If local hostname is not ignored, then we should receive example.com.
+                assertFalse(localAddresses.get2().isEmpty());
+                assertEquals("example.com", F.first(localAddresses.get2()));
+            }
+        }
+        finally {
+            // Clear local address cache as we have polluted it with this test.
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddrAllHostNames", null);
+            GridTestUtils.setFieldValue(IgniteUtils.class, "cachedLocalAddr", null);
+        }
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {
+        /** */
         E1,
+
+        /** */
         E2,
+
+        /** */
         E3
     }
 
+    /** */
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     private @interface Ann1 {}
 
+    /** */
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
     private @interface Ann2 {}
 
+    /** */
     private static class A1 implements I3, I5 {}
+
+    /** */
     private static class A2 extends A1 {}
+
+    /** */
     private static class A3 implements I5 {}
 
+    /** */
     @Ann1 private interface I1 {}
+
+    /** */
     private interface I2 extends I1 {}
+
+    /** */
     private interface I3 extends I2 {}
+
+    /** */
     @Ann2 private interface I4 {}
+
+    /** */
     private interface I5 extends I4 {}
+
+    /**
+     * Represents an operation that accepts a single input argument and returns
+     * no result. Unlike most other functional interfaces,
+     * {@code ThrowableConsumer} is expected to operate via side-effects.
+     *
+     * Also it is able to throw {@link Exception} unlike {@link Consumer}.
+     *
+     * @param <T> The type of the input to the operation.
+     */
+    @FunctionalInterface
+    private static interface ThrowableConsumer<T> {
+        /**
+         * Performs this operation on the given argument.
+         *
+         * @param t the input argument.
+         */
+        void accept(@Nullable T t) throws Exception;
+    }
+
+    /**
+     * Test to verify the {@link U#hashToIndex(int, int)}.
+     */
+    @Test
+    public void testHashToIndexDistribution() {
+        assertEquals(0, U.hashToIndex(1, 1));
+        assertEquals(0, U.hashToIndex(2, 1));
+        assertEquals(1, U.hashToIndex(1, 2));
+        assertEquals(0, U.hashToIndex(2, 2));
+
+        assertEquals(1, U.hashToIndex(1, 4));
+        assertEquals(2, U.hashToIndex(2, 4));
+        assertEquals(3, U.hashToIndex(3, 4));
+        assertEquals(0, U.hashToIndex(4, 4));
+        assertEquals(1, U.hashToIndex(5, 4));
+        assertEquals(0, U.hashToIndex(8, 4));
+        assertEquals(3, U.hashToIndex(15, 4));
+
+        assertEquals(1, U.hashToIndex(-1, 4));
+        assertEquals(2, U.hashToIndex(-2, 4));
+        assertEquals(3, U.hashToIndex(-3, 4));
+        assertEquals(0, U.hashToIndex(-4, 4));
+        assertEquals(1, U.hashToIndex(-5, 4));
+        assertEquals(0, U.hashToIndex(-8, 4));
+        assertEquals(3, U.hashToIndex(-15, 4));
+    }
+
 }

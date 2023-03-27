@@ -47,144 +47,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Protocol versnion. */
         public const byte ProtoVer = 1;
 
-        /** Type: object. */
-        public const byte TypeObject = HdrFull;
-
-        /** Type: unregistered. */
-        public const byte TypeUnregistered = 0;
-
-        /** Type: unsigned byte. */
-        public const byte TypeByte = 1;
-
-        /** Type: short. */
-        public const byte TypeShort = 2;
-
-        /** Type: int. */
-        public const byte TypeInt = 3;
-
-        /** Type: long. */
-        public const byte TypeLong = 4;
-
-        /** Type: float. */
-        public const byte TypeFloat = 5;
-
-        /** Type: double. */
-        public const byte TypeDouble = 6;
-
-        /** Type: char. */
-        public const byte TypeChar = 7;
-
-        /** Type: boolean. */
-        public const byte TypeBool = 8;
-
-        /** Type: decimal. */
-        public const byte TypeDecimal = 30;
-
-        /** Type: string. */
-        public const byte TypeString = 9;
-
-        /** Type: GUID. */
-        public const byte TypeGuid = 10;
-
-        /** Type: date. */
-        public const byte TypeTimestamp = 33;
-
-        /** Type: unsigned byte array. */
-        public const byte TypeArrayByte = 12;
-
-        /** Type: short array. */
-        public const byte TypeArrayShort = 13;
-
-        /** Type: int array. */
-        public const byte TypeArrayInt = 14;
-
-        /** Type: long array. */
-        public const byte TypeArrayLong = 15;
-
-        /** Type: float array. */
-        public const byte TypeArrayFloat = 16;
-
-        /** Type: double array. */
-        public const byte TypeArrayDouble = 17;
-
-        /** Type: char array. */
-        public const byte TypeArrayChar = 18;
-
-        /** Type: boolean array. */
-        public const byte TypeArrayBool = 19;
-
-        /** Type: decimal array. */
-        public const byte TypeArrayDecimal = 31;
-
-        /** Type: string array. */
-        public const byte TypeArrayString = 20;
-
-        /** Type: GUID array. */
-        public const byte TypeArrayGuid = 21;
-
-        /** Type: date array. */
-        public const byte TypeArrayTimestamp = 34;
-
-        /** Type: object array. */
-        public const byte TypeArray = 23;
-
-        /** Type: collection. */
-        public const byte TypeCollection = 24;
-
-        /** Type: map. */
-        public const byte TypeDictionary = 25;
-
-        /** Type: binary object. */
-        public const byte TypeBinary = 27;
-
-        /** Type: enum. */
-        public const byte TypeEnum = 28;
-
-        /** Type: enum array. */
-        public const byte TypeArrayEnum = 29;
-
-        /** Type: native job holder. */
-        public const byte TypeNativeJobHolder = 77;
-
-        /** Type: function wrapper. */
-        public const byte TypeComputeOutFuncJob = 80;
-
-        /** Type: function wrapper. */
-        public const byte TypeComputeFuncJob = 81;
-
-        /** Type: continuous query remote filter. */
-        public const byte TypeContinuousQueryRemoteFilterHolder = 82;
-
-        /** Type: Compute out func wrapper. */
-        public const byte TypeComputeOutFuncWrapper = 83;
-
-        /** Type: Compute func wrapper. */
-        public const byte TypeComputeFuncWrapper = 85;
-
-        /** Type: Compute job wrapper. */
-        public const byte TypeComputeJobWrapper = 86;
-
-        /** Type: action wrapper. */
-        public const byte TypeComputeActionJob = 88;
-
-        /** Type: entry processor holder. */
-        public const byte TypeCacheEntryProcessorHolder = 89;
-
-        /** Type: entry predicate holder. */
-        public const byte TypeCacheEntryPredicateHolder = 90;
-
-        /** Type: message filter holder. */
-        public const byte TypeMessageListenerHolder = 92;
-
-        /** Type: stream receiver holder. */
-        public const byte TypeStreamReceiverHolder = 94;
-
-        /** Type: platform object proxy. */
-        public const byte TypePlatformJavaObjectFactoryProxy = 99;
-
-        /** Type: platform object proxy. */
-        public const int TypeIgniteUuid = 2018070327;
-
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
@@ -206,19 +68,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Indicates object array. */
         public const int ObjTypeId = -1;
 
-        /** Int type. */
-        public static readonly Type TypInt = typeof(int);
-
-        /** Collection type. */
-        public static readonly Type TypCollection = typeof(ICollection);
-
-        /** Dictionary type. */
-        public static readonly Type TypDictionary = typeof(IDictionary);
-
         /** Ticks for Java epoch. */
-        private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        public static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
-        /** Bindig flags for static search. */
+        /** Binding flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** System marshaller. */
@@ -257,6 +110,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** String mode. */
         public static readonly bool UseStringSerializationVer2 =
             (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
+
+        /** Cached maps of enum members per type. */
+        private static readonly CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>> EnumValues =
+            new CopyOnWriteConcurrentDictionary<Type, Dictionary<string, int>>();
 
         /// <summary>
         /// Default marshaller.
@@ -531,13 +388,17 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <summary>Write date.</summary>
          * <param name="val">Date.</param>
          * <param name="stream">Stream.</param>
+         * <param name="converter">Timestamp Converter.</param>
          */
-        public static void WriteTimestamp(DateTime val, IBinaryStream stream)
+        public static void WriteTimestamp(DateTime val, IBinaryStream stream, ITimestampConverter converter)
         {
             long high;
             int low;
 
-            ToJavaDate(val, out high, out low);
+            if (converter != null)
+                converter.ToJavaTicks(val, out high, out low);
+            else
+                ToJavaDate(val, out high, out low);
 
             stream.WriteLong(high);
             stream.WriteInt(low);
@@ -546,14 +407,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Read date.</summary>
          * <param name="stream">Stream.</param>
+         * <param name="converter">Timestamp Converter.</param>
          * <returns>Date</returns>
          */
-        public static DateTime? ReadTimestamp(IBinaryStream stream)
+        public static DateTime? ReadTimestamp(IBinaryStream stream, ITimestampConverter converter)
         {
             long high = stream.ReadLong();
             int low = stream.ReadInt();
 
-            return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+            if (converter != null)
+                return converter.FromJavaTicks(high, low);
+            else
+                return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
         }
 
         /// <summary>
@@ -561,7 +426,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="vals">Values.</param>
         /// <param name="stream">Stream.</param>
-        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream)
+        /// <param name="converter">Timestamp Converter.</param>
+        public static void WriteTimestampArray(DateTime?[] vals, IBinaryStream stream, ITimestampConverter converter)
         {
             stream.WriteInt(vals.Length);
 
@@ -569,9 +435,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeTimestamp);
+                    stream.WriteByte(BinaryTypeId.Timestamp);
 
-                    WriteTimestamp(val.Value, stream);
+                    WriteTimestamp(val.Value, stream, converter);
                 }
                 else
                     stream.WriteByte(HdrNull);
@@ -748,7 +614,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                             throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
 
-                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                        // ReSharper disable once ShiftExpressionRealShiftCountIsZero (reviewed - readability)
+                        res[charArrCnt++] = (char)(
+                            ((c & 0x0F) << 12) |
                             ((c2 & 0x3F) << 6) |
                             ((c3 & 0x3F) << 0));
 
@@ -787,7 +655,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val != null)
                 {
-                    stream.WriteByte(TypeString);
+                    stream.WriteByte(BinaryTypeId.String);
                     WriteString(val, stream);
                 }
                 else
@@ -991,7 +859,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeDecimal);
+                    stream.WriteByte(BinaryTypeId.Decimal);
 
                     WriteDecimal(val.Value, stream);
                 }
@@ -1038,7 +906,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/>
         /// is laid out in memory sequentially and without gaps between fields.
         /// </summary>
         /// <param name="val">The value.</param>
@@ -1086,7 +954,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/>
         /// is laid out in memory sequentially and without gaps between fields.
         /// </summary>
         /// <param name="stream">The stream.</param>
@@ -1153,7 +1021,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (val.HasValue)
                 {
-                    stream.WriteByte(TypeGuid);
+                    stream.WriteByte(BinaryTypeId.Guid);
 
                     WriteGuid(val.Value, stream);
                 }
@@ -1171,32 +1039,63 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static void WriteArray(Array val, BinaryWriter ctx, int? elemTypeId = null)
         {
             Debug.Assert(val != null && ctx != null);
+            Debug.Assert(val.Rank == 1);
 
             IBinaryStream stream = ctx.Stream;
 
-            if (elemTypeId != null && elemTypeId != TypeUnregistered)
+            if (elemTypeId != null && elemTypeId != BinaryTypeId.Unregistered)
             {
                 stream.WriteInt(elemTypeId.Value);
             }
             else
             {
                 var elemType = val.GetType().GetElementType();
+                Debug.Assert(elemType != null);
 
-                var typeId = ObjTypeId;
-
-                if (elemType != typeof(object))
-                    typeId = ctx.Marshaller.GetDescriptor(elemType).TypeId;
-
+                var typeId = GetArrayElementTypeId(val, ctx.Marshaller);
                 stream.WriteInt(typeId);
 
-                if (typeId == TypeUnregistered)
+                if (typeId == BinaryTypeId.Unregistered)
+                {
                     ctx.WriteString(elemType.FullName);
+                }
             }
 
             stream.WriteInt(val.Length);
 
             for (int i = 0; i < val.Length; i++)
-                ctx.Write(val.GetValue(i));
+                ctx.WriteObjectDetached(val.GetValue(i), parentCollection: val);
+        }
+
+        /// <summary>
+        /// Gets the array element type identifier.
+        /// </summary>
+        public static int GetArrayElementTypeId(Array val, Marshaller marsh)
+        {
+            var elemType = val.GetType().GetElementType();
+            Debug.Assert(elemType != null);
+
+            return GetArrayElementTypeId(elemType, marsh);
+        }
+
+        /// <summary>
+        /// Gets the array element type identifier.
+        /// </summary>
+        public static int GetArrayElementTypeId(Type elemType, Marshaller marsh)
+        {
+            return elemType == typeof(object)
+                ? ObjTypeId
+                : marsh.GetDescriptor(elemType).TypeId;
+        }
+
+        /// <summary>
+        /// Gets the type of the array element.
+        /// </summary>
+        public static Type GetArrayElementType(int typeId, Marshaller marsh)
+        {
+            return typeId == ObjTypeId
+                ? typeof(object)
+                : marsh.GetDescriptor(true, typeId, true).Type;
         }
 
         /// <summary>
@@ -1235,7 +1134,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 int typeId = stream.ReadInt();
 
-                if (typeId == TypeUnregistered)
+                if (typeId == BinaryTypeId.Unregistered)
                     ctx.ReadString();
             }
 
@@ -1252,18 +1151,51 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Read string array.
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String array.</returns>
+        public static string[] ReadStringArray(IBinaryStream stream)
+        {
+            var len = stream.ReadInt();
+            var res = new string[len];
+
+            for (var i = 0; i < len; i++)
+                res[i] = stream.ReadByte() == HdrNull ? null : ReadString(stream);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Read string array.
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>String array.</returns>
+        public static Guid?[] ReadGuidArray(IBinaryStream stream)
+        {
+            var len = stream.ReadInt();
+            var res = new Guid?[len];
+
+            for (var i = 0; i < len; i++)
+                res[i] = stream.ReadByte() == HdrNull ? (Guid?) null : ReadGuid(stream);
+
+            return res;
+        }
+
+        /// <summary>
         /// Read timestamp array.
         /// </summary>
         /// <param name="stream">Stream.</param>
+        /// <param name="converter">Timestamp Converter.</param>
         /// <returns>Timestamp array.</returns>
-        public static DateTime?[] ReadTimestampArray(IBinaryStream stream)
+        public static DateTime?[] ReadTimestampArray(IBinaryStream stream, ITimestampConverter converter)
         {
             int len = stream.ReadInt();
 
             DateTime?[] vals = new DateTime?[len];
 
             for (int i = 0; i < len; i++)
-                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream);
+                vals[i] = stream.ReadByte() == HdrNull ? null : ReadTimestamp(stream, converter);
 
             return vals;
         }
@@ -1309,7 +1241,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(colType);
 
             foreach (object elem in val)
-                ctx.Write(elem);
+                ctx.WriteObjectDetached(elem, parentCollection: val);
         }
 
         /**
@@ -1390,8 +1322,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (DictionaryEntry entry in val)
             {
-                ctx.Write(entry.Key);
-                ctx.Write(entry.Value);
+                ctx.WriteObjectDetached(entry.Key, parentCollection: val);
+                ctx.WriteObjectDetached(entry.Value, parentCollection: val);
             }
         }
 
@@ -1440,36 +1372,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write enum.
-        /// </summary>
-        /// <param name="writer">Writer.</param>
-        /// <param name="val">Value.</param>
-        public static void WriteEnum<T>(BinaryWriter writer, T val)
-        {
-            writer.WriteInt(GetEnumTypeId(val.GetType(), writer.Marshaller));
-            writer.WriteInt(TypeCaster<int>.Cast(val));
-        }
-
-        /// <summary>
-        /// Gets the enum type identifier.
-        /// </summary>
-        /// <param name="enumType">The enum type.</param>
-        /// <param name="marshaller">The marshaller.</param>
-        /// <returns>Enum type id.</returns>
-        private static int GetEnumTypeId(Type enumType, Marshaller marshaller)
-        {
-            if (Enum.GetUnderlyingType(enumType) == TypInt)
-            {
-                var desc = marshaller.GetDescriptor(enumType);
-
-                return desc.TypeId;
-            }
-
-            throw new BinaryObjectException("Only Int32 underlying type is supported for enums: " +
-                                            enumType.Name);
-        }
-
-        /// <summary>
         /// Gets the enum value by type id and int representation.
         /// </summary>
         /// <typeparam name="T">Result type.</typeparam>
@@ -1507,12 +1409,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
-        /**
-         * <summary>Get string hash code.</summary>
-         * <param name="val">Value.</param>
-         * <returns>Hash code.</returns>
-         */
-        public static int GetStringHashCode(string val)
+        /// <summary>
+        /// Gets the string hash code using Java algorithm, converting English letters to lower case.
+        /// </summary>
+        public static int GetStringHashCodeLowerCase(string val)
         {
             if (val == null)
                 return 0;
@@ -1527,6 +1427,34 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return hash;
+        }
+
+        /// <summary>
+        /// Gets the string hash code using Java algorithm.
+        /// </summary>
+        public static int GetStringHashCode(string val)
+        {
+            if (val == null)
+                return 0;
+
+            int hash = 0;
+
+            unchecked
+            {
+                // ReSharper disable once LoopCanBeConvertedToQuery (performance)
+                foreach (var c in val)
+                    hash = 31 * hash + c;
+            }
+
+            return hash;
+        }
+
+        /// <summary>
+        /// Gets the cache identifier.
+        /// </summary>
+        public static int GetCacheId(string cacheName)
+        {
+            return string.IsNullOrEmpty(cacheName) ? 1 : GetStringHashCode(cacheName);
         }
 
         /// <summary>
@@ -1582,8 +1510,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static string GetSqlTypeName(Type type)
         {
-            // SQL always uses simple type name without namespace, parent class, etc.
-            return type.FullName;
+            // Ignite SQL engine always uses simple type name without namespace, parent class, etc -
+            // see QueryUtils.typeName.
+            // GridQueryProcessor.store uses this type name to ensure that we put correct data to the cache:
+            // cacheObjects().typeId(QueryEntity.ValueTypeName) is matched against BinaryObject.typeId.
+            // Additionally, this type name is passed back to UnmanagedCallbacks.BinaryTypeGet to register the
+            // query types on cache start.
+            return BinaryBasicNameMapper.FullNameInstance.GetTypeName(type.AssemblyQualifiedName);
         }
 
         /**
@@ -1616,7 +1549,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (id == 0)
-                id = GetStringHashCode(fieldName);
+                id = GetStringHashCodeLowerCase(fieldName);
 
             if (id == 0)
                 throw new BinaryObjectException("Field ID is zero (please provide ID mapper or change field name) " +
@@ -1679,10 +1612,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             err = null;
 
-            if (reader.ReadBoolean())
+            if (reader.ReadBoolean()) // success indication
                 return reader.ReadObject<object>();
 
-            err = reader.ReadBoolean()
+            err = reader.ReadBoolean() // native error indication
                 ? reader.ReadObject<object>()
                 : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(),
                                               reader.ReadString());
@@ -1706,11 +1639,13 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="high">High part (milliseconds).</param>
          * <param name="low">Low part (nanoseconds)</param>
          */
-        private static void ToJavaDate(DateTime date, out long high, out int low)
+        public static void ToJavaDate(DateTime date, out long high, out int low)
         {
             if (date.Kind != DateTimeKind.Utc)
-                throw new InvalidOperationException(
+            {
+                throw new BinaryObjectException(
                     "DateTime is not UTC. Only UTC DateTime can be used for interop with other platforms.");
+            }
 
             long diff = date.Ticks - JavaDateTicks;
 
@@ -1815,6 +1750,108 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Determines whether specified type is Ignite-compatible enum (value fits into 4 bytes).
+        /// </summary>
+        public static bool IsIgniteEnum(Type type)
+        {
+            Debug.Assert(type != null);
+
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (!type.IsEnum)
+                return false;
+
+            var enumType = Enum.GetUnderlyingType(type);
+
+            return enumType == typeof(int) || enumType == typeof(byte) || enumType == typeof(sbyte)
+                || enumType == typeof(short) || enumType == typeof(ushort) || enumType == typeof(uint);
+        }
+
+        /// <summary>
+        /// Converts long to timespan.
+        /// </summary>
+        public static TimeSpan LongToTimeSpan(long ms)
+        {
+            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
+                return TimeSpan.MaxValue;
+
+            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
+                return TimeSpan.MinValue;
+
+            return TimeSpan.FromMilliseconds(ms);
+        }
+
+        /// <summary>
+        /// Gets the enum values.
+        /// </summary>
+        public static IDictionary<string, int> GetEnumValues(Type enumType)
+        {
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType.IsEnum);
+
+            Dictionary<string,int> res;
+            if (EnumValues.TryGetValue(enumType, out res))
+            {
+                return res;
+            }
+
+            var values = Enum.GetValues(enumType);
+            res = new Dictionary<string, int>(values.Length);
+
+            var underlyingType = Enum.GetUnderlyingType(enumType);
+
+            foreach (var value in values)
+            {
+                var name = Enum.GetName(enumType, value);
+                Debug.Assert(name != null);
+
+                res[name] = GetEnumValueAsInt(underlyingType, value);
+            }
+
+            EnumValues.Set(enumType, res);
+
+            return res;
+        }
+
+        /// <summary>
+        /// Gets the enum value as int.
+        /// </summary>
+        private static int GetEnumValueAsInt(Type underlyingType, object value)
+        {
+            if (underlyingType == typeof(int))
+            {
+                return (int) value;
+            }
+
+            if (underlyingType == typeof(byte))
+            {
+                return (byte) value;
+            }
+
+            if (underlyingType == typeof(sbyte))
+            {
+                return (sbyte) value;
+            }
+
+            if (underlyingType == typeof(short))
+            {
+                return (short) value;
+            }
+
+            if (underlyingType == typeof(ushort))
+            {
+                return (ushort) value;
+            }
+
+            if (underlyingType == typeof(uint))
+            {
+                return unchecked((int) (uint) value);
+            }
+
+            throw new BinaryObjectException("Unexpected enum underlying type: " + underlyingType);
+        }
+
+        /// <summary>
         /// Creates and instance from the type name in reader.
         /// </summary>
         private static T CreateInstance<T>(BinaryReader reader)
@@ -1886,7 +1923,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <param name="val">The value.</param>
             public unsafe JavaGuid(Guid val)
             {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
+                // .NET returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
                 // And _a, _b and _c are always in little endian format irrespective of system configuration.
                 // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _f, _e, _d.
                 var accessor = *((GuidAccessor*)&val);

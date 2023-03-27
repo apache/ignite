@@ -37,10 +37,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for {@code IgniteDataStreamerImpl}.
  */
 public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
@@ -61,11 +56,6 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         if (binaries) {
             BinaryMarshaller marsh = new BinaryMarshaller();
@@ -100,6 +90,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         try {
             binaries = false;
@@ -114,7 +105,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             Map<Integer, String> map = U.newHashMap(KEYS_COUNT);
 
-            for (int i = 0; i < KEYS_COUNT; i ++)
+            for (int i = 0; i < KEYS_COUNT; i++)
                 map.put(i, String.valueOf(i));
 
             dataLdr.addData(map);
@@ -130,7 +121,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, String> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
-            for (int i = 0; i < 100; i ++) {
+            for (int i = 0; i < 100; i++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);
 
                 String v = c0.get(k);
@@ -148,6 +139,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddMissingBinary() throws Exception {
         try {
             binaries = true;
@@ -165,7 +157,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             Map<Integer, TestObject2> map = U.newHashMap(KEYS_COUNT);
 
-            for (int i = 0; i < KEYS_COUNT; i ++)
+            for (int i = 0; i < KEYS_COUNT; i++)
                 map.put(i, new TestObject2(i));
 
             dataLdr.addData(map).get();
@@ -183,6 +175,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryDataFromMap() throws Exception {
         try {
             binaries = true;
@@ -197,7 +190,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             Map<Integer, TestObject> map = U.newHashMap(KEYS_COUNT);
 
-            for (int i = 0; i < KEYS_COUNT; i ++)
+            for (int i = 0; i < KEYS_COUNT; i++)
                 map.put(i, new TestObject(i));
 
             dataLdr.addData(map);
@@ -213,7 +206,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, TestObject> c = g0.cache(DEFAULT_CACHE_NAME);
 
-            for (int i = 0; i < 100; i ++) {
+            for (int i = 0; i < 100; i++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);
 
                 TestObject v = c.get(k);
@@ -224,7 +217,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             // Read random keys. Take values as BinaryObject.
             IgniteCache<Integer, BinaryObject> c2 = ((IgniteCacheProxy)c).keepBinary();
 
-            for (int i = 0; i < 100; i ++) {
+            for (int i = 0; i < 100; i++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);
 
                 BinaryObject v = c2.get(k);
@@ -242,6 +235,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddBinaryCreatedWithBuilder() throws Exception {
         try {
             binaries = true;
@@ -258,7 +252,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
                 BinaryObjectBuilder obj = g0.binary().builder("NoExistedClass");
 
                 obj.setField("id", i);
-                obj.setField("name", String.valueOf("name = " + i));
+                obj.setField("name", "name = " + i);
 
                 dataLdr.addData(i, obj.build());
             }
@@ -283,7 +277,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> c = g.cache(DEFAULT_CACHE_NAME);
 
         // Check that data streamer correctly split data by nodes.
-        for (int i = 0; i < KEYS_COUNT; i ++) {
+        for (int i = 0; i < KEYS_COUNT; i++) {
             if (g.affinity(DEFAULT_CACHE_NAME).isPrimary(n, i))
                 assertNotNull(c.localPeek(i));
             else
@@ -311,6 +305,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
+        /** */
         public Integer val() {
             return val;
         }
@@ -355,6 +350,7 @@ public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
+        /** */
         public Integer val() {
             return val;
         }

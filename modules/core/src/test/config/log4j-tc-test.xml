@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+
+<!--
+    Log4j2 configuration.
+-->
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
+        </Console>
+
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        </Console>
+
+        <RollingFile name="FILE"
+                     fileName="${sys:IGNITE_HOME}/work/log/ignite.log"
+                     filePattern="${sys:IGNITE_HOME}/work/log/ignite.log.%i"
+                     append="true">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.apache.ignite.internal.diagnostic" level="INFO">
+            <AppenderRef ref="CONSOLE" level="INFO"/>
+        </Logger>
+
+        <!--
+            Uncomment to enable Ignite query execution debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.query" level="DEBUG"/>
+        -->
+
+        <!--
+            Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
+        -->
+        <!--
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader" level="DEBUG"/>
+            <Logger name="org.apache.ignite.internal.processors.cache.distributed.dht.topology" level="DEBUG"/>
+        -->
+
+        <Logger name="org" level="INFO"/>
+        <Logger name="org.eclipse.jetty" level="INFO"/>
+
+        <Root level="INFO">
+            <AppenderRef ref="FILE" level="DEBUG"/>
+            <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
+        </Root>
+    </Loggers>
+</Configuration>

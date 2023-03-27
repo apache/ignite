@@ -24,9 +24,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -156,18 +158,30 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void invalidPartition(int part) {
+    @Override public void invalidPartition(int cacheId, int part, GridCacheVersion version) {
         if (writeMap != null) {
             for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext(); ) {
                 IgniteTxEntry e = it.next();
 
+                if (e.cacheId() != cacheId)
+                    continue;
+
                 GridCacheContext cacheCtx = e.context();
 
-                GridCacheEntryEx cached = e.cached();
+                GridDistributedCacheEntry cached = (GridDistributedCacheEntry)e.cached();
 
                 if (cached != null) {
-                    if (cached.partition() == part)
+                    if (cached.partition() == part) {
+                        try {
+                            if (cached.hasLockCandidate(version))
+                                cached.removeLock(version);
+                        }
+                        catch (GridCacheEntryRemovedException ignored) {
+                            // No-op.
+                        }
+
                         it.remove();
+                    }
                 }
                 else if (cacheCtx.affinity().partition(e.key()) == part)
                     it.remove();
@@ -176,7 +190,7 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(IgniteTxRemoteStateImpl.class, this);
     }
 

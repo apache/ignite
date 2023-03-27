@@ -91,7 +91,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         GridProtocolHandler.registerDeploymentManager(this);
 
         assertParameter(ctx.config().getDeploymentMode() != null, "ctx.config().getDeploymentMode() != null");
@@ -287,13 +287,13 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             // Check for nested execution. In that case, if task
             // is available locally by name, then we should ignore
             // class loader ID.
-            GridDeployment dep = locStore.getDeployment(meta);
+            GridDeployment dep = checkDeployment(locStore.getDeployment(meta), "local");
 
             if (dep == null) {
-                dep = ldrStore.getDeployment(ldr.classLoaderId());
+                dep = checkDeployment(ldrStore.getDeployment(ldr.classLoaderId()), "perLoader");
 
                 if (dep == null)
-                    dep = verStore.getDeployment(ldr.classLoaderId());
+                    dep = checkDeployment(verStore.getDeployment(ldr.classLoaderId()), "perVersion");
             }
 
             return dep;
@@ -313,6 +313,25 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     }
 
     /**
+     * Checks and logs possibly incorrect deployments.
+     *
+     * @param deployment Deployment.
+     * @param store Store name.
+     * @return Deployment.
+     */
+    private GridDeployment checkDeployment(GridDeployment deployment, String store) {
+        if (deployment != null
+            && deployment.participants() == null
+            && !ctx.discovery().localNode().id().equals(deployment.classLoaderId().globalId())) {
+            log.warning("Possibly incorrect deployment detected in '" + store + "', can't be used to deserialize " +
+                "message on target node [participants=null, localNodeId=" + ctx.discovery().localNode().id() +
+                ", deployment=" + deployment + "]");
+        }
+
+        return deployment;
+    }
+
+    /**
      * Gets any deployment by loader ID.
      *
      * @param ldrId Loader ID.
@@ -320,7 +339,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      */
     @Nullable public GridDeployment getDeployment(IgniteUuid ldrId) {
         if (locDep != null)
-           return locDep.classLoaderId().equals(ldrId) ? locDep : null;
+            return locDep.classLoaderId().equals(ldrId) ? locDep : null;
 
         GridDeployment dep = locStore.getDeployment(ldrId);
 
@@ -458,6 +477,11 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                 }
             }
 
+            GridDeployment dep = verStore.searchDeploymentCache(meta);
+
+            if (dep != null)
+                return dep;
+
             if (reuse) {
                 GridDeployment locDep = locStore.getDeployment(meta);
 
@@ -470,7 +494,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                             "in some other mode). Either change IgniteConfiguration.getDeploymentMode() property to " +
                             "SHARED or CONTINUOUS or remove class from local classpath and any of " +
                             "the local GAR deployments that may have it [cls=" + meta.className() + ", depMode=" +
-                            locDep.deployMode() + ']', "Failed to deploy class in SHARED or CONTINUOUS mode.");
+                            locDep.deployMode() + ']');
 
                         return null;
                     }
@@ -478,8 +502,7 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                     if (!locDep.userVersion().equals(meta.userVersion())) {
                         U.warn(log, "Failed to deploy class in SHARED or CONTINUOUS mode for given user version " +
                             "(class is locally deployed for a different user version) [cls=" + meta.className() +
-                            ", localVer=" + locDep.userVersion() + ", otherVer=" + meta.userVersion() + ']',
-                            "Failed to deploy class in SHARED or CONTINUOUS mode.");
+                            ", localVer=" + locDep.userVersion() + ", otherVer=" + meta.userVersion() + ']');
 
                         return null;
                     }
@@ -497,7 +520,12 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         // Private or Isolated mode.
         meta.record(false);
 
-        GridDeployment dep = locStore.getDeployment(meta);
+        GridDeployment dep = ldrStore.searchDeploymentCache(meta);
+
+        if (dep != null)
+            return dep;
+
+        dep = locStore.getDeployment(meta);
 
         if (sndNodeId.equals(ctx.localNodeId())) {
             if (dep == null)
@@ -551,7 +579,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     public boolean isGlobalLoader(ClassLoader ldr) {
         return ldr instanceof GridDeploymentClassLoader;
     }
-
 
     /**
      * @throws IgniteCheckedException If failed.

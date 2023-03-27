@@ -22,11 +22,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -45,8 +47,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.processor.EntryProcessorException;
+import org.junit.Test;
 
 /**
  * Tests command handler directly.
@@ -70,7 +71,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         // Cache config.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(CacheMode.LOCAL);
+        cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
         cacheCfg.setAtomicityMode(atomicityMode());
 
@@ -93,7 +94,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @return CacheAtomicityMode for the cache.
      */
-    protected CacheAtomicityMode atomicityMode(){
+    protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
@@ -102,6 +103,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheGetFailsSyncNotify() throws Exception {
         GridRestCommandHandler hnd = new TestableCacheCommandHandler(grid().context(), "getAsync");
 
@@ -128,7 +130,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
-    @SuppressWarnings("NullableProblems")
+    @Test
     public void testAppendPrepend() throws Exception {
         assertEquals("as" + "df", testAppend("as", "df", true));
         assertEquals("df" + "as", testAppend("as", "df", false));
@@ -203,13 +205,44 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
             jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
-            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
+            assertTrue((Boolean)hnd.handleAsync(req).get().getResponse());
         }
         finally {
             res = (T)jcache().getAndRemove(key);
         }
 
         return res;
+    }
+
+    /**
+     * Tests the execution of the CACHE_CLEAR command.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheClear() throws Exception {
+        GridRestCommandHandler hnd = new GridCacheCommandHandler((grid()).context());
+
+        HashMap<Object, Object> caches = new HashMap<>();
+        caches.put(DEFAULT_CACHE_NAME, null);
+
+        GridRestCacheRequest req = new GridRestCacheRequest();
+        req.command(GridRestCommand.CACHE_CLEAR);
+        req.values(caches);
+
+        try {
+            // Change cache state.
+            for (int i = 0; i < 10; i++ ) {
+                jcache().put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            }
+
+            assertTrue(jcache().size() == 10);
+
+            assertTrue((Boolean)hnd.handleAsync(req).get().getResponse());
+        }
+        finally {
+            assertTrue(jcache().size() == 0);
+        }
     }
 
     /**
@@ -248,10 +281,15 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
                             return fut;
                         }
+
                         // Rewriting flagOn result to keep intercepting invocations after it.
-                        else if ("setSkipStore".equals(mtd.getName()))
+                        if ("setSkipStore".equals(mtd.getName()))
                             return proxy;
-                        else if ("forSubjectId".equals(mtd.getName()))
+
+                        if ("forSubjectId".equals(mtd.getName()))
+                            return proxy;
+
+                        if ("keepBinary".equals(mtd.getName()))
                             return proxy;
 
                         return mtd.invoke(cache, args);

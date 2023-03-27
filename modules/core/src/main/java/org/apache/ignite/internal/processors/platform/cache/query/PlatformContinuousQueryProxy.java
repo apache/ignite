@@ -25,7 +25,8 @@ import org.apache.ignite.internal.processors.platform.PlatformTarget;
 /**
  * Proxy that implements PlatformTarget.
  */
-public class PlatformContinuousQueryProxy extends PlatformAbstractTarget  {
+public class PlatformContinuousQueryProxy extends PlatformAbstractTarget {
+    /** */
     private final PlatformContinuousQuery qry;
 
     /**

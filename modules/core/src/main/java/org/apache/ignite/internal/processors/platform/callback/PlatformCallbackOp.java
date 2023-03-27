@@ -224,4 +224,28 @@ class PlatformCallbackOp {
 
     /** */
     public static final int PluginCallbackInLongLongOutLong = 68;
+
+    /** */
+    public static final int EventLocalListenerApply = 69;
+
+    /** */
+    public static final int PlatformCacheUpdate = 70;
+
+    /** */
+    public static final int PlatformCacheUpdateFromThreadLocal = 71;
+
+    /** */
+    public static final int OnCacheStopped = 72;
+
+    /** */
+    public static final int OnAffinityTopologyVersionChanged = 73;
+
+    /** */
+    public static final int ComputeOutFuncExecute = 74;
+
+    /** */
+    public static final int ComputeActionExecute = 75;
+
+    /** */
+    public static final int BinaryTypeGet = 76;
 }

@@ -56,11 +56,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TypeNameParser" /> class.
+        /// </summary>
+        private TypeNameParser(string typeName)
+        {
+            _typeName = typeName;
+            NameStart = 0;
+            NameEnd = typeName.Length - 1;
+
+            AssemblyStart = -1;
+            AssemblyEnd = -1;
+            ArrayStart = -1;
+        }
+
+        /// <summary>
         /// Parses the specified type name.
         /// </summary>
         public static TypeNameParser Parse(string typeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
+
+            if (typeName.Contains("\\"))
+            {
+                // Do not parse compiler-generated special names, return as is.
+                return new TypeNameParser(typeName);
+            }
 
             int pos = 0;
 
@@ -76,6 +96,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the name end.
         /// </summary>
         public int NameEnd { get; private set; }
+
+        /// <summary>
+        /// Gets the name end.
+        /// </summary>
+        public int FullNameEnd { get; private set; }
 
         /// <summary>
         /// Gets the start of the assembly name.
@@ -116,12 +141,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the full type name (with namespace).
         /// </summary>
-        public string GetFullName()
+        public string GetNameWithNamespace()
         {
             if (NameEnd < 0)
                 return null;
 
             return _typeName.Substring(_start, NameEnd - _start + 1);
+        }
+
+        /// <summary>
+        /// Gets the full name (with namespace, generics and arrays).
+        /// </summary>
+        public string GetFullName()
+        {
+            return _typeName.Substring(_start, FullNameEnd - _start + 1);
         }
 
         /// <summary>
@@ -147,6 +180,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets a value indicating whether the namespace is present.
+        /// </summary>
+        public bool HasNamespace()
+        {
+            return NameStart > 0;
+        }
+
+        /// <summary>
+        /// Gets namespace name part.
+        /// </summary>
+        public string GetNamespace()
+        {
+            return NameStart == 0 ? null : _typeName.Substring(_start, NameStart - _start);
+        }
+
+        /// <summary>
         /// Parses this instance.
         /// </summary>
         private void Parse()
@@ -164,6 +213,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             ParseTypeName();
             ParseGeneric();
             ParseArrayDefinition();
+            FullNameEnd = End ? _pos : _pos - 1;
             ParseAssemblyName();
         }
 
@@ -183,7 +233,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (Char == '`')
                 {
-                    // Non-null ist indicates detected generic type.
+                    // Non-null list indicates detected generic type.
                     Generics = Generics ?? new List<TypeNameParser>();
                 }
 
@@ -204,6 +254,12 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (Generics == null)
             {
+                return;
+            }
+
+            if (End || Char == ',')
+            {
+                // Open (unbound) generic.
                 return;
             }
 
@@ -258,7 +314,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var bracket = true;
 
             RequireShift();
-            
+
             while (true)
             {
                 if (Char == '[')
@@ -274,15 +330,18 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (!bracket)
                     {
-                        throw new IgniteException("Invalid array specification: " + _typeName);
+                        ArrayEnd = _pos - 1;
+                        return;
                     }
 
                     bracket = false;
                 }
-                else if (Char == ',')
+                else if (Char == ',' || Char == '*')
                 {
                     if (!bracket)
+                    {
                         break;
+                    }
                 }
                 else
                 {

@@ -354,7 +354,6 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             }
         };
 
-
     /** Reentrant lock read closure. */
     private final CIX1<Ignite> reentrantLockReadClos =
         new CIX1<Ignite>() {

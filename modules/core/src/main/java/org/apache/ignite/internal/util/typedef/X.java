@@ -29,8 +29,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -53,8 +56,24 @@ public final class X {
     /** An empty immutable {@code Object} array. */
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
+    /** Millis in second. */
+    private static final long MILLIS_IN_SECOND = 1000L;
+
+    /** Seconds in minute. */
+    private static final long SECONDS_IN_MINUTE = 60L;
+
+    /** Minuses in hour. */
+    private static final long MINUTES_IN_HOUR = 60L;
+
+    /** Hours in day. */
+    private static final long HOURS_IN_DAY = 24L;
+
     /** Time span dividers. */
-    private static final long[] SPAN_DIVS = new long[] {1000L, 60L, 60L, 60L};
+    private static final long[] SPAN_DIVS = new long[] {
+        MILLIS_IN_SECOND, SECONDS_IN_MINUTE, MINUTES_IN_HOUR, HOURS_IN_DAY};
+
+    /** Millis in day. */
+    private static final long MILLIS_IN_DAY = MILLIS_IN_SECOND * SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY;
 
     /** The names of methods commonly used to access a wrapped exception. */
     private static final String[] CAUSE_MTD_NAMES = new String[] {
@@ -75,9 +94,6 @@ public final class X {
     /** The Method object for Java 1.4 getCause. */
     private static final Method THROWABLE_CAUSE_METHOD;
 
-    /**
-     *
-     */
     static {
         Method causeMtd;
 
@@ -197,10 +213,10 @@ public final class X {
     }
 
     /**
-     * Creates string presentation of given time {@code span} in hh:mm:ss:msec {@code HMSM} format.
+     * Creates string presentation of given time {@code span} in hh:mm:ss.msec {@code HMSM} format.
      *
      * @param span Time span.
-     * @return String presentation.
+     * @return String presentation. If duration if longer than 1 day, days count is ignored.
      */
     public static String timeSpan2HMSM(long span) {
         long[] t = new long[4];
@@ -212,7 +228,7 @@ public final class X {
 
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
             (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
-            (t[1] < 10 ? "0" + t[1] : Long.toString(t[1])) + ':' +
+            (t[1] < 10 ? "0" + t[1] : Long.toString(t[1])) + '.' +
             (t[0] < 10 ? "00" + t[0] : ( t[0] < 100 ? "0" + t[0] : Long.toString(t[0])));
     }
 
@@ -233,6 +249,27 @@ public final class X {
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
             (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
             (t[1] < 10 ? "0" + t[1] : Long.toString(t[1]));
+    }
+
+    /**
+     * Creates string presentation of given time {@code span} in days, hh:mm:ss.mmm {@code HMS} format.
+     *
+     * @param span Time span.
+     * @return String presentation.
+     */
+    public static String timeSpan2DHMSM(long span) {
+        String days = "";
+
+        String hmsm = timeSpan2HMSM(span % MILLIS_IN_DAY);
+
+        long daysCnt = span / MILLIS_IN_DAY;
+
+        if (daysCnt == 1)
+            days = "1 day, ";
+        else if (daysCnt > 1)
+            days = daysCnt + " days, ";
+
+        return days + hmsm;
     }
 
     /**
@@ -257,7 +294,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T> T cloneObject(@Nullable T obj, boolean deep, boolean honorCloneable) {
         if (obj == null)
             return null;
@@ -276,7 +312,6 @@ public final class X {
      * @param <T> Type of cloning object.
      * @return Copy of a passed in object.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable private static <T> T shallowClone(@Nullable T obj) {
         if (obj == null)
             return null;
@@ -428,33 +463,33 @@ public final class X {
      * into check.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).
-     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @param msg Message text that should be in cause.
+     * @param types Cause classes to check (if {@code null} or empty, {@code false} is returned).
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
-    @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
-        if (t == null || F.isEmpty(cls))
+    public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... types) {
+        if (t == null || F.isEmpty(types))
             return false;
 
-        assert cls != null;
+        Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
 
-        for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls) {
-                if (c.isAssignableFrom(th.getClass()))
-                    return true;
-            }
+        Throwable found = searchForCause(t, dejaVu, msg, types);
 
-            for (Throwable n : th.getSuppressed()) {
-                if (hasCause(n, cls))
-                    return true;
-            }
+        return found != null;
+    }
 
-            if (th.getCause() == th)
-                break;
-        }
-
-        return false;
+    /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy <b>including</b> that
+     * throwable itself. <p> Note that this method follows includes {@link Throwable#getSuppressed()} into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes, {@code false}
+     * otherwise.
+     */
+    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
+        return hasCause(t, null, cls);
     }
 
     /**
@@ -469,14 +504,12 @@ public final class X {
         if (t == null || cls == null)
             return false;
 
-        if (t.getSuppressed() != null) {
-            for (Throwable th : t.getSuppressed()) {
-                if (cls.isAssignableFrom(th.getClass()))
-                    return true;
+        for (Throwable th : t.getSuppressed()) {
+            if (cls.isAssignableFrom(th.getClass()))
+                return true;
 
-                if (hasSuppressed(th, cls))
-                    return true;
-            }
+            if (hasSuppressed(th, cls))
+                return true;
         }
 
         return false;
@@ -492,27 +525,75 @@ public final class X {
      * @param cls Cause class to get cause (if {@code null}, {@code null} is returned).
      * @return First causing exception of passed in class, {@code null} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public static <T extends Throwable> T cause(@Nullable Throwable t, @Nullable Class<T> cls) {
         if (t == null || cls == null)
             return null;
 
-        for (Throwable th = t; th != null; th = th.getCause()) {
-            if (cls.isAssignableFrom(th.getClass()))
-                return (T)th;
+        Set<Throwable> dejaVu = Collections.newSetFromMap(new IdentityHashMap<>());
 
-            for (Throwable n : th.getSuppressed()) {
-                T found = cause(n, cls);
+        @SuppressWarnings("unchecked")
+        T res = (T)searchForCause(t, dejaVu, null, cls);
 
-                if (found != null)
-                    return found;
-            }
+        return res;
+    }
 
-            if (th.getCause() == th)
-                break;
+    /**
+     * Traverses `tree` of {@link Throwable} to find first cause/suppressed is assignable from any of given types.
+     * Function is aware of possible circular references through tracking of tested objects.
+     *
+     * @param t Throwable.
+     * @param dejaVu Set of throwable for tracking already tested objects.
+     * @param types Candidate types.
+     * @return First throwable meets test condition or {@code null} if none has matched.
+     */
+    @Nullable private static Throwable searchForCause(
+        Throwable t,
+        Set<Throwable> dejaVu,
+        @Nullable String msg,
+        Class<?>... types
+    ) {
+        if (isThrowableValid(t, msg, types))
+            return t;
+
+        if (!dejaVu.add(t))
+            return null;
+
+        Throwable cause = t.getCause();
+
+        if (cause != null) {
+            Throwable found = searchForCause(cause, dejaVu, msg, types);
+
+            if (found != null)
+                return found;
+        }
+
+        for (Throwable suppressed : t.getSuppressed()) {
+            Throwable found = searchForCause(suppressed, dejaVu, msg, types);
+
+            if (found != null)
+                return found;
         }
 
         return null;
+    }
+
+    /**
+     * Checks whether given throwable is assignable from any of candidate throwable type
+     *     and contains given non-null message.
+     *
+     * @param thr Throwable.
+     * @param msg Possible throwable message.
+     * @param candidateTypes Possible types of throwable.
+     * @return {@code true} if such type in found, else {@code false}.
+     */
+    private static boolean isThrowableValid(Throwable thr, @Nullable String msg, Class<?>... candidateTypes) {
+        for (Class<?> c : candidateTypes) {
+            if (c != null && c.isAssignableFrom(thr.getClass())
+                && (msg == null || (thr.getMessage() != null && thr.getMessage().contains(msg))))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -746,6 +827,29 @@ public final class X {
         List<Throwable> list = getThrowableList(throwable);
 
         return list.toArray(new Throwable[list.size()]);
+    }
+
+    /**
+     * Collects suppressed exceptions from throwable and all it causes.
+     *
+     * @param t Throwable.
+     * @return List of suppressed throwables.
+     */
+    public static List<Throwable> getSuppressedList(@Nullable Throwable t) {
+        List<Throwable> result = new ArrayList<>();
+
+        if (t == null)
+            return result;
+
+        do {
+            for (Throwable suppressed : t.getSuppressed()) {
+                result.add(suppressed);
+
+                result.addAll(getSuppressedList(suppressed));
+            }
+        } while ((t = t.getCause()) != null);
+
+        return result;
     }
 
     /**

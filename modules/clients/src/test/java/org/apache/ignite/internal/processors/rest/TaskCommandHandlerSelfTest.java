@@ -41,18 +41,11 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandH
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 
 /**
@@ -60,10 +53,10 @@ import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
  */
 public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private static final String REPLICATED_CACHE_NAME = "replicated";
 
     /** */
-    private static final String CACHE_NAME = "cache";
+    private static final String PARTITIONED_CACHE_NAME = "partitioned";
 
     /** */
     public static final String HOST = "127.0.0.1";
@@ -86,8 +79,6 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS);
     }
 
@@ -115,30 +106,15 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        CacheConfiguration<?, ?> cfg1 = defaultCacheConfiguration()
+            .setName(REPLICATED_CACHE_NAME)
+            .setCacheMode(REPLICATED);
 
-        disco.setIpFinder(IP_FINDER);
+        CacheConfiguration<?, ?> cfg2 = defaultCacheConfiguration()
+            .setName(PARTITIONED_CACHE_NAME)
+            .setCacheMode(PARTITIONED);
 
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration("replicated"),
-            cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
-
-        return cfg;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Cache configuration.
-     * @throws Exception In case of error.
-     */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
-            REPLICATED : PARTITIONED);
-        cfg.setName(cacheName);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheConfiguration(cfg1, cfg2);
 
         return cfg;
     }
@@ -153,12 +129,12 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridClientDataConfiguration cache = new GridClientDataConfiguration();
 
-        cache.setName(CACHE_NAME);
+        cache.setName(PARTITIONED_CACHE_NAME);
 
         cfg.setDataConfigurations(Arrays.asList(nullCache, cache));
 
         cfg.setProtocol(TCP);
-        cfg.setServers(Arrays.asList("localhost:" + BINARY_PORT));
+        cfg.setServers(Collections.singletonList("localhost:" + BINARY_PORT));
 
         return cfg;
     }
@@ -166,6 +142,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyTasksRun() throws Exception {
         GridClientCompute compute = client.compute();
 

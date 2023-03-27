@@ -1,0 +1,62 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cluster ID and Tag
+
+A cluster ID is a unique identifier of the cluster that is generated automatically when the cluster starts for the first time.
+A cluster tag is a user friendly name that you can assign to your cluster.
+You can use these values to identify your cluster in the monitoring system you use.
+
+The default cluster tag is generated automatically, but you can change it using one of the available methods.
+The length of the tag is limited by 280 characters.
+
+You can use the following methods to view the cluster ID and view or change the cluster tag:
+
+* Via the link:control-script#cluster-id-and-tag[control script].
+* JMX Bean:
++
+--
+----
+group=IgniteCluster,name=IgniteClusterMXBeanImpl
+----
+[cols="3,2,8", opts="header"]
+|===
+| Attribute | Type | Description
+|Id| String | The cluster ID.
+|Tag | String | The cluster tag.
+|===
+
+[cols="4,9", opts="header"]
+|===
+| Operation | Description
+| Tag(String) | Set the new cluster tag.
+|===
+--
+* Programmatically:
++
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaCodeDir}/ClusterAPI.java[tags=cluster-tag, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+
+
+

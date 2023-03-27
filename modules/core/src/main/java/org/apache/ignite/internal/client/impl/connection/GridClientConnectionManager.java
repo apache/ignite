@@ -71,4 +71,16 @@ public interface GridClientConnectionManager {
      *      (and receiving responses for all pending requests), otherwise it will return immediately.
      */
     public void stop(boolean waitCompletion);
+
+    /**
+     * Returns connection to node using given server addresses.
+     *
+     * @param srvs Server addresses.
+     * @return Established connection.
+     * @throws GridClientException If failed.
+     * @throws InterruptedException If was interrupted while waiting for connection to be established.
+     */
+    public GridClientConnection connection(
+        Collection<InetSocketAddress> srvs
+    ) throws GridClientException, InterruptedException;
 }

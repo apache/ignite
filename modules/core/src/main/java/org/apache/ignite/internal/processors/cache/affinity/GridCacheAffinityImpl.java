@@ -63,12 +63,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        CacheConfiguration ccfg = cctx.config();
-
-        if (ccfg == null)
-            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
-
-        return ccfg.getAffinity().partitions();
+        return cctx.group().affinityFunction().partitions();
     }
 
     /** {@inheritDoc} */
@@ -193,12 +188,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
         AffinityTopologyVersion topVer = topologyVersion();
 
-        int nodesCnt;
-
-        if (!cctx.isLocal())
-            nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.cacheId(), topVer).size();
-        else
-            nodesCnt = 1;
+        int nodesCnt = cctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), topVer).size();
 
         // Must return empty map if no alive nodes present or keys is empty.
         Map<ClusterNode, Collection<K>> res = new HashMap<>(nodesCnt, 1.0f);

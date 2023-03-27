@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,12 +33,12 @@ public class PagesListAddPageRecord extends PageDeltaRecord {
     private final long dataPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param dataPageId Data page ID to add.
      */
-    public PagesListAddPageRecord(int cacheId, long pageId, long dataPageId) {
-        super(cacheId, pageId);
+    public PagesListAddPageRecord(int grpId, long pageId, long dataPageId) {
+        super(grpId, pageId);
 
         this.dataPageId = dataPageId;
     }
@@ -54,7 +54,7 @@ public class PagesListAddPageRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PagesListNodeIO io = PagesListNodeIO.VERSIONS.forPage(pageAddr);
 
-        int cnt = io.addPage(pageAddr, dataPageId, pageMem.pageSize());
+        int cnt = io.addPage(pageAddr, dataPageId, pageMem.realPageSize(groupId()));
 
         assert cnt >= 0 : cnt;
     }

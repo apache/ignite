@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -39,6 +40,11 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public const bool DefaultKeepDeserialized = true;
 
+        /// <summary>
+        /// Default <see cref="ForceTimestamp"/> setting.
+        /// </summary>
+        public const bool DefaultForceTimestamp = false;
+
         /** Footer setting. */
         private bool? _compactFooter;
 
@@ -48,6 +54,7 @@ namespace Apache.Ignite.Core.Binary
         public BinaryConfiguration()
         {
             KeepDeserialized = DefaultKeepDeserialized;
+            ForceTimestamp = DefaultForceTimestamp;
         }
 
         /// <summary>
@@ -58,10 +65,26 @@ namespace Apache.Ignite.Core.Binary
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
+            CopyLocalProperties(cfg);
+        }
+
+        /// <summary>
+        /// Copies the local properties.
+        /// </summary>
+        internal void CopyLocalProperties(BinaryConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
             IdMapper = cfg.IdMapper;
             NameMapper = cfg.NameMapper;
             KeepDeserialized = cfg.KeepDeserialized;
-            Serializer = cfg.Serializer;
+            ForceTimestamp = cfg.ForceTimestamp;
+            TimestampConverter = cfg.TimestampConverter;
+
+            if (cfg.Serializer != null)
+            {
+                Serializer = cfg.Serializer;
+            }
 
             TypeConfigurations = cfg.TypeConfigurations == null
                 ? null
@@ -69,7 +92,10 @@ namespace Apache.Ignite.Core.Binary
 
             Types = cfg.Types == null ? null : cfg.Types.ToList();
 
-            CompactFooter = cfg.CompactFooter;
+            if (cfg.CompactFooterInternal != null)
+            {
+                CompactFooter = cfg.CompactFooterInternal.Value;
+            }
         }
 
         /// <summary>
@@ -88,7 +114,7 @@ namespace Apache.Ignite.Core.Binary
         public ICollection<BinaryTypeConfiguration> TypeConfigurations { get; set; }
 
         /// <summary>
-        /// Gets or sets a collection of assembly-qualified type names 
+        /// Gets or sets a collection of assembly-qualified type names
         /// (the result of <see cref="Type.AssemblyQualifiedName"/>) for binarizable types.
         /// <para />
         /// Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
@@ -112,6 +138,15 @@ namespace Apache.Ignite.Core.Binary
         public IBinarySerializer Serializer { get; set; }
 
         /// <summary>
+        /// Gets or sets a converter between <see cref="DateTime"/> and Java Timestamp.
+        /// Called from <see cref="IBinaryWriter.WriteTimestamp"/>, <see cref="IBinaryWriter.WriteTimestampArray"/>,
+        /// <see cref="IBinaryReader.ReadTimestamp"/>, <see cref="IBinaryReader.ReadTimestampArray"/>.
+        /// <para />
+        /// See also <see cref="ForceTimestamp"/>.
+        /// </summary>
+        public ITimestampConverter TimestampConverter { get; set; }
+
+        /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
         [DefaultValue(DefaultKeepDeserialized)]
@@ -119,12 +154,12 @@ namespace Apache.Ignite.Core.Binary
 
         /// <summary>
         /// Gets or sets a value indicating whether to write footers in compact form.
-        /// When enabled, Ignite will not write fields metadata when serializing objects, 
+        /// When enabled, Ignite will not write fields metadata when serializing objects,
         /// because internally metadata is distributed inside cluster.
         /// This increases serialization performance.
         /// <para/>
         /// <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
-        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
+        /// sources (e.g.cache store which stores data in binary form, data center replication, etc.).
         /// Otherwise binary objects without any associated metadata could could not be deserialized.
         /// </summary>
         [DefaultValue(DefaultCompactFooter)]
@@ -135,35 +170,26 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether all DateTime keys, values and object fields
+        /// should be written as a Timestamp.
+        /// <para />
+        /// Timestamp format is required for values used in SQL and for interoperation with other platforms.
+        /// Only UTC values are supported in Timestamp format. Other values will cause an exception on write, unless <see cref="TimestampConverter"/> is provided.
+        /// <para />
+        /// Normally Ignite serializer uses <see cref="IBinaryWriter.WriteObject{T}"/> for DateTime fields,
+        /// keys and values.
+        /// This attribute changes the behavior to <see cref="IBinaryWriter.WriteTimestamp"/>.
+        /// <para />
+        /// See also <see cref="TimestampAttribute"/>, <see cref="BinaryReflectiveSerializer.ForceTimestamp"/>.
+        /// </summary>
+        public bool ForceTimestamp { get; set; }
+
+        /// <summary>
         /// Gets the compact footer internal nullable value.
         /// </summary>
         internal bool? CompactFooterInternal
         {
             get { return _compactFooter; }
-        }
-
-        /// <summary>
-        /// Merges other config into this.
-        /// </summary>
-        internal void MergeTypes(BinaryConfiguration localConfig)
-        {
-            if (TypeConfigurations == null)
-            {
-                TypeConfigurations = localConfig.TypeConfigurations;
-            }
-            else if (localConfig.TypeConfigurations != null)
-            {
-                // Both configs are present.
-                // Local configuration is more complete and takes preference when it exists for a given type.
-                var localTypeNames = new HashSet<string>(localConfig.TypeConfigurations.Select(x => x.TypeName), 
-                    StringComparer.OrdinalIgnoreCase);
-
-                var configs = new List<BinaryTypeConfiguration>(localConfig.TypeConfigurations);
-
-                configs.AddRange(TypeConfigurations.Where(x=>!localTypeNames.Contains(x.TypeName)));
-
-                TypeConfigurations = configs;
-            }
         }
     }
 }

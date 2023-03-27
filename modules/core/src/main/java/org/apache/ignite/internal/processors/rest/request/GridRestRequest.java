@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.rest.request;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -45,6 +47,12 @@ public class GridRestRequest {
 
     /** Command. */
     private GridRestCommand cmd;
+
+    /** User attributes. */
+    Map<String, String> userAttrs;
+
+    /** */
+    private Certificate[] certs;
 
     /**
      * @return Destination ID.
@@ -140,6 +148,38 @@ public class GridRestRequest {
      */
     public void address(InetSocketAddress addr) {
         this.addr = addr;
+    }
+
+    /**
+     * Gets user attributes.
+     *
+     * @return User attributes.
+     */
+    public Map<String, String> userAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * Gets user attributes.
+     *
+     * @param userAttrs User attributes.
+     */
+    public void userAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
+    }
+
+    /**
+     * @return Client SSL certificates.
+     */
+    public Certificate[] certificates() {
+        return certs;
+    }
+
+    /**
+     * @param certs Client SSL certificates.
+     */
+    public void certificates(Certificate[] certs) {
+        this.certs = certs;
     }
 
     /** {@inheritDoc} */

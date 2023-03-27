@@ -21,11 +21,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,6 +40,12 @@ import org.jetbrains.annotations.NotNull;
 public class IgniteProductVersion implements Comparable<IgniteProductVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Size of the {@link #revHash }*/
+    public static final int REV_HASH_SIZE = 20;
+
+    /** Size in bytes of serialized: 3 bytes (maj, min, maintenance version), 8 bytes - timestamp */
+    public static final int SIZE_IN_BYTES = 3 + 8 + REV_HASH_SIZE;
 
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
@@ -90,15 +96,17 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @param revHash Revision hash.
      */
     public IgniteProductVersion(byte major, byte minor, byte maintenance, String stage, long revTs, byte[] revHash) {
-        if (revHash != null && revHash.length != 20)
-            throw new IllegalArgumentException("Invalid length for SHA1 hash (must be 20): " + revHash.length);
+        if (revHash != null && revHash.length != REV_HASH_SIZE) {
+            throw new IllegalArgumentException("Invalid length for SHA1 hash (must be "
+                + REV_HASH_SIZE + "): " + revHash.length);
+        }
 
         this.major = major;
         this.minor = minor;
         this.maintenance = maintenance;
         this.stage = stage;
         this.revTs = revTs;
-        this.revHash = revHash != null ? revHash : new byte[20];
+        this.revHash = revHash != null ? revHash : new byte[REV_HASH_SIZE];
     }
 
     /**
@@ -258,8 +266,8 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        String revTsStr = new SimpleDateFormat("yyyyMMdd").format(new Date(revTs * 1000));
+    @Override public String toString() {
+        String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
 
         String hash = U.byteArray2HexString(revHash).toLowerCase();
 
@@ -274,7 +282,6 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
      * @param verStr String representation of version.
      * @return Product version.
      */
-    @SuppressWarnings({"MagicConstant", "TypeMayBeWeakened"})
     public static IgniteProductVersion fromString(String verStr) {
         assert verStr != null;
 

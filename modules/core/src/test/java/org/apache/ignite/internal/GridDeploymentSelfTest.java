@@ -34,12 +34,15 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -47,7 +50,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 /**
  * Task deployment tests.
  */
-@SuppressWarnings("unchecked")
 @GridCommonTest(group = "Kernal Self")
 public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
@@ -76,6 +78,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         // Disable cache since it can deploy some classes during start process.
         cfg.setCacheConfiguration();
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -96,7 +100,6 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @param ignite Grid.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void stopGrid(Ignite ignite) {
         try {
             if (ignite != null)
@@ -110,6 +113,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploy() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
@@ -136,6 +140,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreDeploymentSpi() throws Exception {
         // If peer class loading is disabled and local deployment SPI
         // is configured, SPI should be ignored.
@@ -162,6 +167,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRedeploy() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
@@ -257,6 +263,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"BusyWait"})
+    @Test
     public void testDeployOnTwoNodes() throws Exception {
         Ignite ignite1 = startGrid(getTestIgniteInstanceName() + '1');
         Ignite ignite2 = startGrid(getTestIgniteInstanceName() + '2');
@@ -299,6 +306,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployEvents() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
@@ -372,7 +380,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -405,7 +413,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -437,7 +445,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -473,7 +481,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean register(ClassLoader ldr, Class rsrc) throws IgniteSpiException {
-            if (super.register(ldr, rsrc)) {
+            if (super.register(ldr, rsrc) && ComputeTaskAdapter.class.isAssignableFrom(rsrc)) {
                 deployCnt++;
 
                 return true;

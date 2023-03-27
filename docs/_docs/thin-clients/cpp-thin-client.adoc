@@ -1,0 +1,187 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= C++ Thin Client
+
+== Prerequisites
+
+* C++ compiler: MS Visual C++ (10.0 and up), g++ (4.4.0 and up)
+* OpenSSL
+* CMake 3.6+
+
+
+== Installation
+The source code of the C++ thin client comes with the Ignite distribution package under the `${IGNITE_HOME}/platforms/cpp` directory.
+
+
+[tabs]
+--
+tab:Win64[]
+[source,bat]
+----
+cd %IGNITE_HOME%\platforms\cpp\
+mkdir cmake-build-release
+cd cmake-build-release
+cmake .. -DWITH_CORE=OFF -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=x64 -DOPENSSL_ROOT_DIR=<openssl install dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake --build . --target install --config Release
+----
+
+tab:Win32[]
+[source,bat]
+----
+cd %IGNITE_HOME%\platforms\cpp\
+mkdir cmake-build-release
+cd cmake-build-release
+cmake .. -DWITH_CORE=OFF  -DWITH_THIN_CLIENT=ON -DCMAKE_GENERATOR_PLATFORM=Win32 -DOPENSSL_ROOT_DIR=<openssl install-dir> -DCMAKE_INSTALL_PREFIX=<ignite cpp install dir>
+cmake --build . --target install --config Release
+----
+
+tab:Ubuntu[]
+[source,bash,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+make
+sudo make install
+----
+
+tab:CentOS/RHEL[]
+[source,shell,subs="attributes,specialchars"]
+----
+cd ${CPP_BUILD_DIR}
+cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_CORE=OFF -DWITH_THIN_CLIENT=ON ${IGNITE_HOME}/platforms/cpp
+make
+sudo make install
+----
+
+--
+
+
+== Creating Client Instance
+The API provided by the thin client is located under the `ignite::thin` namespace.
+The main entry point to the API is the `IgniteClient::Start(IgniteClientConfiguration)` method, which returns an instance of the client.
+
+[source, cpp]
+----
+include::code-snippets/cpp/src/thin_creating_client_instance.cpp[tag=thin-creating-client-instance,indent=0]
+----
+
+=== Partition Awareness
+
+include::includes/partition-awareness.adoc[]
+
+The following code sample illustrates how to use the partition awareness feature with the C++ thin client.
+
+[source, cpp]
+----
+include::code-snippets/cpp/src/thin_partition_awareness.cpp[tag=thin-partition-awareness,indent=0]
+----
+
+== Using Key-Value API
+
+=== Getting Cache Instance
+
+To perform basic key-value operations on a cache, obtain an instance of the cache as follows:
+
+[source, cpp]
+----
+include::code-snippets/cpp/src/thin_client_cache.cpp[tag=thin-getting-cache-instance,indent=0]
+----
+
+The `GetOrCreateCache(cacheName)` returns an instance of the cache if it exists or creates the cache.
+
+=== Basic Cache Operations
+The following code snippet demonstrates how to execute basic cache operations on a specific cache.
+[source, cpp]
+----
+include::code-snippets/cpp/src/thin_client_cache.cpp[tag=basic-cache-operations,indent=0]
+----
+
+== Security
+
+=== SSL/TLS
+
+To use encrypted communication between the thin client and the cluster, you have to enable SSL/TLS both in the cluster configuration and the client configuration. Refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls-for-thin-clients[Enabling SSL/TLS for Thin Clients] section for instructions on the cluster configuration.
+
+[source, cpp]
+----
+include::code-snippets/cpp/src/thin_client_ssl.cpp[tag=thin-client-ssl,indent=0]
+----
+
+=== Authentication
+
+Configure link:security/authentication[authentication on the cluster side] and provide a valid user name and password in the client configuration.
+
+[source, cpp]
+----
+include::code-snippets/cpp/src/thin_authentication.cpp[tag=thin-authentication,indent=0]
+----
+
+=== Transactions
+
+
+Client transactions are supported for caches with `AtomicityMode.TRANSACTIONAL` mode.
+
+
+==== Executing Transactions
+
+
+To start a transaction, obtain the `ClientTransactions` object from `IgniteClient`.
+`ClientTransactions` has a number of `txStart(...)` methods, each of which starts a new transaction and returns an object (`ClientTransaction`) that represents the transaction.
+Use this object to commit or rollback the transaction.
+
+
+[source, cpp]
+----
+cache::CacheClient<int, int> cache = client.GetCache<int, int>("my_transactional_cache");
+
+transactions::ClientTransactions transactions = client.ClientTransactions();
+
+transactions::ClientTransaction tx = transactions.TxStart();
+
+cache.Put(2, 20);
+
+tx.Commit();
+----
+
+
+==== Transaction Configuration
+
+
+Client transactions can have different concurrency modes, isolation levels, and execution timeout, which can be set for all transactions or on a per transaction basis.
+
+You can specify the concurrency mode, isolation level, and timeout when starting an individual transaction. In this case, the provided values override the default settings.
+
+
+[source, cpp]
+----
+transactions::ClientTransactions transactions = client.ClientTransactions();
+
+const uint32_t TX_TIMEOUT = 200;
+
+transactions::ClientTransaction tx = transactions.TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+
+cache.Put(1, 20);
+
+tx.Commit();
+----
+
+You can also perform transactions with labels:
+
+[source, cpp]
+----
+transactions::ClientTransaction tx = transactions.withLabel(label).TxStart();
+
+transactions::ClientTransaction tx = transactions.withLabel(label).TxStart(TransactionConcurrency::OPTIMISTIC, TransactionIsolation::SERIALIZABLE, TX_TIMEOUT);
+----

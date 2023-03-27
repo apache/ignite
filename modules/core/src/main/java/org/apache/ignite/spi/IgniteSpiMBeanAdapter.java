@@ -46,7 +46,7 @@ public class IgniteSpiMBeanAdapter implements IgniteSpiManagementMBean {
 
     /** {@inheritDoc} */
     @Override public final String getUpTimeFormatted() {
-        return X.timeSpan2HMSM(getUpTime());
+        return X.timeSpan2DHMSM(getUpTime());
     }
 
     /** {@inheritDoc} */

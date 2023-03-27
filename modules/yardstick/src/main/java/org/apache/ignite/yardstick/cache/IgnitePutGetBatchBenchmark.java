@@ -30,6 +30,8 @@ import org.apache.ignite.yardstick.cache.model.SampleValue;
 public class IgnitePutGetBatchBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         Set<Integer> keys = new TreeSet<>();
 
         while (keys.size() < args.batch())

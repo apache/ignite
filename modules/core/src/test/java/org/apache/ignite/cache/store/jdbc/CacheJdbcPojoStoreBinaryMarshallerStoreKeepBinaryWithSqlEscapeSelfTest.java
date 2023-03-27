@@ -20,7 +20,8 @@ package org.apache.ignite.cache.store.jdbc;
 /**
  *
  */
-public class CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinaryWithSqlEscapeSelfTest extends CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest {
+public class CacheJdbcPojoStoreBinaryMarshallerStoreKeepBinaryWithSqlEscapeSelfTest
+    extends CacheJdbcPojoStoreBinaryMarshallerWithSqlEscapeSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean storeKeepBinary() {
         return true;

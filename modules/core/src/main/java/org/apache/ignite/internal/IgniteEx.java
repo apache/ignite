@@ -18,13 +18,17 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,6 +64,32 @@ public interface IgniteEx extends Ignite {
     public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p);
 
     /**
+     * Gets existing cache with the given name or creates new one with the given configuration.
+     * <p>
+     * If a cache with the same name already exists, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @param sql {@code true} if this call is triggered by SQL command {@code CREATE TABLE}, {@code false} otherwise.
+     * @return Tuple [Existing or newly created cache; {@code true} if cache was newly crated, {@code false} otherwise]
+     * @throws CacheException If error occurs.
+     */
+    public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(CacheConfiguration<K, V> cacheCfg,
+        boolean sql) throws CacheException;
+
+    /**
+     * Stops dynamically started cache.
+     *
+     * @param cacheName Cache name to stop.
+     * @param sql {@code true} if only cache created with SQL command {@code CREATE TABLE} should be affected,
+     *     {@code false} otherwise.
+     * @return {@code true} if cache has been stopped as the result of this call, {@code false} otherwise.
+     * @throws CacheException If error occurs.
+     */
+    public boolean destroyCache0(String cacheName, boolean sql) throws CacheException;
+
+    /**
      * Checks if the event type is user-recordable.
      *
      * @param type Event type to check.
@@ -92,21 +122,6 @@ public interface IgniteEx extends Ignite {
      */
     public boolean isRestartEnabled();
 
-    /**
-     * Get IGFS instance returning null if it doesn't exist.
-     *
-     * @param name IGFS name.
-     * @return IGFS.
-     */
-    @Nullable public IgniteFileSystem igfsx(String name);
-
-    /**
-     * Get Hadoop facade.
-     *
-     * @return Hadoop.
-     */
-    public Hadoop hadoop();
-
     /** {@inheritDoc} */
     @Override IgniteClusterEx cluster();
 
@@ -130,4 +145,31 @@ public interface IgniteEx extends Ignite {
      * @return Kernal context.
      */
     public GridKernalContext context();
+
+    /**
+     * Get rebalance enabled flag.
+     *
+     * @return {@code True} if rebalance enabled on node, {@code False} otherwise.
+     */
+    public boolean isRebalanceEnabled();
+
+    /**
+     * Set rebalance enable flag on node.
+     *
+     * @param rebalanceEnabled rebalance enabled flag.
+     */
+    public void rebalanceEnabled(boolean rebalanceEnabled);
+
+    /**
+     * Gets a set from cache by known cache id. Does not create new sets.
+     *
+     * @param name Set name.
+     * @param cacheId Cache id.
+     * @param collocated Colocated mode flag.
+     * @param separated Separated cache flag.
+     * @param <T> Type of the elements in set.
+     * @return Set with given properties.
+     * @throws IgniteException If set could not be fetched or created.
+     */
+    public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException;
 }

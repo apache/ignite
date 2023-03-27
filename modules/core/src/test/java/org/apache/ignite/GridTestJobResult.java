@@ -82,15 +82,33 @@ public class GridTestJobResult implements ComputeJobResult {
         jobCtx = new GridTestJobContext();
     }
 
-    /** {@inheritDoc} */ @Override public Serializable getData() { return data; }
+    /** {@inheritDoc} */
+    @Override public Serializable getData() {
+        return data;
+    }
 
-    /** {@inheritDoc} */ @Override public IgniteException getException() { return e; }
+    /** {@inheritDoc} */
+    @Override public IgniteException getException() {
+        return e;
+    }
 
-    /** {@inheritDoc} */ @Override public boolean isCancelled() { return false; }
+    /** {@inheritDoc} */
+    @Override public boolean isCancelled() {
+        return false;
+    }
 
-    /** {@inheritDoc} */ @Override public ComputeJob getJob() { return job; }
+    /** {@inheritDoc} */
+    @Override public ComputeJob getJob() {
+        return job;
+    }
 
-    /** {@inheritDoc} */ @Override public ClusterNode getNode() { return node; }
+    /** {@inheritDoc} */
+    @Override public ClusterNode getNode() {
+        return node;
+    }
 
-    /** {@inheritDoc} */ @Override public ComputeJobContext getJobContext() { return jobCtx; }
+    /** {@inheritDoc} */
+    @Override public ComputeJobContext getJobContext() {
+        return jobCtx;
+    }
 }

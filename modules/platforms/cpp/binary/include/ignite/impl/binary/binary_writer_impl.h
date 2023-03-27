@@ -31,7 +31,6 @@
 #include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_utils.h"
 #include "ignite/impl/binary/binary_schema.h"
-#include "ignite/impl/binary/binary_type_manager.h"
 #include "ignite/impl/binary/binary_object_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
@@ -41,10 +40,18 @@
 
 namespace ignite
 {
+    namespace binary
+    {
+        class BinaryWriter;
+    }
+
     namespace impl
     {
         namespace binary
         {
+            // Forward declaration.
+            class BinaryTypeManager;
+
             /**
              * Internal implementation of binary reader.
              */
@@ -59,9 +66,9 @@ namespace ignite
                  * @param metaMgr Type manager.
                  * @param metaHnd Type handler.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryIdResolver* idRslvr, 
                     BinaryTypeManager* metaMgr, BinaryTypeHandler* metaHnd, int32_t start);
-                
+
                 /**
                  * Constructor used to construct light-weight writer allowing only raw operations 
                  * and primitive objects.
@@ -69,7 +76,7 @@ namespace ignite
                  * @param stream Interop stream.
                  * @param metaMgr Type manager.
                  */
-                BinaryWriterImpl(ignite::impl::interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
+                BinaryWriterImpl(interop::InteropOutputStream* stream, BinaryTypeManager* metaMgr);
 
                 /**
                  * Write 8-byte signed integer. Maps to "byte" type in Java.
@@ -461,7 +468,7 @@ namespace ignite
                  * @param val String.
                  * @param len String length (characters).
                  */
-                void WriteString(const char* val, const int32_t len);
+                void WriteString(const char* val, int32_t len);
 
                 /**
                  * Write string.
@@ -470,12 +477,32 @@ namespace ignite
                  * @param val String.
                  * @param len String length (characters).
                  */
-                void WriteString(const char* fieldName, const char* val, const int32_t len);
+                void WriteString(const char* fieldName, const char* val, int32_t len);
+
+                /**
+                 * Write string.
+                 *
+                 * @param val String.
+                 */
+                void WriteString(const std::string& val)
+                {
+                    WriteString(val.c_str(), static_cast<int32_t>(val.size()));
+                }
+
+                /**
+                 * Write string.
+                 *
+                 * @param fieldName Field name.
+                 * @param val String.
+                 */
+                void WriteString(const char* fieldName, const std::string& val)
+                {
+                    WriteString(fieldName, val.c_str(), static_cast<int32_t>(val.size()));
+                }
 
                 /**
                  * Start string array write.
                  *
-                 * @param typ Collection type.
                  * @return Session ID.
                  */
                 int32_t WriteStringArray();
@@ -498,6 +525,21 @@ namespace ignite
                 void WriteStringElement(int32_t id, const char* val, int32_t len);
 
                 /**
+                 * Write binary enum entry.
+                 *
+                 * @param entry Binary enum entry.
+                 */
+                void WriteBinaryEnum(ignite::binary::BinaryEnumEntry entry);
+
+                /**
+                 * Write binary enum entry.
+                 *
+                 * @param fieldName Field name.
+                 * @param entry Binary enum entry.
+                 */
+                void WriteBinaryEnum(const char* fieldName, ignite::binary::BinaryEnumEntry entry);
+
+                /**
                  * Write NULL value.
                  */
                 void WriteNull();
@@ -510,9 +552,13 @@ namespace ignite
                 void WriteNull(const char* fieldName);
 
                 /**
+                 * Write NULL value.
+                 */
+                void WriteNull0();
+
+                /**
                  * Start array write.
                  *
-                 * @param typ Collection type.
                  * @return Session ID.
                  */
                 int32_t WriteArray();
@@ -600,7 +646,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename T>
-                void WriteElement(int32_t id, T val)
+                void WriteElement(int32_t id, const T& val)
                 {
                     CheckSession(id);
                                         
@@ -617,7 +663,7 @@ namespace ignite
                  * @param val Value.
                  */
                 template<typename K, typename V>
-                void WriteElement(int32_t id, K key, V val)
+                void WriteElement(int32_t id, const K& key, const V& val)
                 {
                     CheckSession(id);
 
@@ -640,7 +686,7 @@ namespace ignite
                  * @param val Object.
                  */
                 template<typename T>
-                void WriteObject(T val)
+                void WriteObject(const T& val)
                 {
                     CheckRawMode(true);
 
@@ -664,6 +710,55 @@ namespace ignite
                 }
 
                 /**
+                 * Write enum entry.
+                 *
+                 * @param val Binary enum entry.
+                 *
+                 * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+                 */
+                template<typename T>
+                void WriteEnum(T val)
+                {
+                    typedef ignite::binary::BinaryEnum<T> TypeMeta;
+
+                    if (TypeMeta::IsNull(val))
+                    {
+                        WriteNull();
+
+                        return;
+                    }
+
+                    ignite::binary::BinaryEnumEntry entry(TypeMeta::GetTypeId(), TypeMeta::GetOrdinal(val));
+
+                    WriteBinaryEnum(entry);
+                }
+
+                /**
+                 * Write enum entry.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Binary enum entry.
+                 *
+                 * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+                 */
+                template<typename T>
+                void WriteEnum(const char* fieldName, T val)
+                {
+                    typedef ignite::binary::BinaryEnum<T> TypeMeta;
+
+                    if (TypeMeta::IsNull(val))
+                    {
+                        WriteNull(fieldName);
+
+                        return;
+                    }
+
+                    ignite::binary::BinaryEnumEntry entry(TypeMeta::GetTypeId(), TypeMeta::GetOrdinal(val));
+
+                    WriteBinaryEnum(fieldName, entry);
+                }
+
+                /**
                  * Set raw mode.
                  */
                 void SetRawMode();
@@ -681,6 +776,18 @@ namespace ignite
                 template<typename T>
                 void WriteTopObject(const T& obj)
                 {
+                    WriteHelper<T>::Write(*this, obj);
+                }
+
+                /**
+                 * Write object.
+                 * Does not work for primitive pointer types.
+                 *
+                 * @param obj Object to write.
+                 */
+                template<typename W, typename T>
+                void WriteTopObject0(const T& obj)
+                {
                     typedef ignite::binary::BinaryType<T> BType;
 
                     if (BType::IsNull(obj))
@@ -693,13 +800,16 @@ namespace ignite
                         std::string typeName;
                         BType::GetTypeName(typeName);
 
+                        std::string affField;
+                        GetAffinityFieldName<T>(affField);
+
                         if (metaMgr)
-                            metaHnd = metaMgr->GetHandler(typeName, idRslvr.GetTypeId());
+                            metaHnd = metaMgr->GetHandler(typeName, affField, idRslvr.GetTypeId());
 
                         int32_t pos = stream->Position();
 
                         BinaryWriterImpl writerImpl(stream, &idRslvr, metaMgr, metaHnd.Get(), pos);
-                        ignite::binary::BinaryWriter writer(&writerImpl);
+                        W writer(&writerImpl);
 
                         stream->WriteInt8(IGNITE_HDR_FULL);
                         stream->WriteInt8(IGNITE_PROTO_VER);
@@ -708,7 +818,7 @@ namespace ignite
 
                         int32_t hashPos = stream->Reserve(4);
 
-                        // Reserve space for the Object Lenght, Schema ID and Schema or Raw Offset.
+                        // Reserve space for the Object Length, Schema ID and Schema or Raw Offset.
                         stream->Reserve(12);
 
                         BType::Write(writer, obj);
@@ -795,7 +905,7 @@ namespace ignite
                 /** Writing start position. */
                 int32_t start;
 
-                IGNITE_NO_COPY_ASSIGNMENT(BinaryWriterImpl)
+                IGNITE_NO_COPY_ASSIGNMENT(BinaryWriterImpl);
 
                 /**
                  * Write a primitive value to stream in raw mode.
@@ -807,13 +917,30 @@ namespace ignite
                 void WritePrimitiveRaw(
                     const T val, 
                     void(*func)(interop::InteropOutputStream*, T)
-                )
-                {
-                    CheckRawMode(true);
-                    CheckSingleMode(true);
+                );
 
-                    func(stream, val);
-                }
+                /**
+                 * Write an empty array to stream without any checks.
+                 *
+                 * @param hdr Header.
+                 */
+                void WriteArrayEmpty(const int8_t hdr);
+
+                /**
+                 * Write a primitive array to stream without any checks.
+                 *
+                 * @param val Value.
+                 * @param len Array length.
+                 * @param func Stream function.
+                 * @param hdr Header.
+                 */
+                template<typename T>
+                void WritePrimitiveArrayBase(
+                    const T* val,
+                    const int32_t len,
+                    void(*func)(interop::InteropOutputStream*, const T*, const int32_t),
+                    const int8_t hdr
+                );
 
                 /**
                  * Write a primitive array to stream in raw mode.
@@ -829,20 +956,7 @@ namespace ignite
                     const int32_t len,
                     void(*func)(interop::InteropOutputStream*, const T*, const int32_t),
                     const int8_t hdr
-                )
-                {
-                    CheckRawMode(true);
-                    CheckSingleMode(true);
-
-                    if (val)
-                    {
-                        stream->WriteInt8(hdr);
-                        stream->WriteInt32(len);
-                        func(stream, val, len);
-                    }
-                    else
-                        stream->WriteInt8(IGNITE_HDR_NULL);
-                }
+                );
 
                 /**
                  * Write a primitive value to stream.
@@ -860,17 +974,7 @@ namespace ignite
                     void(*func)(interop::InteropOutputStream*, T), 
                     const int8_t typ, 
                     const int32_t len
-                )
-                {
-                    CheckRawMode(false);
-                    CheckSingleMode(true);
-
-                    WriteFieldId(fieldName, typ);
-
-                    stream->WriteInt8(typ);
-
-                    func(stream, val);
-                }
+                );
 
                 /**
                  * Write a primitive array to stream.
@@ -890,24 +994,7 @@ namespace ignite
                     void(*func)(interop::InteropOutputStream*, const T*, const int32_t), 
                     const int8_t hdr, 
                     const int32_t lenShift
-                )
-                {
-                    CheckRawMode(false);
-                    CheckSingleMode(true);
-
-                    WriteFieldId(fieldName, hdr);
-
-                    if (val)
-                    {
-                        stream->WriteInt8(hdr);
-                        stream->WriteInt32(len);
-                        func(stream, val, len);
-                    }
-                    else
-                    {
-                        stream->WriteInt8(IGNITE_HDR_NULL);
-                    }
-                }
+                );
 
                 /**
                  * Write values in interval [first, last).
@@ -979,46 +1066,93 @@ namespace ignite
                     stream->WriteInt8(hdr);
                     func(stream, obj);
                 }
+
+                /**
+                 * Write primitive array.
+                 *
+                 * @param obj Array.
+                 * @param func Write function.
+                 * @param hdr Header.
+                 */
+                template<typename T>
+                void WriteTopPrimitiveArray(
+                    const std::vector<T>& obj,
+                    void(*func)(interop::InteropOutputStream*, const T*, const int32_t),
+                    int8_t hdr
+                );
             };
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int8_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int8_t>(const int8_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const bool& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, bool>(const bool& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int16_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int16_t>(const int16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const uint16_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, uint16_t>(const uint16_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int32_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int32_t>(const int32_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const int64_t& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int64_t>(const int64_t& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const float& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, float>(const float& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const double& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, double>(const double& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Guid& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Guid>(const Guid& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Date& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Date>(const Date& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Timestamp& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Timestamp>(const Timestamp& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Time& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Time>(const Time& obj);
 
             template<>
-            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj);
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::string>(const std::string& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::vector<int8_t> >(const std::vector<int8_t>& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::vector<int16_t> >(const std::vector<int16_t>& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::vector<uint16_t> >(const std::vector<uint16_t>& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::vector<int32_t> >(const std::vector<int32_t>& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT
+            BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::vector<int64_t> >(const std::vector<int64_t>& obj);
         }
     }
 }

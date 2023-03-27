@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for {@link GridConcurrentWeakHashSet}.
@@ -43,6 +44,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test failed.
      */
+    @Test
     public void testA() throws Exception {
         Collection<Integer> set = new GridConcurrentWeakHashSet<>();
 
@@ -129,6 +131,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
      * @throws Exception Thrown if test failed.
      */
     @SuppressWarnings({"UnusedAssignment"})
+    @Test
     public void testB() throws Exception {
         Collection<SampleBean> set = new GridConcurrentWeakHashSet<>();
 
@@ -198,6 +201,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test failed.
      */
+    @Test
     public void testC() throws Exception {
         final Collection<SampleBean> set = new GridConcurrentWeakHashSet<>();
 
@@ -243,6 +247,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test failed.
      */
+    @Test
     public void testD() throws Exception {
         final Collection<SampleBean> set = new GridConcurrentWeakHashSet<>();
 
@@ -288,7 +293,6 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         }.start();
 
         new Thread() {
-            @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
                 try {
                     start.await();

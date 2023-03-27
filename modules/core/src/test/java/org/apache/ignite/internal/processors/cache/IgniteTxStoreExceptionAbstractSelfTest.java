@@ -37,13 +37,13 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
@@ -82,6 +82,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(singletonFactory(store));
@@ -94,6 +96,8 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         store = new TestStore();
 
         super.beforeTestsStarted();
@@ -118,6 +122,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutNear() throws Exception {
         checkPut(true, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
@@ -127,6 +132,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutPrimary() throws Exception {
         checkPut(true, keyForNode(grid(0).localNode(), PRIMARY));
 
@@ -136,6 +142,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBackup() throws Exception {
         checkPut(true, keyForNode(grid(0).localNode(), BACKUP));
 
@@ -145,6 +152,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
         checkPutAll(true, keyForNode(grid(0).localNode(), PRIMARY),
             keyForNode(grid(0).localNode(), PRIMARY),
@@ -168,6 +176,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveNear() throws Exception {
         checkRemove(false, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
@@ -177,6 +186,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovePrimary() throws Exception {
         checkRemove(false, keyForNode(grid(0).localNode(), PRIMARY));
 
@@ -186,6 +196,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveBackup() throws Exception {
         checkRemove(false, keyForNode(grid(0).localNode(), BACKUP));
 
@@ -195,6 +206,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformNear() throws Exception {
         checkTransform(false, keyForNode(grid(0).localNode(), NOT_PRIMARY_AND_BACKUP));
 
@@ -204,6 +216,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformPrimary() throws Exception {
         checkTransform(false, keyForNode(grid(0).localNode(), PRIMARY));
 
@@ -213,6 +226,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransformBackup() throws Exception {
         checkTransform(false, keyForNode(grid(0).localNode(), BACKUP));
 
@@ -222,6 +236,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutNearTx() throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -235,6 +250,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutPrimaryTx() throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -248,6 +264,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutBackupTx() throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -261,6 +278,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutMultipleKeysTx() throws Exception {
         for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
@@ -370,7 +388,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             GridCacheAdapter cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
-            GridCacheMapEntry entry = cache.map().getEntry(cache.context().toCacheKeyObject(key));
+            GridCacheMapEntry entry = cache.map().getEntry(cache.context(), cache.context().toCacheKeyObject(key));
 
             log.info("Entry: " + entry);
 
@@ -383,7 +401,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             }
 
             if (cache.isNear()) {
-                entry = ((GridNearCacheAdapter)cache).dht().map().getEntry(cache.context().toCacheKeyObject(key));
+                entry = ((GridNearCacheAdapter)cache).dht().map().getEntry(cache.context(), cache.context().toCacheKeyObject(key));
 
                 log.info("Dht entry: " + entry);
 
@@ -480,7 +498,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @param keys Keys.
      * @throws Exception If failed.
      */
-    private void checkPutAll(boolean putBefore, Integer ... keys) throws Exception {
+    private void checkPutAll(boolean putBefore, Integer... keys) throws Exception {
         assert keys.length > 1;
 
         if (putBefore) {
@@ -565,9 +583,6 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      */
     private Integer keyForNode(ClusterNode node, int type) {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL)
-            return ++lastKey;
 
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == REPLICATED && type == NOT_PRIMARY_AND_BACKUP)
             return ++lastKey;

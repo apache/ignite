@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -75,6 +76,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
      * @throws Exception If failed.
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
+    @Test
     public void testNoWriteThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -173,7 +175,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
             assertEquals(storeVal, storeMap.get(key));
 
-            assertEquals(storeVal + 2, (int) cache.get(key));
+            assertEquals(storeVal + 2, (int)cache.get(key));
         }
 
         Map<Integer, Integer> expData = new HashMap<>();
@@ -200,7 +202,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
             expData0.put(i, 1);
 
         cache.invokeAll(expData.keySet(), new EntryProcessor<Integer, Integer, Object>() {
-            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args)  {
+            @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args) {
                 entry.setValue(1);
 
                 return null;
@@ -294,7 +296,7 @@ public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheA
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             cache.invokeAll(expData.keySet(), new EntryProcessor<Integer, Integer, Object>() {
-                                @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args)  {
+                                @Override public Object process(MutableEntry<Integer, Integer> entry, Object... args) {
                                     entry.setValue(1);
 
                                     return null;

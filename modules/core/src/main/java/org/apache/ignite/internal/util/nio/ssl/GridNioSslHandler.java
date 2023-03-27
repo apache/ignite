@@ -54,6 +54,9 @@ class GridNioSslHandler extends ReentrantLock {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Handshake duration threshold; warning is logged when exceeded. */
+    private static final long LONG_HANDSHAKE_THRESHOLD_MS = 1000;
+
     /** Grid logger. */
     private IgniteLogger log;
 
@@ -84,7 +87,7 @@ class GridNioSslHandler extends ReentrantLock {
     /** Input buffer from which SSL engine will decrypt data. */
     private ByteBuffer inNetBuf;
 
-    /** Empty buffer used in handshake procedure.  */
+    /** Empty buffer used in handshake procedure. */
     private ByteBuffer handshakeBuf = ByteBuffer.allocate(0);
 
     /** Application buffer. */
@@ -203,6 +206,8 @@ class GridNioSslHandler extends ReentrantLock {
         if (log.isDebugEnabled())
             log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
 
+        long startTs = U.currentTimeMillis();
+
         lock();
 
         try {
@@ -290,6 +295,13 @@ class GridNioSslHandler extends ReentrantLock {
         }
         finally {
             unlock();
+
+            long elapsed = U.currentTimeMillis() - startTs;
+
+            if (elapsed > LONG_HANDSHAKE_THRESHOLD_MS && log.isInfoEnabled()) {
+                log.info("Handshake took too long: [millis=" + elapsed + ", handshakeStatus=" + handshakeStatus +
+                    ", ses=" + ses + ']');
+            }
         }
 
         if (log.isDebugEnabled())
@@ -319,7 +331,8 @@ class GridNioSslHandler extends ReentrantLock {
 
         if (!handshakeFinished)
             handshake();
-        else
+
+        if (inNetBuf.hasRemaining())
             unwrapData();
 
         if (isInboundDone()) {
@@ -341,8 +354,8 @@ class GridNioSslHandler extends ReentrantLock {
      * Encrypts data to be written to the network.
      *
      * @param src data to encrypt.
-     * @throws SSLException on errors.
      * @return Output buffer with encrypted data.
+     * @throws SSLException on errors.
      */
     ByteBuffer encrypt(ByteBuffer src) throws SSLException {
         assert handshakeFinished;
@@ -431,6 +444,7 @@ class GridNioSslHandler extends ReentrantLock {
 
     /**
      * Flushes all deferred write events.
+     *
      * @throws GridNioException If failed to forward writes to the filter.
      */
     void flushDeferredWrites() throws IgniteCheckedException {
@@ -447,10 +461,9 @@ class GridNioSslHandler extends ReentrantLock {
     /**
      * Writes close_notify message to the network output buffer.
      *
-     * @throws SSLException If wrap failed or SSL engine does not get closed
-     * after wrap.
-     * @return {@code True} if <tt>close_notify</tt> message was encoded, {@code false} if outbound
-     *      stream was already closed.
+     * @return {@code True} if <tt>close_notify</tt> message was encoded, {@code false} if outbound stream was already
+     * closed.
+     * @throws SSLException If wrap failed or SSL engine does not get closed after wrap.
      */
     boolean closeOutbound() throws SSLException {
         assert isHeldByCurrentThread();
@@ -477,8 +490,8 @@ class GridNioSslHandler extends ReentrantLock {
     /**
      * Copies data from out net buffer and passes it to the underlying chain.
      *
-     * @return Write future.
      * @param ackC Closure invoked when message ACK is received.
+     * @return Write future.
      * @throws GridNioException If send failed.
      */
     GridNioFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
@@ -604,7 +617,7 @@ class GridNioSslHandler extends ReentrantLock {
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
         }
         while ((res.getStatus() == Status.OK || res.getStatus() == Status.BUFFER_OVERFLOW) &&
-            (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING || res.getHandshakeStatus() == NEED_UNWRAP));
+            (handshakeFinished || res.getHandshakeStatus() == NEED_UNWRAP));
 
         return res;
     }

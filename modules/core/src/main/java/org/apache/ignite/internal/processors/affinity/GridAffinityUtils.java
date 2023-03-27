@@ -114,7 +114,7 @@ class GridAffinityUtils {
             U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.
-        ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()), src);
+        ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()).get1(), src);
 
         return src;
     }
@@ -170,7 +170,7 @@ class GridAffinityUtils {
             assert ignite != null;
             assert log != null;
 
-            IgniteKernal kernal = ((IgniteKernal) ignite);
+            IgniteKernal kernal = ((IgniteKernal)ignite);
 
             GridCacheContext<Object, Object> cctx = kernal.internalCache(cacheName).context();
 
@@ -182,14 +182,12 @@ class GridAffinityUtils {
 
             AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
 
-            GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
-                (GridAffinityAssignment)assign0 :
-                new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
-
+            //using legacy GridAffinityAssignment for compatibility.
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
-                assign);
+                new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment())
+            );
         }
 
         /** {@inheritDoc} */

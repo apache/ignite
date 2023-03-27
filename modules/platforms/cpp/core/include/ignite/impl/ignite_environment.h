@@ -22,6 +22,7 @@
 #include <ignite/jni/java.h>
 #include <ignite/jni/utils.h>
 #include <ignite/ignite_configuration.h>
+#include <ignite/guid.h>
 
 #include <ignite/impl/interop/interop_memory.h>
 #include <ignite/impl/binary/binary_type_manager.h>
@@ -29,17 +30,28 @@
 
 namespace ignite
 {
+    /* Forward declaration. */
+    class Ignite;
+
     namespace impl
     {
         /* Forward declarations. */
+        class IgniteEnvironment;
         class IgniteBindingImpl;
         class ModuleManager;
+        class ClusterNodesHolder;
+        namespace cluster {
+            class ClusterNodeImpl;
+        }
+
+        typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
 
         /**
          * Defines environment in which Ignite operates.
          */
         class IGNITE_IMPORT_EXPORT IgniteEnvironment
         {
+            typedef common::concurrent::SharedPointer<cluster::ClusterNodeImpl> SP_ClusterNodeImpl;
         public:
             /**
              * Default memory block allocation size.
@@ -101,7 +113,7 @@ namespace ignite
              * @param memPtr Memory pointer.
              * @param proc Processor instance.
              */
-            void OnStartCallback(long long memPtr, jobject proc);
+            void OnStartCallback(int64_t memPtr, jobject proc);
 
             /**
              * Continuous query listener apply callback.
@@ -124,6 +136,44 @@ namespace ignite
              * @param mem Memory with data.
              */
             int64_t OnContinuousQueryFilterApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Callback on future result received.
+             *
+             * @param handle Task handle.
+             * @param value Value.
+             */
+            int64_t OnFuturePrimitiveResult(int64_t handle, int64_t value);
+
+            /**
+             * Callback on future result received.
+             *
+             * @param handle Task handle.
+             * @param mem Memory with data.
+             */
+            int64_t OnFutureObjectResult(int64_t handle, common::concurrent::SharedPointer<interop::InteropMemory> &mem);
+
+            /**
+             * Callback on future null result received.
+             *
+             * @param handle Task handle.
+             */
+            int64_t OnFutureNullResult(int64_t handle);
+
+            /**
+             * Callback on future error received.
+             *
+             * @param handle Task handle.
+             * @param mem Memory with data.
+             */
+            int64_t OnFutureError(int64_t handle, common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Callback on compute function execute request.
+             *
+             * @param mem Memory with data.
+             */
+            int64_t OnComputeFuncExecute(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Cache Invoke callback.
@@ -191,6 +241,20 @@ namespace ignite
             binary::BinaryTypeUpdater* GetTypeUpdater();
 
             /**
+             * Get local cluster node implementation.
+             *
+             * @return Cluster node implementation or NULL if does not exist.
+             */
+            SP_ClusterNodeImpl GetLocalNode();
+
+            /**
+             * Get cluster node implementation by id.
+             *
+             * @return Cluster node implementation or NULL if does not exist.
+             */
+            SP_ClusterNodeImpl GetNode(Guid Id);
+
+            /**
              * Notify processor that Ignite instance has started.
              */
             void ProcessorReleaseStart();
@@ -208,6 +272,92 @@ namespace ignite
              * @return IgniteBinding instance.
              */
             common::concurrent::SharedPointer<IgniteBindingImpl> GetBinding() const;
+
+            /**
+             * Get processor compute.
+             *
+             * @param proj Projection.
+             * @return Processor compute.
+             */
+            jobject GetProcessorCompute(jobject proj);
+
+            /**
+             * Locally execute compute job.
+             *
+             * @param jobHandle Job handle.
+             */
+            void ComputeJobExecuteLocal(int64_t jobHandle);
+
+            /**
+             * Locally commit job execution result for the task.
+             *
+             * @param taskHandle Task handle.
+             * @param jobHandle Job handle.
+             * @return Reduce politics.
+             */
+            int32_t ComputeTaskLocalJobResult(int64_t taskHandle, int64_t jobHandle);
+
+            /**
+             * Reduce compute task.
+             *
+             * @param taskHandle Task handle.
+             */
+            void ComputeTaskReduce(int64_t taskHandle);
+
+            /**
+             * Complete compute task.
+             *
+             * @param taskHandle Task handle.
+             */
+            void ComputeTaskComplete(int64_t taskHandle);
+
+            /**
+             * Create compute job.
+             *
+             * @param mem Memory.
+             * @return Job handle.
+             */
+            int64_t ComputeJobCreate(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Execute compute job.
+             *
+             * @param mem Memory.
+             * @return Job handle.
+             */
+            void ComputeJobExecute(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Destroy compute job.
+             *
+             * @param jobHandle Job handle to destroy.
+             */
+            void ComputeJobDestroy(int64_t jobHandle);
+
+            /**
+             * Consume result of remote job execution.
+             *
+             * @param mem Memory containing result.
+             * @return Reduce policy.
+             */
+            int32_t ComputeTaskJobResult(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Get pointer to ignite node.
+             *
+             * @return Pointer to ignite node.
+             */
+            ignite::Ignite* GetIgnite();
+
+            /**
+             * InLongOutLong callback.
+             * Allow access to private nodes member.
+             *
+             * @param target Target environment.
+             * @param type Operation type.
+             * @param val Value.
+             */
+            friend int64_t IGNITE_CALL InLongOutLong(void* target, int type, int64_t val);
 
         private:
             /** Node configuration. */
@@ -239,6 +389,12 @@ namespace ignite
 
             /** Module manager. */
             common::concurrent::SharedPointer<ModuleManager> moduleMgr;
+
+            /** Cluster nodes. */
+            common::concurrent::SharedPointer<ClusterNodesHolder> nodes;
+
+            /** Ignite node. */
+            ignite::Ignite* ignite;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

@@ -89,7 +89,7 @@ namespace config
      * Convert arguments to configuration.
      *
      * @param cfg Output configuration.
-     * @param args Input arguments.
+     * @param src Input arguments.
      */
     void Configure(ignite::IgniteConfiguration& cfg, const StringList& src)
     {
@@ -164,13 +164,12 @@ void PrintHelp()
 int main(int argc, const char* argv[])
 {
     // Help commands.
-    StringSet Help;
-    Help.insert("/help");
-    Help.insert("-help");
-    Help.insert("--help");
+    StringSet help;
+    help.insert("/help");
+    help.insert("-help");
+    help.insert("--help");
 
-    StringList args;
-    std::copy(argv + 1, argv + argc, std::back_insert_iterator<StringList>(args));
+    StringList args(argv + 1, argv + argc);
 
     try
     {
@@ -181,7 +180,7 @@ int main(int argc, const char* argv[])
 
             std::string first = ToLower(args.front());
 
-            if (Help.find(first) != Help.end())
+            if (help.find(first) != help.end())
             {
                 PrintHelp();
 
@@ -202,24 +201,24 @@ int main(int argc, const char* argv[])
         if (igniteImpl)
         {
             ignite::jni::java::JniContext* context = igniteImpl->GetContext();
+
             if (context)
-            {
                 context->DestroyJvm();
-            }
         }
     }
-    catch (ignite::IgniteError& e)
+    catch (const ignite::IgniteError& e)
     {
         std::cout << "ERROR: " << e.GetText() << std::endl;
 
         return -1;
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         std::cout << "ERROR: " << e.what() << std::endl;
 
         return -2;
     }
+
     return 0;
 }
 

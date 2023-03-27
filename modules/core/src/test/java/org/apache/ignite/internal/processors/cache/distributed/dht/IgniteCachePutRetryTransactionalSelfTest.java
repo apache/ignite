@@ -54,6 +54,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testAtomicLongRetries() throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
@@ -91,6 +92,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExplicitTransactionRetriesSingleValue() throws Exception {
         checkRetry(Test.TX_PUT, false, false);
     }
@@ -98,6 +100,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExplicitTransactionRetriesSingleValueStoreEnabled() throws Exception {
         checkRetry(Test.TX_PUT, false, true);
     }
@@ -105,6 +108,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExplicitTransactionRetries() throws Exception {
         explicitTransactionRetries(false, false);
     }
@@ -112,6 +116,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExplicitTransactionRetriesStoreEnabled() throws Exception {
         explicitTransactionRetries(false, true);
     }
@@ -119,6 +124,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExplicitTransactionRetriesEvictionEnabled() throws Exception {
         explicitTransactionRetries(true, false);
     }
@@ -152,7 +158,8 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
                         if (i > 0 && i % 500 == 0)
                             info("Done: " + i);
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     err.set(th, e);
                 }
 
@@ -202,6 +209,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testOriginatingNodeFailureForcesOnePhaseCommitDataCleanup() throws Exception {
         ignite(0).createCache(cacheConfiguration(false, false));
 
@@ -288,7 +296,6 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Void call() throws Exception {
             String key1 = "key-" + base + "-" + i;
             String key2 = "key-" + base;

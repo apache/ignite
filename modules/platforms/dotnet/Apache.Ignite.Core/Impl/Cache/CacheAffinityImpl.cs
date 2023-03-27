@@ -19,19 +19,16 @@ namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Cache affinity implementation.
     /// </summary>
-    internal class CacheAffinityImpl : PlatformTarget, ICacheAffinity
+    internal class CacheAffinityImpl : PlatformTargetAdapter, ICacheAffinity
     {
         /** */
         private const int OpAffinityKey = 1;
@@ -80,25 +77,20 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** */
         private readonly bool _keepBinary;
-        
+
         /** Grid. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheAffinityImpl" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        /// <param name="ignite">Grid.</param>
-        public CacheAffinityImpl(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
-            Ignite ignite) : base(target, marsh)
+        public CacheAffinityImpl(IPlatformTargetInternal target, bool keepBinary) : base(target)
         {
             _keepBinary = keepBinary;
 
-            Debug.Assert(ignite != null);
-            
-            _ignite = ignite;
+            _ignite = target.Marshaller.Ignite;
         }
 
         /** <inheritDoc /> */
@@ -119,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public bool IsPrimary<TK>(IClusterNode n, TK key)
         {
             IgniteArgumentCheck.NotNull(n, "n");
-            
+
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp(OpIsPrimary, n.Id, key) == True;
@@ -182,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(OpMapKeysToNodes, w => WriteEnumerable(w, keys),
+            return DoOutInOp(OpMapKeysToNodes, w => w.WriteEnumerable(keys),
                 reader => ReadDictionary(reader, ReadNode, r => (IList<TK>) r.ReadCollectionAsList<TK>()));
         }
 
@@ -214,7 +206,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(parts, "parts");
 
             return DoOutInOp(OpMapPartitionsToNodes,
-                w => WriteEnumerable(w, parts),
+                w => w.WriteEnumerable(parts),
                 reader => ReadDictionary(reader, r => r.ReadInt(), ReadNode));
         }
 
@@ -229,7 +221,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return Marshaller.Unmarshal<T>(stream, _keepBinary);
         }
-
 
         /// <summary>
         /// Gets the node by id.

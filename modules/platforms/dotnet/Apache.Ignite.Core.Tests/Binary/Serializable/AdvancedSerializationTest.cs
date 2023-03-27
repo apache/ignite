@@ -19,9 +19,13 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+#if !NETCOREAPP  // AppDomains are not supported in .NET Core
     using System.Reflection;
     using System.Reflection.Emit;
+#endif
     using System.Runtime.Serialization;
     using System.Xml;
     using Apache.Ignite.Core.Cluster;
@@ -95,6 +99,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(expectedRes, jobResult.InnerXml);
         }
 
+#if !NETCOREAPP// AppDomains are not supported in .NET Core
         /// <summary>
         /// Tests custom serialization binder.
         /// </summary>
@@ -109,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             for (var i = 0; i < count; i++)
             {
                 dynamic val = Activator.CreateInstance(GenerateDynamicType());
-                
+
                 val.Id = i;
                 val.Name = "Name_" + i;
 
@@ -141,15 +146,47 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Serializable);
 
             typeBuilder.DefineField("Id", typeof (int), FieldAttributes.Public);
-            
+
             typeBuilder.DefineField("Name", typeof (string), FieldAttributes.Public);
 
             return typeBuilder.CreateType();
+        }
+#endif
+
+        /// <summary>
+        /// Tests the DataTable serialization.
+        /// </summary>
+        [Test]
+        public void TestDataTable()
+        {
+            var dt = new DataTable("foo");
+
+            dt.Columns.Add("intCol", typeof(int));
+            dt.Columns.Add("stringCol", typeof(string));
+
+            dt.Rows.Add(1, "1");
+            dt.Rows.Add(2, "2");
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, DataTable>("dataTables");
+            cache.Put(1, dt);
+
+            var res = cache.Get(1);
+
+            Assert.AreEqual("foo", res.TableName);
+
+            Assert.AreEqual(2, res.Columns.Count);
+            Assert.AreEqual("intCol", res.Columns[0].ColumnName);
+            Assert.AreEqual("stringCol", res.Columns[1].ColumnName);
+
+            Assert.AreEqual(2, res.Rows.Count);
+            Assert.AreEqual(new object[] {1, "1"}, res.Rows[0].ItemArray);
+            Assert.AreEqual(new object[] {2, "2"}, res.Rows[1].ItemArray);
         }
     }
 
     [Serializable]
     [DataContract]
+    [SuppressMessage("Microsoft.Design", "CA1058:TypesShouldNotExtendCertainBaseTypes")]
     public sealed class SerializableXmlDoc : XmlDocument, ISerializable
     {
         /// <summary>
@@ -165,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         /// </summary>
         private SerializableXmlDoc(SerializationInfo info, StreamingContext context)
         {
-            LoadXml(info.GetString("xmlDocument"));
+            LoadXml(info.GetString("xmlDocument")!);
         }
 
         /** <inheritdoc /> */

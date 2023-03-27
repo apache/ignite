@@ -27,12 +27,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Full partition map.
+ * Full partition map from all nodes.
  */
-public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
-    implements Comparable<GridDhtPartitionFullMap>, Externalizable {
+public class GridDhtPartitionFullMap
+    extends HashMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -178,27 +179,6 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(GridDhtPartitionFullMap o) {
-        assert nodeId == null || (nodeOrder != o.nodeOrder && !nodeId.equals(o.nodeId)) ||
-            (nodeOrder == o.nodeOrder && nodeId.equals(o.nodeId)): "Inconsistent node order and ID [id1=" + nodeId +
-                ", order1=" + nodeOrder + ", id2=" + o.nodeId + ", order2=" + o.nodeOrder + ']';
-
-        if (nodeId == null && o.nodeId != null)
-            return -1;
-        else if (nodeId != null && o.nodeId == null)
-            return 1;
-        else if (nodeId == null && o.nodeId == null)
-            return 0;
-
-        int res = Long.compare(nodeOrder, o.nodeOrder);
-
-        if (res == 0)
-            res = Long.compare(updateSeq, o.updateSeq);
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);
 
@@ -246,7 +226,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
 
         buf.append('{');
 
-        while(true) {
+        while (true) {
             Map.Entry<UUID, GridDhtPartitionMap> e = it.next();
 
             UUID nodeId = e.getKey();
@@ -272,5 +252,12 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionFullMap.class, this, "size", size());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull GridDhtPartitionFullMap o) {
+        assert nodeId.equals(o.nodeId);
+
+        return Long.compare(updateSeq, o.updateSeq);
     }
 }

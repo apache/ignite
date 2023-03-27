@@ -19,12 +19,15 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeTask;
@@ -45,8 +48,6 @@ import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED;
@@ -60,8 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  */
 class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by class name. */
-    private final ConcurrentMap<String, ConcurrentLinkedDeque8<GridDeployment>> cache =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, Deque<GridDeployment>> cache = new ConcurrentHashMap<>();
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -90,7 +90,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Map<String, Collection<GridDeployment>> cp;
 
         synchronized (mux) {
-            cp = new HashMap<String, Collection<GridDeployment>>(cache);
+            cp = new HashMap<>(cache);
 
             for (Entry<String, Collection<GridDeployment>> entry : cp.entrySet())
                 entry.setValue(new ArrayList<>(entry.getValue()));
@@ -110,7 +110,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Collection<GridDeployment> deps = new ArrayList<>();
 
         synchronized (mux) {
-            for (ConcurrentLinkedDeque8<GridDeployment> depList : cache.values())
+            for (Deque<GridDeployment> depList : cache.values())
                 for (GridDeployment d : depList)
                     if (!deps.contains(d))
                         deps.add(d);
@@ -122,7 +122,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public GridDeployment getDeployment(IgniteUuid ldrId) {
         synchronized (mux) {
-            for (ConcurrentLinkedDeque8<GridDeployment> deps : cache.values())
+            for (Deque<GridDeployment> deps : cache.values())
                 for (GridDeployment dep : deps)
                     if (dep.classLoaderId().equals(ldrId))
                         return dep;
@@ -145,7 +145,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         // Validate metadata.
         assert alias != null : "Meta is invalid: " + meta;
 
-        GridDeployment dep = deployment(alias);
+        GridDeployment dep = deployment(meta);
 
         if (dep != null) {
             if (log.isDebugEnabled())
@@ -154,71 +154,66 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             return dep;
         }
 
-        DeploymentResource rsrc = spi.findResource(alias);
+        if (meta.classLoader() == null) {
+            DeploymentResource rsrc = spi.findResource(alias);
 
-        if (rsrc != null) {
-            dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(), rsrc.getResourceClass(), alias,
-                meta.record());
+            if (rsrc != null) {
+                dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(), rsrc.getResourceClass(), alias,
+                    meta.record());
 
-            assert dep != null;
+                assert dep != null;
 
-            if (log.isDebugEnabled())
-                log.debug("Acquired deployment class from SPI: " + dep);
+                if (log.isDebugEnabled())
+                    log.debug("Acquired deployment class from SPI: " + dep);
+
+                return dep;
+            }
         }
+
         // Auto-deploy.
-        else {
-            ClassLoader ldr = meta.classLoader();
+        ClassLoader ldr = meta.classLoader();
 
-            if (ldr == null) {
-                ldr = Thread.currentThread().getContextClassLoader();
+        if (ldr == null) {
+            ldr = Thread.currentThread().getContextClassLoader();
 
-                // Safety.
-                if (ldr == null)
-                    ldr = U.resolveClassLoader(ctx.config());
-            }
+            // Safety.
+            if (ldr == null)
+                ldr = U.resolveClassLoader(ctx.config());
+        }
 
-            if (ldr instanceof GridDeploymentClassLoader) {
-                if (log.isDebugEnabled())
-                    log.debug("Skipping local auto-deploy (nested execution) [ldr=" + ldr + ", meta=" + meta + ']');
+        if (ldr instanceof GridDeploymentClassLoader) {
+            if (log.isDebugEnabled())
+                log.debug("Skipping local auto-deploy (nested execution) [ldr=" + ldr + ", meta=" + meta + ']');
 
-                return null;
-            }
+            return null;
+        }
 
-            try {
-                // Check that class can be loaded.
-                String clsName = meta.className();
+        try {
+            // Check that class can be loaded.
+            String clsName = meta.className();
 
-                Class<?> cls = Class.forName(clsName != null ? clsName : alias, true, ldr);
+            Class<?> cls = U.forName(clsName != null ? clsName : alias, ldr);
 
-                spi.register(ldr, cls);
-
-                rsrc = spi.findResource(cls.getName());
-
-                if (rsrc != null && rsrc.getResourceClass().equals(cls)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Retrieved auto-loaded resource from spi: " + rsrc);
-
-                    dep = deploy(ctx.config().getDeploymentMode(), ldr, cls, meta.alias(), meta.record());
-
-                    assert dep != null;
-                }
-                else {
-                    U.warn(log, "Failed to find resource from deployment SPI even after registering: " + meta);
-
-                    return null;
+            if (spi.register(ldr, cls)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Resource registered automatically: [name=" + U.getResourceName(cls)
+                        + ", class=" + cls.getName()
+                        + ", ldr=" + ldr + ']');
                 }
             }
-            catch (ClassNotFoundException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to load class for local auto-deployment [ldr=" + ldr + ", meta=" + meta + ']');
 
-                return null;
-            }
-            catch (IgniteSpiException e) {
-                U.error(log, "Failed to deploy local class with meta: " + meta, e);
+            dep = deploy(ctx.config().getDeploymentMode(), ldr, cls, alias, meta.record());
+        }
+        catch (ClassNotFoundException ignored) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to load class for local auto-deployment [ldr=" + ldr + ", meta=" + meta + ']');
 
-                return null;
-            }
+            return null;
+        }
+        catch (IgniteSpiException e) {
+            U.error(log, "Failed to deploy local class with meta: " + meta, e);
+
+            return null;
         }
 
         if (log.isDebugEnabled())
@@ -227,19 +222,37 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         return dep;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridDeployment searchDeploymentCache(GridDeploymentMetadata meta) {
+        return deployment(meta);
+    }
+
     /**
-     * @param alias Class alias.
+     * @param meta Deployment meta.
      * @return Deployment.
      */
-    @Nullable private GridDeployment deployment(String alias) {
-        ConcurrentLinkedDeque8<GridDeployment> deps = cache.get(alias);
+    @Nullable private GridDeployment deployment(final GridDeploymentMetadata meta) {
+        Deque<GridDeployment> deps = cache.get(meta.alias());
 
         if (deps != null) {
-            GridDeployment dep = deps.peekFirst();
+            for (GridDeployment dep : deps) {
+                if (dep.undeployed())
+                    continue;
 
-            if (dep != null && !dep.undeployed())
-                return dep;
+                // local or remote deployment.
+                if (dep.classLoaderId() == meta.classLoaderId() || dep.classLoader() == meta.classLoader()) {
+                    if (log.isTraceEnabled())
+                        log.trace("Deployment was found for class with specific class loader [alias=" + meta.alias() +
+                            ", clsLdrId=" + meta.classLoaderId() + "]");
+
+                    return dep;
+                }
+            }
         }
+
+        if (log.isDebugEnabled())
+            log.debug("Deployment was not found for class with specific class loader [alias=" + meta.alias() +
+                ", clsLdrId=" + meta.classLoaderId() + "]");
 
         return null;
     }
@@ -252,18 +265,23 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param recordEvt {@code True} to record event.
      * @return Deployment.
      */
-    private GridDeployment deploy(DeploymentMode depMode, ClassLoader ldr, Class<?> cls, String alias,
-        boolean recordEvt) {
+    private GridDeployment deploy(
+        DeploymentMode depMode,
+        ClassLoader ldr,
+        Class<?> cls,
+        String alias,
+        boolean recordEvt
+    ) {
         GridDeployment dep = null;
 
         synchronized (mux) {
             boolean fireEvt = false;
 
             try {
-                ConcurrentLinkedDeque8<GridDeployment> cachedDeps = null;
+                Deque<GridDeployment> cachedDeps = null;
 
                 // Find existing class loader info.
-                for (ConcurrentLinkedDeque8<GridDeployment> deps : cache.values()) {
+                for (Deque<GridDeployment> deps : cache.values()) {
                     for (GridDeployment d : deps) {
                         if (d.classLoader() == ldr) {
                             // Cache class and alias.
@@ -286,9 +304,10 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
                     cache.put(alias, cachedDeps);
 
-                    if (!cls.getName().equals(alias))
+                    if (!cls.getName().equals(alias)) {
                         // Cache by class name as well.
                         cache.put(cls.getName(), cachedDeps);
+                    }
 
                     return dep;
                 }
@@ -304,26 +323,19 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 assert fireEvt : "Class was not added to newly created deployment [cls=" + cls +
                     ", depMode=" + depMode + ", dep=" + dep + ']';
 
-                ConcurrentLinkedDeque8<GridDeployment> deps =
-                    F.addIfAbsent(cache, alias, F.<GridDeployment>newDeque());
-
-                if (!deps.isEmpty()) {
-                    for (GridDeployment d : deps) {
-                        if (!d.undeployed()) {
-                            U.error(log, "Found more than one active deployment for the same resource " +
-                                "[cls=" + cls + ", depMode=" + depMode + ", dep=" + d + ']');
-
-                            return null;
-                        }
-                    }
-                }
+                Deque<GridDeployment> deps = F.<String, Deque<GridDeployment>>addIfAbsent(
+                    cache,
+                    alias,
+                    ConcurrentLinkedDeque::new
+                );
 
                 // Add at the beginning of the list for future fast access.
                 deps.addFirst(dep);
 
-                if (!cls.getName().equals(alias))
+                if (!cls.getName().equals(alias)) {
                     // Cache by class name as well.
                     cache.put(cls.getName(), deps);
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Created new deployment: " + dep);
@@ -345,16 +357,23 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (clsLdr.getClass().equals(GridDeploymentClassLoader.class))
                 clsLdr = clsLdr.getParent();
 
-            spi.register(clsLdr, cls);
+            if (spi.register(clsLdr, cls)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Resource registered automatically: [name=" + U.getResourceName(cls)
+                        + ", class=" + cls.getName() + ", ldr=" + clsLdr + ']');
+                }
+            }
 
-            GridDeployment dep = deployment(cls.getName());
+            GridDeploymentMetadata meta = new GridDeploymentMetadata();
+
+            meta.alias(cls.getName());
+            meta.classLoader(clsLdr);
+
+            GridDeployment dep = deployment(meta);
 
             if (dep == null) {
-                DeploymentResource rsrc = spi.findResource(cls.getName());
-
-                if (rsrc != null && rsrc.getClassLoader() == clsLdr)
-                    dep = deploy(ctx.config().getDeploymentMode(), rsrc.getClassLoader(),
-                        rsrc.getResourceClass(), rsrc.getName(), true);
+                dep = deploy(ctx.config().getDeploymentMode(), clsLdr,
+                    cls, U.getResourceName(cls), true);
             }
 
             return dep;
@@ -427,7 +446,6 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param clsLdr Class loader.
      * @param recordEvt Flag indicating whether to record events.
      */
-    @SuppressWarnings({"unchecked"})
     private void recordDeployFailed(Class<?> cls, ClassLoader clsLdr, boolean recordEvt) {
         assert cls != null;
         assert clsLdr != null;
@@ -443,7 +461,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());
-            evt.type(isTask(cls) ? EVT_CLASS_DEPLOY_FAILED : EVT_TASK_DEPLOY_FAILED);
+            evt.type(isTask ? EVT_CLASS_DEPLOY_FAILED : EVT_TASK_DEPLOY_FAILED);
             evt.alias(taskName);
 
             ctx.event().record(evt);
@@ -512,8 +530,8 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Collection<GridDeployment> doomed = new HashSet<>();
 
         synchronized (mux) {
-            for (Iterator<ConcurrentLinkedDeque8<GridDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
-                ConcurrentLinkedDeque8<GridDeployment> deps = i1.next();
+            for (Iterator<Deque<GridDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
+                Deque<GridDeployment> deps = i1.next();
 
                 for (Iterator<GridDeployment> i2 = deps.iterator(); i2.hasNext();) {
                     GridDeployment dep = i2.next();

@@ -19,7 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -30,12 +31,12 @@ public class DataPageRemoveRecord extends PageDeltaRecord {
     private int itemId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param itemId Item ID.
      */
-    public DataPageRemoveRecord(int cacheId, long pageId, int itemId) {
-        super(cacheId, pageId);
+    public DataPageRemoveRecord(int grpId, long pageId, int itemId) {
+        super(grpId, pageId);
 
         this.itemId = itemId;
     }
@@ -50,9 +51,9 @@ public class DataPageRemoveRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr)
         throws IgniteCheckedException {
-        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.removeRow(pageAddr, itemId, pageMem.pageSize());
+        io.removeRow(pageAddr, itemId, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */
@@ -62,6 +63,6 @@ public class DataPageRemoveRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DataPageRemoveRecord.class, this, super.toString());
+        return S.toString(DataPageRemoveRecord.class, this, "super", super.toString());
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -24,8 +25,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Collections;
+import org.junit.Test;
 
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_TOP_HISTORY_SIZE;
 
@@ -52,6 +52,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testHistorySupported() throws Exception {
         try {
             final Ignite g = startGrid();
@@ -72,6 +73,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testSettingNewTopologyHistorySize() throws Exception {
         try {
             final Ignite g = startGrid();
@@ -96,6 +98,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testNodeAdded() throws Exception {
         try {
             // Add grid #1
@@ -129,6 +132,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testNodeAddedAndRemoved() throws Exception {
         try {
             // Add grid #1

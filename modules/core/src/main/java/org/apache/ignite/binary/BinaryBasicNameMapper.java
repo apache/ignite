@@ -37,7 +37,7 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
     }
 
     /**
-     * @param isSimpleName Whether to use simple name of class or not.
+     * @param isSimpleName Whether to use simple (no package) name of class or not.
      * <p>
      * Defaults to {@link #DFLT_SIMPLE_NAME}.
      */
@@ -87,6 +87,8 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
     private static String simpleName(String clsName) {
         assert clsName != null;
 
+        clsName = simplifyDotNetGenerics(clsName);
+
         int idx = clsName.lastIndexOf('$');
 
         if (idx == clsName.length() - 1)
@@ -117,6 +119,28 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
             idx = clsName.lastIndexOf('.');
 
         return idx >= 0 ? clsName.substring(idx + 1) : clsName;
+    }
+
+    /**
+     * Converts .NET generic type arguments to a simple form (without namespaces and outer classes classes).
+     *
+     * @param clsName Class name.
+     * @return Simplified class name.
+     */
+    private static String simplifyDotNetGenerics(String clsName) {
+        // .NET generic part starts with [[ (not valid for Java class name). Clean up every generic part recursively.
+        // Example: Foo.Bar`1[[Baz.Qux`2[[System.String],[System.Int32]]]]
+        int genericIdx = clsName.indexOf("[[");
+
+        if (genericIdx > 0)
+            clsName = clsName.substring(0, genericIdx + 2) + simpleName(clsName.substring(genericIdx + 2));
+
+        genericIdx = clsName.indexOf("],[", genericIdx);
+
+        if (genericIdx > 0)
+            clsName = clsName.substring(0, genericIdx + 3) + simpleName(clsName.substring(genericIdx + 3));
+
+        return clsName;
     }
 
     /** {@inheritDoc} */

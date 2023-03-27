@@ -56,7 +56,7 @@ namespace ignite
                     SET_ROLLBACK_ONLY = 8,
 
                     /** Reset metrics. */
-                    RESET_METRICS = 11,
+                    RESET_METRICS = 11
                 };
             };
 
@@ -107,7 +107,7 @@ namespace ignite
                 
                 int32_t txSize;
 
-                IGNITE_NO_COPY_ASSIGNMENT(InTransactionStartOperation)
+                IGNITE_NO_COPY_ASSIGNMENT(InTransactionStartOperation);
             };
 
             /**
@@ -148,7 +148,7 @@ namespace ignite
                 /** Value */
                 int64_t val;
 
-                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionStartOperation)
+                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionStartOperation);
             };
 
 
@@ -165,8 +165,6 @@ namespace ignite
 
             TransactionState::Type TransactionsImpl::TxCommit(int64_t id, IgniteError& err)
             {
-                JniErrorInfo jniErr;
-
                 int state = static_cast<int>(OutInOpLong(Operation::COMMIT, id, err));
 
                 return ToTransactionState(state);
@@ -174,8 +172,6 @@ namespace ignite
 
             TransactionState::Type TransactionsImpl::TxRollback(int64_t id, IgniteError& err)
             {
-                JniErrorInfo jniErr;
-
                 int state = static_cast<int>(OutInOpLong(Operation::ROLLBACK, id, err));
 
                 return ToTransactionState(state);
@@ -183,8 +179,6 @@ namespace ignite
 
             TransactionState::Type TransactionsImpl::TxClose(int64_t id, IgniteError& err)
             {
-                JniErrorInfo jniErr;
-
                 int state = static_cast<int>(OutInOpLong(Operation::CLOSE, id, err));
 
                 return ToTransactionState(state);
@@ -192,8 +186,6 @@ namespace ignite
 
             bool TransactionsImpl::TxSetRollbackOnly(int64_t id, IgniteError& err)
             {
-                JniErrorInfo jniErr;
-
                 bool rollbackOnly = OutInOpLong(Operation::SET_ROLLBACK_ONLY, id, err) == 1;
 
                 return rollbackOnly;
@@ -201,8 +193,6 @@ namespace ignite
 
             TransactionState::Type TransactionsImpl::TxState(int64_t id, IgniteError& err)
             {
-                JniErrorInfo jniErr;
-
                 int state = static_cast<int>(OutInOpLong(Operation::STATE, id, err));
 
                 return ToTransactionState(state);
@@ -251,7 +241,7 @@ namespace ignite
                 /** Value */
                 TransactionMetrics val;
 
-                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionMetricsOperation)
+                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionMetricsOperation);
             };
 
             TransactionMetrics TransactionsImpl::GetMetrics(IgniteError& err)

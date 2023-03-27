@@ -1,0 +1,34 @@
+# name: test/sql/filter/test_zonemap.test_slow
+# description: Test expressions with transitive filters
+# group: [filter]
+
+
+statement ok
+create table t as select x a, length(x) b, mod(x,10000) c, 5 d, 10000 e from table(system_range(0,999));
+
+query I
+select count(*) from t where a > 500 or a <= 700
+----
+1000
+
+query I
+select count(*) from t where (a > 500 and b = 3) or (a > 7000 and b = 2)
+----
+499
+
+query I
+select count(*) from t where (a > 500 AND b = 3) OR (a >= 400) OR (a > 300 AND b=4) OR (a > 600 AND a > 300)
+----
+600
+
+query I
+select count(*) from t where (a > 500 AND b = 3) OR (c = 400) OR (a > 300 AND b=4) OR (a > 600 AND a > 300) or (d < 10)
+----
+1000
+
+query I
+select count(*) from t where (a > 500 AND b = 1) OR b < 2
+----
+10
+
+

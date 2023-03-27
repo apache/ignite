@@ -38,26 +38,48 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.GridPlainClosure2;
+import org.apache.ignite.internal.util.lang.GridPlainInClosure;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.AbstractCachePluginProvider;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -85,6 +107,38 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
     /** */
     private Integer lastKey = 0;
+
+    /** */
+    private boolean conflictResolverPlugin;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (conflictResolverPlugin) {
+            cfg.setPluginProviders(new AbstractTestPluginProvider() {
+                @Override public String name() {
+                    return "ConflictResolverProvider";
+                }
+
+                @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+                    if (!ctx.igniteCacheConfiguration().getName().equals(DEFAULT_CACHE_NAME))
+                        return null;
+
+                    return new AbstractCachePluginProvider() {
+                        @Override public Object createComponent(Class cls) {
+                            if (cls != CacheConflictResolutionManager.class)
+                                return null;
+
+                            return new TestCacheConflictResolutionManager();
+                        }
+                    };
+                }
+            });
+        }
+
+        return cfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -118,6 +172,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateUpdate0() throws Exception {
         startGrids(1);
 
@@ -146,8 +201,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         assertEquals(0, pSize);
     }
 
-    /**     * @throws Exception If failed.
+    /**
+     * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnCreate() throws Exception {
         factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
 
@@ -175,6 +232,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnUpdate() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, 0L, null));
 
@@ -203,9 +261,93 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkNoValue(F.asList(key));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testPutAllConflictWithResolverPluginTtlUpdateOrder() throws Exception {
+        conflictResolverPlugin = true;
+
+        try {
+            startGrids();
+
+            final IgniteInternalCache<Integer, Object> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
+
+            GridCacheVersion ver = new GridCacheVersion(1, 1, 1, 2);
+
+            CacheObjectImpl val = new CacheObjectImpl(1, null);
+
+            doTestTtlUpdateOrder(
+                key -> cache.putAllConflict(F.asMap(
+                    new KeyCacheObjectImpl(key, null, -1),
+                    new GridCacheDrInfo(val, ver)
+                )),
+                (key, ttl) -> {
+                    cache.putAllConflict(F.asMap(
+                        new KeyCacheObjectImpl(key, null, -1),
+                        new GridCacheDrExpirationInfo(val, ver, ttl, CU.toExpireTime(ttl))
+                    ));
+
+                    return null;
+                }
+            );
+        }
+        finally {
+            conflictResolverPlugin = false;
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testTtlUpdateOrder() throws Exception {
+        startGrids();
+
+        final IgniteCache<Integer, Object> cache = jcache(0);
+
+        doTestTtlUpdateOrder(
+            key -> cache.put(key, 1),
+            (key, ttl) -> {
+                cache.withExpiryPolicy(new TestPolicy(ttl, ttl, ttl)).put(key, 1);
+
+                return null;
+            }
+        );
+    }
+
+    /** */
+    private void doTestTtlUpdateOrder(
+        GridPlainInClosure<Integer> withoutTtl,
+        GridPlainClosure2<Integer, Long, Void> withTtl
+    ) throws IgniteCheckedException {
+        final IgniteCache<Integer, Object> cache = jcache(0);
+
+        Integer key = primaryKey(cache);
+
+        long ttl = 2_000;
+
+        withoutTtl.apply(key);
+
+        assertTrue(cache.containsKey(key));
+
+        withTtl.apply(key, ttl);
+
+        assertTrue(cache.containsKey(key));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> !cache.containsKey(key), 3 * ttl));
+
+        withTtl.apply(key, ttl);
+
+        assertTrue(cache.containsKey(key));
+
+        withoutTtl.apply(key);
+
+        assertTrue(cache.containsKey(key));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> !cache.containsKey(key), 3 * ttl));
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnAccess() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, null, 0L));
 
@@ -251,6 +393,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnAccessEagerTtlDisabled() throws Exception {
         disableEagerTtl = true;
 
@@ -276,6 +419,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEternal() throws Exception {
         factory = EternalExpiryPolicy.factoryOf();
 
@@ -297,6 +441,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullFactory() throws Exception {
         factory = null; // Should work as eternal.
 
@@ -320,7 +465,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 0);
 
-        assertEquals((Integer) 1, cache.get(key)); // Get.
+        assertEquals((Integer)1, cache.get(key)); // Get.
 
         checkTtl(key, 0);
 
@@ -348,9 +493,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-305")
+    @Test
     public void testAccess() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-305");
-
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, 62_000L));
 
         startGrids();
@@ -493,7 +638,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 60_000L);
 
-        assertEquals((Integer) 1, cache.get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         checkTtl(key, 62_000L, true);
 
@@ -594,6 +739,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateUpdate() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
 
@@ -834,9 +980,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void _testNearCreateUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
+    @Test
+    public void testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -959,9 +1104,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
-    public void _testNearAccess() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-518");
-
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-305")
+    @Test
+    public void testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -979,9 +1124,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         assertEquals(1, jcache(1).get(key));
 
-        checkTtl(key, 62_000L, true);
-
-        assertEquals(1, jcache(2).withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+        assertEquals(1, jcache(2).withExpiryPolicy(
+            new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
 
         checkTtl(key, TTL_FOR_EXPIRE, true);
 
@@ -996,7 +1140,62 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         checkTtl(key, 60_000L);
 
         IgniteCache<Object, Object> cache =
-            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(1).localNode(), key) ? jcache(1) : jcache(2);
+            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(
+                grid(1).localNode(), key) ? jcache(1) : jcache(2);
+
+        assertEquals(1, cache.get(key));
+
+        checkTtl(key, 62_000L, true);
+
+    }
+
+    /**
+     * Given test should be removed after IGNITE-305 will be fixed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearAccessSimplified() throws Exception {
+        if (cacheMode() != PARTITIONED)
+            return;
+
+        nearCache = true;
+
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, 62_000L));
+
+        startGrids();
+
+        Integer key = primaryKeys(jcache(0), 1, 500_000).get(0);
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+
+        cache0.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        assertEquals(1, jcache(1).get(key));
+
+        // Small delay is added in order to prevent race based on IGNITE-305.
+        Thread.sleep(500);
+
+        assertEquals(1, jcache(2).withExpiryPolicy(
+            new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+
+        checkTtl(key, TTL_FOR_EXPIRE, true);
+
+        waitExpired(key);
+
+        // Test reader update on get.
+
+        key = nearKeys(jcache(0), 1, 600_000).get(0);
+
+        cache0.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        IgniteCache<Object, Object> cache =
+            grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(
+                grid(1).localNode(), key) ? jcache(1) : jcache(2);
 
         assertEquals(1, cache.get(key));
 
@@ -1004,25 +1203,70 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * Given test should be removed after IGNITE-305 will be fixed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearAccessGetAllTtlSimplified() throws Exception {
+        if (cacheMode() != PARTITIONED)
+            return;
+
+        nearCache = true;
+
+        factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, 62_000L));
+
+        startGrids();
+
+        Map<Integer, Integer> vals = new HashMap<>();
+
+        for (int i = 1; i < 5; i++)
+            vals.put(i, i);
+
+        IgniteCache<Integer, Integer> cache0 = jcache(0);
+
+        cache0.removeAll(vals.keySet());
+
+        cache0.putAll(vals);
+
+        jcache(1).getAll(vals.keySet());
+
+        // Small delay is added in order to prevent race based on IGNITE-305.
+        Thread.sleep(500);
+
+        jcache(2).withExpiryPolicy(
+            new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).getAll(vals.keySet());
+
+        for (Integer key : vals.keySet()) {
+            info("Checking iterator key: " + key);
+
+            checkTtl(key, TTL_FOR_EXPIRE, true);
+        }
+
+        waitExpired(vals.keySet());
+    }
+
+    /**
      * Put entry to server node and check how its expires in client NearCache.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearExpiresOnClient() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
-        factory =  CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS,1));
+        factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 2));
 
         nearCache = true;
 
         startGrids();
 
-        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+        IgniteConfiguration clientCfg = getConfiguration("client");
 
         ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
-        Ignite client = startGrid("client", clientCfg);
+        Ignite client = startClientGrid("client", clientCfg);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -1045,8 +1289,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearExpiresWithCacheStore() throws Exception {
-        if(cacheMode() != PARTITIONED)
+        if (cacheMode() != PARTITIONED)
             return;
 
         factory = CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1));
@@ -1055,11 +1300,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGridsMultiThreaded(gridCount());
 
-        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+        IgniteConfiguration clientCfg = getConfiguration("client");
 
         ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
-        Ignite client = startGrid("client", clientCfg);
+        Ignite client = startClientGrid("client", clientCfg);
 
         CacheConfiguration ccfg = cacheConfiguration("testCache");
 
@@ -1079,7 +1324,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         waitExpired(key);
 
-        for(int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek(key, CachePeekMode.BACKUP, CachePeekMode.PRIMARY));
 
         assertEquals(null, cache.get(key));
@@ -1161,7 +1406,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                         ", backup=" + affinity(cache).isBackup(node, key) + ']');
                 }
 
-                assertNull("Unexpected non-null value for grid " + i, val);
+                assertNull("Unexpected non-null value for grid " + i + " key: " + key, val);
             }
         }
 
@@ -1219,8 +1464,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                         found = true;
 
-                        if (ttl > 0)
-                            assertTrue(e.expireTime() > 0);
+                        if (ttl > 0) {
+                            assertTrue("Unexpected expiration time, key: " + key + " expirationtime: "
+                                + e.expireTime(), e.expireTime() > 0);
+                        }
                         else
                             assertEquals(0, e.expireTime());
                     }
@@ -1294,6 +1541,34 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TestPolicy.class, this);
+        }
+    }
+
+    /** */
+    public static class TestCacheConflictResolutionManager<K, V> extends GridCacheManagerAdapter<K, V>
+        implements CacheConflictResolutionManager<K, V> {
+
+        /** {@inheritDoc} */
+        @Override public CacheVersionConflictResolver conflictResolver() {
+            return new CacheVersionConflictResolver() {
+                @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+                    CacheObjectValueContext ctx,
+                    GridCacheVersionedEntryEx<K, V> oldEntry,
+                    GridCacheVersionedEntryEx<K, V> newEntry,
+                    boolean atomicVerComparator
+                ) {
+                    GridCacheVersionConflictContext<K, V> res =
+                        new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+
+                    res.merge(
+                        newEntry.value(ctx),
+                        Math.max(oldEntry.ttl(), newEntry.ttl()),
+                        Math.max(oldEntry.expireTime(), newEntry.expireTime())
+                    );
+
+                    return res;
+                }
+            };
         }
     }
 }

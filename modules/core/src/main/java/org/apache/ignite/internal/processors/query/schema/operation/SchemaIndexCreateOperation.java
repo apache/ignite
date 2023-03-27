@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
+import java.util.UUID;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.UUID;
 
 /**
  * Schema index create operation.
@@ -41,21 +40,28 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
     /** Ignore operation if index exists. */
     private final boolean ifNotExists;
 
+    /** Index creation parallelism level */
+    private final int parallel;
+
     /**
      * Constructor.
      *
      * @param opId Operation id.
-     * @param space Space.
+     * @param cacheName Cache name.
+     * @param schemaName Schame name.
      * @param tblName Table name.
      * @param idx Index params.
      * @param ifNotExists Ignore operation if index exists.
+     * @param parallel Index creation parallelism level.
      */
-    public SchemaIndexCreateOperation(UUID opId, String space, String tblName, QueryIndex idx, boolean ifNotExists) {
-        super(opId, space);
+    public SchemaIndexCreateOperation(UUID opId, String cacheName, String schemaName, String tblName, QueryIndex idx,
+        boolean ifNotExists, int parallel) {
+        super(opId, cacheName, schemaName);
 
         this.tblName = tblName;
         this.idx = idx;
         this.ifNotExists = ifNotExists;
+        this.parallel = parallel;
     }
 
     /** {@inheritDoc} */
@@ -82,6 +88,15 @@ public class SchemaIndexCreateOperation extends SchemaIndexAbstractOperation {
      */
     public boolean ifNotExists() {
         return ifNotExists;
+    }
+
+    /**
+     * Gets index creation parallelism level.
+     *
+     * @return Index creation parallelism level.
+     */
+    public int parallel() {
+        return parallel;
     }
 
     /** {@inheritDoc} */

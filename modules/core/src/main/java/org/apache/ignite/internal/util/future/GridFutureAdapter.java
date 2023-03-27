@@ -22,17 +22,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Async;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -97,14 +100,15 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** */
-    private boolean ignoreInterrupts;
+    private volatile boolean ignoreInterrupts;
 
     /** */
     @GridToStringExclude
     private volatile Object state = INIT;
 
     /**
-     * Determines whether the future will ignore interrupts.
+     * Determines whether the future will ignore interrupts while waiting for result in {@code get()} methods.
+     * This call should <i>happen before</i> subsequent {@code get()} in order to have guaranteed effect.
      */
     public void ignoreInterrupts() {
         ignoreInterrupts = true;
@@ -121,12 +125,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public R result() {
         Object state0 = state;
 
-        if(state0 == null ||                           // It is DONE state
-           (state0.getClass() != Node.class &&         // It is not INIT state
+        if (state0 == null ||                           // It is DONE state
+            (state0.getClass() != Node.class &&         // It is not INIT state
             state0.getClass() != ErrorWrapper.class && // It is not FAILED
             state0 != CANCELLED))                      // It is not CANCELLED
             return (R)state0;
@@ -155,7 +158,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         A.ensure(timeout >= 0, "timeout cannot be negative: " + timeout);
         A.notNull(unit, "unit");
 
-        return get0(unit.toNanos(timeout));
+        return get0(ignoreInterrupts, unit.toNanos(timeout));
     }
 
     /**
@@ -179,7 +182,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
                     interrupted = true;
 
                     if (!ignoreInterrupts) {
-                        unregisterWaiter(Thread.currentThread());
+                        unregisterWaiter();
 
                         throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.");
                     }
@@ -196,12 +199,13 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /**
+     * @param ignoreInterrupts Whether to ignore interrupts.
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
-    @Nullable private R get0(long nanosTimeout) throws IgniteCheckedException {
+    @Nullable private R get0(boolean ignoreInterrupts, long nanosTimeout) throws IgniteCheckedException {
         if (isDone() || !registerWaiter(Thread.currentThread()))
             return resolve();
 
@@ -221,7 +225,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
                     interrupted = true;
 
                     if (!ignoreInterrupts) {
-                        unregisterWaiter(Thread.currentThread());
+                        unregisterWaiter();
 
                         throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.");
                     }
@@ -236,7 +240,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
                 Thread.currentThread().interrupt();
         }
 
-        unregisterWaiter(Thread.currentThread());
+        unregisterWaiter();
 
         throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
     }
@@ -247,12 +251,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return Result.
      * @throws IgniteCheckedException If resolved to exception.
      */
-    @SuppressWarnings("unchecked")
     private R resolve() throws IgniteCheckedException {
-        if(state == CANCELLED)
+        if (state == CANCELLED)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        if(state == null || state.getClass() != ErrorWrapper.class)
+        if (state == null || state.getClass() != ErrorWrapper.class)
             return (R)state;
 
         throw U.cast(((ErrorWrapper)state).error);
@@ -271,10 +274,10 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
             if (isDone(oldState))
                 return false;
 
-            if(node == null)
+            if (node == null)
                 node = new Node(waiter);
 
-            if(oldState != INIT && oldState.getClass() == Node.class)
+            if (oldState != INIT && oldState.getClass() == Node.class)
                 node.next = (Node)oldState;
 
             if (compareAndSetState(oldState, node))
@@ -283,20 +286,20 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     }
 
     /**
-     * @param waiter Waiter to unregister.
+     * Unregisters current thread from waiters list.
      */
-    private void unregisterWaiter(Thread waiter) {
+    private void unregisterWaiter() {
         Node prev = null;
         Object cur = state;
 
         while (cur != null) {
-            if(cur.getClass() != Node.class)
+            if (cur.getClass() != Node.class)
                 return;
 
             Object curWaiter = ((Node)cur).val;
             Node next = ((Node)cur).next;
 
-            if (curWaiter == waiter) {
+            if (curWaiter == Thread.currentThread()) {
                 if (prev == null) {
                     Object n = next == null ? INIT : next;
 
@@ -328,7 +331,6 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     /**
      * @param head Head of waiters stack.
      */
-    @SuppressWarnings("unchecked")
     private void unblockAll(Node head) {
         while (head != null) {
             unblock(head.val);
@@ -340,27 +342,106 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @param waiter Waiter to unblock
      */
     private void unblock(Object waiter) {
-        if(waiter instanceof Thread)
+        if (waiter instanceof Thread)
             LockSupport.unpark((Thread)waiter);
         else
             notifyListener((IgniteInClosure<? super IgniteInternalFuture<R>>)waiter);
     }
 
     /** {@inheritDoc} */
+    @Async.Schedule
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         if (!registerWaiter(lsnr))
             notifyListener(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
-        return new ChainFuture<>(this, doneCb, null);
+    @Override public <T> IgniteInternalFuture<T> chain(
+        IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb
+    ) {
+        ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, null);
+
+        if (ignoreInterrupts)
+            fut.ignoreInterrupts();
+
+        return fut;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
-        Executor exec) {
-        return new ChainFuture<>(this, doneCb, exec);
+    @Override public <T> IgniteInternalFuture<T> chain(
+        IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb,
+        Executor exec
+    ) {
+        ChainFuture<R, T> fut = new ChainFuture<>(this, doneCb, exec);
+
+        if (ignoreInterrupts)
+            fut.ignoreInterrupts();
+
+        return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb
+    ) {
+        return chainCompose(doneCb, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb,
+        @Nullable Executor exec
+    ) {
+        GridFutureAdapter<T> res = new GridFutureAdapter<>();
+
+        if (ignoreInterrupts)
+            res.ignoreInterrupts();
+
+        listen(fut -> {
+            if (exec == null)
+                applyChainComposeCallback(doneCb, fut, res);
+            else {
+                exec.execute(() -> applyChainComposeCallback(doneCb, fut, res));
+            }
+        });
+
+        return res;
+    }
+
+    /**
+     * Apply done callback given for {@link #chainCompose(IgniteClosure)} and
+     * {@link #chainCompose(IgniteClosure, Executor)} methods.
+     *
+     * @param doneCb Callback.
+     * @param fut Future that should be passed to the callback as the argument.
+     * @param chainFuture Chained future.
+     * @param <T> Type parameter.
+     */
+    private <T> void applyChainComposeCallback(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb,
+        IgniteInternalFuture<R> fut,
+        GridFutureAdapter<T> chainFuture
+    ) {
+        IgniteInternalFuture<T> doneCbFut;
+
+        try {
+            doneCbFut = doneCb.apply(fut);
+        }
+        catch (GridClosureException e) {
+            doneCbFut = new GridFinishedFuture<>(e.unwrap());
+        }
+        catch (RuntimeException e) {
+            doneCbFut = new GridFinishedFuture<>(e);
+        }
+
+        doneCbFut.listen(f -> {
+            try {
+                chainFuture.onDone(f.get(), null);
+            }
+            catch (Exception e) {
+                chainFuture.onDone(e);
+            }
+        });
     }
 
     /**
@@ -375,6 +456,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      *
      * @param lsnr Listener.
      */
+    @Async.Execute
     private void notifyListener(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
         assert lsnr != null;
 
@@ -490,12 +572,27 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
             if (compareAndSetState(oldState, newState)) {
 
-                if(oldState != INIT)
+                if (oldState != INIT)
                     unblockAll((Node)oldState);
 
                 return true;
             }
         }
+    }
+
+    /**
+     * Resets future for subsequent reuse.
+     */
+    public void reset() {
+        final Object oldState = state;
+
+        if (oldState == INIT)
+            return;
+
+        if (!isDone(oldState))
+            throw new IgniteException("Illegal state");
+
+        compareAndSetState(oldState, INIT);
     }
 
     /**

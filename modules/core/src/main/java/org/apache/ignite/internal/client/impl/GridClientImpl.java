@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.client.impl;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,10 +33,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
@@ -47,20 +48,22 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridClientNodeStateBeforeStart;
 import org.apache.ignite.internal.client.GridClientPartitionAffinity;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientTopologyListener;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.balancer.GridClientRandomBalancer;
+import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerOsImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.CycleThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -68,30 +71,17 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 /**
  * Client implementation.
  */
-public class GridClientImpl implements GridClient {
-    /** Enterprise connection manager class name. */
-    private static final String ENT_CONN_MGR_CLS =
-        "org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerEntImpl";
-
+public class GridClientImpl implements GridClient, GridClientBeforeNodeStart {
     /** Null mask object. */
     private static final Object NULL_MASK = new Object();
 
     /** Logger. */
     private static final Logger log = Logger.getLogger(GridClientImpl.class.getName());
 
-    /** */
+    /* Suppression logging if needed. */
     static {
-        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
-
-        try {
-            if (isLog4jUsed)
-                U.addLog4jNoOpLogger();
-            else
-                U.addJavaNoOpLogger();
-        }
-        catch (IgniteCheckedException ignored) {
-            // Our log4j warning suppression failed, leave it as is.
-        }
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_GRID_CLIENT_LOG_ENABLED, false))
+            log.setLevel(Level.OFF);
     }
 
     /** Client ID. */
@@ -101,28 +91,28 @@ public class GridClientImpl implements GridClient {
     protected final GridClientConfiguration cfg;
 
     /** SSL context if ssl enabled. */
-    private SSLContext sslCtx;
+    private final SSLContext sslCtx;
 
     /** Main compute projection. */
-    private final GridClientComputeImpl compute;
+    @Nullable private final GridClientComputeImpl compute;
 
     /** Cluster state projection. */
-    private final GridClientClusterStateImpl clusterState;
+    @Nullable private final GridClientClusterStateImpl clusterState;
 
     /** Data projections. */
-    private ConcurrentMap<Object, GridClientDataImpl> dataMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Object, GridClientDataImpl> dataMap = new ConcurrentHashMap<>();
 
     /** Topology. */
-    protected GridClientTopology top;
+    protected final GridClientTopology top;
 
     /** Topology updater thread. */
-    private final Thread topUpdateThread;
+    @Nullable private final Thread topUpdateThread;
 
     /** Closed flag. */
-    private AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /** Connection manager. */
-    protected GridClientConnectionManager connMgr;
+    protected final GridClientConnectionManager connMgr;
 
     /** Routers. */
     private final Collection<InetSocketAddress> routers;
@@ -130,18 +120,29 @@ public class GridClientImpl implements GridClient {
     /** Servers. */
     private final Collection<InetSocketAddress> srvs;
 
+    /** Projection of node state before its start. */
+    @Nullable private final GridClientNodeStateBeforeStart beforeStartState;
+
     /**
      * Creates a new client based on a given configuration.
+     * <p/>
+     * If {@code beforeNodeStart == true}, topology will not be received/updated,
+     * and there will also be errors when trying to work with topology, compute, state and cache.
      *
      * @param id Client identifier.
      * @param cfg0 Client configuration.
      * @param routerClient Router client flag.
+     * @param beforeNodeStart Connecting to a node before it start.
      * @throws GridClientException If client configuration is incorrect.
-     * @throws GridServerUnreachableException If none of the servers specified in configuration can
-     *      be reached.
+     * @throws GridServerUnreachableException If none of the servers specified in configuration can be reached.
      */
     @SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-    public GridClientImpl(UUID id, GridClientConfiguration cfg0, boolean routerClient) throws GridClientException {
+    public GridClientImpl(
+        UUID id, 
+        GridClientConfiguration cfg0,
+        boolean routerClient, 
+        boolean beforeNodeStart
+    ) throws GridClientException {
         this.id = id;
 
         cfg = new GridClientConfiguration(cfg0);
@@ -151,14 +152,16 @@ public class GridClientImpl implements GridClient {
         try {
             top = new GridClientTopology(cfg);
 
-            for (GridClientDataConfiguration dataCfg : cfg.getDataConfigurations()) {
-                GridClientDataAffinity aff = dataCfg.getAffinity();
+            if (!beforeNodeStart) {
+                for (GridClientDataConfiguration dataCfg : cfg.getDataConfigurations()) {
+                    GridClientDataAffinity aff = dataCfg.getAffinity();
 
-                if (aff instanceof GridClientTopologyListener)
-                    addTopologyListener((GridClientTopologyListener)aff);
+                    if (aff instanceof GridClientTopologyListener)
+                        addTopologyListener((GridClientTopologyListener)aff);
+                }
             }
 
-            if (cfg.getBalancer() instanceof GridClientTopologyListener)
+            if (!beforeNodeStart && cfg.getBalancer() instanceof GridClientTopologyListener)
                 top.addTopologyListener((GridClientTopologyListener)cfg.getBalancer());
 
             GridSslContextFactory factory = cfg.getSslContextFactory();
@@ -172,6 +175,8 @@ public class GridClientImpl implements GridClient {
                         "check ssl context factory configuration): " + e.getMessage(), e);
                 }
             }
+            else
+                sslCtx = null;
 
             if (cfg.isAutoFetchMetrics() && !cfg.isEnableMetricsCache())
                 log.warning("Auto-fetch for metrics is enabled without enabling caching for them.");
@@ -191,11 +196,11 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Servers addresses and routers addresses cannot both be provided " +
                     "for client (please fix configuration and restart): " + this);
 
-            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null, routerClient);
+            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null, routerClient, beforeNodeStart);
 
             try {
-                // Init connection manager, it should cause topology update.
-                tryInitTopology();
+                // Init connection manager.
+                tryInit();
             }
             catch (GridClientException e) {
                 top.fail(e);
@@ -208,15 +213,28 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Client startup was interrupted.", e);
             }
 
-            topUpdateThread = new TopologyUpdaterThread();
+            if (!beforeNodeStart) {
+                beforeStartState = null;
 
-            topUpdateThread.setDaemon(true);
+                topUpdateThread = new TopologyUpdaterThread();
 
-            topUpdateThread.start();
+                topUpdateThread.setDaemon(true);
 
-            compute = new GridClientComputeImpl(this, null, null, cfg.getBalancer());
+                topUpdateThread.start();
 
-            clusterState = new GridClientClusterStateImpl(this, null, null, cfg.getBalancer());
+                compute = new GridClientComputeImpl(this, null, null, cfg.getBalancer());
+
+                clusterState = new GridClientClusterStateImpl(this, null, null, cfg.getBalancer());
+            }
+            else {
+                topUpdateThread = null;
+
+                compute = null;
+
+                clusterState = null;
+
+                beforeStartState = new GridClientNodeStateBeforeStartImpl(this);
+            }
 
             if (log.isLoggable(Level.INFO))
                 log.info("Client started [id=" + id + ", protocol=" + cfg.getProtocol() + ']');
@@ -264,13 +282,10 @@ public class GridClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientData data() throws GridClientException {
-        return data(null);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientData data(@Nullable final String cacheName) throws GridClientException {
         checkClosed();
+
+        checkBeforeNodeStartMode();
 
         Object key = maskNull(cacheName);
 
@@ -310,26 +325,36 @@ public class GridClientImpl implements GridClient {
 
     /** {@inheritDoc} */
     @Override public GridClientCompute compute() {
+        checkBeforeNodeStartMode();
+
         return compute;
     }
 
     /** {@inheritDoc} */
     @Override public GridClientClusterState state() {
+        checkBeforeNodeStartMode();
+
         return clusterState;
     }
 
     /** {@inheritDoc} */
     @Override public void addTopologyListener(GridClientTopologyListener lsnr) {
+        checkBeforeNodeStartMode();
+
         top.addTopologyListener(lsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void removeTopologyListener(GridClientTopologyListener lsnr) {
+        checkBeforeNodeStartMode();
+
         top.removeTopologyListener(lsnr);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridClientTopologyListener> topologyListeners() {
+        checkBeforeNodeStartMode();
+
         return top.topologyListeners();
     }
 
@@ -349,7 +374,19 @@ public class GridClientImpl implements GridClient {
      * @return Topology instance.
      */
     public GridClientTopology topology() {
+        checkBeforeNodeStartMode();
+
         return top;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientException checkLastError() {
+        return top.lastError();
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public GridClientNodeStateBeforeStart beforeStartState() {
+        return beforeStartState;
     }
 
     /**
@@ -381,6 +418,16 @@ public class GridClientImpl implements GridClient {
     private void checkClosed() throws GridClientClosedException {
         if (closed.get())
             throw new GridClientClosedException("Client was closed (no public methods of client can be used anymore).");
+    }
+
+    /**
+     * Checks and throws an exception if mode is "before node start".
+     *
+     * @throws IgniteException If mode is "before node start".
+     */
+    private void checkBeforeNodeStartMode() throws IgniteException {
+        if (beforeStartState != null)
+            throw new IgniteException("It is possible to work with a node only before it starts.");
     }
 
     /**
@@ -425,9 +472,11 @@ public class GridClientImpl implements GridClient {
      * @return New connection manager based on current client settings.
      * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager(@Nullable Byte marshId, boolean routerClient)
-        throws GridClientException {
-        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId, routerClient);
+    public GridClientConnectionManager newConnectionManager(
+        @Nullable Byte marshId,
+        boolean routerClient
+    ) throws GridClientException {
+        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId, routerClient, beforeStartState != null);
     }
 
     /**
@@ -436,40 +485,65 @@ public class GridClientImpl implements GridClient {
      * @param cfg Client configuration.
      * @param routers Routers or empty collection to use endpoints from topology info.
      * @param top Topology.
+     * @param beforeNodeStart Connecting to a node before starting it without getting/updating topology.
      * @throws GridClientException In case of error.
      */
     private GridClientConnectionManager createConnectionManager(UUID clientId, SSLContext sslCtx,
         GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
-        @Nullable Byte marshId, boolean routerClient)
-        throws GridClientException {
-        GridClientConnectionManager mgr;
-
-        try {
-            Class<?> cls = Class.forName(ENT_CONN_MGR_CLS);
-
-            Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class, GridClientConfiguration.class,
-                Collection.class, GridClientTopology.class, Byte.class, boolean.class);
-
-            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId,
-                routerClient);
-        }
-        catch (ClassNotFoundException ignored) {
-            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
-        }
-        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new GridClientException("Failed to create client connection manager.", e);
-        }
-
-        return mgr;
+        @Nullable Byte marshId, boolean routerClient, boolean beforeNodeStart) throws GridClientException {
+        return new GridClientConnectionManagerOsImpl(
+            clientId,
+            sslCtx,
+            cfg,
+            routers,
+            top,
+            marshId,
+            routerClient,
+            beforeNodeStart
+        );
     }
 
     /**
-     * Tries to init client topology using configured set of servers or routers.
+     * Tries to init connection manager using configured set of servers or routers.
      *
      * @throws GridClientException If initialisation failed.
      * @throws InterruptedException If initialisation was interrupted.
      */
-    private void tryInitTopology() throws GridClientException, InterruptedException {
+    private void tryInit() throws GridClientException, InterruptedException {
+        connMgr.init(addresses());
+
+        Map<String, GridClientCacheMode> overallCaches = new HashMap<>();
+
+        for (GridClientNodeImpl node : top.nodes())
+            overallCaches.putAll(node.caches());
+
+        for (Map.Entry<String, GridClientCacheMode> entry : overallCaches.entrySet()) {
+            GridClientDataAffinity affinity = affinity(entry.getKey());
+
+            if (affinity instanceof GridClientPartitionAffinity && entry.getValue() !=
+                GridClientCacheMode.PARTITIONED)
+                log.warning(GridClientPartitionAffinity.class.getSimpleName() + " is used for a cache configured " +
+                    "for non-partitioned mode [cacheName=" + entry.getKey() + ", cacheMode=" + entry.getValue() + ']');
+        }
+    }
+
+    /**
+     * Getting a client connection without topology information.
+     *
+     * @return Client connection.
+     * @throws GridClientException If failed.
+     */
+    public GridClientConnection connection() throws GridClientException, InterruptedException {
+        return connectionManager().connection(addresses());
+    }
+
+    /**
+     * Return addresses for connection.
+     *
+     * @return Addresses for connection.
+     * @throws GridClientException If failed.
+     */
+    private Collection<InetSocketAddress> addresses() throws GridClientException {
         boolean hasSrvs = routers.isEmpty();
 
         final Collection<InetSocketAddress> connSrvs = (hasSrvs) ? new LinkedHashSet<>(srvs) : routers;
@@ -506,55 +580,30 @@ public class GridClientImpl implements GridClient {
             }
         }
 
-        connMgr.init(connSrvs);
-
-        Map<String, GridClientCacheMode> overallCaches = new HashMap<>();
-
-        for (GridClientNodeImpl node : top.nodes())
-            overallCaches.putAll(node.caches());
-
-        for (Map.Entry<String, GridClientCacheMode> entry : overallCaches.entrySet()) {
-            GridClientDataAffinity affinity = affinity(entry.getKey());
-
-            if (affinity instanceof GridClientPartitionAffinity && entry.getValue() !=
-                GridClientCacheMode.PARTITIONED)
-                log.warning(GridClientPartitionAffinity.class.getSimpleName() + " is used for a cache configured " +
-                    "for non-partitioned mode [cacheName=" + entry.getKey() + ", cacheMode=" + entry.getValue() + ']');
-        }
+        return connSrvs;
     }
 
     /**
      * Thread that updates topology according to refresh interval specified in configuration.
      */
-    @SuppressWarnings("BusyWait")
-    private class TopologyUpdaterThread extends Thread {
+    private class TopologyUpdaterThread extends CycleThread {
         /**
          * Creates topology refresh thread.
          */
         private TopologyUpdaterThread() {
-            super(id + "-topology-update");
+            super(id + "-topology-update", cfg.getTopologyRefreshFrequency());
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override public void iteration() throws InterruptedException {
             try {
-                while (!isInterrupted()) {
-                    Thread.sleep(cfg.getTopologyRefreshFrequency());
-
-                    try {
-                        tryInitTopology();
-                    }
-                    catch (GridClientException e) {
-                        top.fail(e);
-
-                        if (log.isLoggable(Level.FINE))
-                            log.fine("Failed to update topology: " + e.getMessage());
-                    }
-                }
+                tryInit();
             }
-            catch (InterruptedException ignored) {
-                // Client is shutting down.
-                Thread.currentThread().interrupt();
+            catch (GridClientException e) {
+                top.fail(e);
+
+                if (log.isLoggable(Level.FINE))
+                    log.fine("Failed to update topology: " + e.getMessage());
             }
         }
     }

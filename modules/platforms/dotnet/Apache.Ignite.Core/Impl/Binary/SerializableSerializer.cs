@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -53,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            var ctx = GetStreamingContext(writer);
+            var ctx = GetStreamingContext();
             _serializableTypeDesc.OnSerializing(obj, ctx);
 
             var serializable = (ISerializable) obj;
@@ -87,11 +88,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos)
+        public T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
             object res;
-            var ctx = GetStreamingContext(reader);
-            var callbackPushed = false;
+            var ctx = GetStreamingContext();
+
+            var type = typeOverride ?? desc.Type;
 
             // Read additional information from raw part, if flag is set.
             IEnumerable<string> fieldNames;
@@ -120,7 +122,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (customType != null)
                 {
                     // Custom type is present, which returns original type via IObjectReference.
-                    var serInfo = ReadSerializationInfo(reader, fieldNames, desc, dotNetFields);
+                    var serInfo = ReadSerializationInfo(reader, fieldNames, type, dotNetFields);
 
                     res = ReadAsCustomType(customType, serInfo, ctx);
 
@@ -129,30 +131,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                     reader.AddHandle(pos, res);
 
                     DeserializationCallbackProcessor.Push(res);
-                    callbackPushed = true;
                 }
                 else
                 {
-                    res = FormatterServices.GetUninitializedObject(desc.Type);
+                    res = FormatterServices.GetUninitializedObject(type);
 
                     _serializableTypeDesc.OnDeserializing(res, ctx);
 
                     DeserializationCallbackProcessor.Push(res);
-                    callbackPushed = true;
 
                     reader.AddHandle(pos, res);
 
                     // Read actual data and call constructor.
-                    var serInfo = ReadSerializationInfo(reader, fieldNames, desc, dotNetFields);
+                    var serInfo = ReadSerializationInfo(reader, fieldNames, type, dotNetFields);
                     _serializableTypeDesc.SerializationCtorUninitialized(res, serInfo, ctx);
                 }
 
                 _serializableTypeDesc.OnDeserialized(res, ctx);
+                DeserializationCallbackProcessor.Pop();
             }
-            finally
+            catch (Exception)
             {
-                if (callbackPushed)
-                    DeserializationCallbackProcessor.Pop();
+                DeserializationCallbackProcessor.Clear();
+                throw;
             }
 
             return (T) res;
@@ -174,7 +175,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (var dotNetField in dotNetFields)
             {
-                writer.WriteInt(BinaryUtils.GetStringHashCode(dotNetField));
+                writer.WriteInt(BinaryUtils.GetStringHashCodeLowerCase(dotNetField));
             }
         }
 
@@ -251,15 +252,40 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static IEnumerable<string> GetBinaryTypeFields(BinaryReader reader, IBinaryTypeDescriptor desc)
         {
-            var binaryType = reader.Marshaller.GetBinaryType(desc.TypeId);
-
-            if (binaryType == BinaryType.Empty)
+            var schema = reader.Schema;
+            if (schema == null || schema.Length == 0)
             {
-                // Object without fields.
                 return Enumerable.Empty<string>();
             }
 
-            return binaryType.Fields;
+            // Try using cached metadata: if all fields from current schema are present there, we are good.
+            // Any extra fields that may have been added to the binary type are not present in the current object.
+            var binaryTypeHolder = reader.Marshaller.GetCachedBinaryTypeHolder(desc.TypeId);
+            if (binaryTypeHolder != null && HasAllFields(binaryTypeHolder, schema))
+            {
+                return binaryTypeHolder.BinaryType.Fields ?? Enumerable.Empty<string>();
+            }
+
+            // Cached metadata is not present or out of date: request latest (expensive operation).
+            return reader.Marshaller.GetBinaryType(desc.TypeId).Fields ?? Enumerable.Empty<string>();
+        }
+
+        /// <summary>
+        /// Checks whether all field ids from provided schema are present in the given binary type.
+        /// </summary>
+        private static bool HasAllFields(BinaryTypeHolder binaryTypeHolder, int[] schema)
+        {
+            var fieldIds = binaryTypeHolder.GetFieldIds();
+            
+            foreach (var fieldId in schema)
+            {
+                if (!fieldIds.Contains(fieldId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -304,7 +330,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 return new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
             }
-            
+
             if (serInfo.ObjectType != serializable.GetType())
             {
                 return serInfo.ObjectType;
@@ -396,7 +422,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteByteArray(entry.Name, (byte[]) entry.Value);
                 }
-                if (type == typeof(sbyte))
+                else if (type == typeof(sbyte))
                 {
                     writer.WriteByte(entry.Name, (byte) (sbyte) entry.Value);
                 }
@@ -538,9 +564,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Reads the serialization information.
         /// </summary>
         private static SerializationInfo ReadSerializationInfo(BinaryReader reader, 
-            IEnumerable<string> fieldNames, IBinaryTypeDescriptor desc, ICollection<int> dotNetFields)
+            IEnumerable<string> fieldNames, Type type, ICollection<int> dotNetFields)
         {
-            var serInfo = new SerializationInfo(desc.Type, new FormatterConverter());
+            var serInfo = new SerializationInfo(type, new FormatterConverter());
 
             if (dotNetFields == null)
             {
@@ -571,29 +597,43 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var ctorFunc = SerializableTypeDescriptor.Get(customType).SerializationCtor;
 
-            var customObj = ctorFunc(serInfo, ctx);
+            var customObj = ctorFunc != null
+                ? ctorFunc(serInfo, ctx)
+                : FormatterServices.GetUninitializedObject(customType);
 
             var wrapper = customObj as IObjectReference;
 
-            return wrapper == null
+            var resObj = wrapper == null
                 ? customObj
                 : wrapper.GetRealObject(ctx);
+
+            // Special case: type is replaced, but there is no serialization ctor.
+            // Example: StringComparer.OrdinalIgnoreCase.
+            if (ctorFunc == null)
+            {
+                // Cached internally.
+                var members = FormatterServices.GetSerializableMembers(resObj.GetType());
+
+                foreach (var memberInfo in members)
+                {
+                    // FormatterServices.InternalGetSerializableMembers actually returns FieldInfo[],
+                    // so this cast is safe.
+                    var fieldInfo = (FieldInfo)memberInfo;
+                    fieldInfo.SetValue(resObj, serInfo.GetValue(fieldInfo.Name, fieldInfo.FieldType));
+                }
+            }
+
+            return resObj;
         }
 
         /// <summary>
         /// Gets the streaming context.
         /// </summary>
-        private static StreamingContext GetStreamingContext(IBinaryReader reader)
+        private static StreamingContext GetStreamingContext()
         {
-            return new StreamingContext(StreamingContextStates.All, reader);
-        }
-
-        /// <summary>
-        /// Gets the streaming context.
-        /// </summary>
-        private static StreamingContext GetStreamingContext(IBinaryWriter writer)
-        {
-            return new StreamingContext(StreamingContextStates.All, writer);
+            // Additional parameter must be null, because some ISerializable implementations expect weird things there.
+            // For example, System.Data.DataTable calls Convert.ToBoolean on that value.
+            return new StreamingContext(StreamingContextStates.All, null);
         }
 
         /// <summary>
@@ -616,49 +656,49 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (fieldType == typeof(byte))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (sbyte) (byte) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(short))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (ushort) (short) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(int))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (uint) (int) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(long))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (ulong) (long) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(byte[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<byte, sbyte>((byte[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(short[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName))
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName))
                         ? ConvertArray<short, ushort>((short[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(int[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<int, uint>((int[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(long[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<long, ulong>((long[]) fieldVal) : fieldVal;
                 }
             }

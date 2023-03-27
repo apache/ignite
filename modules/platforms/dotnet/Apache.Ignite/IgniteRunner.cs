@@ -20,33 +20,36 @@ namespace Apache.Ignite
     using System;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.ServiceProcess;
+    using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Service;
 
     /// <summary>
     /// Runner class.
     /// </summary>
-    public class IgniteRunner
+    public static class IgniteRunner
     {
         /** Help commands. */
         private static readonly IList<string> Help = new List<string> { "/help", "-help", "--help" };
 
         /** Argument meaning that this is service call. */
-        internal static readonly string Svc = "/service";
+        public const string Svc = "/service";
 
         /** Service install command. */
-        internal static readonly string SvcInstall = "/install";
+        public const string SvcInstall = "/install";
 
         /** Service uninstall command. */
-        internal static readonly string SvcUninstall = "/uninstall";
+        public const string SvcUninstall = "/uninstall";
 
         /// <summary>
         /// Application entry point.
         /// </summary>
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "Reviewed")]
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Main method catches all exceptions to report them.")]
         internal static void Main(string[] args)
         {
             bool svc = false;
@@ -61,25 +64,25 @@ namespace Apache.Ignite
 
                     if (Help.Contains(first))
                     {
-                        PrintHelp();
+                        ConsoleUtils.PrintHelp("Apache.Ignite.exe", true);
 
                         return;
                     }
-                    
-                    if (Svc.Equals(first))
+
+                    if (Svc.Equals(first, StringComparison.Ordinal))
                     {
                         args = RemoveFirstArg(args);
 
                         svc = true;
                     }
 
-                    else if (SvcInstall.Equals(first))
+                    else if (SvcInstall.Equals(first, StringComparison.Ordinal))
                     {
                         args = RemoveFirstArg(args);
 
                         install = true;
                     }
-                    else if (SvcUninstall.Equals(first))
+                    else if (SvcUninstall.Equals(first, StringComparison.Ordinal))
                     {
                         IgniteService.Uninstall();
 
@@ -91,15 +94,29 @@ namespace Apache.Ignite
                 {
                     // Pick application configuration first, command line arguments second.
                     var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
-                        .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
+                        .Concat(ArgsConfigurator.GetArgs(args))
+                        .ToArray();
 
                     if (install)
                         IgniteService.DoInstall(allArgs);
                     else
                     {
-                        Ignition.Start(Configurator.GetConfiguration(allArgs));
+                        // Load assemblies before instantiating IgniteConfiguration,
+                        // it can reference types from those assemblies.
+                        allArgs = allArgs.LoadAssemblies().ToArray();
 
-                        IgniteManager.DestroyJvm();
+                        using (var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs)))
+                        {
+                            // Wait until stopped.
+                            using (var evt = new ManualResetEventSlim(false))
+                            {
+                                // ReSharper disable AccessToDisposedClosure
+                                ignite.Stopped += (s, a) => evt.Set();
+                                Console.CancelKeyPress += (s, a) => evt.Set();
+                                evt.Wait();
+                                // ReSharper restore AccessToDisposedClosure
+                            }
+                        }
                     }
 
                     return;
@@ -115,41 +132,7 @@ namespace Apache.Ignite
             // If we are here, then this is a service call.
             // Use only arguments, not app.config.
             var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
-
-            ServiceBase.Run(new IgniteService(cfg));
-        }
-
-        /// <summary>
-        /// Prints help.
-        /// </summary>
-        private static void PrintHelp()
-        {
-            Console.WriteLine("Usage: Apache.Ignite.exe [/install] [/uninstall] [-options]");
-            Console.WriteLine("");
-            Console.WriteLine("\t/install [-options]    installs Ignite Windows service with provided options.");
-            Console.WriteLine("\t/uninstall             uninstalls Ignite Windows service.");
-            Console.WriteLine("");
-            Console.WriteLine("Options:");
-            Console.WriteLine("\t-IgniteHome            path to Ignite installation directory (if not provided IGNITE_HOME environment variable is used).");
-            Console.WriteLine("\t-ConfigSectionName     name of the IgniteConfigurationSection in app.config to use.");
-            Console.WriteLine("\t-ConfigFileName        path to the app.config file (if not provided Apache.Ignite.exe.config is used).");
-            Console.WriteLine("\t-springConfigUrl       path to Spring configuration file.");
-            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
-            Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here).");
-            Console.WriteLine("\t-suppressWarnings      whether to print warnings.");
-            Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM.");
-            Console.WriteLine("\t-assembly=userLib.dll  additional .NET assemblies to be loaded.");
-            Console.WriteLine("\t-jvmInitialMemoryMB    Initial Java heap size, in megabytes. Maps to -Xms Java parameter. Defaults to 512.");
-            Console.WriteLine("\t-jvmMaxMemoryMB        Maximum Java heap size, in megabytes. Maps to -Xmx Java parameter. Defaults to 1024.");
-            Console.WriteLine("");
-            Console.WriteLine("Examples:");
-            Console.WriteLine("\tApache.Ignite.exe -J-Xms1024m -J-Xmx1024m -springConfigUrl=C:/woer/gg-test/my-test-gg-confignative.xml");
-            Console.WriteLine("\tApache.Ignite.exe -IgniteHome=c:/apache-ignite -jvmClasspath=libs/myLib1.jar;libs/myLib2.jar");
-            Console.WriteLine("\tApache.Ignite.exe -assembly=c:/myProject/libs/lib1.dll -assembly=c:/myProject/libs/lib2.dll");
-            Console.WriteLine("\tApache.Ignite.exe -jvmInitialMemoryMB=1024 -jvmMaxMemoryMB=4096");
-            Console.WriteLine("");
-            Console.WriteLine("Note:");
-            Console.WriteLine("Command line settings have priority over Apache.Ignite.exe.config settings. JVM options and assemblies are concatenated; data from config file comes first, then data from command line.");
+            IgniteService.Run(cfg);
         }
 
         /// <summary>

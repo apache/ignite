@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.query;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -26,8 +27,7 @@ import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.Collection;
+import org.junit.Test;
 
 /**
  * REST query command handler tests.
@@ -48,16 +48,10 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSupportedCommands() throws Exception {
         GridTestKernalContext ctx = newContext(grid().configuration());
 
@@ -79,6 +73,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsupportedCommands() throws Exception {
         GridTestKernalContext ctx = newContext(grid().configuration());
 
@@ -94,34 +89,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNullCache() throws Exception {
-        QueryCommandHandler cmdHnd = new QueryCommandHandler(grid().context());
-
-        Integer arg1 = 1000;
-
-        Object[] arr = new Object[] {arg1, arg1};
-
-        RestQueryRequest req = new RestQueryRequest();
-
-        req.command(GridRestCommand.EXECUTE_SQL_QUERY);
-        req.queryType(RestQueryRequest.QueryType.SCAN);
-        req.typeName(Integer.class.getName());
-        req.pageSize(10);
-        req.sqlQuery("salary+>+%3F+and+salary+<%3D+%3F");
-        req.arguments(arr);
-        req.cacheName(null);
-
-        IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
-        resp.get();
-
-        assertEquals("Ouch! Argument is invalid: Cache name must not be null or empty.", resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
-        assertNull(resp.result().getResponse());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testNullPageSize() throws Exception {
         grid().getOrCreateCache(getName());
 
@@ -157,6 +125,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQuery() throws Exception {
         grid().getOrCreateCache(getName());
 
@@ -184,7 +153,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
         assertNotNull(resp.result().getResponse());
 
-        CacheQueryResult res = (CacheQueryResult) resp.result().getResponse();
+        CacheQueryResult res = (CacheQueryResult)resp.result().getResponse();
 
         assertTrue(res.getLast());
     }

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests SPI in multi-threaded environment.
@@ -39,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
     GridSpiAbstractTest<SharedFsCheckpointSpi> {
     /** */
-    private static final String PATH = "work/cp/test-shared-fs-multi-threaded";
+    private static final String PATH = "cp/test-shared-fs-multi-threaded";
 
     /** */
     private static final String CHECK_POINT_KEY = "testCheckpoint";
@@ -56,7 +57,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
     /**
      * @return Paths.
      */
-    @GridSpiTestConfig(setterName="setDirectoryPaths")
+    @GridSpiTestConfig(setterName = "setDirectoryPaths")
     public Collection<String> getDirectoryPaths() {
         return Collections.singleton(PATH);
     }
@@ -65,108 +66,116 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSpi() throws Exception {
-        final AtomicInteger writeFinished = new AtomicInteger();
+        try {
+            final AtomicInteger writeFinished = new AtomicInteger();
 
-        final AtomicBoolean fail = new AtomicBoolean();
+            final AtomicBoolean fail = new AtomicBoolean();
 
-        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    try {
-                        byte[] state = createTestArray((byte)1);
-
-                        for (int i = 0; i < ITER_CNT; i++)
-                            getSpi().saveCheckpoint(CHECK_POINT_KEY, state, 0, true);
-
-                        return null;
-                    }
-                    finally {
-                        writeFinished.incrementAndGet();
-                    }
-                }
-            },
-            THREAD_CNT,
-            "writer-1"
-        );
-
-        IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    try{
-                        byte[] state = createTestArray((byte)2);
-
-                        for (int i = 0; i < ITER_CNT; i++)
-                            getSpi().saveCheckpoint(CHECK_POINT_KEY, state, 0, true);
-
-                        return null;
-                    }
-                    finally {
-                        writeFinished.incrementAndGet();
-                    }
-                }
-            },
-            THREAD_CNT,
-            "writer-2"
-        );
-
-        IgniteInternalFuture fut3 = GridTestUtils.runMultiThreadedAsync(
-            new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    while (writeFinished.get() < THREAD_CNT * 2) {
+            IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+                new Callable<Object>() {
+                    @Nullable @Override public Object call() throws Exception {
                         try {
-                            byte[] state = getSpi().loadCheckpoint(CHECK_POINT_KEY);
+                            byte[] state = createTestArray((byte)1);
 
-                            if (state == null)
-                                continue;
+                            for (int i = 0; i < ITER_CNT; i++)
+                                getSpi().saveCheckpoint(CHECK_POINT_KEY, GridTestIoUtils.serializeJdk(state), 0, true);
 
-                            assert state.length == ARRAY_SIZE;
-
-                            boolean has1 = false;
-                            boolean has2 = false;
-
-                            for (int j = 0; j < ARRAY_SIZE; j++) {
-                                switch (state[j]) {
-                                    case 1:
-                                        has1 = true;
-
-                                        assert !has2;
-
-                                        break;
-
-                                    case 2:
-                                        has2 = true;
-
-                                        assert !has1;
-
-                                        break;
-
-                                    default:
-                                        assert false : "Unexpected value in state: " + state[j];
-                                }
-                            }
-
-                            info(">>>>>>> Checkpoint is fine.");
+                            return null;
                         }
-                        catch (Throwable e) {
-                            error("Failed to load checkpoint: " + e.getMessage());
-
-                            fail.set(true);
+                        finally {
+                            writeFinished.incrementAndGet();
                         }
                     }
+                },
+                THREAD_CNT,
+                "writer-1"
+            );
 
-                    return null;
-                }
-            },
-            1,
-            "reader"
-        );
+            IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
+                new Callable<Object>() {
+                    @Nullable @Override public Object call() throws Exception {
+                        try {
+                            byte[] state = createTestArray((byte)2);
 
-        fut1.get();
-        fut2.get();
-        fut3.get();
+                            for (int i = 0; i < ITER_CNT; i++)
+                                getSpi().saveCheckpoint(CHECK_POINT_KEY, GridTestIoUtils.serializeJdk(state), 0, true);
 
-        assert !fail.get();
+                            return null;
+                        }
+                        finally {
+                            writeFinished.incrementAndGet();
+                        }
+                    }
+                },
+                THREAD_CNT,
+                "writer-2"
+            );
+
+            IgniteInternalFuture fut3 = GridTestUtils.runMultiThreadedAsync(
+                new Callable<Object>() {
+                    @Nullable @Override public Object call() throws Exception {
+                        while (writeFinished.get() < THREAD_CNT * 2) {
+                            try {
+                                byte[] state = getSpi().loadCheckpoint(CHECK_POINT_KEY);
+
+                                if (state == null)
+                                    continue;
+
+                                state = GridTestIoUtils.deserializeJdk(state);
+
+                                assert state.length == ARRAY_SIZE;
+
+                                boolean has1 = false;
+                                boolean has2 = false;
+
+                                for (int j = 0; j < ARRAY_SIZE; j++) {
+                                    switch (state[j]) {
+                                        case 1:
+                                            has1 = true;
+
+                                            assert !has2;
+
+                                            break;
+
+                                        case 2:
+                                            has2 = true;
+
+                                            assert !has1;
+
+                                            break;
+
+                                        default:
+                                            assert false : "Unexpected value in state: " + state[j];
+                                    }
+                                }
+
+                                info(">>>>>>> Checkpoint is fine.");
+                            }
+                            catch (Throwable e) {
+                                error("Failed to load checkpoint: " + e.getMessage());
+
+                                fail.set(true);
+                            }
+                        }
+
+                        return null;
+                    }
+                },
+                1,
+                "reader"
+            );
+
+            fut1.get();
+            fut2.get();
+            fut3.get();
+
+            assert !fail.get();
+        }
+        finally {
+            U.resolveWorkDirectory(U.defaultWorkDirectory(), PATH, true);
+        }
     }
 
     /**
@@ -179,25 +188,5 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
         Arrays.fill(res, val);
 
         return res;
-    }
-
-    /**
-     * @param f Folder to delete.
-     */
-    void deleteFolder(File f) {
-        for (File file : f.listFiles())
-            if (file.isDirectory())
-                deleteFolder(file);
-            else
-                file.delete();
-
-        f.delete();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        deleteFolder(new File(U.getIgniteHome(), PATH));
     }
 }

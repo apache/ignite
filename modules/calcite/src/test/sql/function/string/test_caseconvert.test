@@ -1,0 +1,69 @@
+# name: test/sql/function/string/test_caseconvert.test
+# description: UPPER/LOWER test
+# group: [string]
+
+# test NULL constant
+query TT
+select UPPER(NULL), LOWER(NULL)
+----
+NULL
+NULL
+
+# unicode
+query TTTT
+select UPPER('áaaá'), UPPER('ö'), LOWER('S̈'), UPPER('ω')
+----
+ÁAAÁ	Ö	s̈	Ω
+
+# greek
+query TT
+SELECT UPPER('Αα Ββ Γγ Δδ Εε Ζζ  Ηη Θθ Ιι Κκ Λλ Μμ Νν Ξξ Οο Ππ Ρρ Σσς Ττ Υυ Φφ Χχ Ψψ Ωω'), LOWER('Αα Ββ Γγ Δδ Εε Ζζ  Ηη Θθ Ιι Κκ Λλ Μμ Νν Ξξ Οο Ππ Ρρ Σσς Ττ Υυ Φφ Χχ Ψψ Ωω')
+----
+ΑΑ ΒΒ ΓΓ ΔΔ ΕΕ ΖΖ  ΗΗ ΘΘ ΙΙ ΚΚ ΛΛ ΜΜ ΝΝ ΞΞ ΟΟ ΠΠ ΡΡ ΣΣΣ ΤΤ ΥΥ ΦΦ ΧΧ ΨΨ ΩΩ	αα ββ γγ δδ εε ζζ  ηη θθ ιι κκ λλ μμ νν ξξ οο ππ ρρ σσς ττ υυ φφ χχ ψψ ωω
+
+# test upper/lower on scalar values
+query TTT
+select UPPER(''), UPPER('hello'), UPPER('MotörHead')
+----
+(empty)	HELLO	MOTÖRHEAD
+
+query TTT
+select LOWER(''), LOWER('hello'), LOWER('MotörHead')
+----
+(empty)	hello	motörhead
+
+# test on entire tables
+statement ok
+CREATE TABLE strings(a VARCHAR, b VARCHAR)
+
+statement ok
+INSERT INTO strings VALUES ('Hello', 'World'), ('HuLlD', NULL), ('MotörHead','RÄcks')
+
+query T
+select UPPER(a) FROM strings ORDER BY a
+----
+HELLO
+HULLD
+MOTÖRHEAD
+
+query T
+select LOWER(a) FROM strings ORDER BY a
+----
+hello
+hulld
+motörhead
+
+query T
+select LOWER(b) FROM strings ORDER BY b NULLS LAST
+----
+räcks
+world
+NULL
+
+# test with selection vector
+query TT
+select UPPER(a), LOWER(a) FROM strings WHERE b IS NOT NULL ORDER BY a
+----
+HELLO	hello
+MOTÖRHEAD	motörhead
+

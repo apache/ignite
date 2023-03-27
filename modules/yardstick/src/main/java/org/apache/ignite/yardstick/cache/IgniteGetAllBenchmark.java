@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.cache;
 
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,6 +35,8 @@ public class IgniteGetAllBenchmark extends IgniteGetBenchmark {
 
             keys.add(key);
         }
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.getAll(keys);
 

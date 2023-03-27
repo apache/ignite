@@ -41,4 +41,9 @@
 #   define IGNITE_NO_THROW throw()
 #endif
 
+#define IGNITE_UNUSED(x) ((void) x)
+
+#define IGNORE_SIGNED_OVERFLOW
+#define IGNORE_FALSE_UNDEFINED
+
 #endif //_IGNITE_COMMON_COMMON

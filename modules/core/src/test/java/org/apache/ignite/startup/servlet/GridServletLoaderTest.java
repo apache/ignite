@@ -29,6 +29,7 @@ import javax.management.remote.JMXServiceURL;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Servlet loader test.
@@ -55,7 +56,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  * 4. Change ports in {@code $TOMCAT_HOME/conf/server.xml} to 8006, 8084, 8446.
  *
  * 5. Add in {@code $TOMCAT_HOME/bin/catalina.sh} where script {@code start} argument handled
- * {@code JAVA_OPTS="${JAVA_OPTS} "-Dcom.sun.management.jmxremote.port=1097" "-Dcom.sun.management.jmxremote.ssl=false" "-Dcom.sun.management.jmxremote.authenticate=false" "}
+ * {@code JAVA_OPTS="${JAVA_OPTS} "-Dcom.sun.management.jmxremote.port=1097" "-Dcom.sun.management.jmxremote.ssl=false"
+ * "-Dcom.sun.management.jmxremote.authenticate=false" "}
  */
 @GridCommonTest(group = "Loaders")
 public class GridServletLoaderTest extends GridCommonAbstractTest {
@@ -68,7 +70,7 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"unchecked"})
+    @Test
     public void testLoader() throws Exception {
         JMXConnector jmx = null;
 
@@ -100,12 +102,12 @@ public class GridServletLoaderTest extends GridCommonAbstractTest {
 
             int i = 0;
 
-            while (found == false) {
+            while (!found) {
                 info("Attempt to find GridKernal MBean [num=" + i + ']');
 
                 Set<ObjectName> names = jmx.getMBeanServerConnection().queryNames(queryName, null);
 
-                if (names.isEmpty() == false) {
+                if (!names.isEmpty()) {
                     for (ObjectName objectName : names) {
                         info("Found MBean for node: " + objectName);
 

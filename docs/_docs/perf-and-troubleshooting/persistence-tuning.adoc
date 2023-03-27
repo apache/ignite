@@ -1,0 +1,269 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Persistence Tuning
+:javaFile: code-snippets/java/src/main/java/org/apache/ignite/snippets/PersistenceTuning.java
+:xmlFile: code-snippets/xml/persistence-tuning.xml
+:dotnetFile: code-snippets/dotnet/PersistenceTuning.cs
+
+This article summarizes best practices for Ignite native persistence tuning.
+If you are using an external (3rd party) storage for persistence needs, please refer to performance guides from the 3rd party vendor.
+
+== Adjusting Page Size
+
+The `DataStorageConfiguration.pageSize` parameter should be no less than the lower of: the page size of your storage media (SSD, Flash, HDD, etc.) and the cache page size of your operating system.
+The default value is 4KB.
+
+The operating system's cache page size can be easily checked using
+link:https://unix.stackexchange.com/questions/128213/how-is-page-size-determined-in-virtual-address-space[system tools and parameters, window=_blank].
+
+The page size of the storage device such as SSD is usually noted in the device specification. If the manufacturer does
+not disclose this information, try to run SSD benchmarks to figure out the number.
+Many manufacturers have to adapt their drivers for 4 KB random-write workloads because a variety of standard
+benchmarks use 4 KB by default.
+link:https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/ssd-server-storage-applications-paper.pdf[This white paper,window=_blank]
+from Intel confirms that 4 KB should be enough.
+
+Once you pick the most optimal page size, apply it in your cluster configuration:
+
+////
+TODO for .NET and other languages.
+////
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;ds;page-size,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=page-size,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=page-size,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Keep WALs Separately
+
+Consider using separate drives for data files and link:persistence/native-persistence#write-ahead-log[Write-Ahead-Logging (WAL)].
+Ignite actively writes to both the data and WAL files.
+
+The example below shows how to configure separate paths for the data storage, WAL, and WAL archive:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;ds;paths,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=separate-wal,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=separate-wal,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Increasing WAL Segment Size
+
+The default WAL segment size (64 MB) may be inefficient in high load scenarios because it causes WAL to switch between segments too frequently and switching/rotation is a costly operation. Setting the segment size to a higher value (up to 2 GB) may help reduce the number of switching operations. However, the tradeoff is that this will increase the overall volume of the write-ahead log.
+
+See link:persistence/native-persistence#changing-wal-segment-size[Changing WAL Segment Size] for details.
+
+== Changing WAL Mode
+
+Consider other WAL modes as alternatives to the default mode. Each mode provides different degrees of reliability in
+case of node failure and that degree is inversely proportional to speed, i.e. the more reliable the WAL mode, the
+slower it is. Therefore, if your use case does not require high reliability, you can switch to a less reliable mode.
+
+See link:persistence/native-persistence#wal-modes[WAL Modes] for more details.
+
+== Disabling WAL
+
+//TODO: when should bhis be done?
+There are situations where link:persistence/native-persistence#disabling-wal[disabling the WAL] can help improve performance.
+
+== Pages Writes Throttling
+
+Ignite periodically starts the link:persistence/native-persistence#checkpointing[checkpointing process] that syncs
+dirty pages from memory to disk. A dirty page is a page that was updated in RAM but was not written to a respective
+partition file (an update was just appended to the WAL). This process happens in the background without affecting the application's logic.
+
+However, if a dirty page, scheduled for checkpointing, is updated before being written to disk, its previous state is
+copied to a special region called a checkpointing buffer.
+If the buffer gets overflowed, Ignite will stop processing all updates until the checkpointing is over.
+As a result, write performance can drop to zero as shown in​ this diagram, until the checkpointing cycle is completed:
+
+image::images/checkpointing-chainsaw.png[Checkpointing Chainsaw]
+
+The same situation occurs if the dirty pages threshold is reached again while the checkpointing is in progress.
+This will force Ignite to schedule one more checkpointing execution and to halt all the update operations until the first checkpointing cycle is over.
+
+Both situations usually arise when either a disk device is slow or the update rate is too intensive.
+To mitigate and prevent these performance drops, consider enabling the pages write throttling algorithm.
+The algorithm brings the performance of update operations down to the speed of the disk device whenever the checkpointing buffer fills in too fast or the percentage of dirty pages soar rapidly.
+
+[NOTE]
+====
+[discrete]
+=== Pages Write Throttling in a Nutshell
+
+Refer to the link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-PagesWriteThrottling[Ignite wiki page, window=_blank]
+maintained by Apache Ignite persistence experts to get more details about throttling and its causes.
+====
+
+The example below shows how to enable write throttling:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;ds;page-write-throttling,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=throttling,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=throttling,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Adjusting Checkpointing Buffer Size
+
+The size of the checkpointing buffer, explained in the previous section, is one of the checkpointing process triggers.
+
+The default buffer size is calculated as a function of the link:memory-configuration/data-regions[data region] size:
+
+[width=100%,cols="1,2",options="header"]
+|=======================================================================
+| Data Region Size |Default Checkpointing Buffer Size
+
+|< 1 GB | MIN (256 MB, Data_Region_Size)
+
+|between 1 GB and 8 GB | Data_Region_Size / 4
+
+|> 8 GB | 2 GB
+
+|=======================================================================
+
+The default buffer size can be suboptimal for write-intensive workloads because the page write
+throttling algorithm will slow down your writes whenever the size reaches the critical mark. To keep write
+performance at the desired pace while the checkpointing is in progress, consider increasing
+`DataRegionConfiguration.checkpointPageBufferSize` and enabling write throttling to prevent performance​ drops:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=!*;ignite-config;ds;page-write-throttling;data-region,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=checkpointing-buffer-size,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=checkpointing-buffer-size,indent=0]
+----
+tab:C++[unsupported]
+--
+
+In the example above, the checkpointing buffer size of the default region is set to 1 GB.
+
+////
+TODO: describe when checkpointing is triggered
+[NOTE]
+====
+[discrete]
+=== When is the Checkpointing Process Triggered?
+
+Checkpointing is started if either the dirty pages count goes beyond the `totalPages * 2 / 3` value or
+`DataRegionConfiguration.checkpointPageBufferSize` is reached. However, if page write throttling is used, then
+`DataRegionConfiguration.checkpointPageBufferSize` is never encountered because it cannot be reached due to the way the algorithm works.
+====
+////
+
+== Enabling Direct I/O
+//TODO: why is this not enabled by default?
+Usually, whenever an application reads data from disk, the OS gets the data and puts it in a file buffer cache first.
+Similarly, for every write operation, the OS first writes the data in the cache and transfers it to disk later. To
+eliminate this process, you can enable Direct I/O in which case the data is read and written directly from/to the
+disk, bypassing the file buffer cache.
+
+The Direct I/O module in Ignite is used to speed up the checkpointing process, which writes dirty pages from RAM to disk.
+Consider using the Direct I/O plugin for write-intensive workloads.
+
+[NOTE]
+====
+[discrete]
+=== Direct I/O and WALs
+
+Note that Direct I/O cannot be enabled specifically for WAL files. However, enabling the Direct I/O module provides
+a slight benefit regarding the WAL files as well: the WAL data will not be stored in the OS buffer cache for too long;
+it will be flushed (depending on the WAL mode) at the next page cache scan and removed from the page cache.
+====
+
+You can enable Direct I/O, move the `{ignite_dir}/libs/optional/ignite-direct-io` folder to the upper level `libs/optional/ignite-direct-io`
+folder in your Ignite distribution or as a Maven dependency as described link:setup#enabling-modules[here].
+
+You can use the `IGNITE_DIRECT_IO_ENABLED` system property to enable or disable the plugin at runtime.
+
+Get more details from the link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+-+under+the+hood#IgnitePersistentStore-underthehood-DirectI/O[Ignite Direct I/O Wiki section, window=_blank].
+
+== Purchase Production-Level SSDs
+
+Note that the performance of Ignite Native Persistence may drop after several hours of intensive write load due to
+the nature of how
+link:http://codecapsule.com/2014/02/12/coding-for-ssds-part-2-architecture-of-an-ssd-and-benchmarking[SSDs are designed and operate, window=_blank].
+Consider buying fast production-level SSDs to keep the performance high or switch to non-volatile memory devices like
+Intel Optane Persistent Memory.
+
+== SSD Over-provisioning
+
+Performance of random writes on a 50% filled disk is much better than on a 90% filled disk because of the SSDs over-provisioning
+(see link:https://www.seagate.com/tech-insights/ssd-over-provisioning-benefits-master-ti[https://www.seagate.com/tech-insights/ssd-over-provisioning-benefits-master-ti, window=_blank]).
+
+Consider buying SSDs with higher over-provisioning rates and make sure the manufacturer provides the tools to adjust it.
+
+[NOTE]
+====
+[discrete]
+=== Intel 3D XPoint
+
+Consider using 3D XPoint drives instead of regular SSDs to avoid the bottlenecks caused by a low over-provisioning
+setting and constant garbage collection at the SSD level.
+Read more link:http://dmagda.blogspot.com/2017/10/3d-xpoint-outperforms-ssds-verified-on.html[here, window=_blank].
+====

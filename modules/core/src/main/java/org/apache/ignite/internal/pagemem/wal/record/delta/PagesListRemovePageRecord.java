@@ -19,7 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,6 +69,7 @@ public class PagesListRemovePageRecord extends PageDeltaRecord {
         return S.toString(PagesListRemovePageRecord.class, this,
             "rmvdPageId", U.hexLong(rmvdPageId),
             "pageId", U.hexLong(pageId()),
-            "cacheId", cacheId());
+            "grpId", groupId(),
+            "super", super.toString());
     }
 }

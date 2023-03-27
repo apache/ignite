@@ -19,13 +19,16 @@ package org.apache.ignite.internal.client.marshaller.jdk;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  * Simple marshaller that utilize JDK serialization features.
@@ -33,6 +36,23 @@ import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 public class GridClientJdkMarshaller implements GridClientMarshaller {
     /** ID. */
     public static final byte ID = 2;
+
+    /** Class name filter. */
+    private final IgnitePredicate<String> clsFilter;
+
+    /**
+     * Default constructor.
+     */
+    public GridClientJdkMarshaller() {
+        this(null);
+    }
+
+    /**
+     * @param clsFilter Class filter.
+     */
+    public GridClientJdkMarshaller(IgnitePredicate<String> clsFilter) {
+        this.clsFilter = clsFilter;
+    }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
@@ -56,17 +76,44 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         ByteArrayInputStream tmp = new ByteArrayInputStream(bytes);
 
-        ObjectInput in = new ObjectInputStream(tmp);
+        ObjectInput in = new ClientJdkInputStream(tmp, clsFilter);
 
         try {
             return (T)in.readObject();
         }
         catch (ClassNotFoundException e) {
             throw new IOException("Failed to unmarshal target object: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Wrapper with class resolving control.
+     */
+    private static class ClientJdkInputStream extends ObjectInputStream {
+        /** Class name filter. */
+        private final IgnitePredicate<String> clsFilter;
+
+        /**
+         * @param in Input stream.
+         * @param clsFilter Class filter.
+         */
+        public ClientJdkInputStream(InputStream in, IgnitePredicate<String> clsFilter) throws IOException {
+            super(in);
+
+            this.clsFilter = clsFilter;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+            String clsName = desc.getName();
+
+            if (clsFilter != null && !clsFilter.apply(clsName))
+                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+
+            return super.resolveClass(desc);
         }
     }
 }

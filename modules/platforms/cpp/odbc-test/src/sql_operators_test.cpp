@@ -22,10 +22,6 @@
 #include <vector>
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "test_type.h"
@@ -38,177 +34,177 @@ BOOST_FIXTURE_TEST_SUITE(SqlOperatorTestSuite, ignite::SqlTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestOperatorAddInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 + 51", 123 + 51);
-};
+    CheckSingleResult<SQLINTEGER>("SELECT 123 + 51", 123 + 51);
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorSubInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 - 51", 123 - 51);
-};
+    CheckSingleResult<SQLINTEGER>("SELECT 123 - 51", 123 - 51);
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorDivInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 / 51", 123 / 51);
-};
+    CheckSingleResult<SQLINTEGER>("SELECT 123 / 51", 123 / 51);
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorModInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 % 51", 123 % 51);
-};
+    CheckSingleResult<SQLINTEGER>("SELECT 123 % 51", 123 % 51);
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorMultInt)
 {
-    CheckSingleResult<int32_t>("SELECT 123 * 51", 123 * 51);
-};
+    CheckSingleResult<SQLINTEGER>("SELECT 123 * 51", 123 * 51);
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorAddDouble)
 {
     CheckSingleResult<double>("SELECT 123.0 + 51.0", 123.0 + 51.0);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorSubDouble)
 {
     CheckSingleResult<double>("SELECT 123.0 - 51.0", 123.0 - 51.0);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorDivDouble)
 {
     CheckSingleResult<double>("SELECT 123.0 / 51.0", 123.0 / 51.0);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorModDouble)
 {
     CheckSingleResult<double>("SELECT 123.0 % 51.0", 123 % 51);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorMultDouble)
 {
     CheckSingleResult<double>("SELECT 123.0 * 51.0", 123.0 * 51.0);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorConcatString)
 {
     CheckSingleResult<std::string>("SELECT 'Hello' || ' ' || 'World' || '!'", "Hello World!");
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorGreaterInt)
 {
     CheckSingleResult<bool>("SELECT 2 > 3", false);
     CheckSingleResult<bool>("SELECT 3 > 3", false);
     CheckSingleResult<bool>("SELECT 34 > 3", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorLessInt)
 {
     CheckSingleResult<bool>("SELECT 4 < 4", false);
     CheckSingleResult<bool>("SELECT 4 < 4", false);
     CheckSingleResult<bool>("SELECT 8 < 42", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorGreaterEquealInt)
 {
     CheckSingleResult<bool>("SELECT 2 >= 3", false);
     CheckSingleResult<bool>("SELECT 3 >= 3", true);
     CheckSingleResult<bool>("SELECT 34 >= 3", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorLessEquealInt)
 {
     CheckSingleResult<bool>("SELECT 4 <= 3", false);
     CheckSingleResult<bool>("SELECT 4 <= 4", true);
     CheckSingleResult<bool>("SELECT 8 <= 42", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorEquealInt)
 {
     CheckSingleResult<bool>("SELECT 4 = 3", false);
     CheckSingleResult<bool>("SELECT 4 = 4", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorNotEquealInt)
 {
     CheckSingleResult<bool>("SELECT 4 != 3", true);
     CheckSingleResult<bool>("SELECT 4 != 4", false);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorGreaterDouble)
 {
     CheckSingleResult<bool>("SELECT 2 > 3", false);
     CheckSingleResult<bool>("SELECT 3 > 3", false);
     CheckSingleResult<bool>("SELECT 34 > 3", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorLessDouble)
 {
     CheckSingleResult<bool>("SELECT 4.0 < 4.0", false);
     CheckSingleResult<bool>("SELECT 4.0 < 4.0", false);
     CheckSingleResult<bool>("SELECT 8.0 < 42.0", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorGreaterEquealDouble)
 {
     CheckSingleResult<bool>("SELECT 2.0 >= 3.0", false);
     CheckSingleResult<bool>("SELECT 3.0 >= 3.0", true);
     CheckSingleResult<bool>("SELECT 34.0 >= 3.0", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorLessEquealDouble)
 {
     CheckSingleResult<bool>("SELECT 4.0 <= 3.0", false);
     CheckSingleResult<bool>("SELECT 4.0 <= 4.0", true);
     CheckSingleResult<bool>("SELECT 8.0 <= 42.0", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorEquealDouble)
 {
     CheckSingleResult<bool>("SELECT 4.0 = 3.0", false);
     CheckSingleResult<bool>("SELECT 4.0 = 4.0", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorNotEquealDouble)
 {
     CheckSingleResult<bool>("SELECT 4.0 != 3.0", true);
     CheckSingleResult<bool>("SELECT 4.0 != 4.0", false);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorGreaterString)
 {
     CheckSingleResult<bool>("SELECT 'abc' > 'bcd'", false);
     CheckSingleResult<bool>("SELECT 'abc' > 'abc'", false);
     CheckSingleResult<bool>("SELECT 'bcd' > 'abc'", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorLessString)
 {
     CheckSingleResult<bool>("SELECT 'bcd' < 'abc'", false);
     CheckSingleResult<bool>("SELECT 'abc' < 'abc'", false);
     CheckSingleResult<bool>("SELECT 'abc' < 'bcd'", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorGreaterEquealString)
 {
     CheckSingleResult<bool>("SELECT 'abc' >= 'bcd'", false);
     CheckSingleResult<bool>("SELECT 'abc' >= 'abc'", true);
     CheckSingleResult<bool>("SELECT 'bcd' >= 'abc'", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorLessEquealString)
 {
     CheckSingleResult<bool>("SELECT 'bcd' <= 'abc'", false);
     CheckSingleResult<bool>("SELECT 'abc' <= 'bcd'", true);
     CheckSingleResult<bool>("SELECT 'abc' <= 'abc'", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorEquealString)
 {
     CheckSingleResult<bool>("SELECT 'bcd' = 'abc'", false);
     CheckSingleResult<bool>("SELECT 'abc' = 'abc'", true);
-};
+}
 
 BOOST_AUTO_TEST_CASE(TestOperatorNotEquealString)
 {
     CheckSingleResult<bool>("SELECT 'abc' != 'abc'", false);
     CheckSingleResult<bool>("SELECT 'bcd' != 'abc'", true);
-};
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -21,38 +21,43 @@
 
 #include "ignite/impl/interop//interop_output_stream.h"
 
-/**
- * Common macro to write a single value.
- */
-#define IGNITE_INTEROP_OUT_WRITE(val, type, len) { \
-    EnsureCapacity(pos + len); \
-    *reinterpret_cast<type*>(data + pos) = val; \
-    Shift(len); \
-}
-
-/**
- * Common macro to write an array.
- */
-#define IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len) { \
-    CopyAndShift(reinterpret_cast<const int8_t*>(val), 0, len); \
-}
-
 namespace ignite
 {
     namespace impl
     {
-        namespace interop 
+        namespace interop
         {
-            union BinaryFloatInt32
+            class OutputStreamHelper
             {
-                float f;
-                int32_t i;                
-            };
+            public:
+                explicit OutputStreamHelper(InteropOutputStream& os0) : os(os0)
+                {
+                    // No-op;
+                };
 
-            union BinaryDoubleInt64
-            {
-                double d;
-                int64_t i;                
+                template<typename T>
+                void WritePrimitiveAt(const T& val, int32_t pos)
+                {
+                    os.EnsureCapacity(pos + sizeof(T));
+                    std::memcpy(os.data + pos, &val, sizeof(T));
+                }
+
+                template<typename T>
+                void WritePrimitive(const T& val)
+                {
+                    os.EnsureCapacity(os.pos + sizeof(T));
+                    std::memcpy(os.data + os.pos, &val, sizeof(T));
+                    os.Shift(sizeof(T));
+                }
+
+                template<typename T>
+                void WritePrimitiveArray(const T* arr, int32_t len)
+                {
+                    os.CopyAndShift(arr, 0, len * sizeof(T));
+                }
+
+            private:
+                InteropOutputStream& os;
             };
 
             InteropOutputStream::InteropOutputStream(InteropMemory* mem)
@@ -64,29 +69,27 @@ namespace ignite
                 pos = 0;
             }
 
-            void InteropOutputStream::WriteInt8(const int8_t val)
+            void InteropOutputStream::WriteInt8(int8_t val)
             {
-                IGNITE_INTEROP_OUT_WRITE(val, int8_t, 1);
+                OutputStreamHelper(*this).WritePrimitive<int8_t>(val);
             }
 
-            void InteropOutputStream::WriteInt8(const int8_t val, const int32_t pos)
+            void InteropOutputStream::WriteInt8(int8_t val, int32_t pos0)
             {
-                EnsureCapacity(pos + 1);
-
-                *(data + pos) = val;
+                OutputStreamHelper(*this).WritePrimitiveAt<int8_t>(val, pos0);
             }
 
-            void InteropOutputStream::WriteInt8Array(const int8_t* val, const int32_t len)
+            void InteropOutputStream::WriteInt8Array(const int8_t* val, int32_t len)
             {
-                IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len);
+                OutputStreamHelper(*this).WritePrimitiveArray<int8_t>(val, len);
             }
 
-            void InteropOutputStream::WriteBool(const bool val)
+            void InteropOutputStream::WriteBool(bool val)
             {
                 WriteInt8(val ? 1 : 0);
             }
 
-            void InteropOutputStream::WriteBoolArray(const bool* val, const int32_t len)
+            void InteropOutputStream::WriteBoolArray(const bool* val, int32_t len)
             {
                 for (int i = 0; i < len; i++)
                     WriteBool(*(val + i));
@@ -94,83 +97,80 @@ namespace ignite
 
             void InteropOutputStream::WriteInt16(const int16_t val)
             {
-                IGNITE_INTEROP_OUT_WRITE(val, int16_t, 2);
+                OutputStreamHelper(*this).WritePrimitive<int16_t>(val);
             }
 
-            void InteropOutputStream::WriteInt16(const int32_t pos, const int16_t val)
+            void InteropOutputStream::WriteInt16(int32_t pos0, int16_t val)
             {
-                EnsureCapacity(pos + 2);
-
-                *reinterpret_cast<int16_t*>(data + pos) = val;
+                OutputStreamHelper(*this).WritePrimitiveAt<int16_t>(val, pos0);
             }
 
-            void InteropOutputStream::WriteInt16Array(const int16_t* val, const int32_t len)
+            void InteropOutputStream::WriteInt16Array(const int16_t* val, int32_t len)
             {
-                IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len << 1);
+                OutputStreamHelper(*this).WritePrimitiveArray<int16_t>(val, len);
             }
 
-            void InteropOutputStream::WriteUInt16(const uint16_t val)
+            void InteropOutputStream::WriteUInt16(uint16_t val)
             {
-                IGNITE_INTEROP_OUT_WRITE(val, uint16_t, 2);
+                OutputStreamHelper(*this).WritePrimitive<uint16_t>(val);
             }
 
-            void InteropOutputStream::WriteUInt16Array(const uint16_t* val, const int32_t len)
+            void InteropOutputStream::WriteUInt16Array(const uint16_t* val, int32_t len)
             {
-                IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len << 1);
+                OutputStreamHelper(*this).WritePrimitiveArray<uint16_t>(val, len);
             }
 
-            void InteropOutputStream::WriteInt32(const int32_t val)
+            void InteropOutputStream::WriteInt32(int32_t val)
             {
-                IGNITE_INTEROP_OUT_WRITE(val, int32_t, 4);
+                OutputStreamHelper(*this).WritePrimitive<int32_t>(val);
             }
 
-            void InteropOutputStream::WriteInt32(const int32_t pos, const int32_t val)
+            void InteropOutputStream::WriteInt32(int32_t pos0, int32_t val)
             {
-                EnsureCapacity(pos + 4);
-
-                *reinterpret_cast<int32_t*>(data + pos) = val;
+                OutputStreamHelper(*this).WritePrimitiveAt<int32_t>(val, pos0);
             }
 
-            void InteropOutputStream::WriteInt32Array(const int32_t* val, const int32_t len)
+            void InteropOutputStream::WriteInt32Array(const int32_t* val, int32_t len)
             {
-                IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len << 2);
+                OutputStreamHelper(*this).WritePrimitiveArray<int32_t>(val, len);
             }
 
-            void InteropOutputStream::WriteInt64(const int64_t val)
+            void InteropOutputStream::WriteInt64(int64_t val)
             {
-                IGNITE_INTEROP_OUT_WRITE(val, int64_t, 8);
+                OutputStreamHelper(*this).WritePrimitive<int64_t>(val);
             }
 
-            void InteropOutputStream::WriteInt64Array(const int64_t* val, const int32_t len)
+            void InteropOutputStream::WriteInt64(const int32_t pos0, const int64_t val)
             {
-                IGNITE_INTEROP_OUT_WRITE_ARRAY(val, len << 3);
+                OutputStreamHelper(*this).WritePrimitiveAt<int64_t>(val, pos0);
             }
 
-            void InteropOutputStream::WriteFloat(const float val)
+            void InteropOutputStream::WriteInt64Array(const int64_t* val, int32_t len)
             {
-                BinaryFloatInt32 u;
+                OutputStreamHelper(*this).WritePrimitiveArray<int64_t>(val, len);
+            }
 
-                u.f = val;
+            void InteropOutputStream::WriteFloat(float val)
+            {
+                BinaryFloatInt32 u = {val};
 
                 WriteInt32(u.i);
             }
 
-            void InteropOutputStream::WriteFloatArray(const float* val, const int32_t len)
+            void InteropOutputStream::WriteFloatArray(const float* val, int32_t len)
             {
                 for (int i = 0; i < len; i++)
                     WriteFloat(*(val + i));
             }
 
-            void InteropOutputStream::WriteDouble(const double val)
+            void InteropOutputStream::WriteDouble(double val)
             {
-                BinaryDoubleInt64 u;
-
-                u.d = val;
+                BinaryDoubleInt64 u = {val};
 
                 WriteInt64(u.i);
             }
 
-            void InteropOutputStream::WriteDoubleArray(const double* val, const int32_t len)
+            void InteropOutputStream::WriteDoubleArray(const double* val, int32_t len)
             {
                 for (int i = 0; i < len; i++)
                     WriteDouble(*(val + i));
@@ -181,7 +181,7 @@ namespace ignite
                 return pos;
             }
 
-            void InteropOutputStream::Position(const int32_t val)
+            void InteropOutputStream::Position(int32_t val)
             {
                 EnsureCapacity(val);
 
@@ -226,14 +226,13 @@ namespace ignite
                 pos += cnt;
             }
 
-            void InteropOutputStream::CopyAndShift(const int8_t* src, int32_t off, int32_t len) {
+            void InteropOutputStream::CopyAndShift(const void* src, int32_t off, int32_t len) {
                 EnsureCapacity(pos + len);
 
-                memcpy(data + pos, src + off, len);
+                memcpy(data + pos, reinterpret_cast<const int8_t*>(src) + off, len);
 
                 Shift(len);
             }
         }
     }
 }
-

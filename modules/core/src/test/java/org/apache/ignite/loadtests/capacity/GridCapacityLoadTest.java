@@ -64,7 +64,7 @@ public class GridCapacityLoadTest {
 
                     printHeap(init);
 
-                    if (cnt > 2100000 &&  cnt % 100000 == 0)
+                    if (cnt > 2100000 && cnt % 100000 == 0)
                         System.gc();
                 }
             }
@@ -85,6 +85,7 @@ public class GridCapacityLoadTest {
         }
     }
 
+    /** */
     private static void printHeap(long init) {
         MemoryUsage heap = mem.getHeapMemoryUsage();
 

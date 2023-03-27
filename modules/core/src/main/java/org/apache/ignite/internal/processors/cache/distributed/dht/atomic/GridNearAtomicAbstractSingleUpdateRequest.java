@@ -21,10 +21,10 @@ import java.io.Externalizable;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,14 +51,10 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      */
     protected GridNearAtomicAbstractSingleUpdateRequest(
@@ -66,32 +62,20 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
-        @Nullable UUID subjId,
         int taskNameHash,
-        boolean mappingKnown,
-        boolean skipStore,
-        boolean keepBinary,
-        boolean recovery,
+        byte flags,
         boolean addDepInfo
     ) {
         super(cacheId,
             nodeId,
             futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
-            subjId,
             taskNameHash,
-            mappingKnown,
-            skipStore,
-            keepBinary,
-            recovery,
+            flags,
             addDepInfo);
     }
 
@@ -112,5 +96,12 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
     /** {@inheritDoc} */
     @Nullable @Override public CacheEntryPredicate[] filter() {
         return NO_FILTER;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicAbstractSingleUpdateRequest.class, this,
+            "nodeId", nodeId, "futId", futId, "topVer", topVer,
+            "parent", super.toString());
     }
 }

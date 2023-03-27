@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -36,12 +35,11 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -109,7 +107,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
                             Collections.shuffle(ids);
 
-                            println("Waiting for partitioned map exchage of all nodes");
+                            println("Waiting for partitioned map exchange of all nodes");
 
                             ignite.compute().broadcastAsync(new AwaitPartitionMapExchangeTask())
                                 .get(args.cacheOperationTimeoutMillis());
@@ -160,7 +158,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
     }
 
     /**
-     * Awaits for partitiona map exchage.
+     * Awaits for partitiona map exchange.
      *
      * @param ignite Ignite.
      * @throws Exception If failed.
@@ -227,7 +225,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             println("");
 
-            ((IgniteMXBean)ignite()).dumpDebugInfo();
+            ((IgniteKernal)ignite()).dumpDebugInfo();
 
             // Debug info on servers.
             Ignite ignite = ignite();
@@ -283,7 +281,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             println("");
 
-            ((IgniteMXBean)ignite).dumpDebugInfo();
+            ((IgniteKernal)ignite).dumpDebugInfo();
         }
     }
 

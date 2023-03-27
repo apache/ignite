@@ -24,21 +24,21 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * JDBC statement implementation.
@@ -56,26 +56,20 @@ public class JdbcStatement implements Statement {
     /** Rows limit. */
     private int maxRows;
 
-    /** Current result set. */
-    protected ResultSet rs;
-
     /** Query arguments. */
     protected ArrayList<Object> args;
 
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
 
-    /** Result sets. */
-    final Set<JdbcResultSet> resSets = new HashSet<>();
-
-    /** Fields indexes. */
-    Map<String, Integer> fieldsIdxs = new HashMap<>();
-
-    /** Current updated items count. */
-    long updateCnt = -1;
-
-    /** Batch statements. */
+    /** Batch of statements. */
     private List<String> batch;
+
+    /** Results. */
+    protected List<JdbcResultSet> results;
+
+    /** Current result set index. */
+    protected int curRes = 0;
 
     /**
      * Creates new statement.
@@ -89,72 +83,81 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public ResultSet executeQuery(String sql) throws SQLException {
-        ensureNotClosed();
+        execute0(sql, true);
 
-        rs = null;
-
-        updateCnt = -1;
-
-        if (F.isEmpty(sql))
-            throw new SQLException("SQL query is empty");
-
-        Ignite ignite = conn.ignite();
-
-        UUID nodeId = conn.nodeId();
-
-        UUID uuid = UUID.randomUUID();
-
-        boolean loc = nodeId == null;
-
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, true, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
-
-        try {
-            JdbcQueryTask.QueryResult res =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-
-            JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(), res.getTypes(),
-                res.getRows(), res.isFinished());
-
-            rs.setFetchSize(fetchSize);
-
-            resSets.add(rs);
-
-            return rs;
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public int executeUpdate(String sql) throws SQLException {
-        ensureNotClosed();
-
-        rs = null;
-
-        updateCnt = -1;
-
-        return Long.valueOf(doUpdate(sql, getArgs())).intValue();
+        return getResultSet();
     }
 
     /**
-     * Run update query.
      * @param sql SQL query.
-     * @param args Update arguments.
-     * @return Number of affected items.
-     * @throws SQLException If failed.
+     * @param isQuery Expected type of statements are contained in the query.
+     * @throws SQLException On error.
      */
-    long doUpdate(String sql, Object[] args) throws SQLException {
+    private void executeMultipleStatement(String sql, Boolean isQuery) throws SQLException {
+        ensureNotClosed();
+
+        closeResults();
+
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
-        Ignite ignite = conn.ignite();
+        IgniteEx ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        boolean loc = nodeId == null;
+        JdbcQueryMultipleStatementsTask qryTask;
+
+        if (conn.isMultipleStatementsTaskV3Supported()) {
+            qryTask = new JdbcQueryMultipleStatementsTaskV3(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(),
+                conn.isCollocatedQuery(), conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(),
+                conn.isMultipleStatementsAllowed(), conn.clientDescriptor());
+        }
+        else if (!conn.isMultipleStatementsAllowed() && conn.isMultipleStatementsTaskV2Supported()) {
+            qryTask = new JdbcQueryMultipleStatementsNotAllowTask(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+        }
+        else {
+            qryTask = new JdbcQueryMultipleStatementsTask(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
+                conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
+        }
+
+        try {
+            List<JdbcStatementResultInfo> rsInfos = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
+
+            results = new ArrayList<>(rsInfos.size());
+
+            for (JdbcStatementResultInfo rsInfo : rsInfos) {
+                if (rsInfo.isQuery())
+                    results.add(new JdbcResultSet(true, rsInfo.queryId(), this, null, null, null, null, false));
+                else
+                    results.add(new JdbcResultSet(this, rsInfo.updateCount()));
+            }
+        }
+        catch (Exception e) {
+            throw convertToSqlException(e, "Failed to query Ignite.");
+        }
+    }
+
+    /**
+     * @param sql SQL query.
+     * @param isQuery Expected type of statements are contained in the query.
+     * @throws SQLException On error.
+     */
+    private void executeSingle(String sql, Boolean isQuery) throws SQLException {
+        ensureNotClosed();
+
+        IgniteEx ignite = conn.ignite();
 
         UUID nodeId = conn.nodeId();
 
@@ -163,51 +166,72 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
 
         if (!conn.isDmlSupported())
-            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+            if (isQuery != null && !isQuery)
+                throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+            else
+                isQuery = true;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, false, loc, args,
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
+            sql, isQuery, loc, getArgs(), fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), false, conn.skipReducerOnUpdate());
 
         try {
-            JdbcQueryTask.QueryResult qryRes =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+            JdbcQueryTaskResult qryRes = loc
+                ? qryTask.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    qryTask,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
 
-            return updateCnt = updateCounterFromQueryResult(qryRes.getRows());
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (SQLException e) {
-            throw e;
+            JdbcResultSet rs = new JdbcResultSet(qryRes.isQuery(), uuid, this, qryRes.getTbls(), qryRes.getCols(),
+                qryRes.getTypes(), qryRes.getRows(), qryRes.isFinished());
+
+            rs.setFetchSize(fetchSize);
+
+            results = Collections.singletonList(rs);
+            curRes = 0;
         }
         catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
+            throw convertToSqlException(e, "Failed to query Ignite.");
         }
+
     }
 
     /**
-     * @param rows query result.
-     * @return update counter, if found
-     * @throws SQLException if getting an update counter from result proved to be impossible.
+     * Sets parameters to query object. Logic should be consistent with {@link JdbcQueryTask#call()} and {@link
+     * JdbcQueryMultipleStatementsTask#call()}. Parameters are determined from context: connection state and this
+     * statement state.
+     *
+     * @param qry query which parameters to set up
      */
-    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
-         if (F.isEmpty(rows))
-            return -1;
+    protected void setupQuery(SqlFieldsQuery qry) {
+        qry.setPageSize(fetchSize);
+        qry.setLocal(conn.nodeId() == null);
+        qry.setCollocated(conn.isCollocatedQuery());
+        qry.setDistributedJoins(conn.isDistributedJoins());
+        qry.setEnforceJoinOrder(conn.isEnforceJoinOrder());
+        qry.setLazy(conn.isLazy());
+        qry.setSchema(conn.schemaName());
+    }
 
-        if (rows.size() != 1)
-            throw new SQLException("Expected fetch size of 1 for update operation");
+    /**
+     * @param sql SQL query.
+     * @param isQuery Expected type of statements are contained in the query.
+     * @throws SQLException On error.
+     */
+    protected void execute0(String sql, Boolean isQuery) throws SQLException {
+        if (conn.isMultipleStatementsSupported())
+            executeMultipleStatement(sql, isQuery);
+        else
+            executeSingle(sql, isQuery);
+    }
 
-        List<?> row = rows.get(0);
+    /** {@inheritDoc} */
+    @Override public int executeUpdate(String sql) throws SQLException {
+        execute0(sql, false);
 
-        if (row.size() != 1)
-            throw new SQLException("Expected row size of 1 for update operation");
-
-        Object objRes = row.get(0);
-
-        if (!(objRes instanceof Long))
-            throw new SQLException("Unexpected update result type");
-
-        return (Long)objRes;
+        return getUpdateCount();
     }
 
     /** {@inheritDoc} */
@@ -219,15 +243,10 @@ public class JdbcStatement implements Statement {
 
     /**
      * Marks statement as closed and closes all result sets.
+     * @throws SQLException On error.
      */
     void closeInternal() throws SQLException {
-        for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {
-            JdbcResultSet rs = it.next();
-
-            rs.closeInternal();
-
-            it.remove();
-        }
+        closeResults();
 
         closed = true;
     }
@@ -307,88 +326,48 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public boolean execute(String sql) throws SQLException {
-        if (!conn.isDmlSupported()) {
-            // We attempt to run a query without any checks as long as server does not support DML anyway,
-            // so it simply will throw an exception when given a DML statement instead of a query.
-            rs = executeQuery(sql);
+        execute0(sql, null);
 
-            return true;
-        }
-
-        ensureNotClosed();
-
-        rs = null;
-
-        updateCnt = -1;
-
-        if (F.isEmpty(sql))
-            throw new SQLException("SQL query is empty");
-
-        Ignite ignite = conn.ignite();
-
-        UUID nodeId = conn.nodeId();
-
-        UUID uuid = UUID.randomUUID();
-
-        boolean loc = nodeId == null;
-
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), sql, null, loc, getArgs(),
-            fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
-
-        try {
-            JdbcQueryTask.QueryResult res =
-                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-
-            if (res.isQuery()) {
-                JdbcResultSet rs = new JdbcResultSet(uuid, this, res.getTbls(), res.getCols(),
-                    res.getTypes(), res.getRows(), res.isFinished());
-
-                rs.setFetchSize(fetchSize);
-
-                resSets.add(rs);
-
-                this.rs = rs;
-            }
-            else
-                updateCnt = updateCounterFromQueryResult(res.getRows());
-
-            return res.isQuery();
-        }
-        catch (IgniteSQLException e) {
-            throw e.toJdbcException();
-        }
-        catch (Exception e) {
-            throw new SQLException("Failed to query Ignite.", e);
-        }
+        return results.get(0).isQuery();
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getResultSet() throws SQLException {
-        ensureNotClosed();
+        JdbcResultSet rs = nextResultSet();
 
-        ResultSet rs0 = rs;
+        if (rs == null)
+            return null;
 
-        rs = null;
+        if (!rs.isQuery()) {
+            curRes--;
 
-        return rs0;
+            return null;
+        }
+
+        return rs;
     }
 
     /** {@inheritDoc} */
     @Override public int getUpdateCount() throws SQLException {
-        ensureNotClosed();
+        JdbcResultSet rs = nextResultSet();
 
-        long res = updateCnt;
+        if (rs == null)
+            return -1;
 
-        updateCnt = -1;
+        if (rs.isQuery()) {
+            curRes--;
 
-        return Long.valueOf(res).intValue();
+            return -1;
+        }
+
+        return (int)rs.updateCount();
     }
 
     /** {@inheritDoc} */
     @Override public boolean getMoreResults() throws SQLException {
         ensureNotClosed();
 
-        return false;
+        return getMoreResults(CLOSE_CURRENT_RESULT);
     }
 
     /** {@inheritDoc} */
@@ -461,7 +440,63 @@ public class JdbcStatement implements Statement {
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        List<String> batch = this.batch;
+
+        this.batch = null;
+
+        return doBatchUpdate(null, batch, null);
+    }
+
+    /**
+     * Runs batch of update commands.
+     *
+     * @param command SQL command.
+     * @param batch Batch of SQL commands.
+     * @param batchArgs Batch of SQL parameters.
+     * @return Number of affected rows.
+     * @throws SQLException If failed.
+     */
+    protected int[] doBatchUpdate(String command, List<String> batch, List<List<Object>> batchArgs)
+        throws SQLException {
+
+        closeResults();
+
+        if ((F.isEmpty(command) || F.isEmpty(batchArgs)) && F.isEmpty(batch))
+            throw new SQLException("Batch is empty.");
+
+        IgniteEx ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        boolean loc = nodeId == null;
+
+        if (!conn.isDmlSupported())
+            throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+
+        JdbcBatchUpdateTask task = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
+            conn.schemaName(), command, batch, batchArgs, getFetchSize(), conn.isLocalQuery(),
+            conn.isCollocatedQuery(), conn.isDistributedJoins());
+
+        try {
+            int[] res = loc
+                ? task.call()
+                : ignite.context().closure().callAsync(
+                    BALANCE,
+                    task,
+                    options(ignite.cluster().forNodeId(nodeId).nodes())
+                ).get();
+
+            long updateCnt = F.isEmpty(res) ? -1 : res[res.length - 1];
+
+            results = Collections.singletonList(new JdbcResultSet(this, updateCnt));
+
+            curRes = 0;
+
+            return res;
+        }
+        catch (Exception e) {
+            throw convertToSqlException(e, "Failed to query Ignite.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -475,10 +510,32 @@ public class JdbcStatement implements Statement {
     @Override public boolean getMoreResults(int curr) throws SQLException {
         ensureNotClosed();
 
-        if (curr == KEEP_CURRENT_RESULT || curr == CLOSE_ALL_RESULTS)
-            throw new SQLFeatureNotSupportedException("Multiple open results are not supported.");
+        if (results != null) {
+            assert curRes <= results.size() : "Invalid results state: [resultsCount=" + results.size() +
+                ", curRes=" + curRes + ']';
 
-        return false;
+            switch (curr) {
+                case CLOSE_CURRENT_RESULT:
+                    if (curRes > 0)
+                        results.get(curRes - 1).close();
+
+                    break;
+
+                case CLOSE_ALL_RESULTS:
+                    for (int i = 0; i < curRes; ++i)
+                        results.get(i).close();
+
+                    break;
+
+                case KEEP_CURRENT_RESULT:
+                    break;
+
+                default:
+                    throw new SQLException("Invalid 'current' parameter.");
+            }
+        }
+
+        return (results != null && curRes < results.size());
     }
 
     /** {@inheritDoc} */
@@ -576,7 +633,6 @@ public class JdbcStatement implements Statement {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Statement is not a wrapper for " + iface.getName());
@@ -615,6 +671,36 @@ public class JdbcStatement implements Statement {
      */
     void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Statement is closed.");
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
+    }
+
+    /**
+     * Get last result set if any.
+     *
+     * @return Result set or null.
+     * @throws SQLException If failed.
+     */
+    private JdbcResultSet nextResultSet() throws SQLException {
+        ensureNotClosed();
+
+        if (results == null || curRes >= results.size())
+            return null;
+        else
+            return results.get(curRes++);
+    }
+
+    /**
+     * Close results.
+     *
+     * @throws SQLException On error.
+     */
+    private void closeResults() throws SQLException {
+        if (results != null) {
+            for (JdbcResultSet rs : results)
+                rs.close();
+
+            results = null;
+            curRes = 0;
+        }
     }
 }

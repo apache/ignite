@@ -39,13 +39,15 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  *
@@ -62,8 +64,11 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Override P2P configuration to exclude Task and Job classes
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridDeploymentResourceTestTask.class.getName(),
-            GridDeploymentResourceTestJob.class.getName());
+        cfg.setPeerClassLoadingLocalClassPathExclude(
+            IgniteExplicitImplicitDeploymentSelfTest.class.getName(),
+            GridDeploymentResourceTestTask.class.getName(),
+            GridDeploymentResourceTestJob.class.getName()
+        );
 
         cfg.setDeploymentMode(DeploymentMode.ISOLATED);
 
@@ -73,6 +78,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployLocally() throws Exception {
         execImplicitDeployLocally(true, true, true);
     }
@@ -80,6 +86,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployP2P() throws Exception {
         execImplicitDeployP2P(true, true, true);
     }
@@ -87,6 +94,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployLocally() throws Exception {
         execExplicitDeployLocally(true, true, true);
     }
@@ -94,22 +102,64 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployP2P() throws Exception {
         execExplicitDeployP2P(true, true, true);
     }
 
-    /**
-     * @param ignite Grid.
+    /** Calls async compute execution with Class of the task.
+     *
+     * @param ignite Ignite server instance.
+     * @param client Ignite client instance.
+     * @param taskCls Class to compute.
+     * @param expected Expected result.
      */
-    @SuppressWarnings({"CatchGenericClass"})
-    private void stopGrid(Ignite ignite) {
-        try {
-            if (ignite != null)
-                G.stop(ignite.name(), true);
-        }
-        catch (Throwable e) {
-            error("Got error when stopping grid.", e);
-        }
+    private IgniteInternalFuture runAsyncByClass(
+        final IgniteEx ignite,
+        final IgniteEx client,
+        Class<? extends ComputeTask<String, Integer>> taskCls,
+        int expected
+    ) {
+        IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
+            for (int i = 0; i < 10; ++i) {
+                Integer res1 = ignite.compute().execute(taskCls, null);
+                assertNotNull(res1);
+                assertEquals("Invalid res1: ", expected, (int)res1);
+
+                res1 = client.compute(ignite.compute().clusterGroup().forNodeId(ignite.localNode().id())).execute(taskCls, null);
+                assertNotNull(res1);
+                assertEquals("Invalid res1: ", expected, (int)res1);
+            }
+        });
+
+        return f;
+    }
+
+    /** Calls async compute execution with class instance.
+     * @param ignite Ignite server instance.
+     * @param client Ignite client instance.
+     * @param taskCls Instance to compute.
+     * @param expected Expected result.
+     */
+    private IgniteInternalFuture runAsyncByInstance(
+        final IgniteEx ignite,
+        final IgniteEx client,
+        ComputeTask<String, Integer> taskCls,
+        int expected
+    ) {
+        IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
+            for (int i = 0; i < 10; ++i) {
+                Integer res1 = ignite.compute().execute(taskCls, null);
+                assertNotNull(res1);
+                assertEquals("Invalid res: ", expected, (int)res1);
+
+                res1 = client.compute(ignite.compute().clusterGroup().forNodeId(ignite.localNode().id())).execute(taskCls, null);
+                assertNotNull(res1);
+                assertEquals("Invalid res: ", expected, (int)res1);
+            }
+        });
+
+        return f;
     }
 
     /**
@@ -118,9 +168,8 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
-        Ignite ignite = null;
+        Ignite ignite;
 
         try {
             ignite = startGrid();
@@ -167,14 +216,14 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
             if (byName) {
                 ignite.compute().localDeployTask(taskCls, ldr1);
 
-                Integer res = (Integer) ignite.compute().execute(taskCls.getName(), null);
+                Integer res = ignite.compute().execute(taskCls.getName(), null);
 
                 assert res != null;
                 assert res == 1 : "Invalid response: " + res;
             }
         }
         finally {
-            stopGrid(ignite);
+            stopAllGrids();
         }
     }
 
@@ -184,149 +233,77 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
-   private void execImplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
-       Ignite ignite = null;
+    private void execImplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
+        final IgniteEx ignite = startGrids(1);
 
-       try {
-           ignite = startGrid();
+        final IgniteEx client = startClientGrid(1);
 
-           // First task class loader.
-           ClassLoader ldr1 = new GridTestClassLoader(
-               Collections.singletonMap("testResource", "1"),
-               getClass().getClassLoader(),
-               GridDeploymentResourceTestTask.class.getName(),
-               GridDeploymentResourceTestJob.class.getName()
-           );
+        try {
+            // First task class loader.
+            ClassLoader ldr1 = new GridTestClassLoader(
+                Collections.singletonMap("testResource", "1"),
+                getClass().getClassLoader(),
+                GridDeploymentResourceTestTask.class.getName(),
+                GridDeploymentResourceTestJob.class.getName()
+            );
 
-           // Second task class loader
-           ClassLoader ldr2 = new GridTestClassLoader(
-               Collections.singletonMap("testResource", "2"),
-               getClass().getClassLoader(),
-               GridDeploymentResourceTestTask.class.getName(),
-               GridDeploymentResourceTestJob.class.getName()
-           );
+            // Second task class loader
+            ClassLoader ldr2 = new GridTestClassLoader(
+                Collections.singletonMap("testResource", "2"),
+                getClass().getClassLoader(),
+                GridDeploymentResourceTestTask.class.getName(),
+                GridDeploymentResourceTestJob.class.getName()
+            );
 
-           // The same name but different classes/ class loaders.
-           Class<? extends ComputeTask<String, Integer>> taskCls1 = (Class<? extends ComputeTask<String, Integer>>)
-               ldr1.loadClass(GridDeploymentResourceTestTask.class.getName());
+            // The same name but different classes/ class loaders.
+            Class<? extends ComputeTask<String, Integer>> taskCls1 = (Class<? extends ComputeTask<String, Integer>>)
+                ldr1.loadClass(GridDeploymentResourceTestTask.class.getName());
 
-           Class<? extends ComputeTask<String, Integer>> taskCls2 = (Class<? extends ComputeTask<String, Integer>>)
-               ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
+            Class<? extends ComputeTask<String, Integer>> taskCls2 = (Class<? extends ComputeTask<String, Integer>>)
+                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
-           if (byCls) {
-               Integer res1 = ignite.compute().execute(taskCls1, null);
-               Integer res2 = ignite.compute().execute(taskCls2, null);
+            if (byCls) {
+                IgniteInternalFuture f1 = runAsyncByClass(ignite, client, taskCls1, 1);
 
-               assert res1 != null;
-               assert res2 != null;
+                IgniteInternalFuture f2 = runAsyncByClass(ignite, client, taskCls2, 2);
 
-               assert res1 == 1 : "Invalid res1: " + res1;
-               assert res2 == 2 : "Invalid res2: " + res2;
-           }
+                f1.get();
+                f2.get();
+            }
 
-           if (byTask) {
-               Integer res1 = ignite.compute().execute(taskCls1.newInstance(), null);
-               Integer res2 = ignite.compute().execute(taskCls2.newInstance(), null);
+            if (byTask) {
+                final ComputeTask<String, Integer> tc1 = taskCls1.newInstance();
+                final ComputeTask<String, Integer> tc2 = taskCls2.newInstance();
 
-               assert res1 != null;
-               assert res2 != null;
+                IgniteInternalFuture f1 = runAsyncByInstance(ignite, client, tc1, 1);
 
-               assert res1 == 1 : "Invalid res1: " + res1;
-               assert res2 == 2 : "Invalid res2: " + res2;
-           }
+                IgniteInternalFuture f2 = runAsyncByInstance(ignite, client, tc2, 2);
 
-           if (byName) {
-               ignite.compute().localDeployTask(taskCls1, ldr1);
+                f1.get();
+                f2.get();
+            }
 
-               Integer res1 = (Integer) ignite.compute().execute(taskCls1.getName(), null);
+            if (byName) {
+                ignite.compute().localDeployTask(taskCls1, ldr1);
 
-               ignite.compute().localDeployTask(taskCls2, ldr2);
+                Integer res1 = ignite.compute().execute(taskCls1.getName(), null);
 
-               Integer res2 = (Integer) ignite.compute().execute(taskCls2.getName(), null);
+                assert res1 != null;
 
-               assert res1 != null;
-               assert res2 != null;
+                assert res1 == 1 : "Invalid res1: " + res1;
 
-               assert res1 == 1 : "Invalid res1: " + res1;
-               assert res2 == 2 : "Invalid res2: " + res2;
-           }
-       }
-       finally {
-           stopGrid(ignite);
-       }
-   }
+                ignite.compute().localDeployTask(taskCls2, ldr2);
 
-    /**
-     * @param byCls If {@code true} than executes task by Class.
-     * @param byTask If {@code true} than executes task instance.
-     * @param byName If {@code true} than executes task by class name.
-     * @throws Exception If test failed.
-     */
-    @SuppressWarnings("unchecked")
-    private void execExplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
-       Ignite ignite1 = null;
-       Ignite ignite2 = null;
+                Integer res2 = ignite.compute().execute(taskCls2.getName(), null);
 
-       try {
-           ignite1 = startGrid(1);
-           ignite2 = startGrid(2);
+                assert res2 != null;
 
-           ClassLoader ldr1 = new GridTestClassLoader(
-               Collections.singletonMap("testResource", "1"),
-               getClass().getClassLoader(),
-               GridDeploymentResourceTestTask.class.getName(),
-               GridDeploymentResourceTestJob.class.getName()
-           );
-
-           ClassLoader ldr2 = new GridTestClassLoader(
-               Collections.singletonMap("testResource", "2"),
-               getClass().getClassLoader(),
-               GridDeploymentResourceTestTask.class.getName(),
-               GridDeploymentResourceTestJob.class.getName()
-           );
-
-           Class<? extends ComputeTask<String, Integer>> taskCls = (Class<? extends ComputeTask<String, Integer>>)
-               ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
-
-           if (byCls) {
-               ignite1.compute().localDeployTask(taskCls, ldr1);
-
-               // Even though the task is deployed with resource class loader,
-               // when we execute it, it will be redeployed with task class-loader.
-               Integer res = ignite1.compute().execute(taskCls, null);
-
-               assert res != null;
-               assert res == 2 : "Invalid response: " + res;
-           }
-
-
-           if (byTask) {
-               ignite1.compute().localDeployTask(taskCls, ldr1);
-
-               // Even though the task is deployed with resource class loader,
-               // when we execute it, it will be redeployed with task class-loader.
-               Integer res = ignite1.compute().execute(taskCls.newInstance(), null);
-
-               assert res != null;
-               assert res == 2 : "Invalid response: " + res;
-           }
-
-           if (byName) {
-               ignite1.compute().localDeployTask(taskCls, ldr1);
-
-               // Even though the task is deployed with resource class loader,
-               // when we execute it, it will be redeployed with task class-loader.
-               Integer res = (Integer) ignite1.compute().execute(taskCls.getName(), null);
-
-               assert res != null;
-               assert res == 1 : "Invalid response: " + res;
-           }
-       }
-       finally {
-           stopGrid(ignite2);
-           stopGrid(ignite1);
-       }
+                assert res2 == 2 : "Invalid res2: " + res2;
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -335,78 +312,138 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
-   private void execImplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
-      Ignite ignite1 = null;
-      Ignite ignite2 = null;
+    private void execExplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
+        try {
+            IgniteEx ignite = startGrids(2);
 
-      try {
-          ignite1 = startGrid(1);
-          ignite2 = startGrid(2);
+            ClassLoader ldr1 = new GridTestClassLoader(
+                Collections.singletonMap("testResource", "1"),
+                getClass().getClassLoader(),
+                IgniteExplicitImplicitDeploymentSelfTest.class.getName(),
+                GridDeploymentResourceTestTask.class.getName(),
+                GridDeploymentResourceTestJob.class.getName()
+            );
 
-          ClassLoader ldr1 = new GridTestClassLoader(
-              Collections.singletonMap("testResource", "1"),
-              getClass().getClassLoader(),
-              GridDeploymentResourceTestTask.class.getName(),
-              GridDeploymentResourceTestJob.class.getName()
-          );
+            ClassLoader ldr2 = new GridTestClassLoader(
+                Collections.singletonMap("testResource", "2"),
+                getClass().getClassLoader(),
+                IgniteExplicitImplicitDeploymentSelfTest.class.getName(),
+                GridDeploymentResourceTestTask.class.getName(),
+                GridDeploymentResourceTestJob.class.getName()
+            );
 
-          ClassLoader ldr2 = new GridTestClassLoader(
-              Collections.singletonMap("testResource", "2"),
-              getClass().getClassLoader(),
-              GridDeploymentResourceTestTask.class.getName(),
-              GridDeploymentResourceTestJob.class.getName()
-          );
+            Class<? extends ComputeTask<String, Integer>> taskCls = (Class<? extends ComputeTask<String, Integer>>)
+                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
 
-          Class<? extends ComputeTask<String, Integer>> taskCls1 = (Class<? extends ComputeTask<String, Integer>>)
-              ldr1.loadClass(GridDeploymentResourceTestTask.class.getName());
+            if (byCls) {
+                ignite.compute().localDeployTask(taskCls, ldr1);
 
-          Class<? extends ComputeTask<String, Integer>> taskCls2 = (Class<? extends ComputeTask<String, Integer>>)
-              ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
+                // Even though the task is deployed with resource class loader,
+                // when we execute it, it will be redeployed with task class-loader.
+                Integer res = ignite.compute().execute(taskCls, null);
 
-          if (byCls) {
-              Integer res1 = ignite1.compute().execute(taskCls1, null);
-              Integer res2 = ignite1.compute().execute(taskCls2, null);
+                assert res != null;
+                assert res == 2 : "Invalid response: " + res;
+            }
 
-              assert res1 != null;
-              assert res2 != null;
+            if (byTask) {
+                ignite.compute().localDeployTask(taskCls, ldr1);
 
-              assert res1 == 1 : "Invalid res1: " + res1;
-              assert res2 == 2 : "Invalid res2: " + res2;
-          }
+                // Even though the task is deployed with resource class loader,
+                // when we execute it, it will be redeployed with task class-loader.
+                Integer res = ignite.compute().execute(taskCls.newInstance(), null);
 
-          if (byTask) {
-              Integer res1 = ignite1.compute().execute(taskCls1.newInstance(), null);
-              Integer res2 = ignite1.compute().execute(taskCls2.newInstance(), null);
+                assert res != null;
+                assert res == 2 : "Invalid response: " + res;
+            }
 
-              assert res1 != null;
-              assert res2 != null;
+            if (byName) {
+                ignite.compute().localDeployTask(taskCls, ldr1);
 
-              assert res1 == 1 : "Invalid res1: " + res1;
-              assert res2 == 2 : "Invalid res2: " + res2;
-          }
+                // Even though the task is deployed with resource class loader,
+                // when we execute it, it will be redeployed with task class-loader.
+                Integer res = ignite.compute().execute(taskCls.getName(), null);
 
-          if (byName) {
-              ignite1.compute().localDeployTask(taskCls1, ldr1);
+                assert res != null;
+                assert res == 1 : "Invalid response: " + res;
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 
-              Integer res1 = (Integer) ignite1.compute().execute(taskCls1.getName(), null);
+    /**
+     * @param byCls If {@code true} than executes task by Class.
+     * @param byTask If {@code true} than executes task instance.
+     * @param byName If {@code true} than executes task by class name.
+     * @throws Exception If test failed.
+     */
+    private void execImplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
+        try {
+            IgniteEx ignite = startGrids(1);
 
-              ignite1.compute().localDeployTask(taskCls2, ldr2);
+            final IgniteEx client = startClientGrid(1);
 
-              Integer res2 = (Integer) ignite1.compute().execute(taskCls2.getName(), null);
+            ClassLoader ldr1 = new GridTestClassLoader(
+                Collections.singletonMap("testResource", "1"),
+                getClass().getClassLoader(),
+                GridDeploymentResourceTestTask.class.getName(),
+                GridDeploymentResourceTestJob.class.getName()
+            );
 
-              assert res1 != null;
-              assert res2 != null;
+            ClassLoader ldr2 = new GridTestClassLoader(
+                Collections.singletonMap("testResource", "2"),
+                getClass().getClassLoader(),
+                GridDeploymentResourceTestTask.class.getName(),
+                GridDeploymentResourceTestJob.class.getName()
+            );
 
-              assert res1 == 1 : "Invalid res1: " + res1;
-              assert res2 == 2 : "Invalid res2: " + res2;
-          }
-      }
-      finally {
-          stopGrid(ignite1);
-          stopGrid(ignite2);
-      }
-   }
+            Class<? extends ComputeTask<String, Integer>> taskCls1 = (Class<? extends ComputeTask<String, Integer>>)
+                ldr1.loadClass(GridDeploymentResourceTestTask.class.getName());
+
+            Class<? extends ComputeTask<String, Integer>> taskCls2 = (Class<? extends ComputeTask<String, Integer>>)
+                ldr2.loadClass(GridDeploymentResourceTestTask.class.getName());
+
+            if (byCls) {
+                IgniteInternalFuture f1 = runAsyncByClass(ignite, client, taskCls1, 1);
+
+                IgniteInternalFuture f2 = runAsyncByClass(ignite, client, taskCls2, 2);
+
+                f1.get();
+                f2.get();
+            }
+
+            if (byTask) {
+                final ComputeTask<String, Integer> tc1 = taskCls1.newInstance();
+                final ComputeTask<String, Integer> tc2 = taskCls2.newInstance();
+
+                IgniteInternalFuture f1 = runAsyncByInstance(ignite, client, tc1, 1);
+
+                IgniteInternalFuture f2 = runAsyncByInstance(ignite, client, tc2, 2);
+
+                f1.get();
+                f2.get();
+            }
+
+            if (byName) {
+                ignite.compute().localDeployTask(taskCls1, ldr1);
+                Integer res1 = ignite.compute().execute(taskCls1.getName(), null);
+
+                assert res1 != null;
+                assertEquals("Invalid res1: ", 1, (int)res1);
+
+                ignite.compute().localDeployTask(taskCls2, ldr2);
+                Integer res2 = ignite.compute().execute(taskCls2.getName(), null);
+
+                assert res2 != null;
+                assertEquals("Invalid res2: ", 2, (int)res2);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 
     /**
      * We use custom name to avoid auto-deployment in the same VM.
@@ -419,7 +456,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;

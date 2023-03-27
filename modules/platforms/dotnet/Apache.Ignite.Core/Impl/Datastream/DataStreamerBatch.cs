@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
         /** Current queue size.*/
         private volatile int _size;
-        
+
         /** Send guard. */
         private bool _sndGuard;
 
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.
 
-            _fut.Task.ContinueWith(x => ParentsCompleted());
+            _fut.Task.ContWith(x => ParentsCompleted());
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (!_rwLock.TryEnterReadLock(0))
                 return -1;
 
-            try 
+            try
             {
                 // 1. Ensure additions are possible
                 if (_sndGuard)
@@ -146,60 +146,60 @@ namespace Apache.Ignite.Core.Impl.Datastream
             long futHnd = 0;
 
             // 3. Actual send.
-            ldr.Update(writer =>
+            try
             {
-                writer.WriteInt(plc);
-
-                if (plc != DataStreamerImpl<TK, TV>.PlcCancelClose)
+                ldr.Update(writer =>
                 {
-                    futHnd = handleRegistry.Allocate(_fut);
+                    writer.WriteInt(plc);
 
-                    try
+                    if (plc != DataStreamerImpl<TK, TV>.PlcCancelClose)
                     {
+                        futHnd = handleRegistry.Allocate(_fut);
+
                         writer.WriteLong(futHnd);
 
                         WriteTo(writer);
                     }
-                    catch (Exception)
-                    {
-                        handleRegistry.Release(futHnd);
-
-                        throw;
-                    }
+                });
+            }
+            catch (Exception)
+            {
+                if (futHnd != 0)
+                {
+                    handleRegistry.Release(futHnd);
                 }
-            });
+
+                throw;
+            }
 
             if (plc == DataStreamerImpl<TK, TV>.PlcCancelClose || _size == 0)
             {
-                _fut.OnNullResult();
-                
+                ThreadPool.QueueUserWorkItem(_ => _fut.OnNullResult());
+
                 handleRegistry.Release(futHnd);
             }
         }
 
-
         /// <summary>
-        /// Await completion of current and all previous loads.
+        /// Gets the task to await completion of current and all previous loads.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public void AwaitCompletion()
+        public Task GetThisAndPreviousCompletionTask()
         {
-            DataStreamerBatch<TK, TV> curBatch = this;
+            var curBatch = this;
+
+            var tasks = new List<Task>();
 
             while (curBatch != null)
             {
-                try
+                if (curBatch.Task.Status != TaskStatus.RanToCompletion)
                 {
-                    curBatch._fut.Get();
-                }
-                // ReSharper disable once EmptyGeneralCatchClause
-                catch (Exception)
-                {
-                    // Ignore.
+                    tasks.Add(curBatch.Task);
                 }
 
                 curBatch = curBatch._prev;
             }
+
+            return TaskRunner.WhenAll(tasks.ToArray());
         }
 
         /// <summary>
@@ -221,8 +221,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     foreach (KeyValuePair<TK, TV> item in entries)
                     {
-                        writer.Write(item.Key);
-                        writer.Write(item.Value);
+                        writer.WriteObjectDetached(item.Key);
+                        writer.WriteObjectDetached(item.Value);
                     }
 
                     continue;
@@ -232,8 +232,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 DataStreamerEntry<TK, TV> entry = val as DataStreamerEntry<TK, TV>;
 
                 if (entry != null) {
-                    writer.Write(entry.Key);
-                    writer.Write(entry.Value);
+                    writer.WriteObjectDetached(entry.Key);
+                    writer.WriteObjectDetached(entry.Value);
 
                     continue;
                 }
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 if (rmvEntry != null)
                 {
-                    writer.Write(rmvEntry.Key);
+                    writer.WriteObjectDetached(rmvEntry.Key);
                     writer.Write<object>(null);
                 }
             }

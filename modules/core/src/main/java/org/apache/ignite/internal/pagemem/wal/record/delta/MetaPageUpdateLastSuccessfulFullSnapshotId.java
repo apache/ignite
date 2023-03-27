@@ -19,11 +19,13 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * @deprecated Will be removed at 3.0. See IGNITE-11139.
  */
+@Deprecated
 public class MetaPageUpdateLastSuccessfulFullSnapshotId extends PageDeltaRecord {
     /** */
     private final long lastSuccessfulFullSnapshotId;
@@ -31,8 +33,8 @@ public class MetaPageUpdateLastSuccessfulFullSnapshotId extends PageDeltaRecord 
     /**
      * @param pageId Meta page ID.
      */
-    public MetaPageUpdateLastSuccessfulFullSnapshotId(int cacheId, long pageId, long lastSuccessfulFullSnapshotId) {
-        super(cacheId, pageId);
+    public MetaPageUpdateLastSuccessfulFullSnapshotId(int grpId, long pageId, long lastSuccessfulFullSnapshotId) {
+        super(grpId, pageId);
 
         this.lastSuccessfulFullSnapshotId = lastSuccessfulFullSnapshotId;
     }
@@ -54,6 +56,11 @@ public class MetaPageUpdateLastSuccessfulFullSnapshotId extends PageDeltaRecord 
      */
     public long lastSuccessfulFullSnapshotId() {
         return lastSuccessfulFullSnapshotId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageUpdateLastSuccessfulFullSnapshotId.class, this, "super", super.toString());
     }
 }
 

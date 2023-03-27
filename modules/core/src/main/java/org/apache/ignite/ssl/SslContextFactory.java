@@ -22,14 +22,19 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -37,8 +42,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * This SSL context factory that provides ssl context configuration with specified key
- * and trust stores.
+ * SSL context factory that provides SSL context configuration with specified key and trust stores.
+ *
+ * This factory caches the result of the first successful attempt to create an {@link SSLContext} and always returns it
+ * as a result of further invocations of the {@link SslContextFactory#create()}} method.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
@@ -53,41 +60,61 @@ public class SslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default key store type. */
-    public static final String DFLT_STORE_TYPE = "JKS";
+    /** Default key / trust store type. */
+    public static final String DFLT_STORE_TYPE = System.getProperty("javax.net.ssl.keyStoreType", "JKS");
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
-    /** Default key manager algorithm. */
-    public static final String DFLT_KEY_ALGORITHM = "SunX509";
+    /**
+     * Property name to specify default key/trust manager algorithm.
+     *
+     * @deprecated Use {@code "ssl.KeyManagerFactory.algorithm"} instead as per JSSE standard.
+     *
+     * Should be considered for deletion in 9.0.
+     */
+    @Deprecated
+    public static final String IGNITE_KEY_ALGORITHM_PROPERTY = "ssl.key.algorithm";
+
+    /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
+    public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm",
+        System.getProperty(IGNITE_KEY_ALGORITHM_PROPERTY, "SunX509"));
 
     /** SSL protocol. */
-    private String proto = DFLT_SSL_PROTOCOL;
+    protected String proto = DFLT_SSL_PROTOCOL;
 
     /** Key manager algorithm. */
-    private String keyAlgorithm = DFLT_KEY_ALGORITHM;
+    protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
 
     /** Key store type. */
-    private String keyStoreType = DFLT_STORE_TYPE;
+    protected String keyStoreType = DFLT_STORE_TYPE;
 
     /** Path to key store file */
-    private String keyStoreFilePath;
+    protected String keyStoreFilePath;
 
     /** Key store password */
-    private char[] keyStorePwd;
+    protected char[] keyStorePwd;
 
     /** Trust store type. */
-    private String trustStoreType = DFLT_STORE_TYPE;
+    protected String trustStoreType = DFLT_STORE_TYPE;
 
     /** Path to trust store. */
-    private String trustStoreFilePath;
+    protected String trustStoreFilePath;
 
     /** Trust store password */
-    private char[] trustStorePwd;
+    protected char[] trustStorePwd;
 
     /** Trust managers. */
-    private TrustManager[] trustMgrs;
+    protected TrustManager[] trustMgrs;
+
+    /** Enabled cipher suites. */
+    protected String[] cipherSuites;
+
+    /** Enabled protocols. */
+    protected String[] protocols;
+
+    /** Cached instance of an {@link SSLContext}. */
+    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /**
      * Gets key store type used for context creation.
@@ -162,8 +189,7 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets key manager algorithm that will be used to create a key manager. Notice that in most cased default value
-     * suites well, however, on Android platform this value need to be set to <tt>X509<tt/>.
+     * Sets key manager algorithm that will be used to create a key manager.
      *
      * @param keyAlgorithm Key algorithm name.
      */
@@ -281,6 +307,42 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
+     * Sets enabled cipher suites.
+     *
+     * @param cipherSuites enabled cipher suites.
+     */
+    public void setCipherSuites(String... cipherSuites) {
+        this.cipherSuites = cipherSuites;
+    }
+
+    /**
+     * Gets enabled cipher suites.
+     *
+     * @return enabled cipher suites
+     */
+    public String[] getCipherSuites() {
+        return cipherSuites;
+    }
+
+    /**
+     * Gets enabled protocols.
+     *
+     * @return Enabled protocols.
+     */
+    public String[] getProtocols() {
+        return protocols;
+    }
+
+    /**
+     * Sets enabled protocols.
+     *
+     * @param protocols Enabled protocols.
+     */
+    public void setProtocols(String... protocols) {
+        this.protocols = protocols;
+    }
+
+    /**
      * Creates SSL context based on factory settings.
      *
      * @return Initialized SSL context.
@@ -289,6 +351,8 @@ public class SslContextFactory implements Factory<SSLContext> {
     private SSLContext createSslContext() throws SSLException {
         checkParameters();
 
+        final KeyManager[] keyMgrs;
+
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
@@ -296,26 +360,61 @@ public class SslContextFactory implements Factory<SSLContext> {
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            TrustManager[] mgrs = trustMgrs;
+            keyMgrs = keyMgrFactory.getKeyManagers();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported keystore algorithm: " + keyAlgorithm, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to initialize key store (security exception occurred) [type=" +
+                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
 
-            if (mgrs == null) {
+        TrustManager[] trustMgrs = this.trustMgrs;
+
+        if (trustMgrs == null) {
+            try {
                 TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance(keyAlgorithm);
 
                 KeyStore trustStore = loadKeyStore(trustStoreType, trustStoreFilePath, trustStorePwd);
 
                 trustMgrFactory.init(trustStore);
 
-                mgrs = trustMgrFactory.getTrustManagers();
+                trustMgrs = trustMgrFactory.getTrustManagers();
             }
+            catch (NoSuchAlgorithmException e) {
+                throw new SSLException("Unsupported keystore algorithm: " + keyAlgorithm, e);
+            }
+            catch (GeneralSecurityException e) {
+                throw new SSLException("Failed to initialize key store (security exception occurred) [type=" +
+                    keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+            }
+        }
 
+        try {
             SSLContext ctx = SSLContext.getInstance(proto);
 
-            ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+            if (cipherSuites != null || protocols != null) {
+                SSLParameters sslParameters = new SSLParameters();
+
+                if (cipherSuites != null)
+                    sslParameters.setCipherSuites(cipherSuites);
+
+                if (protocols != null)
+                    sslParameters.setProtocols(protocols);
+
+                ctx = new SSLContextWrapper(ctx, sslParameters);
+            }
+
+            ctx.init(keyMgrs, trustMgrs, null);
 
             return ctx;
         }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to initialize SSL context " + parameters(), e);
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported SSL protocol: " + proto, e);
+        }
+        catch (KeyManagementException e) {
+            throw new SSLException("Failed to initialized SSL context.", e);
         }
     }
 
@@ -344,7 +443,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      *
      * @throws SSLException If any of required parameters is missing.
      */
-    private void checkParameters() throws SSLException {
+    protected void checkParameters() throws SSLException {
         assert keyStoreType != null;
         assert proto != null;
 
@@ -365,7 +464,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      * @param name Name.
      * @throws SSLException If {@code null}.
      */
-    private void checkNullParameter(Object param, String name) throws SSLException {
+    protected void checkNullParameter(Object param, String name) throws SSLException {
         if (param == null)
             throw new SSLException("Failed to initialize SSL context (parameter cannot be null): " + name);
     }
@@ -391,21 +490,21 @@ public class SslContextFactory implements Factory<SSLContext> {
      * @return Initialized key store.
      * @throws SSLException If key store could not be initialized.
      */
-    private KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd) throws SSLException {
-        InputStream input = null;
-
+    protected KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)
+        throws SSLException {
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType);
 
-            input = openFileInputStream(storeFilePath);
+            try (InputStream input = openFileInputStream(storeFilePath)) {
 
-            keyStore.load(input, keyStorePwd);
+                keyStore.load(input, keyStorePwd);
 
-            return keyStore;
+                return keyStore;
+            }
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize key store (security exception occurred) [type=" +
-                keyStoreType + ", keyStorePath=" + storeFilePath + ']', e);
+                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
         }
         catch (FileNotFoundException e) {
             throw new SSLException("Failed to initialize key store (key store file was not found): [path=" +
@@ -414,19 +513,10 @@ public class SslContextFactory implements Factory<SSLContext> {
         catch (IOException e) {
             throw new SSLException("Failed to initialize key store (I/O error occurred): " + storeFilePath, e);
         }
-        finally {
-            if (input != null) {
-                try {
-                    input.close();
-                }
-                catch (IOException ignored) {
-                }
-            }
-        }
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return getClass().getSimpleName() + parameters();
     }
 
@@ -457,11 +547,20 @@ public class SslContextFactory implements Factory<SSLContext> {
 
     /** {@inheritDoc} */
     @Override public SSLContext create() {
-        try {
-            return createSslContext();
+        SSLContext ctx = sslCtx.get();
+
+        if (ctx == null) {
+            try {
+                ctx = createSslContext();
+
+                if (!sslCtx.compareAndSet(null, ctx))
+                    ctx = sslCtx.get();
+            }
+            catch (SSLException e) {
+                throw new IgniteException(e);
+            }
         }
-        catch (SSLException e) {
-            throw new IgniteException(e);
-        }
+
+        return ctx;
     }
 }

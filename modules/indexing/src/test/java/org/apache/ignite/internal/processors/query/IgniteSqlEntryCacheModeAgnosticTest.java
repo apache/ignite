@@ -16,32 +16,24 @@
  */
 package org.apache.ignite.internal.processors.query;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.List;
-
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test different cache modes for query entry
  */
-public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlEntryCacheModeAgnosticTest extends AbstractIndexingCommonTest {
     /** Host. */
     public static final String HOST = "127.0.0.1";
 
@@ -51,23 +43,13 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
     /** Replicated cache name. */
     private static final String REPLICATED_CACHE_NAME = "REPL_CACHE";
 
-    /** Local cache name. */
-    private static final String LOCAL_CACHE_NAME = "LOCAL_CACHE";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setLocalHost(HOST);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
-        c.setCacheConfiguration(cacheConfiguration(LOCAL_CACHE_NAME),
-            cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME));
+        c.setCacheConfiguration(cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME));
 
         return c;
     }
@@ -87,9 +69,6 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         switch (cacheName) {
-            case LOCAL_CACHE_NAME:
-                cfg.setCacheMode(LOCAL);
-                break;
             case REPLICATED_CACHE_NAME:
                 cfg.setCacheMode(REPLICATED);
                 break;
@@ -116,17 +95,17 @@ public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest 
     /**
      * It should not matter what cache mode does entry cache use, if there is no join
      */
+    @Test
     public void testCrossCacheModeQuery() throws Exception {
         Ignite ignite = startGrid();
 
-        ignite.cache(LOCAL_CACHE_NAME).put(1, LOCAL_CACHE_NAME);
         ignite.cache(REPLICATED_CACHE_NAME).put(1, REPLICATED_CACHE_NAME);
         ignite.cache(PARTITIONED_CACHE_NAME).put(1, PARTITIONED_CACHE_NAME);
 
-        final List<String> cacheNamesList = F.asList(LOCAL_CACHE_NAME, REPLICATED_CACHE_NAME, PARTITIONED_CACHE_NAME);
+        final List<String> cacheNamesList = F.asList(REPLICATED_CACHE_NAME, PARTITIONED_CACHE_NAME);
 
-        for(String entryCacheName: cacheNamesList) {
-            for(String qryCacheName: cacheNamesList) {
+        for (String entryCacheName: cacheNamesList) {
+            for (String qryCacheName: cacheNamesList) {
                 if (entryCacheName.equals(qryCacheName))
                     continue;
 

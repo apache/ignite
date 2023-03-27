@@ -22,6 +22,8 @@ import java.util.List;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * SQL Query AST.
  */
@@ -138,14 +140,14 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
     /**
      * @return If this is a simple query with no conditions, expressions, sorting, etc...
      */
-    public abstract boolean simpleQuery();
+    public abstract boolean skipMergeTable();
 
     /**
      * @param buff Statement builder.
      */
     protected void getSortLimitSQL(StatementBuilder buff) {
         if (!sort.isEmpty()) {
-            buff.append("\nORDER BY ");
+            buff.append(delimeter()).append("ORDER BY ");
 
             int visibleCols = visibleColumns();
 
@@ -187,5 +189,14 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
 
         if (offset != null)
             buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+    }
+
+    /**
+     * Whether offset or limit exists.
+     *
+     * @return {@code true} If we have OFFSET LIMIT.
+     */
+    public boolean hasOffsetLimit() {
+        return limit() != null || offset() != null;
     }
 }

@@ -23,6 +23,9 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
+/**
+ *
+ */
 public class IgniteCacheJdbcBlobStoreNodeRestartTest extends IgniteCacheStoreNodeRestartAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheStore getStore() {

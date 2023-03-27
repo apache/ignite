@@ -17,10 +17,14 @@
 
 package org.apache.ignite.thread;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  *
@@ -39,6 +43,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncCallbackPoolSize() throws Exception {
         testWrongPoolSize(configuration().setAsyncCallbackPoolSize(WRONG_VALUE));
     }
@@ -46,13 +51,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIgfsThreadPoolSize() throws Exception {
-        testWrongPoolSize(configuration().setIgfsThreadPoolSize(WRONG_VALUE));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testManagementThreadPoolSize() throws Exception {
         testWrongPoolSize(configuration().setManagementThreadPoolSize(WRONG_VALUE));
     }
@@ -60,6 +59,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeerClassLoadingThreadPoolSize() throws Exception {
         testWrongPoolSize(configuration().setPeerClassLoadingThreadPoolSize(WRONG_VALUE));
     }
@@ -67,6 +67,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPublicThreadPoolSize() throws Exception {
         testWrongPoolSize(configuration().setPublicThreadPoolSize(WRONG_VALUE));
     }
@@ -74,13 +75,16 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceThreadPoolSize() throws Exception {
-        testWrongPoolSize(configuration().setRebalanceThreadPoolSize(WRONG_VALUE));
+        assertThrowsAnyCause(log, () -> Ignition.start(configuration().setRebalanceThreadPoolSize(WRONG_VALUE)),
+            IgniteException.class, "thread pool size");
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemThreadPoolSize() throws Exception {
         testWrongPoolSize(configuration().setSystemThreadPoolSize(WRONG_VALUE));
     }
@@ -88,6 +92,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUtilityCachePoolSize() throws Exception {
         testWrongPoolSize(configuration().setUtilityCachePoolSize(WRONG_VALUE));
     }
@@ -95,6 +100,7 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectorThreadPoolSize() throws Exception {
         final IgniteConfiguration cfg = configuration();
 
@@ -110,14 +116,6 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testWrongPoolSize(IgniteConfiguration cfg) throws Exception {
-        try {
-            Ignition.start(cfg);
-
-            fail();
-        }
-        catch (IgniteException ex) {
-            assertNotNull(ex.getMessage());
-            assertTrue(ex.getMessage().contains("thread pool size"));
-        }
+        assertThrowsAnyCause(log, () -> Ignition.start(cfg), IgniteCheckedException.class, "thread pool size");
     }
 }

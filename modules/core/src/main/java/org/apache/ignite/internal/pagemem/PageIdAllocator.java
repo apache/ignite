@@ -16,18 +16,33 @@
  */
 
 package org.apache.ignite.internal.pagemem;
-
 import org.apache.ignite.IgniteCheckedException;
+
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  * Allocates page ID's.
  */
 public interface PageIdAllocator {
-    /** */
+    /**
+     * Flag for a Data page.
+     * Also used by partition meta and tracking pages.
+     * This type doesn't use the Page ID rotation mechanism.
+     */
     public static final byte FLAG_DATA = 1;
 
-    /** */
+    /**
+     * Flag for an index page.
+     * Also used by internal structure in in-memory caches.
+     * This type uses the Page ID rotation mechanism.
+     */
     public static final byte FLAG_IDX = 2;
+
+    /**
+     * Flag for an internal structure page.
+     * This type uses the Page ID rotation mechanism.
+     */
+    public static final byte FLAG_AUX = 4;
 
     /** Max partition ID that can be used by affinity. */
     public static final int MAX_PARTITION_ID = 65500;
@@ -35,19 +50,23 @@ public interface PageIdAllocator {
     /** Special partition reserved for index space. */
     public static final int INDEX_PARTITION = 0xFFFF;
 
+    /** Cache group meta page id. */
+    public static final long META_PAGE_ID = pageId(INDEX_PARTITION, FLAG_IDX, 0);
+
     /**
      * Allocates a page from the space for the given partition ID and the given flags.
      *
+     * @param grpId Cache Group ID.
      * @param partId Partition ID.
      * @return Allocated page ID.
      */
-    public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+    public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * The given page is free now.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Cache Group ID.
      * @param pageId Page ID.
      */
-    public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException;
+    public boolean freePage(int grpId, long pageId);
 }

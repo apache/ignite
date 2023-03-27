@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.pagemem.impl;
 
 import java.util.Random;
-
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -30,16 +31,19 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRotatePageId() throws Exception {
         assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0002FFFFFFFFFFFFL));
         assertEquals(0x0B02FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0A02FFFFFFFFFFFFL));
         assertEquals(0x1002FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0F02FFFFFFFFFFFFL));
-        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFF02FFFFFFFFFFFFL));
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFE02FFFFFFFFFFFFL));
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFF02FFFFFFFFFFFFL));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEffectivePageId() throws Exception {
         assertEquals(0x0000FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0002FFFFFFFFFFFFL));
         assertEquals(0x0000FFFFFFFFFFFFL, PageIdUtils.effectivePageId(0x0A02FFFFFFFFFFFFL));
@@ -50,6 +54,7 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLinkConstruction() throws Exception {
         assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 0));
         assertEquals(0x01FFFFFFFFFFFFFFL, PageIdUtils.link(0xFFFFFFFFFFFFFFL, 1));
@@ -70,6 +75,7 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOffsetExtraction() throws Exception {
         assertEquals(0, PageIdUtils.itemId(0x00FFFFFFFFFFFFFFL));
         assertEquals(1, PageIdUtils.itemId(0x01FFFFFFFFFFFFFFL));
@@ -90,15 +96,18 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPageIdFromLink() throws Exception {
         assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x00FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x10FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x01FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x11FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x80FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x88FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0x08FFFFFFFFFFFFFFL));
-        assertEquals(0x00FFFFFFFFFFFFFFL, PageIdUtils.pageId(0xFFFFFFFFFFFFFFFFL));
+
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x0001FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x1001FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x0101FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x1101FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x8001FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x8801FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0x0801FFFFFFFFFFFFL));
+        assertEquals(0x0001FFFFFFFFFFFFL, PageIdUtils.pageId(0xFF01FFFFFFFFFFFFL));
 
         assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.pageId(0x0002FFFFFFFFFFFFL));
         assertEquals(0x1002FFFFFFFFFFFFL, PageIdUtils.pageId(0x1002FFFFFFFFFFFFL));
@@ -109,17 +118,27 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(0x0802FFFFFFFFFFFFL, PageIdUtils.pageId(0x0802FFFFFFFFFFFFL));
         assertEquals(0xFF02FFFFFFFFFFFFL, PageIdUtils.pageId(0xFF02FFFFFFFFFFFFL));
 
-        assertEquals(0L, PageIdUtils.pageId(0x0000000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0x1000000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0x0100000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0x8000000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0x0800000000000000L));
-        assertEquals(0L, PageIdUtils.pageId(0xFF00000000000000L));
+        assertEquals(0x0004FFFFFFFFFFFFL, PageIdUtils.pageId(0x0004FFFFFFFFFFFFL));
+        assertEquals(0x1004FFFFFFFFFFFFL, PageIdUtils.pageId(0x1004FFFFFFFFFFFFL));
+        assertEquals(0x0104FFFFFFFFFFFFL, PageIdUtils.pageId(0x0104FFFFFFFFFFFFL));
+        assertEquals(0x1104FFFFFFFFFFFFL, PageIdUtils.pageId(0x1104FFFFFFFFFFFFL));
+        assertEquals(0x8004FFFFFFFFFFFFL, PageIdUtils.pageId(0x8004FFFFFFFFFFFFL));
+        assertEquals(0x8804FFFFFFFFFFFFL, PageIdUtils.pageId(0x8804FFFFFFFFFFFFL));
+        assertEquals(0x0804FFFFFFFFFFFFL, PageIdUtils.pageId(0x0804FFFFFFFFFFFFL));
+        assertEquals(0xFF04FFFFFFFFFFFFL, PageIdUtils.pageId(0xFF04FFFFFFFFFFFFL));
+
+        assertEquals(0x0000000000000000L, PageIdUtils.pageId(0x0000000000000000L));
+        assertEquals(0x1000000000000000L, PageIdUtils.pageId(0x1000000000000000L));
+        assertEquals(0x0100000000000000L, PageIdUtils.pageId(0x0100000000000000L));
+        assertEquals(0x8000000000000000L, PageIdUtils.pageId(0x8000000000000000L));
+        assertEquals(0x0800000000000000L, PageIdUtils.pageId(0x0800000000000000L));
+        assertEquals(0xFF00000000000000L, PageIdUtils.pageId(0xFF00000000000000L));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomIds() throws Exception {
         Random rnd = new Random();
 
@@ -128,7 +147,7 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
             int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
             int pageNum = rnd.nextInt();
 
-            long pageId = PageIdUtils.pageId(partId, (byte) 0, pageNum);
+            long pageId = PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, pageNum);
 
             String msg = "For values [offset=" + U.hexLong(off) + ", fileId=" + U.hexLong(partId) +
                 ", pageNum=" + U.hexLong(pageNum) + ']';

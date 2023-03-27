@@ -61,7 +61,6 @@ public class GridTestJobContext implements ComputeJobContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V getAttribute(K key) {
         return (V)attrs.get(key);
     }

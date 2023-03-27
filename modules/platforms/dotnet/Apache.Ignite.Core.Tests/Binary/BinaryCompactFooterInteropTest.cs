@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
     using System.Collections;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -45,8 +44,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestSetUp()
         {
             // Start fresh cluster for each test
-            _grid = Ignition.Start(Config("config\\compute\\compute-grid1.xml"));
-            _clientGrid = Ignition.Start(Config("config\\compute\\compute-grid3.xml"));
+            _grid = Ignition.Start(Config("Config\\Compute\\compute-grid1.xml"));
+            _clientGrid = Ignition.Start(Config("Config\\Compute\\compute-grid3.xml"));
         }
 
         /// <summary>
@@ -64,30 +63,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFromJava([Values(true, false)] bool client)
         {
-            // Retry multiple times: IGNITE-4377
-            for (int i = 0; i < 10; i++)
-            {
-                var grid = client ? _clientGrid : _grid;
+            var grid = client ? _clientGrid : _grid;
 
-                try
-                {
-                    var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
-                        ComputeApiTest.EchoTypeBinarizable);
+            grid.GetOrCreateCache<int, int>("default").Put(ComputeApiTest.EchoTypeBinarizable, 99);
 
-                    Assert.AreEqual(1, fromJava.Field);
+            var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(
+                ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizable);
 
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("TestFromJava failed on try {0}: \n {1}", i, ex);
-
-                    if (i < 9)
-                        continue;
-                    
-                    throw;
-                }
-            }
+            Assert.AreEqual(99, fromJava.Field);
         }
 
         /// <summary>

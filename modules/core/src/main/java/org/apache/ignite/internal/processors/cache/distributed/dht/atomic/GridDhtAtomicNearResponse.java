@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic
 /**
  * Message sent from DHT nodes to near node in FULL_SYNC mode.
  */
-public class GridDhtAtomicNearResponse extends GridCacheMessage {
+public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,8 +78,8 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
         int partId,
         long futId,
         UUID primaryId,
-        byte flags)
-    {
+        byte flags
+    ) {
         assert primaryId != null;
 
         this.cacheId = cacheId;
@@ -171,7 +171,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */
@@ -210,31 +210,31 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeMessage("errs", errs))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeUuid("primaryId", primaryId))
                     return false;
 
@@ -256,7 +256,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 errs = reader.readMessage("errs");
 
                 if (!reader.isLastRead())
@@ -264,7 +264,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -272,7 +272,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -280,7 +280,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
@@ -288,7 +288,7 @@ public class GridDhtAtomicNearResponse extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 primaryId = reader.readUuid("primaryId");
 
                 if (!reader.isLastRead())

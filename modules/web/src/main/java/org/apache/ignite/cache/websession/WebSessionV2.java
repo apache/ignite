@@ -17,6 +17,16 @@
 
 package org.apache.ignite.cache.websession;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -25,17 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.websession.WebSessionEntity;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionContext;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Session implementation that uses internal entity, which stores binary attributes,
@@ -98,7 +97,7 @@ class WebSessionV2 implements HttpSession {
      * @param entity Entity.
      * @param marsh Marshaller.
      */
-    WebSessionV2(final String id, final @Nullable HttpSession ses, final boolean isNew, final ServletContext ctx,
+    WebSessionV2(final String id, @Nullable final HttpSession ses, final boolean isNew, final ServletContext ctx,
         @Nullable WebSessionEntity entity, final Marshaller marsh) {
         assert id != null;
         assert marsh != null;

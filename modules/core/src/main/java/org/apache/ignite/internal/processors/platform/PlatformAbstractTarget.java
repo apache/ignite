@@ -130,7 +130,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return Dummy value which is never returned.
      * @throws IgniteCheckedException Exception to be thrown.
      */
-    private <T> T throwUnsupported(int type) throws IgniteCheckedException {
+    public static <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
     }
 
@@ -142,8 +142,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param writer Writer.
      * @throws IgniteCheckedException In case of error.
      */
-    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
-                                                     PlatformFutureUtils.Writer writer)
+    private PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
+                                                   PlatformFutureUtils.Writer writer)
             throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();

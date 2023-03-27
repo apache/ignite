@@ -24,14 +24,19 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
-import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.MBeanServer;
+import com.sun.management.HotSpotDiagnosticMXBean;
+import com.sun.management.OperatingSystemMXBean;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -43,16 +48,10 @@ import org.jetbrains.annotations.Nullable;
 public class GridDebug {
     /** */
     private static final AtomicReference<ConcurrentLinkedQueue<Item>> que =
-        new AtomicReference<>(new ConcurrentLinkedQueue<Item>());
-
-    /** */
-    private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
+        new AtomicReference<>(new ConcurrentLinkedQueue<>());
 
     /** */
     private static final FileOutputStream out;
-
-    /** */
-    private static final Charset charset = Charset.forName("UTF-8");
 
     /** */
     private static volatile long start;
@@ -62,15 +61,30 @@ public class GridDebug {
      * sudo mkdir /ramdisk
      * sudo mount -t tmpfs -o size=2048M tmpfs /ramdisk
      */
-    private static final String LOGS_PATH = null;// "/ramdisk/";
+    private static final String LOGS_PATH = null; // "/ramdisk/";
 
     /** */
     private static boolean allowLog;
 
-    /** */
+    /** This is the name of the HotSpot Diagnostic MBean */
+    private static final String HOTSPOT_BEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
+
+    /** field to store the hotspot diagnostic MBean */
+    private static volatile HotSpotDiagnosticMXBean hotspotMBean;
+
+    /** Platform-specific management interface for the operating system. */
+    private static final String OS_BEAN_NAME = "java.lang:type=OperatingSystem";
+
+    /** Call to {@link #initOSMBean()} before accessing. */
+    private static volatile OperatingSystemMXBean osMBean;
+
+    /* */
     static {
         if (LOGS_PATH != null) {
-            File log = new File(new File(LOGS_PATH), new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-").format(new Date()) +
+            DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-").withZone(ZoneId.systemDefault());
+
+            File log = new File(new File(LOGS_PATH), formatter.format(Instant.now()) +
                     ManagementFactory.getRuntimeMXBean().getName() + ".log");
 
             assert !log.exists();
@@ -107,14 +121,14 @@ public class GridDebug {
      *
      * @param x Data to log.
      */
-    public static synchronized void write(Object ... x) {
+    public static synchronized void write(Object... x) {
         if (!allowLog)
             return;
 
         Thread th = Thread.currentThread();
 
         try {
-            out.write((formatEntry(System.currentTimeMillis(), th.getName(), th.getId(), x) + "\n").getBytes(charset));
+            out.write((formatEntry(System.currentTimeMillis(), th.getName(), th.getId(), x) + "\n").getBytes(StandardCharsets.UTF_8));
             out.flush();
         }
         catch (IOException e) {
@@ -127,7 +141,7 @@ public class GridDebug {
      *
      * @param x Debugging data.
      */
-    public static void debug(Object ... x) {
+    public static void debug(Object... x) {
         ConcurrentLinkedQueue<Item> q = que.get();
 
         if (q != null)
@@ -209,7 +223,7 @@ public class GridDebug {
         if (que == null)
             return;
 
-        int start = -1;// que.size() - 5000;
+        int start = -1; // que.size() - 5000;
 
         int x = 0;
 
@@ -236,7 +250,7 @@ public class GridDebug {
      * @return Empty string (useful for assertions like {@code assert x == 0 : D.dumpWithReset();} ).
      */
     public static String dumpWithReset() {
-        return dumpWithReset(new ConcurrentLinkedQueue<Item>(), null);
+        return dumpWithReset(new ConcurrentLinkedQueue<>(), null);
     }
 
     /**
@@ -285,7 +299,7 @@ public class GridDebug {
         ConcurrentLinkedQueue<Item> old = que.get();
 
         if (old != null) // Was not stopped.
-            que.compareAndSet(old, new ConcurrentLinkedQueue<Item>());
+            que.compareAndSet(old, new ConcurrentLinkedQueue<>());
     }
 
     /**
@@ -298,8 +312,87 @@ public class GridDebug {
      * @return String.
      */
     private static String formatEntry(long ts, String threadName, long threadId, Object... data) {
-        return "<" + DEBUG_DATE_FMT.format(new Date(ts)) + "><~DBG~><" + threadName + " id:" + threadId + "> " +
-            Arrays.deepToString(data);
+        return "<" + IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(ts)) + "><~DBG~><" + threadName + " id:" +
+            threadId + "> " + Arrays.deepToString(data);
+    }
+
+    /**
+     * Call this method from your application whenever you
+     * want to dump the heap snapshot into a file.
+     *
+     * @param fileName name of the heap dump file
+     * @param live flag that tells whether to dump
+     * only the live objects
+     */
+    public static void dumpHeap(String fileName, boolean live) {
+        // initialize hotspot diagnostic MBean
+        initHotspotMBean();
+
+        File f = new File(fileName);
+
+        if (f.exists())
+            f.delete();
+
+        try {
+            hotspotMBean.dumpHeap(fileName, live);
+        }
+        catch (RuntimeException re) {
+            throw re;
+        }
+        catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
+    }
+
+    /**
+     * @return Committed VM size in bits.
+     */
+    public static long getCommittedVirtualMemorySize() {
+        initOSMBean();
+
+        return osMBean.getCommittedVirtualMemorySize();
+    }
+
+    /**
+     * Initialize the hotspot diagnostic MBean field.
+     */
+    private static void initHotspotMBean() {
+        if (hotspotMBean == null) {
+            synchronized (GridDebug.class) {
+                if (hotspotMBean == null)
+                    hotspotMBean = getMBean(HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
+            }
+        }
+    }
+
+    /**
+     * Initialize field to store OperatingSystem MXBean.
+     */
+    private static void initOSMBean() {
+        if (osMBean == null) {
+            synchronized (GridDebug.class) {
+                if (osMBean == null)
+                    osMBean = getMBean(OS_BEAN_NAME, OperatingSystemMXBean.class);
+            }
+        }
+    }
+
+    /**
+     * Get MXBean from the platform MBeanServer.
+     *
+     * @param mxbeanName The name for uniquely identifying the MXBean within an MBeanServer.
+     * @param mxbeanItf The MXBean interface.
+     * @return A proxy for a platform MXBean interface.
+     */
+    private static <T> T getMBean(String mxbeanName, Class<T> mxbeanItf) {
+        try {
+            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+            return ManagementFactory.newPlatformMXBeanProxy(srv, mxbeanName, mxbeanItf);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cross-Platform Support
+
+== Overview
+
+Starting with version 2.4, Ignite.NET supports .NET Core. It is possible to run .NET nodes and develop Ignite.NET
+applications for Linux and macOS, as well as Windows.
+
+== .NET Core
+
+*Requirements:*
+
+* https://www.microsoft.com/net/download/[.NET Core SDK 2.0+, window=_blank]
+* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Java 8+, window=_blank] (macOS requires JDK, otherwise JRE works)
+
+*Running Examples*
+https://ignite.apache.org/download.cgi#binaries[Binary distribution, window=_blank] includes .NET Core examples:
+
+* Download https://ignite.apache.org/download.cgi#binaries[binary distribution, window=_blank] from the Ignite website and extract into any directory.
+* `cd platforms/dotnet/examples/dotnetcore`
+* `dotnet run`
+
+== Java Detection
+
+Ignite.NET looks for a Java installation directory in the following places:
+
+* `HKLM\Software\JavaSoft\Java Runtime Environment` (Windows)
+* `/usr/bin/java` (Linux)
+* `/Library/Java/JavaVirtualMachines` (macOS)
+
+If you changed the default location of Java, then specify the actual path using one of the methods below:
+
+* Set the `IgniteConfiguration.JvmDllPath` property
+* or set the `JAVA_HOME` environment variable
+
+== Known Issues
+
+*No Java runtime present, requesting install*
+
+Java `8u151` has a known bug on macOS: https://bugs.openjdk.java.net/browse/JDK-7131356[JDK-7131356, window=_blank]. Make sure to install `8u152` or later.
+
+*Serializing delegates is not supported on this platform*
+
+.NET Core does not support delegate serialization, `System.MulticastDelegate.GetObjectData`
+just https://github.com/dotnet/coreclr/blob/master/src/mscorlib/src/System/MulticastDelegate.cs#L52[throws an exception, window=_blank],
+so Ignite.NET can not serialize delegates or objects containing them.
+
+*Could not load file or assembly 'System.Configuration.ConfigurationManager'*
+
+Known https://github.com/dotnet/standard/issues/506[.NET issue (506), window=_blank], in some cases additional package reference is required:
+
+* `dotnet add package System.Configuration.ConfigurationManager`

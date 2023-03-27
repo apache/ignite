@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -89,7 +88,7 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sets node attributes and node version which will be distributed in grid during
      * join process. Note that these attributes cannot be changed and set only once.
-     *
+     *set
      * @param attrs Map of node attributes.
      * @param ver Product version.
      */
@@ -100,22 +99,19 @@ public interface DiscoverySpi extends IgniteSpi {
      * {@link org.apache.ignite.events.DiscoveryEvent} for a set of all possible
      * discovery events.
      * <p>
-     * Note that as of Ignite 3.0.2 this method is called <b>before</b>
-     * method {@link #spiStart(String)} is called. This is done to
-     * avoid potential window when SPI is started but the listener is
-     * not registered yet.
+     * TODO: This method should be removed from public API in Apache Ignite 3.0
      *
      * @param lsnr Listener to discovery events or {@code null} to unset the listener.
      */
+    @Deprecated
     public void setListener(@Nullable DiscoverySpiListener lsnr);
 
     /**
      * Sets a handler for initial data exchange between Ignite nodes.
      *
      * @param exchange Discovery data exchange handler.
-     * @return {@code this} for chaining.
      */
-    public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
+    public void setDataExchange(DiscoverySpiDataExchange exchange);
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
@@ -123,9 +119,8 @@ public interface DiscoverySpi extends IgniteSpi {
      * dynamic metrics between nodes.
      *
      * @param metricsProvider Provider of metrics data.
-     * @return {@code this} for chaining.
      */
-    public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
+    public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling

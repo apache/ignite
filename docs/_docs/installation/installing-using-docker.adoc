@@ -1,0 +1,212 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Installing Using Docker
+
+== Considerations
+
+*In-memory vs. Persistent Cluster*::
++
+--
+When deploying a persistent Ignite cluster, you should always mount a persistent volume or local directory.
+If you do not use a persistent volume, Ignite will store the data in the container's file system.
+It means that the data will be erased when you remove the container. To save the data in a permanent location, <<Running Persistent Cluster,mount a persistent volume>>.
+--
+
+*Networking*::
++
+--
+By default, Ignite Docker image exposes the following ports: 11211, 47100, 47500, 49112.
+You can expose more ports as needed by adding `-p <port>` to the `docker run` command.
+For example, to connect a thin client to the node running inside a docker container, open port 10800:
+
+[source, shell]
+----
+docker run -d -p 10800:10800 apacheignite/ignite
+----
+--
+
+== Downloading Ignite Docker Image
+
+Assuming that you already have Docker installed on your machine, you can pull
+and run the Ignite Docker image using the following commands.
+
+Open a command shell and use the following command to pull the Ignite Docker image.
+[source,shell]
+----
+# Pull latest version
+sudo docker pull apacheignite/ignite
+----
+
+By default, the latest version is downloaded, but you can download a specific version too.
+[source,shell,subs="attributes,specialchars"]
+----
+# Pull a specific Ignite version
+sudo docker pull apacheignite/ignite:{version}
+----
+
+== Running In-Memory Cluster
+
+Run Ignite in a docker container using the `docker run` command.
+
+[source,shell]
+----
+# Run the latest version
+sudo docker run -d apacheignite/ignite
+----
+
+This command will launch a single Ignite node.
+
+To run a specific version of Ignite, use the following command:
+
+[source,shell,subs="attributes,specialchars"]
+----
+# Run a specific Ignite version
+sudo docker run -d apacheignite/ignite:{version}
+----
+
+== Running Persistent Cluster
+
+If you use link:persistence/native-persistence[Native Persistence], Ignite stores the user data under the default work directory (`{IGNITE_HOME}/work`) in the file system of the container. This directory will be erased if you restart the docker container. To avoid this, you can:
+
+- Use a persistent volume to store the data; or
+- Mount a local directory
+
+These two options are described in the following sections.
+
+=== Using Persistent Volume
+
+
+To create a persistent volume, run the following command:
+
+[source, shell]
+----
+sudo docker volume create persistence-volume
+----
+
+We will mount this volume to a specific directory when running the Ignite docker image. This directory will have to be passed to Ignite. This can be done in two ways:
+
+- Using the `IGNITE_WORK_DIR` system property
+- In the node configuration file
+
+The following command launches the Ignite Docker image and passes the work directory to Ignite via the system property:
+
+
+[source,shell]
+----
+docker run -d \
+  -v storage-volume:/storage \
+  -e IGNITE_WORK_DIR=/storage \
+  apacheignite/ignite
+----
+
+=== Using Local Directory
+
+Instead of creating a volume, you can mount a local directory to the container in which the Ignite image is running and use this directory to store persistent data.
+When restarting the container with the same command, Ignite will load the data from the directory.
+
+
+[source, shell]
+----
+mkdir work_dir
+
+docker run -d \
+  -v ${PWD}/work_dir:/storage \
+  -e IGNITE_WORK_DIR=/storage \
+  apacheignite/ignite
+----
+
+The `-v` option mounts a local directory under the `/storage` path in the container.
+The `-e IGNITE_WORK_DIR=/storage` option tells Ignite to use this folder as the work directory.
+
+
+== Providing Configuration File
+When you run the image, it starts a node with the default configuration file.
+You can pass a custom configuration file by using the `CONFIG_URI` environment variable:
+
+[source, shell]
+----
+docker run -d \
+  -e CONFIG_URI=http://myserver/config.xml  \
+  apacheignite/ignite
+----
+
+You can also use a file from your local file system.
+You need to mount the file first under a specific path inside the container by using the `-v` option.
+Then, use this path in the `CONFIG_URI` option:
+
+[source, shell]
+----
+docker run -d \
+  -v /local/dir/config.xml:/config-file.xml \
+  -e CONFIG_URI=/config-file.xml \
+  apacheignite/ignite
+----
+
+== Deploying User Libraries
+
+When starting, a node adds all libraries found in the `{IGNITE_HOME}/libs` directory to the classpath (ignoring the "optional" directory).
+If you want to deploy user libraries, you can mount a directory from your local machine to a path in the `/opt/ignite/apache-ignite/libs/` in the container by using the `-v` option.
+
+The following command mounts a directory on your machine to `libs/user_libs` in the container.
+All files located in the directory are added to the classpath of the node.
+
+[source, shell]
+----
+docker run -v /local_path/to/dir_with_libs/:/opt/ignite/apache-ignite/libs/user_libs apacheignite/ignite
+----
+
+Another option is to use the `EXTERNAL_LIBS` variable if your libraries are available via an URL.
+
+[source, shell]
+----
+docker run -e "EXTERNAL_LIBS=http://url_to_your_jar" apacheignite/ignite
+----
+
+
+== Enabling Modules
+
+To enable specific link:setup#enabling-modules[modules], specify their names in the "OPTION_LIBS" system variable as follows:
+
+[source, shell]
+----
+sudo docker run -d \
+  -e "OPTION_LIBS=ignite-rest-http" \
+  apacheignite/ignite
+----
+
+By default, the Ignite Docker image starts with the following modules enabled:
+
+- ignite-log4j2,
+- ignite-spring,
+- ignite-indexing.
+
+== Environment Variables
+
+The following parameters can be passed as environment variables in the docker container:
+
+[cols="1,2,1", options="header"]
+|===
+| Parameter Name |Description |Default
+| `CONFIG_URI` | URL to the Ignite configuration file (can also be relative to the META-INF folder on the class path).
+The downloaded config file is saved to ./ignite-config.xml | N/A
+
+| `OPTION_LIBS` | A list of link:setup#enabling-modules[modules] that will be enabled for the node. | ignite-log4j2, ignite-spring, ignite-indexing
+
+| `JVM_OPTS` | JVM arguments passed to the Ignite instance.| N/A
+
+| `EXTERNAL_LIBS` | A list of URL's to external libraries. Refer to <<Deploying User Libraries>>.| N/A
+
+|===
+

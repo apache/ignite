@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * Tests entry wrappers after preloading happened.
@@ -52,6 +53,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
         return CacheAtomicityMode.ATOMIC;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
@@ -63,7 +65,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testIteration()  throws Exception {
+    @Test
+    public void testIteration() throws Exception {
         try {
             final IgniteCache<String, Integer> cache = jcache();
 

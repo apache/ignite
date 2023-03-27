@@ -19,12 +19,14 @@ package org.apache.ignite.services;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Service execution context. Execution context is provided into {@link Service#execute(ServiceContext)}
- * and {@link Service#cancel(ServiceContext)} methods and contains information about specific service
- * execution.
+ * Service execution context. This context is provided using {@link ServiceContextResource} annotation and contains
+ * information about specific service execution.
+ *
+ * @see ServiceContextResource
  */
 public interface ServiceContext extends Serializable {
     /**
@@ -61,7 +63,16 @@ public interface ServiceContext extends Serializable {
      * Gets affinity key used for key-to-node affinity calculation. This parameter is optional
      * and is set only when key-affinity service was deployed.
      *
+     * @param <K> Affinity key type.
      * @return Affinity key, possibly {@code null}.
      */
     @Nullable public <K> K affinityKey();
+
+    /**
+     * Gets context of the current service call.
+     *
+     * @return Context of the current service call, possibly {@code null}.
+     * @see ServiceCallContext
+     */
+    @Nullable public ServiceCallContext currentCallContext();
 }

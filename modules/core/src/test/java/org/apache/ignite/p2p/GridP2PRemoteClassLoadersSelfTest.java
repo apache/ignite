@@ -37,6 +37,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  *
@@ -68,7 +70,6 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed..
      */
-    @SuppressWarnings("unchecked")
     private void processTestSameRemoteClassLoader(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
@@ -83,14 +84,15 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr =
                 new GridTestClassLoader(
                     Collections.<String, String>emptyMap(), getClass().getClassLoader(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName(),
                     GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestTask1.class.getName(),
                     GridP2PRemoteTestJob.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task2 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr.loadClass(GridP2PRemoteTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
@@ -101,7 +103,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             // One remote p2p class loader
             assert res1 != null : "res1 != null";
             assert res1 instanceof Long : "res1 instanceof Long != true";
-            assert res1.equals(0L): "Expected 0, got " + res1;
+            assert res1.equals(0L) : "Expected 0, got " + res1;
 
             // The same remote p2p class loader.
             assert res2 != null : "res2 != null";
@@ -135,19 +137,21 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr1 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName(),
                     GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestJob.class.getName()
                 );
 
             ClassLoader tstClsLdr2 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName(),
                     GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task2 =
-                (Class<? extends ComputeTask<?, ?>>) tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
+                (Class<? extends ComputeTask<?, ?>>)tstClsLdr2.loadClass(GridP2PRemoteTestTask1.class.getName());
 
             Object res1 = ignite1.compute().execute(task1.newInstance(), null);
 
@@ -158,7 +162,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             // One remote p2p class loader
             assert res1 != null : "res1 != null";
             assert res1 instanceof Long : "res1 instanceof Long != true";
-            assert res1.equals(0L): "Invalid res2 value: " + res1;
+            assert res1.equals(0L) : "Invalid res2 value: " + res1;
 
             // Another remote p2p class loader.
             assert res2 != null : "res2 == null";
@@ -178,6 +182,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderPrivateMode() throws Exception {
         processTestSameRemoteClassLoader(DeploymentMode.PRIVATE);
     }
@@ -187,6 +192,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderIsolatedMode() throws Exception {
         processTestSameRemoteClassLoader(DeploymentMode.ISOLATED);
     }
@@ -196,6 +202,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testDifferentClassLoaderPrivateMode() throws Exception {
         processTestDifferentRemoteClassLoader(DeploymentMode.PRIVATE);
     }
@@ -205,6 +212,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testDifferentClassLoaderIsolatedMode() throws Exception {
         processTestDifferentRemoteClassLoader(DeploymentMode.ISOLATED);
     }
@@ -256,12 +264,12 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg) {
             Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
                 if (!node.id().equals(ignite.configuration().getNodeId()))
-                    map.put(new GridP2PRemoteTestJob(null) , node);
+                    map.put(new GridP2PRemoteTestJob(null), node);
             }
 
             return map;

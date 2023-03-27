@@ -82,7 +82,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public Guid? SubjectId { get { return _subjectId; } }
 
-        /** <inheritDoc /> */
+	    /// <summary>
+	    /// Gets shortened version of ToString result.
+	    /// </summary>
 	    public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,

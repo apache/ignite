@@ -24,12 +24,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  *
@@ -48,6 +48,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnect() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -65,7 +66,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         assertEquals((Object)topVer, srvc.test());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         reconnectClientNode(client, srv, null);
 
@@ -83,12 +84,13 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceRemove() throws Exception {
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         IgniteServices clnServices = client.services();
 
@@ -125,18 +127,16 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
-    public void testReconnectInDeploying() throws Exception {
-        Ignite client = grid(serverCount());
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
+    public void testReconnectInDeployingNew() throws Exception {
+        IgniteEx client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
         final IgniteServices services = client.services();
 
-        Ignite srv = clientRouter(client);
-
-        BlockTcpCommunicationSpi commSpi = commSpi(srv);
-
-        commSpi.blockMessage(GridNearTxPrepareResponse.class);
+        Ignite srv = ignite(0);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -153,18 +153,17 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
             }
         });
 
-        // Check that client waiting operation.
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return fut.get(200);
+        reconnectClientNode(client, srv, () -> {
+            // Check that client waiting operation.
+            GridTestUtils.assertThrows(log, () -> fut.get(200), IgniteFutureTimeoutCheckedException.class, null);
+
+            try {
+                assertNotDone(fut);
             }
-        }, IgniteFutureTimeoutCheckedException.class, null);
-
-        assertNotDone(fut);
-
-        commSpi.unblockMessage();
-
-        reconnectClientNode(client, srv, null);
+            catch (Exception e) {
+                fail("Unexpected exception has been thrown, err=" + e.getMessage());
+            }
+        });
 
         assertTrue((Boolean)fut.get(2, TimeUnit.SECONDS));
     }
@@ -172,6 +171,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectInProgress() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -179,7 +179,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         final IgniteServices services = client.services();
 
-        final Ignite srv = clientRouter(client);
+        final Ignite srv = ignite(0);
 
         services.deployClusterSingleton("testReconnectInProgress", new TestServiceImpl());
 

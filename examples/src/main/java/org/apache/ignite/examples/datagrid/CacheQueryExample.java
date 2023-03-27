@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples.datagrid;
 
-import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -25,10 +24,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -36,8 +35,11 @@ import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+
 /**
- * Cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
+ * Cache queries example. This example demonstrates TEXT, FULL SCAN and INDEX
  * queries over cache.
  * <p>
  * Example also demonstrates usage of fields queries that return only required
@@ -50,7 +52,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  *         collocated mode. Refer to {@link AffinityKey} javadoc for more details.
  *         <p>
  *         To use distributed joins it is necessary to set query 'distributedJoin' flag using
- *         {@link SqlFieldsQuery#setDistributedJoins(boolean)} or {@link SqlQuery#setDistributedJoins(boolean)}.
+ *         {@link SqlFieldsQuery#setDistributedJoins(boolean)}.
  *     </li>
  *     <li>
  *         Note that if you created query on to replicated cache, all data will
@@ -69,9 +71,6 @@ public class CacheQueryExample {
     private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
 
     /** Persons collocated with Organizations cache name. */
-    private static final String COLLOCATED_PERSON_CACHE = CacheQueryExample.class.getSimpleName() + "CollocatedPersons";
-
-    /** Persons cache name. */
     private static final String PERSON_CACHE = CacheQueryExample.class.getSimpleName() + "Persons";
 
     /**
@@ -90,21 +89,15 @@ public class CacheQueryExample {
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             orgCacheCfg.setIndexedTypes(Long.class, Organization.class);
 
-            CacheConfiguration<AffinityKey<Long>, Person> colPersonCacheCfg =
-                new CacheConfiguration<>(COLLOCATED_PERSON_CACHE);
-
-            colPersonCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            colPersonCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
-
-            CacheConfiguration<Long, Person> personCacheCfg = new CacheConfiguration<>(PERSON_CACHE);
+            CacheConfiguration<AffinityKey<Long>, Person> personCacheCfg =
+                new CacheConfiguration<>(PERSON_CACHE);
 
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
-            personCacheCfg.setIndexedTypes(Long.class, Person.class);
+            personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
             try {
                 // Create caches.
                 ignite.getOrCreateCache(orgCacheCfg);
-                ignite.getOrCreateCache(colPersonCacheCfg);
                 ignite.getOrCreateCache(personCacheCfg);
 
                 // Populate caches.
@@ -113,34 +106,14 @@ public class CacheQueryExample {
                 // Example for SCAN-based query based on a predicate.
                 scanQuery();
 
-                // Example for SQL-based querying employees based on salary ranges.
-                sqlQuery();
-
-                // Example for SQL-based querying employees for a given organization
-                // (includes SQL join for collocated objects).
-                sqlQueryWithJoin();
-
-                // Example for SQL-based querying employees for a given organization
-                // (includes distributed SQL join).
-                sqlQueryWithDistributedJoin();
-
                 // Example for TEXT-based querying for a given string in peoples resumes.
                 textQuery();
 
-                // Example for SQL-based querying to calculate average salary
-                // among all employees within a company.
-                sqlQueryWithAggregation();
-
-                // Example for SQL-based fields queries that return only required
-                // fields instead of whole key-value pairs.
-                sqlFieldsQuery();
-
-                // Example for SQL-based fields queries that uses joins.
-                sqlFieldsQueryWithJoin();
+                // Example for INDEX-based query with index criteria.
+                indexQuery();
             }
             finally {
                 // Distributed cache could be removed from cluster only by Ignite.destroyCache() call.
-                ignite.destroyCache(COLLOCATED_PERSON_CACHE);
                 ignite.destroyCache(PERSON_CACHE);
                 ignite.destroyCache(ORG_CACHE);
             }
@@ -154,7 +127,7 @@ public class CacheQueryExample {
      */
     private static void scanQuery() {
         IgniteCache<BinaryObject, BinaryObject> cache = Ignition.ignite()
-            .cache(COLLOCATED_PERSON_CACHE).withKeepBinary();
+            .cache(PERSON_CACHE).withKeepBinary();
 
         ScanQuery<BinaryObject, BinaryObject> scan = new ScanQuery<>(
             new IgniteBiPredicate<BinaryObject, BinaryObject>() {
@@ -166,74 +139,6 @@ public class CacheQueryExample {
 
         // Execute queries for salary ranges.
         print("People with salaries between 0 and 1000 (queried with SCAN query): ", cache.query(scan).getAll());
-    }
-
-    /**
-     * Example for SQL queries based on salary ranges.
-     */
-    private static void sqlQuery() {
-        IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-
-        // SQL clause which selects salaries based on range.
-        String sql = "salary > ? and salary <= ?";
-
-        // Execute queries for salary ranges.
-        print("People with salaries between 0 and 1000 (queried with SQL query): ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, sql).
-                setArgs(0, 1000)).getAll());
-
-        print("People with salaries between 1000 and 2000 (queried with SQL query): ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, sql).
-                setArgs(1000, 2000)).getAll());
-    }
-
-    /**
-     * Example for SQL queries based on all employees working for a specific organization.
-     */
-    private static void sqlQueryWithJoin() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(COLLOCATED_PERSON_CACHE);
-
-        // SQL clause query which joins on 2 types to select people for a specific organization.
-        String joinSql =
-            "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-            "where Person.orgId = org.id " +
-            "and lower(org.name) = lower(?)";
-
-        // Execute queries for find employees for different organizations.
-        print("Following people are 'ApacheIgnite' employees: ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, joinSql).
-                setArgs("ApacheIgnite")).getAll());
-
-        print("Following people are 'Other' employees: ",
-            cache.query(new SqlQuery<AffinityKey<Long>, Person>(Person.class, joinSql).
-                setArgs("Other")).getAll());
-    }
-
-    /**
-     * Example for SQL queries based on all employees working
-     * for a specific organization (query uses distributed join).
-     */
-    private static void sqlQueryWithDistributedJoin() {
-        IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
-
-        // SQL clause query which joins on 2 types to select people for a specific organization.
-        String joinSql =
-            "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-            "where Person.orgId = org.id " +
-            "and lower(org.name) = lower(?)";
-
-        SqlQuery qry = new SqlQuery<AffinityKey<Long>, Person>(Person.class, joinSql).
-            setArgs("ApacheIgnite");
-
-        // Enable distributed joins for query.
-        qry.setDistributedJoins(true);
-
-        // Execute queries for find employees for different organizations.
-        print("Following people are 'ApacheIgnite' employees (distributed join): ", cache.query(qry).getAll());
-
-        qry.setArgs("Other");
-
-        print("Following people are 'Other' employees (distributed join): ", cache.query(qry).getAll());
     }
 
     /**
@@ -255,63 +160,44 @@ public class CacheQueryExample {
     }
 
     /**
-     * Example for SQL queries to calculate average salary for a specific organization.
+     * Example for query indexes with criteria and binary objects.
      */
-    private static void sqlQueryWithAggregation() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(COLLOCATED_PERSON_CACHE);
-
-        // Calculate average of salary of all persons in ApacheIgnite.
-        // Note that we also join on Organization cache as well.
-        String sql =
-            "select avg(salary) " +
-            "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-            "where Person.orgId = org.id " +
-            "and lower(org.name) = lower(?)";
-
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql).setArgs("ApacheIgnite"));
-
-        // Calculate average salary for a specific organization.
-        print("Average salary for 'ApacheIgnite' employees: ", cursor.getAll());
-    }
-
-    /**
-     * Example for SQL-based fields queries that return only required
-     * fields instead of whole key-value pairs.
-     */
-    private static void sqlFieldsQuery() {
+    private static void indexQuery() {
         IgniteCache<Long, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
-        // Execute query to get names of all employees.
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(
-            "select concat(firstName, ' ', lastName) from Person"));
+        // Query for all people who work in the organization "ApacheIgnite".
+        QueryCursor<Cache.Entry<Long, Person>> igniters = cache.query(
+            new IndexQuery<Long, Person>(Person.class)
+                .setCriteria(eq("orgId", 1L))
+        );
 
-        // In this particular case each row will have one element with full name of an employees.
-        List<List<?>> res = cursor.getAll();
+        print("Following people work in the 'ApacheIgnite' organization (queried with INDEX query): ",
+            igniters.getAll());
 
-        // Print names.
-        print("Names of all employees:", res);
-    }
+        // Query for all people who work in the organization "Other" and have salary more than 1,500.
+        QueryCursor<Cache.Entry<Long, Person>> others = cache.query(
+            new IndexQuery<Long, Person>(Person.class)  // Index name {@link Person#ORG_SALARY_IDX} is optional.
+                .setCriteria(eq("orgId", 2L), gt("salary", 1500.0)));
 
-    /**
-     * Example for SQL-based fields queries that return only required
-     * fields instead of whole key-value pairs.
-     */
-    private static void sqlFieldsQueryWithJoin() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(COLLOCATED_PERSON_CACHE);
+        print("Following people work in the 'Other' organizations and have salary more than 1500 (queried with INDEX query): ",
+            others.getAll());
 
-        // Execute query to get names of all employees.
-        String sql =
-            "select concat(firstName, ' ', lastName), org.name " +
-            "from Person, \"" + ORG_CACHE + "\".Organization as org " +
-            "where Person.orgId = org.id";
+        // Query for all people who have salary more than 1,500 using BinaryObject.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> rich = cache.withKeepBinary().query(
+            new IndexQuery<BinaryObject, BinaryObject>(Person.class.getName())
+                .setCriteria(gt("salary", 1500.0)));
 
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql));
+        print("Following people have salary more than 1500 (queried with INDEX query and using binary objects): ",
+            rich.getAll());
 
-        // In this particular case each row will have one element with full name of an employees.
-        List<List<?>> res = cursor.getAll();
+        // Query for all people who have salary more than 1,500 and have 'Master Degree' in their resumes.
+        QueryCursor<Cache.Entry<BinaryObject, BinaryObject>> richMasters = cache.withKeepBinary().query(
+            new IndexQuery<BinaryObject, BinaryObject>(Person.class.getName())
+                .setCriteria(gt("salary", 1500.0))
+                .setFilter((k, v) -> v.<String>field("resume").contains("Master")));
 
-        // Print persons' names and organizations' names.
-        print("Names of all employees and organizations they belong to: ", res);
+        print("Following people have salary more than 1500 and Master degree (queried with INDEX query): ",
+            richMasters.getAll());
     }
 
     /**
@@ -330,12 +216,10 @@ public class CacheQueryExample {
         orgCache.put(org1.id(), org1);
         orgCache.put(org2.id(), org2);
 
-        IgniteCache<AffinityKey<Long>, Person> colPersonCache = Ignition.ignite().cache(COLLOCATED_PERSON_CACHE);
-        IgniteCache<Long, Person> personCache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<AffinityKey<Long>, Person> colPersonCache = Ignition.ignite().cache(PERSON_CACHE);
 
         // Clear caches before running the example.
         colPersonCache.clear();
-        personCache.clear();
 
         // People.
         Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");
@@ -349,12 +233,6 @@ public class CacheQueryExample {
         colPersonCache.put(p2.key(), p2);
         colPersonCache.put(p3.key(), p3);
         colPersonCache.put(p4.key(), p4);
-
-        // These Person objects are not collocated with their organizations.
-        personCache.put(p1.id, p1);
-        personCache.put(p2.id, p2);
-        personCache.put(p3.id, p3);
-        personCache.put(p4.id, p4);
     }
 
     /**

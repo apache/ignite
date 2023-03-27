@@ -17,7 +17,19 @@
 
 package org.apache.ignite.tests.utils;
 
-
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.ResourceBundle;
+import java.util.Set;
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.tests.load.Generator;
@@ -25,19 +37,9 @@ import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.Product;
 import org.apache.ignite.tests.pojos.ProductOrder;
+import org.apache.ignite.tests.pojos.SimplePerson;
+import org.apache.ignite.tests.pojos.SimplePersonId;
 import org.springframework.core.io.ClassPathResource;
-
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.ResourceBundle;
-import java.util.Calendar;
-import java.util.Date;
 
 /**
  * Helper class for all tests
@@ -115,16 +117,16 @@ public class TestsHelper {
 
             HOST_PREFIX = prefix;
 
-            Calendar cl = Calendar.getInstance();
+            LocalDate date = LocalDate.now();
 
             String year = TESTS_SETTINGS.getString("orders.year");
-            ORDERS_YEAR = !year.trim().isEmpty() ? Integer.parseInt(year) : cl.get(Calendar.YEAR);
+            ORDERS_YEAR = !year.trim().isEmpty() ? Integer.parseInt(year) : date.getYear();
 
             String month = TESTS_SETTINGS.getString("orders.month");
-            ORDERS_MONTH = !month.trim().isEmpty() ? Integer.parseInt(month) : cl.get(Calendar.MONTH);
+            ORDERS_MONTH = !month.trim().isEmpty() ? (Integer.parseInt(month) + 1) : date.getMonthValue();
 
             String day = TESTS_SETTINGS.getString("orders.day");
-            ORDERS_DAY = !day.trim().isEmpty() ? Integer.parseInt(day) : cl.get(Calendar.DAY_OF_MONTH);
+            ORDERS_DAY = !day.trim().isEmpty() ? Integer.parseInt(day) : date.getDayOfMonth();
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize TestsHelper", e);
@@ -283,6 +285,24 @@ public class TestsHelper {
     }
 
     /** */
+    public static Map<SimplePersonId, SimplePerson> generateSimplePersonIdsPersonsMap() {
+        return generateSimplePersonIdsPersonsMap(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Map<SimplePersonId, SimplePerson> generateSimplePersonIdsPersonsMap(int cnt) {
+        Map<SimplePersonId, SimplePerson> map = new HashMap<>();
+
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonId();
+
+            map.put(new SimplePersonId(id), new SimplePerson(generateRandomPerson(id.getPersonNumber())));
+        }
+
+        return map;
+    }
+
+    /** */
     public static Map<PersonId, Person> generatePersonIdsPersonsMap() {
         return generatePersonIdsPersonsMap(BULK_OPERATION_SIZE);
     }
@@ -298,6 +318,24 @@ public class TestsHelper {
         }
 
         return map;
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> generateSimplePersonIdsPersonsEntries() {
+        return generateSimplePersonIdsPersonsEntries(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> generateSimplePersonIdsPersonsEntries(int cnt) {
+        Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> entries = new LinkedList<>();
+
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonId();
+
+            entries.add(new CacheEntryImpl<>(new SimplePersonId(id), new SimplePerson(generateRandomPerson(id.getPersonNumber()))));
+        }
+
+        return entries;
     }
 
     /** */
@@ -431,6 +469,7 @@ public class TestsHelper {
         return map;
     }
 
+    /** */
     public static Collection<Long> getOrderIds(Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> orders) {
         Set<Long> ids = new HashSet<>();
 
@@ -443,6 +482,24 @@ public class TestsHelper {
     }
 
     /** */
+    public static SimplePerson generateRandomSimplePerson(long personNum) {
+        int phonesCnt = RANDOM.nextInt(4);
+
+        List<String> phones = new LinkedList<>();
+
+        for (int i = 0; i < phonesCnt; i++)
+            phones.add(randomNumber(4));
+
+        return new SimplePerson(personNum, randomString(4), randomString(4), (short)RANDOM.nextInt(100),
+                RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
+    }
+
+    /** */
+    public static SimplePersonId generateRandomSimplePersonId() {
+        return new SimplePersonId(randomString(4), randomString(4), RANDOM.nextInt(100));
+    }
+
+    /** */
     public static Person generateRandomPerson(long personNum) {
         int phonesCnt = RANDOM.nextInt(4);
 
@@ -451,7 +508,7 @@ public class TestsHelper {
         for (int i = 0; i < phonesCnt; i++)
             phones.add(randomNumber(4));
 
-        return new Person(personNum, randomString(4), randomString(4), RANDOM.nextInt(100),
+        return new Person(personNum, randomString(4), randomString(4), (short)RANDOM.nextInt(100),
             RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
     }
 
@@ -472,18 +529,15 @@ public class TestsHelper {
 
     /** */
     private static ProductOrder generateRandomOrder(long productId, int saltedNumber) {
-        Calendar cl = Calendar.getInstance();
-        cl.set(Calendar.YEAR, ORDERS_YEAR);
-        cl.set(Calendar.MONTH, ORDERS_MONTH);
-        cl.set(Calendar.DAY_OF_MONTH, ORDERS_DAY);
+        LocalDate date = LocalDate.of(ORDERS_YEAR, ORDERS_MONTH, ORDERS_DAY);
 
         long id = Long.parseLong(productId + System.currentTimeMillis() + HOST_PREFIX + saltedNumber);
 
-        return generateRandomOrder(id, productId, cl.getTime());
+        return generateRandomOrder(id, productId, date.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     /** */
-    public static ProductOrder generateRandomOrder(long id, long productId, Date date) {
+    public static ProductOrder generateRandomOrder(long id, long productId, Instant date) {
         return new ProductOrder(id, productId, generateProductPrice(productId), date, 1 + RANDOM.nextInt(20));
     }
 
@@ -517,6 +571,26 @@ public class TestsHelper {
     }
 
     /** */
+    public static <K> boolean checkSimplePersonMapsEqual(Map<K, SimplePerson> map1, Map<K, SimplePerson> map2,
+                                                   boolean primitiveFieldsOnly) {
+        if (map1 == null || map2 == null || map1.size() != map2.size())
+            return false;
+
+        for (K key : map1.keySet()) {
+            SimplePerson person1 = map1.get(key);
+            SimplePerson person2 = map2.get(key);
+
+            boolean equals = person1 != null && person2 != null &&
+                    (primitiveFieldsOnly ? person1.equalsPrimitiveFields(person2) : person1.equals(person2));
+
+            if (!equals)
+                return false;
+        }
+
+        return true;
+    }
+
+    /** */
     public static <K> boolean checkPersonMapsEqual(Map<K, Person> map1, Map<K, Person> map2,
         boolean primitiveFieldsOnly) {
         if (map1 == null || map2 == null || map1.size() != map2.size())
@@ -528,6 +602,24 @@ public class TestsHelper {
 
             boolean equals = person1 != null && person2 != null &&
                 (primitiveFieldsOnly ? person1.equalsPrimitiveFields(person2) : person1.equals(person2));
+
+            if (!equals)
+                return false;
+        }
+
+        return true;
+    }
+
+    /** */
+    public static <K> boolean checkSimplePersonCollectionsEqual(Map<K, SimplePerson> map, Collection<CacheEntryImpl<K, SimplePerson>> col,
+                                                          boolean primitiveFieldsOnly) {
+        if (map == null || col == null || map.size() != col.size())
+            return false;
+
+        for (CacheEntryImpl<K, SimplePerson> entry : col) {
+            boolean equals = primitiveFieldsOnly ?
+                    entry.getValue().equalsPrimitiveFields(map.get(entry.getKey())) :
+                    entry.getValue().equals(map.get(entry.getKey()));
 
             if (!equals)
                 return false;
@@ -650,7 +742,7 @@ public class TestsHelper {
             if (i % 2 != 0)
                 price = price / 2;
             else
-                price = (float) Math.sqrt(price);
+                price = (float)Math.sqrt(price);
 
             i++;
         }

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.util.tostring;
 
-import org.apache.ignite.IgniteSystemProperties;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
  * Attach this annotation to a field or a class to indicate that this field or fields of this

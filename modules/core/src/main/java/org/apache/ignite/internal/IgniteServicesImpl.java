@@ -23,16 +23,22 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallContextBuilder;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.Nullable;
@@ -40,10 +46,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * {@link org.apache.ignite.IgniteServices} implementation.
  */
-@SuppressWarnings("unchecked")
-public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
+public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServicesEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default timeout. */
+    public static final long DFLT_TIMEOUT = 0;
 
     /** */
     private GridKernalContext ctx;
@@ -94,7 +102,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> deployNodeSingletonAsync(String name, Service svc) throws IgniteException {
+    @Override public IgniteFuture<Void> deployNodeSingletonAsync(String name, Service svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -127,7 +135,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> deployClusterSingletonAsync(String name, Service svc) throws IgniteException {
+    @Override public IgniteFuture<Void> deployClusterSingletonAsync(String name, Service svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -160,8 +168,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> deployMultipleAsync(String name, Service svc, int totalCnt,
-        int maxPerNodeCnt) throws IgniteException {
+    @Override public IgniteFuture<Void> deployMultipleAsync(String name, Service svc, int totalCnt, int maxPerNodeCnt) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -198,7 +205,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> deployKeyAffinitySingletonAsync(String name, Service svc,
-        @Nullable String cacheName, Object affKey) throws IgniteException {
+        @Nullable String cacheName, Object affKey) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
         A.notNull(affKey, "affKey");
@@ -218,10 +225,24 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     @Override public void deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
+        deployAll(Collections.singleton(cfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> deployAsync(ServiceConfiguration cfg) {
+        A.notNull(cfg, "cfg");
+
+        return deployAllAsync(Collections.singleton(cfg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deployAll(Collection<ServiceConfiguration> cfgs) {
+        A.notNull(cfgs, "cfgs");
+
         guard();
 
         try {
-            saveOrGet(ctx.service().deploy(cfg));
+            saveOrGet(ctx.service().deployAll(prj, cfgs));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -232,13 +253,13 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> deployAsync(ServiceConfiguration cfg) throws IgniteException {
-        A.notNull(cfg, "cfg");
+    @Override public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs) {
+        A.notNull(cfgs, "cfgs");
 
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deploy(cfg));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployAll(prj, cfgs));
         }
         finally {
             unguard();
@@ -263,13 +284,40 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> cancelAsync(String name) throws IgniteException {
+    @Override public IgniteFuture<Void> cancelAsync(String name) {
         A.notNull(name, "name");
 
         guard();
 
         try {
             return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().cancel(name));
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelAll(Collection<String> names) {
+        guard();
+
+        try {
+            saveOrGet(ctx.service().cancelAll(names));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> cancelAllAsync(Collection<String> names) {
+        guard();
+
+        try {
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().cancelAll(names));
         }
         finally {
             unguard();
@@ -292,7 +340,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> cancelAllAsync() throws IgniteException {
+    @Override public IgniteFuture<Void> cancelAllAsync() {
         guard();
 
         try {
@@ -330,12 +378,75 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
-        return (T) serviceProxy(name, svcItf, sticky, 0);
+        return (T)serviceProxy(name, svcItf, sticky, DFLT_TIMEOUT);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
-        final long timeout) throws IgniteException {
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        final long timeout
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, (Supplier<Map<String, Object>>)null, timeout);
+    }
+
+    /** */
+    public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        final long timeout,
+        final boolean keepBinary
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, null, timeout, keepBinary);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable ServiceCallContext callCtx
+    ) throws IgniteException {
+        return (T)serviceProxy(name, svcItf, sticky, callCtx, DFLT_TIMEOUT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable ServiceCallContext callCtx,
+        final long timeout
+    ) throws IgniteException {
+        A.ensure(callCtx == null || callCtx instanceof ServiceCallContextImpl,
+            "\"callCtx\" has an invalid type. Custom implementation of " + ServiceCallContext.class.getSimpleName() +
+                " is not supported. Please use " + ServiceCallContextBuilder.class.getSimpleName() + " to create it.");
+
+        return (T)serviceProxy(name, svcItf, sticky, callCtx != null ? ((ServiceCallContextImpl)callCtx)::values : null, timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable Supplier<Map<String, Object>> callAttrsProvider,
+        final long timeout
+    ) throws IgniteException {
+        return serviceProxy(name, svcItf, sticky, callAttrsProvider, timeout, false);
+    }
+
+    /** */
+    private <T> T serviceProxy(
+        final String name,
+        final Class<? super T> svcItf,
+        final boolean sticky,
+        @Nullable Supplier<Map<String, Object>> callAttrsProvider,
+        final long timeout,
+        final boolean keepBinary
+    ) {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
@@ -344,7 +455,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, callAttrsProvider, timeout, keepBinary);
         }
         finally {
             unguard();

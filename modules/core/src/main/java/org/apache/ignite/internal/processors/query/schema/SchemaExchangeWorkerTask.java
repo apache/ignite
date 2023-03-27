@@ -17,26 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
+import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache schema change task for exchange worker.
  */
-public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTask {
+public class SchemaExchangeWorkerTask extends AbstractCachePartitionExchangeWorkerTask {
     /** Message. */
     private final SchemaAbstractDiscoveryMessage msg;
 
     /**
      * Constructor.
      *
+     * @param secCtx Security context in which current task must be executed.
      * @param msg Message.
      */
-    public SchemaExchangeWorkerTask(SchemaAbstractDiscoveryMessage msg) {
+    public SchemaExchangeWorkerTask(SecurityContext secCtx, SchemaAbstractDiscoveryMessage msg) {
+        super(secCtx);
+
         assert msg != null;
 
         this.msg = msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return false;
     }
 
     /**

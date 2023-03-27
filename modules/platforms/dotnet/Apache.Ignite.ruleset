@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<RuleSet Name="Rules for Apache.Ignite.Core" Description="Code analysis rules for Apache.Ignite.Core.csproj." ToolsVersion="14.0">
+  <IncludeAll Action="Error" />
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <!-- Generic methods should provide type parameter. -->
+    <Rule Id="CA1004" Action="None" />
+    
+    <!-- Avoid excessive parameters on generic types. -->
+    <Rule Id="CA1005" Action="None" />
+
+    <!-- Do not nest generic types in member signatures. -->
+    <Rule Id="CA1006" Action="None" />
+
+    <!-- Avoid namespaces with few types. -->
+    <Rule Id="CA1020" Action="None" />
+
+    <!-- Avoid out parameters. -->
+    <Rule Id="CA1021" Action="None" />
+
+    <!-- Use properties where appropriate. -->
+    <Rule Id="CA1024" Action="None" />
+
+    <!-- Default parameters should not be used. -->
+    <Rule Id="CA1026" Action="None" />
+
+    <!-- Do not pass literals as localized parameters. -->
+    <Rule Id="CA1303" Action="None" />
+
+    <!-- Specify IFormatProvider. -->
+    <Rule Id="CA1305" Action="None" />
+
+    <!-- Avoid excessive complexity. -->
+    <Rule Id="CA1502" Action="None" />
+
+    <!-- Avoid excessive class coupling. -->
+    <Rule Id="CA1506" Action="None" />
+
+    <!-- Identifiers should not match keywords. -->
+    <Rule Id="CA1716" Action="None" />
+
+    <!-- Identifiers should not contain type names. -->
+    <Rule Id="CA1720" Action="None" />
+
+    <!-- Do not lock on objects with weak identity: we allow this on internal classes that are never exposed to the user. -->
+    <Rule Id="CA2002" Action="None" />
+
+    <!-- Use nameof: not applicable for older frameworks that we support. -->
+    <Rule Id="CA1507" Action="None" />
+
+    <!-- Use Array.Empty: not available in older frameworks that we support. -->
+    <Rule Id="CA1825" Action="None" />
+  </Rules>
+</RuleSet>

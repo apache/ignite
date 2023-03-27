@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.continuous;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.event.CacheEntryEvent;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.PX2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.loadtests.util.GridLoadTestArgs.CACHE_NAME;
@@ -115,8 +115,8 @@ public class GridContinuousOperationsLoadTest {
                 if (useQry) {
                     ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-                    qry.setLocalListener(new CacheEntryUpdatedListener<Object,Object>() {
-                        @Override public void onUpdated(Iterable<CacheEntryEvent<?,?>> evts) {
+                    qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
                             if (cbSleepMs > 0) {
                                 try {
                                     U.sleep(cbSleepMs);
@@ -126,13 +126,13 @@ public class GridContinuousOperationsLoadTest {
                                 }
                             }
 
-                            for (CacheEntryEvent<?,?> ignored : evts)
+                            for (CacheEntryEvent<?, ?> ignored : evts)
                                 cbCntr.incrementAndGet();
                         }
                     });
 
-                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object,Object>() {
-                        @Override public boolean evaluate(CacheEntryEvent<?,?> evt) {
+                    qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object, Object>() {
+                        @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
                             if (filterSleepMs > 0) {
                                 try {
                                     U.sleep(filterSleepMs);
@@ -209,7 +209,7 @@ public class GridContinuousOperationsLoadTest {
             IgniteInternalFuture<Long> genFut = runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     byte[] val = new byte[valSize];
-                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (!stop.get() && !Thread.currentThread().isInterrupted()) {
                         Integer key = rnd.nextInt(keyRange);

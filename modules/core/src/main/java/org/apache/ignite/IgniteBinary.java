@@ -23,12 +23,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -307,17 +309,21 @@ import org.jetbrains.annotations.Nullable;
 public interface IgniteBinary {
     /**
      * Gets type ID for given type name.
+     * If no user defined {@link org.apache.ignite.binary.BinaryIdMapper} is configured
+     * via {@link org.apache.ignite.configuration.BinaryConfiguration}, then system mapper will be used.
+     *
      *
      * @param typeName Type name.
-     * @return Type ID.
+     * @return Type ID which a type would have had if it has been registered in Ignite.
      */
-    public int typeId(String typeName);
+    public int typeId(@NotNull String typeName);
 
     /**
      * Converts provided object to instance of {@link org.apache.ignite.binary.BinaryObject}.
      *
      * @param obj Object to convert.
-     * @return Converted object.
+     * @param <T> Type of the binary object.
+     * @return Converted object or {@code null} if obj is null.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException;
@@ -327,6 +333,7 @@ public interface IgniteBinary {
      *
      * @param typeName Type name.
      * @return Newly binary builder.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException;
 
@@ -374,11 +381,41 @@ public interface IgniteBinary {
     public Collection<BinaryType> types() throws BinaryObjectException;
 
     /**
-     * Create enum object.
+     * Create enum object using value.
      *
      * @param typeName Type name.
      * @param ord Ordinal.
      * @return Enum object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryObject buildEnum(String typeName, int ord);
+    public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException;
+
+    /**
+     * Create enum object using name.
+     *
+     * @param typeName Type name.
+     * @param name Name.
+     * @return Enum object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException;
+
+    /**
+     * Register enum type.
+     *
+     * @param typeName Type name.
+     * @param vals Mapping of enum constant names to ordinals.
+     * @return Binary type for registered enum.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException;
+
+    /**
+     * Register binary type for specified class.
+     *
+     * @param cls Class.
+     * @return Metadata.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerClass(Class<?> cls) throws BinaryObjectException;
 }

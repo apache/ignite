@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -37,13 +38,18 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
      *
      * @param fut Internal future.
      */
-    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut) {
-        super(fut);
+    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut, Executor defaultExecutor) {
+        super(fut, defaultExecutor);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return new IgniteCacheFutureImpl<>(chainInternal(doneCb));
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, null), defaultExecutor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, exec), defaultExecutor);
     }
 
     /** {@inheritDoc} */

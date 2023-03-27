@@ -25,22 +25,22 @@ import javax.cache.event.CacheEntryListenerException;
 /**
  * Must be not in org.apache.ignite.internal
  */
-public class DummyEventFilterFactory implements Factory<CacheEntryEventFilter<Integer, String>> {
+public class DummyEventFilterFactory<T> implements Factory<CacheEntryEventFilter<Integer, T>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventFilter<Integer, String> create() {
-        return new DummyEventFilter();
+    @Override public CacheEntryEventFilter<Integer, T> create() {
+        return new DummyEventFilter<T>();
     }
 
     /**
      *
      */
-    private static class DummyEventFilter implements CacheEntryEventFilter<Integer, String> {
+    private static class DummyEventFilter<T> implements CacheEntryEventFilter<Integer, T> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(
-            final CacheEntryEvent<? extends Integer, ? extends String> evt) throws CacheEntryListenerException {
+            final CacheEntryEvent<? extends Integer, ? extends T> evt) throws CacheEntryListenerException {
             return true;
         }
     }

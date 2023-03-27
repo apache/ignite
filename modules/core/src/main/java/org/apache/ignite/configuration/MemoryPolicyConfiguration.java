@@ -17,7 +17,10 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mxbean.MetricsMxBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -39,26 +42,29 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *                 <list>
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="Default_Region"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100L * 1024 * 1024}"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
- *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{20L * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
- *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{25L * 1024 * 1024}"/>
+ *                          <property name="maxSize" value="#{100L * 1024 * 1024}"/>
  *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
  *                      </bean>
  *                  </list>
  *              </property>
  *     }
  * </pre>
+ *
+ * @deprecated Use {@link DataRegionConfiguration} instead.
  */
+@Deprecated
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -66,11 +72,17 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Default metrics enabled flag. */
     public static final boolean DFLT_METRICS_ENABLED = false;
 
+    /** Default amount of sub intervals to calculate {@link MemoryMetrics#getAllocationRate()} metric. */
+    public static final int DFLT_SUB_INTERVALS = 5;
+
+    /** Default length of interval over which {@link MemoryMetrics#getAllocationRate()} metric is calculated. */
+    public static final int DFLT_RATE_TIME_INTERVAL_MILLIS = 60_000;
+
     /** Memory policy name. */
     private String name = DFLT_MEM_PLC_DEFAULT_NAME;
 
     /** Memory policy start size. */
-    private long initialSize = MemoryConfiguration.DFLT_MEMORY_POLICY_INITIAL_SIZE;
+    private long initialSize;
 
     /** Memory policy maximum size. */
     private long maxSize = MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
@@ -90,8 +102,27 @@ public final class MemoryPolicyConfiguration implements Serializable {
     /** Minimum number of empty pages in reuse lists. */
     private int emptyPagesPoolSize = 100;
 
-    /** */
+    /**
+     * Flag to enable the memory metrics collection for this memory policy.
+     */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
+
+    /** Number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
+     * {@link MemoryMetrics#getAllocationRate()} and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
+     * <p>
+     * Setting it to a bigger value will result in more precise calculation and smaller drops of
+     * {@link MemoryMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * calculation overhead. */
+    private int subIntervals = DFLT_SUB_INTERVALS;
+
+    /**
+     * Time interval (in milliseconds) for {@link MemoryMetrics#getAllocationRate()}
+     * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
+     * <p>
+     * For instance, after setting the interval to 60_000 milliseconds, subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * will return average allocation rate (pages per second) for the last minute.
+     */
+    private long rateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
 
     /**
      * Gets memory policy name.
@@ -262,8 +293,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics MX bean.
+     * Gets whether memory metrics are enabled by default on node startup.
      *
      * @return Metrics enabled flag.
      */
@@ -273,7 +303,6 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics MX bean.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
@@ -282,5 +311,81 @@ public final class MemoryPolicyConfiguration implements Serializable {
         this.metricsEnabled = metricsEnabled;
 
         return this;
+    }
+
+    /**
+     * Gets time interval for {@link MemoryMetrics#getAllocationRate()}
+     * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
+     * <p>
+     * For instance, after setting the interval to 60_000 milliseconds,
+     * subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * will return average allocation rate (pages per second) for the last minute.
+     *
+     * @return Time interval over which allocation rate is calculated.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
+     */
+    @Deprecated
+    public long getRateTimeInterval() {
+        return rateTimeInterval;
+    }
+
+    /**
+     * Sets time interval for {@link MemoryMetrics#getAllocationRate()}
+     * and {@link MemoryMetrics#getEvictionRate()} monitoring purposes.
+     * <p>
+     * For instance, after setting the interval to 60 seconds,
+     * subsequent calls to {@link MemoryMetrics#getAllocationRate()}
+     * will return average allocation rate (pages per second) for the last minute.
+     *
+     * @param rateTimeInterval Time interval used for allocation and eviction rates calculations.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
+     */
+    @Deprecated
+    public MemoryPolicyConfiguration setRateTimeInterval(long rateTimeInterval) {
+        this.rateTimeInterval = rateTimeInterval;
+
+        return this;
+    }
+
+    /**
+     * Gets a number of sub-intervals the whole {@link #setRateTimeInterval(long)}
+     * will be split into to calculate {@link MemoryMetrics#getAllocationRate()}
+     * and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
+     * <p>
+     * Setting it to a bigger value will result in more precise calculation and smaller drops of
+     * {@link MemoryMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * calculation overhead.
+     *
+     * @return number of sub intervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
+     */
+    @Deprecated
+    public int getSubIntervals() {
+        return subIntervals;
+    }
+
+    /**
+     * Sets a number of sub-intervals the whole {@link #setRateTimeInterval(long)} will be split into to calculate
+     * {@link MemoryMetrics#getAllocationRate()} and {@link MemoryMetrics#getEvictionRate()} rates (5 by default).
+     * <p>
+     * Setting it to a bigger value will result in more precise calculation and smaller drops of
+     * {@link MemoryMetrics#getAllocationRate()} metric when next sub-interval has to be recycled but introduces bigger
+     * calculation overhead.
+     *
+     * @param subIntervals A number of sub-intervals.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
+     */
+    @Deprecated
+    public MemoryPolicyConfiguration setSubIntervals(int subIntervals) {
+        this.subIntervals = subIntervals;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MemoryPolicyConfiguration.class, this);
     }
 }

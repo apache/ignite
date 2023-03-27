@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.checkCyclicBalancing;
 
@@ -42,7 +43,9 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
      * @return Per-task configuration parameter.
      */
     @GridSpiTestConfig
-    public boolean getPerTask() { return false; }
+    public boolean getPerTask() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override protected GridSpiTestContext initSpiContext() throws Exception {
@@ -57,6 +60,7 @@ public class GridRoundRobinLoadBalancingSpiTopologyChangeSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         ComputeTaskSession ses = new GridTestTaskSession(IgniteUuid.randomUuid());
 

@@ -26,9 +26,9 @@ namespace Apache.Ignite.Core.Common
     public interface IFactory<out T>
     {
         /// <summary>
-        /// Creates an instance of the cache store.
+        /// Creates an instance of type <typeparamref name="T" />.
         /// </summary>
-        /// <returns>New instance of the cache store.</returns>
+        /// <returns>New instance of type <typeparamref name="T" />.</returns>
         T CreateInstance();
     }
 }

@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -27,6 +23,7 @@
 
 using namespace ignite;
 using namespace boost::unit_test;
+using namespace ignite_test;
 
 BOOST_AUTO_TEST_SUITE(IgnitionTestSuite)
 
@@ -35,9 +32,9 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     IgniteConfiguration cfg;
 
 #ifdef IGNITE_TESTS_32
-    ignite_test::InitConfig(cfg, "cache-test-32.xml");
+    InitConfig(cfg, "persistence-store-32.xml");
 #else
-    ignite_test::InitConfig(cfg, "cache-test.xml");
+    InitConfig(cfg, "persistence-store.xml");
 #endif
 
     IgniteError err;
@@ -45,23 +42,29 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     // Start two Ignite instances.
     Ignite grid1 = Ignition::Start(cfg, "ignitionTest-1", err);
     
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS) {
         BOOST_ERROR(err.GetText());
+        return;
+    }
     
     BOOST_REQUIRE(strcmp(grid1.GetName(), "ignitionTest-1") == 0);
 
     Ignite grid2 = Ignition::Start(cfg, "ignitionTest-2", err);
 
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS) {
         BOOST_ERROR(err.GetText());
+        return;
+    }
 
     BOOST_REQUIRE(strcmp(grid2.GetName(), "ignitionTest-2") == 0);
 
     // Test get
     Ignite grid0 = Ignition::Get("ignitionTest-1", err);
     
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+    if (err.GetCode() != IgniteError::IGNITE_SUCCESS) {
         BOOST_ERROR(err.GetText());
+        return;
+    }
 
     BOOST_REQUIRE(strcmp(grid0.GetName(), grid1.GetName()) == 0);
 
@@ -79,6 +82,56 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     
     Ignition::Get("ignitionTest-2", err);
     BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_GENERIC);    
+}
+
+BOOST_AUTO_TEST_CASE(TestStartWithpersistence)
+{
+    IgniteConfiguration cfg;
+
+#ifdef IGNITE_TESTS_32
+    InitConfig(cfg, "persistence-store-32.xml");
+#else
+    InitConfig(cfg, "persistence-store.xml");
+#endif
+    try
+    {
+        Ignite grid = Ignition::Start(cfg, "test");
+    }
+    catch (...)
+    {
+        Ignition::StopAll(true);
+        throw;
+    }
+
+    Ignition::StopAll(true);
+}
+
+BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
+{
+    IgniteConfiguration cfg;
+
+    InitConfig(cfg, "invalid.xml");
+
+    BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
+
+    Ignition::StopAll(false);
+}
+
+BOOST_AUTO_TEST_CASE(GracefulDeathOnDuplicatedIgnitionInstanceName)
+{
+#ifdef IGNITE_TESTS_32
+    const char* cfgFile = "persistence-store-32.xml";
+#else
+    const char* cfgFile = "persistence-store.xml";
+#endif
+
+    const char* ignitionName = "ignitionTest-1";
+
+    // Start two Ignite instances with same name.
+    StartNode(cfgFile, ignitionName);
+    BOOST_CHECK_THROW(StartNode(cfgFile, ignitionName), IgniteError);
+
+    Ignition::StopAll(true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

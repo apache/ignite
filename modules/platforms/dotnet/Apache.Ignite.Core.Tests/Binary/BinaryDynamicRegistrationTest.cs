@@ -18,11 +18,19 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
+#if !NETCOREAPP
+    extern alias TestDll2;
+    using Apache.Ignite.Core.Tests.TestDll2;
+    using ExamplesAccount = TestDll2.Apache.Ignite.Core.Tests.TestDll2.Account;
+#endif
+
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -106,7 +114,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         CacheStoreFactory = new StoreFactory(),
                         ReadThrough = true,
-                        WriteThrough = true
+                        WriteThrough = true,
+                        KeepBinaryInStore = true
                     }
                 }
             };
@@ -118,7 +127,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     CacheStoreFactory = new StoreFactory(),
                     ReadThrough = true,
-                    WriteThrough = true
+                    WriteThrough = true,
+                    KeepBinaryInStore = true
                 });
                 dynCache[2] = new Foo { Str = "test2", Int = 3 };
 
@@ -178,7 +188,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 var ex = Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>("default").Get(1));
 
-                Assert.IsTrue(ex.Message.Contains("Unknown pair"));
+                StringAssert.Contains("Failed to resolve class name", ex.Message);
             }
         }
 
@@ -196,7 +206,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         CacheStoreFactory = new StoreFactory {StringProp = "test", IntProp = 9},
                         ReadThrough = true,
-                        WriteThrough = true
+                        WriteThrough = true,
+                        KeepBinaryInStore = true
                     }
                 }
             };
@@ -214,9 +225,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the single grid scenario.
         /// </summary>
         [Test]
-        public void TestSingleGrid()
+        public void TestSingleGrid([Values(false, true)] bool customMapper)
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(GetConfig(false, customMapper)))
             {
                 Test(ignite, ignite);
             }
@@ -226,23 +237,20 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the two grid scenario.
         /// </summary>
         [Test]
-        public void TestTwoGrids([Values(false, true)] bool clientMode)
+        public void TestTwoGrids([Values(false, true)] bool clientMode, [Values(false, true)] bool customMapper)
         {
-            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    IgniteInstanceName = "grid2",
-                    ClientMode = clientMode
-                };
+            var cfg1 = GetConfig(false, customMapper);
+            var cfg2 = GetConfig(clientMode, customMapper, "grid2");
 
-                using (var ignite2 = Ignition.Start(cfg))
+            using (var ignite1 = Ignition.Start(cfg1))
+            {
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
 
                 // Test twice to verify double registration.
-                using (var ignite2 = Ignition.Start(cfg))
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
@@ -287,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests interop scenario: Java and .NET exchange an object with the same type id, 
+        /// Tests interop scenario: Java and .NET exchange an object with the same type id,
         /// but marshaller cache contains different entries for different platforms for the same id.
         /// </summary>
         [Test]
@@ -311,20 +319,92 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var cache = ignite.CreateCache<int, object>(cacheCfg);
 
                 // Force dynamic registration for .NET
-                cache.Put(1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(-1, new PlatformComputeBinarizable {Field = 7});
+                cache.Put(ComputeApiTest.EchoTypeBinarizable, 255);
 
                 // Run Java code that will also perform dynamic registration
                 var fromJava = ignite.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask,
                     ComputeApiTest.EchoTypeBinarizable);
 
                 // Check that objects are compatible
-                Assert.AreEqual(1, fromJava.Field);
+                Assert.AreEqual(255, fromJava.Field);
 
                 // Check that Java can read what .NET has put
                 var qryRes = ignite.GetCompute().ExecuteJavaTask<IList>(
-                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field < 10");
+                    BinaryCompactFooterInteropTest.PlatformSqlQueryTask, "Field = 7");
 
                 Assert.AreEqual(7, qryRes.OfType<PlatformComputeBinarizable>().Single().Field);
+            }
+        }
+
+#if !NETCOREAPP
+        /// <summary>
+        /// Tests that types with same FullName from different assemblies are mapped to each other.
+        /// </summary>
+        [Test]
+        public void TestSameTypeInDifferentAssemblies()
+        {
+            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache1 = ignite1.CreateCache<int, ExamplesAccount>("acc");
+                cache1[1] = new ExamplesAccount(1, 2.2m);
+
+                using (var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "ignite2")))
+                {
+                    var cache2 = ignite2.GetCache<int, Account>("acc");
+                    cache2[2] = new Account {Id = 2, Balance = 3.3m};
+
+                    Assert.AreEqual(1, cache2[1].Id);  // Read ExamplesAccount as Account.
+                    Assert.AreEqual(2, cache1[2].Id);  // Read Account as ExamplesAccount.
+                }
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Tests registration in multiple threads.
+        /// </summary>
+        [Test]
+        public void TestRegistrationMultithreaded([Values(true, false)] bool useTypeName)
+        {
+            const int iterations = 50;
+            const int threads = 4;
+
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                var cache = ignite.CreateCache<int, int>("c").WithKeepBinary<int, IBinaryObject>();
+                var bin = ignite.GetBinary();
+                Func<Type, IBinaryObjectBuilder> getBuilder = x =>
+                    useTypeName ? bin.GetBuilder(x.FullName) : bin.GetBuilder(x);
+
+                var types = new[] { typeof(Foo), typeof(Bar), typeof(Bin) };
+
+                foreach (var type in types)
+                {
+                    var type0 = type;  // Modified closure.
+
+                    for (var i = 0; i < iterations; i++)
+                    {
+                        var countdown = new CountdownEvent(threads);
+
+                        Action registerType = () =>
+                        {
+                            countdown.Signal();
+                            Assert.IsTrue(countdown.Wait(5000));
+
+                            var binObj = getBuilder(type0).SetIntField("x", 1).Build();
+                            cache[1] = binObj;
+
+                            Assert.AreEqual(binObj, cache[1]);
+                        };
+
+                        var tasks = Enumerable.Range(0, threads)
+                            .Select(x => TaskRunner.Run(registerType))
+                            .ToArray();
+
+                        Task.WaitAll(tasks);
+                    }
+                }
             }
         }
 
@@ -333,7 +413,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
         {
-            var cfg = new CacheConfiguration("cache") {CacheMode = CacheMode.Partitioned};
+            var cfg = new CacheConfiguration("cache")
+            {
+                CacheMode = CacheMode.Partitioned,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync
+            };
 
             // Put on one grid.
             var cache1 = ignite1.GetOrCreateCache<int, object>(cfg);
@@ -360,12 +444,17 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Test compute.
             var serverNodeCount = ignite1.GetCluster().ForServers().GetNodes().Count;
 
-            var res = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
-            Assert.AreEqual(serverNodeCount, res.Count);
+            var res0 = ignite1.GetCompute().Broadcast(new CompDateTimeFn());
+            Assert.AreEqual(serverNodeCount, res0.Count);
+
+#if !NETCOREAPP // Serializing delegates is not supported on this platform
+            var res1 = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
+            Assert.AreEqual(serverNodeCount, res1.Count);
 
             // Variable capture.
             var res2 = ignite1.GetCompute().Broadcast(new CompFn<string>(() => bar0.Str));
             Assert.AreEqual(Enumerable.Repeat(bar0.Str, serverNodeCount), res2);
+#endif
         }
 
         /// <summary>
@@ -374,11 +463,37 @@ namespace Apache.Ignite.Core.Tests.Binary
         private static void ClearMarshallerWorkDir()
         {
             // Delete all *.classname files within IGNITE_HOME
-            var home = IgniteHome.Resolve(null);
+            var home = IgniteHome.Resolve();
 
             var files = Directory.GetFiles(home, "*.classname*", SearchOption.AllDirectories);
 
             files.ToList().ForEach(File.Delete);
+        }
+
+        /// <summary>
+        /// Gets the config.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(bool client, bool customMapper, string name = null)
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = client,
+                IgniteInstanceName = name
+            };
+
+            if (customMapper)
+            {
+                cfg.BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper
+                    {
+                        NamespaceToLower = true,
+                        NamespacePrefix = "foo.bar."
+                    }
+                };
+            }
+
+            return cfg;
         }
 
         private interface ITest
@@ -476,6 +591,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+#if !NETCOREAPP // Serializing delegates is not supported on this platform
         private class CompFn<T> : IComputeFunc<T>
         {
             private readonly Func<T> _func;
@@ -490,5 +606,29 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return _func();
             }
         }
+#endif
+
+        private class CompDateTimeFn : IComputeFunc<DateTime>
+        {
+            public DateTime Invoke()
+            {
+                return DateTime.UtcNow;
+            }
+        }
     }
 }
+
+#if !NETCOREAPP
+namespace Apache.Ignite.Core.Tests.TestDll2
+{
+    /// <summary>
+    /// Copy of Account class in TestDll2. Same name and namespace, different assembly.
+    /// </summary>
+    public class Account
+    {
+        public int Id { get; set; }
+
+        public decimal Balance { get; set; }
+    }
+}
+#endif

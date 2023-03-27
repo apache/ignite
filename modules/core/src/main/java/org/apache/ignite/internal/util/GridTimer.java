@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -26,9 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Timer to use mostly for debugging purposes.
  */
 public class GridTimer {
-    /** Debug date format. */
-    private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SS");
-
     /** Timer name. */
     private final String name;
 
@@ -143,8 +139,8 @@ public class GridTimer {
      * @param msg Message to debug.
      */
     private void debug(String msg) {
-        System.out.println('<' + DEBUG_DATE_FMT.format(new Date(U.currentTimeMillis())) + "><DEBUG><" +
-            Thread.currentThread().getName() + "> " + msg);
+        System.out.println('<' + IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(U.currentTimeMillis()))
+            + "><DEBUG><" + Thread.currentThread().getName() + "> " + msg);
     }
 
     /** {@inheritDoc} */

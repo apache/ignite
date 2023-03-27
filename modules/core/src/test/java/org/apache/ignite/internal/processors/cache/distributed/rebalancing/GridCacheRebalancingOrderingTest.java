@@ -59,6 +59,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -102,9 +104,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     </li>
  * </ol>
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@link Random} for test key generation. */
-    private final static Random RANDOM = new Random();
+    private static final Random RANDOM = new Random();
 
     /** Test cache name. */
     private static final String TEST_CACHE_NAME = "TestCache";
@@ -117,8 +120,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isFirstGrid(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -174,13 +175,6 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         return 1000 * 60 * 5;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Convert the given key from binary form, if necessary.
      *
@@ -188,8 +182,8 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @return the key
      */
     private static IntegerKey ensureKey(Object key) {
-        Object converted = key instanceof BinaryObject ? ((BinaryObject) key).deserialize() : key;
-        return converted instanceof IntegerKey ? (IntegerKey) converted : null;
+        Object converted = key instanceof BinaryObject ? ((BinaryObject)key).deserialize() : key;
+        return converted instanceof IntegerKey ? (IntegerKey)converted : null;
     }
 
     /**
@@ -275,8 +269,9 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
-        Ignite ignite = startGrid(0);
+        Ignite ignite = startClientGrid(0);
 
         ServerStarter srvStarter = startServers();
 
@@ -517,7 +512,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 return false;
 
             if (IntegerKey.class.equals(o.getClass())) {
-                IntegerKey that = (IntegerKey) o;
+                IntegerKey that = (IntegerKey)o;
                 return this.val == that.val;
             }
 
@@ -698,7 +693,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Integer, Set<IntegerKey>> loadingMap = new ConcurrentHashMap<>();
 
         /** */
-        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>) new IgnitePredicate<Event>() {
+        private final IgnitePredicate<Event> pred = (IgnitePredicate<Event>)new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 // Handle:
                 // EVT_CACHE_OBJECT_PUT
@@ -706,7 +701,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 // EVT_CACHE_OBJECT_REMOVED
                 // EVT_CACHE_REBALANCE_OBJECT_UNLOADED
                 if (evt instanceof CacheEvent) {
-                    CacheEvent cacheEvt = (CacheEvent) evt;
+                    CacheEvent cacheEvt = (CacheEvent)evt;
                     int part = cacheEvt.partition();
 
                     // Oonly handle events for the test cache.
@@ -736,7 +731,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
                 // EVT_CACHE_REBALANCE_PART_UNLOADED
                 // EVT_CACHE_REBALANCE_PART_DATA_LOST
                 else if (evt instanceof CacheRebalancingEvent) {
-                    CacheRebalancingEvent rebalancingEvt = (CacheRebalancingEvent) evt;
+                    CacheRebalancingEvent rebalancingEvt = (CacheRebalancingEvent)evt;
 
                     int part = rebalancingEvt.partition();
 
@@ -814,7 +809,7 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
          * @param part the partition
          * @return the set for the given partition
          */
-        public Set<IntegerKey> ensureKeySet(final int part) {
+        @Override public Set<IntegerKey> ensureKeySet(final int part) {
             return ensureKeySet(part, partMap);
         }
 

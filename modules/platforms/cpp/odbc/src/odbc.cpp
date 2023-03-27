@@ -23,7 +23,9 @@
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
+#include "ignite/odbc/system/system_dsn.h"
 
+#include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/environment.h"
@@ -32,6 +34,26 @@
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc.h"
 
+/**
+ * Handle window handle.
+ * @param windowHandle Window handle.
+ * @param config Configuration.
+ * @return @c true on success and @c false otherwise.
+ */
+bool HandleParentWindow(SQLHWND windowHandle, ignite::odbc::config::Configuration &config)
+{
+#ifdef _WIN32
+    if (windowHandle)
+    {
+        LOG_MSG("Parent window is passed. Creating configuration window.");
+        return DisplayConnectionWindow(windowHandle, config);
+    }
+#else
+    IGNITE_UNUSED(windowHandle);
+    IGNITE_UNUSED(config);
+#endif
+    return true;
+}
 
 namespace ignite
 {
@@ -180,7 +202,7 @@ namespace ignite
     {
         using odbc::Environment;
 
-        LOG_MSG("SQLFreeEnv called");
+        LOG_MSG("SQLFreeEnv called: " << env);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 
@@ -203,6 +225,8 @@ namespace ignite
         if (!connection)
             return SQL_INVALID_HANDLE;
 
+        connection->Deregister();
+
         delete connection;
 
         return SQL_SUCCESS;
@@ -212,7 +236,7 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLFreeStmt called");
+        LOG_MSG("SQLFreeStmt called [option=" << option << ']');
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -252,12 +276,12 @@ namespace ignite
                                SQLSMALLINT* outConnectionStringLen,
                                SQLUSMALLINT driverCompletion)
     {
+        IGNITE_UNUSED(driverCompletion);
+
         using odbc::Connection;
         using odbc::diagnostic::DiagnosticRecordStorage;
         using utility::SqlStringToString;
         using utility::CopyStringToBuffer;
-
-        UNREFERENCED_PARAMETER(windowHandle);
 
         LOG_MSG("SQLDriverConnect called");
         if (inConnectionString)
@@ -269,20 +293,9 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
+        connection->Establish(connectStr, windowHandle);
 
-        odbc::config::Configuration config;
-
-        config.FillFromConnectString(connectStr);
-
-        std::string dsn = config.GetDsn();
-
-        if (!dsn.empty())
-            odbc::ReadDsnConfiguration(dsn.c_str(), config);
-
-        connection->Establish(config);
-
-        const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
-
+        DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
         if (!diag.IsSuccessful())
             return diag.GetReturnCode();
 
@@ -307,6 +320,11 @@ namespace ignite
                          SQLCHAR*       auth,
                          SQLSMALLINT    authLen)
     {
+        IGNITE_UNUSED(userName);
+        IGNITE_UNUSED(userNameLen);
+        IGNITE_UNUSED(auth);
+        IGNITE_UNUSED(authLen);
+
         using odbc::Connection;
         using odbc::config::Configuration;
         using utility::SqlStringToString;
@@ -324,7 +342,7 @@ namespace ignite
 
         LOG_MSG("DSN: " << dsn);
 
-        odbc::ReadDsnConfiguration(dsn.c_str(), config);
+        odbc::ReadDsnConfiguration(dsn.c_str(), config, &connection->GetDiagnosticRecords());
 
         connection->Establish(config);
 
@@ -593,7 +611,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->NextResults();
+        statement->MoreResults();
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -630,6 +648,8 @@ namespace ignite
                            SQLINTEGER   outQueryBufferLen,
                            SQLINTEGER*  outQueryLen)
     {
+        IGNITE_UNUSED(conn);
+
         using namespace utility;
 
         LOG_MSG("SQLNativeSql called");
@@ -753,6 +773,8 @@ namespace ignite
 
         int64_t res = statement->AffectedRows();
 
+        LOG_MSG("Row count: " << res);
+
         if (rowCnt)
             *rowCnt = static_cast<SQLLEN>(res);
 
@@ -813,11 +835,11 @@ namespace ignite
 
         LOG_MSG("SQLGetStmtAttr called");
 
-#ifdef ODBC_DEBUG
+#ifdef _DEBUG
         using odbc::type_traits::StatementAttrIdToString;
 
         LOG_MSG("Attr: " << StatementAttrIdToString(attr) << " (" << attr << ")");
-#endif //ODBC_DEBUG
+#endif //_DEBUG
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -836,13 +858,13 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLSetStmtAttr called");
+        LOG_MSG("SQLSetStmtAttr called: " << attr);
 
-#ifdef ODBC_DEBUG
+#ifdef _DEBUG
         using odbc::type_traits::StatementAttrIdToString;
 
         LOG_MSG("Attr: " << StatementAttrIdToString(attr) << " (" << attr << ")");
-#endif //ODBC_DEBUG
+#endif //_DEBUG
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -897,7 +919,12 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         if (paramCnt)
-            *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
+        {
+            uint16_t paramNum = 0;
+            statement->GetParametersNumber(paramNum);
+
+            *paramCnt = static_cast<SQLSMALLINT>(paramNum);
+        }
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -979,16 +1006,22 @@ namespace ignite
             {
                 Diagnosable *diag = reinterpret_cast<Diagnosable*>(handle);
 
+                if (!diag)
+                    return SQL_INVALID_HANDLE;
+
                 records = &diag->GetDiagnosticRecords();
 
                 break;
             }
 
             default:
-                break;
+                return SQL_INVALID_HANDLE;
         }
 
-        if (!records || recNum < 1 || recNum > records->GetStatusRecordsNumber())
+        if (recNum < 1 || msgBufferLen < 0)
+            return SQL_ERROR;
+
+        if (!records || recNum > records->GetStatusRecordsNumber())
             return SQL_NO_DATA;
 
         const DiagnosticRecord& record = records->GetStatusRecord(recNum);
@@ -999,13 +1032,24 @@ namespace ignite
         if (nativeError)
             *nativeError = 0;
 
-        SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_CHAR, msgBuffer, msgBufferLen, &outResLen);
+        const std::string& errMsg = record.GetMessageText();
 
-        outBuffer.PutString(record.GetMessageText());
+        if (!msgBuffer || msgBufferLen < static_cast<SQLSMALLINT>(errMsg.size() + 1))
+        {
+            if (!msgLen)
+                return SQL_ERROR;
+
+            CopyStringToBuffer(errMsg, reinterpret_cast<char*>(msgBuffer), static_cast<size_t>(msgBufferLen));
+
+            *msgLen = static_cast<SQLSMALLINT>(errMsg.size());
+
+            return SQL_SUCCESS_WITH_INFO;
+        }
+
+        CopyStringToBuffer(errMsg, reinterpret_cast<char*>(msgBuffer), static_cast<size_t>(msgBufferLen));
 
         if (msgLen)
-            *msgLen = static_cast<SQLSMALLINT>(outResLen);
+            *msgLen = static_cast<SQLSMALLINT>(errMsg.size());
 
         return SQL_SUCCESS;
     }
@@ -1014,7 +1058,7 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLGetTypeInfo called");
+        LOG_MSG("SQLGetTypeInfo called: [type=" << type << ']');
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -1117,6 +1161,7 @@ namespace ignite
         using odbc::Environment;
 
         LOG_MSG("SQLSetEnvAttr called");
+        LOG_MSG("Attribute: " << attr << ", Value: " << (size_t)value);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 
@@ -1135,9 +1180,9 @@ namespace ignite
                             SQLINTEGER* valueResLen)
     {
         using namespace odbc;
-        using namespace odbc::type_traits;
+        using namespace type_traits;
 
-        using odbc::app::ApplicationDataBuffer;
+        using app::ApplicationDataBuffer;
 
         LOG_MSG("SQLGetEnvAttr called");
 
@@ -1147,7 +1192,7 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_DEFAULT, valueBuf,
+        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_SIGNED_LONG, valueBuf,
             static_cast<int32_t>(valueBufLen), &outResLen);
 
         environment->GetAttribute(attr, outBuffer);
@@ -1303,6 +1348,48 @@ namespace ignite
             *msgResLen = static_cast<SQLSMALLINT>(outResLen);
 
         return SQL_SUCCESS;
+    }
+
+    SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC    conn,
+                                        SQLINTEGER attr,
+                                        SQLPOINTER valueBuf,
+                                        SQLINTEGER valueBufLen,
+                                        SQLINTEGER* valueResLen)
+    {
+        using namespace odbc;
+        using namespace type_traits;
+
+        using app::ApplicationDataBuffer;
+
+        LOG_MSG("SQLGetConnectAttr called");
+
+        Connection *connection = reinterpret_cast<Connection*>(conn);
+
+        if (!connection)
+            return SQL_INVALID_HANDLE;
+
+        connection->GetAttribute(attr, valueBuf, valueBufLen, valueResLen);
+
+        return connection->GetDiagnosticRecords().GetReturnCode();
+    }
+
+    SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC    conn,
+                                        SQLINTEGER attr,
+                                        SQLPOINTER value,
+                                        SQLINTEGER valueLen)
+    {
+        using odbc::Connection;
+
+        LOG_MSG("SQLSetConnectAttr called(" << attr << ", " << value << ")");
+
+        Connection *connection = reinterpret_cast<Connection*>(conn);
+
+        if (!connection)
+            return SQL_INVALID_HANDLE;
+
+        connection->SetAttribute(attr, value, valueLen);
+
+        return connection->GetDiagnosticRecords().GetReturnCode();
     }
 
 } // namespace ignite;

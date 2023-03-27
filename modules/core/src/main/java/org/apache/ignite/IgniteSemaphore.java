@@ -20,6 +20,9 @@ package org.apache.ignite;
 import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
+
 /**
  * This interface provides a rich API for working with distributed semaphore.
  * <p>
@@ -243,6 +246,18 @@ public interface IgniteSemaphore extends Closeable {
      * @throws IllegalArgumentException if {@code permits} is negative
      */
     public void acquire(int permits) throws IgniteInterruptedException;
+
+    /**
+     * Acquires the given semaphore, executes the given callable and schedules the release of permits asynchronously
+     *
+     * @param callable the callable to execute
+     * @param numPermits the number of permits to acquire
+     * @param <T> Type of the callable execution result.
+     * @return Callable execution future.
+     * @throws Exception if the callable throws an exception
+     */
+    public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<T> callable,
+                                                 int numPermits) throws Exception;
 
     /**
      * Releases the given number of permits, returning them to the semaphore.

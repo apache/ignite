@@ -111,6 +111,7 @@ public interface BinaryObject extends Serializable, Cloneable {
      * Gets field value.
      *
      * @param fieldName Field name.
+     * @param <F> Type of the field value.
      * @return Field value.
      * @throws BinaryObjectException In case of any other error.
      */
@@ -127,11 +128,24 @@ public interface BinaryObject extends Serializable, Cloneable {
     /**
      * Gets fully deserialized instance of binary object.
      *
+     * @param <T> Type of the deserialized object.
      * @return Fully deserialized instance of binary object.
      * @throws BinaryInvalidTypeException If class doesn't exist.
      * @throws BinaryObjectException In case of any other error.
      */
     public <T> T deserialize() throws BinaryObjectException;
+
+    /**
+     * Gets fully deserialized instance of binary object. If <code>ldr</code> was not specified, configured class loader
+     * will be used {@link org.apache.ignite.configuration.IgniteConfiguration#getClassLoader}.
+     *
+     * @param ldr Class loader.
+     * @param <T> Type of the deserialized object.
+     * @return Fully deserialized instance of binary object.
+     * @throws BinaryInvalidTypeException If class doesn't exist.
+     * @throws BinaryObjectException In case of any other error.
+     */
+    public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException;
 
     /**
      * Copies this binary object.
@@ -162,4 +176,18 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @throws BinaryObjectException If object is not enum.
      */
     public int enumOrdinal() throws BinaryObjectException;
+
+    /**
+     * Get name for this enum object. Use {@link BinaryType#isEnum()} to check if object is of enum type.
+     *
+     * @return Name.
+     * @throws BinaryObjectException If object is not enum.
+     */
+    public String enumName() throws BinaryObjectException;
+
+    /**
+     * Get the size of the object
+     * @return Size of the object
+     */
+    public int size();
 }

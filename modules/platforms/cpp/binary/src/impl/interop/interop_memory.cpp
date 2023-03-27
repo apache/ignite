@@ -100,12 +100,17 @@ namespace ignite
                 return memPtr;
             }
 
-            int64_t InteropMemory::PointerLong()
+            int64_t InteropMemory::PointerLong() const
             {
                 return reinterpret_cast<int64_t>(memPtr);
             }
 
             int8_t* InteropMemory::Data()
+            {
+                return Data(memPtr);
+            }
+
+            const int8_t* InteropMemory::Data() const
             {
                 return Data(memPtr);
             }
@@ -150,10 +155,7 @@ namespace ignite
 
             InteropUnpooledMemory::~InteropUnpooledMemory()
             {
-                if (owning) {
-                    free(Data());
-                    free(memPtr);
-                }
+                CleanUp();
             }
 
             void InteropUnpooledMemory::Reallocate(int32_t cap)
@@ -165,6 +167,29 @@ namespace ignite
 
                 Data(memPtr, realloc(Data(memPtr), cap));
                 Capacity(memPtr, cap);
+            }
+
+            bool InteropUnpooledMemory::TryGetOwnership(InteropUnpooledMemory &mem)
+            {
+                if (!owning)
+                    return false;
+
+                mem.CleanUp();
+                mem.owning = true;
+                mem.memPtr = memPtr;
+
+                owning = false;
+
+                return true;
+            }
+
+            void InteropUnpooledMemory::CleanUp()
+            {
+                if (owning)
+                {
+                    free(Data());
+                    free(memPtr);
+                }
             }
         }
     }

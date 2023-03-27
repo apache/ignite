@@ -36,8 +36,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -91,6 +92,9 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
     /** Response count. */
     private volatile int resCnt;
+
+    /** */
+    private boolean addedReader;
 
     /**
      * @param cctx Cache context.
@@ -158,6 +162,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param addPrevVal If {@code true} sends previous value to backups.
      * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
+     * @param cacheOp Corresponding cache operation.
+     * @param readRepairRecovery Recovery on Read Repair.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     final void addWriteEntry(
@@ -170,12 +176,16 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr) {
+        long updateCntr,
+        GridCacheOperation cacheOp,
+        boolean readRepairRecovery) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         List<ClusterNode> affNodes = affAssignment.get(entry.partition());
 
-        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), affAssignment, affNodes);
+        // Client has seen that rebalancing finished, it is safe to use affinity mapping.
+        List<ClusterNode> dhtNodes = updateReq.affinityMapping() ?
+            affNodes : cctx.dht().topology().nodes(entry.partition(), affAssignment, affNodes);
 
         if (dhtNodes == null)
             dhtNodes = affNodes;
@@ -204,7 +214,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                         topVer,
                         ttl,
                         conflictExpireTime,
-                        conflictVer);
+                        conflictVer,
+                        readRepairRecovery);
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -217,7 +228,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     conflictVer,
                     addPrevVal,
                     prevVal,
-                    updateCntr);
+                    updateCntr,
+                    cacheOp);
             }
         }
     }
@@ -232,38 +244,57 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param key Key.
      * @param readers Near cache readers.
      */
-    protected abstract void addNearKey(KeyCacheObject key, Collection<UUID> readers);
+    protected abstract void addNearKey(KeyCacheObject key, GridDhtCacheEntry.ReaderId[] readers);
 
     /**
+     * @param nearNode Near node.
      * @param readers Entry readers.
      * @param entry Entry.
      * @param val Value.
      * @param entryProcessor Entry processor..
      * @param ttl TTL for near cache update (optional).
      * @param expireTime Expire time for near cache update (optional).
+     * @param readRepairRecovery Recovery on Read Repair.
      */
     final void addNearWriteEntries(
-        Collection<UUID> readers,
+        ClusterNode nearNode,
+        GridDhtCacheEntry.ReaderId[] readers,
         GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
-        long expireTime) {
+        long expireTime,
+        boolean readRepairRecovery) {
+        assert readers != null;
+
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
         addNearKey(entry.key(), readers);
 
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-        for (UUID nodeId : readers) {
-            GridDhtAtomicAbstractUpdateRequest updateReq = mappings.get(nodeId);
+        for (int i = 0; i < readers.length; i++) {
+            GridDhtCacheEntry.ReaderId reader = readers[i];
+
+            if (nearNode.id().equals(reader.nodeId()))
+                continue;
+
+            GridDhtAtomicAbstractUpdateRequest updateReq = mappings.get(reader.nodeId());
 
             if (updateReq == null) {
-                ClusterNode node = cctx.discovery().node(nodeId);
+                ClusterNode node = cctx.discovery().node(reader.nodeId());
 
                 // Node left the grid.
-                if (node == null)
+                if (node == null) {
+                    try {
+                        entry.removeReader(reader.nodeId(), -1L);
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        assert false; // Assume hold entry lock.
+                    }
+
                     continue;
+                }
 
                 updateReq = createRequest(
                     node.id(),
@@ -273,9 +304,12 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     topVer,
                     ttl,
                     expireTime,
-                    null);
+                    null,
+                    readRepairRecovery);
 
-                mappings.put(nodeId, updateReq);
+                mappings.put(node.id(), updateReq);
+
+                addedReader = true;
             }
 
             updateReq.addNearWriteValue(entry.key(),
@@ -361,7 +395,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         GridNearAtomicUpdateResponse updateRes,
         GridDhtAtomicCache.UpdateReplyClosure completionCb) {
         if (F.isEmpty(mappings)) {
-            updateRes.dhtNodes(Collections.<UUID>emptyList());
+            updateRes.mapping(Collections.<UUID>emptyList());
 
             completionCb.apply(updateReq, updateRes);
 
@@ -372,18 +406,31 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
         boolean needReplyToNear = updateReq.writeSynchronizationMode() == PRIMARY_SYNC ||
             !ret.emptyResult() ||
-            updateRes.nearVersion() != null ||
+            updateReq.nearCache() ||
             cctx.localNodeId().equals(nearNode.id());
 
         boolean needMapping = updateReq.fullSync() && (updateReq.needPrimaryResponse() || !sendAllToDht());
 
-        if (needMapping) {
+        boolean readersOnlyNodes = false;
+
+        if (!updateReq.needPrimaryResponse() && addedReader) {
+            for (GridDhtAtomicAbstractUpdateRequest dhtReq : mappings.values()) {
+                if (dhtReq.nearSize() > 0 && dhtReq.size() == 0) {
+                    readersOnlyNodes = true;
+
+                    break;
+                }
+            }
+        }
+
+        if (needMapping || readersOnlyNodes) {
             initMapping(updateRes);
 
             needReplyToNear = true;
         }
 
-        sendDhtRequests(nearNode, ret);
+        // If there are readers updates then nearNode should not finish before primary response received.
+        sendDhtRequests(nearNode, ret, !readersOnlyNodes);
 
         if (needReplyToNear)
             completionCb.apply(updateReq, updateRes);
@@ -393,24 +440,25 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param updateRes Response.
      */
     private void initMapping(GridNearAtomicUpdateResponse updateRes) {
-        List<UUID> dhtNodes;
+        List<UUID> mapping;
 
         if (!F.isEmpty(mappings)) {
-            dhtNodes = new ArrayList<>(mappings.size());
+            mapping = new ArrayList<>(mappings.size());
 
-            dhtNodes.addAll(mappings.keySet());
+            mapping.addAll(mappings.keySet());
         }
         else
-            dhtNodes = Collections.emptyList();
+            mapping = Collections.emptyList();
 
-        updateRes.dhtNodes(dhtNodes);
+        updateRes.mapping(mapping);
     }
 
     /**
      * @param nearNode Near node.
+     * @param sndRes {@code True} if allow to send result from DHT nodes.
      * @param ret Return value.
      */
-    private void sendDhtRequests(ClusterNode nearNode, GridCacheReturn ret) {
+    private void sendDhtRequests(ClusterNode nearNode, GridCacheReturn ret, boolean sndRes) {
         for (GridDhtAtomicAbstractUpdateRequest req : mappings.values()) {
             try {
                 assert !cctx.localNodeId().equals(req.nodeId()) : req;
@@ -418,7 +466,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                 if (updateReq.fullSync()) {
                     req.nearReplyInfo(nearNode.id(), updateReq.futureId());
 
-                    if (ret.emptyResult())
+                    if (sndRes && ret.emptyResult())
                         req.hasResult(true);
                 }
 
@@ -493,6 +541,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param ttl TTL.
      * @param conflictExpireTime Conflict expire time.
      * @param conflictVer Conflict version.
+     * @param readRepairRecovery Recovery on Read Repair.
      * @return Request.
      */
     protected abstract GridDhtAtomicAbstractUpdateRequest createRequest(
@@ -503,7 +552,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer
+        @Nullable GridCacheVersion conflictVer,
+        boolean readRepairRecovery
     );
 
     /** {@inheritDoc} */

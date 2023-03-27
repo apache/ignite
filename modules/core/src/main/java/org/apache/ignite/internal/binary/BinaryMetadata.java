@@ -27,8 +27,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,6 +42,9 @@ import org.jetbrains.annotations.Nullable;
 public class BinaryMetadata implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int VERSION = 1;
 
     /** Type ID. */
     @GridToStringInclude(sensitive = true)
@@ -67,6 +72,12 @@ public class BinaryMetadata implements Externalizable {
     /** Whether this is enum type. */
     private boolean isEnum;
 
+    /** Enum name to ordinal mapping. */
+    private Map<String, Integer> nameToOrdinal;
+
+    /** Enum ordinal to name mapping. */
+    private Map<Integer, String> ordinalToName;
+
     /**
      * For {@link Externalizable}.
      */
@@ -83,9 +94,11 @@ public class BinaryMetadata implements Externalizable {
      * @param affKeyFieldName Affinity key field name.
      * @param schemas Schemas.
      * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
      */
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, BinaryFieldMetadata> fields,
-        @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum) {
+        @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum,
+        @Nullable Map<String, Integer> enumMap) {
         assert typeName != null;
 
         this.typeId = typeId;
@@ -104,6 +117,15 @@ public class BinaryMetadata implements Externalizable {
             schemaIds = Collections.emptySet();
 
         this.isEnum = isEnum;
+
+        if (enumMap != null) {
+            this.nameToOrdinal = new LinkedHashMap<>(enumMap);
+
+            this.ordinalToName = new LinkedHashMap<>(enumMap.size());
+
+            for (Map.Entry<String, Integer> e: nameToOrdinal.entrySet())
+                this.ordinalToName.put(e.getValue(), e.getKey());
+        }
     }
 
     /**
@@ -163,6 +185,9 @@ public class BinaryMetadata implements Externalizable {
      * @return {@code true} if <b>BinaryMetadata</b> instance has schema with ID specified, {@code false} otherwise.
      */
     public boolean hasSchema(int schemaId) {
+        if (schemaIds == null)
+            return false;
+        
         return schemaIds.contains(schemaId);
     }
 
@@ -197,6 +222,7 @@ public class BinaryMetadata implements Externalizable {
      * @exception IOException Includes any I/O exceptions that may occur.
      */
     public void writeTo(DataOutput out) throws IOException {
+        out.writeByte(VERSION);
         out.writeInt(typeId);
 
         U.writeString(out, typeName);
@@ -224,6 +250,18 @@ public class BinaryMetadata implements Externalizable {
         }
 
         out.writeBoolean(isEnum);
+
+        if (isEnum) {
+            Map<String, Integer> map = enumMap();
+
+            out.writeInt(map.size());
+
+            for (Map.Entry<String, Integer> e : map.entrySet()) {
+                U.writeString(out, e.getKey());
+
+                out.writeInt(e.getValue());
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -242,6 +280,8 @@ public class BinaryMetadata implements Externalizable {
      * @exception IOException if I/O errors occur.
      */
     public void readFrom(DataInput in) throws IOException {
+        in.readByte(); //skip version
+
         typeId = in.readInt();
         typeName = U.readString(in);
 
@@ -266,8 +306,11 @@ public class BinaryMetadata implements Externalizable {
 
         int schemasSize = in.readInt();
 
-        if (schemasSize == -1)
+        if (schemasSize == -1) {
             schemas = null;
+
+            schemaIds = Collections.emptySet();
+        }
         else {
             schemas = new ArrayList<>();
 
@@ -285,6 +328,59 @@ public class BinaryMetadata implements Externalizable {
         }
 
         isEnum = in.readBoolean();
+
+        if (isEnum) {
+            int size = in.readInt();
+
+            if (size >= 0) {
+                ordinalToName = new LinkedHashMap<>(size);
+                nameToOrdinal = new LinkedHashMap<>(size);
+
+                for (int idx = 0; idx < size; idx++) {
+                    String name = U.readString(in);
+
+                    int ord = in.readInt();
+
+                    ordinalToName.put(ord, name);
+                    nameToOrdinal.put(name, ord);
+                }
+            }
+        }
+    }
+
+    /**
+     * Gets enum constant name given its ordinal value.
+     *
+     * @param ord Enum constant ordinal value.
+     * @return Enum constant name.
+     */
+    public String getEnumNameByOrdinal(int ord) {
+        if (ordinalToName == null)
+            return null;
+
+        return ordinalToName.get(ord);
+    }
+
+    /**
+     * Gets enum constant ordinal value given its name.
+     *
+     * @param name Enum constant name.
+     * @return Enum constant ordinal value.
+     */
+    public Integer getEnumOrdinalByName(String name) {
+        assert name != null;
+
+        return nameToOrdinal.get(name);
+    }
+
+    /**
+     * @return Name to ordinal mapping.
+     */
+    public Map<String, Integer> enumMap() {
+        if (nameToOrdinal == null)
+            return Collections.emptyMap();
+
+        return nameToOrdinal;
     }
 
     /** {@inheritDoc} */

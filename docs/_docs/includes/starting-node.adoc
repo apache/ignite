@@ -1,0 +1,93 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+You can start a node from the command line using the default configuration or by passing a custom configuration file.
+You can start as many nodes as you like and they will all automatically discover each other.
+
+Navigate into the `bin` folder of the Ignite installation directory from the command shell.
+Your command might look like this:
+
+[tabs]
+--
+
+tab:Unix[]
+[source,shell]
+----
+cd {IGNITE_HOME}/bin/
+----
+
+tab:Windows[]
+[source,shell]
+----
+cd {IGNITE_HOME}\bin\
+----
+
+--
+
+
+Start a node with a custom configuration file that is passed as a parameter to `ignite.sh|bat` like this:
+
+
+[tabs]
+--
+
+tab:Unix[]
+[source,shell]
+----
+./ignite.sh ../examples/config/example-ignite.xml
+----
+
+tab:Windows[]
+[source,shell]
+----
+ignite.bat ..\examples\config\example-ignite.xml
+----
+--
+
+
+You will see output similar to this:
+
+....
+[08:53:45] Ignite node started OK (id=7b30bc8e)
+[08:53:45] Topology snapshot [ver=1, locNode=7b30bc8e, servers=1, clients=0, state=ACTIVE, CPUs=4, offheap=1.6GB, heap=2.0GB]
+....
+
+Open another tab from your command shell and run the same command again:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+./ignite.sh ../examples/config/example-ignite.xml
+----
+
+tab:Windows[]
+[source,shell]
+----
+ignite.bat ..\examples\config\example-ignite.xml
+----
+
+--
+
+Check the `Topology snapshot` line in the output.
+Now you have a cluster of two server nodes with more CPUs and RAM available cluster-wide:
+
+....
+[08:54:34] Ignite node started OK (id=3a30b7a4)
+[08:54:34] Topology snapshot [ver=2, locNode=3a30b7a4, servers=2, clients=0, state=ACTIVE, CPUs=4, offheap=3.2GB, heap=4.0GB]
+....
+
+
+NOTE: By default, `ignite.sh|bat` starts a node with the default configuration file: `config/default-config.xml`.

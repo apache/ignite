@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.cache.expiry;
 
+import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Platform expiry policy.
@@ -89,5 +89,22 @@ public class PlatformExpiryPolicy implements ExpiryPolicy {
 
             return new Duration(TimeUnit.MILLISECONDS, dur);
         }
+    }
+
+    /**
+     * Convert actual duration to encoded duration for serialization.
+     *
+     * @param dur Actual duration.
+     * @return Encoded duration.
+     */
+    public static long convertDuration(Duration dur) {
+        if (dur == null)
+            return DUR_UNCHANGED;
+        else if (dur.isEternal())
+            return DUR_ETERNAL;
+        else if (dur.isZero())
+            return DUR_ZERO;
+        else
+            return dur.getTimeUnit().toMillis(dur.getDurationAmount());
     }
 }

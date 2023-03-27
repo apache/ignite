@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.services;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.services.Service;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for all platform services.
@@ -29,11 +31,19 @@ public interface PlatformService extends Service {
      *
      * @param mthdName Method name.
      * @param srvKeepBinary Server keep binary flag.
+     * @param deserializeResult If {@code true}, call service in cross-platform compatible manner.
      * @param args Arguments.
+     * @param callAttrs Service call context attributes.
      * @return Resulting data.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args) throws IgniteCheckedException;
+    public Object invokeMethod(
+        String mthdName,
+        boolean srvKeepBinary,
+        boolean deserializeResult,
+        @Nullable Object[] args,
+        @Nullable Map<String, Object> callAttrs
+    ) throws IgniteCheckedException;
 
     /**
      * Gets native pointer.

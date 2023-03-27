@@ -74,6 +74,8 @@ public interface SortedEvictionPolicyMBean {
 
     /**
      * Sets maximum allowed cache size in bytes.
+     *
+     * @param maxMemSize Maximum allowed cache size in bytes.
      */
     @MXBeanDescription("Set maximum allowed cache size in bytes.")
     public void setMaxMemorySize(long maxMemSize);

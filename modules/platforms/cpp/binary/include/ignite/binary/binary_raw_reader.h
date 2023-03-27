@@ -31,6 +31,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_containers.h"
+#include "ignite/binary/binary_enum_entry.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
@@ -42,7 +43,7 @@ namespace ignite
         /**
          * Binary raw reader.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
          * underlying object.
          *
@@ -313,29 +314,58 @@ namespace ignite
              */
             std::string ReadString()
             {
+                std::string res;
+
+                ReadString(res);
+
+                return res;
+            }
+
+            /**
+             * Read string from the stream.
+             *
+             * @param dst String.
+             */
+            void ReadString(std::string& dst)
+            {
                 int32_t len = ReadString(NULL, 0);
 
                 if (len != -1)
                 {
-                    ignite::common::FixedSizeArray<char> arr(len + 1);
+                    dst.resize(static_cast<size_t>(len));
 
-                    ReadString(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
-
-                    return std::string(arr.GetData());
+                    ReadString(&dst[0], len);
                 }
                 else
-                    return std::string();
+                    dst.clear();
             }
 
             /**
              * Start string array read.
+             *
+             * Every time you get a BinaryStringArrayReader from BinaryRawReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return String array reader.
              */
             BinaryStringArrayReader ReadStringArray();
 
             /**
+             * Read enum entry.
+             *
+             * @return Enum entry.
+             */
+            BinaryEnumEntry ReadBinaryEnum();
+
+            /**
              * Start array read.
+             *
+             * Every time you get a BinaryArrayReader from BinaryRawReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Array reader.
              */
@@ -351,6 +381,11 @@ namespace ignite
 
             /**
              * Start collection read.
+             *
+             * Every time you get a BinaryCollectionReader from BinaryRawReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Collection reader.
              */
@@ -379,6 +414,11 @@ namespace ignite
 
             /**
              * Start map read.
+             *
+             * Every time you get a BinaryMapReader from BinaryRawReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Map reader.
              */
@@ -411,11 +451,26 @@ namespace ignite
              * Read object.
              *
              * @return Object.
+             *
+             * @trapam T Object type. BinaryType class template should be specialized for the type.
              */
             template<typename T>
             T ReadObject()
             {
                 return impl->ReadObject<T>();
+            }
+
+            /**
+             * Read enum value.
+             *
+             * @return Enum value.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            T ReadEnum()
+            {
+                return impl->ReadEnum<T>();
             }
 
             /**

@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Batch acknowledgement.
  */
-public class CacheContinuousQueryBatchAck extends GridCacheMessage {
+public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -90,15 +90,14 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeUuid("routineId", routineId))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
-                if (!writer.writeMap("updateCntrs", updateCntrs, MessageCollectionItemType.INT,
-                    MessageCollectionItemType.LONG))
+            case 5:
+                if (!writer.writeMap("updateCntrs", updateCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -119,7 +118,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 routineId = reader.readUuid("routineId");
 
                 if (!reader.isLastRead())
@@ -127,9 +126,8 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
 
                 reader.incrementState();
 
-            case 4:
-                updateCntrs = reader.readMap("updateCntrs", MessageCollectionItemType.INT,
-                    MessageCollectionItemType.LONG, false);
+            case 5:
+                updateCntrs = reader.readMap("updateCntrs", MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -153,7 +151,7 @@ public class CacheContinuousQueryBatchAck extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

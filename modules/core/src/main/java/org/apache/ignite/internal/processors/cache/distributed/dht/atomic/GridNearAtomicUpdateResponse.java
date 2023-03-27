@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,7 +78,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** */
     @GridDirectCollection(UUID.class)
     @GridToStringInclude
-    private List<UUID> dhtNodes;
+    private List<UUID> mapping;
 
     /** */
     @GridDirectTransient
@@ -126,17 +126,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     }
 
     /**
-     * @param dhtNodes DHT nodes.
+     * @param mapping Mapping.
      */
-    public void dhtNodes(List<UUID> dhtNodes) {
-        this.dhtNodes = dhtNodes;
+    public void mapping(List<UUID> mapping) {
+        this.mapping = mapping;
     }
 
     /**
      * @return DHT nodes.
      */
-    @Nullable public List<UUID> dhtNodes() {
-        return dhtNodes;
+    @Nullable public List<UUID> mapping() {
+        return mapping;
     }
 
     /**
@@ -165,7 +165,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      *
      * @param err Error.
      */
-    public void error(IgniteCheckedException err){
+    public void error(IgniteCheckedException err) {
         if (errs == null)
             errs = new UpdateErrors();
 
@@ -194,7 +194,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @param ret Return value.
      */
-    @SuppressWarnings("unchecked")
     public void returnValue(GridCacheReturn ret) {
         this.ret = ret;
     }
@@ -243,7 +242,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param ttl TTL for near cache update.
      * @param expireTime Expire time for near cache update.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     void addNearTtl(int keyIdx, long ttl, long expireTime) {
         initNearUpdates();
 
@@ -301,9 +299,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Indexes of keys for which values were generated on primary node.
      */
-   @Nullable public List<Integer> nearValuesIndexes() {
+    @Nullable public List<Integer> nearValuesIndexes() {
         return nearUpdates != null ? nearUpdates.nearValuesIndexes() : null;
-   }
+    }
 
     /**
      * @param idx Index.
@@ -405,12 +403,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         }
 
         switch (writer.state()) {
-            case 3:
-                if (!writer.writeCollection("dhtNodes", dhtNodes, MessageCollectionItemType.UUID))
-                    return false;
-
-                writer.incrementState();
-
             case 4:
                 if (!writer.writeMessage("errs", errs))
                     return false;
@@ -424,24 +416,30 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("nearUpdates", nearUpdates))
+                if (!writer.writeCollection("mapping", mapping, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("partId", partId))
+                if (!writer.writeMessage("nearUpdates", nearUpdates))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage("remapTopVer", remapTopVer))
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeAffinityTopologyVersion("remapTopVer", remapTopVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeMessage("ret", ret))
                     return false;
 
@@ -463,14 +461,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
             return false;
 
         switch (reader.state()) {
-            case 3:
-                dhtNodes = reader.readCollection("dhtNodes", MessageCollectionItemType.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 4:
                 errs = reader.readMessage("errs");
 
@@ -488,7 +478,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 6:
-                nearUpdates = reader.readMessage("nearUpdates");
+                mapping = reader.readCollection("mapping", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -496,7 +486,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 7:
-                partId = reader.readInt("partId");
+                nearUpdates = reader.readMessage("nearUpdates");
 
                 if (!reader.isLastRead())
                     return false;
@@ -504,7 +494,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 8:
-                remapTopVer = reader.readMessage("remapTopVer");
+                partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -512,6 +502,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 9:
+                remapTopVer = reader.readAffinityTopologyVersion("remapTopVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 ret = reader.readMessage("ret");
 
                 if (!reader.isLastRead())
@@ -531,11 +529,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicUpdateResponse.class, this, "parent");
+        return S.toString(GridNearAtomicUpdateResponse.class, this, super.toString());
     }
 }

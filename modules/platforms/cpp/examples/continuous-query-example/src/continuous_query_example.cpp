@@ -18,10 +18,9 @@
 #include <stdint.h>
 #include <iostream>
 
-#include "ignite/ignition.h"
-#include "ignite/cache/query/continuous/continuous_query.h"
+#include <ignite/ignition.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
 
-#include "ignite/examples/organization.h"
 #include "ignite/examples/person.h"
 
 using namespace ignite;
@@ -33,14 +32,14 @@ using namespace examples;
 /** Cache name. */
 const char* CACHE_NAME = "cpp_cache_continuous_query";
 
-/*
+/**
  * Listener class.
  */
 template<typename K, typename V>
 class Listener : public event::CacheEntryEventListener<K, V>
 {
 public:
-    /*
+    /**
      * Default constructor.
      */
     Listener()
@@ -65,6 +64,91 @@ public:
     }
 };
 
+/**
+ * Range Filter. Only lets through keys from the specified range.
+ */
+template<typename K, typename V>
+struct RangeFilter : event::CacheEntryEventFilter<int32_t, std::string>
+{
+    /**
+     * Default constructor.
+     */
+    RangeFilter() :
+        rangeBegin(0),
+        rangeEnd(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param from Range beginning. Inclusive.
+     * @param to Range end. Not inclusive.
+     */
+    RangeFilter(const K& from, const K& to) :
+        rangeBegin(from),
+        rangeEnd(to)
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    virtual ~RangeFilter()
+    {
+        // No-op.
+    }
+
+    /**
+     * Event callback.
+     *
+     * @param event Event.
+     * @return True if the event passes filter.
+     */
+    virtual bool Process(const CacheEntryEvent<K, V>& event)
+    {
+        return event.GetKey() >= rangeBegin && event.GetKey() < rangeEnd;
+    }
+
+    /** Beginning of the range. */
+    K rangeBegin;
+
+    /** End of the range. */
+    K rangeEnd;
+};
+
+namespace ignite
+{
+    namespace binary
+    {
+        template<>
+        struct BinaryType< RangeFilter<int32_t, std::string> > :
+            BinaryTypeDefaultAll< RangeFilter<int32_t, std::string> >
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "RangeFilter<int32_t,std::string>";
+
+            }
+
+            static void Write(BinaryWriter& writer, const RangeFilter<int32_t, std::string>& obj)
+            {
+                writer.WriteInt32("rangeBegin", obj.rangeBegin);
+                writer.WriteInt32("rangeEnd", obj.rangeEnd);
+            }
+
+            static void Read(BinaryReader& reader, RangeFilter<int32_t, std::string>& dst)
+            {
+                dst.rangeBegin = reader.ReadInt32("rangeBegin");
+                dst.rangeEnd = reader.ReadInt32("rangeEnd");
+            }
+        };
+    }
+}
+
+
 int main()
 {
     IgniteConfiguration cfg;
@@ -79,6 +163,12 @@ int main()
         std::cout << std::endl;
         std::cout << ">>> Cache continuous query example started." << std::endl;
         std::cout << std::endl;
+
+        // Get binding.
+        IgniteBinding binding = ignite.GetBinding();
+
+        // Registering remote filter.
+        binding.RegisterCacheEntryEventFilter< RangeFilter<int32_t, std::string> >();
 
         // Get cache instance.
         Cache<int32_t, std::string> cache = ignite.GetOrCreateCache<int32_t, std::string>(CACHE_NAME);
@@ -97,17 +187,20 @@ int main()
         }
 
         // Declaring listener.
-        Listener<int, std::string> listener;
+        Listener<int32_t, std::string> listener;
+
+        // Declaring filter.
+        RangeFilter<int32_t, std::string> filter(keyCnt, keyCnt + 5);
 
         // Declaring continuous query.
-        continuous::ContinuousQuery<int, std::string> qry(MakeReference(listener));
+        continuous::ContinuousQuery<int32_t, std::string> qry(MakeReference(listener), MakeReference(filter));
 
         {
-            // Continous query scope. Query is closed when scope is left.
-            continuous::ContinuousQueryHandle<int, std::string> handle = cache.QueryContinuous(qry);
+            // Continuous query scope. Query is closed when scope is left.
+            continuous::ContinuousQueryHandle<int32_t, std::string> handle = cache.QueryContinuous(qry);
 
             // Add a few more keys and watch more query notifications.
-            for (int32_t i = keyCnt; i < keyCnt + 5; ++i)
+            for (int32_t i = keyCnt; i < keyCnt + 10; ++i)
             {
                 std::stringstream builder;
 
@@ -130,6 +223,8 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;

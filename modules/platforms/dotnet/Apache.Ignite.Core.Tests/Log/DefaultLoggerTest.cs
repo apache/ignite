@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#if !NETCOREAPP
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Log
         public void TestJavaLogger()
         {
             // Run the test in a separate process because log4jlogger has some static state,
-            // and after Ignite has been started once, it is not possible to start a new node 
+            // and after Ignite has been started once, it is not possible to start a new node
             // with a different logger config.
             const string envVar = "DefaultLoggerTest.TestJavaLogger";
 
@@ -45,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 // Delete all log files from the work dir
                 Func<string[]> getLogs = () =>
-                    Directory.GetFiles(IgniteHome.Resolve(null), "dotnet-logger-test.log", SearchOption.AllDirectories);
+                    Directory.GetFiles(IgniteHome.Resolve(), "dotnet-logger-test.log", SearchOption.AllDirectories);
 
                 getLogs().ToList().ForEach(File.Delete);
 
@@ -55,7 +56,8 @@ namespace Apache.Ignite.Core.Tests.Log
                     CacheConfiguration = new[]
                     {
                         new CacheConfiguration("cache1", new QueryEntity(typeof(uint), typeof(ulong)))
-                    }
+                    },
+                    Logger = null
                 };
 
                 // Start Ignite and verify file log
@@ -96,11 +98,11 @@ namespace Apache.Ignite.Core.Tests.Log
                     Assert.IsTrue(log.Contains("[DEBUG][main][=DOTNET=] DOTNET-Debug"));
 
                     Assert.IsTrue(log.Contains("[WARN ][main][=DOTNET=] DOTNET-Warn"));
-                    Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
+                    Assert.IsTrue(log.Contains("org.apache.ignite.IgniteException: " +
                                                "Platform error:System.Exception: EXCEPTION_TEST_Warn"));
 
                     Assert.IsTrue(log.Contains("[ERROR][main][=DOTNET=] DOTNET-Error"));
-                    Assert.IsTrue(log.Contains("class org.apache.ignite.IgniteException: " +
+                    Assert.IsTrue(log.Contains("org.apache.ignite.IgniteException: " +
                                                "Platform error:System.Exception: EXCEPTION_TEST_Error"));
                 }
             }
@@ -112,3 +114,4 @@ namespace Apache.Ignite.Core.Tests.Log
         }
     }
 }
+#endif

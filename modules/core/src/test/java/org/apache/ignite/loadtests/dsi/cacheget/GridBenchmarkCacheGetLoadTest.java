@@ -34,6 +34,7 @@ public class GridBenchmarkCacheGetLoadTest {
     /** */
     private static AtomicLong id = new AtomicLong();
 
+    /** */
     private static Thread t;
 
     /**
@@ -77,7 +78,7 @@ public class GridBenchmarkCacheGetLoadTest {
      */
     public static void stats() {
         t = new Thread(new Runnable() {
-            @SuppressWarnings({"InfiniteLoopStatement", "BusyWait"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 int interval = 5;
 

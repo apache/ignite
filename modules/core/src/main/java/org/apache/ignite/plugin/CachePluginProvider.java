@@ -17,12 +17,11 @@
 
 package org.apache.ignite.plugin;
 
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
 
 /**
  * Cache plugin provider is a point for processing of properties 
@@ -61,6 +60,7 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
 
     /**
      * @param cls Ignite component class.
+     * @param <T> Type of the component to create.
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(Class<T> cls);
@@ -70,6 +70,9 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      *
      * @param entry Mutable entry to unwrap.
      * @param cls Type of the expected component.
+     * @param <T> Type of the object cache entry be unwrapped to.
+     * @param <V> Cache entry value type.
+     * @param <K> Cache entry key type.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
     @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);

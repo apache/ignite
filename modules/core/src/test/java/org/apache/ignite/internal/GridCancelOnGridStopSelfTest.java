@@ -31,7 +31,9 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test task cancellation on grid stop.
@@ -53,10 +55,14 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelingJob() throws Exception {
         cancelCall = false;
 
         try (Ignite g = startGrid(1)) {
+            // We change it because compute jobs will go to sleep.
+            assertTrue(computeJobWorkerInterruptTimeout(g).propagate(10L));
+
             cnt = new CountDownLatch(1);
 
             g.compute().executeAsync(CancelledTask.class, null);
@@ -64,7 +70,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
             cnt.await();
         }
 
-        assert cancelCall;
+        assertTrue(cancelCall);
     }
 
     /**
@@ -76,7 +82,7 @@ public class GridCancelOnGridStopSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable String arg) {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(ignite.configuration().getNodeId())) {
                     return Collections.singletonMap(new ComputeJob() {

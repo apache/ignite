@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -31,9 +32,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.junit.Test;
 
 /**
  *
@@ -46,6 +47,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
     /**
      */
+    @Test
     public void testGroupIndexes() {
         IgniteEx ig = grid(0);
 
@@ -74,20 +76,19 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
     /**
      */
+    @Test
     public void testGroupIndexes2() {
         IgniteEx ig = grid(0);
 
-        IgniteCache<Integer,Abc> cache = ig.cache("abc");
+        IgniteCache<Integer, Abc> cache = ig.cache("abc");
 
         long cnt = 10_000;
 
-        Map<Integer,AtomicLong> as = new TreeMap<>();
-        Map<Integer,AtomicLong> bs = new TreeMap<>();
-        Map<Integer,AtomicLong> cs = new TreeMap<>();
+        Map<Integer, AtomicLong> as = new TreeMap<>();
+        Map<Integer, AtomicLong> bs = new TreeMap<>();
+        Map<Integer, AtomicLong> cs = new TreeMap<>();
 
-        Random rnd = BPlusTree.rnd;
-
-        assertNotNull(rnd);
+        Random rnd = ThreadLocalRandom.current();
 
         for (int i = 0; i < cnt; i++) {
             Abc abc = new Abc(rnd.nextInt(2000), rnd.nextInt(100), rnd.nextInt(5));
@@ -133,7 +134,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
      * @param cache Cache.
      * @param field Field name.
      */
-    private static void check(Map<Integer,AtomicLong> xs, IgniteCache<Integer,Abc> cache, String field) {
+    private static void check(Map<Integer, AtomicLong> xs, IgniteCache<Integer, Abc> cache, String field) {
         String qry = "select " + field + ", count(*) from Abc group by " + field + " order by " + field;
 
         List<List<?>> res = cache.query(new SqlFieldsQuery(qry)).getAll();
@@ -142,7 +143,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
         int i = 0;
 
-        for (Map.Entry<Integer,AtomicLong> entry : xs.entrySet()) {
+        for (Map.Entry<Integer, AtomicLong> entry : xs.entrySet()) {
 //            X.println("    " + field + ": " + entry);
 
             int key = entry.getKey();
@@ -166,7 +167,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
      * @param key Key.
      * @param inc Increment.
      */
-    private static void add(Map<Integer,AtomicLong> xs, int key, boolean inc) {
+    private static void add(Map<Integer, AtomicLong> xs, int key, boolean inc) {
         AtomicLong cntr = xs.get(key);
 
         if (cntr == null) {
@@ -179,11 +180,13 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         cntr.addAndGet(inc ? 1 : -1);
     }
 
+    /** */
     @SuppressWarnings("unchecked")
     private static <X> X queryOne(IgniteCache<?, ?> cache, String qry) {
         return (X)cache.query(new SqlFieldsQuery(qry)).getAll().get(0).get(0);
     }
 
+    /** */
     private static int querySize(IgniteCache<?, ?> cache, String qry) {
         return cache.query(new SqlFieldsQuery(qry)).getAll().size();
     }
@@ -206,6 +209,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         return cfg;
     }
 
+    /** */
     static class Abc {
         /** */
         @QuerySqlField

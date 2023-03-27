@@ -17,10 +17,9 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.cache.model.Person8;
-
-import java.util.Map;
 
 /**
  * Ignite benchmark that performs put operations for entity with primitive fields.
@@ -28,6 +27,8 @@ import java.util.Map;
 public class IgnitePutValue8Benchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         int key = nextRandom(args.range());
 
         cache.put(key, new Person8(key));

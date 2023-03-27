@@ -18,25 +18,25 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for {@link GridHandleTable}.
  */
 public class GridHandleTableSelfTest extends GridCommonAbstractTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGrow() throws Exception {
+    /** */
+    @Test
+    public void testGrow() {
         GridHandleTable table = new GridHandleTable(8, 2);
 
         for (int i = 0; i < 16; i++)
-            assertEquals(-1, table.lookup(i));
+            assertEquals(-1, table.putIfAbsent(i));
 
         Object testObj = new Object();
 
-        assertEquals(-1, table.lookup(testObj));
+        assertEquals(-1, table.putIfAbsent(testObj));
 
-        assertEquals(16, table.lookup(testObj));
+        assertEquals(16, table.putIfAbsent(testObj));
 
         int cnt = 0;
 
@@ -46,5 +46,28 @@ public class GridHandleTableSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(1, cnt);
+    }
+
+    /** */
+    @Test
+    public void testShrink() {
+        GridHandleTable table = new GridHandleTable(8, 3);
+
+        assertEquals(8, table.objects().length);
+
+        for (int i = 0; i < 32; i++)
+            assertEquals(-1, table.putIfAbsent(i));
+
+        assertEquals(35, table.objects().length);
+
+        table.clear();
+
+        table.clear();
+
+        assertEquals(17, table.objects().length);
+
+        table.clear();
+
+        assertEquals(8, table.objects().length);
     }
 }

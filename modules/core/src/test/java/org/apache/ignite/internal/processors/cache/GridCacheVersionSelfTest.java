@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -32,6 +32,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyVersionDrId() throws Exception {
         GridCacheVersion ver = version(10, 0);
 
@@ -46,10 +47,18 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
         ver = version(0x7FFFFFF, 15);
         assertEquals(0x7FFFFFF, ver.nodeOrder());
         assertEquals(15, ver.dataCenterId());
+        assertEquals(
+            ver.toString(),
+            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=15]"
+        );
 
         ver = version(0x7FFFFFF, 31);
         assertEquals(0x7FFFFFF, ver.nodeOrder());
         assertEquals(31, ver.dataCenterId());
+        assertEquals(
+            ver.toString(),
+            "GridCacheVersion [topVer=0, order=0, nodeOrder=" + 0x7FFFFFF + ", dataCenterId=31]"
+        );
 
         // Check max dr ID with some topology versions.
         ver = version(11, 31);
@@ -77,13 +86,12 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalling() throws Exception {
         GridCacheVersion ver = version(1, 1);
         GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, ver);
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller(false);
-
-        marsh.setContext(new MarshallerContextTestImpl());
+        Marshaller marsh = createStandaloneBinaryMarshaller();
 
         byte[] verBytes = marsh.marshal(ver);
         byte[] verExBytes = marsh.marshal(verEx);

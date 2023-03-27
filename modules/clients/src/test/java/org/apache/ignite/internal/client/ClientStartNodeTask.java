@@ -53,12 +53,14 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     /**
      * Available node's configurations.
      */
-    private static final Map<String, String> NODE_CFG = new HashMap<String, String>() {{
-        put("tcp", "modules/clients/src/test/resources/spring-server-node.xml");
-        put("http", "modules/clients/src/test/resources/spring-server-node.xml");
-        put("tcp+ssl", "modules/clients/src/test/resources/spring-server-ssl-node.xml");
-        put("http+ssl", "modules/clients/src/test/resources/spring-server-ssl-node.xml");
-    }};
+    private static final Map<String, String> NODE_CFG = new HashMap<>();
+
+    static {
+        NODE_CFG.put("tcp", "modules/clients/src/test/resources/spring-server-node.xml");
+        NODE_CFG.put("http", "modules/clients/src/test/resources/spring-server-node.xml");
+        NODE_CFG.put("tcp+ssl", "modules/clients/src/test/resources/spring-server-ssl-node.xml");
+        NODE_CFG.put("http+ssl", "modules/clients/src/test/resources/spring-server-ssl-node.xml");
+    }
 
     /** */
     @LoggerResource
@@ -84,7 +86,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         cfg.setIgniteInstanceName(igniteInstanceName);
 
         // Start new node in current VM.
-        Ignite g =  G.start(cfg);
+        Ignite g = G.start(cfg);
 
         log.info(">>> Grid started [nodeId=" + g.cluster().localNode().id() + ", name='" + g.name() + "']");
 

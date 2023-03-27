@@ -36,6 +36,8 @@ import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstrac
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.PLANE_OBJECT;
@@ -110,7 +112,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     };
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = super.cacheConfiguration();
 
@@ -123,15 +124,16 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testRemovePutGet() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
@@ -178,15 +180,16 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testRemovePutGetAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
@@ -204,7 +207,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                         }
                     }
                 });
-
 
                 for (final Object key : keys) {
                     runInAllTxModes(new TestRunnable() {
@@ -234,15 +236,16 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testPutAllGetAll() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
@@ -262,13 +265,13 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
-                        Map keyValMap = new LinkedHashMap() {{
-                            for (Object key : keys) {
-                                Object val = value(valueOf(key));
+                        Map keyValMap = new LinkedHashMap();
 
-                                put(key, val);
-                            }
-                        }};
+                        for (Object key : keys) {
+                            Object val = value(valueOf(key));
+
+                            keyValMap.put(key, val);
+                        }
 
                         cache.putAll(keyValMap);
 
@@ -301,15 +304,16 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testPutAllGetAllAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
@@ -332,13 +336,13 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
-                        Map keyValMap = new LinkedHashMap() {{
-                            for (Object key : keys) {
-                                Object val = value(valueOf(key));
+                        Map keyValMap = new LinkedHashMap();
 
-                                put(key, val);
-                            }
-                        }};
+                        for (Object key : keys) {
+                            Object val = value(valueOf(key));
+
+                            keyValMap.put(key, val);
+                        }
 
                         cache.putAllAsync(keyValMap).get();
 
@@ -374,15 +378,16 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testInvoke() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 for (final Object key : keys) {
                     Object res = cache.invoke(key, NOOP_ENTRY_PROC);
@@ -439,6 +444,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -465,10 +471,10 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     for (final Object key : keys) {
@@ -558,15 +564,16 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testInvokeAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 for (final Object key : keys) {
                     Object res = cache.invokeAsync(key, NOOP_ENTRY_PROC).get();
@@ -623,6 +630,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAsyncTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -647,10 +655,10 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     for (final Object key : keys) {
@@ -744,15 +752,17 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11884")
+    @Test
     public void testInvokeAll() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, NOOP_ENTRY_PROC);
 
@@ -794,7 +804,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
+    @Test
     public void testInvokeAllTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -822,10 +832,10 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                     Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, NOOP_ENTRY_PROC);
@@ -927,15 +937,17 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11884")
+    @Test
     public void testInvokeAllAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 Map<Object, EntryProcessorResult<Object>> resMap =
                     (Map<Object, EntryProcessorResult<Object>>)cache.invokeAllAsync(keys, NOOP_ENTRY_PROC).get();
@@ -984,7 +996,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
+    @Test
     public void testInvokeAllAsyncTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -1009,10 +1021,10 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                final Set keys = new LinkedHashSet() {{
-                    for (int i = 0; i < CNT; i++)
-                        add(key(i));
-                }};
+                final Set keys = new LinkedHashSet();
+
+                for (int i = 0; i < CNT; i++)
+                    keys.add(key(i));
 
                 Map<Object, EntryProcessorResult<Object>> resMap;
 

@@ -20,7 +20,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-    <Arg name="threadPool">
+    <Arg name="threadpool">
         <!-- Default queued blocking thread pool -->
         <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
             <Set name="minThreads">10</Set>
@@ -42,7 +42,7 @@
         <Set name="keyStorePath"><SystemProperty name="CLIENTS_MODULE_PATH"/>/src/test/keystore/server.jks</Set>
         <Set name="keyStorePassword">123456</Set>
         <Set name="keyManagerPassword">123456</Set>
-        <Set name="trustStorePath"><SystemProperty name="CLIENTS_MODULE_PATH"/>/src/test/keystore/trust.jks</Set>
+        <Set name="trustStorePath"><SystemProperty name="CLIENTS_MODULE_PATH"/>/src/test/keystore/trust-one.jks</Set>
         <Set name="trustStorePassword">123456</Set>
     </New>
 

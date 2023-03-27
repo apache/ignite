@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -34,16 +35,18 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatchAdapter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -64,14 +67,13 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private static final long serialVersionUID = 0L;
 
     /** Default callback. */
-    private static final IgniteBiPredicate<UUID,Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
         @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
     };
 
     /** Local callback. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private IgniteBiPredicate<UUID, Event> cb;
 
     /** Filter. */
@@ -91,6 +93,9 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
     /** Listener. */
     private GridLocalEventListener lsnr;
+
+    /** P2P unmarshalling future. */
+    private IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
 
     /**
      * Required by {@link Externalizable}.
@@ -143,6 +148,26 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public Map<Integer, T2<Long, Long>> updateCounters() {
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Performs remote filter initialization.
+     *
+     * @param filter Remote filter.
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case if initialization failed.
+     */
+    private void initFilter(IgnitePredicate<Event> filter, GridKernalContext ctx) throws IgniteCheckedException {
+        if (filter != null)
+            ctx.resource().injectGeneric(filter);
+
+        if (filter instanceof PlatformEventFilterListener)
+            ((PlatformEventFilterListener)filter).initialize(ctx);
+    }
+
+    /** {@inheritDoc} */
     @Override public RegisterStatus register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
         throws IgniteCheckedException {
         assert nodeId != null;
@@ -151,12 +176,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         if (cb != null)
             ctx.resource().injectGeneric(cb);
-
-        if (filter != null)
-            ctx.resource().injectGeneric(filter);
-
-        if (filter instanceof PlatformEventFilterListener)
-            ((PlatformEventFilterListener)filter).initialize(ctx);
 
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
@@ -167,7 +186,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             private boolean notificationInProgress;
 
             @Override public void onEvent(Event evt) {
-                if (filter != null && !filter.apply(evt))
+                if (filterDropsEvent(evt))
                     return;
 
                 if (loc) {
@@ -182,7 +201,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                         notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
                         if (!notificationInProgress) {
-                            ctx.getSystemExecutorService().execute(new Runnable() {
+                            ctx.pools().getSystemExecutorService().execute(new Runnable() {
                                 @Override public void run() {
                                     if (!ctx.continuous().lockStopping())
                                         return;
@@ -214,17 +233,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                     if (node == null)
                                                         continue;
 
-                                                    if (ctx.config().isPeerClassLoadingEnabled()) {
-                                                        GridCacheContext cctx =
-                                                            ctx.cache().internalCache(cacheName).context();
+                                                    if (ctx.config().isPeerClassLoadingEnabled() &&
+                                                        ctx.discovery().cacheNode(node, cacheName)) {
+                                                        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-                                                        if (cctx.deploymentEnabled() &&
-                                                            ctx.discovery().cacheNode(node, cacheName)) {
+                                                        if (cache != null && cache.context().deploymentEnabled()) {
                                                             wrapper.p2pMarshal(ctx.config().getMarshaller());
 
                                                             wrapper.cacheName = cacheName;
 
-                                                            cctx.deploy().prepare(wrapper);
+                                                            cache.context().deploy().prepare(wrapper);
                                                         }
                                                     }
                                                 }
@@ -257,9 +275,39 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (F.isEmpty(types))
             types = EVTS_ALL;
 
-        ctx.event().addLocalEventListener(lsnr, types);
+        p2pUnmarshalFut.listen((fut) -> {
+            if (fut.error() == null) {
+                try {
+                    initFilter(filter, ctx);
+                }
+                catch (IgniteCheckedException e) {
+                    throw F.wrap(e);
+                }
+
+                ctx.event().addLocalEventListener(lsnr, types);
+            }
+        });
 
         return RegisterStatus.REGISTERED;
+    }
+
+    /**
+     * Returns {@code true} if there is a filter and this filter filters the given event out.
+     *
+     * @param evt event to check
+     * @return {@code true} if there is a filter and this filter filters the given event out
+     */
+    private boolean filterDropsEvent(Event evt) {
+        try {
+            return filter != null && !filter.apply(evt);
+        }
+        catch (NoClassDefFoundError e) {
+            // Filter might be installed using P2P class loading, so let's be careful and avoid a NCDFE from getting
+            // to a Failure Handler.
+
+            P2PClassLoadingIssues.rethrowDisarmedP2PClassLoadingFailure(e);
+            return true;
+        }
     }
 
     /** {@inheritDoc} */
@@ -276,7 +324,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             if (filter instanceof PlatformEventFilterListener)
                 ((PlatformEventFilterListener)filter).onClose();
         }
-        catch(RuntimeException ex) {
+        catch (RuntimeException ex) {
             err = ex;
         }
 
@@ -315,25 +363,30 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                 ClassLoader ldr = null;
 
-                if (cache != null) {
-                    GridCacheDeploymentManager depMgr = cache.context().deploy();
+                try {
+                    if (cache != null) {
+                        GridCacheDeploymentManager depMgr = cache.context().deploy();
 
-                    GridDeploymentInfo depInfo = wrapper.depInfo;
+                        GridDeploymentInfo depInfo = wrapper.depInfo;
 
-                    if (depInfo != null) {
-                        depMgr.p2pContext(nodeId, depInfo.classLoaderId(), depInfo.userVersion(), depInfo.deployMode(),
-                            depInfo.participants(), depInfo.localDeploymentOwner());
+                        if (depInfo != null) {
+                            depMgr.p2pContext(
+                                nodeId,
+                                depInfo.classLoaderId(),
+                                depInfo.userVersion(),
+                                depInfo.deployMode(),
+                                depInfo.participants()
+                            );
+                        }
+
+                        ldr = depMgr.globalLoader();
+                    }
+                    else {
+                        U.warn(ctx.log(getClass()), "Received cache event for cache that is not configured locally " +
+                            "when peer class loading is enabled: " + wrapper.cacheName + ". Will try to unmarshal " +
+                            "with default class loader.");
                     }
 
-                    ldr = depMgr.globalLoader();
-                }
-                else {
-                    U.warn(ctx.log(getClass()), "Received cache event for cache that is not configured locally " +
-                        "when peer class loading is enabled: " + wrapper.cacheName + ". Will try to unmarshal " +
-                        "with default class loader.");
-                }
-
-                try {
                     wrapper.p2pUnmarshal(ctx.config().getMarshaller(), U.resolveClassLoader(ldr, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
@@ -377,13 +430,27 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (filterBytes != null) {
-            GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
-                depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
+            try {
+                GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
+                    depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
-            if (dep == null)
-                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
+                if (dep == null)
+                    throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            filter = U.unmarshal(ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                filter = U.unmarshal(ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+            }
+            catch (IgniteCheckedException e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw e;
+            }
+            catch (ExceptionInInitializerError e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+            }
         }
     }
 
@@ -399,11 +466,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onNodeLeft() {
         // No-op.
     }
 
@@ -444,6 +506,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         boolean b = in.readBoolean();
 
         if (b) {
+            p2pUnmarshalFut = new GridFutureAdapter<>();
             filterBytes = U.readByteArray(in);
             clsName = U.readString(in);
             depInfo = (GridDeploymentInfo)in.readObject();

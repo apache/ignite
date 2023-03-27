@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -75,6 +76,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAtomicCache() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -114,6 +116,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectTxCache() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -181,6 +184,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectComputeApi() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -200,6 +204,7 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectStreamerApi() throws Exception {
         final Ignite client = grid(serverCount());
 

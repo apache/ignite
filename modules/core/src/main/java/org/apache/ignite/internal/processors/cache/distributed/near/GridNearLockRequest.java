@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Near cache lock request.
+ * Near cache lock request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
@@ -55,6 +55,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private static final int SYNC_COMMIT_FLAG_MASK = 0x04;
 
+    /** */
+    private static final int NEAR_CACHE_FLAG_MASK = 0x08;
+
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -68,9 +71,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @GridToStringInclude
     private GridCacheVersion[] dhtVers;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
@@ -82,6 +82,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** */
     private byte flags;
+
+    /** Transaction label. */
+    private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -106,13 +109,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param syncCommit Synchronous commit flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      * @param addDepInfo Deployment info flag.
+     * @param txLbl Transaction label.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -130,15 +133,15 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         int keyCnt,
         int txSize,
         boolean syncCommit,
-        @Nullable UUID subjId,
         int taskNameHash,
         long createTtl,
         long accessTtl,
         boolean skipStore,
         boolean keepBinary,
         boolean firstClientReq,
-        boolean addDepInfo
-
+        boolean nearCache,
+        boolean addDepInfo,
+        @Nullable String txLbl
     ) {
         super(
             cacheId,
@@ -161,16 +164,25 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
+
+        this.txLbl = txLbl;
 
         dhtVers = new GridCacheVersion[keyCnt];
 
         setFlag(syncCommit, SYNC_COMMIT_FLAG_MASK);
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
+        setFlag(nearCache, NEAR_CACHE_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if near cache enabled on originating node.
+     */
+    public boolean nearCache() {
+        return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
     /**
@@ -208,10 +220,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Subject ID.
+     * @param topVer Topology version.
      */
-    public UUID subjectId() {
-        return subjId;
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -309,6 +321,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
+    /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -352,44 +371,38 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         }
 
         switch (writer.state()) {
-            case 20:
+            case 21:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 22:
                 if (!writer.writeLong("createTtl", createTtl))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 23:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 24:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 25:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 25:
-                if (!writer.writeInt("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
             case 26:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -401,11 +414,16 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
+            case 29:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -422,7 +440,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             return false;
 
         switch (reader.state()) {
-            case 20:
+            case 21:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
@@ -430,7 +448,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 21:
+            case 22:
                 createTtl = reader.readLong("createTtl");
 
                 if (!reader.isLastRead())
@@ -438,7 +456,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 22:
+            case 23:
                 dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -446,7 +464,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 24:
                 filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
@@ -454,7 +472,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 24:
+            case 25:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -462,16 +480,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 25:
-                miniId = reader.readInt("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 26:
-                subjId = reader.readUuid("subjId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -487,7 +497,15 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 28:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 29:
+                txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -506,7 +524,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 29;
+        return 30;
     }
 
     /** {@inheritDoc} */

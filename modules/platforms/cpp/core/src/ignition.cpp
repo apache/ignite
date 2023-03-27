@@ -18,9 +18,7 @@
 #include <sstream>
 #include <memory>
 
-#include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
-#include <ignite/jni/exports.h>
 #include <ignite/jni/java.h>
 #include <ignite/jni/utils.h>
 #include <ignite/common/utils.h>
@@ -75,8 +73,7 @@ namespace ignite
          * Constructor.
          */
         JvmOptions() :
-            size(0),
-            opts(0)
+            opts()
         {
             // No-op.
         }
@@ -100,39 +97,78 @@ namespace ignite
         {
             Deinit();
 
-            size = 3 + static_cast<int>(cfg.jvmOpts.size());
+            const size_t REQ_OPTS_CNT = 4;
+            const size_t JAVA9_OPTS_CNT = 6;
 
-            if (!home.empty())
-                ++size;
+            opts.reserve(cfg.jvmOpts.size() + REQ_OPTS_CNT + JAVA9_OPTS_CNT);
 
-            // Brackets '()' here guarantee for the array to be zeroed.
-            // Important to avoid crash in case of exception.
-            opts = new char*[size]();
+            std::string fileEncParam = "-Dfile.encoding=";
 
-            int idx = 0;
+            bool hadFileEnc = false;
 
             // 1. Set classpath.
             std::string cpFull = "-Djava.class.path=" + cp;
 
-            opts[idx++] = CopyChars(cpFull.c_str());
+            opts.push_back(CopyChars(cpFull.c_str()));
 
             // 2. Set home.
             if (!home.empty()) {
                 std::string homeFull = "-DIGNITE_HOME=" + home;
 
-                opts[idx++] = CopyChars(homeFull.c_str());
+                opts.push_back(CopyChars(homeFull.c_str()));
             }
 
             // 3. Set Xms, Xmx.
             std::string xmsStr = JvmMemoryString("-Xms", cfg.jvmInitMem);
             std::string xmxStr = JvmMemoryString("-Xmx", cfg.jvmMaxMem);
 
-            opts[idx++] = CopyChars(xmsStr.c_str());
-            opts[idx++] = CopyChars(xmxStr.c_str());
+            opts.push_back(CopyChars(xmsStr.c_str()));
+            opts.push_back(CopyChars(xmxStr.c_str()));
 
             // 4. Set the rest options.
-            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i)
-                opts[idx++] = CopyChars(i->c_str());
+            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
+                if (i->find(fileEncParam) != std::string::npos)
+                    hadFileEnc = true;
+
+                opts.push_back(CopyChars(i->c_str()));
+            }
+
+            // 5. Set file.encoding.
+            if (!hadFileEnc) {
+                std::string fileEncFull = fileEncParam + "UTF-8";
+
+                opts.push_back(CopyChars(fileEncFull.c_str()));
+            }
+
+            // Adding options for Java 9 or later
+            if (IsJava9OrLater()) {
+                opts.push_back(CopyChars("--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--illegal-access=permit"));
+
+                // Those are only needed for Java 15+, but Java 15 can not be detected easily using JNI,
+                // so just putting it here in case we are running on 15+. It is OK to have them on Java 9-14 too.
+                // See https://docs.oracle.com/en/java/javase/17/docs/specs/jni/functions.html#getversion
+                opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.io=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.nio=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.util=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.util.concurrent=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.lang=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.math=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.sql/java.sql=ALL-UNNAMED"));
+            }
         }
 
         /**
@@ -140,13 +176,10 @@ namespace ignite
          */
         void Deinit()
         {
-            if (opts)
-            {
-                for (int i = 0; i < size; ++i)
-                    ReleaseChars(opts[i]);
+            for (size_t i = 0; i < opts.size(); ++i)
+                ReleaseChars(opts[i]);
 
-                delete[] opts;
-            }
+            opts.clear();
         }
 
         /**
@@ -154,9 +187,9 @@ namespace ignite
          *
          * @return Built options
          */
-        char** GetOpts() const
+        char** GetOpts()
         {
-            return opts;
+            return &opts[0];
         }
 
         /**
@@ -166,15 +199,12 @@ namespace ignite
          */
         int GetSize() const
         {
-            return size;
+            return static_cast<int>(opts.size());
         }
 
     private:
-        /** Size */
-        int size;
-
         /** Options array. */
-        char** opts;
+        std::vector<char*> opts;
     };
 
     Ignite Ignition::Start(const IgniteConfiguration& cfg)
@@ -226,16 +256,10 @@ namespace ignite
         }
 
         // 2. Resolve IGNITE_HOME.
-        std::string home;
-        bool homeFound = ResolveIgniteHome(cfg.igniteHome, home);
+        std::string home = ResolveIgniteHome(cfg.igniteHome);
 
         // 3. Create classpath.
-        std::string cp;
-
-        if (homeFound)
-            cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
-        else
-            cp = CreateIgniteClasspath(cfg.jvmClassPath);
+        std::string cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
 
         if (cp.empty())
         {
@@ -263,15 +287,20 @@ namespace ignite
 
         JniErrorInfo jniErr;
 
-        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment(cfg0));
-
         JvmOptions opts;
         opts.FromConfiguration(cfg, home, cp);
 
-        std::auto_ptr< SharedPointer<IgniteEnvironment> > envTarget(new SharedPointer<IgniteEnvironment>(env));
+        // This is the instance that allows us keep IgniteEnvironment alive
+        // till the end of the method call
+        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment(cfg0));
+
+        // This is the instance with manual control over lifetime which is we
+        // going to pass to Java if Java object is constructed and initialized
+        // successfully.
+        std::auto_ptr< SharedPointer<IgniteEnvironment> > envGuard(new SharedPointer<IgniteEnvironment>(env));
 
         SharedPointer<JniContext> ctx(
-            JniContext::Create(opts.GetOpts(), opts.GetSize(), env.Get()->GetJniHandlers(envTarget.get()), &jniErr));
+            JniContext::Create(opts.GetOpts(), opts.GetSize(), env.Get()->GetJniHandlers(envGuard.get()), &jniErr));
 
         if (!ctx.Get())
         {
@@ -301,13 +330,9 @@ namespace ignite
         stream.WriteBool(false);
         stream.Synchronize();
 
-        jobject javaRef = ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
+        ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
 
-        // Releasing control over environment as it is controlled by Java at this point.
-        // Even if the call has failed environment are going to be released by the Java.
-        envTarget.release();
-
-        if (!javaRef)
+        if (!env.Get()->GetProcessor() || jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
         {
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
@@ -321,9 +346,14 @@ namespace ignite
 
         guard.Reset();
 
+        // We successfully created Java Ignite instance by this point, so we
+        // give control over C++ instance to Java. Still, we keep holding env
+        // instance so it will keep living till the end of the scope.
+        envGuard.release();
+
         env.Get()->ProcessorReleaseStart();
 
-        IgniteImpl* impl = new IgniteImpl(env, javaRef);
+        IgniteImpl* impl = new IgniteImpl(env);
 
         return Ignite(impl);
     }
@@ -369,7 +399,7 @@ namespace ignite
             if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 // 2. Get environment pointer.
-                long long ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
+                int64_t ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
@@ -383,22 +413,9 @@ namespace ignite
                         SharedPointer<IgniteEnvironment>* env =
                             static_cast<SharedPointer<IgniteEnvironment>*>(hnds->target);
 
-                        // 4. Get fresh node reference.
-                        jobject ref = ctx.Get()->IgnitionInstance(name0, &jniErr);
+                        IgniteImpl* impl = new IgniteImpl(*env);
 
-                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS) {
-                            if (ref)
-                            {
-                                IgniteImpl* impl = new IgniteImpl(*env, ref);
-
-                                res = Ignite(impl);
-                            }
-                            else
-                                // Error: concurrent node stop.
-                                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                                    "Failed to get Ignite instance because it was stopped concurrently.");
-
-                        }
+                        res = Ignite(impl);
                     }
                     else
                         // Error: no node with the given name.

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.Collection;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -149,6 +150,59 @@ public class GridArgumentCheck {
     }
 
     /**
+     * Checks that given array is not empty.
+     *
+     * @param arr Array.
+     * @param name Argument name.
+     */
+    public static void notEmpty(long[] arr, String name) {
+        notNull(arr, name);
+
+        if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given array is not empty.
+     *
+     * @param arr Array.
+     * @param name Argument name.
+     */
+    public static void notEmpty(double[] arr, String name) {
+        notNull(arr, name);
+
+        if (arr.length == 0)
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given String is not empty.
+     *
+     * @param str String.
+     * @param name Argument name.
+     */
+    public static void notEmpty(String str, String name) {
+        notNull(str, name);
+
+        if (str.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
+     * Checks that given String is nullable but not empty.
+     *
+     * @param str String.
+     * @param name Argument name.
+     */
+    public static void nullableNotEmpty(String str, String name) {
+        if (str == null)
+            return;
+
+        if (str.isEmpty())
+            throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_EMPTY_SUFFIX);
+    }
+
+    /**
      * Checks that a String is not null or empty.
      *
      * @param value Value to check.
@@ -157,7 +211,7 @@ public class GridArgumentCheck {
     public static void notNullOrEmpty(String value, String name) {
         notNull(value, name);
 
-        if (value.trim().length() == 0)
+        if (value.trim().isEmpty())
             throw new IllegalArgumentException(INVALID_ARG_MSG_PREFIX + name + NOT_NULL_OR_EMPTY_SUFFIX);
     }
 }

@@ -26,6 +26,7 @@
         <property name="connectorConfiguration"><null/></property>
         <property name="networkSendRetryDelay" value="765"/>
         <property name="networkTimeout" value="2999" />
+        <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -43,18 +44,12 @@
             </bean>
         </property>
 
-        <property name="memoryConfiguration">
-            <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <property name="defaultMemoryPolicyName" value="dfltPlc"/>
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
+        </property>
 
-                <property name="memoryPolicies">
-                    <list>
-                        <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
-                            <property name="name" value="dfltPlc"/>
-                        </bean>
-                    </list>
-                </property>
-            </bean>
+        <property name="asyncContinuationExecutor">
+            <bean class="org.apache.ignite.platform.PlatformTestExecutor"/>
         </property>
     </bean>
 </beans>

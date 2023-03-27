@@ -87,6 +87,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** Conflict expire times. */
     private GridLongList conflictExpireTimes;
+
     /** Optional arguments for entry processor. */
     @GridDirectTransient
     private Object[] invokeArgs;
@@ -117,22 +118,18 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /**
      * Constructor.
-     *  @param cacheId Cache ID.
+     *
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
      * @param expiryPlc Expiry policy.
      * @param invokeArgs Optional arguments for entry processor.
      * @param filter Optional filter for atomic check.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param needPrimaryRes {@code True} if client expects primary node response.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
@@ -141,19 +138,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
-        @Nullable UUID subjId,
         int taskNameHash,
-        boolean needPrimaryRes,
-        boolean skipStore,
-        boolean keepBinary,
-        boolean recovery,
+        byte flags,
         boolean addDepInfo,
         int maxEntryCnt
     ) {
@@ -161,17 +152,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             nodeId,
             futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
-            subjId,
             taskNameHash,
-            needPrimaryRes,
-            skipStore,
-            keepBinary,
-            recovery,
+            flags,
             addDepInfo);
+
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;
         this.filter = filter;
@@ -278,7 +264,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public CacheObject value(int idx) {
         assert op == UPDATE : op;
 
@@ -286,7 +271,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert op == TRANSFORM : op;
 

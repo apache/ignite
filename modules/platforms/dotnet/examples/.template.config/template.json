@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Apache Ignite",
+  "classifications": [
+    "Apache Ignite",
+    "Console",
+    "Examples"
+  ],
+  "identity": "Apache.Ignite.Examples",
+  "name": "Apache Ignite Examples",
+  "shortName": "ignite-examples",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  }
+}

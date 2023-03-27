@@ -124,7 +124,7 @@ public class CacheJndiTmFactory implements Factory<TransactionManager> {
             }
 
             if (obj != null && obj instanceof TransactionManager)
-                return (TransactionManager) obj;
+                return (TransactionManager)obj;
         }
 
         throw new IgniteException("Failed to lookup TM by: " + Arrays.toString(jndiNames));

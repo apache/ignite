@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains platform-related classes.
  */
+
 package org.apache.ignite.platform;

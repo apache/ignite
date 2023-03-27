@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  *
@@ -29,6 +31,7 @@ public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      *
      */
+    @Test
     public void testExecute() throws SQLException {
         conn.createStatement().execute("update Person set firstName = 'Jack' where " +
             "cast(substring(_key, 2, 1) as int) % 2 = 0");
@@ -40,11 +43,36 @@ public class JdbcUpdateStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      *
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         conn.createStatement().executeUpdate("update Person set firstName = 'Jack' where " +
                 "cast(substring(_key, 2, 1) as int) % 2 = 0");
 
         assertEquals(Arrays.asList(F.asList("John"), F.asList("Jack"), F.asList("Mike")),
                 jcache(0).query(new SqlFieldsQuery("select firstName from Person order by _key")).getAll());
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testBatch() throws SQLException {
+        PreparedStatement ps = conn.prepareStatement("update Person set lastName = concat(firstName, 'son') " +
+            "where firstName = ?");
+
+        ps.setString(1, "John");
+
+        ps.addBatch();
+
+        ps.setString(1, "Harry");
+
+        ps.addBatch();
+
+        int[] res = ps.executeBatch();
+
+        assertEquals(Arrays.asList(F.asList("Johnson"), F.asList("Black"), F.asList("Green")),
+            jcache(0).query(new SqlFieldsQuery("select lastName from Person order by _key")).getAll());
+
+        assertTrue(Arrays.equals(new int[] {1, 0}, res));
     }
 }

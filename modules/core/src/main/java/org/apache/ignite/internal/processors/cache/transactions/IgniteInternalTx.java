@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -37,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -90,6 +92,13 @@ public interface IgniteInternalTx {
      * @return Start time of this transaction on this node.
      */
     public long startTime();
+
+    /**
+     * Start time of this transaction in nanoseconds to measure duration.
+     *
+     * @return Start time of this transaction in nanoseconds.
+     */
+    public long startTimeNanos();
 
     /**
      * Cache transaction isolation level.
@@ -262,6 +271,11 @@ public interface IgniteInternalTx {
     public boolean activeCachesDeploymentEnabled();
 
     /**
+     * @param depEnabled Flag indicating whether deployment is enabled for caches from this transaction or not.
+     */
+    public void activeCachesDeploymentEnabled(boolean depEnabled);
+
+    /**
      * Attempts to set topology version and returns the current value.
      * If topology version was previously set, then it's value will
      * be returned (but not updated).
@@ -283,10 +297,15 @@ public interface IgniteInternalTx {
     public boolean markFinalizing(FinalizationStatus status);
 
     /**
-     * @param cacheCtx Cache context.
+     * @return Finalization status.
+     */
+    public @Nullable FinalizationStatus finalizationStatus();
+
+    /**
+     * @param cacheId Cache id.
      * @param part Invalid partition.
      */
-    public void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int part);
+    public void addInvalidPartition(int cacheId, int part);
 
     /**
      * @return Invalid partitions.
@@ -459,7 +478,7 @@ public interface IgniteInternalTx {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public GridTuple<CacheObject> peek(
+    @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key) throws GridCacheFilterFailedException;
@@ -483,12 +502,6 @@ public interface IgniteInternalTx {
      * @return Future.
      */
     @Nullable public IgniteInternalFuture<?> salvageTx();
-
-    /**
-     * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     *      assigned to this transaction at the end of write phase.
-     */
-    public void endVersion(GridCacheVersion endVer);
 
     /**
      * @return Transaction write version. For all transactions except DHT transactions, will be equal to
@@ -634,4 +647,37 @@ public interface IgniteInternalTx {
      * @param e Commit error.
      */
     public void commitError(Throwable e);
+
+    /**
+     * Returns label of transactions.
+     *
+     * @return Label of transaction or {@code null} if there was not set.
+     */
+    @Nullable public String label();
+
+    /**
+     * @param mvccSnapshot Mvcc snapshot.
+     */
+    public void mvccSnapshot(MvccSnapshot mvccSnapshot);
+
+    /**
+     * @return Mvcc snapshot.
+     */
+    public MvccSnapshot mvccSnapshot();
+
+    /**
+     * @return ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
+     */
+    public @Nullable UUID incrementalSnapshotId();
+
+    /**
+     * @param id ID of incremental snapshot after which this transaction commits, {@code null} if snapshot isn't running.
+     */
+    public void incrementalSnapshotId(@Nullable UUID id);
+
+    /**
+     * @return Transaction counters.
+     * @param createIfAbsent {@code True} if non-null instance is needed.
+     */
+    @Nullable @Contract("true -> !null;") public TxCounters txCounters(boolean createIfAbsent);
 }

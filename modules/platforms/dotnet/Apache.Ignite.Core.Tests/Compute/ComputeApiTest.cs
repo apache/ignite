@@ -15,115 +15,37 @@
  * limitations under the License.
  */
 
-// ReSharper disable SpecifyACultureInStringConversionExplicitly
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Tests.Client.Compute;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for compute.
     /// </summary>
-    public class ComputeApiTest
+    public partial class ComputeApiTest
     {
-        /** Echo task name. */
-        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
-
-        /** Binary argument task name. */
-        public const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
-
-        /** Broadcast task name. */
-        public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
-
-        /** Broadcast task name. */
-        private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
-
         /** Java binary class name. */
         private const string JavaBinaryCls = "PlatformComputeJavaBinarizable";
 
-        /** Echo type: null. */
-        private const int EchoTypeNull = 0;
-
-        /** Echo type: byte. */
-        private const int EchoTypeByte = 1;
-
-        /** Echo type: bool. */
-        private const int EchoTypeBool = 2;
-
-        /** Echo type: short. */
-        private const int EchoTypeShort = 3;
-
-        /** Echo type: char. */
-        private const int EchoTypeChar = 4;
-
-        /** Echo type: int. */
-        private const int EchoTypeInt = 5;
-
-        /** Echo type: long. */
-        private const int EchoTypeLong = 6;
-
-        /** Echo type: float. */
-        private const int EchoTypeFloat = 7;
-
-        /** Echo type: double. */
-        private const int EchoTypeDouble = 8;
-
-        /** Echo type: array. */
-        private const int EchoTypeArray = 9;
-
-        /** Echo type: collection. */
-        private const int EchoTypeCollection = 10;
-
-        /** Echo type: map. */
-        private const int EchoTypeMap = 11;
-
-        /** Echo type: binarizable. */
-        public const int EchoTypeBinarizable = 12;
-
-        /** Echo type: binary (Java only). */
-        private const int EchoTypeBinarizableJava = 13;
-
-        /** Type: object array. */
-        private const int EchoTypeObjArray = 14;
-
-        /** Type: binary object array. */
-        private const int EchoTypeBinarizableArray = 15;
-
-        /** Type: enum. */
-        private const int EchoTypeEnum = 16;
-
-        /** Type: enum array. */
-        private const int EchoTypeEnumArray = 17;
-
-        /** Type: enum field. */
-        private const int EchoTypeEnumField = 18;
-
-        /** Type: affinity key. */
-        public const int EchoTypeAffinityKey = 19;
-
-        /** Type: enum from cache. */
-        private const int EchoTypeEnumFromCache = 20;
-
-        /** Type: enum array from cache. */
-        private const int EchoTypeEnumArrayFromCache = 21;
-                
-        /** Echo type: IgniteUuid. */
-        private const int EchoTypeIgniteUuid = 22;
-
         /** */
-        private const string DefaultCacheName = "default";
+        public const string DefaultCacheName = "default";
 
         /** First node. */
         private IIgnite _grid1;
@@ -134,19 +56,28 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Third node. */
         private IIgnite _grid3;
 
+        /** Thin client. */
+        private IIgniteClient _igniteClient;
+
         /// <summary>
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
         public void InitClient()
         {
-            TestUtils.KillProcesses();
-
             var configs = GetConfigs();
 
             _grid1 = Ignition.Start(Configuration(configs.Item1));
             _grid2 = Ignition.Start(Configuration(configs.Item2));
+
+            AffinityTopologyVersion waitingTop = new AffinityTopologyVersion(2, 1);
+
+            Assert.True(_grid1.WaitTopology(waitingTop), "Failed to wait topology " + waitingTop);
+
             _grid3 = Ignition.Start(Configuration(configs.Item3));
+
+            // Start thin client.
+            _igniteClient = Ignition.StartClient(GetThinClientConfiguration());
         }
 
         /// <summary>
@@ -154,10 +85,21 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         protected virtual Tuple<string, string, string> GetConfigs()
         {
-            return Tuple.Create(
-                "config\\compute\\compute-grid1.xml",
-                "config\\compute\\compute-grid2.xml",
-                "config\\compute\\compute-grid3.xml");
+            var path = Path.Combine("Config", "Compute", "compute-grid");
+
+            return Tuple.Create(path + "1.xml", path + "2.xml", path + "3.xml");
+        }
+
+        /// <summary>
+        /// Gets the thin client configuration.
+        /// </summary>
+        private static IgniteClientConfiguration GetThinClientConfiguration()
+        {
+            return new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> { IPAddress.Loopback.ToString() },
+                SocketTimeout = TimeSpan.FromSeconds(15)
+            };
         }
 
         /// <summary>
@@ -223,9 +165,13 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(node.Addresses.Count > 0);
                 Assert.Throws<NotSupportedException>(() => node.Addresses.Add("addr"));
 
-                Assert.NotNull(node.GetAttributes());
-                Assert.IsTrue(node.GetAttributes().Count > 0);
-                Assert.Throws<NotSupportedException>(() => node.GetAttributes().Add("key", "val"));
+                Assert.NotNull(node.Attributes);
+                Assert.IsTrue(node.Attributes.Count > 0);
+                Assert.Throws<NotSupportedException>(() => node.Attributes.Add("key", "val"));
+
+#pragma warning disable 618
+                Assert.AreSame(node.Attributes, node.GetAttributes());
+#pragma warning restore 618
 
                 Assert.NotNull(node.HostNames);
                 Assert.Throws<NotSupportedException>(() => node.HostNames.Add("h"));
@@ -246,15 +192,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cluster = _grid1.GetCluster();
 
-            IClusterMetrics metrics = cluster.GetMetrics();
+            var metrics = cluster.GetMetrics();
 
             Assert.IsNotNull(metrics);
-
             Assert.AreEqual(cluster.GetNodes().Count, metrics.TotalNodes);
 
-            Thread.Sleep(2000);
-
-            IClusterMetrics newMetrics = cluster.GetMetrics();
+            TestUtils.WaitForTrueCondition(() => cluster.GetMetrics().LastUpdateTime > metrics.LastUpdateTime, 2000);
+            var newMetrics = cluster.GetMetrics();
 
             Assert.IsFalse(metrics == newMetrics);
             Assert.IsTrue(metrics.LastUpdateTime < newMetrics.LastUpdateTime);
@@ -311,7 +255,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             var cluster = _grid1.GetCluster();
 
             Assert.IsTrue(cluster.GetNodes().Select(node => node.Id).All(cluster.PingNode));
-            
+
             Assert.IsFalse(cluster.PingNode(Guid.NewGuid()));
         }
 
@@ -322,7 +266,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestTopologyVersion()
         {
             var cluster = _grid1.GetCluster();
-            
+
             var topVer = cluster.TopologyVersion;
 
             Ignition.Stop(_grid3.Name, true);
@@ -368,7 +312,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsTrue(top.All(nodes.Contains));
             }
-            finally 
+            finally
             {
                 _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
             }
@@ -466,7 +410,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             var nodes = _grid1.GetCluster().GetNodes().Take(2).ToArray();
 
             var callCount = 0;
-            
+
             Func<IClusterNode, IClusterNode> nodeSelector = node =>
             {
                 callCount++;
@@ -482,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             var projection = _grid1.GetCluster().ForNodes(nodes.Select(nodeSelector));
             Assert.AreEqual(2, projection.GetNodes().Count);
             Assert.AreEqual(2, callCount);
-            
+
             projection = _grid1.GetCluster().ForNodeIds(nodes.Select(idSelector));
             Assert.AreEqual(2, projection.GetNodes().Count);
             Assert.AreEqual(4, callCount);
@@ -513,32 +457,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(2, prj.GetNodes().Count);
             Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(0)));
             Assert.IsTrue(nodes.Contains(prj.GetNodes().ElementAt(1)));
-        }
-
-        /// <summary>
-        /// Test for daemon nodes projection.
-        /// </summary>
-        [Test]
-        public void TestForDaemons()
-        {
-            Assert.AreEqual(0, _grid1.GetCluster().ForDaemons().GetNodes().Count);
-
-            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    SpringConfigUrl = GetConfigs().Item1,
-                    IgniteInstanceName = "daemonGrid",
-                    IsDaemon = true
-                })
-            )
-            {
-                var prj = _grid1.GetCluster().ForDaemons();
-
-                Assert.AreEqual(1, prj.GetNodes().Count);
-                Assert.AreEqual(ignite.GetCluster().GetLocalNode().Id, prj.GetNode().Id);
-
-                Assert.IsTrue(prj.GetNode().IsDaemon);
-                Assert.IsTrue(ignite.GetCluster().GetLocalNode().IsDaemon);
-            }
         }
 
         /// <summary>
@@ -599,6 +517,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests thin client ForServers projection.
+        /// </summary>
+        [Test]
+        public void TestThinClientForServers()
+        {
+            var cluster = _igniteClient.GetCluster();
+
+            var servers = cluster.ForServers().GetNodes();
+            Assert.AreEqual(2, servers.Count);
+            Assert.IsTrue(servers.All(x => !x.IsClient));
+        }
+
+        /// <summary>
         /// Test for attribute projection.
         /// </summary>
         [Test]
@@ -611,7 +542,20 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.IsTrue(nodes.Contains(prj.GetNode()));
             Assert.AreEqual("value1", prj.GetNodes().First().GetAttribute<string>("my_attr"));
         }
-        
+
+        /// <summary>
+        /// Test thin client for attribute projection.
+        /// </summary>
+        [Test]
+        public void TestClientForAttribute()
+        {
+            IClientClusterGroup clientPrj = _igniteClient.GetCluster().ForAttribute("my_attr", "value1");
+            Assert.AreEqual(1,clientPrj.GetNodes().Count);
+
+            var nodeId = _grid1.GetCluster().ForAttribute("my_attr", "value1").GetNodes().Single().Id;
+            Assert.AreEqual(nodeId, clientPrj.GetNode().Id);
+        }
+
         /// <summary>
         /// Test for cache/data/client projections.
         /// </summary>
@@ -627,7 +571,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Contains(prjCache.GetNodes().ElementAt(0)));
             Assert.IsTrue(nodes.Contains(prjCache.GetNodes().ElementAt(1)));
-            
+
             // Data nodes.
             IClusterGroup prjData = _grid1.GetCluster().ForDataNodes("cache1");
 
@@ -641,17 +585,19 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(0, prjClient.GetNodes().Count);
         }
-        
+
         /// <summary>
         /// Test for cache predicate.
         /// </summary>
         [Test]
         public void TestForPredicate()
         {
-            IClusterGroup prj1 = _grid1.GetCluster().ForPredicate(new NotAttributePredicate("value1").Apply);
+            IClusterGroup prj1 = _grid1.GetCluster()
+                .ForPredicate(new NotAttributePredicate<IClusterNode>("value1").Apply);
             Assert.AreEqual(2, prj1.GetNodes().Count);
 
-            IClusterGroup prj2 = prj1.ForPredicate(new NotAttributePredicate("value2").Apply);
+            IClusterGroup prj2 = prj1
+                .ForPredicate(new NotAttributePredicate<IClusterNode>("value2").Apply);
             Assert.AreEqual(1, prj2.GetNodes().Count);
 
             string val;
@@ -662,9 +608,28 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Test thin client for cache predicate.
+        /// </summary>
+        [Test]
+        public void TestClientForPredicate()
+        {
+            var prj1 = _igniteClient.GetCluster()
+                .ForPredicate(new NotAttributePredicate<IClientClusterNode>("value1").Apply);
+            Assert.AreEqual(2, prj1.GetNodes().Count);
+
+            var prj2 = prj1
+                .ForPredicate(new NotAttributePredicate<IClientClusterNode>("value2").Apply);
+            Assert.AreEqual(1, prj2.GetNodes().Count);
+
+            var val = (string) prj2.GetNodes().First().Attributes.FirstOrDefault(attr => attr.Key == "my_attr").Value;
+
+            Assert.IsTrue(val == null || (!val.Equals("value1") && !val.Equals("value2")));
+        }
+
+        /// <summary>
         /// Attribute predicate.
         /// </summary>
-        private class NotAttributePredicate
+        private class NotAttributePredicate<T> where T: IBaselineNode
         {
             /** Required attribute value. */
             private readonly string _attrVal;
@@ -679,404 +644,14 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inhreitDoc /> */
-            public bool Apply(IClusterNode node)
+            public bool Apply(T node)
             {
-                string val;
+                object val;
 
-                node.TryGetAttribute("my_attr", out val);
+                node.Attributes.TryGetValue("my_attr", out val);
 
                 return val == null || !val.Equals(_attrVal);
             }
-        }
-
-        /// <summary>
-        /// Test echo with decimals.
-        /// </summary>
-        [Test]
-        public void TestEchoDecimal()
-        {
-            decimal val;
-
-            Assert.AreEqual(val = decimal.Zero, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, 1, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MinValue, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 0, int.MaxValue, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, 1, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MinValue, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(0, int.MaxValue, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 0, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MinValue, 0, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(int.MaxValue, 0, 0, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0) - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, false, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = new decimal(1, 1, 1, true, 0) + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.Parse("65536"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-65536"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("65536") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-65536") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("65536") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-65536") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.Parse("4294967296"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-4294967296"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("4294967296") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-4294967296") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("4294967296") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-4294967296") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.Parse("281474976710656"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-281474976710656"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("281474976710656") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-281474976710656") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("281474976710656") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-281474976710656") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.Parse("18446744073709551616"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-18446744073709551616"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("18446744073709551616") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-18446744073709551616") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("18446744073709551616") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-18446744073709551616") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176") - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("1208925819614629174706176") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-1208925819614629174706176") + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.MaxValue, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.MinValue, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.MaxValue - 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.MinValue + 1, _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            Assert.AreEqual(val = decimal.Parse("11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-            Assert.AreEqual(val = decimal.Parse("-11,12"), _grid1.GetCompute().ExecuteJavaTask<object>(DecimalTask, new object[] { val, val.ToString() }));
-
-            // Test echo with overflow.
-            var ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
-                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, decimal.MaxValue.ToString() + 1}));
-
-            Assert.AreEqual("Decimal magnitude overflow (must be less than 96 bits): 104", ex.Message);
-
-            // Negative scale. 1E+1 parses to "1 scale -1" on Java side.
-            ex = Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute()
-                .ExecuteJavaTask<object>(DecimalTask, new object[] {null, "1E+1"}));
-
-            Assert.AreEqual("Decimal value scale overflow (must be between 0 and 28): -1", ex.Message);
-        }
-
-        /// <summary>
-        /// Test echo task returning null.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskNull()
-        {
-            Assert.IsNull(_grid1.GetCompute().ExecuteJavaTask<object>(EchoTask, EchoTypeNull));
-        }
-
-        /// <summary>
-        /// Test echo task returning various primitives.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskPrimitives()
-        {
-            Assert.AreEqual(1, _grid1.GetCompute().ExecuteJavaTask<byte>(EchoTask, EchoTypeByte));
-            Assert.AreEqual(true, _grid1.GetCompute().ExecuteJavaTask<bool>(EchoTask, EchoTypeBool));
-            Assert.AreEqual(1, _grid1.GetCompute().ExecuteJavaTask<short>(EchoTask, EchoTypeShort));
-            Assert.AreEqual((char)1, _grid1.GetCompute().ExecuteJavaTask<char>(EchoTask, EchoTypeChar));
-            Assert.AreEqual(1, _grid1.GetCompute().ExecuteJavaTask<int>(EchoTask, EchoTypeInt));
-            Assert.AreEqual(1, _grid1.GetCompute().ExecuteJavaTask<long>(EchoTask, EchoTypeLong));
-            Assert.AreEqual((float)1, _grid1.GetCompute().ExecuteJavaTask<float>(EchoTask, EchoTypeFloat));
-            Assert.AreEqual((double)1, _grid1.GetCompute().ExecuteJavaTask<double>(EchoTask, EchoTypeDouble));
-        }
-
-        /// <summary>
-        /// Test echo task returning compound types.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskCompound()
-        {
-            int[] res1 = _grid1.GetCompute().ExecuteJavaTask<int[]>(EchoTask, EchoTypeArray);
-
-            Assert.AreEqual(1, res1.Length);
-            Assert.AreEqual(1, res1[0]);
-
-            var res2 = _grid1.GetCompute().ExecuteJavaTask<IList>(EchoTask, EchoTypeCollection);
-
-            Assert.AreEqual(1, res2.Count);
-            Assert.AreEqual(1, res2[0]);
-
-            var res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary>(EchoTask, EchoTypeMap);
-
-            Assert.AreEqual(1, res3.Count);
-            Assert.AreEqual(1, res3[1]);
-        }
-
-        /// <summary>
-        /// Test echo task returning binary object.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskBinarizable()
-        {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
-
-            Assert.AreEqual(1, res.Field);
-        }
-
-        /// <summary>
-        /// Test echo task returning binary object with no corresponding class definition.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskBinarizableNoClass()
-        {
-            ICompute compute = _grid1.GetCompute();
-
-            compute.WithKeepBinary();
-
-            IBinaryObject res = compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
-
-            Assert.AreEqual(1, res.GetField<int>("field"));
-
-            // This call must fail because "keepBinary" flag is reset.
-            var ex = Assert.Throws<BinaryObjectException>(() =>
-            {
-                compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
-            });
-
-            Assert.AreEqual("Unknown pair [platformId=1, typeId=2009791293]", ex.Message);
-        }
-
-        /// <summary>
-        /// Tests the echo task returning object array.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskObjectArray()
-        {
-            var res = _grid1.GetCompute().ExecuteJavaTask<string[]>(EchoTask, EchoTypeObjArray);
-            
-            Assert.AreEqual(new[] {"foo", "bar", "baz"}, res);
-        }
-
-        /// <summary>
-        /// Tests the echo task returning binary array.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskBinarizableArray()
-        {
-            var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypeBinarizableArray);
-            
-            Assert.AreEqual(3, res.Length);
-
-            for (var i = 0; i < res.Length; i++)
-                Assert.AreEqual(i + 1, ((PlatformComputeBinarizable) res[i]).Field);
-        }
-
-        /// <summary>
-        /// Tests the echo task returning enum.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskEnum()
-        {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
-
-            Assert.AreEqual(PlatformComputeEnum.Bar, res);
-        }
-
-        /// <summary>
-        /// Tests the echo task returning enum.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskEnumFromCache()
-        {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum>(DefaultCacheName);
-
-            foreach (PlatformComputeEnum val in Enum.GetValues(typeof(PlatformComputeEnum)))
-            {
-                cache[EchoTypeEnumFromCache] = val;
-
-                var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumFromCache);
-
-                Assert.AreEqual(val, res);
-            }
-        }
-
-        /// <summary>
-        /// Tests the echo task returning enum.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskEnumArray()
-        {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
-
-            Assert.AreEqual(new[]
-            {
-                PlatformComputeEnum.Bar,
-                PlatformComputeEnum.Baz,
-                PlatformComputeEnum.Foo
-            }, res);
-        }
-
-        /// <summary>
-        /// Tests the echo task returning enum.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskEnumArrayFromCache()
-        {
-            var cache = _grid1.GetCache<int, PlatformComputeEnum[]>(DefaultCacheName);
-
-            foreach (var val in new[]
-            {
-                new[] {PlatformComputeEnum.Bar, PlatformComputeEnum.Baz, PlatformComputeEnum.Foo },
-                new[] {PlatformComputeEnum.Foo, PlatformComputeEnum.Baz},
-                new[] {PlatformComputeEnum.Bar}
-            })
-            {
-                cache[EchoTypeEnumArrayFromCache] = val;
-
-                var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(
-                    EchoTask, EchoTypeEnumArrayFromCache);
-
-                Assert.AreEqual(val, res);
-            }
-        }
-
-        /// <summary>
-        /// Tests the echo task reading enum from a binary object field.
-        /// Ensures that Java can understand enums written by .NET.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskEnumField()
-        {
-            var enumVal = PlatformComputeEnum.Baz;
-
-            _grid1.GetCache<int, InteropComputeEnumFieldTest>(DefaultCacheName)
-                .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
-
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
-
-            var enumMeta = _grid1.GetBinary().GetBinaryType(typeof (PlatformComputeEnum));
-
-            Assert.IsTrue(enumMeta.IsEnum);
-            Assert.AreEqual(enumMeta.TypeName, typeof(PlatformComputeEnum).Name);
-            Assert.AreEqual(0, enumMeta.Fields.Count);
-
-            Assert.AreEqual(enumVal, res);
-        }
-
-        /// <summary>
-        /// Tests that IgniteGuid in .NET maps to IgniteUuid in Java.
-        /// </summary>
-        [Test]
-        public void TestEchoTaskIgniteUuid()
-        {
-            var guid = Guid.NewGuid();
-
-            _grid1.GetCache<int, object>(DefaultCacheName)[EchoTypeIgniteUuid] = new IgniteGuid(guid, 25);
-
-            var res = _grid1.GetCompute().ExecuteJavaTask<IgniteGuid>(EchoTask, EchoTypeIgniteUuid);
-
-            Assert.AreEqual(guid, res.GlobalId);
-            Assert.AreEqual(25, res.LocalId);
-        }
-
-        /// <summary>
-        /// Test for binary argument in Java.
-        /// </summary>
-        [Test]
-        public void TestBinarizableArgTask()
-        {
-            ICompute compute = _grid1.GetCompute();
-
-            compute.WithKeepBinary();
-
-            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable {Field = 100};
-
-            int res = compute.ExecuteJavaTask<int>(BinaryArgTask, arg);
-
-            Assert.AreEqual(arg.Field, res);
-        }
-
-        /// <summary>
-        /// Test running broadcast task.
-        /// </summary>
-        [Test]
-        public void TestBroadcastTask([Values(false, true)] bool isAsync)
-        {
-            var execTask =
-                isAsync
-                    ? (Func<ICompute, List<Guid>>) (
-                        c => c.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList())
-                    : c => c.ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
-
-            var res = execTask(_grid1.GetCompute());
-
-            Assert.AreEqual(2, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-
-            var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
-
-            Assert.AreEqual(2, prj.GetNodes().Count);
-
-            var filteredRes = execTask(prj.GetCompute());
-
-            Assert.AreEqual(2, filteredRes.Count);
-            Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
-            Assert.IsTrue(filteredRes.Contains(res.ElementAt(1)));
         }
 
         /// <summary>
@@ -1120,11 +695,11 @@ namespace Apache.Ignite.Core.Tests.Compute
                 // Cancel while executing
                 var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
                 cts.Cancel();
-                Assert.IsTrue(task.IsCanceled);
+                TestUtils.WaitForTrueCondition(() => task.IsCanceled);
 
                 // Use cancelled token
-                task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
-                Assert.IsTrue(task.IsCanceled);
+                var task2 = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                Assert.IsTrue(task2.IsCanceled);
             }
         }
 
@@ -1162,10 +737,16 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
-                _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
+                var computeAction = new ComputeAction
+                {
+                    ReservedPartition = aff.GetPartition(primaryKey),
+                    CacheNames = new[] {cacheName}
+                };
+
+                _grid1.GetCompute().AffinityRun(cacheName, affinityKey, computeAction);
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
 
-                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, new ComputeAction()).Wait();
+                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, computeAction).Wait();
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
             }
         }
@@ -1207,31 +788,135 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test "withNoFailover" feature.
+        /// Tests affinity call with partition.
         /// </summary>
         [Test]
-        public void TestWithNoFailover()
+        public void TestAffinityCallWithPartition([Values(true, false)] bool async)
         {
-            var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
-                .OfType<Guid>().ToList();
+            var cacheName = DefaultCacheName;
+            var aff = _grid1.GetAffinity(cacheName);
+            var localNode = _grid1.GetCluster().GetLocalNode();
+            var part = aff.GetPrimaryPartitions(localNode).First();
+            var compute = _grid1.GetCompute();
 
-            Assert.AreEqual(2, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+            Func<IEnumerable<string>, int> action = names => async
+                ? compute.AffinityCallAsync(names, part, new ComputeFunc()).Result
+                : compute.AffinityCall(names, part, new ComputeFunc());
+
+            // One cache.
+            var res = action(new[] {cacheName});
+
+            Assert.AreEqual(res, ComputeFunc.InvokeCount);
+            Assert.AreEqual(localNode.Id, ComputeFunc.LastNodeId);
+
+            // Two caches.
+            var cache = _grid1.CreateCache<int, int>(TestUtils.TestName);
+
+            res = action(new[] {cacheName, cache.Name});
+
+            Assert.AreEqual(res, ComputeFunc.InvokeCount);
+            Assert.AreEqual(localNode.Id, ComputeFunc.LastNodeId);
+
+            // Empty caches.
+            var ex = Assert.Throws<ArgumentException>(() => action(new string[0]));
+            StringAssert.StartsWith("cacheNames can not be empty", ex.Message);
+
+            // Invalid cache name.
+            Assert.Throws<AggregateException>(() => action(new[] {"bad"}));
+
+            // Invalid partition.
+            Assert.Throws<ArgumentException>(() => compute.AffinityCall(new[] {cacheName}, -1, new ComputeFunc()));
         }
 
         /// <summary>
-        /// Test "withTimeout" feature.
+        /// Tests affinity run with partition.
         /// </summary>
         [Test]
-        public void TestWithTimeout()
+        public void TestAffinityRunWithPartition([Values(true, false)] bool local,
+            [Values(true, false)] bool multiCache, [Values(true, false)] bool async)
         {
-            var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
-                .OfType<Guid>().ToList();
+            var cacheNames = new List<string> {DefaultCacheName};
 
-            Assert.AreEqual(2, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
+            if (multiCache)
+            {
+                var cache2 = _grid1.CreateCache<int, int>(TestUtils.TestName);
+                cacheNames.Add(cache2.Name);
+            }
+
+            var node = local
+                ? _grid1.GetCluster().GetLocalNode()
+                : _grid2.GetCluster().GetLocalNode();
+
+            var aff = _grid1.GetAffinity(cacheNames[0]);
+
+            // Wait for some partitions to be assigned to the node.
+            TestUtils.WaitForTrueCondition(() => aff.GetPrimaryPartitions(node).Any());
+            var part = aff.GetPrimaryPartitions(node).First();
+
+            var computeAction = new ComputeAction
+            {
+                ReservedPartition = part,
+                CacheNames = cacheNames
+            };
+
+            var action = async
+                ? (Action) (() => _grid1.GetCompute().AffinityRunAsync(cacheNames, part, computeAction).Wait())
+                : () => _grid1.GetCompute().AffinityRun(cacheNames, part, computeAction);
+
+            // Good case.
+            action();
+            Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
+
+            // Exception in user code.
+            computeAction.ShouldThrow = true;
+            var aex = Assert.Throws<AggregateException>(() => action());
+
+            var ex = aex.GetBaseException();
+            StringAssert.StartsWith("Remote job threw user exception", ex.Message);
+            Assert.AreEqual("Error in ComputeAction", ex.GetInnermostException().Message);
+        }
+
+        /// <summary>
+        /// Tests affinity operations with cancellation.
+        /// </summary>
+        [Test]
+        public void TestAffinityOpAsyncWithCancellation([Values(true, false)] bool callOrRun,
+            [Values(true, false)] bool keyOrPart)
+        {
+            var compute = _grid1.GetCompute();
+
+            Action<CancellationToken> action = token =>
+            {
+                if (callOrRun)
+                {
+                    if (keyOrPart)
+                    {
+                        compute.AffinityCallAsync(DefaultCacheName, 1, new ComputeFunc(), token).Wait();
+                    }
+                    else
+                    {
+                        compute.AffinityCallAsync(new[] {DefaultCacheName}, 1, new ComputeFunc(), token).Wait();
+                    }
+                }
+                else
+                {
+                    if (keyOrPart)
+                    {
+                        compute.AffinityRunAsync(DefaultCacheName, 1, new ComputeAction(), token).Wait();
+                    }
+                    else
+                    {
+                        compute.AffinityRunAsync(new[] {DefaultCacheName}, 1, new ComputeAction(), token).Wait();
+                    }
+                }
+            };
+
+            // Not cancelled.
+            Assert.DoesNotThrow(() => action(CancellationToken.None));
+
+            // Cancelled.
+            var ex = Assert.Throws<AggregateException>(() => action(new CancellationToken(true)));
+            Assert.IsInstanceOf<TaskCanceledException>(ex.GetInnermostException());
         }
 
         /// <summary>
@@ -1260,11 +945,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestExceptions()
         {
-            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+            Assert.Throws<AggregateException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
 
-            Assert.Throws<BinaryObjectException>(
+            Assert.Throws<AggregateException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+
+            // Local.
+            var ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForLocal().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on local node, examine InnerException for details.",
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
+
+            // Remote.
+            ex = Assert.Throws<AggregateException>(() =>
+                _grid1.GetCluster().ForRemotes().GetCompute().Broadcast(new ExceptionalComputeAction()));
+
+            Assert.IsNotNull(ex.InnerException);
+            Assert.AreEqual("Compute job has failed on remote node, examine InnerException for details.",
+                ex.InnerException.Message);
+            Assert.IsNotNull(ex.InnerException.InnerException);
+            Assert.AreEqual(ExceptionalComputeAction.ErrorText, ex.InnerException.InnerException.Message);
         }
 
         /// <summary>
@@ -1273,10 +978,23 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestFooterSetting()
         {
-            Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);
+            Assert.AreEqual(CompactFooter, ((Ignite) _grid1).Marshaller.CompactFooter);
 
             foreach (var g in new[] {_grid1, _grid2, _grid3})
                 Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
+        }
+        
+        /// <summary>
+        /// Tests that compute modifiers are reset between calls.
+        /// </summary>
+        [Test]
+        public void TestTaskOptionsPropagation()
+        {
+            ICompute compute = _grid1.GetCompute();
+            
+            compute.WithTimeout(500).Call(new ComputeFunc());
+
+            compute.ExecuteJavaTask<object>(ComputeClientTests.TestTask, (long)1000);
         }
 
         /// <summary>
@@ -1297,19 +1015,10 @@ namespace Apache.Ignite.Core.Tests.Compute
                         new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
                         new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
                     },
-                    NameMapper = BinaryBasicNameMapper.SimpleNameInstance
+                    NameMapper = new BinaryBasicNameMapper { IsSimpleName = true }
                 },
                 SpringConfigUrl = path
             };
-        }
-    }
-
-    class PlatformComputeBinarizable
-    {
-        public int Field
-        {
-            get;
-            set;
         }
     }
 
@@ -1420,7 +1129,8 @@ namespace Apache.Ignite.Core.Tests.Compute
     class ComputeAction : IComputeAction
     {
         [InstanceResource]
-        #pragma warning disable 649
+#pragma warning disable 649
+        // ReSharper disable once UnassignedField.Local
         private IIgnite _grid;
 
         public static ConcurrentBag<Guid> Invokes = new ConcurrentBag<Guid>();
@@ -1428,6 +1138,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         public static Guid LastNodeId;
 
         public Guid Id { get; set; }
+
+        public int? ReservedPartition { get; set; }
+
+        public ICollection<string> CacheNames { get; set; }
+
+        public bool ShouldThrow { get; set; }
 
         public ComputeAction()
         {
@@ -1444,6 +1160,21 @@ namespace Apache.Ignite.Core.Tests.Compute
             Thread.Sleep(10);
             Invokes.Add(Id);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
+
+            if (ReservedPartition != null)
+            {
+                Assert.IsNotNull(CacheNames);
+
+                foreach (var cacheName in CacheNames)
+                {
+                    Assert.IsTrue(TestUtils.IsPartitionReserved(_grid, cacheName, ReservedPartition.Value));
+                }
+            }
+
+            if (ShouldThrow)
+            {
+                throw new Exception("Error in ComputeAction");
+            }
         }
 
         public static int InvokeCount(Guid id)
@@ -1465,6 +1196,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
+    class ExceptionalComputeAction : IComputeAction
+    {
+        public const string ErrorText = "Expected user exception";
+
+        public void Invoke()
+        {
+            throw new OverflowException(ErrorText);
+        }
+    }
+
     interface IUserInterface<out T>
     {
         T Invoke();
@@ -1472,13 +1213,14 @@ namespace Apache.Ignite.Core.Tests.Compute
 
     interface INestedComputeFunc : IComputeFunc<int>
     {
-        
+
     }
 
     [Serializable]
     class ComputeFunc : INestedComputeFunc, IUserInterface<int>
     {
         [InstanceResource]
+        // ReSharper disable once UnassignedField.Local
         private IIgnite _grid;
 
         public static int InvokeCount;
@@ -1506,7 +1248,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum PlatformComputeEnum
+    public enum PlatformComputeEnum : ushort
     {
         Foo,
         Bar,

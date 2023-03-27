@@ -225,6 +225,16 @@ public interface ClusterMetrics {
     public int getTotalExecutedJobs();
 
     /**
+     * Gets total time all finished jobs takes to execute on the node since node startup.
+     * <p>
+     * <b>Note:</b> Unlike most of other aggregation metrics this metric is not calculated over history
+     * but over the entire node life.
+     *
+     * @return Total jobs execution time.
+     */
+    public long getTotalJobsExecutionTime();
+
+    /**
      * Gets maximum time a job ever spent waiting in a queue to be executed.
      * <p>
      * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
@@ -364,7 +374,7 @@ public interface ClusterMetrics {
     public int getTotalCpus();
 
     /**
-     * Returns the CPU usage usage in {@code [0, 1]} range.
+     * Returns the CPU usage in {@code [0, 1]} range.
      * The exact way how this number is calculated depends on SPI implementation.
      * <p>
      * If the CPU usage is not available, a negative value is returned.
@@ -684,4 +694,11 @@ public interface ClusterMetrics {
      * @return Total number of nodes.
      */
     public int getTotalNodes();
+
+    /**
+     * Gets execution duration for current partition map exchange in milliseconds.
+     *
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no running PME.
+     */
+    public long getCurrentPmeDuration();
 }

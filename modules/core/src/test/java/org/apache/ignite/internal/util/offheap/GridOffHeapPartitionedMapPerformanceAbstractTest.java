@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.offheap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -28,7 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Test;
 
 /**
  * Performance test for partitioned offheap hash map.
@@ -108,6 +109,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPuts() throws Exception {
         info("Warming up...");
 
@@ -121,6 +123,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsConcurrentMap() throws Exception {
         info("Warming up...");
 
@@ -134,6 +137,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoves() throws Exception {
         info("Warming up...");
 
@@ -147,6 +151,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemovesConcurrentMap() throws Exception {
         info("Warming up...");
 
@@ -281,11 +286,12 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         info("Average random operation performance: " + (totalOpCnt.get() * 1000) / (end - start) + " ops/sec");
     }
+
     /**
      * @throws Exception If failed.
      */
     private void checkPutsConcurrentMap(int threadCnt, long duration) throws Exception {
-        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap8<>();
+        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap<>();
 
         final AtomicLong opCnt = new AtomicLong();
         final AtomicLong totalOpCnt = new AtomicLong();
@@ -340,7 +346,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
      * @throws Exception If failed.
      */
     private void checkPutRemovesConcurrentMap(int threadCnt, long duration) throws Exception {
-        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap8<>();
+        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap<>();
 
         final AtomicLong opCnt = new AtomicLong();
         final AtomicLong totalOpCnt = new AtomicLong();

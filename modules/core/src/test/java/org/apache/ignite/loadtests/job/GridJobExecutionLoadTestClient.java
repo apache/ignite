@@ -18,15 +18,17 @@
 package org.apache.ignite.loadtests.job;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -34,7 +36,6 @@ import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -50,13 +51,12 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static Ignite g;
 
     /** Transaction count. */
-    private static LongAdder8 txCnt = new LongAdder8();
+    private static LongAdder txCnt = new LongAdder();
 
     /** Finish flag. */
     private static volatile boolean finish;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
         IgniteCompute rmts = g.compute(g.cluster().forRemotes());
 
@@ -126,7 +126,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
                             GridLoadTestUtils.appendLineToFile(
                                 outputFileName,
                                 "%s,%d",
-                                GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                                IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                                 avgTxPerSec.get()
                             );
                         }

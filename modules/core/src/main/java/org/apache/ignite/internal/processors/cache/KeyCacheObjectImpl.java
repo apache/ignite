@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -73,9 +75,9 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.processor().marshal(ctx, val);
+            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
 
         return valBytes;
     }
@@ -93,8 +95,12 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
+        return value(ctx, cpy, null);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
         assert val != null;
 
         return (T)val;
@@ -114,7 +120,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     @Override public int hashCode() {
         assert val != null;
 
-        return val.hashCode();
+        return IgniteUtils.hashCode(val);
     }
 
     /** {@inheritDoc} */
@@ -178,13 +184,13 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
             valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (val == null) {
             assert valBytes != null;
 
@@ -199,12 +205,12 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         KeyCacheObjectImpl other = (KeyCacheObjectImpl)obj;
 
-        return val.equals(other.val);
+        return Objects.deepEquals(val, other.val);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "KeyCacheObject",
+        return S.toString(S.includeSensitive() ? getClass().getSimpleName() : "KeyCacheObject",
             "part", part, true,
             "val", val, true,
             "hasValBytes", valBytes != null, false);

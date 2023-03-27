@@ -45,6 +45,16 @@ namespace ignite
         return impl.Get()->GetConfiguration();
     }
 
+    bool Ignite::IsActive()
+    {
+        return impl.Get()->IsActive();
+    }
+
+    void Ignite::SetActive(bool active)
+    {
+        impl.Get()->SetActive(active);
+    }
+
     transactions::Transactions Ignite::GetTransactions()
     {
         using ignite::common::concurrent::SharedPointer;
@@ -53,6 +63,21 @@ namespace ignite
         SharedPointer<TransactionsImpl> txImpl = impl.Get()->GetTransactions();
 
         return transactions::Transactions(txImpl);
+    }
+
+    cluster::IgniteCluster Ignite::GetCluster()
+    {
+        return cluster::IgniteCluster(impl.Get()->GetCluster());
+    }
+
+    compute::Compute Ignite::GetCompute()
+    {
+        return compute::Compute(impl.Get()->GetCompute());
+    }
+
+    compute::Compute Ignite::GetCompute(cluster::ClusterGroup grp)
+    {
+        return compute::Compute(impl.Get()->GetCompute(grp));
     }
 
     IgniteBinding Ignite::GetBinding()

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -51,7 +52,7 @@ namespace Apache.Ignite.Core.Binary
             IgniteArgumentCheck.NotNull(type, "type");
 
             TypeName = type.AssemblyQualifiedName;
-            IsEnum = type.IsEnum;
+            IsEnum = BinaryUtils.IsIgniteEnum(type);
         }
 
         /// <summary>

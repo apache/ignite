@@ -38,7 +38,7 @@ namespace ignite
                  * @param diag Diagnostics collector.
                  * @param sqlType SQL type.
                  */
-                TypeInfoQuery(diagnostic::Diagnosable& diag, int16_t sqlType);
+                TypeInfoQuery(diagnostic::DiagnosableAdapter& diag, int16_t sqlType);
 
                 /**
                  * Destructor.
@@ -57,7 +57,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector* GetMeta();
 
                 /**
                  * Fetch next result row to application buffers.
@@ -95,7 +95,14 @@ namespace ignite
                  * @return Number of rows affected by the statement.
                  */
                 virtual int64_t AffectedRows() const;
-                
+
+                /**
+                 * Move to the next result set.
+                 *
+                 * @return Operation result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(TypeInfoQuery);
 
@@ -104,6 +111,9 @@ namespace ignite
 
                 /** Executed flag. */
                 bool executed;
+
+                /** Fetched flag. */
+                bool fetched;
 
                 /** Requested types. */
                 std::vector<int8_t> types;

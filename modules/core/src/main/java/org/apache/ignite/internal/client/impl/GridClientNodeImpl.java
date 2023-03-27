@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.client.GridClientCacheMode;
@@ -31,6 +32,8 @@ import org.apache.ignite.internal.client.GridClientNodeMetrics;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 
 /**
  * Client node implementation.
@@ -66,6 +69,9 @@ public class GridClientNodeImpl implements GridClientNode {
     /** Cache for REST TCP socket addresses. */
     private final AtomicReference<Collection<InetSocketAddress>> tcpSockAddrs = new AtomicReference<>();
 
+    /** Node order within grid topology */
+    private long order;
+
     /**
      * Default constructor (private).
      */
@@ -99,7 +105,8 @@ public class GridClientNodeImpl implements GridClientNode {
             .tcpAddresses(from.tcpAddresses())
             .tcpPort(from.tcpPort())
             .caches(from.caches())
-            .connectable(from.connectable());
+            .connectable(from.connectable())
+            .order(from.order());
 
         if (!skipAttrs)
             b.attributes(from.attributes());
@@ -141,7 +148,6 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T attribute(String name) {
         return (T)attrs.get(name);
     }
@@ -186,6 +192,11 @@ public class GridClientNodeImpl implements GridClientNode {
         return filterIfNecessary(addrs0, filterResolved);
     }
 
+    /** {@inheritDoc} */
+    @Override public long order() {
+        return order;
+    }
+
     /**
      * Filters sockets with resolved addresses.
      *
@@ -220,6 +231,11 @@ public class GridClientNodeImpl implements GridClientNode {
         GridClientNodeImpl that = (GridClientNodeImpl)o;
 
         return nodeId.equals(that.nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isClient() {
+        return Objects.equals(attribute(ATTR_CLIENT_MODE), true);
     }
 
     /** {@inheritDoc} */
@@ -374,6 +390,17 @@ public class GridClientNodeImpl implements GridClientNode {
          */
         public Builder connectable(boolean connectable) {
             impl.connectable = connectable;
+
+            return this;
+        }
+
+        /**
+         * Set node order within grid topology
+         *
+         * @param order Node order within grid topology
+         */
+        public Builder order(long order) {
+            impl.order = order;
 
             return this;
         }

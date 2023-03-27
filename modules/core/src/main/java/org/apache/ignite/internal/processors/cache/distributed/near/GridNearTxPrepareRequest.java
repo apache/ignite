@@ -21,23 +21,25 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Near transaction prepare request.
+ * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
@@ -55,6 +57,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final int EXPLICIT_LOCK_FLAG_MASK = 0x08;
 
+    /** */
+    private static final int ALLOW_WAIT_TOP_FUT_FLAG_MASK = 0x10;
+
+    /** Recovery value flag. */
+    private static final int RECOVERY_FLAG_MASK = 0x40;
+
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -64,15 +72,16 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
-    /** Subject ID. */
-    private UUID subjId;
-
     /** Task name hash. */
     private int taskNameHash;
 
     /** */
     @GridToStringExclude
     private byte flags;
+
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -95,9 +104,9 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param retVal Return value flag.
      * @param implicitSingle Implicit single flag.
      * @param explicitLock Explicit lock flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param firstClientReq {@code True} if first optimistic tx prepare request sent from client node.
+     * @param allowWaitTopFut {@code True} if it is safe for first client request to wait for topology future.
      * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareRequest(
@@ -114,10 +123,11 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean retVal,
         boolean implicitSingle,
         boolean explicitLock,
-        @Nullable UUID subjId,
         int taskNameHash,
         boolean firstClientReq,
-        boolean addDepInfo
+        boolean allowWaitTopFut,
+        boolean addDepInfo,
+        boolean recovery
     ) {
         super(tx,
             timeout,
@@ -134,13 +144,38 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         this.futId = futId;
         this.topVer = topVer;
-        this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+
+        txLbl = tx.label();
 
         setFlag(near, NEAR_FLAG_MASK);
         setFlag(implicitSingle, IMPLICIT_SINGLE_FLAG_MASK);
         setFlag(explicitLock, EXPLICIT_LOCK_FLAG_MASK);
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
+        setFlag(allowWaitTopFut, ALLOW_WAIT_TOP_FUT_FLAG_MASK);
+        setFlag(recovery, RECOVERY_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if it is safe for first client request to wait for topology future
+     *      completion.
+     */
+    public boolean allowWaitTopologyFuture() {
+        return isFlag(ALLOW_WAIT_TOP_FUT_FLAG_MASK);
+    }
+
+    /**
+     * @return Recovery flag.
+     */
+    public final boolean recovery() {
+        return isFlag(RECOVERY_FLAG_MASK);
+    }
+
+    /**
+     * @param val Recovery flag.
+     */
+    public void recovery(boolean val) {
+        setFlag(val, RECOVERY_FLAG_MASK);
     }
 
     /**
@@ -179,13 +214,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
      * @return Task name hash.
      */
     public int taskNameHash() {
@@ -214,6 +242,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
+    }
+
+    /**
      *
      */
     public void cloneEntries() {
@@ -230,7 +265,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     private Collection<IgniteTxEntry> cloneEntries(Collection<IgniteTxEntry> c) {
         if (F.isEmpty(c))
-            return c;
+            return Collections.emptyList();
 
         Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 
@@ -287,26 +322,20 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         }
 
         switch (writer.state()) {
-            case 20:
+            case 21:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 22:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
-                if (!writer.writeInt("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
             case 23:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -318,7 +347,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 26:
+                if (!writer.writeString("txLbl", txLbl))
                     return false;
 
                 writer.incrementState();
@@ -339,7 +374,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         switch (reader.state()) {
-            case 20:
+            case 21:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -347,7 +382,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 21:
+            case 22:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -355,16 +390,8 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
-            case 22:
-                miniId = reader.readInt("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 23:
-                subjId = reader.readUuid("subjId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -380,7 +407,15 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 25:
-                topVer = reader.readMessage("topVer");
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 26:
+                txLbl = reader.readString("txLbl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -399,7 +434,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 27;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
     }
 
     /** {@inheritDoc} */
@@ -407,13 +447,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         StringBuilder flags = new StringBuilder();
 
         if (near())
-            flags.append("near");
+            flags.append("[near]");
         if (firstClientRequest())
-            flags.append("clientReq");
+            flags.append("[firstClientReq]");
         if (implicitSingle())
-            flags.append("single");
+            flags.append("[implicitSingle]");
         if (explicitLock())
-            flags.append("explicitLock");
+            flags.append("[explicitLock]");
 
         return S.toString(GridNearTxPrepareRequest.class, this,
             "flags", flags.toString(),

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.tests.utils;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -29,13 +24,18 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
-
+import java.util.concurrent.atomic.AtomicInteger;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.logger.log4j.Log4JLogger;
-import org.apache.log4j.Logger;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -56,7 +56,8 @@ public class CassandraHelper {
     private static final String EMBEDDED_CASSANDRA_YAML = "org/apache/ignite/tests/cassandra/embedded-cassandra.yaml";
 
     /** */
-    private static final ApplicationContext connectionContext = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
+    private static final ApplicationContext connectionContext =
+        new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
 
     /** */
     private static DataSource adminDataSrc;
@@ -103,6 +104,9 @@ public class CassandraHelper {
     public static String[] getTestKeyspaces() {
         return KEYSPACES.getString("keyspaces").split(",");
     }
+
+    /** */
+    private static AtomicInteger refCounter = new AtomicInteger(0);
 
     /** */
     public static String[] getContactPointsArray() {
@@ -197,7 +201,6 @@ public class CassandraHelper {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(String statement, Object... args) {
         if (args == null || args.length == 0)
             return regularSession().execute(statement);
@@ -207,13 +210,11 @@ public class CassandraHelper {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithAdminCredentials(Statement statement) {
         return adminSession().execute(statement);
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static ResultSet executeWithRegularCredentials(Statement statement) {
         return regularSession().execute(statement);
     }
@@ -227,7 +228,6 @@ public class CassandraHelper {
     }
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     public static synchronized DataSource getRegularDataSrc() {
         if (regularDataSrc != null)
             return regularDataSrc;
@@ -330,8 +330,13 @@ public class CassandraHelper {
         }
     }
 
-    /** */
+    /**
+     * Note that setting of cassandra.storagedir property is expected.
+     */
     public static void startEmbeddedCassandra(Logger log) {
+        if (refCounter.getAndIncrement() > 0)
+            return;
+
         ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
         URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
 
@@ -341,7 +346,7 @@ public class CassandraHelper {
         try {
             Field logField = CassandraLifeCycleBean.class.getDeclaredField("log");
             logField.setAccessible(true);
-            logField.set(embeddedCassandraBean, new Log4JLogger(log));
+            logField.set(embeddedCassandraBean, new GridTestLog4jLogger(log));
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize logger for CassandraLifeCycleBean", e);
@@ -352,6 +357,9 @@ public class CassandraHelper {
 
     /** */
     public static void stopEmbeddedCassandra() {
+        if (refCounter.decrementAndGet() > 0)
+            return;
+
         if (embeddedCassandraBean != null)
             embeddedCassandraBean.onLifecycleEvent(LifecycleEventType.BEFORE_NODE_STOP);
     }

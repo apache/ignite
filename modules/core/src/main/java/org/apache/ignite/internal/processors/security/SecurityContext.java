@@ -21,7 +21,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
- * Security context.
+ * This interface should be used to get security subject and perform checks for specific permissions.
  */
 public interface SecurityContext {
     /**

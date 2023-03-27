@@ -55,7 +55,7 @@ namespace ignite
     {
         namespace query
         {
-            PrimaryKeysQuery::PrimaryKeysQuery(diagnostic::Diagnosable& diag,
+            PrimaryKeysQuery::PrimaryKeysQuery(diagnostic::DiagnosableAdapter& diag,
                 Connection& connection, const std::string& catalog,
                 const std::string& schema, const std::string& table) :
                 Query(diag, QueryType::PRIMARY_KEYS),
@@ -103,9 +103,9 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
             }
 
-            const meta::ColumnMetaVector & PrimaryKeysQuery::GetMeta() const
+            const meta::ColumnMetaVector* PrimaryKeysQuery::GetMeta()
             {
-                return columnsMeta;
+                return &columnsMeta;
             }
 
             SqlResult::Type PrimaryKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
@@ -206,6 +206,11 @@ namespace ignite
             int64_t PrimaryKeysQuery::AffectedRows() const
             {
                 return 0;
+            }
+
+            SqlResult::Type PrimaryKeysQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
             }
         }
     }

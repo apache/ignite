@@ -21,16 +21,20 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
 
 /**
  *
@@ -67,7 +71,6 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestUndeployLocalTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
@@ -95,6 +98,9 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             assert spi1.findResource(task1.getName()) != null;
             assert spi2.findResource(task1.getName()) != null;
 
+            checkResourceRegisteredInSpi(tstClsLdr, task1, spi1, true);
+            checkResourceRegisteredInSpi(tstClsLdr, task1, spi2, true);
+
             assert ignite1.compute().localTasks().containsKey(task1.getName());
             assert ignite2.compute().localTasks().containsKey(task1.getName());
 
@@ -106,6 +112,9 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             assert spi1.findResource(task1.getName()) == null;
             assert spi2.findResource(task1.getName()) == null;
 
+            checkResourceRegisteredInSpi(tstClsLdr, task1, spi1, false);
+            checkResourceRegisteredInSpi(tstClsLdr, task1, spi2, false);
+
             assert !ignite1.compute().localTasks().containsKey(task1.getName());
             assert !ignite2.compute().localTasks().containsKey(task1.getName());
         }
@@ -116,10 +125,33 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks the resource is registered in SPI.
+     *
+     * @param tstClsLdr Class loader.
+     * @param task Task resource.
+     * @param spi Deployment SPI.
+     * @param registered True id the resource registered, false otherwise.
+     */
+    private void checkResourceRegisteredInSpi(ClassLoader tstClsLdr, Class<? extends ComputeTask<?, ?>> task,
+        LocalDeploymentSpi spi, boolean registered) {
+        ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = U.field(spi, "ldrRsrcs");
+
+        ConcurrentMap<String, String> rcsAliasMap = ldrRsrcs.get(tstClsLdr);
+
+        if (registered) {
+            assertNotNull(rcsAliasMap.get(U.getResourceName(task)));
+            assertNotNull(rcsAliasMap.get(task.getName()));
+        }
+        else {
+            assertTrue(rcsAliasMap == null || rcsAliasMap.get(U.getResourceName(task)) == null);
+            assertTrue(rcsAliasMap == null || rcsAliasMap.get(task.getName()) == null);
+        }
+    }
+
+    /**
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void processTestUndeployP2PTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
@@ -140,20 +172,20 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
             LocalDeploymentSpi spi1 = spis.get(ignite1.name());
             LocalDeploymentSpi spi2 = spis.get(ignite2.name());
 
-            assert spi1.findResource(task1.getName()) != null;
+            checkResourceRegisteredInSpi(ldr, task1, spi1, true);
 
             assert ignite1.compute().localTasks().containsKey(task1.getName());
 
             // P2P deployment will not deploy task into the SPI.
-            assert spi2.findResource(task1.getName()) == null;
+            checkResourceRegisteredInSpi(ldr, task1, spi2, false);
 
             ignite1.compute().undeployTask(task1.getName());
 
             // Wait for undeploy.
             Thread.sleep(1000);
 
-            assert spi1.findResource(task1.getName()) == null;
-            assert spi2.findResource(task1.getName()) == null;
+            checkResourceRegisteredInSpi(ldr, task1, spi1, false);
+            checkResourceRegisteredInSpi(ldr, task1, spi2, false);
 
             assert !ignite1.compute().localTasks().containsKey(task1.getName());
             assert !ignite2.compute().localTasks().containsKey(task1.getName());
@@ -171,6 +203,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalPrivateMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.PRIVATE);
     }
@@ -180,6 +213,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalIsolatedMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.ISOLATED);
     }
@@ -189,6 +223,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalContinuousMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.CONTINUOUS);
     }
@@ -198,6 +233,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployLocalSharedMode() throws Exception {
         processTestUndeployLocalTasks(DeploymentMode.SHARED);
     }
@@ -207,6 +243,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PPrivateMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.PRIVATE);
     }
@@ -216,6 +253,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PIsolatedMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.ISOLATED);
     }
@@ -225,6 +263,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PContinuousMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.CONTINUOUS);
     }
@@ -234,6 +273,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testUndeployP2PSharedMode() throws Exception {
         processTestUndeployP2PTasks(DeploymentMode.SHARED);
     }

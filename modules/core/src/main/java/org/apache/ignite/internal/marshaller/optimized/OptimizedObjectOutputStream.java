@@ -39,15 +39,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridHandleTable;
 import org.apache.ignite.internal.util.io.GridDataOutput;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.NULL;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getBoolean;
@@ -63,7 +64,7 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 /**
  * Optimized object output stream.
  */
-class OptimizedObjectOutputStream extends ObjectOutputStream {
+public class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
 
@@ -149,7 +150,22 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void writeObjectOverride(Object obj) throws IOException {
-        writeObject0(obj);
+        Object oldObj = curObj;
+
+        OptimizedClassDescriptor.ClassFields oldFields = curFields;
+
+        PutFieldImpl oldPut = curPut;
+
+        try {
+            writeObject0(obj);
+        }
+        finally {
+            curObj = oldObj;
+
+            curFields = oldFields;
+
+            curPut = oldPut;
+        }
     }
 
     /**
@@ -166,11 +182,12 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (obj == null)
             writeByte(NULL);
         else {
-            if (obj instanceof Throwable && !(obj instanceof Externalizable)) {
+            if (obj instanceof Throwable && !(obj instanceof Externalizable) || U.isEnum(obj.getClass())) {
+                // Avoid problems with differing Enum objects or Enum implementation class deadlocks.
                 writeByte(JDK);
 
                 try {
-                    JDK_MARSH.marshal(obj, this);
+                    ctx.jdkMarshaller().marshal(obj, this);
                 }
                 catch (IgniteCheckedException e) {
                     IOException ioEx = e.getCause(IOException.class);
@@ -185,6 +202,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 OptimizedClassDescriptor desc = classDescriptor(
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
+                    GridBinaryMarshaller.USE_CACHE.get(),
                     ctx,
                     mapper);
 
@@ -205,23 +223,31 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 int handle = -1;
 
                 if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass() && !desc.isProxy())
-                    handle = handles.lookup(obj);
+                    handle = handles.putIfAbsent(obj);
 
                 if (obj0 != obj) {
                     obj = obj0;
 
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
+                        GridBinaryMarshaller.USE_CACHE.get(),
                         ctx,
                         mapper);
                 }
 
-                if (handle >= 0) {
-                    writeByte(HANDLE);
-                    writeInt(handle);
+                try {
+                    if (handle >= 0) {
+                        writeByte(HANDLE);
+
+                        writeInt(handle);
+                    }
+                    else
+                        desc.write(this, obj);
                 }
-                else
-                    desc.write(this, obj);
+                catch (IOException e) {
+                    throw new IOException("Failed to serialize object [typeName=" +
+                        desc.describedClass().getName() + ']', e);
+                }
             }
         }
     }
@@ -304,7 +330,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param fields class fields details.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields)
         throws IOException {
         for (int i = 0; i < mtds.size(); i++) {
@@ -457,63 +482,67 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param fields Fields.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void writeFields(Object obj, OptimizedClassDescriptor.ClassFields fields) throws IOException {
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);
 
-            switch (t.type()) {
-                case BYTE:
-                    if (t.field() != null)
-                        writeByte(getByte(obj, t.offset()));
+            try {
+                switch (t.type()) {
+                    case BYTE:
+                        if (t.field() != null)
+                            writeByte(getByte(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case SHORT:
-                    if (t.field() != null)
-                        writeShort(getShort(obj, t.offset()));
+                    case SHORT:
+                        if (t.field() != null)
+                            writeShort(getShort(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case INT:
-                    if (t.field() != null)
-                        writeInt(getInt(obj, t.offset()));
+                    case INT:
+                        if (t.field() != null)
+                            writeInt(getInt(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case LONG:
-                    if (t.field() != null)
-                        writeLong(getLong(obj, t.offset()));
+                    case LONG:
+                        if (t.field() != null)
+                            writeLong(getLong(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case FLOAT:
-                    if (t.field() != null)
-                        writeFloat(getFloat(obj, t.offset()));
+                    case FLOAT:
+                        if (t.field() != null)
+                            writeFloat(getFloat(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case DOUBLE:
-                    if (t.field() != null)
-                        writeDouble(getDouble(obj, t.offset()));
+                    case DOUBLE:
+                        if (t.field() != null)
+                            writeDouble(getDouble(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case CHAR:
-                    if (t.field() != null)
-                        writeChar(getChar(obj, t.offset()));
+                    case CHAR:
+                        if (t.field() != null)
+                            writeChar(getChar(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case BOOLEAN:
-                    if (t.field() != null)
-                        writeBoolean(getBoolean(obj, t.offset()));
+                    case BOOLEAN:
+                        if (t.field() != null)
+                            writeBoolean(getBoolean(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case OTHER:
-                    if (t.field() != null)
-                        writeObject0(getObject(obj, t.offset()));
+                    case OTHER:
+                        if (t.field() != null)
+                            writeObject0(getObject(obj, t.offset()));
+                }
+            }
+            catch (IOException e) {
+                throw new IOException("Failed to serialize field [name=" + t.name() + ']', e);
             }
         }
     }
@@ -792,6 +821,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         /** Fields info. */
         private final OptimizedClassDescriptor.ClassFields curFields;
+
         /** Values. */
         private final IgniteBiTuple<OptimizedFieldType, Object>[] objs;
 

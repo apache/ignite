@@ -17,13 +17,19 @@
 
 namespace Apache.Ignite.Core.Cache.Configuration
 {
+    using System;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Defines page memory policy configuration. See <see cref="MemoryConfiguration.MemoryPolicies"/>.
+    /// Obsolete, use <see cref="DataRegionConfiguration"/>.
     /// </summary>
+    [Obsolete("Use DataRegionConfiguration.")]
     public class MemoryPolicyConfiguration
     {
         /// <summary>
@@ -42,9 +48,22 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const long DefaultInitialSize = 256 * 1024 * 1024;
 
         /// <summary>
-        /// The default maximum size, equals to 80% of total RAM.
+        /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
-        public static readonly long DefaultMaxSize = (long) ((long) NativeMethods.GetTotalPhysicalMemory() * 0.8);
+        public static readonly long DefaultMaxSize =
+            (long) ((long) (MemoryInfo.MemoryLimit ?? 2048L * 1024 * 1024) * 0.2);
+
+        /// <summary>
+        /// The default sub intervals.
+        /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with Java config")]
+        public const int DefaultSubIntervals = 5;
+
+        /// <summary>
+        /// The default rate time interval.
+        /// </summary>
+        public static readonly TimeSpan DefaultRateTimeInterval = TimeSpan.FromSeconds(60);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MemoryPolicyConfiguration"/> class.
@@ -56,6 +75,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName;
             InitialSize = DefaultInitialSize;
             MaxSize = DefaultMaxSize;
+            SubIntervals = DefaultSubIntervals;
+            RateTimeInterval = DefaultRateTimeInterval;
         }
 
         /// <summary>
@@ -71,6 +92,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             PageEvictionMode = (DataPageEvictionMode) reader.ReadInt();
             EvictionThreshold = reader.ReadDouble();
             EmptyPagesPoolSize = reader.ReadInt();
+            MetricsEnabled = reader.ReadBoolean();
+            SubIntervals = reader.ReadInt();
+            RateTimeInterval = reader.ReadLongAsTimespan();
         }
 
         /// <summary>
@@ -85,6 +109,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt((int) PageEvictionMode);
             writer.WriteDouble(EvictionThreshold);
             writer.WriteInt(EmptyPagesPoolSize);
+            writer.WriteBoolean(MetricsEnabled);
+            writer.WriteInt(SubIntervals);
+            writer.WriteTimeSpanAsLong(RateTimeInterval);
         }
 
         /// <summary>
@@ -140,5 +167,34 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultEmptyPagesPoolSize)]
         public int EmptyPagesPoolSize { get;set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether memory metrics should be enabled.
+        /// <para />
+        /// Metrics can be retrieved with <see cref="IIgnite.GetMemoryMetrics()"/> method.
+        /// </summary>
+        public bool MetricsEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rate time interval for <see cref="IMemoryMetrics.AllocationRate"/>
+        /// and <see cref="IMemoryMetrics.EvictionRate"/> monitoring purposes.
+        /// <para />
+        /// For instance, after setting the interval to 60 seconds, subsequent calls
+        /// to <see cref="IMemoryMetrics.AllocationRate"/> will return average allocation
+        /// rate (pages per second) for the last minute.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:01:00")]
+        public TimeSpan RateTimeInterval { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of sub intervals to split <see cref="RateTimeInterval"/> into to calculate
+        /// <see cref="IMemoryMetrics.AllocationRate"/> and <see cref="IMemoryMetrics.EvictionRate"/>.
+        /// <para />
+        /// Bigger value results in more accurate metrics.
+        /// </summary>
+        [DefaultValue(DefaultSubIntervals)]
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with Java config")]
+        public int SubIntervals { get; set; }
     }
 }

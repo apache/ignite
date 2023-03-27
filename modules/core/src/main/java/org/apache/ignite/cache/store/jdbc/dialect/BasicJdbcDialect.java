@@ -35,6 +35,9 @@ public class BasicJdbcDialect implements JdbcDialect {
     /** Max query parameters count. */
     protected int maxParamsCnt = DFLT_MAX_PARAMS_CNT;
 
+    /** Fetch size. */
+    protected int fetchSize;
+
     /**
      * Concatenates elements using provided separator.
      *
@@ -157,8 +160,12 @@ public class BasicJdbcDialect implements JdbcDialect {
     @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
         String cols = mkString(keyCols, ",");
 
-        return String.format("SELECT %1$s FROM (SELECT %1$s, ROW_NUMBER() OVER() AS rn FROM (SELECT %1$s FROM %2$s ORDER BY %1$s) AS tbl) AS tbl WHERE mod(rn, ?) = 0",
-            cols, fullTblName);
+        return String.format(
+            "SELECT %1$s FROM (" +
+                "SELECT %1$s, ROW_NUMBER() OVER() AS rn FROM (SELECT %1$s FROM %2$s ORDER BY %1$s) AS tbl) AS tbl WHERE mod(rn, ?) = 0",
+            cols,
+            fullTblName
+        );
     }
 
     /** {@inheritDoc} */
@@ -288,6 +295,15 @@ public class BasicJdbcDialect implements JdbcDialect {
 
     /** {@inheritDoc} */
     @Override public int getFetchSize() {
-        return 0;
+        return fetchSize;
+    }
+
+    /**
+     * Sets fetch size.
+     *
+     * @param fetchSize Fetch size.
+     */
+    public void setFetchSize(int fetchSize) {
+        this.fetchSize = fetchSize;
     }
 }

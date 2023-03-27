@@ -26,15 +26,16 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.query.VisorQueryEntity;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
@@ -47,6 +48,9 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /** Cache name. */
     private String name;
+
+    /** Cache group name. */
+    private String grpName;
 
     /** Cache mode. */
     private CacheMode mode;
@@ -138,8 +142,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** */
     private boolean loadPrevVal;
 
-    /** Name of {@link MemoryPolicyConfiguration} for this cache */
-    private String memPlcName;
+    /** Name of {@link DataRegionConfiguration} for this cache */
+    private String dataRegName;
 
     /** Maximum inline size for sql indexes. */
     private int sqlIdxMaxInlineSize;
@@ -159,6 +163,15 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** Cache topology validator. */
     private String topValidator;
 
+    /** Dynamic deployment ID. */
+    private IgniteUuid dynamicDeploymentId;
+
+    /** Disk page compression algorithm. */
+    private DiskPageCompression diskPageCompression;
+
+    /** Algorithm specific disk page compression level. */
+    private Integer diskPageCompressionLevel;
+
     /**
      * Default constructor.
      */
@@ -171,9 +184,12 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      *
      * @param ignite Grid.
      * @param ccfg Cache configuration.
+     * @param dynamicDeploymentId Dynamic deployment ID.
      */
-    public VisorCacheConfiguration(IgniteEx ignite, CacheConfiguration ccfg) {
+    public VisorCacheConfiguration(IgniteEx ignite, CacheConfiguration ccfg, IgniteUuid dynamicDeploymentId) {
         name = ccfg.getName();
+        grpName = ccfg.getGroupName();
+        this.dynamicDeploymentId = dynamicDeploymentId;
         mode = ccfg.getCacheMode();
         atomicityMode = ccfg.getAtomicityMode();
         eagerTtl = ccfg.isEagerTtl();
@@ -209,13 +225,16 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = compactClass(ccfg.getEvictionFilter());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
-        memPlcName = ccfg.getMemoryPolicyName();
+        dataRegName = ccfg.getDataRegionName();
         sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
         nodeFilter = compactClass(ccfg.getNodeFilter());
         qryDetailMetricsSz = ccfg.getQueryDetailMetricsSize();
         readFromBackup = ccfg.isReadFromBackup();
         tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         topValidator = compactClass(ccfg.getTopologyValidator());
+
+        diskPageCompression = ccfg.getDiskPageCompression();
+        diskPageCompressionLevel = ccfg.getDiskPageCompressionLevel();
     }
 
     /**
@@ -223,6 +242,13 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     @Nullable public String getName() {
         return name;
+    }
+
+    /**
+     * @return Cache group name.
+     */
+    @Nullable public String getGroupName() {
+        return grpName;
     }
 
     /**
@@ -300,13 +326,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public boolean isEagerTtl() {
         return eagerTtl;
-    }
-
-    /**
-     * @return Default lock acquisition timeout.
-     */
-    public long getDfltLockTimeout() {
-        return dfltLockTimeout;
     }
 
     /**
@@ -438,7 +457,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /**
      * @return Listener configurations.
      */
-    public String getLsnrConfigurations() {
+    public String getListenerConfigurations() {
         return lsnrConfigurations;
     }
 
@@ -450,16 +469,17 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@link MemoryPolicyConfiguration} name.
+     * @return {@link DataRegionConfiguration} name.
      */
+    @Deprecated
     public String getMemoryPolicyName() {
-        return memPlcName;
+        return dataRegName;
     }
 
     /**
      * @return Maximum payload size for offheap indexes.
      */
-    public int getSqlIdxMaxInlineSize() {
+    public int getSqlIndexMaxInlineSize() {
         return sqlIdxMaxInlineSize;
     }
 
@@ -478,8 +498,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@code true} if data can be read from backup node or {@code false} if data always
-     *      should be read from primary node and never from backup.
+     * @return {@code true} if data can be read from backup node or {@code false} if data always should be read from
+     * primary node and never from backup.
      */
     public boolean isReadFromBackup() {
         return readFromBackup;
@@ -494,16 +514,43 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return validator.
+     * @return Topology validator.
      */
     public String getTopologyValidator() {
         return topValidator;
     }
 
+    /**
+     * @return Cache dynamic deployment ID.
+     */
+    public IgniteUuid getDynamicDeploymentId() {
+        return dynamicDeploymentId;
+    }
+
+    /**
+     * @return Disk page compression algorithm.
+     */
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression;
+    }
+
+    /**
+     * @return Algorithm specific disk page compression level.
+     */
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeEnum(out, mode);
+        U.writeString(out, grpName);
+        out.writeByte(CacheMode.toCode(mode));
         U.writeEnum(out, atomicityMode);
         out.writeBoolean(eagerTtl);
         U.writeEnum(out, writeSynchronizationMode);
@@ -533,19 +580,25 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, evictFilter);
         U.writeString(out, lsnrConfigurations);
         out.writeBoolean(loadPrevVal);
-        U.writeString(out, memPlcName);
+        U.writeString(out, dataRegName);
         out.writeInt(sqlIdxMaxInlineSize);
         U.writeString(out, nodeFilter);
         out.writeInt(qryDetailMetricsSz);
         out.writeBoolean(readFromBackup);
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
+        U.writeIgniteUuid(out, dynamicDeploymentId);
+
+        // V2
+        U.writeEnum(out, diskPageCompression);
+        out.writeObject(diskPageCompressionLevel);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        mode = CacheMode.fromOrdinal(in.readByte());
+        grpName = U.readString(in);
+        mode = CacheMode.fromCode(in.readByte());
         atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
         eagerTtl = in.readBoolean();
         writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
@@ -575,13 +628,19 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = U.readString(in);
         lsnrConfigurations = U.readString(in);
         loadPrevVal = in.readBoolean();
-        memPlcName = U.readString(in);
+        dataRegName = U.readString(in);
         sqlIdxMaxInlineSize = in.readInt();
         nodeFilter = U.readString(in);
         qryDetailMetricsSz = in.readInt();
         readFromBackup = in.readBoolean();
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
+        dynamicDeploymentId = U.readIgniteUuid(in);
+
+        if (protoVer > V1) {
+            diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
+            diskPageCompressionLevel = (Integer)in.readObject();
+        }
     }
 
     /** {@inheritDoc} */

@@ -17,14 +17,20 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskFuture;
-import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.IgniteComputeHandler;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -33,26 +39,20 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.task.TaskExecutionOptions;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils.getResult;
 
 /**
  * Interop compute.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored", "UnusedDeclaration"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class PlatformCompute extends PlatformAbstractTarget {
-    /** */
-    private static final int OP_AFFINITY = 1;
-
     /** */
     private static final int OP_BROADCAST = 2;
 
@@ -74,29 +74,77 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_EXEC_NATIVE = 8;
 
-    /** Compute instance. */
-    private final IgniteComputeImpl compute;
+    /** */
+    private static final int OP_WITH_NO_RESULT_CACHE = 9;
 
-    /** Compute instance for platform-only nodes. */
-    private final IgniteComputeImpl computeForPlatform;
+    /** */
+    private static final int OP_WITH_EXECUTOR = 10;
+
+    /** */
+    private static final int OP_AFFINITY_CALL_PARTITION = 11;
+
+    /** */
+    private static final int OP_AFFINITY_RUN_PARTITION = 12;
+
+    /** */
+    private static final int OP_AFFINITY_CALL = 13;
+
+    /** */
+    private static final int OP_AFFINITY_RUN = 14;
+
+    /** */
+    private final ClusterGroup platformGrp;
+
+    /** */
+    private final ClusterGroup grp;
+
+    /** */
+    private final String execName;
+
+    /** */
+    private final String platformAttr;
+
+    /** */
+    private final IgniteComputeHandler compute;
+
+    /**
+     * @param platformCtx Platform context.
+     * @param grp Cluster group associated with this compute instance.
+     */
+    public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp, String platformAttr) {
+        this(platformCtx, grp, platformAttr, null, null);
+    }
 
     /**
      * Constructor.
      *
      * @param platformCtx Context.
-     * @param grp Cluster group.
+     * @param grp Cluster group associated with this compute instance.
+     * @param platformAttr Platform attribute.
+     * @param execName Custom executor name associated with this compute instance.
+     * @param compute Optional compute handler from which the initial task execution options will be copied.
      */
-    public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp, String platformAttr) {
+    private PlatformCompute(
+        PlatformContext platformCtx,
+        ClusterGroup grp,
+        String platformAttr,
+        String execName,
+        @Nullable IgniteComputeHandler compute
+    ) {
         super(platformCtx);
 
         assert grp != null;
         assert platformAttr != null;
 
-        compute = (IgniteComputeImpl)grp.ignite().compute(grp);
+        this.grp = grp;
+        this.execName = execName;
+        this.platformAttr = platformAttr;
 
-        ClusterGroup platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
+        this.compute = compute == null
+            ? new IgniteComputeHandler(platformCtx.kernalContext(), this::enrichOptions)
+            : new IgniteComputeHandler(compute, this::enrichOptions);
 
-        computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
+        platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
     }
 
     /** {@inheritDoc} */
@@ -104,25 +152,91 @@ public class PlatformCompute extends PlatformAbstractTarget {
         throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
-                return processClosures(reader.readLong(), reader, false, false);
+                return processClosures(reader.readLong(), reader, false);
 
             case OP_BROADCAST:
-                return processClosures(reader.readLong(), reader, true, false);
-
-            case OP_AFFINITY:
-                return processClosures(reader.readLong(), reader, false, true);
+                return processClosures(reader.readLong(), reader, true);
 
             case OP_EXEC_NATIVE: {
                 long taskPtr = reader.readLong();
                 long topVer = reader.readLong();
+                String taskName = reader.readString();
 
-                final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
+                final PlatformFullTask task = new PlatformFullTask(platformCtx, platformGrp, taskPtr, topVer, taskName);
 
                 return executeNative0(task);
             }
 
             case OP_EXEC_ASYNC:
-                return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
+                return wrapListenable((PlatformListenable)executeJavaTask(reader, true));
+
+            case OP_WITH_EXECUTOR: {
+                String executorName = reader.readString();
+
+                return new PlatformCompute(
+                    platformCtx,
+                    grp,
+                    platformAttr,
+                    executorName,
+                    compute
+                );
+            }
+
+            case OP_AFFINITY_CALL_PARTITION: {
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
+                int part = reader.readInt();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+                String funcName = reader.readString();
+
+                PlatformCallable callable = new PlatformCallable(func, ptr, funcName);
+
+                IgniteInternalFuture future = compute.affinityCallAsync(cacheNames, part, callable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
+
+            case OP_AFFINITY_CALL: {
+                String cacheName = reader.readString();
+                Object key = reader.readObjectDetached();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+                String callableName = reader.readString();
+
+                PlatformCallable callable = new PlatformCallable(func, ptr, callableName);
+
+                IgniteInternalFuture future = compute.affinityCallAsync(Collections.singletonList(cacheName), key, callable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
+
+            case OP_AFFINITY_RUN_PARTITION: {
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
+                int part = reader.readInt();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+                String runnableName = reader.readString();
+
+                PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
+
+                IgniteInternalFuture future = compute.affinityRunAsync(cacheNames, part, runnable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
+
+            case OP_AFFINITY_RUN: {
+                String cacheName = reader.readString();
+                Object key = reader.readObjectDetached();
+                Object func = reader.readObjectDetached();
+                long ptr = reader.readLong();
+                String runnableName = reader.readString();
+
+                PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
+
+                IgniteInternalFuture future = compute.affinityRunAsync(Collections.singleton(cacheName), key, runnable);
+
+                return wrapListenable(readAndListenFuture(reader, future));
+            }
 
             default:
                 return super.processInStreamOutObject(type, reader);
@@ -134,14 +248,18 @@ public class PlatformCompute extends PlatformAbstractTarget {
         switch (type) {
             case OP_WITH_TIMEOUT: {
                 compute.withTimeout(val);
-                computeForPlatform.withTimeout(val);
 
                 return TRUE;
             }
 
             case OP_WITH_NO_FAILOVER: {
                 compute.withNoFailover();
-                computeForPlatform.withNoFailover();
+
+                return TRUE;
+            }
+
+            case OP_WITH_NO_RESULT_CACHE: {
+                compute.withNoResultCache();
 
                 return TRUE;
             }
@@ -156,8 +274,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private PlatformTarget processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast,
-        boolean affinity) {
+    private PlatformTarget processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -168,16 +285,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
                     new PlatformBroadcastingSingleClosureTask(platformCtx, taskPtr);
 
                 task0.job(nextClosureJob(task0, reader));
-
-                task = task0;
-            }
-            else if (affinity) {
-                PlatformBalancingSingleClosureAffinityTask task0 =
-                    new PlatformBalancingSingleClosureAffinityTask(platformCtx, taskPtr);
-
-                task0.job(nextClosureJob(task0, reader));
-
-                task0.affinity(reader.readString(), reader.readObjectDetached(), platformCtx.kernalContext());
 
                 task = task0;
             }
@@ -206,8 +313,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 ((PlatformBalancingMultiClosureTask)task).jobs(jobs);
         }
 
-        platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, computeForPlatform.clusterGroup().nodes());
-
         return executeNative0(task);
     }
 
@@ -219,7 +324,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @return Closure job.
      */
     private PlatformJob nextClosureJob(PlatformAbstractTask task, BinaryRawReaderEx reader) {
-        return platformCtx.createClosureJob(task, reader.readLong(), reader.readObjectDetached());
+        return platformCtx.createClosureJob(task, reader.readLong(), reader.readObjectDetached(), reader.readString());
     }
 
     /** {@inheritDoc} */
@@ -243,7 +348,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @return Target.
      */
     private PlatformTarget executeNative0(final PlatformAbstractTask task) {
-        IgniteInternalFuture fut = computeForPlatform.executeAsync0(task, null);
+        IgniteInternalFuture fut = compute.withProjection(platformGrp.nodes()).executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             private static final long serialVersionUID = 0L;
@@ -278,15 +383,15 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         Collection<UUID> nodeIds = readNodeIds(reader);
 
-        IgniteCompute compute0 = computeForTask(nodeIds);
-
-        if (!keepBinary && arg instanceof BinaryObjectImpl)
+        if (!keepBinary && (arg instanceof BinaryObjectImpl || arg instanceof BinaryArray))
             arg = ((BinaryObject)arg).deserialize();
 
-        if (async)
-            return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.executeAsync(taskName, arg)));
-        else
-            return toBinary(compute0.execute(taskName, arg));
+        if (nodeIds != null)
+            compute.withProjection(grp.forNodeIds(nodeIds).nodes());
+
+        IgniteInternalFuture<?> fut = compute.asPublicRequest().executeAsync(taskName, arg);
+
+        return async ? readAndListenFuture(reader, fut) : toBinary(getResult(fut));
     }
 
     /**
@@ -318,17 +423,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
         else
             return null;
-    }
-
-    /**
-     * Get compute object for the given node IDs.
-     *
-     * @param nodeIds Node IDs.
-     * @return Compute object.
-     */
-    protected IgniteCompute computeForTask(Collection<UUID> nodeIds) {
-        return nodeIds == null ? compute :
-            platformCtx.kernalContext().grid().compute(compute.clusterGroup().forNodeIds(nodeIds));
     }
 
     /**
@@ -404,6 +498,16 @@ public class PlatformCompute extends PlatformAbstractTarget {
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chainCompose(IgniteClosure doneCb) {
+            throw new UnsupportedOperationException("Chain compose operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chainCompose(IgniteClosure doneCb, @Nullable Executor exec) {
+            throw new UnsupportedOperationException("Chain compose operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
         @Override public Throwable error() {
             return fut.error();
         }
@@ -422,5 +526,15 @@ public class PlatformCompute extends PlatformAbstractTarget {
         protected Object convertResult(Object obj) {
             return toBinary(obj);
         }
+    }
+
+    /** Enriches specified task execution options with those that are bounded to the current compute instance. */
+    private TaskExecutionOptions enrichOptions(TaskExecutionOptions opts) {
+        opts.withProjection(grp.nodes());
+
+        if (execName != null)
+            opts.withExecutor(execName);
+
+        return opts;
     }
 }

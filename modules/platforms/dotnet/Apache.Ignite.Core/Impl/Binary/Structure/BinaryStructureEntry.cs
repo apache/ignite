@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.Structure
 {
+    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
 
@@ -71,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         public bool IsExpected(string name, byte type)
         {
             // Perform reference equality check first because field name is a literal in most cases.
-            if (!ReferenceEquals(_name, name) && !name.Equals(_name))
+            if (!ReferenceEquals(_name, name) && !name.Equals(_name, StringComparison.Ordinal))
                 return false;
 
             ValidateType(type);
@@ -106,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// </summary>
         public bool IsJumpTable
         {
-            get { return _name == null && _id >= 0; }
+            get { return _name == null && _id > 0; }
         }
 
         /// <summary>

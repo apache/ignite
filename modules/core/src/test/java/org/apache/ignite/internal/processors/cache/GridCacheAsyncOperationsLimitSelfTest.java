@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.lang.IgniteFuture;
+import org.junit.Test;
 
 /**
  * Checks that number of concurrent asynchronous operations is limited when configuration parameter is set.
@@ -47,6 +48,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncOps() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();
         final GridAtomicInteger max = new GridAtomicInteger();
@@ -56,7 +58,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
 
             cnt.incrementAndGet();
 
-            jcache().putAsync("key" + i, i).listen(new CI1<IgniteFuture<?>>() {
+            jcache().putAsync("key" + i, i).listenAsync(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> t) {
                     cnt.decrementAndGet();
 
@@ -65,9 +67,9 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
                     if (i0 > 0 && i0 % 100 == 0)
                         info("cnt: " + cnt.get());
                 }
-            });
+            }, Runnable::run);
 
-            assertTrue("Maximum number of permits exceeded: " + max.get(),  max.get() <= 51);
+            assertTrue("Maximum number of permits exceeded: " + max.get(), max.get() <= 51);
         }
     }
 }

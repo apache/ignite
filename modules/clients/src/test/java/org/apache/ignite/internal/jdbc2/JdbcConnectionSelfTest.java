@@ -25,34 +25,23 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 
 /**
  * Connection test.
  */
 public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Custom cache name. */
     private static final String CUSTOM_CACHE_NAME = "custom-cache";
 
     /** Grid count. */
     private static final int GRID_CNT = 2;
-
-    /** Daemon node flag. */
-    private boolean daemon;
-
-    /** Client node flag. */
-    private boolean client;
 
     /**
      * @return Config URL to use in test.
@@ -66,16 +55,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setDaemon(daemon);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -96,18 +75,12 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaults() throws Exception {
         String url = CFG_URL_PREFIX + configURL();
 
@@ -125,6 +98,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeId() throws Exception {
         String url = CFG_URL_PREFIX + "nodeId=" + grid(0).localNode().id() + '@' + configURL();
 
@@ -142,6 +116,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWrongNodeId() throws Exception {
         UUID wrongId = UUID.randomUUID();
 
@@ -164,10 +139,9 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeId() throws Exception {
-        client = true;
-
-        IgniteEx client = (IgniteEx)startGrid();
+        IgniteEx client = startClientGrid();
 
         UUID clientId = client.localNode().id();
 
@@ -190,32 +164,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDaemonNodeId() throws Exception {
-        daemon = true;
-
-        IgniteEx daemon = startGrid(GRID_CNT);
-
-        UUID daemonId = daemon.localNode().id();
-
-        final String url = CFG_URL_PREFIX + "nodeId=" + daemonId + '@' + configURL();
-
-        GridTestUtils.assertThrows(
-            log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    try (Connection conn = DriverManager.getConnection(url)) {
-                        return conn;
-                    }
-                }
-            },
-            SQLException.class,
-            "Failed to establish connection with node (is it a server node?): " + daemonId
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testCustomCache() throws Exception {
         String url = CFG_URL_PREFIX + "cache=" + CUSTOM_CACHE_NAME + '@' + configURL();
 
@@ -227,6 +176,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWrongCache() throws Exception {
         final String url = CFG_URL_PREFIX + "cache=wrongCacheName@" + configURL();
 
@@ -247,10 +197,11 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClose() throws Exception {
         String url = CFG_URL_PREFIX + configURL();
 
-        try(final Connection conn = DriverManager.getConnection(url)) {
+        try (final Connection conn = DriverManager.getConnection(url)) {
             assertNotNull(conn);
             assertFalse(conn.isClosed());
 
@@ -276,6 +227,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxAllowedCommit() throws Exception {
         String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
 
@@ -293,6 +245,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxAllowedRollback() throws Exception {
         String url = CFG_URL_PREFIX + "transactionsAllowed=true@" + configURL();
 
@@ -304,6 +257,55 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             conn.setAutoCommit(false);
 
             conn.rollback();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSqlHints() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@"
+            + configURL())) {
+            assertTrue(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertEquals(DFLT_LAZY, ((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "distributedJoins=true@"
+            + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertTrue(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertEquals(DFLT_LAZY, ((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "collocated=true@"
+            + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertTrue(((JdbcConnection)conn).isCollocatedQuery());
+            assertEquals(DFLT_LAZY, ((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "lazy=" + (!DFLT_LAZY) + "@" + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertEquals(!DFLT_LAZY, ((JdbcConnection)conn).isLazy());
+            assertFalse(((JdbcConnection)conn).skipReducerOnUpdate());
+        }
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "skipReducerOnUpdate=true@"
+            + configURL())) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+            assertEquals(DFLT_LAZY, ((JdbcConnection)conn).isLazy());
+            assertTrue(((JdbcConnection)conn).skipReducerOnUpdate());
         }
     }
 }

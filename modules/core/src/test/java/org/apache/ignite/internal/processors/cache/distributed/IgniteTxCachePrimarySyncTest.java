@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -48,20 +49,22 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.MvccFeatureChecker.Feature;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -73,9 +76,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  */
 public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int SRVS = 4;
 
     /** */
@@ -84,16 +84,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = SRVS + CLIENTS;
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(clientMode);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -115,31 +108,27 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        try {
-            for (int i = 0; i < CLIENTS; i++) {
-                clientMode = true;
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite client = startClientGrid(SRVS + i);
 
-                Ignite client = startGrid(SRVS + i);
-
-                assertTrue(client.configuration().isClientMode());
-            }
-        }
-        finally {
-            clientMode = false;
+            assertTrue(client.configuration().isClientMode());
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyCommitFromPrimary() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10518", MvccFeatureChecker.forcedMvcc());
+
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
         singleKeyCommitFromPrimary(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
@@ -154,9 +143,22 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleKeyCommitFromPrimary(CacheConfiguration<Object, Object> ccfg) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (ccfg.getCacheStoreFactory() != null &&
+                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
+                return;
+
+            if (ccfg.getNearConfiguration() != null &&
+                !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
+                return;
+        }
+
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+
+        F.view(G.allGrids(), node -> node.cluster().localNode().isClient())
+            .forEach(node -> awaitCacheOnClient(node, ccfg.getName()));
 
         try {
             for (int i = 0; i < SRVS; i++) {
@@ -170,6 +172,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
+                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                            continue;
+
                         singleKeyCommitFromPrimary(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -252,6 +257,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyPrimaryNodeFail1() throws Exception {
         singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -261,6 +267,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyPrimaryNodeFail2() throws Exception {
         singleKeyPrimaryNodeLeft(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, true, false));
 
@@ -272,12 +279,22 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleKeyPrimaryNodeLeft(CacheConfiguration<Object, Object> ccfg) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (ccfg.getCacheStoreFactory() != null &&
+                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
+                return;
+        }
+
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         try {
-            ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) {
+                awaitCacheOnClient(ignite(NODES - 1), ccfg.getName());
+
+                ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
 
             for (int i = 0; i < NODES; i++) {
                 Ignite node = ignite(i);
@@ -290,6 +307,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
+                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                            continue;
+
                         singleKeyPrimaryNodeLeft(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -377,7 +397,10 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleKeyCommit() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10518", MvccFeatureChecker.forcedMvcc());
+
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
         singleKeyCommit(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 2, false, false));
@@ -392,12 +415,26 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void singleKeyCommit(CacheConfiguration<Object, Object> ccfg) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (ccfg.getCacheStoreFactory() != null &&
+                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
+                return;
+
+            if (ccfg.getNearConfiguration() != null &&
+                !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
+                return;
+        }
+
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         try {
-            ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) {
+                awaitCacheOnClient(ignite(NODES - 1), ccfg.getName());
+
+                ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
 
             for (int i = 1; i < NODES; i++) {
                 Ignite node = ignite(i);
@@ -412,6 +449,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
+                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                            continue;
+
                         singleKeyCommit(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -519,6 +559,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitPrimaryResponse() throws Exception {
         checkWaitPrimaryResponse(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, true, false));
 
@@ -534,12 +575,26 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkWaitPrimaryResponse(CacheConfiguration<Object, Object> ccfg) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (ccfg.getCacheStoreFactory() != null &&
+                !MvccFeatureChecker.isSupported(Feature.CACHE_STORE))
+                return;
+
+            if (ccfg.getNearConfiguration() != null &&
+                !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
+                return;
+        }
+
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
 
         try {
-            ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) {
+                awaitCacheOnClient(ignite(NODES - 1), ccfg.getName());
+
+                ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+            }
 
             for (int i = 1; i < NODES; i++) {
                 Ignite node = ignite(i);
@@ -567,6 +622,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
+                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                            continue;
+
                         checkWaitPrimaryResponse(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -657,7 +715,11 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseMessages() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            return; // Not supported. Commit flow differs for Mvcc mode.
+
         checkOnePhaseMessages(cacheConfiguration(DEFAULT_CACHE_NAME, PRIMARY_SYNC, 1, false, false));
     }
 
@@ -669,6 +731,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         Ignite ignite = ignite(0);
 
         IgniteCache<Object, Object> cache = ignite.createCache(ccfg);
+
+        F.view(G.allGrids(), node -> node.cluster().localNode().isClient())
+            .forEach(node -> awaitCacheOnClient(node, ccfg.getName()));
 
         try {
             for (int i = 1; i < NODES; i++) {
@@ -684,6 +749,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
                 for (final TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                     for (final TransactionIsolation isolation : TransactionIsolation.values()) {
+                        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                            continue;
+
                         checkOnePhaseMessages(node, ccfg, new IgniteBiInClosure<Integer, IgniteCache<Object, Object>>() {
                             @Override public void apply(Integer key, IgniteCache<Object, Object> cache) {
                                 Ignite ignite = cache.unwrap(Ignite.class);
@@ -760,18 +828,20 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxSyncMode() throws Exception {
         Ignite ignite = ignite(0);
 
         List<IgniteCache<Object, Object>> caches = new ArrayList<>();
 
         try {
-            caches.add(createCache(ignite, cacheConfiguration("fullSync1", FULL_SYNC, 1, false, false), true));
-            caches.add(createCache(ignite, cacheConfiguration("fullSync2", FULL_SYNC, 1, false, false), true));
-            caches.add(createCache(ignite, cacheConfiguration("fullAsync1", FULL_ASYNC, 1, false, false), true));
-            caches.add(createCache(ignite, cacheConfiguration("fullAsync2", FULL_ASYNC, 1, false, false), true));
-            caches.add(createCache(ignite, cacheConfiguration("primarySync1", PRIMARY_SYNC, 1, false, false), true));
-            caches.add(createCache(ignite, cacheConfiguration("primarySync2", PRIMARY_SYNC, 1, false, false), true));
+
+            caches.add(createCache(ignite, cacheConfiguration("fullSync1", FULL_SYNC, 1, false, false)));
+            caches.add(createCache(ignite, cacheConfiguration("fullSync2", FULL_SYNC, 1, false, false)));
+            caches.add(createCache(ignite, cacheConfiguration("fullAsync1", FULL_ASYNC, 1, false, false)));
+            caches.add(createCache(ignite, cacheConfiguration("fullAsync2", FULL_ASYNC, 1, false, false)));
+            caches.add(createCache(ignite, cacheConfiguration("primarySync1", PRIMARY_SYNC, 1, false, false)));
+            caches.add(createCache(ignite, cacheConfiguration("primarySync2", PRIMARY_SYNC, 1, false, false)));
 
             for (int i = 0; i < NODES; i++) {
                 checkTxSyncMode(ignite(i), true);
@@ -811,7 +881,8 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      * @param key Cache key.
      * @throws Exception If failed.
      */
-    private void waitKeyUpdated(Ignite ignite, int expNodes, final String cacheName, final Object key) throws Exception {
+    private void waitKeyUpdated(Ignite ignite, int expNodes, final String cacheName,
+        final Object key) throws Exception {
         Affinity<Object> aff = ignite.affinity(cacheName);
 
         final Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
@@ -840,14 +911,12 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /**
      * @param ignite Node.
      * @param ccfg Cache configuration.
-     * @param nearCache If {@code true} creates near cache on one of client nodes.
      * @return Created cache.
      */
-    private <K, V> IgniteCache<K, V> createCache(Ignite ignite, CacheConfiguration<K, V> ccfg,
-        boolean nearCache) {
+    private <K, V> IgniteCache<K, V> createCache(Ignite ignite, CacheConfiguration<K, V> ccfg) {
         IgniteCache<K, V> cache = ignite.createCache(ccfg);
 
-        if (nearCache)
+        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(Feature.NEAR_CACHE))
             ignite(NODES - 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
 
         return cache;
@@ -872,6 +941,9 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
             for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, isolation))
+                        continue;
+
                     try (Transaction tx = txs.txStart(concurrency, isolation)) {
                         fullSync1.put(key++, 1);
 
@@ -1101,21 +1173,31 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
      */
     private static class TestStoreFactory implements Factory<CacheStore<Object, Object>> {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public CacheStore<Object, Object> create() {
-            return new CacheStoreAdapter() {
-                @Override public Object load(Object key) throws CacheLoaderException {
-                    return null;
-                }
+            return new TestCacheStore();
+        }
+    }
 
-                @Override public void write(Cache.Entry entry) throws CacheWriterException {
-                    // No-op.
-                }
+    /**
+     *
+     */
+    private static class TestCacheStore extends CacheStoreAdapter<Object, Object> {
+        /** Store map. */
+        private static final Map STORE_MAP = new ConcurrentHashMap();
 
-                @Override public void delete(Object key) throws CacheWriterException {
-                    // No-op.
-                }
-            };
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            return STORE_MAP.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
+            STORE_MAP.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            STORE_MAP.remove(key);
         }
     }
 }

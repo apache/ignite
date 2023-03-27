@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
@@ -112,45 +113,28 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test task.
         /// </summary>
-        public class TestTask : ComputeTaskAdapter<Tuple<bool, bool>, int, int>
+        private class TestTask : ComputeTaskAdapter<Tuple<bool, bool>, int, int>
         {
             /** <inheritDoc /> */
-            override public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, Tuple<bool, bool> arg)
+            public override IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid,
+                Tuple<bool, bool> arg)
             {
                 Assert.AreEqual(2, subgrid.Count);
 
-                Tuple<bool, bool> t = arg;
+                var serializable = arg.Item1;
+                var local = arg.Item2;
 
-                bool serializable = t.Item1;
-                bool local = t.Item2;
+                var job = serializable
+                    ? (IComputeJob<int>) new TestSerializableJob()
+                    :  new TestBinarizableJob();
 
-                IDictionary<IComputeJob<int>, IClusterNode> jobs = new Dictionary<IComputeJob<int>, IClusterNode>();
+                var node = subgrid.Single(x => x.IsLocal == local);
 
-                IComputeJob<int> job;
-
-                if (serializable)
-                    job = new TestSerializableJob();
-                else
-                    job = new TestBinarizableJob();
-
-                foreach (IClusterNode node in subgrid) {
-                    bool add = local ? node.IsLocal : !node.IsLocal;
-
-                    if (add)
-                    {
-                        jobs.Add(job, node);
-
-                        break;
-                    }
-                }
-
-                Assert.AreEqual(1, jobs.Count);
-
-                return jobs;
+                return new Dictionary<IComputeJob<int>, IClusterNode> {{job, node}};
             }
 
             /** <inheritDoc /> */
-            override public int Reduce(IList<IComputeJobResult<int>> results)
+            public override int Reduce(IList<IComputeJobResult<int>> results)
             {
                 Assert.AreEqual(1, results.Count);
 
@@ -162,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         ///
         /// </summary>
         [Serializable]
-        class TestClosure : IComputeFunc<int>
+        private class TestClosure : IComputeFunc<int>
         {
             [InstanceResource]
             private readonly IIgnite _grid = null;
@@ -178,7 +162,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         ///
         /// </summary>
         [Serializable]
-        class TestSerializableJob : IComputeJob<int>
+        private class TestSerializableJob : IComputeJob<int>
         {
             [InstanceResource]
             private readonly IIgnite _grid = null;
@@ -199,7 +183,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         ///
         /// </summary>
-        class TestBinarizableJob : IComputeJob<int>
+        private class TestBinarizableJob : IComputeJob<int>
         {
             [InstanceResource]
             private readonly IIgnite _grid = null;
@@ -223,6 +207,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.NotNull(grid);
 
+            // ReSharper disable once NonAtomicCompoundOperator
             _cnt++;
 
             if (_gridName == null)

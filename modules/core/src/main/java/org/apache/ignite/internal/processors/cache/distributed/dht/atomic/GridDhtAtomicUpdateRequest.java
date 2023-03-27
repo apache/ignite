@@ -30,6 +30,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -143,10 +144,12 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      * @param invokeArgs Optional arguments for entry processor.
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
+     * @param keepBinary Keep binary flag.
+     * @param skipStore Skip store flag.
      * @param forceTransformBackups Force transform backups flag.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
+     * @param readRepairRecovery Recovery on Read Repair flag.
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
@@ -155,13 +158,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
-        UUID subjId,
         int taskNameHash,
         Object[] invokeArgs,
         boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
-        boolean forceTransformBackups
+        boolean forceTransformBackups,
+        boolean readRepairRecovery
     ) {
         super(cacheId,
             nodeId,
@@ -169,11 +172,11 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             writeVer,
             syncMode,
             topVer,
-            subjId,
             taskNameHash,
             addDepInfo,
             keepBinary,
-            skipStore);
+            skipStore,
+            readRepairRecovery);
 
         assert invokeArgs == null || forceTransformBackups;
 
@@ -199,8 +202,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr
-    ) {
+        long updateCntr,
+        GridCacheOperation cacheOp) {
         assert key.partition() >= 0 : key;
 
         keys.add(key);
@@ -333,11 +336,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() {
         return keys.size();
     }
@@ -451,7 +449,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     @Override public int partition() {
         assert !F.isEmpty(keys) || !F.isEmpty(nearKeys);
 
-        int p = keys.size() > 0 ? keys.get(0).partition() : nearKeys.get(0).partition();
+        int p = !keys.isEmpty() ? keys.get(0).partition() : nearKeys.get(0).partition();
 
         assert p >= 0;
 

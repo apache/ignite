@@ -33,14 +33,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContextImpl;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValue;
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
@@ -145,21 +144,50 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Class<?>, Object> loadBeans(URL cfgUrl, Class<?>... beanClasses) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException {
         assert beanClasses.length > 0;
 
         ApplicationContext springCtx = initContext(cfgUrl);
 
-        Map<Class<?>, Object> beans = new HashMap<>();
+        Map<Class<?>, Collection> beans = loadBeans(springCtx, beanClasses);
 
-        for (Class<?> cls : beanClasses)
-            beans.put(cls, bean(springCtx, cls));
+        return F.t(beans, new GridSpringResourceContextImpl(springCtx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTuple3<Map<String, ?>, Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Collection<String> beanNames,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException {
+        ApplicationContext springCtx = initContext(cfgUrl);
+
+        Map<String, ?> beansByName = new HashMap<>();
+
+        for (String name : beanNames)
+            beansByName.put(name, loadBean(springCtx, name));
+
+        return F.t(beansByName, loadBeans(springCtx, beanClasses), new GridSpringResourceContextImpl(springCtx));
+    }
+
+    /** Loads bean instances that match the given types. */
+    private Map<Class<?>, Collection> loadBeans(ApplicationContext springCtx, Class<?>... beanClasses) {
+        Map<Class<?>, Collection> beans = new HashMap<>();
+
+        for (Class<?> cls : beanClasses) {
+            Map<String, ?> clsBeans = springCtx.getBeansOfType(cls);
+
+            if (clsBeans != null)
+                beans.put(cls, clsBeans.values());
+        }
 
         return beans;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException {
         ApplicationContext springCtx = initContext(url);
 
@@ -177,52 +205,31 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
-        throws IgniteCheckedException {
-        assert beanClasses.length > 0;
-
-        ApplicationContext springCtx = initContext(cfgStream);
-
-        Map<Class<?>, Object> beans = new HashMap<>();
-
-        for (Class<?> cls : beanClasses)
-            beans.put(cls, bean(springCtx, cls));
-
-        return beans;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T loadBean(InputStream cfgStream, String beanName) throws IgniteCheckedException {
         ApplicationContext springCtx = initContext(cfgStream);
 
-        try {
-            return (T)springCtx.getBean(beanName);
-        }
-        catch (NoSuchBeanDefinitionException ignored) {
-            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
-                ", beanName=" + beanName + ']');
-        }
-        catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
-                ", beanName=" + beanName + ']', e);
-        }
+        return loadBean(springCtx, beanName);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T loadBeanFromAppContext(Object appContext, String beanName) throws IgniteCheckedException {
         ApplicationContext springCtx = (ApplicationContext)appContext;
 
+        return loadBean(springCtx, beanName);
+    }
+
+    /** Loads bean instance that match the given name. */
+    private <T> T loadBean(ApplicationContext springCtx, String beanName) throws IgniteCheckedException {
         try {
             return (T)springCtx.getBean(beanName);
         }
         catch (NoSuchBeanDefinitionException ignored) {
-            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
-                ", beanName=" + beanName + ']');
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist [beanName=" +
+                beanName + ']');
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
-                ", beanName=" + beanName + ']', e);
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name [beanName=" +
+                beanName + ']', e);
         }
     }
 
@@ -348,19 +355,6 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /**
-     * Gets bean configuration.
-     *
-     * @param ctx Spring context.
-     * @param beanCls Bean class.
-     * @return Spring bean.
-     */
-    @Nullable private static <T> T bean(ListableBeanFactory ctx, Class<T> beanCls) {
-        Map.Entry<String, T> entry = F.firstEntry(ctx.getBeansOfType(beanCls));
-
-        return entry == null ? null : entry.getValue();
-    }
-
-    /**
      * Creates Spring application context. Optionally excluded properties can be specified,
      * it means that if such a property is found in {@link org.apache.ignite.configuration.IgniteConfiguration}
      * then it is removed before the bean is instantiated.
@@ -435,7 +429,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * @param excludedProps Properties to be excluded.
      * @return application context.
      */
-    private static GenericApplicationContext prepareSpringContext(final String... excludedProps){
+    private static GenericApplicationContext prepareSpringContext(final String... excludedProps) {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
         if (excludedProps.length > 0) {

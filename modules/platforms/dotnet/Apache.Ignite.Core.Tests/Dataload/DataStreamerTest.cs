@@ -22,8 +22,11 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Datastream;
     using NUnit.Framework;
 
@@ -38,6 +41,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /** Node. */
         private IIgnite _grid;
 
+        /** Node 2. */
+        private IIgnite _grid2;
+
         /** Cache. */
         private ICache<int, int?> _cache;
 
@@ -49,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             _grid = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            _grid2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = "grid1"
             });
@@ -92,59 +98,181 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
+                Assert.AreEqual(CacheName, ldr.CacheName);
+
+                Assert.AreEqual(TimeSpan.Zero, ldr.AutoFlushInterval);
+                ldr.AutoFlushInterval = TimeSpan.FromMinutes(5);
+                Assert.AreEqual(5, ldr.AutoFlushInterval.TotalMinutes);
+
+#pragma warning disable 618 // Type or member is obsolete
+                Assert.AreEqual(5 * 60 * 1000, ldr.AutoFlushFrequency);
+                ldr.AutoFlushFrequency = 9000;
+                Assert.AreEqual(9000, ldr.AutoFlushFrequency);
+                Assert.AreEqual(9, ldr.AutoFlushInterval.TotalSeconds);
+#pragma warning restore 618 // Type or member is obsolete
+
+                Assert.IsFalse(ldr.AllowOverwrite);
                 ldr.AllowOverwrite = true;
                 Assert.IsTrue(ldr.AllowOverwrite);
                 ldr.AllowOverwrite = false;
                 Assert.IsFalse(ldr.AllowOverwrite);
 
+                Assert.IsFalse(ldr.SkipStore);
                 ldr.SkipStore = true;
                 Assert.IsTrue(ldr.SkipStore);
                 ldr.SkipStore = false;
                 Assert.IsFalse(ldr.SkipStore);
 
+                Assert.AreEqual(DataStreamerDefaults.DefaultPerNodeBufferSize, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 1;
                 Assert.AreEqual(1, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 2;
                 Assert.AreEqual(2, ldr.PerNodeBufferSize);
 
-                ldr.PerNodeParallelOperations = 1;
-                Assert.AreEqual(1, ldr.PerNodeParallelOperations);
+                Assert.AreEqual(DataStreamerDefaults.DefaultPerThreadBufferSize, ldr.PerThreadBufferSize);
+                ldr.PerThreadBufferSize = 1;
+                Assert.AreEqual(1, ldr.PerThreadBufferSize);
+                ldr.PerThreadBufferSize = 2;
+                Assert.AreEqual(2, ldr.PerThreadBufferSize);
+
+                Assert.AreEqual(0, ldr.PerNodeParallelOperations);
+                var ops = DataStreamerDefaults.DefaultParallelOperationsMultiplier *
+                          IgniteConfiguration.DefaultThreadPoolSize;
+                ldr.PerNodeParallelOperations = ops;
+                Assert.AreEqual(ops, ldr.PerNodeParallelOperations);
                 ldr.PerNodeParallelOperations = 2;
                 Assert.AreEqual(2, ldr.PerNodeParallelOperations);
+
+                Assert.AreEqual(DataStreamerDefaults.DefaultTimeout, ldr.Timeout);
+                ldr.Timeout = TimeSpan.MaxValue;
+                Assert.AreEqual(TimeSpan.MaxValue, ldr.Timeout);
+                ldr.Timeout = TimeSpan.FromSeconds(1.5);
+                Assert.AreEqual(1.5, ldr.Timeout.TotalSeconds);
             }
+        }
+
+        /// <summary>
+        /// Tests removal without <see cref="IDataStreamer{TK,TV}.AllowOverwrite"/>.
+        /// </summary>
+        [Test]
+        public void TestRemoveNoOverwrite()
+        {
+            _cache.Put(1, 1);
+
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.Remove(1);
+            }
+
+            Assert.IsTrue(_cache.ContainsKey(1));
         }
 
         /// <summary>
         /// Test data add/remove.
         /// </summary>
-        [Test]        
+        [Test]
         public void TestAddRemove()
         {
-            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            IDataStreamer<int, int> ldr;
+
+            using (ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
+                Assert.IsFalse(ldr.Task.IsCompleted);
+
                 ldr.AllowOverwrite = true;
 
                 // Additions.
-                ldr.AddData(1, 1);
-                ldr.Flush();                
+                var task = ldr.GetCurrentBatchTask();
+                ldr.Add(1, 1);
+                ldr.Flush();
                 Assert.AreEqual(1, _cache.Get(1));
+                Assert.IsTrue(task.IsCompleted);
+                Assert.IsFalse(ldr.Task.IsCompleted);
 
-                ldr.AddData(new KeyValuePair<int, int>(2, 2));
+                task = ldr.GetCurrentBatchTask();
+                ldr.Add(new KeyValuePair<int, int>(2, 2));
                 ldr.Flush();
                 Assert.AreEqual(2, _cache.Get(2));
+                Assert.IsTrue(task.IsCompleted);
 
-                ldr.AddData(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
+                task = ldr.GetCurrentBatchTask();
+                ldr.Add(new [] { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
                 ldr.Flush();
                 Assert.AreEqual(3, _cache.Get(3));
                 Assert.AreEqual(4, _cache.Get(4));
+                Assert.IsTrue(task.IsCompleted);
 
                 // Removal.
-                ldr.RemoveData(1);
+                task = ldr.GetCurrentBatchTask();
+                ldr.Remove(1);
                 ldr.Flush();
                 Assert.IsFalse(_cache.ContainsKey(1));
+                Assert.IsTrue(task.IsCompleted);
 
                 // Mixed.
-                ldr.AddData(5, 5);                
+                ldr.Add(5, 5);
+                ldr.Remove(2);
+                ldr.Add(new KeyValuePair<int, int>(7, 7));
+                ldr.Add(6, 6);
+                ldr.Remove(4);
+                ldr.Add(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(9, 9), new KeyValuePair<int, int>(10, 10) });
+                ldr.Add(new KeyValuePair<int, int>(8, 8));
+                ldr.Remove(3);
+                ldr.Add(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(11, 11), new KeyValuePair<int, int>(12, 12) });
+
+                ldr.Flush();
+
+                for (int i = 2; i < 5; i++)
+                    Assert.IsFalse(_cache.ContainsKey(i));
+
+                for (int i = 5; i < 13; i++)
+                    Assert.AreEqual(i, _cache.Get(i));
+            }
+
+            Assert.IsTrue(ldr.Task.Wait(5000));
+        }
+
+        /// <summary>
+        /// Test data add/remove.
+        /// </summary>
+        [Test]
+        public void TestAddRemoveObsolete()
+        {
+#pragma warning disable 618 // Type or member is obsolete
+            IDataStreamer<int, int> ldr;
+
+            using (ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                Assert.IsFalse(ldr.Task.IsCompleted);
+
+                ldr.AllowOverwrite = true;
+
+                // Additions.
+                var task = ldr.AddData(1, 1);
+                ldr.Flush();
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.IsTrue(task.IsCompleted);
+                Assert.IsFalse(ldr.Task.IsCompleted);
+
+                task = ldr.AddData(new KeyValuePair<int, int>(2, 2));
+                ldr.Flush();
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.IsTrue(task.IsCompleted);
+
+                task = ldr.AddData(new [] { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
+                ldr.Flush();
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
+                Assert.IsTrue(task.IsCompleted);
+
+                // Removal.
+                task = ldr.RemoveData(1);
+                ldr.Flush();
+                Assert.IsFalse(_cache.ContainsKey(1));
+                Assert.IsTrue(task.IsCompleted);
+
+                // Mixed.
+                ldr.AddData(5, 5);
                 ldr.RemoveData(2);
                 ldr.AddData(new KeyValuePair<int, int>(7, 7));
                 ldr.AddData(6, 6);
@@ -162,14 +290,58 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 for (int i = 5; i < 13; i++)
                     Assert.AreEqual(i, _cache.Get(i));
             }
+
+            Assert.IsTrue(ldr.Task.Wait(5000));
+#pragma warning restore 618 // Type or member is obsolete
+        }
+
+        /// <summary>
+        /// Tests object graphs with loops.
+        /// </summary>
+        [Test]
+        public void TestObjectGraphs()
+        {
+            var obj1 = new Container();
+            var obj2 = new Container();
+            var obj3 = new Container();
+            var obj4 = new Container();
+
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+            obj3.Inner = obj1;
+            obj4.Inner = new Container();
+
+            using (var ldr = _grid.GetDataStreamer<int, Container>(CacheName))
+            {
+                ldr.AllowOverwrite = true;
+
+                ldr.Add(1, obj1);
+                ldr.Add(2, obj2);
+                ldr.Add(3, obj3);
+                ldr.Add(4, obj4);
+            }
+
+            var cache = _grid.GetCache<int, Container>(CacheName);
+
+            var res = cache[1];
+            Assert.AreEqual(res, res.Inner.Inner);
+
+            Assert.IsNotNull(cache[2].Inner);
+            Assert.IsNotNull(cache[2].Inner.Inner);
+            Assert.IsNotNull(cache[3].Inner);
+            Assert.IsNotNull(cache[3].Inner.Inner);
+
+            Assert.IsNotNull(cache[4].Inner);
+            Assert.IsNull(cache[4].Inner.Inner);
         }
 
         /// <summary>
         /// Test "tryFlush".
         /// </summary>
         [Test]
-        public void TestTryFlush()
+        public void TestTryFlushObsolete()
         {
+#pragma warning disable 618 // Type or member is obsolete
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
@@ -177,6 +349,23 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.TryFlush();
 
                 fut.Wait();
+
+                Assert.AreEqual(1, _cache.Get(1));
+            }
+#pragma warning restore 618 // Type or member is obsolete
+        }
+
+        /// <summary>
+        /// Test FlushAsync.
+        /// </summary>
+        [Test]
+        public void TestFlushAsync()
+        {
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.Add(1, 1);
+
+                ldr.FlushAsync().Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
             }
@@ -188,39 +377,68 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestBufferSize()
         {
-            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                const int timeout = 5000;
+
+                var part1 = GetPrimaryPartitionKeys(_grid, 4);
+                var part2 = GetPrimaryPartitionKeys(_grid2, 4);
+
+                ldr.Add(part1[0], part1[0]);
+
+                var task = ldr.GetCurrentBatchTask();
 
                 Thread.Sleep(100);
 
-                Assert.IsFalse(fut.IsCompleted);
+                Assert.IsFalse(task.IsCompleted);
 
                 ldr.PerNodeBufferSize = 2;
+                ldr.PerThreadBufferSize = 1;
 
-                ldr.AddData(2, 2);
-                ldr.AddData(3, 3);
-                ldr.AddData(4, 4).Wait();
-                fut.Wait();
+                ldr.Add(part2[0], part2[0]);
+                ldr.Add(part1[1], part1[1]);
+                ldr.Add(part2[1], part2[1]);
+                Assert.IsTrue(task.Wait(timeout));
 
-                Assert.AreEqual(1, _cache.Get(1));
-                Assert.AreEqual(2, _cache.Get(2));
-                Assert.AreEqual(3, _cache.Get(3));
-                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(part1[0], _cache.Get(part1[0]));
+                Assert.AreEqual(part1[1], _cache.Get(part1[1]));
+                Assert.AreEqual(part2[0], _cache.Get(part2[0]));
+                Assert.AreEqual(part2[1], _cache.Get(part2[1]));
 
-                ldr.AddData(new List<KeyValuePair<int, int>>
+                var task2 = ldr.GetCurrentBatchTask();
+
+                ldr.Add(new[]
                 {
-                    new KeyValuePair<int, int>(5, 5), 
-                    new KeyValuePair<int, int>(6, 6),
-                    new KeyValuePair<int, int>(7, 7), 
-                    new KeyValuePair<int, int>(8, 8)
-                }).Wait();
+                    new KeyValuePair<int, int>(part1[2], part1[2]),
+                    new KeyValuePair<int, int>(part1[3], part1[3]),
+                    new KeyValuePair<int, int>(part2[2], part2[2]),
+                    new KeyValuePair<int, int>(part2[3], part2[3])
+                });
 
-                Assert.AreEqual(5, _cache.Get(5));
-                Assert.AreEqual(6, _cache.Get(6));
-                Assert.AreEqual(7, _cache.Get(7));
-                Assert.AreEqual(8, _cache.Get(8));
+                Assert.IsTrue(task2.Wait(timeout));
+
+                Assert.AreEqual(part1[2], _cache.Get(part1[2]));
+                Assert.AreEqual(part1[3], _cache.Get(part1[3]));
+                Assert.AreEqual(part2[2], _cache.Get(part2[2]));
+                Assert.AreEqual(part2[3], _cache.Get(part2[3]));
             }
+        }
+
+        /// <summary>
+        /// Gets the primary partition keys.
+        /// </summary>
+        private static int[] GetPrimaryPartitionKeys(IIgnite ignite, int count)
+        {
+            var affinity = ignite.GetAffinity(CacheName);
+
+            var localNode = ignite.GetCluster().GetLocalNode();
+
+            var part = affinity.GetPrimaryPartitions(localNode).First();
+
+            return Enumerable.Range(0, int.MaxValue)
+                .Where(k => affinity.GetPartition(k) == part)
+                .Take(count)
+                .ToArray();
         }
 
         /// <summary>
@@ -231,12 +449,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                var fut = ldr.GetCurrentBatchTask();
+                ldr.Add(1, 1);
 
                 ldr.Close(false);
 
-                fut.Wait();
-
+                Assert.IsTrue(fut.Wait(5000));
                 Assert.AreEqual(1, _cache.Get(1));
             }
         }
@@ -249,12 +467,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                var fut = ldr.GetCurrentBatchTask();
+                ldr.Add(1, 1);
 
                 ldr.Close(true);
 
-                fut.Wait();
-
+                Assert.IsTrue(fut.Wait(5000));
                 Assert.IsFalse(_cache.ContainsKey(1));
             }
         }
@@ -265,13 +483,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestFinalizer()
         {
-            var streamer = _grid.GetDataStreamer<int, int>(CacheName);
-            var streamerRef = new WeakReference(streamer);
-
-            Assert.IsNotNull(streamerRef.Target);
-
-            // ReSharper disable once RedundantAssignment
-            streamer = null;
+            // Create streamer reference in a different thread to defeat Debug mode quirks.
+            var streamerRef = Task.Factory.StartNew
+                (() => new WeakReference(_grid.GetDataStreamer<int, int>(CacheName))).Result;
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -283,15 +497,16 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test auto-flush feature.
         /// </summary>
         [Test]
-        public void TestAutoFlush()
+        public void TestAutoFlushObsolete()
         {
+#pragma warning disable 618 // Type or member is obsolete
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 // Test auto flush turning on.
                 var fut = ldr.AddData(1, 1);
                 Thread.Sleep(100);
                 Assert.IsFalse(fut.IsCompleted);
-                ldr.AutoFlushFrequency = 1000;                
+                ldr.AutoFlushFrequency = 1000;
                 fut.Wait();
 
                 // Test forced flush after frequency change.
@@ -320,10 +535,59 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.AreEqual(4, _cache.Get(4));
                 Assert.AreEqual(5, _cache.Get(5));
             }
+#pragma warning restore 618 // Type or member is obsolete
         }
 
         /// <summary>
-        /// Test multithreaded behavior. 
+        /// Test auto-flush feature.
+        /// </summary>
+        [Test]
+        public void TestAutoFlush()
+        {
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                // Test auto flush turning on.
+                var fut = ldr.GetCurrentBatchTask();
+                ldr.Add(1, 1);
+                Thread.Sleep(100);
+                Assert.IsFalse(fut.IsCompleted);
+                ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
+                fut.Wait();
+
+                // Test forced flush after frequency change.
+                fut = ldr.GetCurrentBatchTask();
+                ldr.Add(2, 2);
+                ldr.AutoFlushInterval = TimeSpan.MaxValue;
+                fut.Wait();
+
+                // Test another forced flush after frequency change.
+                fut = ldr.GetCurrentBatchTask();
+                ldr.Add(3, 3);
+                ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
+                fut.Wait();
+
+                // Test flush before stop.
+                fut = ldr.GetCurrentBatchTask();
+                ldr.Add(4, 4);
+                ldr.AutoFlushInterval = TimeSpan.Zero;
+                fut.Wait();
+
+                // Test flush after second turn on.
+                fut = ldr.GetCurrentBatchTask();
+                ldr.Add(5, 5);
+                ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
+                fut.Wait();
+
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(5, _cache.Get(5));
+            }
+        }
+
+        /// <summary>
+        /// Test multithreaded behavior.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
@@ -358,7 +622,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                         for (int j = startIdx; j < endIdx; j++)
                         {
                             // ReSharper disable once AccessToDisposedClosure
-                            ldr.AddData(j, j);
+                            ldr.Add(j, j);
 
                             if (j % 100000 == 0)
                                 Console.WriteLine("Put [thread=" + threadIdx + ", cnt=" + j  + ']');
@@ -391,7 +655,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestStreamVisitor()
         {
+#if !NETCOREAPP // Serializing delegates is not supported on this platform.
             TestStreamReceiver(new StreamVisitor<int, int>((c, e) => c.Put(e.Key, e.Value + 1)));
+#endif
         }
 
         /// <summary>
@@ -402,6 +668,27 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             TestStreamReceiver(new StreamTransformer<int, int, int, int>(new EntryProcessorSerializable()));
             TestStreamReceiver(new StreamTransformer<int, int, int, int>(new EntryProcessorBinarizable()));
+        }
+
+        [Test]
+        public void TestStreamTransformerIsInvokedForDuplicateKeys()
+        {
+            var cache = _grid.GetOrCreateCache<string, long>("c");
+
+            using (var streamer = _grid.GetDataStreamer<string, long>(cache.Name))
+            {
+                streamer.AllowOverwrite = true;
+                streamer.Receiver = new StreamTransformer<string, long, object, object>(new CountingEntryProcessor());
+
+                var words = Enumerable.Repeat("a", 3).Concat(Enumerable.Repeat("b", 2));
+                foreach (var word in words)
+                {
+                    streamer.Add(word, 1L);
+                }
+            }
+
+            Assert.AreEqual(3, cache.Get("a"));
+            Assert.AreEqual(2, cache.Get("b"));
         }
 
         /// <summary>
@@ -420,7 +707,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.AreEqual(ldr.Receiver, receiver);
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, i);
+                    ldr.Add(i, i);
 
                 ldr.Flush();
 
@@ -446,14 +733,187 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, _grid.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry {Val = i}));
+                    ldr.Add(i, _grid.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry {Val = i}));
 
                 ldr.Flush();
 
                 for (var i = 0; i < 100; i++)
                     Assert.AreEqual(i + 1, cache.Get(i).Val);
+
+                // Repeating WithKeepBinary call: valid args.
+                Assert.AreSame(ldr, ldr.WithKeepBinary<int, IBinaryObject>());
+
+                // Invalid type args.
+                var ex = Assert.Throws<InvalidOperationException>(() => ldr.WithKeepBinary<string, IBinaryObject>());
+
+                Assert.AreEqual(
+                    "Can't change type of binary streamer. WithKeepBinary has been called on an instance of " +
+                    "binary streamer with incompatible generic arguments.", ex.Message);
             }
         }
+
+        /// <summary>
+        /// Streamer test with destroyed cache.
+        /// </summary>
+        [Test]
+        public void TestDestroyCache()
+        {
+            var cache = _grid.CreateCache<int, int>(TestUtils.TestName);
+
+            var streamer = _grid.GetDataStreamer<int, int>(cache.Name);
+
+            streamer.Add(1, 2);
+            streamer.FlushAsync().Wait();
+
+            _grid.DestroyCache(cache.Name);
+
+            streamer.Add(2, 3);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).GetBaseException();
+
+            Assert.IsNotNull(ex);
+
+            Assert.AreEqual("class org.apache.ignite.IgniteCheckedException: DataStreamer data loading failed.",
+                ex.Message);
+
+            Assert.Throws<CacheException>(() => streamer.Close(true));
+        }
+
+        /// <summary>
+        /// Streamer test with destroyed cache.
+        /// </summary>
+        [Test]
+        public void TestDestroyCacheObsolete()
+        {
+#pragma warning disable 618 // Type or member is obsolete
+            var cache = _grid.CreateCache<int, int>(TestUtils.TestName);
+
+            var streamer = _grid.GetDataStreamer<int, int>(cache.Name);
+
+            var task = streamer.AddData(1, 2);
+            streamer.Flush();
+            task.Wait();
+
+            _grid.DestroyCache(cache.Name);
+
+            streamer.AddData(2, 3);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).GetBaseException();
+
+            Assert.IsNotNull(ex);
+
+            Assert.AreEqual("class org.apache.ignite.IgniteCheckedException: DataStreamer data loading failed.",
+                ex.Message);
+
+            Assert.Throws<CacheException>(() => streamer.Close(true));
+#pragma warning restore 618 // Type or member is obsolete
+        }
+
+
+        /// <summary>
+        /// Tests that streaming binary objects with a thin client results in those objects being
+        /// available through SQL in the cache's table.
+        /// </summary>
+        [Test]
+        public void TestBinaryStreamerCreatesSqlRecord()
+        {
+            var cacheCfg = new CacheConfiguration
+            {
+                Name = "TestBinaryStreamerCreatesSqlRecord",
+                SqlSchema = "persons",
+                QueryEntities = new[]
+                {
+                    new QueryEntity
+                    {
+                        ValueTypeName = "Person",
+                        Fields = new List<QueryField>
+                        {
+                            new QueryField
+                            {
+                                Name = "Name",
+                                FieldType = typeof(string),
+                            },
+                            new QueryField
+                            {
+                                Name = "Age",
+                                FieldType = typeof(int)
+                            }
+                        }
+                    }
+                }
+            };
+
+            var cacheClientBinary = _grid.GetOrCreateCache<int, IBinaryObject>(cacheCfg)
+                .WithKeepBinary<int, IBinaryObject>();
+
+            // Prepare a binary object.
+            var jane = _grid.GetBinary().GetBuilder("Person")
+                .SetStringField("Name", "Jane")
+                .SetIntField("Age", 43)
+                .Build();
+
+            const int key = 1;
+
+            // Stream the binary object to the server.
+            using (var streamer = _grid.GetDataStreamer<int, IBinaryObject>(cacheCfg.Name))
+            {
+                streamer.Add(key, jane);
+                streamer.Flush();
+            }
+
+            // Check that SQL works.
+            var query = new SqlFieldsQuery("SELECT Name, Age FROM \"PERSONS\".PERSON");
+            var fullResultAfterClientStreamer = cacheClientBinary.Query(query).GetAll();
+            Assert.IsNotNull(fullResultAfterClientStreamer);
+            Assert.AreEqual(1, fullResultAfterClientStreamer.Count);
+            Assert.AreEqual("Jane", fullResultAfterClientStreamer[0][0]);
+            Assert.AreEqual(43, fullResultAfterClientStreamer[0][1]);
+        }
+
+#if NETCOREAPP
+        /// <summary>
+        /// Tests async streamer usage.
+        /// Using async cache and streamer operations within the streamer means that we end up on different threads.
+        /// Streamer is thread-safe and is expected to handle this well.
+        /// </summary>
+        [Test]
+        public async Task TestStreamerAsyncAwait()
+        {
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.AllowOverwrite = true;
+
+                ldr.Add(Enumerable.Range(1, 500).ToDictionary(x => x, x => -x));
+
+                Assert.IsFalse(await _cache.ContainsKeysAsync(new[] {1, 2}));
+
+                var flushTask = ldr.FlushAsync();
+                Assert.IsFalse(flushTask.IsCompleted);
+                await flushTask;
+
+                Assert.AreEqual(-1, await _cache.GetAsync(1));
+                Assert.AreEqual(-2, await _cache.GetAsync(2));
+
+                // Remove.
+                var batchTask = ldr.GetCurrentBatchTask();
+                Assert.IsFalse(batchTask.IsCompleted);
+                Assert.IsFalse(batchTask.IsFaulted);
+
+                ldr.Remove(1);
+                var flushTask2 = ldr.FlushAsync();
+
+                Assert.AreSame(batchTask, flushTask2);
+                await flushTask2;
+
+                Assert.IsTrue(batchTask.IsCompleted);
+                Assert.IsFalse(await _cache.ContainsKeyAsync(1));
+
+                // Empty buffer flush is allowed.
+                await ldr.FlushAsync();
+                await ldr.FlushAsync();
+            }
+        }
+#endif
 
         /// <summary>
         /// Test binarizable receiver.
@@ -509,7 +969,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             public int Process(IMutableCacheEntry<int, int> entry, int arg)
             {
                 entry.Value = entry.Key + 1;
-                
+
                 return 0;
             }
         }
@@ -523,7 +983,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             public int Process(IMutableCacheEntry<int, int> entry, int arg)
             {
                 entry.Value = entry.Key + 1;
-                
+
                 return 0;
             }
 
@@ -546,6 +1006,24 @@ namespace Apache.Ignite.Core.Tests.Dataload
         private class BinarizableEntry
         {
             public int Val { get; set; }
+        }
+
+        /// <summary>
+        /// Container class.
+        /// </summary>
+        private class Container
+        {
+            public Container Inner;
+        }
+
+        private class CountingEntryProcessor : ICacheEntryProcessor<string, long, object, object>
+        {
+            public object Process(IMutableCacheEntry<string, long> e, object arg)
+            {
+                e.Value++;
+
+                return null;
+            }
         }
     }
 }

@@ -49,7 +49,7 @@ public class CacheEntryEventAsyncProbe extends CacheEntryEventProbe {
 
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> events)
-        throws CacheEntryListenerException {
+            throws CacheEntryListenerException {
             int size = 0;
 
             for (CacheEntryEvent<? extends Integer, ? extends Integer> e : events)

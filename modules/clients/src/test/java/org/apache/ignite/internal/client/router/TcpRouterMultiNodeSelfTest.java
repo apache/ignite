@@ -26,7 +26,7 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.integration.ClientAbstractMultiNodeSelfTest;
 import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
-import org.apache.ignite.logger.log4j.Log4JLogger;
+import org.apache.ignite.logger.log4j2.Log4J2Logger;
 
 import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTest.ROUTER_LOG_CFG;
 
@@ -64,8 +64,6 @@ public class TcpRouterMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest 
         info("Routers stopped.");
 
         routers.clear();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -90,7 +88,7 @@ public class TcpRouterMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest 
         cfg.setPort(ROUTER_TCP_PORT_BASE + i);
         cfg.setPortRange(0);
         cfg.setServers(Collections.singleton(HOST + ":" + REST_TCP_PORT_BASE));
-        cfg.setLogger(new Log4JLogger(ROUTER_LOG_CFG));
+        cfg.setLogger(new Log4J2Logger(ROUTER_LOG_CFG));
 
         return cfg;
     }

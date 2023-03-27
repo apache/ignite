@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Apache.Ignite.Examples.Shared</RootNamespace>
+    <NoWarn>CS0649</NoWarn>
+  </PropertyGroup>
+
+  <!-- Standalone examples mode: use NuGet -->
+  <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteDevMode) == ''">
+    <PackageReference Include="Apache.Ignite" Version="2.*" />
+    <PackageReference Include="Apache.Ignite.Linq" Version="2.*" />
+  </ItemGroup>
+
+</Project>

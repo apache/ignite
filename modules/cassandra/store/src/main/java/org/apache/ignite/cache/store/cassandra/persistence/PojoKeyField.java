@@ -17,14 +17,13 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.beans.PropertyDescriptor;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.w3c.dom.Element;
 
 /**
  * Descriptor for Ignite key POJO class
  */
 public class PojoKeyField extends PojoField {
-
     /**
      * Specifies sort order for POJO key field
      */
@@ -61,12 +60,30 @@ public class PojoKeyField extends PojoField {
     }
 
     /**
+     * Constructs instance of {@code PojoKeyField} based on the other instance and java class
+     * to initialize accessor.
+     *
+     * @param field PojoKeyField instance
+     * @param pojoCls java class of the corresponding POJO
+     */
+    public PojoKeyField(PojoKeyField field, Class<?> pojoCls) {
+        super(field, pojoCls);
+
+        sortOrder = field.sortOrder;
+    }
+
+    /**
      * Constructs Ignite cache key POJO object descriptor.
      *
-     * @param desc property descriptor.
+     * @param accessor property descriptor.
      */
-    public PojoKeyField(PropertyDescriptor desc) {
-        super(desc);
+    public PojoKeyField(PojoFieldAccessor accessor) {
+        super(accessor);
+
+        QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
+
+        if (sqlField != null && sqlField.descending())
+            sortOrder = SortOrder.DESC;
     }
 
     /**

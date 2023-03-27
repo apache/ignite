@@ -184,7 +184,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
         return new GridEmbeddedFuture<>(new IgniteClosure2X<GridRestResponse, Exception, GridRestResponse>() {
             @Override public GridRestResponse applyx(GridRestResponse restRes,
                 Exception ex) throws IgniteCheckedException {
-                if(ex != null)
+                if (ex != null)
                     throw U.cast(ex);
 
                 // Handle 'Stat' command (special case because several packets are included in response).
@@ -271,7 +271,6 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param cmd Command.
      * @return REST request.
      */
-    @SuppressWarnings("unchecked")
     private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 
@@ -295,7 +294,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             restReq.key(req.key());
 
             if (cmd == CACHE_REMOVE_ALL) {
-                Object[] keys = (Object[]) req.value();
+                Object[] keys = (Object[])req.value();
 
                 if (keys != null) {
                     Map<Object, Object> map = new HashMap<>();

@@ -32,7 +32,7 @@ public class GridClientFactory {
     private static ConcurrentMap<UUID, GridClientImpl> openClients = new ConcurrentHashMap<>();
 
     /** Lock to prevent concurrent adding of clients while stopAll is working. */
-    private static ReadWriteLock busyLock = new ReentrantReadWriteLock();
+    private static final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
     /**
      * Ensure singleton.
@@ -50,12 +50,41 @@ public class GridClientFactory {
      * @throws GridClientException If client could not be created.
      */
     public static GridClient start(GridClientConfiguration cfg) throws GridClientException {
+        return start(cfg, false);
+    }
+
+    /**
+     * Starts a client before node start with given configuration.
+     * If node has already started, there will be an error.
+     *
+     * @param cfg Client configuration.
+     * @return Started client.
+     * @throws GridClientException If client could not be created.
+     */
+    public static GridClientBeforeNodeStart startBeforeNodeStart(
+        GridClientConfiguration cfg
+    ) throws GridClientException {
+        return start(cfg, true);
+    }
+
+    /**
+     * Starts a client with given configuration.
+     *
+     * @param cfg Client configuration.
+     * @param beforeNodeStart Before node start.
+     * @return Started client.
+     * @throws GridClientException If client could not be created.
+     */
+    private static GridClientImpl start(
+        GridClientConfiguration cfg,
+        boolean beforeNodeStart
+    ) throws GridClientException {
         busyLock.readLock().lock();
 
         try {
             UUID clientId = UUID.randomUUID();
 
-            GridClientImpl client = new GridClientImpl(clientId, cfg, false);
+            GridClientImpl client = new GridClientImpl(clientId, cfg, false, beforeNodeStart);
 
             GridClientImpl old = openClients.putIfAbsent(clientId, client);
 

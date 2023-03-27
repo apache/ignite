@@ -1,0 +1,15 @@
+# name: test/sql/function/test/test_timestampdiff.test
+# description: Just simple test to check support of timestampdiff functions
+# group: [timestamp]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15418
+
+query T
+SELECT TIMESTAMPDIFF(MICROSECOND, TIMESTAMP '2022-02-01 10:30:26.000', TIMESTAMP '2022-05-01 10:30:28.122')
+----
+7689602122000
+
+query T
+SELECT TIMESTAMPDIFF(MICROSECOND, TIMESTAMP '2022-05-01 10:30:28.122', TIMESTAMP '2022-02-01 10:30:26.398')
+----
+-7689601724000
+

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -28,6 +28,11 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * @param entry Entry.
      */
     public void addEntry(IgniteTxEntry entry);
+
+    /**
+     * @param key Key.
+     */
+    public void removeEntry(IgniteTxKey key);
 
     /**
      * @param txSize Transaction size.
@@ -46,9 +51,20 @@ public interface IgniteTxLocalState extends IgniteTxState {
     public void seal();
 
     /**
-     * @param ctx Context.
-     * @param topVer Topology version.
-     * @return {@code True} if tx has cache with created near cache.
+     * @return Cache partitions touched by current tx.
      */
-    public boolean hasNearCacheConfigured(GridCacheSharedContext ctx, AffinityTopologyVersion topVer);
+    public Map<Integer, Set<Integer>> touchedPartitions();
+
+    /**
+     * Remembers that particular cache partition was touched by current tx.
+     *
+     * @param cacheId Cache id.
+     * @param partId Partition id.
+     */
+    public void touchPartition(int cacheId, int partId);
+
+    /**
+     * @return Recovery mode flag.
+     */
+    public boolean recovery();
 }

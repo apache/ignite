@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
-#endif
-
 #include <sstream>
 #include <algorithm>
 
@@ -377,9 +373,88 @@ namespace ignite
     }
 }
 
+/**
+ * PlatformComputeBinarizable class representation for the Java class with the
+ * same name for invoke tests.
+ */
+struct PlatformComputeBinarizable
+{
+public:
+    /**
+     * Constructor.
+     */
+    PlatformComputeBinarizable() : field(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param field Field.
+     */
+    PlatformComputeBinarizable(int32_t field) : field(field)
+    {
+        // No-op.
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other Other instance.
+     */
+    PlatformComputeBinarizable(const PlatformComputeBinarizable& other) : field(other.field)
+    {
+        // No-op.
+    }
+
+    /**
+     * Assignment operator.
+     *
+     * @param other Other instance.
+     * @return This instance.
+     */
+    PlatformComputeBinarizable& operator=(const PlatformComputeBinarizable& other)
+    {
+        field = other.field;
+
+        return *this;
+    }
+
+    /** Field. */
+    int32_t field;
+};
+
+namespace ignite
+{
+    namespace binary
+    {
+        /**
+         * Binary type definition for PlatformComputeBinarizable.
+         */
+        IGNITE_BINARY_TYPE_START(PlatformComputeBinarizable)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(PlatformComputeBinarizable)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(PlatformComputeBinarizable)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_IS_NULL_FALSE(PlatformComputeBinarizable)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(PlatformComputeBinarizable)
+
+            static void Write(BinaryWriter& writer, const PlatformComputeBinarizable& obj)
+            {
+                writer.WriteInt32("field", obj.field);
+            }
+
+            static void Read(BinaryReader& reader, PlatformComputeBinarizable& dst)
+            {
+                dst.field = reader.ReadInt32("field");
+            }
+        IGNITE_BINARY_TYPE_END
+    }
+}
+
 IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
 {
-    IgniteBinding binding = context.GetBingding();
+    IgniteBinding binding = context.GetBinding();
 
     binding.RegisterCacheEntryProcessor<CacheEntryModifier>();
     binding.RegisterCacheEntryProcessor<Divisor>();
@@ -523,6 +598,51 @@ BOOST_AUTO_TEST_CASE(TestStrings)
 
     BOOST_CHECK_EQUAL(res, 11);
     BOOST_CHECK(!cache.ContainsKey("some key"));
+}
+
+/**
+ * Test cache invoke of Java CacheEntryProcessor.
+ */
+BOOST_AUTO_TEST_CASE(TestJavaProcessor)
+{
+    const static std::string procName = "org.apache.ignite.platform.PlatformAddArgEntryProcessor";
+
+    Cache<int64_t, int64_t> cache = node.GetOrCreateCache<int64_t, int64_t>("TestJavaProcessorCache");
+
+    cache.Put(5, 10);
+
+    int64_t res = cache.InvokeJava<int64_t, int64_t>(5, procName, 8);
+
+    BOOST_CHECK_EQUAL(res, 18);
+    BOOST_CHECK_EQUAL(cache.Get(5), 18);
+
+    res = cache.InvokeJava<int64_t, int64_t>(4, procName, 42);
+
+    BOOST_CHECK_EQUAL(res, 42);
+    BOOST_CHECK_EQUAL(cache.Get(4), 42);
+}
+
+
+/**
+ * Test cache invoke of Java CacheEntryProcessor binarizable.
+ */
+BOOST_AUTO_TEST_CASE(TestJavaProcessorBinarizable)
+{
+    const static std::string procName = "org.apache.ignite.platform.PlatformAddArgEntryProcessorBinarizable";
+
+    Cache<int64_t, int64_t> cache = node.GetOrCreateCache<int64_t, int64_t>("TestJavaProcessorCacheBinarizable");
+
+    cache.Put(15, 40);
+
+    PlatformComputeBinarizable res = cache.InvokeJava<PlatformComputeBinarizable, int64_t>(15, procName, -12);
+
+    BOOST_CHECK_EQUAL(res.field, 28);
+    BOOST_CHECK_EQUAL(cache.Get(15), 28);
+
+    res = cache.InvokeJava<PlatformComputeBinarizable, int64_t>(4, procName, 42);
+
+    BOOST_CHECK_EQUAL(res.field, 42);
+    BOOST_CHECK_EQUAL(cache.Get(4), 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

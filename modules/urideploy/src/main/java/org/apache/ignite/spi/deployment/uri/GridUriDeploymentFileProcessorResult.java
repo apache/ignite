@@ -75,18 +75,18 @@ class GridUriDeploymentFileProcessorResult {
     }
 
     /**
-     * Gets GAR file.
+     * Gets package file.
      *
-     * @return GAR file.
+     * @return Package file.
      */
     public File getFile() {
         return file;
     }
 
     /**
-     * Sets GAR file.
+     * Sets package file.
      *
-     * @param file GAR file.
+     * @param file Package file.
      */
     public void setFile(File file) {
         this.file = file;

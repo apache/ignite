@@ -28,11 +28,10 @@ public class GridDsiRequest implements Serializable {
     private Long id;
 
     /** */
-    @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
+    @SuppressWarnings({"FieldCanBeLocal"})
     private long msgId;
 
     /** */
-    @SuppressWarnings("UnusedDeclaration")
     private long txId;
 
     /**
@@ -53,7 +52,7 @@ public class GridDsiRequest implements Serializable {
      * @param terminalId Terminal ID.
      * @return Cache key.
      */
-    public Object getCacheKey(String terminalId){
+    public Object getCacheKey(String terminalId) {
         return new RequestKey(id, terminalId);
     }
 
@@ -66,7 +65,6 @@ public class GridDsiRequest implements Serializable {
         private Long key;
 
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         @AffinityKeyMapped
         private String terminalId;
 

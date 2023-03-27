@@ -53,25 +53,19 @@ public class ComputeCallableExample {
             Collection<IgniteCallable<Integer>> calls = new ArrayList<>();
 
             // Iterate through all words in the sentence and create callable jobs.
-            for (final String word : "Count characters using callable".split(" ")) {
-                calls.add(new IgniteCallable<Integer>() {
-                    @Override public Integer call() throws Exception {
-                        System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
+            for (String word : "Count characters using callable".split(" ")) {
+                calls.add(() -> {
+                    System.out.println();
+                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
-                        return word.length();
-                    }
+                    return word.length();
                 });
             }
 
             // Execute collection of callables on the ignite.
             Collection<Integer> res = ignite.compute().call(calls);
 
-            int sum = 0;
-
-            // Add up individual word lengths received from remote nodes.
-            for (int len : res)
-                sum += len;
+            int sum = res.stream().mapToInt(i -> i).sum();
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");

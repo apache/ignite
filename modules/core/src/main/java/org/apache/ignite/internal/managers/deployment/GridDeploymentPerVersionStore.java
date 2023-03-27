@@ -27,7 +27,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DeploymentEvent;
@@ -45,11 +47,11 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
@@ -99,7 +101,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         missedRsrcCacheSize = ctx.config().getPeerClassLoadingMissedResourcesCacheSize();
 
-        rsrcCache = new ConcurrentHashMap8<>();
+        rsrcCache = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -278,6 +280,24 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public GridDeployment searchDeploymentCache(GridDeploymentMetadata meta) {
+        synchronized (mux) {
+            List<SharedDeployment> deps = cache.get(meta.userVersion());
+
+            if (deps != null) {
+                assert !deps.isEmpty();
+
+                for (SharedDeployment d : deps) {
+                    if (d.hasParticipant(meta.senderNodeId(), meta.classLoaderId()))
+                        return d;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public GridDeployment getDeployment(GridDeploymentMetadata meta) {
         assert meta != null;
 
@@ -309,7 +329,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (isDeadClassLoader(meta))
                     return null;
 
-                if (meta.participants() != null && !meta.participants().isEmpty()) {
+                if (!F.isEmpty(meta.participants())) {
                     Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();
 
                     for (Map.Entry<UUID, IgniteUuid> e : meta.participants().entrySet()) {
@@ -356,51 +376,45 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                List<SharedDeployment> deps = cache.get(meta.userVersion());
+                dep = (SharedDeployment)searchDeploymentCache(meta);
 
-                if (deps != null) {
-                    assert !deps.isEmpty();
+                if (dep == null) {
+                    List<SharedDeployment> deps = cache.get(meta.userVersion());
 
-                    for (SharedDeployment d : deps) {
-                        if (d.hasParticipant(meta.senderNodeId(), meta.classLoaderId()) ||
-                            meta.senderNodeId().equals(ctx.localNodeId())) {
-                            // Done.
-                            dep = d;
+                    if (deps != null) {
+                        assert !deps.isEmpty();
 
-                            break;
-                        }
-                    }
-
-                    if (dep == null) {
                         checkRedeploy(meta);
 
                         // Find existing deployments that need to be checked
                         // whether they should be reused for this request.
-                        for (SharedDeployment d : deps) {
-                            if (!d.pendingUndeploy() && !d.undeployed()) {
-                                Map<UUID, IgniteUuid> parties = d.participants();
+                        if (ctx.config().getDeploymentMode() == CONTINUOUS) {
+                            for (SharedDeployment d : deps) {
+                                if (!d.pendingUndeploy() && !d.undeployed()) {
+                                    Map<UUID, IgniteUuid> parties = d.participants();
 
-                                if (parties != null) {
-                                    IgniteUuid ldrId = parties.get(meta.senderNodeId());
+                                    if (parties != null) {
+                                        IgniteUuid ldrId = parties.get(meta.senderNodeId());
 
-                                    if (ldrId != null) {
-                                        assert !ldrId.equals(meta.classLoaderId());
+                                        if (ldrId != null) {
+                                            assert !ldrId.equals(meta.classLoaderId());
 
-                                        if (log.isDebugEnabled())
-                                            log.debug("Skipping deployment (loaders on remote node are different) " +
-                                                "[dep=" + d + ", meta=" + meta + ']');
+                                            if (log.isDebugEnabled())
+                                                log.debug("Skipping deployment (loaders on remote node are different) " +
+                                                    "[dep=" + d + ", meta=" + meta + ']');
 
-                                        continue;
+                                            continue;
+                                        }
                                     }
+
+                                    if (depsToCheck == null)
+                                        depsToCheck = new LinkedList<>();
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Adding deployment to check: " + d);
+
+                                    depsToCheck.add(d);
                                 }
-
-                                if (depsToCheck == null)
-                                    depsToCheck = new LinkedList<>();
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Adding deployment to check: " + d);
-
-                                depsToCheck.add(d);
                             }
                         }
 
@@ -411,12 +425,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                             deps.add(dep);
                         }
                     }
-                }
-                else {
-                    checkRedeploy(meta);
+                    else {
+                        checkRedeploy(meta);
 
-                    // Create peer class loader.
-                    dep = createNewDeployment(meta, true);
+                        // Create peer class loader.
+                        dep = createNewDeployment(meta, true);
+                    }
                 }
             }
 
@@ -425,11 +439,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     log.debug("Found SHARED or CONTINUOUS deployment after first check: " + dep);
 
                 // Cache the deployed class.
-                Class<?> cls = dep.deployedClass(meta.className(), meta.alias());
+                IgniteBiTuple<Class<?>, Throwable> cls = dep.deployedClass(meta.className(), meta.alias());
 
-                if (cls == null) {
+                if (cls.get1() == null) {
                     U.warn(log, "Failed to load peer class (ignore if class got undeployed during preloading) [alias=" +
-                        meta.alias() + ", dep=" + dep + ']');
+                        meta.alias() + ", dep=" + dep + ']', cls.get2());
 
                     return null;
                 }
@@ -451,7 +465,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             for (SharedDeployment d : depsToCheck) {
                 // Load class. Note, that remote node will not load this class.
                 // The class will only be loaded on this node.
-                Class<?> cls = d.deployedClass(meta.className(), meta.alias());
+                Class<?> cls = d.deployedClass(meta.className(), meta.alias()).get1();
 
                 if (cls != null) {
                     synchronized (mux) {
@@ -495,11 +509,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         }
                     }
 
-                    Class<?> depCls = d.deployedClass(meta.className(), meta.alias());
+                    IgniteBiTuple<Class<?>, Throwable> depCls = d.deployedClass(meta.className(), meta.alias());
 
-                    if (depCls == null) {
+                    if (depCls.get1() == null) {
                         U.error(log, "Failed to peer load class after loading it as a resource [alias=" +
-                            meta.alias() + ", dep=" + dep + ']');
+                            meta.alias() + ", dep=" + dep + ']', depCls.get2());
 
                         return null;
                     }
@@ -544,8 +558,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         // New deployment was added while outside of synchronization.
                         // Need to recheck it again.
-                        if (!d.pendingUndeploy() && !d.undeployed() && !depsToCheck.contains(d))
-                            retry = true;
+                        if (!d.pendingUndeploy() && !d.undeployed() && !depsToCheck.contains(d)) {
+                            Map<UUID, IgniteUuid> parties = d.participants();
+
+                            if (parties == null || parties.get(meta.senderNodeId()) == null)
+                                retry = true;
+                        }
                     }
 
                     if (retry) {
@@ -576,11 +594,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
             if (dep != null) {
                 // Cache the deployed class.
-                Class<?> cls = dep.deployedClass(meta.className(), meta.alias());
+                IgniteBiTuple<Class<?>, Throwable> cls = dep.deployedClass(meta.className(), meta.alias());
 
-                if (cls == null) {
+                if (cls.get1() == null) {
                     U.warn(log, "Failed to load peer class (ignore if class got undeployed during preloading) [alias=" +
-                        meta.alias() + ", dep=" + dep + ']');
+                        meta.alias() + ", dep=" + dep + ']', cls.get2());
 
                     return null;
                 }
@@ -683,7 +701,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 return false;
 
             // Temporary class loader.
-            ClassLoader temp = new GridDeploymentClassLoader(
+            GridDeploymentClassLoader temp = new GridDeploymentClassLoader(
                 IgniteUuid.fromUuid(ctx.localNodeId()),
                 meta.userVersion(),
                 meta.deploymentMode(),
@@ -706,7 +724,14 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             InputStream rsrcIn = null;
 
             try {
-                rsrcIn = temp.getResourceAsStream(path);
+                boolean timeout = false;
+
+                try {
+                    rsrcIn = temp.getResourceAsStreamEx(path);
+                }
+                catch (TimeoutException e) {
+                    timeout = true;
+                }
 
                 boolean found = rsrcIn != null;
 
@@ -716,7 +741,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (found || missedRsrcCacheSize > 0) {
                     if (ldrRsrcCache == null)
                         ldrRsrcCache = F.addIfAbsent(rsrcCache, meta.classLoaderId(),
-                            new ConcurrentHashMap8<String, Boolean>());
+                            new ConcurrentHashMap<String, Boolean>());
 
                     // This is the only place where cache could have been changed,
                     // so we remove only here if classloader have been undeployed
@@ -726,7 +751,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         return false;
                     }
-                    else
+                    else if (!timeout)
                         // Cache result if classloader is still alive.
                         ldrRsrcCache.put(clsName, found);
                 }
@@ -937,7 +962,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 for (Iterator<SharedDeployment> i2 = deps.iterator(); i2.hasNext();) {
                     SharedDeployment dep = i2.next();
 
-
                     if (dep.hasName(rsrcName)) {
                         if (!dep.undeployed()) {
                             dep.undeploy();
@@ -1079,7 +1103,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param userVer User version.
          * @param sampleClsName Sample class name.
          */
-        @SuppressWarnings({"TypeMayBeWeakened"})
         SharedDeployment(DeploymentMode depMode,
             GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {
@@ -1184,8 +1207,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             assert nodeId != null;
             assert ldrId != null;
 
-            assert Thread.holdsLock(mux);
-
             return classLoader().hasRegisteredNode(nodeId, ldrId);
         }
 
@@ -1283,6 +1304,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ClassLoader ldr = classLoader();
 
                 ctx.cache().onUndeployed(ldr);
+
+               // Clear static class cache.
+                U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), sampleClassName());
+
+                for (String alias : deployedClassMap().keySet())
+                    U.clearClassFromClassCache(ctx.cache().context().deploy().globalLoader(), alias);
 
                 // Clear optimized marshaller's cache.
                 if (ctx.config().getMarshaller() instanceof AbstractMarshaller)

@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -39,27 +37,27 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Test node restart.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
 public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     protected static final String CACHE_NAME = "TEST_CACHE";
@@ -118,9 +116,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /** Retries. */
     private int retries = DFLT_RETRIES;
 
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -128,15 +123,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         ((TcpCommunicationSpi)c.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         // Discovery.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
+        TcpDiscoverySpi disco = (TcpDiscoverySpi)c.getDiscoverySpi();
 
         disco.setSocketTimeout(30_000);
         disco.setAckTimeout(30_000);
         disco.setNetworkTimeout(30_000);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg = cacheConfiguration();
 
@@ -160,12 +151,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     protected abstract CacheConfiguration cacheConfiguration();
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+        
         stopAllGrids();
     }
 
@@ -209,6 +197,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         rebalancMode = SYNC;
         partitions = 3;
@@ -285,6 +274,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutTwoNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 2;
@@ -293,7 +283,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 30000;
+        long duration = SF.applyLB(30_000, 3_000);
 
         checkRestartWithPut(duration, 1, 1);
     }
@@ -301,6 +291,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 2;
@@ -309,7 +300,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 30000;
+        long duration = SF.applyLB(30_000, 3_000);
 
         checkRestartWithTx(duration, 1, 1, 3);
     }
@@ -317,6 +308,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutTwoNodesOneBackup() throws Throwable {
         backups = 1;
         nodeCnt = 2;
@@ -325,7 +317,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 30000;
+        long duration = SF.applyLB(30_000, 3_000);
 
         checkRestartWithPut(duration, 1, 1);
     }
@@ -333,6 +325,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
         backups = 1;
         nodeCnt = 2;
@@ -341,7 +334,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 30000;
+        long duration = SF.applyLB(30_000, 3_000);
 
         checkRestartWithTx(duration, 1, 1, 3);
     }
@@ -349,6 +342,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutFourNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 4;
@@ -357,7 +351,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 60000;
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithPut(duration, 2, 2);
     }
@@ -365,6 +359,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxFourNodesNoBackups() throws Throwable {
         backups = 0;
         nodeCnt = 4;
@@ -373,7 +368,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 60000;
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithTx(duration, 2, 2, 3);
     }
@@ -381,6 +376,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutFourNodesOneBackups() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -389,7 +385,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 60000;
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithPut(duration, 2, 2);
     }
@@ -397,6 +393,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutFourNodesOneBackupsOffheapEvict() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -405,7 +402,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = true;
 
-        long duration = 60000;
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithPut(duration, 2, 2);
     }
@@ -413,6 +410,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxFourNodesOneBackups() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -421,7 +419,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 60000;
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithTx(duration, 2, 2, 3);
     }
@@ -429,6 +427,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxFourNodesOneBackupsOffheapEvict() throws Throwable {
         backups = 1;
         nodeCnt = 4;
@@ -437,7 +436,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = true;
 
-        long duration = 30_000;
+        long duration = SF.applyLB(30_000, 3_000);
 
         checkRestartWithTx(duration, 2, 2, 100);
     }
@@ -445,6 +444,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 6;
@@ -453,7 +453,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithPut(duration, 3, 3);
     }
@@ -461,6 +461,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 6;
@@ -469,7 +470,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTx(duration, 3, 3, 3);
     }
@@ -477,6 +478,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 8;
@@ -485,7 +487,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithPut(duration, 4, 4);
     }
@@ -493,6 +495,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 8;
@@ -501,7 +504,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTx(duration, 4, 4, 3);
     }
@@ -509,6 +512,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 10;
@@ -517,7 +521,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithPut(duration, 5, 5);
     }
@@ -525,6 +529,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 10;
@@ -533,7 +538,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTx(duration, 5, 5, 3);
     }
@@ -541,6 +546,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxPutAllTenNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 10;
@@ -549,7 +555,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTxPutAll(duration, 5, 5);
     }
@@ -557,6 +563,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartWithTxPutAllFourNodesTwoBackups() throws Throwable {
         backups = 2;
         nodeCnt = 4;
@@ -565,7 +572,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = 90000;
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTxPutAll(duration, 2, 2);
     }
@@ -583,106 +590,94 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         startGrids();
 
-        Collection<Thread> threads = new LinkedList<>();
+        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>();
 
         try {
             final AtomicInteger putCntr = new AtomicInteger();
-
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
+            final AtomicInteger startedThreadCntr = new AtomicInteger();
 
-            for (int i = 0; i < putThreads; i++) {
-                final int gridIdx = i;
+            fut.add(GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int gridIdx = startedThreadCntr.getAndIncrement();
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
+                    barrier.await();
+
+                    info("Starting put thread: " + gridIdx);
+
+                    Thread.currentThread().setName("put-worker-" + grid(gridIdx).name());
+
+                    IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
+
+                    while (System.currentTimeMillis() < endTime && err.get() == null) {
+                        int key = RAND.nextInt(keyCnt);
+
                         try {
-                            barrier.await();
-
-                            info("Starting put thread: " + gridIdx);
-
-                            Thread.currentThread().setName("put-worker-" + grid(gridIdx).name());
-
-                            IgniteCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
-
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                int key = RAND.nextInt(keyCnt);
-
-                                try {
-                                    cache.put(key, Integer.toString(key));
-                                }
-                                catch (IgniteException | CacheException ignored) {
-                                    // It is ok if primary node leaves grid.
-                                }
-
-                                cache.get(key);
-
-                                int c = putCntr.incrementAndGet();
-
-                                if (c % LOG_FREQ == 0)
-                                    info(">>> Put iteration [cnt=" + c + ", key=" + key + ']');
-                            }
+                            cache.put(key, Integer.toString(key));
                         }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
-
-                            error("Unexpected exception in put-worker.", e);
+                        catch (IgniteException | CacheException ignored) {
+                            // It is ok if primary node leaves grid.
                         }
+
+                        cache.get(key);
+
+                        int c = putCntr.incrementAndGet();
+
+                        if (c % LOG_FREQ == 0)
+                            info(">>> Put iteration [cnt=" + c + ", key=" + key + ']');
                     }
-                }, "put-worker-" + i);
+                }
+                catch (Exception e) {
+                    err.compareAndSet(null, e);
 
-                t.start();
+                    error("Unexpected exception in put-worker.", e);
+                }
+            }, putThreads, "put-worker"));
 
-                threads.add(t);
-            }
+            GridTestUtils.waitForCondition(() -> startedThreadCntr.get() == putThreads, getTestTimeout());
 
-            for (int i = 0; i < restartThreads; i++) {
-                final int gridIdx = i + putThreads;
+            fut.add(GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int gridIdx = startedThreadCntr.getAndIncrement();
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+                    barrier.await();
 
-                            info("Starting restart thread: " + gridIdx);
+                    info("Starting restart thread: " + gridIdx);
 
-                            int cnt = 0;
+                    int cnt = 0;
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                log.info(">>>>>>> Stopping grid " + gridIdx);
+                    while (System.currentTimeMillis() < endTime && err.get() == null) {
+                        log.info(">>>>>>> Stopping grid " + gridIdx);
 
-                                stopGrid(gridIdx);
+                        stopGrid(gridIdx);
 
-                                log.info(">>>>>>> Starting grid " + gridIdx);
+                        log.info(">>>>>>> Starting grid " + gridIdx);
 
-                                startGrid(gridIdx);
+                        startGrid(gridIdx);
 
-                                int c = ++cnt;
+                        int c = ++cnt;
 
-                                if (c % LOG_FREQ == 0)
-                                    info(">>> Restart iteration: " + c);
-                            }
-                        }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
-
-                            error("Unexpected exception in restart-worker.", e);
-                        }
+                        if (c % LOG_FREQ == 0)
+                            info(">>> Restart iteration: " + c);
                     }
-                }, "restart-worker-" + i);
+                }
+                catch (Exception e) {
+                    err.compareAndSet(null, e);
 
-                t.start();
+                    error("Unexpected exception in restart-worker.", e);
+                }
+            }, restartThreads, "restart-worker"));
 
-                threads.add(t);
-            }
+            fut.markInitialized();
 
-            for (Thread t : threads)
-                t.join();
+            fut.get(getTestTimeout());
 
             if (err.get() != null)
                 throw err.get();
         }
         finally {
-            stopAllGrids();
+            if (!fut.isDone())
+                fut.cancel();
         }
     }
 
@@ -701,147 +696,134 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
             return;
 
         final long endTime = System.currentTimeMillis() + duration;
-
         final AtomicReference<Throwable> err = new AtomicReference<>();
 
         startGrids();
 
-        Collection<Thread> threads = new LinkedList<>();
+        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>();
 
         try {
             final AtomicInteger txCntr = new AtomicInteger();
-
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
+            final AtomicInteger startedThreadCntr = new AtomicInteger();
 
-            for (int i = 0; i < putThreads; i++) {
-                final int gridIdx = i;
+            fut.add(GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int gridIdx = startedThreadCntr.getAndIncrement();
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
+                    barrier.await();
+
+                    info("Starting put thread: " + gridIdx);
+
+                    Ignite ignite = grid(gridIdx);
+
+                    Thread.currentThread().setName("put-worker-" + ignite.name());
+
+                    UUID locNodeId = ignite.cluster().localNode().id();
+
+                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
+
+                    List<Integer> keys = new ArrayList<>(txKeys);
+
+                    while (System.currentTimeMillis() < endTime && err.get() == null) {
+                        keys.clear();
+
+                        for (int i = 0; i < txKeys; i++)
+                            keys.add(RAND.nextInt(keyCnt));
+
+                        // Ensure lock order.
+                        Collections.sort(keys);
+
+                        int c = 0;
+
                         try {
-                            barrier.await();
+                            IgniteTransactions txs = ignite.transactions();
 
-                            info("Starting put thread: " + gridIdx);
-
-                            Ignite ignite = grid(gridIdx);
-
-                            Thread.currentThread().setName("put-worker-" + ignite.name());
-
-                            UUID locNodeId = ignite.cluster().localNode().id();
-
-                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
-
-                            List<Integer> keys = new ArrayList<>(txKeys);
-
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                keys.clear();
-
-                                for (int i = 0; i < txKeys; i++)
-                                    keys.add(RAND.nextInt(keyCnt));
-
-                                // Ensure lock order.
-                                Collections.sort(keys);
-
-                                int c = 0;
-
-                                try {
-                                    IgniteTransactions txs = ignite.transactions();
-
-                                    try (Transaction tx = txs.txStart(txConcurrency(), REPEATABLE_READ)) {
-                                        c = txCntr.incrementAndGet();
-
-                                        if (c % LOG_FREQ == 0) {
-                                            info(">>> Tx iteration started [cnt=" + c +
-                                                ", keys=" + keys +
-                                                ", locNodeId=" + locNodeId + ']');
-                                        }
-
-                                        for (int key : keys) {
-                                            int op = cacheOp();
-
-                                            if (op == 1)
-                                                cache.put(key, Integer.toString(key));
-                                            else if (op == 2)
-                                                cache.remove(key);
-                                            else
-                                                cache.get(key);
-                                        }
-
-                                        tx.commit();
-                                    }
-                                }
-                                catch (IgniteException | CacheException ignored) {
-                                    // It is ok if primary node leaves grid.
-                                }
+                            try (Transaction tx = txs.txStart(txConcurrency(), REPEATABLE_READ)) {
+                                c = txCntr.incrementAndGet();
 
                                 if (c % LOG_FREQ == 0) {
-                                    info(">>> Tx iteration finished [cnt=" + c +
-                                        ", cacheSize=" + cache.localSize() +
+                                    info(">>> Tx iteration started [cnt=" + c +
                                         ", keys=" + keys +
                                         ", locNodeId=" + locNodeId + ']');
                                 }
+
+                                for (int key : keys) {
+                                    int op = cacheOp();
+
+                                    if (op == 1)
+                                        cache.put(key, Integer.toString(key));
+                                    else if (op == 2)
+                                        cache.remove(key);
+                                    else
+                                        cache.get(key);
+                                }
+
+                                tx.commit();
                             }
-
-                            info(">>> " + Thread.currentThread().getName() + " finished.");
                         }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
+                        catch (IgniteException | CacheException ignored) {
+                            // It is ok if primary node leaves grid.
+                        }
 
-                            error("Unexpected exception in put-worker.", e);
+                        if (c % LOG_FREQ == 0) {
+                            info(">>> Tx iteration finished [cnt=" + c +
+                                ", cacheSize=" + cache.localSize() +
+                                ", keys=" + keys +
+                                ", locNodeId=" + locNodeId + ']');
                         }
                     }
-                }, "put-worker-" + i);
 
-                t.start();
+                    info(">>> " + Thread.currentThread().getName() + " finished.");
+                }
+                catch (Exception e) {
+                    err.compareAndSet(null, e);
 
-                threads.add(t);
-            }
+                    error("Unexpected exception in put-worker.", e);
+                }
+            }, putThreads, "put-worker"));
 
-            for (int i = 0; i < restartThreads; i++) {
-                final int gridIdx = i + putThreads;
+            GridTestUtils.waitForCondition(() -> startedThreadCntr.get() == putThreads, getTestTimeout());
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+            fut.add(GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int gridIdx = startedThreadCntr.incrementAndGet();
 
-                            info("Starting restart thread: " + gridIdx);
+                    barrier.await();
 
-                            int cnt = 0;
+                    info("Starting restart thread: " + gridIdx);
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                stopGrid(getTestIgniteInstanceName(gridIdx), false, false);
-                                startGrid(gridIdx);
+                    int cnt = 0;
 
-                                int c = ++cnt;
+                    while (System.currentTimeMillis() < endTime && err.get() == null) {
+                        stopGrid(getTestIgniteInstanceName(gridIdx), false, false);
+                        startGrid(gridIdx);
 
-                                if (c % LOG_FREQ == 0)
-                                    info(">>> Restart iteration: " + c);
-                            }
+                        int c = ++cnt;
 
-                            info(">>> " + Thread.currentThread().getName() + " finished.");
-                        }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
-
-                            error("Unexpected exception in restart-worker.", e);
-                        }
+                        if (c % LOG_FREQ == 0)
+                            info(">>> Restart iteration: " + c);
                     }
-                }, "restart-worker-" + i);
 
-                t.start();
+                    info(">>> " + Thread.currentThread().getName() + " finished.");
+                }
+                catch (Exception e) {
+                    err.compareAndSet(null, e);
 
-                threads.add(t);
-            }
+                    error("Unexpected exception in restart-worker.", e);
+                }
+            }, restartThreads, "restart-worker"));
 
-            for (Thread t : threads)
-                t.join();
+            fut.markInitialized();
+
+            fut.get(getTestTimeout());
 
             if (err.get() != null)
                 throw err.get();
         }
         finally {
-            stopAllGrids();
+            if (!fut.isDone())
+                fut.cancel();
         }
     }
 
@@ -861,129 +843,116 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         startGrids();
 
-        Collection<Thread> threads = new LinkedList<>();
+        GridCompoundFuture<Long, Long> fut = new GridCompoundFuture<>();
 
         try {
             final AtomicInteger txCntr = new AtomicInteger();
-
             final CyclicBarrier barrier = new CyclicBarrier(putThreads + restartThreads);
-
+            final AtomicInteger startedThreadCntr = new AtomicInteger();
             final int txKeys = 3;
 
-            for (int i = 0; i < putThreads; i++) {
-                final int gridIdx = i;
+            fut.add(GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int gridIdx = startedThreadCntr.getAndIncrement();
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+                    barrier.await();
 
-                            info("Starting put thread: " + gridIdx);
+                    info("Starting put thread: " + gridIdx);
 
-                            Ignite ignite = grid(gridIdx);
+                    Ignite ignite = grid(gridIdx);
 
-                            Thread.currentThread().setName("put-worker-" + ignite.name());
+                    Thread.currentThread().setName("put-worker-" + ignite.name());
 
-                            UUID locNodeId = ignite.cluster().localNode().id();
+                    UUID locNodeId = ignite.cluster().localNode().id();
 
-                            IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
-                            List<Integer> keys = new ArrayList<>(txKeys);
+                    List<Integer> keys = new ArrayList<>(txKeys);
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                keys.clear();
+                    while (System.currentTimeMillis() < endTime && err.get() == null) {
+                        keys.clear();
 
-                                for (int i = 0; i < txKeys; i++)
-                                    keys.add(RAND.nextInt(keyCnt));
+                        for (int i = 0; i < txKeys; i++)
+                            keys.add(RAND.nextInt(keyCnt));
 
-                                // Ensure lock order.
-                                Collections.sort(keys);
+                        // Ensure lock order.
+                        Collections.sort(keys);
 
-                                int c = 0;
+                        int c = 0;
 
-                                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    c = txCntr.incrementAndGet();
+                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            c = txCntr.incrementAndGet();
 
-                                    if (c % LOG_FREQ == 0)
-                                        info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
-                                            "locNodeId=" + locNodeId + ']');
+                            if (c % LOG_FREQ == 0)
+                                info(">>> Tx iteration started [cnt=" + c + ", keys=" + keys + ", " +
+                                    "locNodeId=" + locNodeId + ']');
 
-                                    Map<Integer, String> batch = new LinkedHashMap<>();
+                            Map<Integer, String> batch = new LinkedHashMap<>();
 
-                                    for (int key : keys)
-                                        batch.put(key, String.valueOf(key));
+                            for (int key : keys)
+                                batch.put(key, String.valueOf(key));
 
-                                    cache.putAll(batch);
+                            cache.putAll(batch);
 
-                                    tx.commit();
-                                }
-                                catch (IgniteException | CacheException ignored) {
-                                    // It is ok if primary node leaves grid.
-                                }
-
-                                if (c % LOG_FREQ == 0) {
-                                    info(">>> Tx iteration finished [cnt=" + c +
-                                        ", keys=" + keys + ", " +
-                                        "locNodeId=" + locNodeId + ']');
-                                }
-                            }
+                            tx.commit();
                         }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
+                        catch (IgniteException | CacheException ignored) {
+                            // It is ok if primary node leaves grid.
+                        }
 
-                            error("Unexpected exception in put-worker.", e);
+                        if (c % LOG_FREQ == 0) {
+                            info(">>> Tx iteration finished [cnt=" + c +
+                                ", keys=" + keys + ", " +
+                                "locNodeId=" + locNodeId + ']');
                         }
                     }
-                }, "put-worker-" + i);
+                }
+                catch (Exception e) {
+                    err.compareAndSet(null, e);
 
-                t.start();
+                    error("Unexpected exception in put-worker.", e);
+                }
+            }, putThreads, "put-worker"));
 
-                threads.add(t);
-            }
+            GridTestUtils.waitForCondition(() -> startedThreadCntr.get() == putThreads, getTestTimeout());
 
-            for (int i = 0; i < restartThreads; i++) {
-                final int gridIdx = i + putThreads;
+            fut.add(GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int gridIdx = startedThreadCntr.getAndIncrement();
 
-                Thread t = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            barrier.await();
+                    barrier.await();
 
-                            info("Starting restart thread: " + gridIdx);
+                    info("Starting restart thread: " + gridIdx);
 
-                            int cnt = 0;
+                    int cnt = 0;
 
-                            while (System.currentTimeMillis() < endTime && err.get() == null) {
-                                stopGrid(gridIdx);
-                                startGrid(gridIdx);
+                    while (System.currentTimeMillis() < endTime && err.get() == null) {
+                        stopGrid(gridIdx);
+                        startGrid(gridIdx);
 
-                                int c = ++cnt;
+                        int c = ++cnt;
 
-                                if (c % LOG_FREQ == 0)
-                                    info(">>> Restart iteration: " + c);
-                            }
-                        }
-                        catch (Exception e) {
-                            err.compareAndSet(null, e);
-
-                            error("Unexpected exception in restart-worker.", e);
-                        }
+                        if (c % LOG_FREQ == 0)
+                            info(">>> Restart iteration: " + c);
                     }
-                }, "restart-worker-" + i);
+                }
+                catch (Exception e) {
+                    err.compareAndSet(null, e);
 
-                t.start();
+                    error("Unexpected exception in restart-worker.", e);
+                }
+            }, restartThreads, "restart-worker"));
 
-                threads.add(t);
-            }
+            fut.markInitialized();
 
-            for (Thread t : threads)
-                t.join();
+            fut.get(getTestTimeout());
 
             if (err.get() != null)
                 throw err.get();
         }
         finally {
-            stopAllGrids();
+            if (!fut.isDone())
+                fut.cancel();
         }
     }
 

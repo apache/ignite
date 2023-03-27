@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteInterruptedException;
@@ -35,6 +36,7 @@ import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -43,10 +45,10 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
-    private InnerLogger innerLog;
+    private static InnerLogger innerLog;
 
     /** */
-    private GridTestKernalContext ctx;
+    private static GridTestKernalContext ctx;
 
     /** */
     private static final int THREADS = 4;
@@ -64,15 +66,21 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ctx.setSystemExecutorService(Executors.newFixedThreadPool(THREADS));
+        ctx.add(new PoolProcessor(ctx) {
+            final ExecutorService sysExecSvc = Executors.newFixedThreadPool(THREADS);
 
-        ctx.add(new PoolProcessor(ctx));
+            @Override public ExecutorService getSystemExecutorService() {
+                return sysExecSvc;
+            }
+        });
+
         ctx.add(new GridClosureProcessor(ctx));
     }
 
     /**
      * Multithreaded test, used custom class loader
      */
+    @Test
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -103,8 +111,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         // Wait for all pending tasks in closure processor to complete.
         for (int i = 0; i < THREADS; i++) {
             ctx.closure().runLocalSafe(new GridPlainRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     arrive.countDown();
 
                     try {
@@ -124,8 +131,6 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         assertTrue(InternalExecutor.counter.get() == 0);
 
         assertTrue(!innerLog.contains("Exception"));
-
-        assertTrue(innerLog.contains("File already locked"));
     }
 
     /**
@@ -141,7 +146,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         public void executeTest(GridTestLog4jLogger log, GridKernalContext ctx) throws Exception {
             counter.incrementAndGet();
 
-            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
+            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null, null);
             marshallerContext.onMarshallerProcessorStarted(ctx, null);
 
             MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());

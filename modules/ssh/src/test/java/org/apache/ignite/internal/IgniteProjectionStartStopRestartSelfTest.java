@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,17 +35,20 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -63,20 +67,24 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.UNA
  * Tests for {@code startNodes(..)}, {@code stopNodes(..)}
  * and {@code restartNodes(..)} methods.
  * <p>
- * {@code tests.properties} file must specify username ({@code ssh.username} property)
- * and one (and only one) of password ({@code ssh.password} property) or
- * private key path ({@code ssh.key} property).
+ * Environment (obtained via {@link System#getenv(String)}) or, alternatively, {@code tests.properties} file must
+ * specify either username and password or private key path in the environment properties (@code test.ssh.username},
+ * {@code test.ssh.password}, {@code ssh.key} or in test file entries {@code ssh.username} {@code ssh.password},
+ * {@code ssh.key}respectively.</p>
+ * <p>
+ * Configured target host must run ssh server and accept ssh connections at configured port from user with specified
+ * credentials.</p>
  */
 @SuppressWarnings("ConstantConditions")
 public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String SSH_UNAME = System.getenv("test.ssh.username");
+    private static final String SSH_UNAME = getProperty("test.ssh.username", "ssh.username");
 
     /** */
-    private static final String SSH_PWD = System.getenv("test.ssh.password");
+    private static final String SSH_PWD = getProperty("test.ssh.password", "ssh.password");
 
     /** */
-    private static final String SSH_KEY = System.getenv("ssh.key");
+    private static final String SSH_KEY = getProperty("ssh.key", "ssh.key");
 
     /** */
     private static final String CUSTOM_SCRIPT_WIN = "modules/core/src/test/bin/start-nodes-custom.bat";
@@ -97,7 +105,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private static final String CUSTOM_CFG_ATTR_VAL = "true";
 
     /** */
-    private static final long WAIT_TIMEOUT = 40 * 1000;
+    private static final long WAIT_TIMEOUT = 90 * 1000;
 
     /** */
     private String pwd;
@@ -124,7 +132,12 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     private volatile CountDownLatch leftLatch;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() {
         if (SSH_KEY != null) {
             key = new File(SSH_KEY);
 
@@ -138,62 +151,34 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         log.info("Password: " + pwd);
         log.info("Key path: " + key);
 
-        G.setDaemon(true);
-
         ignite = G.start(CFG_NO_ATTR);
 
-        G.setDaemon(false);
+        ignite.events().localListen((IgnitePredicate<Event>)evt -> {
+            info("Received event: " + evt.shortDisplay());
 
-        ignite.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                info("Received event: " + evt.shortDisplay());
+            if (evt.type() == EVT_NODE_JOINED) {
+                joinedCnt.incrementAndGet();
 
-                if (evt.type() == EVT_NODE_JOINED) {
-                    joinedCnt.incrementAndGet();
-
-                    if (joinedLatch != null)
-                        joinedLatch.countDown();
-                }
-                else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-                    leftCnt.incrementAndGet();
-
-                    if (leftLatch != null)
-                        leftLatch.countDown();
-                }
-
-                return true;
+                if (joinedLatch != null)
+                    joinedLatch.countDown();
             }
+            else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
+                leftCnt.incrementAndGet();
+
+                if (leftLatch != null)
+                    leftLatch.countDown();
+            }
+
+            return true;
         }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        boolean wasEmpty = true;
-
-        if (ignite != null) {
-            if (!ignite.cluster().nodes().isEmpty()) {
-                leftLatch = new CountDownLatch(ignite.cluster().nodes().size());
-
-                ignite.cluster().stopNodes();
-
-                assert leftLatch.await(
-                    WAIT_TIMEOUT,
-                    MILLISECONDS);
-            }
-
-            wasEmpty = ignite.cluster().nodes().isEmpty();
-        }
-
-        G.stop(true);
-
-        joinedCnt.set(0);
-        leftCnt.set(0);
+    @Override protected void afterTest() {
+        stopAllGrids();
 
         joinedLatch = null;
         leftLatch = null;
-
-        assert wasEmpty : "grid.isEmpty() returned false after all nodes were stopped " +
-            "[nodes=" + ignite.cluster().nodes() + ']';
     }
 
     /** {@inheritDoc} */
@@ -204,23 +189,22 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartOneNode() throws Exception {
         joinedLatch = new CountDownLatch(1);
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
+                maps(Collections.singleton(HOST), pwd, key, 1, U.getIgniteHome(), CFG_NO_ATTR, null),
+                false, 0, 16);
 
         assert res.size() == 1;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -228,29 +212,28 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 1;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodes() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, DFLT_TIMEOUT, 1);
+                maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
+                false, DFLT_TIMEOUT, 1);
 
         assert res.size() == 3;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -258,135 +241,84 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodesAndDoEmptyCall() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+        startCheckNodes();
 
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
-        res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-            null, false, 0, 16);
+        Collection<ClusterStartNodeResult> res = startNodes(ignite.cluster(),
+            maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
+            false, 0, 16);
 
         assert res.isEmpty();
 
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodesAndTryToStartOneNode() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+        startCheckNodes();
 
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
-
-        res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getIgniteHome(), CFG_NO_ATTR, null),
-            null, false, 0, 16);
+        Collection<ClusterStartNodeResult> res = startNodes(ignite.cluster(),
+            maps(Collections.singleton(HOST), pwd, key, 1, U.getIgniteHome(), CFG_NO_ATTR, null),
+            false, 0, 16);
 
         assert res.isEmpty();
 
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFiveNodesInTwoCalls() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+        startCheckNodes();
 
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
-
         joinedLatch = new CountDownLatch(2);
 
-        res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 5, U.getIgniteHome(), CFG_NO_ATTR, null),
-            null, false, 0, 16);
+        Collection<ClusterStartNodeResult> res = startNodes(ignite.cluster(),
+            maps(Collections.singleton(HOST), pwd, key, 5, U.getIgniteHome(), CFG_NO_ATTR, null),
+            false, 0, 16);
 
         assert res.size() == 2;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -394,30 +326,29 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 5;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 5;
+        assert ignite.cluster().nodes().size() == 6;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFiveWithTwoSpecs() throws Exception {
         joinedLatch = new CountDownLatch(5);
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                F.asList(map(HOST, SSH_UNAME, pwd, key, 2, U.getIgniteHome(), CFG_NO_ATTR, null),
-                    map(HOST, SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null)),
-                null, false, 0, 16);
+                F.asList(map(pwd, key, 2, U.getIgniteHome()),
+                    map(pwd, key, 3, U.getIgniteHome())),
+                false, 0, 16);
 
         assert res.size() == 5;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -425,54 +356,35 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 5;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 5;
+        assert ignite.cluster().nodes().size() == 6;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartThreeNodesAndRestart() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+        startCheckNodes();
 
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
-
         joinedLatch = new CountDownLatch(3);
         leftLatch = new CountDownLatch(3);
 
-        res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-            null, true, 0, 16);
+        Collection<ClusterStartNodeResult> res = startNodes(ignite.cluster(),
+            maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
+            true, 0, 16);
 
         assert res.size() == 3;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -481,12 +393,13 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 6;
         assert leftCnt.get() == 3;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomScript() throws Exception {
         joinedLatch = new CountDownLatch(1);
 
@@ -496,18 +409,16 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getIgniteHome(), null, script),
-                null, false, 0, 16);
+                maps(Collections.singleton(HOST), pwd, key, 1, U.getIgniteHome(), null, script),
+                false, 0, 16);
 
         assert res.size() == 1;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -515,66 +426,64 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 1;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
 
-        assert CUSTOM_CFG_ATTR_VAL.equals(F.first(ignite.cluster().nodes()).<String>attribute(CUSTOM_CFG_ATTR_KEY));
+        Iterator<ClusterNode> iter = ignite.cluster().nodes().iterator();
+
+        iter.next();
+
+        ClusterNode node = iter.next();
+
+        assert CUSTOM_CFG_ATTR_VAL.equals(node.<String>attribute(CUSTOM_CFG_ATTR_KEY));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNodes() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
-                null), null, false, 0, 16);
+                maps(Collections.singleton(HOST), pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
+                    null), false, 0, 16);
 
         assert res.size() == 3;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
-        leftLatch = new CountDownLatch(3);
-
-        ignite.cluster().stopNodes();
-
-        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().isEmpty();
+        stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopNodesFiltered() throws Exception {
         joinedLatch = new CountDownLatch(2);
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getIgniteHome(), CFG_ATTR, null),
-                null, false, 0, 16);
+                maps(Collections.singleton(HOST), pwd, key, 2, U.getIgniteHome(), CFG_ATTR, null),
+                false, 0, 16);
 
         assert res.size() == 2;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -582,71 +491,30 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         joinedLatch = new CountDownLatch(1);
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-            null, false, 0, 16);
+            maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
+            false, 0, 16);
 
         assert res.size() == 1;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
         leftLatch = new CountDownLatch(2);
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
-            new IgniteClosure<ClusterNode, UUID>() {
-            @Override public UUID apply(ClusterNode node) {
-                return node.id();
-            }
-        });
+            (IgniteClosure<ClusterNode, UUID>)ClusterNode::id);
 
         ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes();
 
         ignite.cluster().stopNodes(ids);
-
-        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 1;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStopNodeById() throws Exception {
-        joinedLatch = new CountDownLatch(3);
-
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
-
-        leftLatch = new CountDownLatch(1);
-
-        ignite.cluster().stopNodes(Collections.singleton(F.first(ignite.cluster().forRemotes().nodes()).id()));
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
@@ -656,32 +524,49 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testStopNodeById() throws Exception {
+        joinedLatch = new CountDownLatch(3);
+
+        startCheckNodes();
+
+        leftLatch = new CountDownLatch(1);
+
+        UUID toStop = null;
+
+        Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (!Objects.equals(node.id(), ignite.cluster().localNode().id())) {
+                toStop = node.id();
+
+                break;
+            }
+        }
+
+        assert toStop != null;
+
+        ignite.cluster().stopNodes(Collections.singleton(toStop));
+
+        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+
+        assert ignite.cluster().nodes().size() == 3;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testStopNodesByIds() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
+        startCheckNodes();
 
         leftLatch = new CountDownLatch(2);
 
         Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
+
+        it.next();
 
         Collection<UUID> ids = new HashSet<>();
 
@@ -692,71 +577,17 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testStopNodesByIdsC() throws Exception {
-        joinedLatch = new CountDownLatch(3);
-
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
-
-        leftLatch = new CountDownLatch(2);
-
-        Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
-
-        ignite.cluster().stopNodes(F.asList(it.next().id(), it.next().id()));
-
-        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 1;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testRestartNodes() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
+        startCheckNodes();
 
         joinedLatch = new CountDownLatch(3);
         leftLatch = new CountDownLatch(3);
@@ -766,29 +597,28 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodesFiltered() throws Exception {
         joinedLatch = new CountDownLatch(2);
 
         Collection<ClusterStartNodeResult> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getIgniteHome(), CFG_ATTR, null),
-                null, false, 0, 16);
+                maps(Collections.singleton(HOST), pwd, key, 2, U.getIgniteHome(), CFG_ATTR, null),
+                false, 0, 16);
 
         assert res.size() == 2;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
@@ -796,23 +626,21 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         joinedLatch = new CountDownLatch(1);
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-            null, false, 0, 16);
+            maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
+            false, 0, 16);
 
         assert res.size() == 1;
 
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
 
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
         });
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
         joinedLatch = new CountDownLatch(2);
         leftLatch = new CountDownLatch(2);
@@ -820,11 +648,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         X.println("Restarting nodes with " + CUSTOM_CFG_ATTR_KEY);
 
         Collection<UUID> ids = F.transform(ignite.cluster().forAttribute(CUSTOM_CFG_ATTR_KEY, CUSTOM_CFG_ATTR_VAL).nodes(),
-            new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            }
+            (IgniteClosure<ClusterNode, UUID>)ClusterNode::id
         );
 
         ignite.cluster().restartNodes(ids);
@@ -832,34 +656,17 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodeById() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
+        startCheckNodes();
 
         joinedLatch = new CountDownLatch(1);
         leftLatch = new CountDownLatch(1);
@@ -869,126 +676,63 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartNodesByIds() throws Exception {
         joinedLatch = new CountDownLatch(3);
 
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
+        startCheckNodes();
 
         joinedLatch = new CountDownLatch(2);
         leftLatch = new CountDownLatch(2);
 
         Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
-        ignite.cluster().restartNodes(F.asList(it.next().id(), it.next().id()));
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRestartNodesByIdsC() throws Exception {
-        joinedLatch = new CountDownLatch(3);
-
-        Collection<ClusterStartNodeResult> res =
-            startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
-                null, false, 0, 16);
-
-        assert res.size() == 3;
-
-        F.forEach(res, new CI1<ClusterStartNodeResult>() {
-            @Override public void apply(ClusterStartNodeResult t) {
-                assert t.getHostName().equals(HOST);
-
-                if (!t.isSuccess())
-                    throw new IgniteException(t.getError());
-            }
-        });
-
-        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().size() == 3;
-
-        joinedLatch = new CountDownLatch(2);
-        leftLatch = new CountDownLatch(2);
-
-        Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
+        it.next();
 
         ignite.cluster().restartNodes(F.asList(it.next().id(), it.next().id()));
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
-     * @param host Hostname.
-     * @param uname Username.
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
      * @param igniteHome Ignite home.
-     * @param cfg Configuration file path.
-     * @param script Startup script path.
      * @return Parameters map.
      */
     private Map<String, Object> map(
-        String host,
-        @Nullable String uname,
         @Nullable String passwd,
         @Nullable File key,
         @Nullable Integer nodes,
-        @Nullable String igniteHome,
-        @Nullable String cfg,
-        @Nullable String script) {
-        assert host != null;
+        @Nullable String igniteHome) {
+        assert IgniteProjectionStartStopRestartSelfTest.HOST != null;
 
         Map<String, Object> params = new HashMap<>();
 
-        params.put(IgniteNodeStartUtils.HOST, host);
-        params.put(UNAME, uname);
+        params.put(IgniteNodeStartUtils.HOST, IgniteProjectionStartStopRestartSelfTest.HOST);
+        params.put(UNAME, IgniteProjectionStartStopRestartSelfTest.SSH_UNAME);
         params.put(PASSWD, passwd);
         params.put(KEY, key);
         params.put(NODES, nodes);
         params.put(IGNITE_HOME, igniteHome);
-        params.put(CFG, cfg);
-        params.put(SCRIPT, script);
+        params.put(CFG, IgniteProjectionStartStopRestartSelfTest.CFG_NO_ATTR);
+        params.put(SCRIPT, null);
 
         return params;
     }
 
     /**
      * @param hosts Hostnames.
-     * @param uname Username.
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
@@ -999,7 +743,6 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      */
     private Collection<Map<String, Object>> maps(
         Collection<String> hosts,
-        @Nullable String uname,
         @Nullable String passwd,
         @Nullable File key,
         @Nullable Integer nodes,
@@ -1014,7 +757,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
             Map<String, Object> params = new HashMap<>();
 
             params.put(IgniteNodeStartUtils.HOST, host);
-            params.put(UNAME, uname);
+            params.put(UNAME, IgniteProjectionStartStopRestartSelfTest.SSH_UNAME);
             params.put(PASSWD, passwd);
             params.put(KEY, key);
             params.put(NODES, nodes);
@@ -1029,17 +772,33 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     }
 
     /**
-     * @param name Filename.
-     * @return Whether name belongs to log file.
+     * @throws InterruptedException If failed.
      */
-    private boolean isSshNodeLogName(String name) {
-        return name.matches("ignite.[0-9a-z-]+.log");
+    private void startCheckNodes() throws InterruptedException {
+        joinedLatch = new CountDownLatch(3);
+
+        Collection<ClusterStartNodeResult> res =
+            startNodes(ignite.cluster(),
+                maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
+                false, 0, 16);
+
+        assert res.size() == 3;
+
+        res.forEach(t -> {
+            assert t.getHostName().equals(HOST);
+
+            if (!t.isSuccess())
+                throw new IgniteException(t.getError());
+        });
+
+        assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
      * @param cluster Cluster.
      * @param hosts Hosts.
-     * @param dflts Default.
      * @param restart Restart flag.
      * @param timeout Timeout.
      * @param maxConn Maximum connections.
@@ -1047,10 +806,19 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      */
     private Collection<ClusterStartNodeResult> startNodes(IgniteCluster cluster,
         Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts,
         boolean restart,
         int timeout,
         int maxConn) {
-        return cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn).get(WAIT_TIMEOUT);
+        return cluster.startNodesAsync(hosts, null, restart, timeout, maxConn).get(WAIT_TIMEOUT);
+    }
+
+    /** */
+    private static String getProperty(String envName, String gridTestName) {
+        String candidate = System.getenv(envName);
+
+        if (candidate != null)
+            return candidate;
+
+        return GridTestProperties.getProperty(gridTestName);
     }
 }

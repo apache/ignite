@@ -17,23 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -75,6 +75,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCleanup() throws Exception {
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, 0, config(false));
 
@@ -176,21 +177,15 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
         // Check that items of removed queue are removed, items of new queue not.
         assertTrue(GridTestUtils.waitForCondition(new PAX() {
-            @SuppressWarnings("WhileLoopReplaceableByForEach")
-            @Override public boolean applyx() {
+            @Override public boolean applyx() throws IgniteCheckedException {
                 int cnt = 0;
 
                 for (int i = 0; i < gridCount(); i++) {
                     GridCacheAdapter<Object, Object> cache =
-                        ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
+                        grid(i).context().cache().internalCache(queueCacheName);
 
-                    Iterator<GridCacheMapEntry> entries = cache.map().entries().iterator();
-
-                    while (entries.hasNext()) {
+                    for (Object e : cache.localEntries(new CachePeekMode[]{CachePeekMode.ALL}))
                         cnt++;
-
-                        entries.next();
-                    }
                 }
 
                 if (cnt > 501) { // 500 items + header.

@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 
 /**
  *
@@ -58,6 +59,11 @@ public class BPlusTreeFakeReuseSelfTest extends BPlusTreeSelfTest {
         /** {@inheritDoc} */
         @Override public long recycledPagesCount() throws IgniteCheckedException {
             return deque.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
+            return pageId;
         }
     }
 }

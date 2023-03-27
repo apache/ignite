@@ -133,7 +133,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
-                (IgnitePredicate<Event>)rmtFilter, types);
+                securityAwareRemoteFilter(rmtFilter), types);
 
             return saveOrGet(ctx.continuous().startRoutine(
                 hnd,
@@ -162,7 +162,7 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
 
         try {
             GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
-                (IgnitePredicate<Event>)rmtFilter, types);
+                securityAwareRemoteFilter(rmtFilter), types);
 
             return new IgniteFutureImpl<>(ctx.continuous().startRoutine(
                 hnd,
@@ -172,9 +172,31 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
                 autoUnsubscribe,
                 prj.predicate()));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
+    }
+
+    /**
+     * @param original Original IgnitePredicate.
+     * @return Security aware IgnitePredicate.
+     */
+    private <T> IgnitePredicate<Event> securityAwareRemoteFilter(@Nullable IgnitePredicate<T> original) {
+        if (original == null)
+            return null;
+
+        IgnitePredicate<Event> res = (IgnitePredicate<Event>)original;
+
+        if (ctx.security().enabled()) {
+            final UUID subjId = ctx.security().securityContext().subject().id();
+
+            return new SecurityAwarePredicate<>(subjId, res);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -195,7 +217,6 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException {
         A.notNull(opId, "consumeId");
 

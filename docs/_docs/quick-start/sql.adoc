@@ -1,0 +1,129 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Getting Started Quickly with SQL Via the Command Line
+
+If you just want to start up a cluster on the local machine and add a few rows of data without running Java or starting up an IDE, you can do some basic data loading and run some queries via the command line purely in SQL in less than 5 minutes.
+
+To do this, we'll use the `sqlline` utility (located in the `/bin` directory of your Ignite installation).
+
+NOTE: This example shows just one simple way to load data into Ignite, quickly, for the sake of experimenting.
+For larger, production-scale work, you would want to use a more robust method of loading data (IgniteDataStreamer, Spark, advanced SQL, etc.).
+Refer to the link:persistence/external-storage[External Storage] page for the information on how to load data from an RDBMS.
+
+== Installing Ignite
+
+Before we can get to any of that, we'll first need to install Ignite.
+
+include::includes/install-ignite.adoc[]
+
+
+== Running Ignite
+
+include::includes/starting-node.adoc[]
+
+This is the most basic startup method.
+It starts a node on the local machine, which gives us a place into which we can load data.
+
+Now just connect to the node and add data.
+
+== Using sqlline
+
+Using the `sqlline` utility is easy — you just need to connect to the node and then start entering SQL statements.
+
+. Open one more command shell tab and ensure you're in the `{IGNITE_HOME}\bin`
+folder.
+
+. Connect to the cluster with `sqlline`:
++
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+$ ./sqlline.sh -u jdbc:ignite:thin://127.0.0.1/
+----
+tab:Windows[]
+[source,shell]
+----
+$ sqlline -u jdbc:ignite:thin://127.0.0.1
+----
+--
+
+. Create two tables by running these two statements in `sqlline`:
++
+[source, sql]
+----
+CREATE TABLE City (id LONG PRIMARY KEY, name VARCHAR) WITH "template=replicated";
+
+CREATE TABLE Person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))
+WITH "backups=1, affinityKey=city_id";
+----
+
+
+. Insert some rows by copy-pasting the statements below:
++
+[source, sql]
+----
+INSERT INTO City (id, name) VALUES (1, 'Forest Hill');
+INSERT INTO City (id, name) VALUES (2, 'Denver');
+INSERT INTO City (id, name) VALUES (3, 'St. Petersburg');
+INSERT INTO Person (id, name, city_id) VALUES (1, 'John Doe', 3);
+INSERT INTO Person (id, name, city_id) VALUES (2, 'Jane Roe', 2);
+INSERT INTO Person (id, name, city_id) VALUES (3, 'Mary Major', 1);
+INSERT INTO Person (id, name, city_id) VALUES (4, 'Richard Miles', 2);
+----
+
+. And then run some basic queries:
++
+[source, sql]
+----
+SELECT * FROM City;
+
++--------------------------------+--------------------------------+
+|               ID               |              NAME              |
++--------------------------------+--------------------------------+
+| 1                              | Forest Hill                    |
+| 2                              | Denver                         |
+| 3                              | St. Petersburg                 |
++--------------------------------+--------------------------------+
+3 rows selected (0.05 seconds)
+----
+
+. As well as queries with distributed JOINs:
++
+[source, sql]
+----
+SELECT p.name, c.name FROM Person p, City c WHERE p.city_id = c.id;
+
++--------------------------------+--------------------------------+
+|              NAME              |              NAME              |
++--------------------------------+--------------------------------+
+| Mary Major                     | Forest Hill                    |
+| Jane Roe                       | Denver                         |
+| John Doe                       | St. Petersburg                 |
+| Richard Miles                  | Denver                         |
++--------------------------------+--------------------------------+
+4 rows selected (0.011 seconds)
+----
+
+Easy!
+
+
+== Next Steps
+
+From here, you may want to:
+
+* Read more about using Ignite and link:SQL/sql-introduction[SQL]
+* Read more about using link:tools/sqlline[sqlline]

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reader handles.
@@ -50,14 +49,13 @@ public class BinaryReaderHandles {
      * @param pos Position.
      * @return Object.
      */
-    @SuppressWarnings("unchecked")
-    public @Nullable <T> T get(int pos) {
+    @Nullable public <T> T get(int pos) {
         switch (mode) {
             case MODE_EMPTY:
                 return null;
 
             case MODE_SINGLE:
-                 return pos == singlePos ? (T)data : null;
+                return pos == singlePos ? (T)data : null;
 
             default:
                 assert mode == MODE_MULTIPLE;

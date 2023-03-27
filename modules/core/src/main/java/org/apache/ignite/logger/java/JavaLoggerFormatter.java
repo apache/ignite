@@ -19,10 +19,10 @@ package org.apache.ignite.logger.java;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -32,16 +32,7 @@ public class JavaLoggerFormatter extends Formatter {
     /** Name for anonymous loggers. */
     public static final String ANONYMOUS_LOGGER_NAME = "UNKNOWN";
 
-    /** */
-    private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
-        /** {@inheritDoc} */
-        @Override protected SimpleDateFormat initialValue() {
-            return new SimpleDateFormat("HH:mm:ss,SSS");
-        }
-    };
-
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Override public String format(LogRecord record) {
         String threadName = Thread.currentThread().getName();
 
@@ -64,7 +55,7 @@ public class JavaLoggerFormatter extends Formatter {
             ex = "\n" + stackTrace;
         }
 
-        return "[" + DATE_FORMATTER.get().format(new Date(record.getMillis())) + "][" +
+        return "[" + IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(record.getMillis())) + "][" +
             record.getLevel() + "][" +
             threadName + "][" +
             logName + "] " +

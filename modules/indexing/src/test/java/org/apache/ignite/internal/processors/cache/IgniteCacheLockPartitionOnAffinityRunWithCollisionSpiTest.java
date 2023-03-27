@@ -35,6 +35,7 @@ import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
@@ -42,6 +43,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
 
+    /** */
     private static volatile boolean cancelAllJobs = false;
 
     /** {@inheritDoc} */
@@ -58,6 +60,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionReservation() throws Exception {
         int orgId = 0;
         cancelAllJobs = true;
@@ -67,7 +70,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                 new Integer(orgId),
                 new TestRun(orgId));
-        } catch (Exception ignored) {
+        }
+        catch (Exception ignored) {
             // No-op. Swallow exceptions on run (e.g. job canceling etc.).
             // The test checks only correct partition release in case CollisionSpi is used.
         }
@@ -81,8 +85,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
-    public void _testJobFinishing() throws Exception {
-//        fail("Affinity run / call doesn't receive response where many job rejections happen.");
+    @Test
+    public void testJobFinishing() throws Exception {
         final AtomicInteger jobNum = new AtomicInteger(0);
 
         cancelAllJobs = true;
@@ -133,6 +137,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
      *
      */
     private static class TestRun implements IgniteRunnable {
+        /** */
         private int jobNum;
 
         /** Ignite Logger. */
@@ -173,7 +178,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
             if (cancelAllJobs) {
                 for (CollisionJobContext job : waitJobs)
                     job.cancel();
-            } else {
+            }
+            else {
                 for (CollisionJobContext job : waitJobs)
                     job.activate();
             }

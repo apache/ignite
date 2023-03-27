@@ -19,10 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
     /**
@@ -31,144 +28,37 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal static class BinarySystemHandlers
     {
         /** Write handlers. */
-        private static readonly CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler> WriteHandlers =
-            new CopyOnWriteConcurrentDictionary<Type, BinarySystemWriteHandler>();
+        private static readonly CopyOnWriteConcurrentDictionary<Type, IBinarySystemWriteHandler> WriteHandlers =
+            new CopyOnWriteConcurrentDictionary<Type, IBinarySystemWriteHandler>();
 
-        /** Read handlers. */
-        private static readonly IBinarySystemReader[] ReadHandlers = new IBinarySystemReader[255];
+        /** */
+        private static readonly BinarySystemWriteHandler<DateTime> TimestampWriteHandler =
+            new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
 
-        /** Type ids. */
-        private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>
-        {
-            {typeof (bool), BinaryUtils.TypeBool},
-            {typeof (byte), BinaryUtils.TypeByte},
-            {typeof (sbyte), BinaryUtils.TypeByte},
-            {typeof (short), BinaryUtils.TypeShort},
-            {typeof (ushort), BinaryUtils.TypeShort},
-            {typeof (char), BinaryUtils.TypeChar},
-            {typeof (int), BinaryUtils.TypeInt},
-            {typeof (uint), BinaryUtils.TypeInt},
-            {typeof (long), BinaryUtils.TypeLong},
-            {typeof (ulong), BinaryUtils.TypeLong},
-            {typeof (float), BinaryUtils.TypeFloat},
-            {typeof (double), BinaryUtils.TypeDouble},
-            {typeof (string), BinaryUtils.TypeString},
-            {typeof (decimal), BinaryUtils.TypeDecimal},
-            {typeof (Guid), BinaryUtils.TypeGuid},
-            {typeof (Guid?), BinaryUtils.TypeGuid},
-            {typeof (ArrayList), BinaryUtils.TypeCollection},
-            {typeof (Hashtable), BinaryUtils.TypeDictionary},
-            {typeof (bool[]), BinaryUtils.TypeArrayBool},
-            {typeof (byte[]), BinaryUtils.TypeArrayByte},
-            {typeof (sbyte[]), BinaryUtils.TypeArrayByte},
-            {typeof (short[]), BinaryUtils.TypeArrayShort},
-            {typeof (ushort[]), BinaryUtils.TypeArrayShort},
-            {typeof (char[]), BinaryUtils.TypeArrayChar},
-            {typeof (int[]), BinaryUtils.TypeArrayInt},
-            {typeof (uint[]), BinaryUtils.TypeArrayInt},
-            {typeof (long[]), BinaryUtils.TypeArrayLong},
-            {typeof (ulong[]), BinaryUtils.TypeArrayLong},
-            {typeof (float[]), BinaryUtils.TypeArrayFloat},
-            {typeof (double[]), BinaryUtils.TypeArrayDouble},
-            {typeof (string[]), BinaryUtils.TypeArrayString},
-            {typeof (decimal?[]), BinaryUtils.TypeArrayDecimal},
-            {typeof (Guid?[]), BinaryUtils.TypeArrayGuid},
-            {typeof (object[]), BinaryUtils.TypeArray}
-        };
-        
-        /// <summary>
-        /// Initializes the <see cref="BinarySystemHandlers"/> class.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline", 
-            Justification = "Readability.")]
-        static BinarySystemHandlers()
-        {
-            // 1. Primitives.
-            ReadHandlers[BinaryUtils.TypeBool] = new BinarySystemReader<bool>(s => s.ReadBool());
-            ReadHandlers[BinaryUtils.TypeByte] = new BinarySystemReader<byte>(s => s.ReadByte());
-            ReadHandlers[BinaryUtils.TypeShort] = new BinarySystemReader<short>(s => s.ReadShort());
-            ReadHandlers[BinaryUtils.TypeChar] = new BinarySystemReader<char>(s => s.ReadChar());
-            ReadHandlers[BinaryUtils.TypeInt] = new BinarySystemReader<int>(s => s.ReadInt());
-            ReadHandlers[BinaryUtils.TypeLong] = new BinarySystemReader<long>(s => s.ReadLong());
-            ReadHandlers[BinaryUtils.TypeFloat] = new BinarySystemReader<float>(s => s.ReadFloat());
-            ReadHandlers[BinaryUtils.TypeDouble] = new BinarySystemReader<double>(s => s.ReadDouble());
-            ReadHandlers[BinaryUtils.TypeDecimal] = new BinarySystemReader<decimal?>(BinaryUtils.ReadDecimal);
-
-            // 2. Date.
-            ReadHandlers[BinaryUtils.TypeTimestamp] = new BinarySystemReader<DateTime?>(BinaryUtils.ReadTimestamp);
-
-            // 3. String.
-            ReadHandlers[BinaryUtils.TypeString] = new BinarySystemReader<string>(BinaryUtils.ReadString);
-
-            // 4. Guid.
-            ReadHandlers[BinaryUtils.TypeGuid] = new BinarySystemReader<Guid?>(s => BinaryUtils.ReadGuid(s));
-
-            // 5. Primitive arrays.
-            ReadHandlers[BinaryUtils.TypeArrayBool] = new BinarySystemReader<bool[]>(BinaryUtils.ReadBooleanArray);
-
-            ReadHandlers[BinaryUtils.TypeArrayByte] =
-                new BinarySystemDualReader<byte[], sbyte[]>(BinaryUtils.ReadByteArray, BinaryUtils.ReadSbyteArray);
-            
-            ReadHandlers[BinaryUtils.TypeArrayShort] =
-                new BinarySystemDualReader<short[], ushort[]>(BinaryUtils.ReadShortArray,
-                    BinaryUtils.ReadUshortArray);
-
-            ReadHandlers[BinaryUtils.TypeArrayChar] = 
-                new BinarySystemReader<char[]>(BinaryUtils.ReadCharArray);
-
-            ReadHandlers[BinaryUtils.TypeArrayInt] =
-                new BinarySystemDualReader<int[], uint[]>(BinaryUtils.ReadIntArray, BinaryUtils.ReadUintArray);
-            
-            ReadHandlers[BinaryUtils.TypeArrayLong] =
-                new BinarySystemDualReader<long[], ulong[]>(BinaryUtils.ReadLongArray, 
-                    BinaryUtils.ReadUlongArray);
-
-            ReadHandlers[BinaryUtils.TypeArrayFloat] =
-                new BinarySystemReader<float[]>(BinaryUtils.ReadFloatArray);
-
-            ReadHandlers[BinaryUtils.TypeArrayDouble] =
-                new BinarySystemReader<double[]>(BinaryUtils.ReadDoubleArray);
-
-            ReadHandlers[BinaryUtils.TypeArrayDecimal] =
-                new BinarySystemReader<decimal?[]>(BinaryUtils.ReadDecimalArray);
-
-            // 6. Date array.
-            ReadHandlers[BinaryUtils.TypeArrayTimestamp] =
-                new BinarySystemReader<DateTime?[]>(BinaryUtils.ReadTimestampArray);
-
-            // 7. String array.
-            ReadHandlers[BinaryUtils.TypeArrayString] = new BinarySystemTypedArrayReader<string>();
-
-            // 8. Guid array.
-            ReadHandlers[BinaryUtils.TypeArrayGuid] = new BinarySystemTypedArrayReader<Guid?>();
-
-            // 9. Array.
-            ReadHandlers[BinaryUtils.TypeArray] = new BinarySystemReader(ReadArray);
-
-            // 11. Arbitrary collection.
-            ReadHandlers[BinaryUtils.TypeCollection] = new BinarySystemReader(ReadCollection);
-
-            // 13. Arbitrary dictionary.
-            ReadHandlers[BinaryUtils.TypeDictionary] = new BinarySystemReader(ReadDictionary);
-            
-            // 14. Enum.
-            ReadHandlers[BinaryUtils.TypeArrayEnum] = new BinarySystemReader(ReadEnumArray);
-        }
+        /** */
+        private static readonly BinarySystemWriteHandler<DateTime?[]> TimestampArrayWriteHandler =
+            new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
 
         /// <summary>
         /// Try getting write handler for type.
         /// </summary>
         /// <param name="type"></param>
+        /// <param name="forceTimestamp"></param>
         /// <returns></returns>
-        public static BinarySystemWriteHandler GetWriteHandler(Type type)
+        public static IBinarySystemWriteHandler GetWriteHandler(Type type, bool forceTimestamp)
         {
+            if (forceTimestamp)
+            {
+                if (type == typeof(DateTime))
+                    return TimestampWriteHandler;
+
+                if (type == typeof(DateTime?[]))
+                    return TimestampArrayWriteHandler;
+            }
+
             return WriteHandlers.GetOrAdd(type, t =>
             {
-                bool supportsHandles;
-
-                var handler = FindWriteHandler(t, out supportsHandles);
-
-                return handler == null ? null : new BinarySystemWriteHandler(handler, supportsHandles);
+                return FindWriteHandler(t);
             });
         }
 
@@ -176,106 +66,109 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Find write handler for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <param name="supportsHandles">Flag indicating whether returned delegate supports handles.</param>
         /// <returns>
         /// Write handler or NULL.
         /// </returns>
-        private static Action<BinaryWriter, object> FindWriteHandler(Type type, out bool supportsHandles)
+        private static IBinarySystemWriteHandler FindWriteHandler(Type type)
         {
-            supportsHandles = false;
-
             // 1. Well-known types.
             if (type == typeof(string))
-                return WriteString;
+                return new BinarySystemWriteHandler<string>(WriteString, false);
             if (type == typeof(decimal))
-                return WriteDecimal;
+                return new BinarySystemWriteHandler<decimal>(WriteDecimal, false);
             if (type == typeof(Guid))
-                return WriteGuid;
+                return new BinarySystemWriteHandler<Guid>(WriteGuid, false);
             if (type == typeof (BinaryObject))
-                return WriteBinary;
+                return new BinarySystemWriteHandler<BinaryObject>(WriteBinary, false);
             if (type == typeof (BinaryEnum))
-                return WriteBinaryEnum;
+                return new BinarySystemWriteHandler<BinaryEnum>(WriteBinaryEnum, false);
             if (type.IsEnum)
-                return WriteEnum;
+            {
+                var underlyingType = Enum.GetUnderlyingType(type);
+
+                if (underlyingType == typeof(int))
+                    return new BinarySystemWriteHandler<int>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(uint))
+                    return new BinarySystemWriteHandler<uint>((w, i) => w.WriteEnum(unchecked((int) i), type), false);
+                if (underlyingType == typeof(byte))
+                    return new BinarySystemWriteHandler<byte>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(sbyte))
+                    return new BinarySystemWriteHandler<sbyte>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(short))
+                    return new BinarySystemWriteHandler<short>((w, i) => w.WriteEnum(i, type), false);
+                if (underlyingType == typeof(ushort))
+                    return new BinarySystemWriteHandler<ushort>((w, i) => w.WriteEnum(i, type), false);
+
+                return null; // Other enums, such as long and ulong, can't be expressed as int.
+            }
             if (type == typeof(Ignite))
-                return WriteIgnite;
+                return new BinarySystemWriteHandler<object>(WriteIgnite, false);
 
             // All types below can be written as handles.
-            supportsHandles = true;
-
             if (type == typeof (ArrayList))
-                return WriteArrayList;
+                return new BinarySystemWriteHandler<ICollection>(WriteArrayList, true);
             if (type == typeof (Hashtable))
-                return WriteHashtable;
+                return new BinarySystemWriteHandler<IDictionary>(WriteHashtable, true);
 
             if (type.IsArray)
             {
+                if (type.GetArrayRank() > 1)
+                {
+                    // int[,]-style arrays are wrapped, see comments in holder.
+                    return new BinarySystemWriteHandler<Array>(
+                        (w, o) => w.WriteObject(new MultidimensionalArrayHolder(o)), true);
+                }
+
                 // We know how to write any array type.
                 Type elemType = type.GetElementType();
-                
+
                 // Primitives.
                 if (elemType == typeof (bool))
-                    return WriteBoolArray;
+                    return new BinarySystemWriteHandler<bool[]>(WriteBoolArray, true);
                 if (elemType == typeof(byte))
-                    return WriteByteArray;
+                    return new BinarySystemWriteHandler<byte[]>(WriteByteArray, true);
                 if (elemType == typeof(short))
-                    return WriteShortArray;
+                    return new BinarySystemWriteHandler<short[]>(WriteShortArray, true);
                 if (elemType == typeof(char))
-                    return WriteCharArray;
+                    return new BinarySystemWriteHandler<char[]>(WriteCharArray, true);
                 if (elemType == typeof(int))
-                    return WriteIntArray;
+                    return new BinarySystemWriteHandler<int[]>(WriteIntArray, true);
                 if (elemType == typeof(long))
-                    return WriteLongArray;
+                    return new BinarySystemWriteHandler<long[]>(WriteLongArray, true);
                 if (elemType == typeof(float))
-                    return WriteFloatArray;
+                    return new BinarySystemWriteHandler<float[]>(WriteFloatArray, true);
                 if (elemType == typeof(double))
-                    return WriteDoubleArray;
+                    return new BinarySystemWriteHandler<double[]>(WriteDoubleArray, true);
                 // Non-CLS primitives.
                 if (elemType == typeof(sbyte))
-                    return WriteSbyteArray;
+                    return new BinarySystemWriteHandler<byte[]>(WriteByteArray, true);
                 if (elemType == typeof(ushort))
-                    return WriteUshortArray;
+                    return new BinarySystemWriteHandler<short[]>(WriteShortArray, true);
                 if (elemType == typeof(uint))
-                    return WriteUintArray;
+                    return new BinarySystemWriteHandler<int[]>(WriteIntArray, true);
                 if (elemType == typeof(ulong))
-                    return WriteUlongArray;
+                    return new BinarySystemWriteHandler<long[]>(WriteLongArray, true);
                 // Special types.
                 if (elemType == typeof (decimal?))
-                    return WriteDecimalArray;
+                    return new BinarySystemWriteHandler<decimal?[]>(WriteDecimalArray, true);
                 if (elemType == typeof(string))
-                    return WriteStringArray;
+                    return new BinarySystemWriteHandler<string[]>(WriteStringArray, true);
                 if (elemType == typeof(Guid?))
-                    return WriteGuidArray;
+                    return new BinarySystemWriteHandler<Guid?[]>(WriteGuidArray, true);
                 // Enums.
-                if (elemType.IsEnum || elemType == typeof(BinaryEnum))
-                    return WriteEnumArray;
+                if (BinaryUtils.IsIgniteEnum(elemType) || elemType == typeof(BinaryEnum))
+                    return new BinarySystemWriteHandler<object>(WriteEnumArray, true);
 
                 // Object array.
-                return WriteArray;
+                return new BinarySystemWriteHandler<object>(WriteArray, true);
+            }
+
+            if (type == typeof(OptimizedMarshallerObject))
+            {
+                return new BinarySystemWriteHandler<OptimizedMarshallerObject>((w, o) => o.Write(w.Stream), false);
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Find write handler for type.
-        /// </summary>
-        /// <param name="type">Type.</param>
-        /// <returns>Write handler or NULL.</returns>
-        public static byte GetTypeId(Type type)
-        {
-            byte res;
-
-            if (TypeIds.TryGetValue(type, out res))
-                return res;
-
-            if (type.IsEnum)
-                return BinaryUtils.TypeEnum;
-
-            if (type.IsArray && type.GetElementType().IsEnum)
-                return BinaryUtils.TypeArrayEnum;
-
-            return BinaryUtils.TypeObject;
         }
 
         /// <summary>
@@ -283,40 +176,161 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public static bool TryReadSystemType<T>(byte typeId, BinaryReader ctx, out T res)
         {
-            var handler = ReadHandlers[typeId];
+            var stream = ctx.Stream;
 
-            if (handler == null)
+            switch (typeId)
             {
-                res = default(T);
-                return false;
+                case BinaryTypeId.Byte:
+                    res = TypeCaster<T>.Cast(stream.ReadByte());
+                    return true;
+
+                case BinaryTypeId.Short:
+                    res = TypeCaster<T>.Cast(stream.ReadShort());
+                    return true;
+
+                case BinaryTypeId.Int:
+                    res = TypeCaster<T>.Cast(stream.ReadInt());
+                    return true;
+
+                case BinaryTypeId.Long:
+                    res = TypeCaster<T>.Cast(stream.ReadLong());
+                    return true;
+
+                case BinaryTypeId.Float:
+                    res = TypeCaster<T>.Cast(stream.ReadFloat());
+                    return true;
+
+                case BinaryTypeId.Double:
+                    res = TypeCaster<T>.Cast(stream.ReadDouble());
+                    return true;
+
+                case BinaryTypeId.Char:
+                    res = TypeCaster<T>.Cast(stream.ReadChar());
+                    return true;
+
+                case BinaryTypeId.Bool:
+                    res = TypeCaster<T>.Cast(stream.ReadBool());
+                    return true;
+
+                case BinaryTypeId.String:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadString(stream));
+                    return true;
+
+                case BinaryTypeId.Guid:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadGuid(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayByte:
+                    res = typeof(T) == typeof(sbyte[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadSbyteArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadByteArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayShort:
+                    res = typeof(T) == typeof(ushort[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadUshortArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadShortArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayInt:
+                    res = typeof(T) == typeof(uint[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadUintArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadIntArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayLong:
+                    res = typeof(T) == typeof(ulong[])
+                        ? TypeCaster<T>.Cast(BinaryUtils.ReadUlongArray(stream))
+                        : TypeCaster<T>.Cast(BinaryUtils.ReadLongArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayFloat:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadFloatArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayDouble:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadDoubleArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayChar:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadCharArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayBool:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadBooleanArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayString:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadStringArray(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayGuid:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadGuidArray(stream));
+                    return true;
+
+                case BinaryTypeId.Array:
+                    res = (T) ReadArray(ctx, typeof(T));
+                    return true;
+
+                case BinaryTypeId.Collection:
+                    res = (T) BinaryUtils.ReadCollection(ctx, null, null);
+                    return true;
+
+                case BinaryTypeId.Dictionary:
+                    res = (T) BinaryUtils.ReadDictionary(ctx, null);
+                    return true;
+
+                case BinaryTypeId.ArrayEnum:
+                    res = (T) ReadArray(ctx, typeof(T));
+                    return true;
+
+                case BinaryTypeId.Decimal:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimal(stream));
+                    return true;
+
+                case BinaryTypeId.ArrayDecimal:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadDecimalArray(stream));
+                    return true;
+
+                case BinaryTypeId.Timestamp:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestamp(stream, ctx.Marshaller.TimestampConverter));
+                    return true;
+
+                case BinaryTypeId.ArrayTimestamp:
+                    res = TypeCaster<T>.Cast(BinaryUtils.ReadTimestampArray(stream, ctx.Marshaller.TimestampConverter));
+                    return true;
+
+                case BinaryTypeId.OptimizedMarshaller:
+                    res = (T) (object) new OptimizedMarshallerObject(ctx.Stream);
+                    return true;
             }
 
-            res = handler.Read<T>(ctx);
-            return true;
+            res = default(T);
+            return false;
         }
-        
+
         /// <summary>
         /// Write decimal.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDecimal(BinaryWriter ctx, object obj)
+        private static void WriteDecimal(BinaryWriter ctx, decimal obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeDecimal);
+            ctx.Stream.WriteByte(BinaryTypeId.Decimal);
 
-            BinaryUtils.WriteDecimal((decimal)obj, ctx.Stream);
+            BinaryUtils.WriteDecimal(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write string.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Object.</param>
-        private static void WriteString(BinaryWriter ctx, object obj)
+        private static void WriteString(BinaryWriter ctx, string obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeString);
+            ctx.Stream.WriteByte(BinaryTypeId.String);
 
-            BinaryUtils.WriteString((string)obj, ctx.Stream);
+            BinaryUtils.WriteString(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -324,11 +338,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteGuid(BinaryWriter ctx, object obj)
+        private static void WriteGuid(BinaryWriter ctx, Guid obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeGuid);
+            ctx.Stream.WriteByte(BinaryTypeId.Guid);
 
-            BinaryUtils.WriteGuid((Guid)obj, ctx.Stream);
+            BinaryUtils.WriteGuid(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write Date.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestamp(BinaryWriter ctx, DateTime obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
+
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream, ctx.Marshaller.TimestampConverter);
         }
 
         /// <summary>
@@ -336,35 +362,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteBoolArray(BinaryWriter ctx, object obj)
+        private static void WriteBoolArray(BinaryWriter ctx, bool[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayBool);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayBool);
 
-            BinaryUtils.WriteBooleanArray((bool[])obj, ctx.Stream);
+            BinaryUtils.WriteBooleanArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write byte array.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteByteArray(BinaryWriter ctx, object obj)
+        private static void WriteByteArray(BinaryWriter ctx, byte[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayByte);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayByte);
 
-            BinaryUtils.WriteByteArray((byte[])obj, ctx.Stream);
-        }
-
-        /// <summary>
-        /// Write sbyte array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteSbyteArray(BinaryWriter ctx, object obj)
-        {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayByte);
-
-            BinaryUtils.WriteByteArray((byte[]) obj, ctx.Stream);
+            BinaryUtils.WriteByteArray(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -372,23 +386,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteShortArray(BinaryWriter ctx, object obj)
+        private static void WriteShortArray(BinaryWriter ctx, short[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayShort);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayShort);
 
-            BinaryUtils.WriteShortArray((short[])obj, ctx.Stream);
-        }
-        
-        /// <summary>
-        /// Write ushort array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteUshortArray(BinaryWriter ctx, object obj)
-        {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayShort);
-
-            BinaryUtils.WriteShortArray((short[]) obj, ctx.Stream);
+            BinaryUtils.WriteShortArray(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -398,7 +400,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Value.</param>
         private static void WriteCharArray(BinaryWriter ctx, object obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayChar);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayChar);
 
             BinaryUtils.WriteCharArray((char[])obj, ctx.Stream);
         }
@@ -408,23 +410,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteIntArray(BinaryWriter ctx, object obj)
+        private static void WriteIntArray(BinaryWriter ctx, int[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayInt);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayInt);
 
-            BinaryUtils.WriteIntArray((int[])obj, ctx.Stream);
-        }
-
-        /// <summary>
-        /// Write uint array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteUintArray(BinaryWriter ctx, object obj)
-        {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayInt);
-
-            BinaryUtils.WriteIntArray((int[]) obj, ctx.Stream);
+            BinaryUtils.WriteIntArray(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -432,23 +422,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteLongArray(BinaryWriter ctx, object obj)
+        private static void WriteLongArray(BinaryWriter ctx, long[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayLong);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayLong);
 
-            BinaryUtils.WriteLongArray((long[])obj, ctx.Stream);
-        }
-
-        /// <summary>
-        /// Write ulong array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteUlongArray(BinaryWriter ctx, object obj)
-        {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayLong);
-
-            BinaryUtils.WriteLongArray((long[]) obj, ctx.Stream);
+            BinaryUtils.WriteLongArray(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -456,11 +434,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteFloatArray(BinaryWriter ctx, object obj)
+        private static void WriteFloatArray(BinaryWriter ctx, float[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayFloat);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayFloat);
 
-            BinaryUtils.WriteFloatArray((float[])obj, ctx.Stream);
+            BinaryUtils.WriteFloatArray(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -468,11 +446,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDoubleArray(BinaryWriter ctx, object obj)
+        private static void WriteDoubleArray(BinaryWriter ctx, double[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayDouble);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayDouble);
 
-            BinaryUtils.WriteDoubleArray((double[])obj, ctx.Stream);
+            BinaryUtils.WriteDoubleArray(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -480,35 +458,47 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteDecimalArray(BinaryWriter ctx, object obj)
+        private static void WriteDecimalArray(BinaryWriter ctx, decimal?[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayDecimal);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayDecimal);
 
-            BinaryUtils.WriteDecimalArray((decimal?[])obj, ctx.Stream);
+            BinaryUtils.WriteDecimalArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write string array.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteStringArray(BinaryWriter ctx, object obj)
+        private static void WriteStringArray(BinaryWriter ctx, string[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayString);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayString);
 
-            BinaryUtils.WriteStringArray((string[])obj, ctx.Stream);
+            BinaryUtils.WriteStringArray(obj, ctx.Stream);
         }
-        
+
         /// <summary>
         /// Write nullable GUID array.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
-        private static void WriteGuidArray(BinaryWriter ctx, object obj)
+        private static void WriteGuidArray(BinaryWriter ctx, Guid?[] obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayGuid);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayGuid);
 
-            BinaryUtils.WriteGuidArray((Guid?[])obj, ctx.Stream);
+            BinaryUtils.WriteGuidArray(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write nullable Date array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestampArray(BinaryWriter ctx, DateTime?[] obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayTimestamp);
+
+            BinaryUtils.WriteTimestampArray(obj, ctx.Stream, ctx.Marshaller.TimestampConverter);
         }
 
         /// <summary>
@@ -516,7 +506,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteEnumArray(BinaryWriter ctx, object obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArrayEnum);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayEnum);
 
             BinaryUtils.WriteArray((Array) obj, ctx);
         }
@@ -526,7 +516,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteArray(BinaryWriter ctx, object obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeArray);
+            ctx.Stream.WriteByte(BinaryTypeId.Array);
 
             BinaryUtils.WriteArray((Array) obj, ctx);
         }
@@ -534,62 +524,44 @@ namespace Apache.Ignite.Core.Impl.Binary
         /**
          * <summary>Write ArrayList.</summary>
          */
-        private static void WriteArrayList(BinaryWriter ctx, object obj)
+        private static void WriteArrayList(BinaryWriter ctx, ICollection obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeCollection);
+            ctx.Stream.WriteByte(BinaryTypeId.Collection);
 
-            BinaryUtils.WriteCollection((ICollection)obj, ctx, BinaryUtils.CollectionArrayList);
+            BinaryUtils.WriteCollection(obj, ctx, BinaryUtils.CollectionArrayList);
         }
 
         /**
          * <summary>Write Hashtable.</summary>
          */
-        private static void WriteHashtable(BinaryWriter ctx, object obj)
+        private static void WriteHashtable(BinaryWriter ctx, IDictionary obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeDictionary);
+            ctx.Stream.WriteByte(BinaryTypeId.Dictionary);
 
-            BinaryUtils.WriteDictionary((IDictionary)obj, ctx, BinaryUtils.MapHashMap);
+            BinaryUtils.WriteDictionary(obj, ctx, BinaryUtils.MapHashMap);
         }
 
         /**
          * <summary>Write binary object.</summary>
          */
-        private static void WriteBinary(BinaryWriter ctx, object obj)
+        private static void WriteBinary(BinaryWriter ctx, BinaryObject obj)
         {
-            ctx.Stream.WriteByte(BinaryUtils.TypeBinary);
+            ctx.Stream.WriteByte(BinaryTypeId.Binary);
 
-            BinaryUtils.WriteBinary(ctx.Stream, (BinaryObject)obj);
-        }
-        
-        /// <summary>
-        /// Write enum.
-        /// </summary>
-        private static void WriteEnum(BinaryWriter ctx, object obj)
-        {
-            ctx.WriteEnum(obj);
+            BinaryUtils.WriteBinary(ctx.Stream, obj);
         }
 
         /// <summary>
         /// Write enum.
         /// </summary>
-        private static void WriteBinaryEnum(BinaryWriter ctx, object obj)
+        private static void WriteBinaryEnum(BinaryWriter ctx, BinaryEnum obj)
         {
-            var binEnum = (BinaryEnum) obj;
+            var binEnum = obj;
 
-            ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
+            ctx.Stream.WriteByte(BinaryTypeId.BinaryEnum);
 
             ctx.WriteInt(binEnum.TypeId);
             ctx.WriteInt(binEnum.EnumValue);
-        }
-
-        /**
-         * <summary>Read enum array.</summary>
-         */
-        private static object ReadEnumArray(BinaryReader ctx, Type type)
-        {
-            var elemType = type.GetElementType() ?? typeof(object);
-
-            return BinaryUtils.ReadTypedArray(ctx, true, elemType);
         }
 
         /// <summary>
@@ -610,11 +582,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     // Infer element type from typeId.
                     var typeId = ctx.ReadInt();
-
-                    if (typeId != BinaryUtils.ObjTypeId)
-                    {
-                        elemType = ctx.Marshaller.GetDescriptor(true, typeId, true).Type;
-                    }
+                    elemType = BinaryUtils.GetArrayElementType(typeId, ctx.Marshaller);
 
                     return BinaryUtils.ReadTypedArray(ctx, false, elemType ?? typeof(object));
                 }
@@ -625,22 +593,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             return BinaryUtils.ReadTypedArray(ctx, true, elemType);
         }
 
-        /**
-         * <summary>Read collection.</summary>
-         */
-        private static object ReadCollection(BinaryReader ctx, Type type)
-        {
-            return BinaryUtils.ReadCollection(ctx, null, null);
-        }
-
-        /**
-         * <summary>Read dictionary.</summary>
-         */
-        private static object ReadDictionary(BinaryReader ctx, Type type)
-        {
-            return BinaryUtils.ReadDictionary(ctx, null);
-        }
-                
         /// <summary>
         /// Write Ignite.
         /// </summary>
@@ -648,162 +600,43 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.HdrNull);
         }
-
-        /**
-         * <summary>Read delegate.</summary>
-         * <param name="ctx">Read context.</param>
-         * <param name="type">Type.</param>
-         */
-        private delegate object BinarySystemReadDelegate(BinaryReader ctx, Type type);
-
-        /// <summary>
-        /// System type reader.
-        /// </summary>
-        private interface IBinarySystemReader
-        {
-            /// <summary>
-            /// Reads a value of specified type from reader.
-            /// </summary>
-            T Read<T>(BinaryReader ctx);
-        }
-
-        /// <summary>
-        /// System type generic reader.
-        /// </summary>
-        private interface IBinarySystemReader<out T>
-        {
-            /// <summary>
-            /// Reads a value of specified type from reader.
-            /// </summary>
-            T Read(BinaryReader ctx);
-        }
-
-        /// <summary>
-        /// Default reader with boxing.
-        /// </summary>
-        private class BinarySystemReader : IBinarySystemReader
-        {
-            /** */
-            private readonly BinarySystemReadDelegate _readDelegate;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="BinarySystemReader"/> class.
-            /// </summary>
-            /// <param name="readDelegate">The read delegate.</param>
-            public BinarySystemReader(BinarySystemReadDelegate readDelegate)
-            {
-                Debug.Assert(readDelegate != null);
-
-                _readDelegate = readDelegate;
-            }
-
-            /** <inheritdoc /> */
-            public T Read<T>(BinaryReader ctx)
-            {
-                return (T)_readDelegate(ctx, typeof(T));
-            }
-        }
-
-        /// <summary>
-        /// Reader without boxing.
-        /// </summary>
-        private class BinarySystemReader<T> : IBinarySystemReader
-        {
-            /** */
-            private readonly Func<IBinaryStream, T> _readDelegate;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="BinarySystemReader{T}"/> class.
-            /// </summary>
-            /// <param name="readDelegate">The read delegate.</param>
-            public BinarySystemReader(Func<IBinaryStream, T> readDelegate)
-            {
-                Debug.Assert(readDelegate != null);
-
-                _readDelegate = readDelegate;
-            }
-
-            /** <inheritdoc /> */
-            public TResult Read<TResult>(BinaryReader ctx)
-            {
-                return TypeCaster<TResult>.Cast(_readDelegate(ctx.Stream));
-            }
-        }
-
-        /// <summary>
-        /// Reader without boxing.
-        /// </summary>
-        private class BinarySystemTypedArrayReader<T> : IBinarySystemReader
-        {
-            public TResult Read<TResult>(BinaryReader ctx)
-            {
-                return TypeCaster<TResult>.Cast(BinaryUtils.ReadArray<T>(ctx, false));
-            }
-        }
-
-        /// <summary>
-        /// Reader with selection based on requested type.
-        /// </summary>
-        private class BinarySystemDualReader<T1, T2> : IBinarySystemReader, IBinarySystemReader<T2>
-        {
-            /** */
-            private readonly Func<IBinaryStream, T1> _readDelegate1;
-
-            /** */
-            private readonly Func<IBinaryStream, T2> _readDelegate2;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="BinarySystemDualReader{T1,T2}"/> class.
-            /// </summary>
-            /// <param name="readDelegate1">The read delegate1.</param>
-            /// <param name="readDelegate2">The read delegate2.</param>
-            public BinarySystemDualReader(Func<IBinaryStream, T1> readDelegate1, Func<IBinaryStream, T2> readDelegate2)
-            {
-                Debug.Assert(readDelegate1 != null);
-                Debug.Assert(readDelegate2 != null);
-
-                _readDelegate1 = readDelegate1;
-                _readDelegate2 = readDelegate2;
-            }
-
-            /** <inheritdoc /> */
-            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-            T2 IBinarySystemReader<T2>.Read(BinaryReader ctx)
-            {
-                return _readDelegate2(ctx.Stream);
-            }
-
-            /** <inheritdoc /> */
-            public T Read<T>(BinaryReader ctx)
-            {
-                // Can't use "as" because of variance. 
-                // For example, IBinarySystemReader<byte[]> can be cast to IBinarySystemReader<sbyte[]>, which
-                // will cause incorrect behavior.
-                if (typeof (T) == typeof (T2))  
-                    return ((IBinarySystemReader<T>) this).Read(ctx);
-
-                return TypeCaster<T>.Cast(_readDelegate1(ctx.Stream));
-            }
-        }
     }
 
     /// <summary>
     /// Write delegate + handles flag.
     /// </summary>
-    internal class BinarySystemWriteHandler
+    internal interface IBinarySystemWriteHandler
+    {
+        /// <summary>
+        /// Gets a value indicating whether this handler supports handles.
+        /// </summary>
+        bool SupportsHandles { get; }
+
+        /// <summary>
+        /// Writes object to a specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="obj">The object.</param>
+        void Write<T>(BinaryWriter writer, T obj);
+    }
+
+    /// <summary>
+    /// Write delegate + handles flag.
+    /// </summary>
+    internal sealed class BinarySystemWriteHandler<T1> : IBinarySystemWriteHandler
     {
         /** */
-        private readonly Action<BinaryWriter, object> _writeAction;
+        private readonly Action<BinaryWriter, T1> _writeAction;
 
         /** */
         private readonly bool _supportsHandles;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinarySystemWriteHandler" /> class.
+        /// Initializes a new instance of the <see cref="BinarySystemWriteHandler{T1}" /> class.
         /// </summary>
         /// <param name="writeAction">The write action.</param>
         /// <param name="supportsHandles">Handles flag.</param>
-        public BinarySystemWriteHandler(Action<BinaryWriter, object> writeAction, bool supportsHandles)
+        public BinarySystemWriteHandler(Action<BinaryWriter, T1> writeAction, bool supportsHandles)
         {
             Debug.Assert(writeAction != null);
 
@@ -811,19 +644,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             _supportsHandles = supportsHandles;
         }
 
-        /// <summary>
-        /// Writes object to a specified writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="obj">The object.</param>
-        public void Write(BinaryWriter writer, object obj)
+        /** <inheritdoc /> */
+        public void Write<T>(BinaryWriter writer, T obj)
         {
-            _writeAction(writer, obj);
+            _writeAction(writer, TypeCaster<T1>.Cast(obj));
         }
 
-        /// <summary>
-        /// Gets a value indicating whether this handler supports handles.
-        /// </summary>
+        /** <inheritdoc /> */
         public bool SupportsHandles
         {
             get { return _supportsHandles; }

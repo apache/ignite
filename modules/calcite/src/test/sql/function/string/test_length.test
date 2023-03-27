@@ -1,0 +1,26 @@
+# name: test/sql/function/string/test_length.test
+# description: Test length function
+# group: [string]
+
+statement ok
+CREATE TABLE strings(s VARCHAR)
+
+statement ok
+INSERT INTO strings VALUES ('hello'), ('world'), (NULL)
+
+# normal length
+query I
+SELECT length(s) FROM strings ORDER BY s NULLS LAST
+----
+5
+5
+NULL
+
+# length after concat
+query I
+SELECT length(s || ' ' || 'a') FROM strings ORDER BY s NULLS LAST
+----
+7
+7
+NULL
+

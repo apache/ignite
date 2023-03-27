@@ -22,14 +22,13 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
-
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -45,11 +44,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -73,14 +67,16 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     private CacheConfiguration cacheConfiguration(String gridName,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
-        String cacheName)
-        throws Exception
-    {
+        String cacheName
+    ) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(cacheMode);
         cfg.setAtomicityMode(atomicityMode);
         cfg.setName(cacheName);
+
+        if (atomicityMode == TRANSACTIONAL_SNAPSHOT && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            cfg.setNearConfiguration(null);
 
         return cfg;
     }
@@ -88,18 +84,21 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheMapEntry() throws Exception {
-        checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
-
-        checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
-
         checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtAtomicCacheEntry.class);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, PARTITIONED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtColocatedCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
+
+        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
+
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**
@@ -110,9 +109,8 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      */
     private void checkCacheMapEntry(CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
-        Class<?> entryCls)
-        throws Exception
-    {
+        Class<?> entryCls
+    ) throws Exception {
         log.info("Test cache [atomicityMode=" + atomicityMode + ", cacheMode=" + cacheMode + ']');
 
         CacheConfiguration cfg = cacheConfiguration(grid(0).name(),
@@ -135,7 +133,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
             assertNotNull(entry);
 
-            assertEquals(entry.getClass(), entryCls);
+            assertEquals(entryCls, entry.getClass());
         }
         finally {
             jcache.destroy();

@@ -17,16 +17,19 @@
 
 package org.apache.ignite.ml.math;
 
+import org.apache.ignite.ml.math.stat.StatsTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for local and distributed tests
+ * Test suite for local and distributed math tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    StatsTestSuite.class,
     MathImplLocalTestSuite.class,
-    MathImplDistributedTestSuite.class
+    TracerTest.class,
+    BlasTest.class
 })
 public class MathImplMainTestSuite {
     // No-op.

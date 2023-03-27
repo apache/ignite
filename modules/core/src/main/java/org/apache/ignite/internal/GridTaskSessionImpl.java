@@ -27,10 +27,13 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
+import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,8 +41,13 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableCollection;
 
 /**
  * Task session.
@@ -72,7 +80,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private Collection<ComputeJobSibling> siblings;
 
-    /** */
+    /** Guarded by {@link #mux}. */
     private Map<Object, Object> attrs;
 
     /** */
@@ -99,7 +107,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** */
     private final AtomicInteger usage = new AtomicInteger(1);
 
-    /** */
+    /** Task supports session attributes and checkpoints (there is {@link ComputeTaskSessionFullSupport}). */
     private final boolean fullSup;
 
     /** */
@@ -109,7 +117,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final Collection<UUID> top;
 
     /** */
-    private final UUID subjId;
+    private final IgnitePredicate<ClusterNode> topPred;
 
     /** */
     private final IgniteFutureImpl mapFut;
@@ -118,12 +126,24 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final String execName;
 
     /**
+     * Nodes on which the jobs of the task will be executed.
+     * Guarded by {@link #mux}.
+     */
+    @Nullable private List<UUID> jobNodes;
+
+    /** Security context of the user who created the session, {@code null} if security is not enabled. */
+    @Nullable private final SecurityContext secCtx;
+
+    /**
+     * Constructor.
+     *
      * @param taskNodeId Task node ID.
      * @param taskName Task name.
      * @param dep Deployment.
      * @param taskClsName Task class name.
      * @param sesId Task session ID.
      * @param top Topology.
+     * @param topPred Topology predicate.
      * @param startTime Task execution start time.
      * @param endTime Task execution end time.
      * @param siblings Collection of siblings.
@@ -131,8 +151,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param ctx Grid Kernal Context.
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
-     * @param subjId Subject ID.
      * @param execName Custom executor name.
+     * @param secCtx Security context of the user who created the session, {@code null} if security is not enabled.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -141,6 +161,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         String taskClsName,
         IgniteUuid sesId,
         @Nullable Collection<UUID> top,
+        @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
         Collection<ComputeJobSibling> siblings,
@@ -148,8 +169,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        UUID subjId,
-        @Nullable String execName) {
+        @Nullable String execName,
+        @Nullable SecurityContext secCtx
+    ) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -159,6 +181,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.taskName = taskName;
         this.dep = dep;
         this.top = top;
+        this.topPred = topPred;
 
         // Note that class name might be null here if task was not explicitly
         // deployed.
@@ -166,7 +189,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.sesId = sesId;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.siblings = siblings != null ? Collections.unmodifiableCollection(siblings) : null;
+        this.siblings = siblings != null ? unmodifiableCollection(siblings) : null;
         this.ctx = ctx;
 
         if (attrs != null && !attrs.isEmpty()) {
@@ -177,10 +200,11 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
 
         this.fullSup = fullSup;
         this.internal = internal;
-        this.subjId = subjId;
         this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
+
+        this.secCtx = secCtx;
     }
 
     /** {@inheritDoc} */
@@ -188,19 +212,18 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         return fullSup;
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID subjectId() {
-        return subjId;
-    }
-
     /**
+     * Checks that the task supports session attributes and checkpoints
+     * (there is {@link ComputeTaskSessionFullSupport}).
      *
+     * @throws IllegalStateException If not supported.
      */
     protected void checkFullSupport() {
-        if (!fullSup)
+        if (!fullSup) {
             throw new IllegalStateException("Sessions attributes and checkpoints are disabled by default " +
                 "for better performance (to enable, annotate task class with " +
-                "@ComputeTaskSessionFullSupport annotation).");
+                "@" + ComputeTaskSessionFullSupport.class.getSimpleName() + " annotation).");
+        }
     }
 
     /**
@@ -277,7 +300,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V waitForAttribute(K key, long timeout) throws InterruptedException {
         A.notNull(key, "key");
 
@@ -286,7 +308,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -295,11 +317,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
-        synchronized (mux) {
-            while (!closed && (attrs == null || !attrs.containsKey(key)) && now < end) {
-                mux.wait(end - now);
+        timeout = end - now;
 
-                now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
+
+        synchronized (mux) {
+            long passedMillis = 0L;
+
+            while (!closed && (attrs == null || !attrs.containsKey(key)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -318,7 +346,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -327,13 +355,19 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
+        timeout = end - now;
+
+        long startNanos = System.nanoTime();
+
         synchronized (mux) {
             boolean isFound = false;
 
-            while (!closed && !(isFound = isAttributeSet(key, val)) && now < end) {
-                mux.wait(end - now);
+            long passedMillis = 0L;
 
-                now = U.currentTimeMillis();
+            while (!closed && !(isFound = isAttributeSet(key, val)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -351,12 +385,12 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         if (keys.isEmpty())
-            return Collections.emptyMap();
+            return emptyMap();
 
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -365,11 +399,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
-        synchronized (mux) {
-            while (!closed && (attrs == null || !attrs.keySet().containsAll(keys)) && now < end) {
-                mux.wait(end - now);
+        timeout = end - now;
 
-                now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
+
+        synchronized (mux) {
+            long passedMillis = 0L;
+
+            while (!closed && (attrs == null || !attrs.keySet().containsAll(keys)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -397,7 +437,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -406,18 +446,24 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
+        timeout = end - now;
+
+        long startNanos = System.nanoTime();
+
         synchronized (mux) {
             boolean isFound = false;
 
-            while (!closed && now < end) {
+            long passedMillis = 0L;
+
+            while (!closed && passedMillis < timeout) {
                 isFound = this.attrs != null && this.attrs.entrySet().containsAll(attrs.entrySet());
 
                 if (isFound)
                     break;
 
-                mux.wait(end - now);
+                mux.wait(timeout - passedMillis);
 
-                now = U.currentTimeMillis();
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -498,7 +544,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public void setJobSiblings(Collection<ComputeJobSibling> siblings) {
         synchronized (mux) {
-            this.siblings = Collections.unmodifiableCollection(siblings);
+            this.siblings = unmodifiableCollection(siblings);
         }
     }
 
@@ -514,7 +560,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
             tmp.addAll(this.siblings);
             tmp.addAll(siblings);
 
-            this.siblings = Collections.unmodifiableCollection(tmp);
+            this.siblings = unmodifiableCollection(tmp);
         }
     }
 
@@ -541,7 +587,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V getAttribute(K key) {
         A.notNull(key, "key");
 
@@ -587,7 +632,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         synchronized (mux) {
-            return attrs == null || attrs.isEmpty() ? Collections.emptyMap() : U.sealMap(attrs);
+            return attrs == null || attrs.isEmpty() ? emptyMap() : U.sealMap(attrs);
         }
     }
 
@@ -719,7 +764,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T loadCheckpoint(String key) {
         return loadCheckpoint0(this, key);
     }
@@ -730,7 +774,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @return Checkpoint.
      * @throws IgniteException If failed.
      */
-    protected  <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) {
+    protected <T> T loadCheckpoint0(GridTaskSessionInternal ses, String key) {
         assert ses != null; // Internal call, so assert should be enough.
 
         A.notNull(key, "key");
@@ -741,7 +785,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         checkFullSupport();
 
         try {
-            return (T) ctx.checkpoint().loadCheckpoint(ses, key);
+            return (T)ctx.checkpoint().loadCheckpoint(ses, key);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -772,8 +816,18 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         return ctx.checkpoint().removeCheckpoint(ses, key);
     }
 
+    /**
+     * @return Topology predicate.
+     */
+    @Nullable public IgnitePredicate<ClusterNode> getTopologyPredicate() {
+        return topPred;
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<UUID> getTopology() {
+        if (topPred != null)
+            return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
+
         return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
     }
 
@@ -884,6 +938,49 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     @Nullable public String executorName() {
         return execName;
+    }
+
+    /**
+     * Sets nodes on which the jobs of the task will be executed.
+     *
+     * @param jobNodes Nodes on which the jobs of the task will be executed.
+     */
+    public void jobNodes(Collection<UUID> jobNodes) {
+        synchronized (mux) {
+            this.jobNodes = F.isEmpty(jobNodes) ? emptyList() : new ArrayList<>(jobNodes);
+        }
+    }
+
+    /**
+     * @return Nodes on which the jobs of the task will be executed.
+     */
+    public List<UUID> jobNodesSafeCopy() {
+        synchronized (mux) {
+            return F.isEmpty(jobNodes) ? emptyList() : new ArrayList<>(jobNodes);
+        }
+    }
+
+    /**
+     * @return All session attributes, without checks.
+     */
+    public Map<Object, Object> attributesSafeCopy() {
+        synchronized (mux) {
+            return F.isEmpty(attrs) ? emptyMap() : new HashMap<>(attrs);
+        }
+    }
+
+    /**
+     * @return Security context of the task initiator, {@code null} if security is not enabled.
+     */
+    public SecurityContext initiatorSecurityContext() {
+        return secCtx;
+    }
+
+    /**
+     * @return User who created the session, {@code null} if security is not enabled.
+     */
+    public Object login() {
+        return secCtx == null ? null : secCtx.subject().login();
     }
 
     /** {@inheritDoc} */

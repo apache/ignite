@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
@@ -40,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         /// Tests the plugin life cycle.
         /// </summary>
         [Test]
-        public void TestIgniteStartStop()
+        public void IgnitionStart_ValidPluginConfiguration_StartsAndReturnsWorkingPlugin()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -61,12 +63,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.IsTrue(prov.Started);
                 Assert.AreEqual(null, prov.Stopped);
                 Assert.AreEqual(TestIgnitePluginProvider.PluginName, prov.Name);
-                Assert.IsNotNullOrEmpty(prov.Copyright);
+                Assert.IsNotNull(prov.Copyright);
                 Assert.IsNotNull(prov.Context);
 
                 var ctx = prov.Context;
                 Assert.IsNotNull(ctx.Ignite);
-                Assert.AreEqual(cfg, ctx.IgniteConfiguration);
                 Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
                 CheckResourceInjection(ctx);
 
@@ -142,13 +143,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.IsTrue(task.IsCompleted);
             Assert.AreEqual("FOO", asyncRes);
 
+            // Async operation with cancellation.
+            var cts = new CancellationTokenSource();
+            task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString(), cts.Token);
+            Assert.IsFalse(task.IsCompleted);
+            cts.Cancel();
+            Assert.IsTrue(task.IsCanceled);
+            var aex = Assert.Throws<AggregateException>(() => { asyncRes = task.Result; });
+            Assert.IsInstanceOf<TaskCanceledException>(aex.GetBaseException());
+
             // Async operation with exception in entry point.
             Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
 
             // Async operation with exception in future.
             var errTask = target.DoOutOpAsync<object>(3, null, null);
             Assert.IsFalse(errTask.IsCompleted);
-            var aex = Assert.Throws<AggregateException>(() => errTask.Wait());
+            aex = Assert.Throws<AggregateException>(() => errTask.Wait());
             Assert.IsInstanceOf<IgniteException>(aex.InnerExceptions.Single());
 
             // Throws custom mapped exception.
@@ -165,29 +175,28 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 "at org.apache.ignite.platform.plugin.PlatformTestPluginTarget.processInLongOutLong"));
         }
 
-        /// <summary>
-        /// Tests invalid plugins.
-        /// </summary>
         [Test]
-        public void TestInvalidPlugins()
+        public void IgnitionStart_MissingPluginConfigurationAttribute_ThrowsException()
         {
-            Action<ICollection<IPluginConfiguration>> check = x => Ignition.Start(
-                new IgniteConfiguration(TestUtils.GetTestConfiguration()) {PluginConfigurations = x});
-
-            // Missing attribute.
-            var ex = Assert.Throws<IgniteException>(() => check(new[] { new NoAttributeConfig(),  }));
+            var ex = Assert.Throws<IgniteException>(() => TryStart(new[] { new NoAttributeConfig() }));
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0} of type {1} has no {2}", typeof(IPluginConfiguration),
                 typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.InnerException.Message);
+        }
 
-            // Empty plugin name.
-            ex = Assert.Throws<IgniteException>(() => check(new[] {new EmptyNameConfig()}));
+        [Test]
+        public void IgnitionStart_EmptyPluginName_ThrowsException()
+        {
+            var ex = Assert.Throws<IgniteException>(() => TryStart(new[] {new EmptyNameConfig()}));
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0}.Name should not be null or empty: {1}", typeof(IPluginProvider<>),
                 typeof(EmptyNamePluginProvider)), ex.InnerException.Message);
+        }
 
-            // Duplicate plugin name.
-            ex = Assert.Throws<IgniteException>(() => check(new[]
+        [Test]
+        public void IgnitionStart_DuplicatePluginName_ThrowsException()
+        {
+            var ex = Assert.Throws<IgniteException>(() => TryStart(new[]
             {
                 new TestIgnitePluginConfiguration(),
                 new TestIgnitePluginConfiguration()
@@ -195,12 +204,18 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("Duplicate plugin name 'TestPlugin1' is used by plugin providers " +
                                           "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)),
-                                          ex.InnerException.Message);
+                ex.InnerException.Message);
+        }
 
-            // Provider throws an exception.
+        /// <summary>
+        /// Tests invalid plugins.
+        /// </summary>
+        [Test]
+        public void IgnitionStart_PluginProviderThrowsException_StopsAndRethrowsException()
+        {
             PluginLog.Clear();
 
-            ex = Assert.Throws<IgniteException>(() => check(new IPluginConfiguration[]
+            var ex = Assert.Throws<IgniteException>(() => TryStart(new IPluginConfiguration[]
             {
                 new NormalConfig(), new ExceptionConfig()
             }));
@@ -215,6 +230,23 @@ namespace Apache.Ignite.Core.Tests.Plugin
                     "normalPlugin.Start", "errPlugin.Start",
                     "errPlugin.Stop", "normalPlugin.Stop"
                 }, PluginLog);
+        }
+
+        private static void TryStart(ICollection<IPluginConfiguration> x)
+        {
+            try
+            {
+                var igniteConfiguration = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    PluginConfigurations = x
+                };
+
+                Ignition.Start(igniteConfiguration);
+            }
+            finally
+            {
+                Ignition.StopAll(true);
+            }
         }
 
         private class NoAttributeConfig : IPluginConfiguration

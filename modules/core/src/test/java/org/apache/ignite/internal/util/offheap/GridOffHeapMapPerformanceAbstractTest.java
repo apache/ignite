@@ -23,6 +23,7 @@ import java.util.Random;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests off-heap map.
@@ -60,7 +61,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     protected long mem = 12L * 1024L * 1024L * 1024L;
 
     /** */
-    protected long dur = 60 * 1000;//2 * 60 * 60 * 1000;
+    protected long dur = 60 * 1000; //2 * 60 * 60 * 1000;
 
     /**
      *
@@ -78,7 +79,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
                 String k = string();
                 String v = string();
 
-                kvMap.put(k,  new T3<>(v, k.getBytes(), v.getBytes()));
+                kvMap.put(k, new T3<>(v, k.getBytes(), v.getBytes()));
             }
     }
 
@@ -133,6 +134,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      * Test plain hash map.
      */
+    @Test
     public void testHashMapPutRemove() {
         Map<String, String> map = new HashMap<>(LOAD_CNT);
 
@@ -187,6 +189,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      *
      */
+    @Test
     public void testInsertRemoveLoad() {
         info("Starting insert performance test...");
 
@@ -240,6 +243,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     /**
      *
      */
+    @Test
     public void testPutRemoveLoad() {
         info("Starting put performance test...");
 

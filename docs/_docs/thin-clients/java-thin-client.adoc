@@ -1,0 +1,396 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Java Thin Client
+
+:sourceCodeFile: {javaCodeDir}/JavaThinClient.java
+== Overview
+
+The Java thin client is a lightweight client that connects to the cluster via a standard socket connection. It does not become a part of the cluster topology, never holds any data, and is not used as a destination for compute calculations. The thin client simply establishes a socket connection to a standard node​ and performs all operations through that node.
+
+== Setting Up
+If you use maven or gradle, add the `ignite-core` dependency to your application:
+
+
+[tabs]
+--
+tab:Maven[]
+[source,xml,subs="attributes,specialchars"]
+----
+<properties>
+    <ignite.version>{version}</ignite.version>
+</properties>
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-core</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
+</dependencies>
+----
+
+tab:Gradle[]
+[source,groovy,subs="attributes,specialchars"]
+----
+def igniteVersion = '{version}'
+
+dependencies {
+    compile group: 'org.apache.ignite', name: 'ignite-core', version: igniteVersion
+}
+----
+
+--
+
+Alternatively, you can use the `ignite-core-{version}.jar` library from the Ignite distribution package.
+
+== Connecting to Cluster
+
+To initialize a thin client, use the `Ignition.startClient(ClientConfiguration)` method. The method accepts a `ClientConfiguration` object, which defines client connection parameters.
+
+The method returns the `IgniteClient` interface, which provides various methods for accessing data. `IgniteClient` is an auto-closable resource. Use the _try-with-resources_ statement to close the thin client and release the resources associated with the connection.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=clientConnection,indent=0]
+-------------------------------------------------------------------------------
+
+You can provide addresses of multiple nodes. In this case, the thin client randomly tries all the servers in the list and throws `ClientConnectionException` if none is available.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
+-------------------------------------------------------------------------------
+
+Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
+
+== Partition Awareness
+
+include::includes/partition-awareness.adoc[]
+
+Partition awareness functionality helps to avoid an additional network hop in the following scenarios:
+
+1. Single-key operations API, like put(), get(), etc. However, the functionality has no effect on those operations within explicit transactions (initiated via ClientTransaction#txStart() described in <<Transactions>> section).
+
+2. ScanQuery and IndexQuery accept a partition number as a parameter with which the query is routed to a particular server node that stores the requested data. Refer to <<Executing Scan Queries>> and link:key-value-api/using-cache-queries#executing-index-queries[Executing Index Queries] sections for more information.
+
+The following code sample illustrates how to use the partition awareness feature with the java thin client.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=partition-awareness,indent=0]
+----
+
+The code sample below shows how to use a custom cache key to partition mapping function to enable affinity awareness on
+a thin client side if the cache already exists in a cluster or/and was created with custom AffinityFunction or AffinityKeyMapper.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=partition-awareness-with-mapper,indent=0]
+----
+
+If a list of server nodes is dynamically changing or scaling, then it is possible to configure the connection with custom implementation of `ClientAddressFinder`. It should provide a number of current server addresses every time a client asks for them.
+The following code sample illustrates how to use it.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=client-address-finder,indent=0]
+----
+
+The code snippet shows how an example implementation might look like if you want clients to retrieve server addresses dynamically.
+
+* The `ClientAddressFinder` is a functional interface that provides the only method `getAddresses()`.
+* The `fetchServerAddress()` is a custom function that dynamically provides server addresses.
+* Configure client with `ClientConfiguration.setAddressFinder(finder)`.
+
+Also, you can check a link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/client/ClientKubernetesPutGetExample.java#L50[real example] of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+
+== Using Key-Value API
+
+The Java thin client supports most of the key-value operations available in the thick client.
+To execute key-value operations on a specific cache, you need to get an instance of the cache and use one of its methods.
+
+=== Getting a Cache Instance
+
+The `ClientCache` interface provides the key-value API. You can use the following methods to obtain an instance of `ClientCache`:
+
+* `IgniteClient.cache(String)`: assumes a cache with the specified name exists. The method does not communicate with the cluster to check if the cache really exists. Subsequent cache operations fail if the cache does not exist.
+* `IgniteClient.getOrCreateCache(String)`, `IgniteClient.getOrCreateCache(ClientCacheConfiguration)`: get existing cache with the specified name or create the cache if it does not exist. The former operation creates a cache with default configuration.
+* `IgniteClient.createCache(String)`, `IgniteClient.createCache(ClientCacheConfiguration)`: create a cache with the specified name and fail if the cache already exists.
+
+Use `IgniteClient.cacheNames()` to list all existing caches.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=getOrCreateCache,indent=0]
+-------------------------------------------------------------------------------
+
+=== Basic Cache Operations
+
+The following code snippet demonstrates how to execute basic cache operations from the thin client.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=key-value-operations,indent=0]
+-------------------------------------------------------------------------------
+
+=== Executing Scan Queries
+Use the `ScanQuery<K, V>` class to get a set of entries that satisfy a given condition. The thin client sends the query to the cluster node where it is executed as a regular link:key-value-api/using-cache-queries[scan query].
+
+The query condition is specified by an `IgniteBiPredicate<K, V>` object that is passed to the query constructor as an argument. The predicate is applied on the server side. If there is no predicate provided, the query returns all cache entries.
+
+NOTE: The classes of the predicates must be available on the server nodes of the cluster.
+
+The results of the query are transferred to the client page by page. Each page contains a specific number of entries and is fetched to the client only when the entries from that page are requested. To change the number of entries in a page, use the `ScanQuery.setPageSize(int pageSize)` method (default value is 1024).
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=scan-query,indent=0]
+-------------------------------------------------------------------------------
+
+The `IgniteClient.query(...)` method returns an instance of `FieldsQueryCursor`. Make sure to always close the cursor after you obtain all results.
+
+=== Transactions
+
+Client transactions are supported for caches with `AtomicityMode.TRANSACTIONAL` mode.
+
+==== Executing Transactions
+
+To start a transaction, obtain the `ClientTransactions` object from `IgniteClient`.
+`ClientTransactions` has a number of  `txStart(...)` methods, each of which starts a new transaction and returns an object (`ClientTransaction`) that represents the transaction.
+Use this object to commit or rollback the transaction.
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=tx,indent=0]
+----
+
+
+==== Transaction Configuration
+
+Client transactions can have different link:key-value-api/transactions#concurrency-modes-and-isolation-levels[concurrency modes, isolation levels], and execution timeout, which can be set for all transactions or on a per transaction basis.
+
+The `ClientConfiguration` object supports setting the default concurrency mode, isolation level, and timeout for all transactions started with this client interface.
+
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=transaction-config,indent=0]
+----
+
+You can specify the concurrency mode, isolation level, and timeout when starting an individual transaction.
+In this case, the provided values override the default settings.
+
+
+[source, java]
+----
+include::{sourceCodeFile}[tags=tx-custom-properties,indent=0]
+----
+
+
+=== Working with Binary Objects
+The thin client fully supports Binary Object API described in the link:key-value-api/binary-objects[Working with Binary Objects] section.
+Use `CacheClient.withKeepBinary()` to switch the cache to binary mode and start working directly with binary objects to avoid serialization/deserialization.
+Use `IgniteClient.binary()` to get an instance of `IgniteBinary` and build an object from scratch.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=binary-example,indent=0]
+-------------------------------------------------------------------------------
+
+Refer to the link:key-value-api/binary-objects[Working with Binary Objects] page for detailed information.
+
+=== Cache Entry Listening
+
+When a cache is modified (an entry is inserted, updated, deleted, or expired), an event can be sent to notify the client.
+To listen to these events, you can use one of the following approaches:
+
+* Continuous queries
+* Cache `registerCacheEntryListener` methods
+
+Both approaches require a local listener to be provided, which is triggered on every cache modification event.
+
+For both approaches you can also specify a remote filter to narrow down the range of entries that are monitored for updates. This filter is executed for each updated entry on the server-side and evaluates whether the event should be propagated to the client's local listener.
+
+NOTE: The classes of the remote filter factory must be available on the server nodes of the cluster.
+
+Refer to the link:key-value-api/continuous-queries[thick client continuous queries] page for more information about continuous queries.
+
+In case of connection to server failure, a thin client cannot silently reconnect with guarantees that no events are lost, so continuous queries and registered cache event listeners are closed after the server disconnection. There are also several methods with the additional parameter: disconnect listener. This listener allows to catch server disconnection events and react appropriately.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=continuous-queries,indent=0]
+-------------------------------------------------------------------------------
+
+== Executing SQL Statements
+
+The Java thin client provides a SQL API to execute SQL statements. SQL statements are declared using the `SqlFieldsQuery` objects and executed through the `IgniteClient.query(SqlFieldsQuery)` method.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=sql,indent=0]
+-------------------------------------------------------------------------------
+The `query(SqlFieldsQuery)` method returns an instance of `FieldsQueryCursor`, which can be used to iterate over the results. After getting the results, the cursor must be closed to release the resources associated with it.
+
+NOTE: The `getAll()` method retrieves the results from the cursor and closes it.
+
+Read more about using `SqlFieldsQuery` and SQL API in the link:SQL/sql-api[Using SQL API] section.
+
+== Using Cluster APIs
+
+The cluster APIs let you create a group of cluster nodes and run various operations against the group. The `ClientCluster`
+interface is the entry-point to the APIs that can be used as follows:
+
+* Get or change the state of a cluster
+* Get a list of all cluster nodes
+* Create logical groups of cluster nodes and use other Ignite APIs to perform certain operations on the group
+
+Use the instance of `IgniteClient` to obtain a reference to the `ClientCluster` interface:
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-cluster,indent=0]
+-------------------------------------------------------------------------------
+
+=== Logical Nodes Grouping
+
+You can use the `ClientClusterGroup` interface of the cluster APIs to create various groups of cluster nodes. For instance,
+one group can comprise all servers nodes, while the other group can include only those nodes that match a specific
+TCP/IP address format. The example below shows how to create a group of server nodes located in the `dc1` data center:
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-cluster-groups,indent=0]
+-------------------------------------------------------------------------------
+
+Refer to the main link:distributed-computing/cluster-groups[cluster groups] documentation page for more details on the capability.
+
+== Executing Compute Tasks
+
+Presently, the Java thin client supports basic link:distributed-computing/distributed-computing[compute capabilities]
+by letting you execute those compute tasks that are *already deployed* in the cluster. You can either run a task across all
+cluster nodes or a specific link:thin-clients/java-thin-client#logical-nodes-grouping[cluster group]. The deployment
+assumes that you create a JAR file with the compute tasks and add the JAR to the cluster nodes' classpath.
+
+By default, the execution of tasks, triggered by the thin client, is disabled on the cluster side. You need to set the
+`ThinClientConfiguration.maxActiveComputeTasksPerConnection` parameter to a non-zero value in the configuration of your
+server nodes and thick clients:
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration" id="ignite.cfg">
+    <property name="clientConnectorConfiguration">
+        <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+            <property name="thinClientConfiguration">
+                <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+                    <property name="maxActiveComputeTasksPerConnection" value="100" />
+                </bean>
+            </property>
+        </bean>
+    </property>
+</bean>
+----
+tab:Java[]
+[source,java]
+----
+include::{sourceCodeFile}[tag=client-compute-setup,indent=0]
+----
+--
+
+The example below shows how to get access to the compute APIs via the `ClientCompute` interface and execute the compute
+task named `MyTask`:
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-compute-task,indent=0]
+-------------------------------------------------------------------------------
+
+== Executing Ignite Services
+
+You can use the `ClientServices` APIs of the Java thin client to invoke an link:services/services[Ignite Service] that
+is *already deployed* in the cluster.
+
+The example below shows how to invoke the service named `MyService`:
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-services,indent=0]
+-------------------------------------------------------------------------------
+
+The deployed service can be implemented using Java or .NET.
+
+== Handling Exceptions
+
+=== Handling Node Failures
+
+When you provide the addresses of multiple nodes in the client configuration, the client automatically switches to the next node if the current connection fails and retries any ongoing operation.
+
+In the case of atomic operations, failover to another node is transparent to the user. However, if you execute a scan query or a SELECT query, iteration over query cursor may throw an `ClientConnectionException`. This can happen because queries return data in pages, and if the node that the client is connected to goes down while the client retrieves the pages, to keep query result consistent exception is thrown.
+
+If explicit transaction is started, cache operations binded to this transaction also can throw an `ClientException` in case of failed connection to server node.
+
+User code should handle these exceptions and implement retry logic accordingly.
+
+== Security
+
+=== SSL/TLS
+
+To use encrypted communication between the thin client and the cluster, you have to enable SSL/TLS in both the cluster configuration and the client configuration. Refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls-for-thin-clients[Enabling SSL/TLS for Thin Clients] section for the instruction on the cluster configuration.
+
+To enable encrypted communication in the thin client, provide a keystore that contains the encryption key and a truststore with the trusted certificates in the thin client configuration.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=ssl-configuration,indent=0]
+-------------------------------------------------------------------------------
+
+The following table explains encryption parameters of the client configuration:
+
+[cols="1,3,1",opts="header,stretch"]
+|===
+| Parameter | Description | Default Value
+| sslMode | Either  `REQURED` or `DISABLED`. | `DISABLED`
+| sslClientCertificateKeyStorePath | The path to the keystore file with the private key. | N/A
+| sslClientCertificateKeyStoreType | The type of the keystore. | `JKS`
+| sslClientCertificateKeyStorePassword | The password to the keystore.| N/A
+| sslTrustCertificateKeyStorePath | The path to the truststore file.| N/A
+| sslTrustCertificateKeyStoreType | The type of the truststore. | `JKS`
+| sslTrustCertificateKeyStorePassword | The password to the truststore. | N/A
+| sslKeyAlgorithm| Sets the key manager algorithm that is used to create a key manager. | `SunX509`
+| sslTrustAll | If this parameter is set to `true`, the certificates are not validated. | N/A
+| sslProtocol | The name of the protocol that is used for data encryption. | `TLS`
+|===
+
+=== Authentication
+
+Configure link:security/authentication[authentication on the cluster side] and provide the user name and password in the client configuration.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=client-authentication,indent=0]
+-------------------------------------------------------------------------------
+
+
+== Async APIs
+
+Most network-bound thin client APIs have an async counterpart, for example, `ClientCache.get` and `ClientCache.getAsync`.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=async-api,indent=0]
+-------------------------------------------------------------------------------
+
+* Async methods do not block the calling thread
+* Async methods return `IgniteClientFuture<T>` which is a combination of `Future<T>` and `CompletionStage<T>`.
+* Async continuations are executed using `ClientConfiguration.AsyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool()`. For example, `cache.getAsync(1).thenAccept(val -> System.out.println(val))` will execute the `println` call using a thread from the `commonPool`.

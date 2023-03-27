@@ -39,8 +39,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface IgniteSpiMultipleInstancesSupport {
     /**
-     * Whether or not target SPI supports multiple grid instances
+     * @return Whether or not target SPI supports multiple grid instances
      * started in the same VM.
      */
-    @SuppressWarnings({"JavaDoc"}) public boolean value();
+    public boolean value();
 }

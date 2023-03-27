@@ -21,6 +21,8 @@ import javax.cache.CacheException;
 import org.h2.command.dml.SelectUnion;
 import org.h2.util.StatementBuilder;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * Select query with UNION.
  */
@@ -32,7 +34,7 @@ public class GridSqlUnion extends GridSqlQuery {
     public static final int RIGHT_CHILD = 3;
 
     /** */
-    private int unionType;
+    private SelectUnion.UnionType unionType;
 
     /** */
     private GridSqlQuery right;
@@ -103,25 +105,27 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN \n" : "");
+        char delim = delimeter();
+
+        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " + delim : "");
 
         buff.append('(').append(left.getSQL()).append(')');
 
         switch (unionType()) {
-            case SelectUnion.UNION_ALL:
-                buff.append("\nUNION ALL\n");
+            case UNION_ALL:
+                buff.append(delim).append("UNION ALL").append(delim);
                 break;
 
-            case SelectUnion.UNION:
-                buff.append("\nUNION\n");
+            case UNION:
+                buff.append(delim).append("UNION").append(delim);
                 break;
 
-            case SelectUnion.INTERSECT:
-                buff.append("\nINTERSECT\n");
+            case INTERSECT:
+                buff.append(delim).append("INTERSECT").append(delim);
                 break;
 
-            case SelectUnion.EXCEPT:
-                buff.append("\nEXCEPT\n");
+            case EXCEPT:
+                buff.append(delim).append("EXCEPT").append(delim);
                 break;
 
             default:
@@ -136,23 +140,23 @@ public class GridSqlUnion extends GridSqlQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean simpleQuery() {
-        return unionType() == SelectUnion.UNION_ALL && sort().isEmpty() &&
+    @Override public boolean skipMergeTable() {
+        return unionType() == SelectUnion.UnionType.UNION_ALL && sort().isEmpty() &&
             offset() == null && limit() == null &&
-            left().simpleQuery() && right().simpleQuery();
+            left().skipMergeTable() && right().skipMergeTable();
     }
 
     /**
      * @return Union type.
      */
-    public int unionType() {
+    public SelectUnion.UnionType unionType() {
         return unionType;
     }
 
     /**
      * @param unionType New union type.
      */
-    public void unionType(int unionType) {
+    public void unionType(SelectUnion.UnionType unionType) {
         this.unionType = unionType;
     }
 

@@ -17,10 +17,21 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.function.LongSupplier;
+
 /**
  * Clock timer for tests.
  */
 public class GridTestClockTimer implements Runnable {
+    /** Default time supplier. */
+    public static final LongSupplier DFLT_TIME_SUPPLIER = System::currentTimeMillis;
+
+    /** Current time supplier. */
+    private static volatile LongSupplier timeSupplier = DFLT_TIME_SUPPLIER;
+
+    /** Mutex to avoid races between time updates. */
+    private static final Object mux = new Object();
+
     /**
      * Constructor.
      */
@@ -32,10 +43,37 @@ public class GridTestClockTimer implements Runnable {
         }
     }
 
+    /**
+     * @return {@code True} if need start test time.
+     */
+    public static boolean startTestTimer() {
+        synchronized (IgniteUtils.mux) {
+            return IgniteUtils.gridCnt == 0;
+        }
+    }
+
+    /**
+     * Sets new time supplier.
+     *
+     * @param timeSupplier Time supplier.
+     */
+    public static void timeSupplier(LongSupplier timeSupplier) {
+        GridTestClockTimer.timeSupplier = timeSupplier;
+    }
+
+    /**
+     * Updates current time with value supplied by time supplier.
+     */
+    public static void update() {
+        synchronized (mux) {
+            IgniteUtils.curTimeMillis = timeSupplier.getAsLong();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void run() {
         while (true) {
-            IgniteUtils.curTimeMillis = System.currentTimeMillis();
+            update();
 
             try {
                 Thread.sleep(10);

@@ -17,43 +17,53 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Checkpoint (begin) record
  */
 public class CheckpointRecord extends WALRecord {
     /** Checkpoint ID. */
     private UUID cpId;
 
-    /** */
+    /** always false */
     private boolean end;
 
     /** */
-    private Map<Integer, CacheState> cacheStates;
+    private Map<Integer, CacheState> cacheGrpStates;
 
     /** Safe replay pointer. */
     private WALPointer cpMark;
 
     /**
      * @param cpMark Checkpoint mark.
-     * @param end Checkpoint end flag.
      */
-    public CheckpointRecord(WALPointer cpMark, boolean end) {
-        this(UUID.randomUUID(), cpMark, end);
+    public CheckpointRecord(@Nullable WALPointer cpMark) {
+        this(UUID.randomUUID(), cpMark);
     }
 
     /**
      * @param cpId Checkpoint ID.
      * @param cpMark Checkpoint mark.
-     * @param end Checkpoint end flag.
      */
-    public CheckpointRecord(UUID cpId, WALPointer cpMark, boolean end) {
+    public CheckpointRecord(UUID cpId, @Nullable WALPointer cpMark) {
+        this.cpId = cpId;
+        this.cpMark = cpMark;
+    }
+
+    /**
+     * Constructor kept for serializer
+     * @param cpId Checkpoint ID.
+     * @param cpMark Checkpoint mark.
+     * @param end Checkpoint end flag - deprecated expected to be always false
+     */
+    public CheckpointRecord(UUID cpId, @Nullable WALPointer cpMark, boolean end) {
         this.cpId = cpId;
         this.end = end;
         this.cpMark = cpMark;
@@ -65,28 +75,28 @@ public class CheckpointRecord extends WALRecord {
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param state Cache state.
      */
-    public void addCacheState(int cacheId, CacheState state) {
-        if (cacheStates == null)
-            cacheStates = new HashMap<>();
+    public void addCacheGroupState(int grpId, CacheState state) {
+        if (cacheGrpStates == null)
+            cacheGrpStates = new HashMap<>();
 
-        cacheStates.put(cacheId, state);
+        cacheGrpStates.put(grpId, state);
     }
 
     /**
-     * @param cacheStates Cache states.
+     * @param cacheGrpStates Cache states.
      */
-    public void cacheStates(Map<Integer, CacheState> cacheStates) {
-        this.cacheStates = cacheStates;
+    public void cacheGroupStates(Map<Integer, CacheState> cacheGrpStates) {
+        this.cacheGrpStates = cacheGrpStates;
     }
 
     /**
      * @return Cache states.
      */
-    public Map<Integer, CacheState> cacheStates() {
-        return cacheStates != null ? cacheStates : Collections.<Integer, CacheState>emptyMap();
+    public Map<Integer, CacheState> cacheGroupStates() {
+        return cacheGrpStates != null ? cacheGrpStates : Collections.<Integer, CacheState>emptyMap();
     }
 
     /**
@@ -97,7 +107,7 @@ public class CheckpointRecord extends WALRecord {
     }
 
     /**
-     * @return Checkpoint end flag.
+     * @return Checkpoint end flag, now always false
      */
     public boolean end() {
         return end;
@@ -108,5 +118,10 @@ public class CheckpointRecord extends WALRecord {
      */
     public WALPointer checkpointMark() {
         return cpMark;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CheckpointRecord.class, this, "super", super.toString());
     }
 }

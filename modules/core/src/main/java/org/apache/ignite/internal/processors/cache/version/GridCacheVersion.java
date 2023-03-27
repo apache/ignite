@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -31,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable {
+public class GridCacheVersion implements Message, Externalizable, CacheEntryVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,7 +82,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         nodeOrderDrId = nodeOrder | (dataCenterId << DR_ID_SHIFT);
     }
 
-
     /**
      * @param topVer Topology version plus number of seconds from the start time of the first grid node.
      * @param nodeOrderDrId Node order and DR ID.
@@ -93,10 +93,8 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         this.order = order;
     }
 
-    /**
-     * @return Topology version plus number of seconds from the start time of the first grid node..
-     */
-    public int topologyVersion() {
+    /** {@inheritDoc} */
+    @Override public int topologyVersion() {
         return topVer;
     }
 
@@ -112,15 +110,23 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /**
      * @return Version order.
      */
-    public long order() {
+    @Override public long order() {
         return order;
     }
 
-    /**
-     * @return Node order on which this version was assigned.
-     */
-    public int nodeOrder() {
+    /** {@inheritDoc} */
+    @Override public CacheEntryVersion otherClusterVersion() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int nodeOrder() {
         return nodeOrderDrId & NODE_ORDER_MASK;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte clusterId() {
+        return dataCenterId();
     }
 
     /**
@@ -170,9 +176,9 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     }
 
     /**
-     * @return Version represented as {@code GridUuid}
+     * @return Version represented as {@code IgniteUuid}
      */
-    public IgniteUuid asGridUuid() {
+    public IgniteUuid asIgniteUuid() {
         return new IgniteUuid(new UUID(topVer, nodeOrderDrId), order);
     }
 
@@ -220,14 +226,13 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("IfMayBeConditional")
-    @Override public int compareTo(GridCacheVersion other) {
+    @Override public int compareTo(CacheEntryVersion other) {
         int res = Integer.compare(topologyVersion(), other.topologyVersion());
 
         if (res != 0)
             return res;
 
-        res = Long.compare(order, other.order);
+        res = Long.compare(order(), other.order());
 
         if (res != 0)
             return res;
@@ -321,6 +326,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     @Override public String toString() {
         return "GridCacheVersion [topVer=" + topologyVersion() +
             ", order=" + order() +
-            ", nodeOrder=" + nodeOrder() + ']';
+            ", nodeOrder=" + nodeOrder() +
+            ", dataCenterId=" + dataCenterId() + ']';
     }
 }

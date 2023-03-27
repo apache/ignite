@@ -77,9 +77,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -90,7 +88,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(EXE, RESULT, NOOP);
 
     /** Default maximum number of task results. */
-    private static final int DFLT_MAX_TASK_RESULTS = 10240;
+    public static final int DFLT_MAX_TASK_RESULTS = 10240;
 
     /** Maximum number of task results. */
     private final int maxTaskResults = getInteger(IGNITE_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
@@ -109,7 +107,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         super(ctx);
 
         ctx.io().addMessageListener(TOPIC_REST, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (!(msg instanceof GridTaskResultRequest)) {
                     U.warn(log, "Received unexpected message instead of task result request: " + msg);
 
@@ -187,7 +185,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         if (log.isDebugEnabled())
             log.debug("Handling task REST request: " + req);
 
-        GridRestTaskRequest req0 = (GridRestTaskRequest) req;
+        GridRestTaskRequest req0 = (GridRestTaskRequest)req;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
@@ -214,28 +212,23 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 long timeout = req0.timeout();
 
-                final UUID clientId = req.clientId();
-
                 final IgniteInternalFuture<Object> taskFut;
 
                 if (locExec) {
-                    ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, clientId);
-                    ctx.task().setThreadContext(TC_TIMEOUT, timeout);
-
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    taskFut = ctx.task().execute(name, arg);
+                    taskFut = ctx.task().execute(name, arg, options().asPublicRequest().withTimeout(timeout));
                 }
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
                     ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(req.destinationId()));
 
-                    ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
                     taskFut = ctx.closure().callAsync(
                         BALANCE,
-                        new ExeCallable(name, params, timeout, clientId), prj.nodes());
+                        new ExeCallable(name, params, timeout),
+                        options(prj.nodes()).withFailoverDisabled()
+                    );
                 }
 
                 if (async) {
@@ -425,7 +418,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         final Condition cond = lock.newCondition();
 
         GridMessageListener msgLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 String err = null;
                 GridTaskResultResponse res = null;
 
@@ -615,9 +608,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         private long timeout;
 
         /** */
-        private UUID clientId;
-
-        /** */
         @IgniteInstanceResource
         private IgniteEx g;
 
@@ -632,19 +622,16 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
          * @param name Name.
          * @param params Params.
          * @param timeout Timeout.
-         * @param clientId Client ID.
          */
-        private ExeCallable(String name, List<Object> params, long timeout, UUID clientId) {
+        private ExeCallable(String name, List<Object> params, long timeout) {
             this.name = name;
             this.params = params;
             this.timeout = timeout;
-            this.clientId = clientId;
         }
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return g.compute(g.cluster().forSubjectId(clientId)).execute(
-                name,
+            return g.compute().execute(name,
                 !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null);
         }
 
@@ -653,7 +640,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             U.writeString(out, name);
             out.writeObject(params);
             out.writeLong(timeout);
-            U.writeUuid(out, clientId);
         }
 
         /** {@inheritDoc} */
@@ -661,7 +647,6 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             name = U.readString(in);
             params = (List<Object>)in.readObject();
             timeout = in.readLong();
-            clientId = U.readUuid(in);
         }
     }
 }

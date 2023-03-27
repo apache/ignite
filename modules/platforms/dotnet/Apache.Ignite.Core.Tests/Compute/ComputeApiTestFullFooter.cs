@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// Compute API test with compact footers disabled.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class ComputeApiTestFullFooter : ComputeApiTest
     {
         /// <summary>
@@ -60,6 +61,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             path += "_fullFooter";
 
             File.WriteAllText(path, text);
+
+            Assert.IsTrue(File.Exists(path));
 
             return path;
         }

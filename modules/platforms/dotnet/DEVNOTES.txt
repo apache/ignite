@@ -1,29 +1,53 @@
-Apache Ignite.NET Build Instructions
-====================================
+Requirements
+============
 
-Requirements:
-* Windows (XP and up), Windows Server (2008 and up)
-* Oracle JDK 7 and above
-* .NET Framework 4.0
-* PowerShell 3.0+
-* Visual Studio 2010 (later versions require upgrading "common" C++ project, see below)
+* Oracle JDK 8 or 11
+* .NET 6 SDK
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)
 * Apache Maven bin directory in PATH, or MAVEN_HOME environment variable
+* PowerShell
+* Any OS supported by .NET SDK (Linux, Windows, macOS)
 
-Building binaries:
-  build.bat -skipCodeAnalysis
+
+Build Binaries and NuGet
+========================
+
+pwsh build.ps1
+(works on any supported OS)
+
 Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 
-Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
-  bin\Apache.Ignite.exe  
+Build Apache Ignite .NET with Maven
+===================================
 
-NOTE: 
-* x86 solution platform requires x86 Oracle JDK.
-* x64 solution platform requires x64 Oracle JDK.
-* AnyCPU platform requires at least one of the above. 
-To build truly universal AnyCPU binaries (suitable for x86 and x64 modes), both x64 and x86 Oracle JDKs should be installed.
+Note that .NET Core SDK 3.1 and PowerShell must be installed first.
 
-Building in later versions of Visual Studio:
-* Open Apache.Ignite.sln in Visual Studio
-* You will be prompted to "Update VC++ Compiler and Libraries", click "Update"
-* OR, right-click "common" project in the Solution Explorer and select "Upgrade VC++ Compiler and Libraries"
+The command below will build the binaries and NuGet packages with Maven:
+
+    ./mvnw clean install -am -pl modules/platforms/dotnet -DskipTests -P platforms
+
+
+Solutions and Projects
+======================
+
+* Apache.Ignite.DotNetCore.sln excludes legacy integrations and some tests specific to full .NET Framework.
+  All projects and tests in this solution work on any supported OS (Windows, Linux, macOS).
+  USE THIS solution for development by default.
+
+* Apache.Ignite.sln includes all projects, including legacy EF and ASP.NET integrations.
+  It can be built on any OS with "dotnet build", but some tests work only on Windows with full .NET Framework.
+  DO NOT USE unless working on Apache.Ignite.EntityFramework or Apache.Ignite.AspNet.
+
+
+Tests
+=====
+
+* Run tests:
+  cd Apache.Ignite.Core.Tests
+  dotnet test Apache.Ignite.Core.Tests.DotNetCore.csproj
+
+* Run specific test:
+  dotnet test Apache.Ignite.Core.Tests.DotNetCore.csproj --filter CacheTest  
+
+* Run a smaller subset of tests - exclude long tests and examples tests:
+  dotnet test Apache.Ignite.Core.Tests.DotNetCore.csproj --filter "TestCategory!=LONG_TEST&TestCategory!=EXAMPLES_TEST"

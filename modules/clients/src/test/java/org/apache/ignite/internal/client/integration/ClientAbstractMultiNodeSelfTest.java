@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -68,17 +67,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
+import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -87,11 +80,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests basic client behavior with multiple nodes.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Partitioned cache name. */
     private static final String PARTITIONED_CACHE_NAME = "partitioned";
 
@@ -178,20 +167,27 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             c.setConnectorConfiguration(clientCfg);
         }
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
 
         c.setCommunicationSpi(spi);
 
-        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
-            cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
+        CacheConfiguration<?, ?> ccfg1 = defaultCacheConfiguration()
+            .setName(PARTITIONED_CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setBackups(0);
+
+        CacheConfiguration<?, ?> ccfg2 = defaultCacheConfiguration()
+            .setName(REPLICATED_CACHE_NAME)
+            .setCacheMode(REPLICATED);
+
+        CacheConfiguration<?, ?> ccfg3 = defaultCacheConfiguration()
+            .setName(REPLICATED_ASYNC_CACHE_NAME)
+            .setCacheMode(REPLICATED)
+            .setWriteSynchronizationMode(FULL_ASYNC);
+
+        c.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
         c.setPublicThreadPoolSize(40);
 
@@ -200,49 +196,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         return c;
     }
 
-    /**
-     * @param cacheName Cache name.
-     * @return Cache configuration.
-     * @throws Exception In case of error.
-     */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setAtomicityMode(TRANSACTIONAL);
-
-        switch (cacheName) {
-            case DEFAULT_CACHE_NAME:
-                cfg.setCacheMode(LOCAL);
-                break;
-            case PARTITIONED_CACHE_NAME:
-                cfg.setCacheMode(PARTITIONED);
-
-                cfg.setBackups(0);
-                break;
-            default:
-                cfg.setCacheMode(REPLICATED);
-                break;
-        }
-
-        cfg.setName(cacheName);
-
-        cfg.setWriteSynchronizationMode(REPLICATED_ASYNC_CACHE_NAME.equals(cacheName) ? FULL_ASYNC : FULL_SYNC);
-
-        cfg.setAffinity(new RendezvousAffinityFunction());
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        info("Stopping grids.");
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -262,6 +218,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyProjections() throws Exception {
         final GridClientCompute dflt = client.compute();
 
@@ -288,8 +245,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         }, GridClientException.class, null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return singleNodePrj.projection(targetFilter);
             }
         }, GridClientException.class, null);
@@ -298,6 +254,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionRun() throws Exception {
         GridClientCompute dflt = client.compute();
 
@@ -327,6 +284,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyListener() throws Exception {
         final Collection<UUID> added = new ArrayList<>(1);
         final Collection<UUID> rmvd = new ArrayList<>(1);
@@ -439,7 +397,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    @SuppressWarnings("OverlyStrongTypeCast")
                     @Override public Object execute() {
                         try {
                             Thread.sleep(1000);
@@ -483,7 +440,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * Communication SPI which checks cache flags.
      */
-    @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)

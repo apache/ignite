@@ -1,0 +1,121 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Asynchronous APIs
+
+== Overview
+
+Many Ignite APIs have asynchronous variants, for example, `void ICache.Put` and `Task ICache.PutAsync`.
+Async APIs allow us to write link:https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/[efficient non-blocking code]:
+
+[source,csharp]
+----
+ICache<int, string> cache = ignite.GetOrCreateCache<int, string>("name");
+
+// Sync, blocks thread on every call.
+cache.Put(1, "Hello");
+string hello = cache.Get(1);
+
+// Async, does not block threads.
+await cache.PutAsync(1, "Hello");
+string hello = await cache.GetAsync(1);
+----
+
+With async APIs, current thread is not blocked while we wait for the cache operation to complete;
+the thread is returned to the thread pool and can perform other work.
+
+When the async operation completes, our method resumes execution - either on the same thread, or on a different one -
+depending on the environment and the configuration. This is called "async continuation".
+
+
+== Async Continuations
+
+Unless specified otherwise, Ignite executes async continuations on the link:https://docs.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool[.NET Thread Pool], which is safe and does not require any special care.
+
+
+=== Thin Client
+
+All thin client async APIs use link:https://docs.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool[.NET Thread Pool.] for async continuations.
+
+=== Thick Cache
+
+Callbacks for asynchronous cache operations on server and thick client nodes are invoked by using Java `ForkJoinPool#commonPool`, unless a different executor is configured with `IgniteConfiguration.AsyncContinuationExecutor`.
+
+* This default executor is safe for any operations inside the callback.
+* Default behavior was changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
+* To restore the previous behavior, use `IgniteConfiguration.AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous`.
+** Previous behavior can provide a small performance improvement, because callbacks are executed without any indirection or scheduling.
+** UNSAFE: cache operations cannot proceed while system threads execute callbacks, and deadlocks are possible if other cache operations are invoked from the callback.
+
+[IMPORTANT]
+====
+[discrete]
+=== *Ignite 2.10 and before*: possibility of deadlocks and system pool starvation
+
+In Ignite versions 2.10 and before, system pool is used to run async continuations,
+which means that `GetAsync` call in the code above is executed by the system thread.
+
+This can lead to deadlocks if user code blocks the thread, or cause starvation because system thread is busy
+running user code instead of performing cache operations.
+
+To enable safe behavior, move continuations to .NET Thread Pool manually:
+
+[source,csharp]
+----
+await cache.PutAsync(1, "Hello").ContinueWith(
+                t => {},
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+
+string hello = await cache.GetAsync(1).ContinueWith(
+                t => t.Result,
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+----
+
+Tip: use an extension method to reduce verbosity.
+
+====
+
+
+=== Compute
+
+*Ignite 2.11 and later*: all `ICompute` async APIs use .NET Thread Pool to run async continuations.
+
+*Ignite 2.10 and before*: Compute async continuations are executed on link:perf-and-troubleshooting/thread-pools-tuning[Ignite public pool].
+To reduce the load on the public pool, it is recommended to use the same `ContinueWith` approach as above:
+
+[source,csharp]
+----
+await compute.CallAsync(new MyAction()).ContinueWith(
+                t => t.Result,
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+----
+
+This will move the continuation from Ignite public pool (reserved for Compute functionality) to the .NET thread pool (`TaskScheduler.Default`).
+
+
+== ConfigureAwait
+
+`Task.ConfigureAwait` method can be used as usual with all Ignite async APIs.
+
+See link:https://devblogs.microsoft.com/dotnet/configureawait-faq/[ConfigureAwait FAQ] for more details.
+
+
+
+

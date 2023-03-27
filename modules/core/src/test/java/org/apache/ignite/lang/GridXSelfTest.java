@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link X}.
@@ -33,6 +35,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testHasCause() {
         ConnectException conEx = new ConnectException();
 
@@ -53,8 +56,69 @@ public class GridXSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that using function with Throwable that contains circular reference in {@code getSuppressed()}
+     *     does not cause {@link StackOverflowError}.
+     */
+    @Test
+    public void testCauseDoesNotRaiseStackOverflowWhenCircularReferenceInSuppressed() {
+        NullPointerException npe = new NullPointerException();
+
+        IOException ioExc = new IOException(npe);
+
+        IgniteException exc = new IgniteException(ioExc);
+
+        ioExc.addSuppressed(exc);
+
+        assertEquals(npe, X.cause(exc, NullPointerException.class));
+
+        assertTrue(X.hasCause(exc, NullPointerException.class));
+
+        assertNull(X.cause(exc, ArithmeticException.class));
+
+        assertFalse(X.hasCause(exc, ArithmeticException.class));
+    }
+
+    /**
+     * Checks that using function with Throwable that contains circular reference in {@code getCaused()}
+     *     does not cause {@link StackOverflowError}.
+     */
+    @Test
+    public void testCauseDoesNotRaiseStackOverflowWhenCircularReferenceInCaused() {
+        NullPointerException npe = new NullPointerException();
+
+        IOException ioExc = new IOException(npe);
+
+        IgniteException exc = new IgniteException(ioExc);
+
+        npe.initCause(exc);
+
+        assertEquals(npe, X.cause(exc, NullPointerException.class));
+
+        assertTrue(X.hasCause(exc, NullPointerException.class));
+
+        assertNull(X.cause(exc, ArithmeticException.class));
+
+        assertFalse(X.hasCause(exc, ArithmeticException.class));
+    }
+
+    /**
+     * Tests string presentation of given time.
+     */
+    @Test
+    public void testTimeSpan() {
+        assertEquals(X.timeSpan2DHMSM(86400001L), "1 day, 00:00:00.001");
+
+        assertEquals(X.timeSpan2DHMSM(172800004L), "2 days, 00:00:00.004");
+
+        assertEquals(X.timeSpan2DHMSM(1L), "00:00:00.001");
+
+        assertEquals(X.timeSpan2HMSM(172800004L), "00:00:00.004");
+    }
+
+    /**
      *
      */
+    @Test
     public void testShallowClone() {
         // Single not cloneable object
         Object obj = new Object();
@@ -104,6 +168,7 @@ public class GridXSelfTest extends GridCommonAbstractTest {
      *
      */
     @SuppressWarnings({"StringEquality"})
+    @Test
     public void testDeepCloner() {
         // Single not cloneable object
         Object obj = new Object();

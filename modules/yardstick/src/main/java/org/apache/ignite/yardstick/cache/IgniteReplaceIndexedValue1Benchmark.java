@@ -66,6 +66,8 @@ public class IgniteReplaceIndexedValue1Benchmark extends IgniteCacheAbstractBenc
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         cache.replace(rnd.nextInt(args.range()), new Person1(rnd.nextInt(args.range())));
 
         return true;

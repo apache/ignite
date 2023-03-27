@@ -79,6 +79,7 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
 
     /**
      * Removes this set.
+     * In order to check the state it is possible to use {@link #removed()}.
      *
      * @throws IgniteException If operation failed.
      */
@@ -100,7 +101,7 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
     public boolean collocated();
 
     /**
-     * Gets status of set.
+     * Gets status of set. In order to change the status it is possible to use {@link #close()} method.
      *
      * @return {@code True} if set was removed from cache {@code false} otherwise.
      */
@@ -124,7 +125,17 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * This is not supported for non-collocated sets.
      *
      * @param job Job which will be co-located with the set.
+     * @param <R> Type of the job result.
+     * @return Job result.
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Returns Ignite set that operates on binary objects without deserialization.
+     *
+     * @param <T1> Type of binary objects.
+     * @return New set instance for binary objects.
+     */
+    public <T1> IgniteSet<T1> withKeepBinary();
 }

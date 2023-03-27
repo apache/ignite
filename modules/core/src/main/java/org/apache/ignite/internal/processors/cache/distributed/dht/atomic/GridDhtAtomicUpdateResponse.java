@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -27,7 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -39,7 +38,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * DHT atomic cache backup update response.
  */
-public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -97,7 +96,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      *
      * @param err Error.
      */
-    public void onError(IgniteCheckedException err){
+    public void onError(IgniteCheckedException err) {
         if (errs == null)
             errs = new UpdateErrors();
 
@@ -119,7 +118,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * @param nearEvicted Evicted near cache keys.
      */
-    void nearEvicted(List<KeyCacheObject> nearEvicted) {
+    public void nearEvicted(List<KeyCacheObject> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -134,10 +133,13 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(nearEvicted, cctx);
+        // Can be null if client near cache was removed, in this case assume do not need prepareMarshal.
+        if (cctx != null) {
+            prepareMarshalCacheObjects(nearEvicted, cctx);
 
-        if (errs != null)
-            errs.prepareMarshal(this, cctx);
+            if (errs != null)
+                errs.prepareMarshal(this, cctx);
+        }
     }
 
     /** {@inheritDoc} */
@@ -177,25 +179,25 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeMessage("errs", errs))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeInt("partId", partId))
                     return false;
 
@@ -217,7 +219,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 errs = reader.readMessage("errs");
 
                 if (!reader.isLastRead())
@@ -225,7 +227,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -233,7 +235,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -241,7 +243,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
@@ -261,7 +263,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

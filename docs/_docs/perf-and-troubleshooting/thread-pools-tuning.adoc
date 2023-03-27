@@ -1,0 +1,125 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Thread Pools Tuning
+
+Ignite creates and maintains a variety of thread pools that are used for different purposes. In this section, we list some of the more common internal pools and show how you can create a custom one.
+
+////
+Refer to the *TODO Link to APIs/Javadoc/etc.* APIs documentation to get a full list of thread pools available in Ignite.
+////
+
+== System Pool
+
+The system pool handles all the cache related operations except for SQL and some other types of queries that go to the queries pool.
+Also, this pool is responsible for processing compute tasks' cancellation operations.
+
+The default pool size is `max(8, total number of cores)`.
+Use `IgniteConfiguration.setSystemThreadPoolSize(...)` or a similar API from your programming language to change the pool size.
+
+== Queries Pool
+
+The queries pool takes care of all SQL, Scan, and SPI queries being sent and executed across the cluster.
+
+The default pool size is `max(8, total number of cores)`.
+Use `IgniteConfiguration.setQueryThreadPoolSize(...)` or a similar API from your programming language to change the pool size.
+
+== Public Pool
+
+Public pool is the work-horse of the Compute Grid. All computations are received and processed by this pool.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setPublicThreadPoolSize(...)` or a similar API from your programming language to change the pool size.
+
+== Service Pool
+
+Service Grid calls go to the services' thread pool.
+Having dedicated pools for the Service and Compute components allows us to avoid threads starvation and deadlocks when a service implementation wants to call a computation or vice versa.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setServiceThreadPoolSize(...)` or a similar API from your programming language to change the pool size.
+
+== Striped Pool
+
+The striped pool helps accelerate basic cache operations and transactions by spreading operations execution across multiple stripes that don't contend with each other for resources.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setStripedPoolSize(...)` or a similar API from your programming language to change the pool size.
+
+== Data Streamer Pool
+
+The data streamer pool processes all messages and requests coming from `IgniteDataStreamer` and a variety of streaming adapters that use `IgniteDataStreamer` internally.
+
+The default pool size is `max(8, total number of cores)`. Use `IgniteConfiguration.setDataStreamerThreadPoolSize(...)` or a similar API from your programming language to change the pool size.
+
+== Snapshot Pool
+
+The snapshot pool is used for processing all the cluster operations related to taking or restoring Apache Ignite snapshots.
+
+The default pool size is `4` (see the `IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE`).
+Use `IgniteConfiguration.setSnapshotThreadPoolSize(...)` to change the pool size.
+
+
+== Creating Custom Thread Pool
+
+It is possible to configure a custom thread pool for compute tasks.
+This is useful if you want to execute one compute task from another synchronously avoiding deadlocks.
+To guarantee this, you need to make sure that a nested task is executed in a thread pool separate from the parent's tasks thread pool.
+
+A custom pool is defined in `IgniteConfiguration` and must have a unique name:
+
+:javaFile: code-snippets/java/src/main/java/org/apache/ignite/snippets/CustomThreadPool.java
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/thread-pool.xml[tags=ignite-config;!discovery,indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=pool-config,indent=0]
+----
+--
+
+Now, let's assume that you want to execute the following compute task in a thread from the `myPool` defined above:
+
+[source,java]
+----
+include::{javaFile}[tags=inner-runnable,indent=0]
+----
+
+To do that, use `IgniteCompute.withExecutor()`, which will execute the task immediately from the parent task, as shown below:
+
+[source,java]
+----
+include::{javaFile}[tags=outer-runnable,indent=0]
+----
+
+The parent task's execution might be triggered the following way and, in this scenario, it will be executed by the public pool:
+
+[source,java]
+----
+ignite.compute().run(new OuterRunnable());
+----
+
+[WARNING]
+====
+[discrete]
+=== Undefined Thread Pool
+
+If an application attempts to execute a compute task in a custom pool which is not defined in the configuration of the node, then a special warning message will be printed to the logs, and the task will be picked up by the public pool for execution.
+====

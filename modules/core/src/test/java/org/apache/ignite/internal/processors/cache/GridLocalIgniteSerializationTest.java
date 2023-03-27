@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,15 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Test for local Ignite instance processing during serialization/deserialization.
@@ -63,6 +63,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         checkPutGet(new SimpleTestObject("one"), null);
     }
@@ -70,6 +71,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSerializable() throws Exception {
         checkPutGet(new SerializableTestObject("test"), null);
     }
@@ -77,6 +79,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetExternalizable() throws Exception {
         checkPutGet(new ExternalizableTestObject("test"), null);
     }
@@ -84,6 +87,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetBinarylizable() throws Exception {
         checkPutGet(new BinarylizableTestObject("test"), "binaryIgnite");
     }
@@ -92,7 +96,6 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkPutGet(final TestObject obj, final String igniteInstanceName) throws Exception {
-
 
         // Run async to emulate user thread.
         GridTestUtils.runAsync(new Callable<Object>() {
@@ -170,7 +173,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final SimpleTestObject simpleTestObj = (SimpleTestObject) o;
+            final SimpleTestObject simpleTestObj = (SimpleTestObject)o;
 
             return val != null ? val.equals(simpleTestObj.val) : simpleTestObj.val == null;
 
@@ -238,7 +241,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final SerializableTestObject that = (SerializableTestObject) o;
+            final SerializableTestObject that = (SerializableTestObject)o;
 
             return val != null ? val.equals(that.val) : that.val == null;
 
@@ -300,7 +303,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final ExternalizableTestObject that = (ExternalizableTestObject) o;
+            final ExternalizableTestObject that = (ExternalizableTestObject)o;
 
             return val != null ? val.equals(that.val) : that.val == null;
 
@@ -359,7 +362,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final BinarylizableTestObject that = (BinarylizableTestObject) o;
+            final BinarylizableTestObject that = (BinarylizableTestObject)o;
 
             return val != null ? val.equals(that.val) : that.val == null;
 

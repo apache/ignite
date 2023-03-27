@@ -21,10 +21,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.h2.message.DbException;
+import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
@@ -38,18 +39,25 @@ public class GridH2ValueCacheObject extends Value {
     /** */
     private CacheObject obj;
 
-    /** */
-    private GridCacheContext<?,?> cctx;
+    /** Object value context. */
+    private CacheObjectValueContext valCtx;
 
     /**
-     * @param cctx Cache context.
+     * Constructor.
+     *
      * @param obj Object.
+     * @param valCtx Object value context.
      */
-    public GridH2ValueCacheObject(GridCacheContext<?,?> cctx, CacheObject obj) {
+    public GridH2ValueCacheObject(CacheObject obj, CacheObjectValueContext valCtx) {
         assert obj != null;
 
+        if (obj instanceof BinaryObjectImpl) {
+            ((BinaryObjectImpl)obj).detachAllowed(true);
+            obj = ((BinaryObjectImpl)obj).detach();
+        }
+
         this.obj = obj;
-        this.cctx = cctx; // Allowed to be null in tests.
+        this.valCtx = valCtx;
     }
 
     /**
@@ -60,10 +68,10 @@ public class GridH2ValueCacheObject extends Value {
     }
 
     /**
-     * @return Cache context.
+     * @return Value context.
      */
-    public GridCacheContext<?,?> getCacheContext() {
-        return cctx;
+    public CacheObjectValueContext valueContext() {
+        return valCtx;
     }
 
     /** {@inheritDoc} */
@@ -96,19 +104,12 @@ public class GridH2ValueCacheObject extends Value {
         return Utils.cloneByteArray(getBytesNoCopy());
     }
 
-    /**
-     * @return Cache object context.
-     */
-    private CacheObjectContext objectContext() {
-        return cctx == null ? null : cctx.cacheObjectContext();
-    }
-
     /** {@inheritDoc} */
     @Override public byte[] getBytesNoCopy() {
         if (obj.cacheObjectType() == CacheObject.TYPE_REGULAR) {
             // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
             try {
-                return obj.valueBytes(objectContext());
+                return obj.valueBytes(valCtx);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -129,7 +130,7 @@ public class GridH2ValueCacheObject extends Value {
      * @return Value.
      */
     public Object getObject(boolean cpy) {
-        return obj.isPlatformType() ? obj.value(objectContext(), cpy) : obj;
+        return obj.isPlatformType() ? obj.value(valCtx, cpy) : obj;
     }
 
     /** {@inheritDoc} */
@@ -169,7 +170,7 @@ public class GridH2ValueCacheObject extends Value {
             if (o1.equals(o2))
                 return 0;
 
-            return Utils.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
+            return Bits.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
         }
 
         return h1 > h2 ? 1 : -1;

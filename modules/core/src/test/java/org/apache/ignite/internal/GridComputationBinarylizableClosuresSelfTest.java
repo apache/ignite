@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test ensuring that correct closures are serialized.
@@ -88,6 +89,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJob() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -110,6 +112,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterLeaveAwareJob() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -134,6 +137,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCallable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -153,6 +157,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterLeaveAwareCallable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -174,6 +179,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRunnable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);
@@ -193,6 +199,7 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterLeaveAwareRunnable() throws Exception {
         Ignite ignite = startGrid(1);
         startGrid(2);

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -145,6 +146,155 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(4, res.Bar);
             Assert.AreEqual(3, res.Nested.Baz);
             Assert.AreEqual(5, res.Nested.Qux);
+        }
+
+        /// <summary>
+        /// Tests a combination of changing field order and some fields being added or removed.
+        /// </summary>
+        [Test]
+        public void TestChangingFieldOrderAndPresence()
+        {
+            // Create two different binary structure paths, than make one of them longer to defeat the optimization. 
+            TestChangingFieldOrderAndPresence(new[] {1, 0}, new[] {0}, new[] {0, 1});
+
+            // Growing path.
+            TestChangingFieldOrderAndPresence(new[] {1}, new[] {1, 2, 3, 4}, new[] {1, 2, 3, 4, 5, 6});
+
+            // Shrinking path.
+            TestChangingFieldOrderAndPresence(new[] {1}, new[] {1, 2, 3, 4}, new[] {1, 2, 3}, new[] {1, 2});
+        }
+
+        /// <summary>
+        /// Tests specified field combination.
+        /// </summary>
+        private static void TestChangingFieldOrderAndPresence(params int[][] fieldSequences)
+        {
+            var marsh = new Marshaller(new BinaryConfiguration(typeof(CustomFieldOrder)));
+
+            foreach (var fields in fieldSequences)
+            {
+                CustomFieldOrder.Fields = fields;
+                marsh.Marshal(new CustomFieldOrder());
+            }
+        }
+
+        /// <summary>
+        /// Tests object with random order and presence of fields.
+        /// </summary>
+        [Test]
+        public void TestRandomFieldOrderAndPresence()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration(typeof(RandomFieldOrder)));
+            var obj = new RandomFieldOrder();
+
+            for (var i = 0; i < 1000; i++)
+            {
+                var bytes = marsh.Marshal(obj);
+                
+                marsh.Unmarshal<RandomFieldOrder>(bytes);
+            }
+        }
+    
+        /// <summary>
+        /// Runs write/read test in multiple threads, using random field order to create lots of schemas.
+        /// </summary>
+        [Test]
+        public void TestMultithreadedRandomFields()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration(typeof(RandomFieldOrder)));
+            var obj = new RandomFieldOrder();
+            
+            TestUtils.RunMultiThreaded(() =>
+            {
+                var bytes = marsh.Marshal(obj);
+                
+                marsh.Unmarshal<RandomFieldOrder>(bytes);
+
+            }, Environment.ProcessorCount, 5);
+        }
+        
+        /// <summary>
+        /// Test serializing nested binarizable objects with different schemas.
+        /// </summary>
+        [Test]
+        public void TestSerializeNestedStructureWithDifferentSchemas()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration(typeof(Item)));
+            
+            var simple = new Item(new List<string> { "f1", "f2" });
+            var nested = new Item(new List<string> { "f3" }, 
+                new List<Item> {new Item(new List<string> { "f1" })}); 
+
+            var simpleMarsh = marsh.Marshal(simple);
+            var nestedMarsh = marsh.Marshal(nested);
+            
+            Assert.AreEqual(new List<string> {"f1", "f2"}, marsh.Unmarshal<Item>(simpleMarsh).FieldNames);
+            Assert.IsEmpty(marsh.Unmarshal<Item>(simpleMarsh).Children);
+            
+            Assert.AreEqual(new List<string> { "f3" }, marsh.Unmarshal<Item>(nestedMarsh).FieldNames);
+            Assert.AreEqual(1, marsh.Unmarshal<Item>(nestedMarsh).Children.Count);
+            Assert.AreEqual(new List<string> { "f1" }, marsh.Unmarshal<Item>(nestedMarsh).Children[0].FieldNames);
+            Assert.IsEmpty(marsh.Unmarshal<Item>(nestedMarsh).Children[0].Children);
+        }
+    }
+
+    /// <summary>
+    /// A composite structure consisting of the specified fields and optional children of the same
+    /// <see cref="Item"/> type.
+    /// </summary>
+    class Item : IBinarizable
+    {
+        private List<string> _fieldNames;
+        private List<Item> _children;
+
+        public Item(List<string> fieldNames, List<Item> children)
+        {
+            _fieldNames = fieldNames;
+            _children = children;
+        }
+
+        public Item(List<string> fieldNames)
+            : this(fieldNames, new List<Item>())
+        {
+        }
+
+        public List<string> FieldNames
+        {
+            get { return _fieldNames;  }
+        }
+        
+        public List<Item> Children
+        {
+            get { return _children;  }
+        }
+
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            writer.WriteCollection(nameof(_children), _children);
+            writer.WriteCollection(nameof(_fieldNames), _fieldNames);
+
+            foreach (var name in _fieldNames)
+            {
+                writer.WriteString(name, name);
+            }
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            _children = (List<Item>)reader.ReadCollection(
+                nameof(_children),
+                size => new List<Item>(size),
+                (collection, obj) => ((List<Item>) collection).Add((Item) obj));
+            
+            _fieldNames = (List<string>)reader.ReadCollection(
+                nameof(_fieldNames),
+                size => new List<string>(size),
+                (collection, obj) => ((List<string>) collection).Add((string) obj));
+
+            foreach (var name in _fieldNames)
+            {
+                Assert.AreEqual(name, reader.ReadString(name));
+            }
         }
     }
 
@@ -383,6 +533,71 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Read in reverse order to defeat structure optimization.
             Qux = reader.ReadInt("qux");
             Baz = reader.ReadInt("baz");
+        }
+    }
+
+    public class RandomFieldOrder : IBinarizable
+    {
+        public const int FieldCount = 5;
+
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            var fieldNames = GetRandomOrderFieldNames().ToArray();
+            
+            foreach (var fieldName in fieldNames)
+            {
+                writer.WriteString(fieldName, fieldName);
+            }
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            var fieldNames = GetRandomOrderFieldNames().ToArray();
+            
+            foreach (var fieldName in fieldNames)
+            {
+                var fieldValue = reader.ReadString(fieldName);
+
+                if (fieldValue != null)
+                {
+                    Assert.AreEqual(fieldName, fieldValue);
+                }
+            }
+        }
+        
+        private static IEnumerable<string> GetRandomOrderFieldNames()
+        {
+            return Enumerable.Range(0, FieldCount).Select(x => "Field_" + x).OrderBy(_ => Guid.NewGuid())
+                .Skip(IgniteUtils.ThreadLocalRandom.Next(FieldCount));
+        }
+    }
+
+    public class CustomFieldOrder : IBinarizable
+    {
+        public static int[] Fields;
+
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            foreach (var field in Fields)
+            {
+                var fieldName = "Field_" + field;
+                writer.WriteString(fieldName, fieldName);
+            }
+        }
+
+        public void ReadBinary(IBinaryReader reader)
+        {
+            foreach (var field in Fields)
+            {
+                var fieldName = "Field_" + field;
+                
+                var fieldValue = reader.ReadString(fieldName);
+                
+                if (fieldValue != null)
+                {
+                    Assert.AreEqual(fieldName, fieldValue);
+                }
+            }
         }
     }
 }

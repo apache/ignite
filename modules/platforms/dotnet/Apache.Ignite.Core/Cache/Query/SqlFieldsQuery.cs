@@ -17,16 +17,23 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Query;
 
     /// <summary>
     /// SQL fields query.
     /// </summary>
-    public class SqlFieldsQuery
+    public class SqlFieldsQuery : IQueryBaseInternal
     {
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = 1024;
+
+        /// <summary> Default value for <see cref="UpdateBatchSize"/>. </summary>
+        public const int DefaultUpdateBatchSize = 1;
 
         /// <summary>
         /// Constructor.
@@ -51,13 +58,14 @@ namespace Apache.Ignite.Core.Cache.Query
             Arguments = args;
 
             PageSize = DefaultPageSize;
+            UpdateBatchSize = DefaultUpdateBatchSize;
         }
 
         /// <summary>
         /// SQL.
         /// </summary>
         public string Sql { get; set; }
-        
+
         /// <summary>
         /// Arguments.
         /// </summary>
@@ -65,7 +73,7 @@ namespace Apache.Ignite.Core.Cache.Query
         public object[] Arguments { get; set; }
 
         /// <summary>
-        /// Local flag. When set query will be executed only on local node, so only local 
+        /// Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.
         /// <para />
         /// Defaults to <c>false</c>.
@@ -105,6 +113,65 @@ namespace Apache.Ignite.Core.Cache.Query
         public bool EnforceJoinOrder { get; set; }
 
         /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        [Obsolete("No longer used as of Apache Ignite 2.8.")]
+        public bool ReplicatedOnly { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query operates on colocated data.
+        /// <para />
+        /// Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+        /// If you know in advance that the elements of your query selection are colocated together on the same
+        /// node and you group by colocated key (primary or affinity key), then Ignite can make significant
+        /// performance and network optimizations by grouping data on remote nodes.
+        /// </summary>
+        public bool Colocated { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default schema name for the query.
+        /// <para />
+        /// If not set, current cache name is used,
+        /// which means you can omit schema name for tables within the current cache.
+        /// </summary>
+        public string Schema { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="SqlFieldsQuery"/> is lazy.
+        /// <para />
+        /// By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+        /// For small and medium result sets this provides optimal performance and minimize duration of internal
+        /// database locks, thus increasing concurrency.
+        /// <para />
+        /// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+        /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+        /// consumption at the cost of moderate performance hit.
+        /// </summary>
+        public bool Lazy { get; set; }
+
+        /// <summary>
+        /// Gets or sets partitions for the query.
+        /// <para />
+        /// The query will be executed only on nodes which are primary for specified partitions.
+        /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
+        public int[] Partitions { get; set; }
+
+        /// <summary>
+        /// Gets or sets batch size for update queries.
+        /// <para />
+        /// Default is 1 (<see cref="DefaultUpdateBatchSize"/>.
+        /// </summary>
+        public int UpdateBatchSize { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
         /// </summary>
         /// <returns>
@@ -112,11 +179,55 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </returns>
         public override string ToString()
         {
-            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+            var args = Arguments == null
+                ? ""
+                : string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            var parts = Partitions == null
+                ? ""
+                : string.Join(", ", Partitions.Select(x => x.ToString()));
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
-                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}]", Sql, args, Local,
-                                 PageSize, EnableDistributedJoins, EnforceJoinOrder);
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, Partitions=[{7}], " +
+                                 "UpdateBatchSize={8}, Colocated={9}, Schema={10}, Lazy={11}]", Sql, args, Local,
+                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, parts,
+                                 UpdateBatchSize, Colocated, Schema, Lazy);
+        }
+
+        /** <inheritdoc /> */
+        void IQueryBaseInternal.Write(BinaryWriter writer, bool keepBinary)
+        {
+            Write(writer);
+        }
+
+        /// <summary>
+        /// Writes this query.
+        /// </summary>
+        internal void Write(BinaryWriter writer)
+        {
+            writer.WriteBoolean(Local);
+            writer.WriteString(Sql);
+            writer.WriteInt(PageSize);
+
+            QueryBase.WriteQueryArgs(writer, Arguments);
+
+            writer.WriteBoolean(EnableDistributedJoins);
+            writer.WriteBoolean(EnforceJoinOrder);
+            writer.WriteBoolean(Lazy); // Lazy flag.
+            writer.WriteInt((int) Timeout.TotalMilliseconds);
+#pragma warning disable 618
+            writer.WriteBoolean(ReplicatedOnly);
+#pragma warning restore 618
+            writer.WriteBoolean(Colocated);
+            writer.WriteString(Schema); // Schema
+            writer.WriteIntArray(Partitions);
+            writer.WriteInt(UpdateBatchSize);
+        }
+
+        /** <inheritdoc /> */
+        CacheOp IQueryBaseInternal.OpId
+        {
+            get { return CacheOp.QrySqlFields; }
         }
     }
 }

@@ -21,15 +21,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Atomic reference value.
  */
-public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal, GridPeerDeployAware,
-    Externalizable {
+public final class GridCacheAtomicReferenceValue<T> extends AtomicDataStructureValue implements GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,6 +50,11 @@ public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.ATOMIC_REF;
+    }
+
     /**
      * @param val New value.
      */
@@ -72,7 +75,6 @@ public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val = (T)in.readObject();
     }

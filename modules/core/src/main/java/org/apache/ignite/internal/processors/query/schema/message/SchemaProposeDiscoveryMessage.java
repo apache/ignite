@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.schema.message;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.schema.SchemaKey;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -100,9 +99,8 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
      * @param err Error.
      */
     public void onError(SchemaOperationException err) {
-        if (!hasError()) {
+        if (!hasError())
             this.err = err;
-        }
     }
 
     /**
@@ -120,10 +118,10 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     }
 
     /**
-     * @return Schema key.
+     * @return Schema name.
      */
-    public SchemaKey schemaKey() {
-        return new SchemaKey(operation().space(), depId);
+    public String schemaName() {
+        return operation().schemaName();
     }
 
     /** {@inheritDoc} */

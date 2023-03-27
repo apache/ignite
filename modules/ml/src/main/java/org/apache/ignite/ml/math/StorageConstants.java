@@ -33,6 +33,9 @@ public interface StorageConstants {
     /** Storage mode optimized for column access. */
     public static final int COLUMN_STORAGE_MODE = 2002;
 
+    /** Storage mode is unknown. */
+    public static final int UNKNOWN_STORAGE_MODE = 3001;
+
     /**
      * @param mode Access mode to verify.
      */

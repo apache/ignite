@@ -17,7 +17,8 @@
 
 namespace Apache.Ignite.Core.Binary
 {
-    using System;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Text;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -46,6 +47,26 @@ namespace Apache.Ignite.Core.Binary
         public bool IsSimpleName { get; set; }
 
         /// <summary>
+        /// Gets or sets the prefix to be added to the full type name.
+        /// For example, Java package names usually begin with <c>org.</c> or <c>com.</c>.
+        /// <para />
+        /// In combination with <see cref="NamespaceToLower"/>, we can map .NET type name <c>Apache.Ignite.Foo</c>
+        /// to a corresponding Java type name <c>org.apache.ignite.Foo</c>, conforming to the naming conventions
+        /// for both languages.
+        /// </summary>
+        public string NamespacePrefix { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance converts the namespace part to the lower case.
+        /// For example, Java package names are usually lowercase.
+        /// <para />
+        /// In combination with <see cref="NamespacePrefix"/>, we can map .NET type name <c>Apache.Ignite.Foo</c>
+        /// to a corresponding Java type name <c>org.apache.ignite.Foo</c>, conforming to the naming conventions
+        /// for both languages.
+        /// </summary>
+        public bool NamespaceToLower { get; set; }
+
+        /// <summary>
         /// Gets the type name.
         /// </summary>
         public string GetTypeName(string name)
@@ -57,23 +78,10 @@ namespace Apache.Ignite.Core.Binary
             if (parsedName.Generics == null)
             {
                 // Generics are rare, use simpler logic for the common case.
-                var res = IsSimpleName ? parsedName.GetName() : parsedName.GetFullName();
-                
-                var arr = parsedName.GetArray();
-
-                if (arr != null)
-                {
-                    res += arr;
-                }
-
-                return res;
+                return GetTypeName(parsedName) + parsedName.GetArray();
             }
 
-            var nameFunc = IsSimpleName
-                ? (Func<TypeNameParser, string>) (x => x.GetName())
-                : (x => x.GetFullName());
-
-            return BuildTypeName(parsedName, new StringBuilder(), nameFunc).ToString();
+            return BuildTypeName(parsedName, new StringBuilder()).ToString();
         }
 
         /// <summary>
@@ -87,14 +95,13 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Builds the type name.
         /// </summary>
-        private static StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb, 
-            Func<TypeNameParser, string> typeNameFunc)
+        private StringBuilder BuildTypeName(TypeNameParser typeName, StringBuilder sb)
         {
-            sb.Append(typeNameFunc(typeName));
+            sb.Append(GetTypeName(typeName));
 
             var generics = typeName.Generics;
 
-            if (generics != null)
+            if (generics != null && generics.Count > 0)  // Generics are non-null but empty when unbound.
             {
                 sb.Append('[');
 
@@ -113,7 +120,7 @@ namespace Apache.Ignite.Core.Binary
 
                     sb.Append('[');
 
-                    BuildTypeName(genArg, sb, typeNameFunc);
+                    BuildTypeName(genArg, sb);
 
                     sb.Append(']');
                 }
@@ -124,6 +131,23 @@ namespace Apache.Ignite.Core.Binary
             sb.Append(typeName.GetArray());
 
             return sb;
+        }
+
+        /// <summary>
+        /// Gets the type name from the parser.
+        /// </summary>
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase",
+            Justification = "Not applicable, lower case is required.")]
+        private string GetTypeName(TypeNameParser name)
+        {
+            if (IsSimpleName)
+                return name.GetName();
+
+            var fullName = NamespaceToLower && name.HasNamespace()
+                ? name.GetNamespace().ToLower(CultureInfo.InvariantCulture) + name.GetName()
+                : name.GetNameWithNamespace();
+
+            return NamespacePrefix + fullName;
         }
     }
 }

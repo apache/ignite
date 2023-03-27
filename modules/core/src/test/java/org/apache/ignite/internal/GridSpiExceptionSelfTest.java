@@ -36,6 +36,7 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests exceptions that are thrown by event storage and deployment spi.
@@ -66,6 +67,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiFail() throws Exception {
         Ignite ignite = startGrid();
 
@@ -85,7 +87,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
                 assert false : "Exception should be thrown";
             }
             catch (IgniteException e) {
-                assertTrue(e.getCause() instanceof  IgniteCheckedException);
+                assertTrue(e.getCause() instanceof IgniteCheckedException);
 
                 Throwable err = e.getCause().getCause();
 
@@ -141,8 +143,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public DeploymentResource findResource(String rsrcName) {
-            // No-op.
+        @Override public DeploymentResource findResource(String rsrcName) {
             return null;
         }
 

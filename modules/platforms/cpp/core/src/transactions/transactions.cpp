@@ -16,6 +16,7 @@
  */
 
 #include "ignite/transactions/transactions.h"
+#include "ignite/transactions/transaction.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::impl::transactions;

@@ -23,6 +23,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 
 #include <ignite/common/common.h>
 #include <ignite/common/platform_utils.h>
@@ -65,11 +66,95 @@ namespace ignite
         }
 
         /**
+         * Replace all alphabetic symbols of the string with their uppercase
+         * versions.
+         * @param str String to be transformed.
+         */
+        inline void IntoUpper(std::string& str)
+        {
+            std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+        }
+
+        /**
+         * Get uppercase version of the string.
+         *
+         * @param str Input string.
+         * @return Upper cased version of the string.
+         */
+        inline std::string ToUpper(const std::string& str)
+        {
+            std::string res(str);
+            IntoUpper(res);
+            return res;
+        }
+
+        /**
          * Strips leading and trailing whitespaces from string.
          *
          * @param str String to be transformed.
          */
         IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
+         * Skip leading spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to first non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipLeadingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = begin;
+
+            while (isspace(*res) && res != end)
+                ++res;
+
+            return res;
+        }
+
+        /**
+         * Skip trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to last non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipTrailingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = end - 1;
+
+            while (isspace(*res) && res != begin - 1)
+                --res;
+
+            return res + 1;
+        }
+
+        /**
+         * Remove leading and trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return String without leading and trailing spaces.
+         */
+        template<typename Iterator>
+        std::string StripSurroundingWhitespaces(Iterator begin, Iterator end)
+        {
+            std::string res;
+
+            if (begin >= end)
+                return res;
+
+            Iterator skipped_leading = SkipLeadingSpaces(begin, end);
+            Iterator skipped_trailing = SkipTrailingSpaces(skipped_leading, end);
+
+            res.reserve(skipped_trailing - skipped_leading);
+
+            std::copy(skipped_leading, skipped_trailing, std::back_inserter(res));
+
+            return res;
+        }
 
         /**
          * Get string representation of long in decimal form.
@@ -142,22 +227,11 @@ namespace ignite
         }
 
         /**
-         * Check if the predicate returns true for all the elements of the
-         * sequence.
+         * Check if all characters are digits.
          *
-         * @return True if the predicate returns true for all the elements
-         *     of the sequence and false otherwise.
+         * @param val Value to check.
          */
-        template<typename Iter, typename Pred>
-        bool AllOf(Iter begin, Iter end, Pred pred)
-        {
-            Iter i = begin;
-
-            while (i != end && pred(*i))
-                ++i;
-
-            return i == end;
-        }
+        IGNITE_IMPORT_EXPORT bool AllDigits(const std::string& val);
 
         /**
          * Converts 32-bit integer to big endian format
@@ -329,7 +403,7 @@ namespace ignite
          * @param sec Sec.
          * @return Date.
          */
-        Date MakeDateGmt(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Date MakeDateGmt(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
@@ -345,7 +419,7 @@ namespace ignite
          * @param sec Sec.
          * @return Date.
          */
-        Date MakeDateLocal(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Date MakeDateLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
@@ -358,7 +432,7 @@ namespace ignite
          * @param sec Second.
          * @return Time.
          */
-        Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
+        IGNITE_FRIEND_EXPORT Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
 
         /**
          * Make Time in human understandable way.
@@ -370,7 +444,7 @@ namespace ignite
          * @param sec Second.
          * @return Time.
          */
-        Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
+        IGNITE_FRIEND_EXPORT Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
 
         /**
          * Make Timestamp in human understandable way.
@@ -386,7 +460,7 @@ namespace ignite
          * @param ns Nanosecond.
          * @return Timestamp.
          */
-        Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
         /**
@@ -403,7 +477,7 @@ namespace ignite
          * @param ns Nanosecond.
          * @return Timestamp.
          */
-        Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
+        IGNITE_FRIEND_EXPORT Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
             int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
 
         /**
@@ -425,6 +499,285 @@ namespace ignite
         {
             typedef T2 type;
         };
+
+        /**
+         * Returns the bigger type.
+         */
+        template<typename T1, typename T2>
+        struct Bigger
+        {
+            typedef typename Conditional<(sizeof(T1) > sizeof(T2)), T1, T2>::type type;
+        };
+
+        /**
+         * Utility class to bind class instance with member function.
+         */
+        template<typename R, typename T>
+        class BoundInstance
+        {
+        public:
+            typedef R FunctionReturnType;
+            typedef T ClassType;
+            typedef FunctionReturnType(ClassType::* MemberFunctionType)();
+
+            /**
+             * Constructor.
+             *
+             * @param instance Class instance.
+             * @param mfunc Member function.
+             */
+            BoundInstance(ClassType* instance, MemberFunctionType mfunc) : 
+                instance(instance),
+                mfunc(mfunc)
+            {
+                // No-op.
+            }
+
+            /**
+             * Invoke operator.
+             *
+             * @return Result of the invokation of the member function on the bound instance.
+             */
+            FunctionReturnType operator()()
+            {
+                return (instance->*mfunc)();
+            }
+                
+        private:
+            /** Instance reference. */
+            ClassType* instance;
+
+            /** Member function pointer. */
+            MemberFunctionType mfunc;
+        };
+
+        /**
+         * Utility function for binding.
+         */
+        template<typename R, typename T>
+        BoundInstance<R, T> Bind(T* instance, R(T::* mfunc)())
+        {
+            return BoundInstance<R, T>(instance, mfunc);
+        }
+
+        /**
+         * Method guard class template.
+         *
+         * Upon destruction calls provided method on provided class instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class MethodGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Mehtod type. */
+            typedef void (ValueType::*MethodType)();
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            MethodGuard(ValueType* val, MethodType method) :
+                val(val),
+                method(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~MethodGuard()
+            {
+                if (val && method)
+                    (val->*method)();
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                method = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            MethodType method;
+        };
+
+        /**
+         * De-init guard class template.
+         *
+         * Upon destruction calls provided deinit function on provided instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class DeinitGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Deinit function type. */
+            typedef void (*FuncType)(ValueType*);
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            DeinitGuard(ValueType* val, FuncType method) :
+                val(val),
+                func(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~DeinitGuard()
+            {
+                if (val && func)
+                    (func)(val);
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                func = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            FuncType func;
+        };
+
+        /**
+         * Get dynamic library full name.
+         * @param name Name without extension.
+         * @return Full name.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const std::string& name);
+
+        /**
+         * Get hex dump of binary data in string form.
+         * @param data Data.
+         * @param count Number of bytes.
+         * @return Hex dump string.
+         */
+        IGNITE_IMPORT_EXPORT std::string HexDump(const void* data, size_t count);
+
+        /**
+         * Fibonacci sequence iterator.
+         *
+         * @tparam S Sequence length. Should be >= 2.
+         */
+        template<size_t S>
+        class FibonacciSequence
+        {
+        public:
+            /** Size. */
+            static const size_t size = S > 2 ? S : 2;
+
+            /**
+             * Constructor.
+             */
+            FibonacciSequence()
+            {
+                sequence[0] = 0;
+                sequence[1] = 1;
+
+                for (size_t i = 2; i < size; ++i)
+                    sequence[i] = sequence[i - 1] + sequence[i - 2];
+            }
+
+            /**
+             * Get n-th or max member of sequence.
+             *
+             * @param n Member position.
+             * @return N-th member of sequence if n < size, or max member.
+             */
+            size_t GetValue(size_t n) const
+            {
+                if (n < size)
+                    return sequence[n];
+
+                return sequence[size-1];
+            }
+
+        private:
+            /** Sequence of fibonacci numbers */
+            size_t sequence[size];
+        };
+
+        /**
+         * Throw platform-specific error.
+         *
+         * @param msg Error message.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowSystemError(const std::string& msg);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description, const std::string& advice);
+
+        /**
+         * Try extract from system error stack and throw platform-specific error.
+         *
+         * @param description Error description.
+         */
+        IGNITE_IMPORT_EXPORT void ThrowLastSystemError(const std::string& description);
+
+        /**
+         * Format error message.
+         *
+         * @param description Error description.
+         * @param description Error details.
+         * @param advice User advice.
+         */
+        IGNITE_IMPORT_EXPORT std::string FormatErrorMessage(const std::string& description, const std::string& details,
+            const std::string& advice);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description);
+
+        /**
+         * Try extract from system error stack, format and return platform-specific error.
+         *
+         * @param description Error description.
+         * @param advice User advice.
+         * @return Error in human-readable format.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetLastSystemError(const std::string& description, const std::string& advice);
     }
 }
 

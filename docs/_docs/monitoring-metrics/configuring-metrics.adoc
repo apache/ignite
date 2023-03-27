@@ -1,0 +1,131 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Configuring Metrics
+
+:javaFile: {javaCodeDir}/ConfiguringMetrics.java
+:xmlFile: code-snippets/xml/configuring-metrics.xml
+:dotnetFile: code-snippets/dotnet/ConfiguringMetrics.cs
+
+
+Metrics collection is not a free operation and might affect the performance of an application.
+For this reason, some metrics are disabled by default.
+
+
+== Enabling Cache Metrics
+
+Cache metrics show statistics on the amount of data stored in caches, the total number and frequency of cache operations, etc. as well as some cache configuration properties for information purposes.
+
+To enable cache metrics, use one of the methods described below for each cache you want to monitor.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tag=cache-metrics,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=cache-metrics,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tag=cache-metrics,indent=0]
+----
+tab:C++[unsupported]
+--
+
+== Enabling Data Region Metrics
+Data region metrics expose information about data regions, including memory and storage size of the region.
+Enable data region metrics for every region you want to collect the metrics for.
+
+Data region metrics can be enabled in two ways:
+
+* in the link:memory-configuration/data-regions[configuration of the region]
+* via JMX Beans
+
+The following example illustrates how to enable metrics for the default data region and one custom data region.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::{xmlFile}[tags=ignite-config;data-region-metrics;!data-storage-metrics;!cache-metrics;!discovery,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tags=data-region-metrics,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tags=data-region-metrics,indent=0]
+----
+tab:C++[unsupported]
+--
+
+Data region metrics can be enabled/disabled at runtime via the following JMX Bean:
+
+*Data Region MBean*::
++
+----
+org.apache:group=DataRegionMetrics,name=<Data Region Name>
+----
+
+== Enabling Persistence-related Metrics
+Persistence-related metrics can be enabled/disabled in the data storage configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/persistence-metrics.xml[tags=!*;ignite-config,indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=data-storage-metrics,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{dotnetFile}[tags=data-storage-metrics,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+You can enable "Persistent Store" metrics at runtime via the following MXBean:
+
+*Persistent Store MBean*::
++
+--
+----
+org.apache:group="Persistent Store",name=DataStorageMetrics
+----
+[cols="1,4",opts="header"]
+|===
+| Operation | Description
+| EnableMetrics | Enable persistent data storage metrics.
+|===
+--
+
+
+

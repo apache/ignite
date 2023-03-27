@@ -23,17 +23,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ssl.SSLContextWrapper;
+import org.apache.ignite.ssl.SslContextFactory;
+
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
  * Basic ssl context factory that provides ssl context configuration with specified key
@@ -51,15 +59,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 @Deprecated
 public class GridSslBasicContextFactory implements GridSslContextFactory {
-    /** Default key store type. */
-    public static final String DFLT_STORE_TYPE = "JKS";
-
-    /** Default SSL protocol. */
-    public static final String DFLT_SSL_PROTOCOL = "TLS";
-
-    /** Default key manager algorithm. */
-    public static final String DFLT_KEY_ALGORITHM = "SunX509";
-
     /** SSL protocol. */
     private String proto = DFLT_SSL_PROTOCOL;
 
@@ -87,6 +86,12 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     /** Trust managers. */
     private TrustManager[] trustMgrs;
 
+    /** Enabled cipher suites. */
+    private String[] cipherSuites;
+
+    /** Enabled protocols. */
+    private String[] protocols;
+
     /**
      * Gets key store type used for context creation.
      *
@@ -97,8 +102,8 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Sets key store type used in context initialization. If not provided, {@link #DFLT_STORE_TYPE} will
-     * be used.
+     * Sets key store type used in context initialization. If not provided, {@link SslContextFactory#DFLT_STORE_TYPE}
+     * will be used.
      *
      * @param keyStoreType Key store type.
      */
@@ -118,8 +123,8 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Sets trust store type used in context initialization. If not provided, {@link #DFLT_STORE_TYPE} will
-     * be used.
+     * Sets trust store type used in context initialization. If not provided, {@link SslContextFactory#DFLT_STORE_TYPE}
+     * will be used.
      *
      * @param trustStoreType Trust store type.
      */
@@ -139,7 +144,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Sets protocol for secure transport. If not specified, {@link #DFLT_SSL_PROTOCOL} will be used.
+     * Sets protocol for secure transport. If not specified, {@link SslContextFactory#DFLT_SSL_PROTOCOL} will be used.
      *
      * @param proto SSL protocol name.
      */
@@ -150,7 +155,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
-     * Gets algorithm that will be used to create a key manager. If not specified, {@link #DFLT_KEY_ALGORITHM}
+     * Gets algorithm that will be used to create a key manager. If not specified, {@link SslContextFactory#DFLT_KEY_ALGORITHM}
      * will be used.
      *
      * @return Key manager algorithm.
@@ -270,6 +275,62 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /**
+     * Gets enabled cipher suites.
+     *
+     * @return Enabled cipher suites.
+     */
+    public String[] getCipherSuites() {
+        return cipherSuites;
+    }
+
+    /**
+     * Sets enabled cipher suites.
+     *
+     * @param cipherSuites Enabled cipher suites.
+     */
+    public void setCipherSuites(String... cipherSuites) {
+        this.cipherSuites = cipherSuites;
+    }
+
+    /**
+     * Sets enabled cipher suites.
+     *
+     * @param cipherSuites Enabled cipher suites.
+     */
+    public void setCipherSuites(Collection<String> cipherSuites) {
+        if (!F.isEmpty(cipherSuites))
+            setCipherSuites(cipherSuites.toArray(new String[0]));
+    }
+
+    /**
+     * Gets enabled protocols.
+     *
+     * @return Enabled protocols.
+     */
+    public String[] getProtocols() {
+        return protocols;
+    }
+
+    /**
+     * Sets enabled protocols.
+     *
+     * @param protocols Enabled protocols.
+     */
+    public void setProtocols(String... protocols) {
+        this.protocols = protocols;
+    }
+
+    /**
+     * Sets enabled protocols.
+     *
+     * @param protocols Enabled protocols.
+     */
+    public void setProtocols(Collection<String> protocols) {
+        if (!F.isEmpty(protocols))
+            setProtocols(protocols.toArray(new String[0]));
+    }
+
+    /**
      * Returns an instance of trust manager that will always succeed regardless of certificate provided.
      *
      * @return Trust manager instance.
@@ -302,6 +363,18 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
             }
 
             SSLContext ctx = SSLContext.getInstance(proto);
+
+            if (cipherSuites != null || protocols != null) {
+                SSLParameters sslParameters = new SSLParameters();
+
+                if (cipherSuites != null)
+                    sslParameters.setCipherSuites(cipherSuites);
+
+                if (protocols != null)
+                    sslParameters.setProtocols(protocols);
+
+                ctx = new SSLContextWrapper(ctx, sslParameters);
+            }
 
             ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
 
@@ -419,7 +492,7 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return getClass().getSimpleName() + parameters();
     }
 
@@ -431,14 +504,12 @@ public class GridSslBasicContextFactory implements GridSslContextFactory {
         private static final X509Certificate[] CERTS = new X509Certificate[0];
 
         /** {@inheritDoc} */
-        @Override public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
-            throws CertificateException {
+        @Override public void checkClientTrusted(X509Certificate[] x509Certificates, String s) {
             // No-op, all clients are trusted.
         }
 
         /** {@inheritDoc} */
-        @Override public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
-            throws CertificateException {
+        @Override public void checkServerTrusted(X509Certificate[] x509Certificates, String s) {
             // No-op, all servers are trusted.
         }
 

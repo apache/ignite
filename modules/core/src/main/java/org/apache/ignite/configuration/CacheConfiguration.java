@@ -18,21 +18,10 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -44,39 +33,38 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
-import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -89,26 +77,40 @@ import org.jetbrains.annotations.Nullable;
  * can be configured from Spring XML files (or other DI frameworks). <p> Note that absolutely all configuration
  * properties are optional, so users should only change what they need.
  */
-@SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of partitions. */
-    public static final int MAX_PARTITIONS_COUNT = 0xFFFF;
+    public static final int MAX_PARTITIONS_COUNT = 65000;
 
-    /** Default size of rebalance thread pool. */
+    /**
+     * Default size of rebalance thread pool.
+     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THREAD_POOL_SIZE} instead.
+     */
     @Deprecated
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE;
 
-    /** Default rebalance timeout (ms).*/
-    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
+    /**
+     * Default rebalance timeout (ms).
+     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT} instead.
+     */
+    @Deprecated
+    public static final long DFLT_REBALANCE_TIMEOUT = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
-    /** Default rebalance batches prefetch count. */
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 2;
+    /**
+     * Default rebalance batches prefetch count.
+     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT} instead.
+     */
+    @Deprecated
+    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
-    /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
-    public static final long DFLT_REBALANCE_THROTTLE = 0;
+    /**
+     * Time in milliseconds to wait between rebalance messages to avoid overloading CPU.
+     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} instead.
+     */
+    @Deprecated
+    public static final long DFLT_REBALANCE_THROTTLE = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
     /** Default number of backups. */
     public static final int DFLT_BACKUPS = 0;
@@ -119,7 +121,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** Default lock timeout. */
+    /**
+      * Default lock timeout.
+      * @deprecated Default lock timeout configuration property has no effect.
+      */
+    @Deprecated
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
     /** Default cache size to use with eviction policy. */
@@ -137,8 +143,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default rebalance mode for distributed cache. */
     public static final CacheRebalanceMode DFLT_REBALANCE_MODE = CacheRebalanceMode.ASYNC;
 
-    /** Default rebalance batch size in bytes. */
-    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
+    /**
+     * Default rebalance batch size in bytes.
+     * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE} instead.
+     */
+    @Deprecated
+    public static final int DFLT_REBALANCE_BATCH_SIZE = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
     /** Default value for eager ttl flag. */
     public static final boolean DFLT_EAGER_TTL = true;
@@ -180,6 +190,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
 
     /** Default timeout after which long query warning will be printed. */
+    @Deprecated
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
     /** Default number of queries detail metrics to collect. */
@@ -198,10 +209,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
+    /** Default value for events disabled flag. */
+    public static final boolean DFLT_EVENTS_DISABLED = false;
+
+    /** Default SQL on-heap cache size. */
+    public static final int DFLT_SQL_ONHEAP_CACHE_MAX_SIZE = 0;
+
+    /** Default disk page compression algorithm. */
+    public static final DiskPageCompression DFLT_DISK_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
+
     /** Cache name. */
     private String name;
 
-    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    /** Cache group name. */
+    private String grpName;
+
+    /** Name of {@link DataRegionConfiguration} for this cache */
     private String memPlcName;
 
     /** Threshold for concurrent loading of keys from {@link CacheStore}. */
@@ -212,25 +235,42 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
     /** Rebalance timeout. */
+    @Deprecated
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
-    /** Cache expiration policy. */
+    /** Cache eviction policy. */
+    @Deprecated
     private EvictionPolicy evictPlc;
+
+    /** Cache eviction policy factory. */
+    @SerializeSeparately
+    private Factory evictPlcFactory;
 
     /** */
     private boolean onheapCache;
 
+    /** Use on-heap cache for rows for SQL queries. */
+    private boolean sqlOnheapCache;
+
+    /** SQL on-heap cache max size. */
+    private int sqlOnheapCacheMaxSize = DFLT_SQL_ONHEAP_CACHE_MAX_SIZE;
+
     /** Eviction filter. */
+    @SerializeSeparately
     private EvictionFilter<?, ?> evictFilter;
 
     /** Eager ttl flag. */
     private boolean eagerTtl = DFLT_EAGER_TTL;
 
     /** Default lock timeout. */
+    @Deprecated
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
 
     /** Near cache configuration. */
     private NearCacheConfiguration<K, V> nearCfg;
+
+    /** Platform cache configuration. Enables native cache in platforms (.NET, ...). */
+    private PlatformCacheConfiguration platformCfg;
 
     /** Default value for 'copyOnRead' flag. */
     public static final boolean DFLT_COPY_ON_READ = true;
@@ -239,6 +279,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheWriteSynchronizationMode writeSync;
 
     /** */
+    @SerializeSeparately
     private Factory storeFactory;
 
     /** */
@@ -272,9 +313,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int rebalanceOrder;
 
     /** Rebalance batch size. */
+    @Deprecated
     private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Rebalance batches prefetch count. */
+    @Deprecated
     private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Maximum number of concurrent asynchronous operations. */
@@ -310,16 +353,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private long rebalanceDelay;
 
-    /** */
+    /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
+    @Deprecated
     private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
-    private CacheInterceptor<?, ?> interceptor;
+    @SerializeSeparately
+    private CacheInterceptor<K, V> interceptor;
 
     /** */
     private Class<?>[] sqlFuncCls;
 
     /** */
+    @Deprecated
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
 
     /** */
@@ -353,6 +399,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private TopologyValidator topValidator;
 
     /** Cache store session listeners. */
+    @SerializeSeparately
     private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
 
     /** Query entities. */
@@ -363,6 +410,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** */
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
+
+    /** Cache key configuration. */
+    private CacheKeyConfiguration[] keyCfg;
+
+    /** Events disabled. */
+    private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
+
+    /**
+     * Flag indicating whether data must be encrypted.
+     * If {@code true} data on the disk will be encrypted.
+     *
+     * @see EncryptionSpi
+     * @see KeystoreEncryptionSpi
+     */
+    private boolean encryptionEnabled;
+
+    /** */
+    private DiskPageCompression diskPageCompression = IgniteSystemProperties.getEnum(
+        DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
+
+    /** */
+    private Integer diskPageCompressionLevel;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -403,30 +472,35 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
         eagerTtl = cc.isEagerTtl();
+        encryptionEnabled = cc.isEncryptionEnabled();
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
+        evictPlcFactory = cc.getEvictionPolicyFactory();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
+        grpName = cc.getGroupName();
         indexedTypes = cc.getIndexedTypes();
         interceptor = cc.getInterceptor();
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
-        qryParallelism = cc.getQueryParallelism();
         isWriteThrough = cc.isWriteThrough();
-        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
+        keyCfg = cc.getKeyConfiguration();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        memPlcName = cc.getMemoryPolicyName();
-        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
+        memPlcName = cc.getDataRegionName();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
+        platformCfg = cc.getPlatformCacheConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
+        diskPageCompression = cc.getDiskPageCompression();
+        diskPageCompressionLevel = cc.getDiskPageCompressionLevel();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
-        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
+        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        qryParallelism = cc.getQueryParallelism();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCnt = cc.getRebalanceBatchesPrefetchCount();
@@ -439,7 +513,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
+        sqlIdxMaxInlineSize = cc.getSqlIndexMaxInlineSize();
         storeFactory = cc.getCacheStoreFactory();
+        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
@@ -450,12 +526,56 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
+        maxQryIterCnt = cc.getMaxQueryIteratorsCount();
+        sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
+        sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
+        evtsDisabled = cc.isEventsDisabled();
     }
 
     /**
-     * Cache name or {@code null} if not provided, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
+     * Gets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setDataRegionName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
+     * @return Cache group name.
+     */
+    public String getGroupName() {
+        return grpName;
+    }
+
+    /**
+     * Sets the cache group name.
+     *
+     * Caches with the same group name share single underlying 'physical' cache (partition set),
+     * but are logically isolated.
+     *
+     * Since underlying cache is shared, the following configuration properties should be the same within group:
+     * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
+     * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
+     * {@link #setDataRegionName(String)}.
+     *
+     * Grouping caches reduces overall overhead, since internal data structures are shared.
+     *
+     * @param grpName Cache group name.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setGroupName(String grpName) {
+        this.grpName = grpName;
+
+        return this;
+    }
+
+    /**
+     * Cache name. The cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */
@@ -476,25 +596,44 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * @return {@link MemoryPolicyConfiguration} name.
+     * @return {@link DataRegionConfiguration} name.
      */
+    @Nullable public String getDataRegionName() {
+        return memPlcName;
+    }
+
+    /**
+     * @return Name of the memory policy.
+     * @deprecated Use {@link #getDataRegionName()} (String)} instead.
+     */
+    @Deprecated
     public String getMemoryPolicyName() {
         return memPlcName;
     }
 
     /**
-     * Sets a name of {@link MemoryPolicyConfiguration} for this cache.
+     * Sets a name of {@link DataRegionConfiguration} for this cache.
      *
-     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used)
+     * @param dataRegionName DataRegionConfiguration name. Can be null (default DataRegionConfiguration will be used)
      *                   but should not be empty.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
+    public CacheConfiguration<K, V> setDataRegionName(@Nullable String dataRegionName) {
+        A.ensure(dataRegionName == null || !dataRegionName.isEmpty(), "Name cannot be empty.");
 
-        this.memPlcName = memPlcName;
+        this.memPlcName = dataRegionName;
 
         return this;
+    }
+
+    /**
+     * @param memPlcName Memory policy name.
+     * @return {@code this} for chaining.
+     * @deprecated Use {@link #setDataRegionName(String)} instead.
+     */
+    @Deprecated
+    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
+        return setDataRegionName(memPlcName);
     }
 
     /**
@@ -502,7 +641,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * which means that evictions are disabled for cache.
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     *
+     * @deprecated Use {@link #getEvictionPolicyFactory()} instead.
      */
+    @Deprecated
     @SuppressWarnings({"unchecked"})
     @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
@@ -511,11 +653,39 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache eviction policy.
      *
-     * @param evictPlc Cache expiration policy.
+     * @param evictPlc Cache eviction policy.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setEvictionPolicyFactory(Factory)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets cache eviction policy factory. By default, returns {@code null}
+     * which means that evictions are disabled for cache.
+     *
+     * @return Cache eviction policy factory or {@code null} if evictions should be disabled
+     * or if {@link #getEvictionPolicy()} should be used instead.
+     */
+    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+        return evictPlcFactory;
+    }
+
+    /**
+     * Sets cache eviction policy factory.
+     * Note: Eviction policy factory should be {@link Serializable}.
+     *
+     * @param evictPlcFactory Cache eviction policy factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEvictionPolicyFactory(
+        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
+        this.evictPlcFactory = evictPlcFactory;
 
         return this;
     }
@@ -542,6 +712,62 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Gets whether SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by
+     * query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or
+     * evicted.
+     *
+     * @return Whether SQL onheap cache is enabled.
+     */
+    public boolean isSqlOnheapCacheEnabled() {
+        return sqlOnheapCache;
+    }
+
+    /**
+     * Sets whether SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by
+     * query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or
+     * evicted.
+     *
+     * @param sqlOnheapCache Whether SQL onheap cache is enabled.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheEnabled(boolean sqlOnheapCache) {
+        this.sqlOnheapCache = sqlOnheapCache;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows
+     * will be evicted.
+     * <p>
+     * Zero or negative value stand for unlimited size.
+     * <p>
+     * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
+     *
+     * @return SQL on-heap cache max size.
+     */
+    public int getSqlOnheapCacheMaxSize() {
+        return sqlOnheapCacheMaxSize;
+    }
+
+    /**
+     * Sets maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows
+     * will be evicted.
+     * <p>
+     * Zero or negative value stand for unlimited size.
+     * <p>
+     * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
+     *
+     * @param sqlOnheapCacheMaxSize Maximum SQL on-heap cache.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheMaxSize(int sqlOnheapCacheMaxSize) {
+        this.sqlOnheapCacheMaxSize = sqlOnheapCacheMaxSize;
+
+        return this;
+    }
+
+    /**
      * @return Near enabled flag.
      */
     public NearCacheConfiguration<K, V> getNearConfiguration() {
@@ -556,6 +782,39 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
         this.nearCfg = nearCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets platform cache configuration.
+     *
+     * @return Platform cache configuration or null.
+     */
+    @IgniteExperimental
+    public PlatformCacheConfiguration getPlatformCacheConfiguration() {
+        return platformCfg;
+    }
+
+    /**
+     * Sets platform cache configuration.
+     * Enables native platform (only .NET currently) cache when not null.
+     * Cache entries will be stored in deserialized form in native platform memory (e.g. .NET objects in CLR heap).
+     * <p>
+     * When enabled on server nodes, all primary keys will be stored in platform memory as well.
+     * <p>
+     * Same eviction policy applies to near cache entries for all keys on client nodes and
+     * non-primary keys on server nodes.
+     * <p>
+     * Enabling this can greatly improve performance for key-value operations and scan queries,
+     * at the expense of RAM usage.
+     *
+     * @param platformCfg Platform cache configuration.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setPlatformCacheConfiguration(PlatformCacheConfiguration platformCfg) {
+        this.platformCfg = platformCfg;
 
         return this;
     }
@@ -613,11 +872,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * never be evicted.
      * <p>
      * If not provided, any entry may be evicted depending on
-     * {@link #getEvictionPolicy() eviction policy} configuration.
+     * {@link #getEvictionPolicyFactory()} eviction policy} configuration.
      *
      * @return Eviction filter or {@code null}.
      */
-    @SuppressWarnings("unchecked")
     public EvictionFilter<K, V> getEvictionFilter() {
         return (EvictionFilter<K, V>)evictFilter;
     }
@@ -714,7 +972,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache store factory.
      */
-    @SuppressWarnings("unchecked")
     public Factory<CacheStore<? super K, ? super V>> getCacheStoreFactory() {
         return (Factory<CacheStore<? super K, ? super V>>)storeFactory;
     }
@@ -725,7 +982,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param storeFactory Cache store factory.
      * @return {@code this} for chaining.
      */
-    @SuppressWarnings("unchecked")
     public CacheConfiguration<K, V> setCacheStoreFactory(
         Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
         this.storeFactory = storeFactory;
@@ -895,7 +1151,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * which is {@code 0} and means that lock acquisition will never timeout.
      *
      * @return Default lock timeout.
+     * @deprecated Default lock timeout configuration property has no effect.
      */
+    @Deprecated
     public long getDefaultLockTimeout() {
         return dfltLockTimeout;
     }
@@ -905,7 +1163,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param dfltLockTimeout Default lock timeout.
      * @return {@code this} for chaining.
+     * @deprecated Default lock timeout configuration property has no effect.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setDefaultLockTimeout(long dfltLockTimeout) {
         this.dfltLockTimeout = dfltLockTimeout;
 
@@ -985,15 +1245,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets cache rebalance order. Rebalance order can be set to non-zero value for caches with
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
+     * Note that caches with {@link CacheRebalanceMode#SYNC SYNC} rebalancing mode are always rebalanced prior to caches
+     * with {@link CacheRebalanceMode#ASYNC ASYNC} rebalancing mode when rebalancing order is the same.
      * <p/>
-     * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
+     * The rebalance order guarantees that rebalancing for this cache will start only when rebalancing for
      * all caches with smaller rebalance order will be completed.
      * <p/>
-     * Note that cache with order {@code 0} does not participate in ordering. This means that cache with
-     * rebalance order {@code 0} will never wait for any other caches. All caches with order {@code 0} will
-     * be rebalanced right away concurrently with each other and ordered rebalance processes.
-     * <p/>
-     * If not set, cache order is 0, i.e. rebalancing is not ordered.
+     * If not set, cache order is 0.
      *
      * @return Cache rebalance order.
      */
@@ -1021,7 +1279,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * {@link #DFLT_REBALANCE_BATCH_SIZE}.
      *
      * @return Size in bytes of a single rebalance message.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchSize()} instead.
      */
+    @Deprecated
     public int getRebalanceBatchSize() {
         return rebalanceBatchSize;
     }
@@ -1031,7 +1291,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceBatchSize Rebalance batch size.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setRebalanceBatchSize(int)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceBatchSize(int rebalanceBatchSize) {
         this.rebalanceBatchSize = rebalanceBatchSize;
 
@@ -1046,7 +1308,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Minimum is 1.
      *
      * @return batches count
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchesPrefetchCount()} instead.
      */
+    @Deprecated
     public long getRebalanceBatchesPrefetchCount() {
         return rebalanceBatchesPrefetchCnt;
     }
@@ -1060,7 +1324,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceBatchesCnt batches count.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setRebalanceBatchesPrefetchCount(long)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceBatchesPrefetchCount(long rebalanceBatchesCnt) {
         this.rebalanceBatchesPrefetchCnt = rebalanceBatchesCnt;
 
@@ -1309,7 +1575,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Default value is {@link #DFLT_REBALANCE_TIMEOUT}.
      *
      * @return Rebalance timeout (ms).
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceTimeout()} instead.
      */
+    @Deprecated
     public long getRebalanceTimeout() {
         return rebalanceTimeout;
     }
@@ -1319,7 +1587,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceTimeout Rebalance timeout (ms).
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setRebalanceTimeout(long)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceTimeout(long rebalanceTimeout) {
         this.rebalanceTimeout = rebalanceTimeout;
 
@@ -1347,7 +1617,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
      *      start rebalancing manually, or positive value to specify delay in milliseconds
      *      after which rebalancing should start automatically.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public long getRebalanceDelay() {
         return rebalanceDelay;
     }
@@ -1357,7 +1629,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceDelay Rebalance delay to set.
      * @return {@code this} for chaining.
+     * @deprecated Use baseline topology feature instead. Please, be aware this API will be removed in the next releases.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
 
@@ -1376,8 +1650,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
      * @return Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
-     *      {@code 0} to disable throttling.
+     * {@code 0} to disable throttling.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
      */
+    @Deprecated
     public long getRebalanceThrottle() {
         return rebalanceThrottle;
     }
@@ -1393,7 +1669,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
      * {@code 0} to disable throttling.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setRebalanceThrottle(long)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceThrottle(long rebalanceThrottle) {
         this.rebalanceThrottle = rebalanceThrottle;
 
@@ -1457,9 +1735,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Cache interceptor.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public CacheInterceptor<K, V> getInterceptor() {
-        return (CacheInterceptor<K, V>)interceptor;
+        return interceptor;
     }
 
     /**
@@ -1500,9 +1777,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether copy of of the value stored in cache should be created
-     * for cache operation implying return value. Also if this flag is set copies are created for values
+     * Gets the flag indicating whether a copy of the value stored in the on-heap cache
+     * (see {@link #isOnheapCacheEnabled()} should be created for a cache operation return the value.
+     *
+     * Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
+     *
+     * If the on-heap cache is disabled then this flag is of no use.
      *
      * @return Copy on read flag.
      */
@@ -1550,7 +1831,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @return Timeout in milliseconds.
+     * @deprecated Use {@link IgniteConfiguration#getLongQueryWarningTimeout()} instead.
      */
+    @Deprecated
     public long getLongQueryWarningTimeout() {
         return longQryWarnTimeout;
     }
@@ -1560,7 +1843,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link IgniteConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
 
@@ -1616,8 +1901,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
-        A.ensure((sqlSchema != null), "Schema could not be null.");
-        A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+        if (sqlSchema != null) {
+            A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+        }
 
         this.sqlSchema = sqlSchema;
 
@@ -1711,14 +1997,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             Class<?> keyCls = newIndexedTypes[i];
             Class<?> valCls = newIndexedTypes[i + 1];
 
-            TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
-
-            QueryEntity converted = convert(desc);
+            QueryEntity newEntity = new QueryEntity(keyCls, valCls);
 
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.findValueType(), converted.findValueType())) {
+                if (F.eq(entity.findValueType(), newEntity.findValueType())) {
                     dup = true;
 
                     break;
@@ -1726,7 +2010,38 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             }
 
             if (!dup)
-                qryEntities.add(converted);
+                qryEntities.add(newEntity);
+
+            // Set key configuration if needed.
+            String affFieldName = BinaryContext.affinityFieldName(keyCls);
+
+            if (affFieldName != null) {
+                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
+
+                if (F.isEmpty(keyCfg))
+                    keyCfg = new CacheKeyConfiguration[] { newKeyCfg };
+                else {
+                    boolean keyCfgDup = false;
+
+                    for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
+                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                            keyCfgDup = true;
+
+                            break;
+                        }
+                    }
+
+                    if (!keyCfgDup) {
+                        CacheKeyConfiguration[] keyCfg0 = new CacheKeyConfiguration[keyCfg.length + 1];
+
+                        System.arraycopy(keyCfg, 0, keyCfg0, 0, keyCfg.length);
+
+                        keyCfg0[keyCfg0.length - 1] = newKeyCfg;
+
+                        keyCfg = keyCfg0;
+                    }
+                }
+            }
         }
 
         return this;
@@ -1794,8 +2109,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
-        if (this.qryEntities == null)
+        if (this.qryEntities == null) {
             this.qryEntities = new ArrayList<>(qryEntities);
+
+            return this;
+        }
 
         for (QueryEntity entity : qryEntities) {
             boolean found = false;
@@ -1811,6 +2129,17 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             if (!found)
                 this.qryEntities.add(entity);
         }
+
+        return this;
+    }
+
+    /**
+     * Clear query entities.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> clearQueryEntities() {
+        this.qryEntities = null;
 
         return this;
     }
@@ -1844,6 +2173,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setQueryParallelism(int qryParallelism) {
+        A.ensure(qryParallelism > 0, "Query parallelism must be positive.");
+
         this.qryParallelism = qryParallelism;
 
         return this;
@@ -1940,83 +2271,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * @param desc Type descriptor.
-     * @return Type metadata.
-     */
-    private static QueryEntity convert(TypeDescriptor desc) {
-        QueryEntity entity = new QueryEntity();
-
-        // Key and val types.
-        entity.setKeyType(desc.keyClass().getName());
-        entity.setValueType(desc.valueClass().getName());
-
-        for (ClassProperty prop : desc.props.values())
-            entity.addQueryField(prop.fullName(), U.box(prop.type()).getName(), prop.alias());
-
-        entity.setKeyFields(desc.keyProps);
-
-        QueryIndex txtIdx = null;
-
-        Collection<QueryIndex> idxs = new ArrayList<>();
-
-        for (Map.Entry<String, GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
-            GridQueryIndexDescriptor idx = idxEntry.getValue();
-
-            if (idx.type() == QueryIndexType.FULLTEXT) {
-                assert txtIdx == null;
-
-                txtIdx = new QueryIndex();
-
-                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
-
-                txtIdx.setFieldNames(idx.fields(), true);
-                txtIdx.setName(idxEntry.getKey());
-            }
-            else {
-                Collection<String> grp = new ArrayList<>();
-
-                for (String fieldName : idx.fields())
-                    grp.add(idx.descending(fieldName) ? fieldName + " desc" : fieldName);
-
-                QueryIndex sortedIdx = new QueryIndex();
-
-                sortedIdx.setIndexType(idx.type());
-
-                LinkedHashMap<String, Boolean> fields = new LinkedHashMap<>();
-
-                for (String f : idx.fields())
-                    fields.put(f, !idx.descending(f));
-
-                sortedIdx.setFields(fields);
-
-                sortedIdx.setName(idxEntry.getKey());
-
-                idxs.add(sortedIdx);
-            }
-        }
-
-        if (desc.valueTextIndex()) {
-            if (txtIdx == null) {
-                txtIdx = new QueryIndex();
-
-                txtIdx.setIndexType(QueryIndexType.FULLTEXT);
-
-                txtIdx.setFieldNames(Arrays.asList(QueryUtils.VAL_FIELD_NAME), true);
-            }
-            else
-                txtIdx.getFields().put(QueryUtils.VAL_FIELD_NAME, true);
-        }
-
-        if (txtIdx != null)
-            idxs.add(txtIdx);
-
-        if (!F.isEmpty(idxs))
-            entity.setIndexes(idxs);
-
-        return entity;
-    }
-
-    /**
      * @param cls Class.
      * @return Masked class.
      */
@@ -2026,139 +2280,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return QueryUtils.isSqlType(cls) ? cls : Object.class;
     }
 
-    /**
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @return Type descriptor.
-     */
-    static TypeDescriptor processKeyAndValueClasses(
-        Class<?> keyCls,
-        Class<?> valCls
-    ) {
-        TypeDescriptor d = new TypeDescriptor();
-
-        d.keyClass(keyCls);
-        d.valueClass(valCls);
-
-        processAnnotationsInClass(true, d.keyCls, d, null);
-        processAnnotationsInClass(false, d.valCls, d, null);
-
-        return d;
-    }
-
-    /**
-     * Process annotations for class.
-     *
-     * @param key If given class relates to key.
-     * @param cls Class.
-     * @param type Type descriptor.
-     * @param parent Parent in case of embeddable.
-     */
-    private static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
-        @Nullable ClassProperty parent) {
-        if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
-            if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
-                String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
-
-                type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
-                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
-
-                type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
-            }
-
-            return;
-        }
-
-        if (parent != null && parent.knowsClass(cls))
-            throw new CacheException("Recursive reference found in type: " + cls.getName());
-
-        if (parent == null) { // Check class annotation at top level only.
-            QueryTextField txtAnnCls = cls.getAnnotation(QueryTextField.class);
-
-            if (txtAnnCls != null)
-                type.valueTextIndex(true);
-
-            QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
-
-            if (grpIdx != null)
-                type.addIndex(grpIdx.name(), QueryIndexType.SORTED);
-
-            QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
-
-            if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
-                for (QueryGroupIndex idx : grpIdxList.value())
-                    type.addIndex(idx.name(), QueryIndexType.SORTED);
-            }
-        }
-
-        for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-            for (Field field : c.getDeclaredFields()) {
-                QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
-                QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
-
-                if (sqlAnn != null || txtAnn != null) {
-                    ClassProperty prop = new ClassProperty(field);
-
-                    prop.parent(parent);
-
-                    // Add parent property before its possible nested properties so that
-                    // resulting parent column comes before columns corresponding to those
-                    // nested properties in the resulting table - that way nested
-                    // properties override will happen properly (first parent, then children).
-                    type.addProperty(prop, key, true);
-
-                    processAnnotation(key, sqlAnn, txtAnn, cls, c, field.getType(), prop, type);
-                }
-            }
-        }
-    }
-
-    /**
-     * Processes annotation at field or method.
-     *
-     * @param key If given class relates to key.
-     * @param sqlAnn SQL annotation, can be {@code null}.
-     * @param txtAnn H2 text annotation, can be {@code null}.
-     * @param cls Entity class.
-     * @param curCls Current entity class.
-     * @param fldCls Class of field or return type for method.
-     * @param prop Current property.
-     * @param desc Class description.
-     */
-    private static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
-        Class<?> cls, Class<?> curCls, Class<?> fldCls, ClassProperty prop, TypeDescriptor desc) {
-        if (sqlAnn != null) {
-            processAnnotationsInClass(key, fldCls, desc, prop);
-
-            if (!sqlAnn.name().isEmpty())
-                prop.alias(sqlAnn.name());
-
-            if (sqlAnn.index()) {
-                String idxName = curCls.getSimpleName() + "_" + prop.alias() + "_idx";
-
-                if (cls != curCls)
-                    idxName = cls.getSimpleName() + "_" + idxName;
-
-                desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
-                    QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
-
-                desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
-            }
-
-            if (!F.isEmpty(sqlAnn.groups())) {
-                for (String group : sqlAnn.groups())
-                    desc.addFieldToIndex(group, prop.fullName(), 0, false);
-            }
-
-            if (!F.isEmpty(sqlAnn.orderedGroups())) {
-                for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
-                    desc.addFieldToIndex(idx.name(), prop.fullName(), idx.order(), idx.descending());
-            }
-        }
-
-        if (txtAnn != null)
-            desc.addFieldToTextIndex(prop.fullName());
-    }
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration<K, V> setStatisticsEnabled(boolean enabled) {
@@ -2224,6 +2345,117 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return this;
     }
 
+    /**
+     * Checks whether events are disabled for this cache.
+     *
+     * @return Events disabled flag.
+     */
+    public Boolean isEventsDisabled() {
+        return evtsDisabled;
+    }
+
+    /**
+     * Sets events disabled flag.
+     *
+     * @param evtsDisabled Events disabled flag.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEventsDisabled(boolean evtsDisabled) {
+        this.evtsDisabled = evtsDisabled;
+
+        return this;
+    }
+
+    /**
+     * Gets cache key configuration.
+     *
+     * @return Cache key configuration.
+     */
+    public CacheKeyConfiguration[] getKeyConfiguration() {
+        return keyCfg;
+    }
+
+    /**
+     * Sets cache key configuration.
+     *
+     * @param cacheKeyCfg Cache key configuration.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
+        this.keyCfg = cacheKeyCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether data must be encrypted.
+     *
+     * @return {@code True} if this cache persistent data is encrypted.
+     */
+    public boolean isEncryptionEnabled() {
+        return encryptionEnabled;
+    }
+
+    /**
+     * Sets encrypted flag.
+     *
+     * @param encryptionEnabled {@code True} if this cache persistent data should be encrypted.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
+        this.encryptionEnabled = encryptionEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     *
+     * @return Disk page compression algorithm.
+     * @see #getDiskPageCompressionLevel
+     */
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression == null ? DFLT_DISK_PAGE_COMPRESSION : diskPageCompression;
+    }
+
+    /**
+     * Sets disk page compression algorithm.
+     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
+     *
+     * @param diskPageCompression Disk page compression algorithm.
+     * @return {@code this} for chaining.
+     * @see #setDiskPageCompressionLevel
+     */
+    public CacheConfiguration<K, V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
+        this.diskPageCompression = diskPageCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getDiskPageCompression algorithm} specific disk page compression level.
+     *
+     * @return Disk page compression level or {@code null} for default.
+     */
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setDiskPageCompression algorithm} specific disk page compression level.
+     *
+     * @param diskPageCompressionLevel Disk page compression level or {@code null} to use default.
+     *                             {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
+        this.diskPageCompressionLevel = diskPageCompressionLevel;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
@@ -2249,366 +2481,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return "IgniteAllNodesPredicate []";
-        }
-    }
-
-    /**
-     * Descriptor of type.
-     */
-    private static class TypeDescriptor {
-        /** Value field names and types with preserved order. */
-        @GridToStringInclude
-        private final Map<String, Class<?>> fields = new LinkedHashMap<>();
-
-        /** */
-        @GridToStringExclude
-        private final Map<String, ClassProperty> props = new LinkedHashMap<>();
-
-        /** */
-        @GridToStringInclude
-        private final Set<String> keyProps = new HashSet<>();
-
-        /** */
-        @GridToStringInclude
-        private final Map<String, IndexDescriptor> indexes = new HashMap<>();
-
-        /** */
-        private IndexDescriptor fullTextIdx;
-
-        /** */
-        private Class<?> keyCls;
-
-        /** */
-        private Class<?> valCls;
-
-        /** */
-        private boolean valTextIdx;
-
-        /**
-         * @return Indexes.
-         */
-        public Map<String, GridQueryIndexDescriptor> indexes() {
-            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
-        }
-
-        /**
-         * Adds index.
-         *
-         * @param idxName Index name.
-         * @param type Index type.
-         * @param inlineSize Inline size.
-         * @return Index descriptor.
-         */
-        public IndexDescriptor addIndex(String idxName, QueryIndexType type, int inlineSize) {
-            IndexDescriptor idx = new IndexDescriptor(type, inlineSize);
-
-            if (indexes.put(idxName, idx) != null)
-                throw new CacheException("Index with name '" + idxName + "' already exists.");
-
-            return idx;
-        }
-
-        /**
-         * Adds index.
-         *
-         * @param idxName Index name.
-         * @param type Index type.
-         * @return Index descriptor.
-         */
-        public IndexDescriptor addIndex(String idxName, QueryIndexType type) {
-            return addIndex(idxName, type, -1);
-        }
-
-        /**
-         * Adds field to index.
-         *
-         * @param idxName Index name.
-         * @param field Field name.
-         * @param orderNum Fields order number in index.
-         * @param descending Sorting order.
-         */
-        public void addFieldToIndex(String idxName, String field, int orderNum,
-            boolean descending) {
-            IndexDescriptor desc = indexes.get(idxName);
-
-            if (desc == null)
-                desc = addIndex(idxName, QueryIndexType.SORTED);
-
-            desc.addField(field, orderNum, descending);
-        }
-
-        /**
-         * Adds field to text index.
-         *
-         * @param field Field name.
-         */
-        public void addFieldToTextIndex(String field) {
-            if (fullTextIdx == null) {
-                fullTextIdx = new IndexDescriptor(QueryIndexType.FULLTEXT);
-
-                indexes.put(null, fullTextIdx);
-            }
-
-            fullTextIdx.addField(field, 0, false);
-        }
-
-        /**
-         * @return Value class.
-         */
-        public Class<?> valueClass() {
-            return valCls;
-        }
-
-        /**
-         * Sets value class.
-         *
-         * @param valCls Value class.
-         */
-        void valueClass(Class<?> valCls) {
-            this.valCls = valCls;
-        }
-
-        /**
-         * @return Key class.
-         */
-        public Class<?> keyClass() {
-            return keyCls;
-        }
-
-        /**
-         * Set key class.
-         *
-         * @param keyCls Key class.
-         */
-        void keyClass(Class<?> keyCls) {
-            this.keyCls = keyCls;
-        }
-
-        /**
-         * Adds property to the type descriptor.
-         *
-         * @param prop Property.
-         * @param key Property ownership flag (key or not).
-         * @param failOnDuplicate Fail on duplicate flag.
-         */
-        void addProperty(ClassProperty prop, boolean key, boolean failOnDuplicate) {
-            String name = prop.fullName();
-
-            if (props.put(name, prop) != null && failOnDuplicate)
-                throw new CacheException("Property with name '" + name + "' already exists.");
-
-            fields.put(name, prop.type());
-
-            if (key)
-                keyProps.add(name);
-        }
-
-        /**
-         * @return {@code true} If we need to have a fulltext index on value.
-         */
-        public boolean valueTextIndex() {
-            return valTextIdx;
-        }
-
-        /**
-         * Sets if this value should be text indexed.
-         *
-         * @param valTextIdx Flag value.
-         */
-        public void valueTextIndex(boolean valTextIdx) {
-            this.valTextIdx = valTextIdx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TypeDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Index descriptor.
-     */
-    private static class IndexDescriptor implements GridQueryIndexDescriptor {
-        /** Fields sorted by order number. */
-        private final Collection<T2<String, Integer>> fields = new TreeSet<>(
-            new Comparator<T2<String, Integer>>() {
-                @Override public int compare(T2<String, Integer> o1, T2<String, Integer> o2) {
-                    if (o1.get2().equals(o2.get2())) // Order is equal, compare field names to avoid replace in Set.
-                        return o1.get1().compareTo(o2.get1());
-
-                    return o1.get2() < o2.get2() ? -1 : 1;
-                }
-            });
-
-        /** Fields which should be indexed in descending order. */
-        private Collection<String> descendings;
-
-        /** */
-        private final QueryIndexType type;
-
-        /** */
-        private final int inlineSize;
-
-        /**
-         * @param type Type.
-         * @param inlineSize Inline size.
-         */
-        private IndexDescriptor(QueryIndexType type, int inlineSize) {
-            assert type != null;
-
-            this.type = type;
-            this.inlineSize = inlineSize;
-        }
-
-        /**
-         * @param type Type.
-         */
-        private IndexDescriptor(QueryIndexType type) {
-            this(type, -1);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> fields() {
-            Collection<String> res = new ArrayList<>(fields.size());
-
-            for (T2<String, Integer> t : fields)
-                res.add(t.get1());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean descending(String field) {
-            return descendings != null && descendings.contains(field);
-        }
-
-        /**
-         * Adds field to this index.
-         *
-         * @param field Field name.
-         * @param orderNum Field order number in this index.
-         * @param descending Sort order.
-         */
-        public void addField(String field, int orderNum, boolean descending) {
-            fields.add(new T2<>(field, orderNum));
-
-            if (descending) {
-                if (descendings == null)
-                    descendings = new HashSet<>();
-
-                descendings.add(field);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public QueryIndexType type() {
-            return type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int inlineSize() {
-            return inlineSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IndexDescriptor.class, this);
-        }
-    }
-
-    /**
-     * Description of type property.
-     */
-    private static class ClassProperty {
-        /** */
-        private final Member member;
-
-        /** */
-        private ClassProperty parent;
-
-        /** */
-        private String name;
-
-        /** */
-        private String alias;
-
-        /**
-         * Constructor.
-         *
-         * @param member Element.
-         */
-        ClassProperty(Member member) {
-            this.member = member;
-
-            name = member.getName();
-
-            if (member instanceof Method) {
-                if (member.getName().startsWith("get") && member.getName().length() > 3)
-                    name = member.getName().substring(3);
-
-                if (member.getName().startsWith("is") && member.getName().length() > 2)
-                    name = member.getName().substring(2);
-            }
-
-            ((AccessibleObject)member).setAccessible(true);
-        }
-
-        /**
-         * @param alias Alias.
-         */
-        public void alias(String alias) {
-            this.alias = alias;
-        }
-
-        /**
-         * @return Alias.
-         */
-        String alias() {
-            return F.isEmpty(alias) ? name : alias;
-        }
-
-        /**
-         * @return Type.
-         */
-        public Class<?> type() {
-            return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
-        }
-
-        /**
-         * @param parent Parent property if this is embeddable element.
-         */
-        public void parent(ClassProperty parent) {
-            this.parent = parent;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ClassProperty.class, this);
-        }
-
-        /**
-         * @param cls Class.
-         * @return {@code true} If this property or some parent relates to member of the given class.
-         */
-        public boolean knowsClass(Class<?> cls) {
-            return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
-        }
-
-        /**
-         * @return Full name with all parents in dot notation.
-         */
-        public String fullName() {
-            assert name != null;
-
-            if (parent == null)
-                return name;
-
-            return parent.fullName() + '.' + name;
         }
     }
 }

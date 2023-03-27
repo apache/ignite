@@ -35,6 +35,7 @@ public abstract class GridCacheFutureAdapter<R> extends GridFutureAdapter<R> imp
      * Default constructor.
      */
     public GridCacheFutureAdapter() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -51,7 +52,7 @@ public abstract class GridCacheFutureAdapter<R> extends GridFutureAdapter<R> imp
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
-        if(super.onDone(res, err, cancel)){
+        if (super.onDone(res, err, cancel)) {
             endTime = U.currentTimeMillis();
             return true;
         }

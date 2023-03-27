@@ -102,6 +102,8 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="rcvd">All previously received results. Note that if task class has
         /// <see cref="ComputeTaskNoResultCacheAttribute"/> attribute, then this list will be empty.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
+        // ReSharper disable once UnusedParameter.Global
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
         ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res, IList<IComputeJobResult<TJobRes>> rcvd);
 
         /// <summary>

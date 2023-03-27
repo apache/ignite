@@ -19,7 +19,9 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Insert into data page.
@@ -29,16 +31,16 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     private byte[] payload;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param payload Remainder of the record.
      */
     public DataPageInsertRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         byte[] payload
     ) {
-        super(cacheId, pageId);
+        super(grpId, pageId);
 
         this.payload = payload;
     }
@@ -54,13 +56,18 @@ public class DataPageInsertRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         assert payload != null;
 
-        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.addRow(pageAddr, payload, pageMem.pageSize());
+        io.addRow(pageAddr, payload, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_PAGE_INSERT_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataPageInsertRecord.class, this, "super", super.toString());
     }
 }

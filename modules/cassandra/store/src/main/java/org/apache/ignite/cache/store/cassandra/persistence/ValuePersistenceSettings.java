@@ -17,24 +17,23 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.beans.PropertyDescriptor;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 /**
  * Stores persistence settings for Ignite cache value
  */
-public class ValuePersistenceSettings extends PersistenceSettings {
+public class ValuePersistenceSettings extends PersistenceSettings<PojoValueField> {
     /** XML element describing value field settings. */
     private static final String FIELD_ELEMENT = "field";
 
     /** Value fields. */
-    private List<PojoField> fields = new LinkedList<>();
+    private List<PojoValueField> fields = new LinkedList<>();
 
     /**
      * Creates class instance from XML configuration.
@@ -52,7 +51,7 @@ public class ValuePersistenceSettings extends PersistenceSettings {
 
         NodeList nodes = el.getElementsByTagName(FIELD_ELEMENT);
 
-        fields = detectFields(nodes);
+        fields = detectPojoFields(nodes);
 
         if (fields.isEmpty())
             throw new IllegalStateException("Failed to initialize value fields for class '" + getJavaClass().getName() + "'");
@@ -65,7 +64,7 @@ public class ValuePersistenceSettings extends PersistenceSettings {
     /**
      * @return List of value fields.
      */
-    @Override public List<PojoField> getFields() {
+    @Override public List<PojoValueField> getFields() {
         return fields == null ? null : Collections.unmodifiableList(fields);
     }
 
@@ -74,45 +73,28 @@ public class ValuePersistenceSettings extends PersistenceSettings {
         return "value";
     }
 
-    /**
-     * Extracts POJO fields from a list of corresponding XML field nodes.
-     *
-     * @param fieldNodes Field nodes to process.
-     * @return POJO fields list.
-     */
-    private List<PojoField> detectFields(NodeList fieldNodes) {
-        List<PojoField> list = new LinkedList<>();
-
-        if (fieldNodes == null || fieldNodes.getLength() == 0) {
-            List<PropertyDescriptor> primitivePropDescriptors =
-                PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-
-            for (PropertyDescriptor desc : primitivePropDescriptors) {
-                // Skip POJO field if it's read-only
-                if (desc.getWriteMethod() != null)
-                    list.add(new PojoValueField(desc));
-            }
-
-            return list;
-        }
-
-        List<PropertyDescriptor> allPropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), false);
-
-        int cnt = fieldNodes.getLength();
-
-        for (int i = 0; i < cnt; i++) {
-            PojoValueField field = new PojoValueField((Element)fieldNodes.item(i), getJavaClass());
-
-            PropertyDescriptor desc = findPropertyDescriptor(allPropDescriptors, field.getName());
-
-            if (desc == null) {
-                throw new IllegalArgumentException("Specified POJO field '" + field.getName() +
-                    "' doesn't exist in '" + getJavaClass().getName() + "' class");
-            }
-
-            list.add(field);
-        }
-
-        return list;
+    /** {@inheritDoc} */
+    @Override protected PojoValueField createPojoField(Element el, Class clazz) {
+        return new PojoValueField(el, clazz);
     }
+
+    /** {@inheritDoc} */
+    @Override protected PojoValueField createPojoField(PojoFieldAccessor accessor) {
+        return new PojoValueField(accessor);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PojoValueField createPojoField(PojoValueField field, Class clazz) {
+        return new PojoValueField(field, clazz);
+    }
+
+    /**
+     * @see java.io.Serializable
+     */
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        fields = enrichFields(fields);
+    }
+
 }

@@ -18,83 +18,66 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
-    using Apache.Ignite.Core.Tests.Memory;
-    using NUnit.ConsoleRunner;
+    using NUnit.Framework;
 
+    /// <summary>
+    /// Console test runner.
+    /// </summary>
     public static class TestRunner
     {
         [STAThread]
         static void Main(string[] args)
         {
-            Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
-            Debug.AutoFlush = true;
+            System.Diagnostics.Debug.AutoFlush = true;
+
+#if (!NETCOREAPP)
+            System.Diagnostics.Debug.Listeners.Add(new System.Diagnostics.TextWriterTraceListener(Console.Out));
+#endif
 
             if (args.Length == 2)
             {
-                //Debugger.Launch();
-                var testClass = Type.GetType(args[0]);
-                var method = args[1];
+                TestOne(args[0], args[1]);
 
-                if (testClass == null || testClass.GetMethods().All(x => x.Name != method))
-                    throw new InvalidOperationException("Failed to find method: " + testClass + "." + method);
-
-                Environment.ExitCode = TestOne(testClass, method);
                 return;
             }
 
-            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
-
-            //TestAll(typeof (AffinityFunctionTest));
-            //TestAllInAssembly();
+            // Default: test startup.
+            new IgniteStartStopTest().TestStartDefault();
         }
 
-        private static int TestOne(Type testClass, string method)
+        /// <summary>
+        /// Runs specified test method.
+        /// </summary>
+        private static void TestOne(string className, string methodName)
         {
-            string[] args =
+            var fixtureClass = Type.GetType(className);
+
+            if (fixtureClass == null)
             {
-                "/noshadow",
-                "/run:" + testClass.FullName + "." + method,
-                Assembly.GetAssembly(testClass).Location
-            };
+                throw new InvalidOperationException("Failed to find class: " + className);
+            }
 
-            int returnCode = Runner.Main(args);
+            var fixture = Activator.CreateInstance(fixtureClass);
 
-            if (returnCode != 0)
-                Console.Beep();
+            foreach (var setUpMethod in GetMethodsWithAttr<SetUpAttribute>(fixtureClass))
+            {
+                setUpMethod.Invoke(fixture, Array.Empty<object>());
+            }
 
-            return returnCode;
+            var testMethod = fixtureClass.GetMethod(methodName);
+
+            if (testMethod == null)
+                throw new InvalidOperationException("Failed to find method: " + fixtureClass + "." + methodName);
+
+            testMethod.Invoke(fixture, Array.Empty<object>());
         }
 
-        private static void TestAll(Type testClass)
+        private static IEnumerable<MethodInfo> GetMethodsWithAttr<T>(Type testClass)
         {
-            string[] args =
-            {
-                "/noshadow",
-                "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
-            };
-
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
+            return testClass.GetMethods().Where(m => m.GetCustomAttributes(true).Any(a => a is T));
         }
-
-        private static void TestAllInAssembly()
-        {
-            string[] args =
-            {
-                "/noshadow",
-                Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
-            };
-
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
-        }
-
     }
 }

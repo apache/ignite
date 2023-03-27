@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,7 +56,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
     public GridClientZipOptimizedMarshaller(GridClientMarshaller dfltMarsh, @Nullable List<PluginProvider> plugins) {
         super(plugins);
 
-        assert dfltMarsh!= null;
+        assert dfltMarsh != null;
 
         this.dfltMarsh = dfltMarsh;
     }
@@ -109,7 +108,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
         ByteArrayInputStream bais = new ByteArrayInputStream(input);
         ByteArrayOutputStream baos = new ByteArrayOutputStream(DFLT_BUFFER_SIZE);
 
-        try(ZipInputStream zis = new ZipInputStream(bais)) {
+        try (ZipInputStream zis = new ZipInputStream(bais)) {
             zis.getNextEntry();
 
             byte[] buf = new byte[DFLT_BUFFER_SIZE];
@@ -125,6 +124,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
 
         return baos.toByteArray();
     }
+
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {

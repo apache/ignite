@@ -22,19 +22,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTaskNoResultCache;
-import org.apache.ignite.internal.IgniteComputeImpl;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManager;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,26 +49,31 @@ public final class PlatformFullTask extends PlatformAbstractTask {
     /** Initial topology version. */
     private final long topVer;
 
-    /** Compute instance. */
-    private final IgniteComputeImpl compute;
+    /** Cluster group. */
+    private final ClusterGroup grp;
+
+    /** Platform task name. */
+    private final String taskName;
 
     /**
      * Constructor.
      *
      * @param ctx Platform context.
-     * @param compute Target compute instance.
+     * @param grp Cluster group.
      * @param taskPtr Pointer to the task in the native platform.
      * @param topVer Initial topology version.
+     * @param taskName Task name.
      */
-    public PlatformFullTask(PlatformContext ctx, IgniteComputeImpl compute, long taskPtr, long topVer) {
+    public PlatformFullTask(PlatformContext ctx, ClusterGroup grp, long taskPtr, long topVer, String taskName) {
         super(ctx, taskPtr);
 
-        this.compute = compute;
+        this.grp = grp;
         this.topVer = topVer;
+        this.taskName = taskName;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert arg == null;
 
@@ -76,7 +82,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
         try {
             assert !done;
 
-            Collection<ClusterNode> nodes = compute.clusterGroup().nodes();
+            Collection<ClusterNode> nodes = grp.nodes();
 
             PlatformMemoryManager memMgr = ctx.memory();
 
@@ -159,7 +165,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
                 Object nativeJob = reader.readBoolean() ? reader.readObjectDetached() : null;
 
-                PlatformJob job = ctx.createJob(this, ptr, nativeJob);
+                PlatformJob job = ctx.createJob(this, ptr, nativeJob, taskName);
 
                 UUID jobNodeId = reader.readUuid();
 

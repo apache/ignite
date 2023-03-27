@@ -29,8 +29,8 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -57,6 +57,9 @@ public class AboutDialog extends JDialog {
     /** Border color. */
     private static final Color VALUE_BORDER_COLOR = new Color(0xcdcdcd);
 
+    /** Release date formatter. */
+    private static final DateTimeFormatter RELEASE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy");
+
     /** Global reference to about dialog to prevent double open. */
     private static AboutDialog aboutDlg;
 
@@ -70,7 +73,7 @@ public class AboutDialog extends JDialog {
     private final String ver;
 
     /** Release date. */
-    private final Date release;
+    private final LocalDate release;
 
     /** Copyright. */
     private final String copyright;
@@ -85,7 +88,7 @@ public class AboutDialog extends JDialog {
      * @param release Release date.
      * @param copyright Copyright.
      */
-    AboutDialog(String appName, String bannerSpec, String ver, Date release, String copyright) {
+    AboutDialog(String appName, String bannerSpec, String ver, LocalDate release, String copyright) {
         this.appName = appName;
 
         this.bannerSpec = bannerSpec;
@@ -101,7 +104,7 @@ public class AboutDialog extends JDialog {
     }
 
     /** Close action. */
-    private Action closeAct = new AbstractAction("Close") {
+    private final Action closeAct = new AbstractAction("Close") {
         @Override public void actionPerformed(ActionEvent e) {
             assert SwingUtilities.isEventDispatchThread();
 
@@ -110,7 +113,7 @@ public class AboutDialog extends JDialog {
     };
 
     /** Close button. */
-    private JButton closeBtn = new JButton(closeAct);
+    private final JButton closeBtn = new JButton(closeAct);
 
     /**
      * Create and initialize dialog controls.
@@ -224,7 +227,7 @@ public class AboutDialog extends JDialog {
         licPanel.add(Box.createVerticalGlue(), gbcStrut());
 
         addAboutItem(licPanel, "Version:", ver);
-        addAboutItem(licPanel, "Release Date:", new SimpleDateFormat("dd MMM yyyy").format(release));
+        addAboutItem(licPanel, "Release Date:", RELEASE_DATE_FORMATTER.format(release));
         addAboutItem(licPanel, "Copyright:", copyright);
 
         return licPanel;
@@ -308,7 +311,7 @@ public class AboutDialog extends JDialog {
      * @param act Escape button action.
      */
     private void setEscAction(ActionListener act) {
-        assert(act != null);
+        assert (act != null);
 
         getRootPane().registerKeyboardAction(act,
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0x0),
@@ -325,10 +328,9 @@ public class AboutDialog extends JDialog {
      * @param release Release date.
      * @param copyright Copyright blurb.
      */
-    public static void centerShow(final String appName, final String bannerSpec,
-        final String ver, final Date release, final String copyright) {
+    public static void centerShow(String appName, String bannerSpec,
+        String ver, LocalDate release, String copyright) {
         SwingUtilities.invokeLater(new Runnable() {
-            @SuppressWarnings("NonThreadSafeLazyInitialization")
             @Override public void run() {
                 if (aboutDlg == null) {
                     try {

@@ -30,14 +30,16 @@ public class PersonGenerator implements Generator {
     private static final Date DATE = new Date();
 
     /** */
-    private static final List<String> PHONES = new LinkedList<String>(){{
-        add("1234567");
-        add("7654321");
-        add("1289054");
-    }};
+    private static final List<String> PHONES = new LinkedList<String>();
+
+    static {
+        PHONES.add("1234567");
+        PHONES.add("7654321");
+        PHONES.add("1289054");
+    }
 
     /** {@inheritDoc} */
     @Override public Object generate(long i) {
-        return new Person(i, Long.toString(i), Long.toString(i), (int)(i % 100), i % 2 == 0, i, i, DATE, PHONES);
+        return new Person(i, Long.toString(i), Long.toString(i), (short)(i % 100), i % 2 == 0, i, i, DATE, PHONES);
     }
 }

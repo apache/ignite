@@ -35,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
  * Advanced parent adapter for all processor.
  */
 public abstract class GridProcessorAdapter implements GridProcessor {
+    /** */
+    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
+
     /** Kernal context. */
     @GridToStringExclude
     protected final GridKernalContext ctx;
@@ -42,6 +45,10 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     /** Grid logger. */
     @GridToStringExclude
     protected final IgniteLogger log;
+
+    /** Diagnostic logger. */
+    @GridToStringExclude
+    protected final IgniteLogger diagnosticLog;
 
     /**
      * @param ctx Kernal context.
@@ -52,10 +59,12 @@ public abstract class GridProcessorAdapter implements GridProcessor {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
+
+        diagnosticLog = ctx.log(DIAGNOSTIC_LOG_CATEGORY);
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -100,7 +109,7 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -138,6 +147,14 @@ public abstract class GridProcessorAdapter implements GridProcessor {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(
+        ClusterNode node,
+        DiscoveryDataBag.JoiningNodeDiscoveryData discoData
+    ) {
         return null;
     }
 

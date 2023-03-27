@@ -17,6 +17,9 @@
 
 package org.apache.ignite.binary;
 
+import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,7 +33,10 @@ import org.jetbrains.annotations.Nullable;
  * However, this class allows you to change configuration properties for a specific
  * binary type without affecting configuration for other binary types.
  */
-public class BinaryTypeConfiguration {
+public class BinaryTypeConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Class name. */
     private String typeName;
 
@@ -45,6 +51,9 @@ public class BinaryTypeConfiguration {
 
     /** Enum flag. */
     private boolean isEnum;
+
+    /** Enum names to ordinals mapping. */
+    private Map<String, Integer> enumValues;
 
     /**
      * Constructor.
@@ -64,6 +73,7 @@ public class BinaryTypeConfiguration {
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
+        enumValues = other.enumValues != null ? new LinkedHashMap<>(other.enumValues) : null;
         typeName = other.typeName;
     }
 
@@ -177,6 +187,25 @@ public class BinaryTypeConfiguration {
         this.isEnum = isEnum;
 
         return this;
+    }
+
+    /**
+     * Set enum ordinal to names mapping.
+     *
+     * @param values Map of enum name to ordinal.
+     * @return {@code this} for chaining.
+     */
+    public BinaryTypeConfiguration setEnumValues(@Nullable Map<String, Integer> values) {
+        this.enumValues = values;
+
+        return this;
+    }
+
+    /**
+     * @return Enum name to ordinal mapping
+     */
+    @Nullable public Map<String, Integer> getEnumValues() {
+        return enumValues;
     }
 
     /** {@inheritDoc} */

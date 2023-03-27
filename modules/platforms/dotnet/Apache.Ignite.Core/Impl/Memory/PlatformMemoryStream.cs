@@ -893,7 +893,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (disposing)
                 SynchronizeOutput();
@@ -921,9 +921,17 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// </returns>
         public byte[] GetArray()
         {
-            return GetArrayCopy();
+            throw new NotSupportedException("Off-heap stream can not return array without copy.");
         }
-        
+
+        /// <summary>
+        /// Gets a value indicating whether this instance can return underlying array without copying.
+        /// </summary>
+        public bool CanGetArray
+        {
+            get { return false; }
+        }
+
         /// <summary>
         /// Gets underlying data in a new array.
         /// </summary>

@@ -113,7 +113,6 @@ final class TestMemcacheClient {
 
         // Start socket reader thread.
         rdr = new Thread(new Runnable() {
-            @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 try {
                     InputStream in = sock.getInputStream();
@@ -249,7 +248,7 @@ final class TestMemcacheClient {
         rdr.start();
     }
 
-    /** {@inheritDoc} */
+    /** */
     public void shutdown() throws IgniteCheckedException {
         try {
             if (rdr != null) {
@@ -420,7 +419,7 @@ final class TestMemcacheClient {
         packet[0] = (byte)0x80;
         packet[1] = cmd.operationCode();
 
-        U.shortToBytes((short) keyData.length(), packet, 2);
+        U.shortToBytes((short)keyData.length(), packet, 2);
 
         packet[4] = (byte)(extrasLength);
 
@@ -537,7 +536,7 @@ final class TestMemcacheClient {
         Map<String, Long> res = new HashMap<>(raw.size());
 
         for (Response resp : raw)
-            res.put((String)resp.key(), Long.parseLong(String.valueOf(resp.getObject())));
+            res.put((String)resp.key(), Long.parseLong(String.valueOf(resp.<String>getObject())));
 
         return res;
     }
@@ -650,17 +649,17 @@ final class TestMemcacheClient {
             flags |= BOOLEAN_FLAG;
         }
         else if (obj instanceof Integer) {
-            bytes = U.intToBytes((Integer) obj);
+            bytes = U.intToBytes((Integer)obj);
 
             flags |= INT_FLAG;
         }
         else if (obj instanceof Long) {
-            bytes = U.longToBytes((Long) obj);
+            bytes = U.longToBytes((Long)obj);
 
             flags |= LONG_FLAG;
         }
         else if (obj instanceof Date) {
-            bytes = U.longToBytes(((Date) obj).getTime());
+            bytes = U.longToBytes(((Date)obj).getTime());
 
             flags |= DATE_FLAG;
         }
@@ -670,12 +669,12 @@ final class TestMemcacheClient {
             flags |= BYTE_FLAG;
         }
         else if (obj instanceof Float) {
-            bytes = U.intToBytes(Float.floatToIntBits((Float) obj));
+            bytes = U.intToBytes(Float.floatToIntBits((Float)obj));
 
             flags |= FLOAT_FLAG;
         }
         else if (obj instanceof Double) {
-            bytes = U.longToBytes(Double.doubleToLongBits((Double) obj));
+            bytes = U.longToBytes(Double.doubleToLongBits((Double)obj));
 
             flags |= DOUBLE_FLAG;
         }
@@ -775,6 +774,7 @@ final class TestMemcacheClient {
             return success;
         }
 
+        /** */
         Object key() {
             return key;
         }
@@ -788,7 +788,7 @@ final class TestMemcacheClient {
         }
     }
 
-
+    /** */
     private static class Data {
         /** Bytes. */
         private final byte[] bytes;

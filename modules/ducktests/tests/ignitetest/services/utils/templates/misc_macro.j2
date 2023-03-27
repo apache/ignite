@@ -1,0 +1,87 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+{% macro cluster_state(state, version) %}
+    {% if version > "2.9.0" %}
+        <property name="clusterStateOnStart" value="{{ state }}"/>
+    {%  else %}
+        <property name="activeOnStart" value="{{ 'false' if state == 'INACTIVE' else 'true'}}"/>
+    {% endif %}
+{% endmacro %}
+
+{% macro plugins(config) %}
+    {% if config.plugins %}
+        <property name="pluginProviders">
+            <list>
+            {% for plugin in config.plugins %}
+                {% import plugin[0] as plugin_template -%}
+                {{ plugin_template.apply(config, plugin[1]) }}
+            {% endfor %}
+            </list>
+        </property>
+    {% endif %}
+{% endmacro %}
+
+{% macro ext_beans(config) %}
+    {% if config.ext_beans %}
+        {% for ext_bean in config.ext_beans %}
+            {% import ext_bean[0] as bean_template -%}
+            {{ bean_template.apply(config, ext_bean[1]) }}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
+
+{% macro event_types(config) %}
+    {% if config.include_event_types | length > 0 %}
+        <util:list id="eventTypes" value-type="java.lang.Integer">
+            {% for event_type in config.include_event_types %}
+            <value>{{ event_type }}</value>
+            {% endfor %}
+        </util:list>
+    {% endif %}
+{% endmacro %}
+
+{% macro bean(bean_object) %}
+    {% if bean_object.properties | length > 0 or bean_object.constructor_args | length > 0 %}
+        <bean class="{{ bean_object }}">
+            {% for name, value in bean_object.properties.items() %}
+                {% if value is string or value is number or value is boolean %}
+                    <property name="{{ name  | snake_to_camel }}" value="{{ value }}"/>
+                {% elif value is iterable and value is not mapping %}
+                    <property name="{{ name | snake_to_camel }}">
+                        <list>
+                            {% for v in value %}
+                                <value>{{ v }}</value>
+                            {% endfor %}
+                        </list>
+                    </property>
+                {% elif value.ref | length > 0 %}
+                    <property name="{{ name  | snake_to_camel }}" ref="{{ value.ref }}"/>
+                {% else %}
+                    <property name="{{ name | snake_to_camel }}">
+                        {{ bean(value) }}
+                    </property>
+                {% endif %}
+            {% endfor %}
+            {% for value in bean_object.constructor_args %}
+            <constructor-arg value="{{ value }}"/>
+            {% endfor %}
+        </bean>
+    {% else %}
+        <bean class="{{ bean_object }}"/>
+    {% endif %}
+{% endmacro %}

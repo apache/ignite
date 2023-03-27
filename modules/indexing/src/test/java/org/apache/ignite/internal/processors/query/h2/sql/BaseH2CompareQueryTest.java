@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -38,7 +37,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Base set of queries to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
@@ -60,6 +60,21 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** Purchase count. */
     public static final int PURCH_CNT = PROD_CNT * 5;
 
+    /** */
+    protected static final String ORG = "org";
+
+    /** */
+    protected static final String PERS = "pers";
+
+    /** */
+    protected static final String PURCH = "purch";
+
+    /** */
+    protected static final String PROD = "prod";
+
+    /** */
+    protected static final String ADDR = "addr";
+
     /** Cache org. */
     private static IgniteCache<Integer, Organization> cacheOrg;
 
@@ -80,11 +95,11 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(
-            cacheConfiguration("org", CacheMode.PARTITIONED, Integer.class, Organization.class),
-            cacheConfiguration("pers", CacheMode.PARTITIONED, AffinityKey.class, Person.class),
-            cacheConfiguration("purch", CacheMode.PARTITIONED, AffinityKey.class, Purchase.class),
-            cacheConfiguration("prod", CacheMode.REPLICATED, Integer.class, Product.class),
-            cacheConfiguration("addr", CacheMode.REPLICATED, Integer.class, Address.class));
+            cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class),
+            cacheConfiguration(PERS, CacheMode.PARTITIONED, AffinityKey.class, Person.class),
+            cacheConfiguration(PURCH, CacheMode.PARTITIONED, AffinityKey.class, Purchase.class),
+            cacheConfiguration(PROD, CacheMode.REPLICATED, Integer.class, Product.class),
+            cacheConfiguration(ADDR, CacheMode.REPLICATED, Integer.class, Address.class));
 
         return cfg;
     }
@@ -101,17 +116,21 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void createCaches() {
-        cacheOrg = jcache(ignite, cacheConfiguration("org", CacheMode.PARTITIONED, Integer.class, Organization.class), "org", Integer.class, Organization.class);
-        cachePers = ignite.cache("pers");
-        cachePurch = ignite.cache("purch");
-        cacheProd = ignite.cache("prod");
-        cacheAddr = ignite.cache("addr");
+        cacheOrg = jcache(
+            ignite,
+            cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class),
+            ORG,
+            Integer.class,
+            Organization.class
+        );
+        cachePers = ignite.cache(PERS);
+        cachePurch = ignite.cache(PURCH);
+        cacheProd = ignite.cache(PROD);
+        cacheAddr = ignite.cache(ADDR);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected void initCacheAndDbData() throws SQLException {
         int idGen = 0;
 
@@ -130,7 +149,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             insertInDb(org);
         }
 
-       // Adresses.
+        // Adresses.
         List<Address> addreses = new ArrayList<>();
 
         for (int i = 0; i < ADDR_CNT; i++) {
@@ -171,7 +190,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         for (int i = 0; i < PROD_CNT; i++) {
             int id = idGen++;
 
-            Product product = new Product(id, "Product" + id, id*1000);
+            Product product = new Product(id, "Product" + id, id * 1000);
 
             products.add(product);
 
@@ -208,8 +227,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      *
      */
+    @Test
     public void testSelectStar() {
-        assertEquals(1, cachePers.query(new SqlQuery<AffinityKey<?>,Person>(
+        assertEquals(1, cachePers.query(new SqlQuery<AffinityKey<?>, Person>(
             Person.class, "\t\r\n  select  \n*\t from Person limit 1")).getAll().size());
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -224,22 +244,24 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidQuery() throws Exception {
         final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName from Person where id <> ? and orgId <> ?");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                cachePers.query(sql.setArgs(3));
+                cachePers.query(sql.setArgs(3)).getAll();
 
                 return null;
             }
-        }, IgniteException.class, "Invalid number of query parameters.");
+        }, CacheException.class, "Invalid number of query parameters");
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-705", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-705")
+    @Test
     public void testAllExamples() throws Exception {
 //        compareQueryRes0("select ? limit ? offset ?");
 
@@ -259,13 +281,13 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         List<List<?>> res = compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person left join \"addr\".Address " +
-            " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
+                " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
 
         assertNotSame(0, res);
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person join \"addr\".Address on Person.addrId = Address.id " +
-            "where lower(Address.street) = lower(?)", addStreet);
+                "where lower(Address.street) = lower(?)", addStreet);
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person left join \"addr\".Address " +
@@ -274,7 +296,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         compareQueryRes0(cachePers,
             "select avg(old) from \"pers\".Person, \"addr\".Address where Person.addrId = Address.id " +
-            "and lower(Address.street) = lower(?)", addStreet);
+                "and lower(Address.street) = lower(?)", addStreet);
 
         compareQueryRes0(cachePers, "select firstName, date from \"pers\".Person");
         compareQueryRes0(cachePers, "select distinct firstName, date from \"pers\".Person");
@@ -301,7 +323,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         compareQueryRes0(cachePers, "select distinct firstName, street from \"pers\".Person, " +
             "\"addr\".Address");
         // TODO uncomment and investigate (Rows count has to be equal.: Expected :2500, Actual :900)
-//        compareQueryRes0("select p1.firstName, a2.street from \"part\".Person p1, \"repl\".Address a1, \"part\".Person p2, \"repl\".Address a2");
+        //compareQueryRes0(
+        //    "select p1.firstName, a2.street from \"part\".Person p1, \"repl\".Address a1, \"part\".Person p2, \"repl\".Address a2"
+        //);
 
         //TODO look at it (org.h2.jdbc.JdbcSQLException: Feature not supported: "VARCHAR +" // at H2)
 //        compareQueryRes0("select p.firstName n, a.street s from \"part\".Person p, \"repl\".Address a");
@@ -331,7 +355,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         // TODO analyse
 //        compareQueryRes0("select " + star + " from \"part\".Person p where p.firstName in ('a', 'b', '_' + RAND())"); // test ConditionIn
-        compareQueryRes0(cachePers, "select " + star + " from \"pers\".Person p where p.firstName in ('a', 'b', 'c')"); // test ConditionInConstantSet
+        // test ConditionInConstantSet
+        compareQueryRes0(cachePers, "select " + star + " from \"pers\".Person p where p.firstName in ('a', 'b', 'c')");
         compareQueryRes0(cachePers, "select " + star + " from \"pers\".Person p " +
             "where p.firstName in (select a.street from \"addr\".Address a)"); // test ConditionInConstantSet
 
@@ -409,6 +434,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParamSubstitution() throws Exception {
         compareQueryRes0(cachePers, "select ? from \"pers\".Person", "Some arg");
     }
@@ -416,6 +442,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws SQLException If failed.
      */
+    @Test
     public void testAggregateOrderBy() throws SQLException {
         compareOrderedQueryRes0(cachePers, "select firstName name, count(*) cnt from \"pers\".Person " +
             "group by name order by cnt, name desc");
@@ -424,6 +451,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullParamSubstitution() throws Exception {
         List<List<?>> rs1 = compareQueryRes0(cachePers, "select ? from \"pers\".Person", null);
 
@@ -434,6 +462,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      *
      */
+    @Test
     public void testUnion() throws SQLException {
         String base = "select _val v from \"pers\".Person";
 
@@ -449,6 +478,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyResult() throws Exception {
         compareQueryRes0(cachePers, "select id from \"pers\".Person where 0 = 1");
     }
@@ -456,6 +486,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlQueryWithAggregation() throws Exception {
         compareQueryRes0(cachePers, "select avg(salary) from \"pers\".Person, \"org\".Organization " +
             "where Person.orgId = Organization.id and " +
@@ -465,6 +496,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlFieldsQuery() throws Exception {
         compareQueryRes0(cachePers, "select concat(firstName, ' ', lastName) from \"pers\".Person");
     }
@@ -472,6 +504,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlFieldsQueryWithJoin() throws Exception {
         compareQueryRes0(cachePers, "select concat(firstName, ' ', lastName), "
             + "Organization.name from \"pers\".Person, \"org\".Organization where "
@@ -481,15 +514,17 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOrdered() throws Exception {
         compareOrderedQueryRes0(cachePers, "select firstName, lastName" +
-                " from \"pers\".Person" +
-                " order by lastName, firstName");
+            " from \"pers\".Person" +
+            " order by lastName, firstName");
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleJoin() throws Exception {
         // Have expected results.
         compareQueryRes0(cachePers, String.format("select id, firstName, lastName" +
@@ -505,6 +540,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleReplicatedSelect() throws Exception {
         compareQueryRes0(cacheProd, "select id, name from \"prod\".Product");
     }
@@ -512,6 +548,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCache() throws Exception {
         compareQueryRes0(cachePers, "select firstName, lastName" +
             "  from \"pers\".Person, \"purch\".Purchase" +
@@ -589,7 +626,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Organization org) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"org\".ORGANIZATION (_key, _val, id, name) values(?, ?, ?, ?)")) {
             st.setObject(1, org.id);
             st.setObject(2, org);
@@ -607,7 +644,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Person p) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement("insert into \"pers\".PERSON " +
+        try (PreparedStatement st = conn.prepareStatement("insert into \"pers\".PERSON " +
             "(_key, _val, id, firstName, lastName, orgId, salary, addrId, old, date) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             st.setObject(1, p.key());
             st.setObject(2, p);
@@ -631,7 +668,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Product p) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"prod\".PRODUCT (_key, _val, id, name, price) values(?, ?, ?, ?, ?)")) {
             st.setObject(1, p.id);
             st.setObject(2, p);
@@ -650,7 +687,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Purchase p) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"purch\".PURCHASE (_key, _val, id, personId, productId, organizationId) values(?, ?, ?, ?, ?, ?)")) {
             st.setObject(1, p.key());
             st.setObject(2, p);
@@ -670,7 +707,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If exception.
      */
     private void insertInDb(Address a) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"addr\".ADDRESS (_key, _val, id, street) values(?, ?, ?, ?)")) {
             st.setObject(1, a.id);
             st.setObject(2, a);
@@ -681,14 +718,16 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         }
     }
 
+    /** */
     @QuerySqlFunction
     public static int cool1() {
         return 1;
     }
 
+    /** */
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
-        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+        return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
     }
 
     /**
@@ -726,7 +765,6 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         /** Old. */
         @QuerySqlField(index = true)
         public int old = 17;
-
 
         /**
          * Constructs person record.
@@ -921,12 +959,15 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * Address class. Stored at replicated cache.
      */
     private static class Address implements Serializable {
+        /** */
         @QuerySqlField(index = true)
         private int id;
 
+        /** */
         @QuerySqlField(index = true)
         private String street;
 
+        /** */
         Address(int id, String street) {
             this.id = id;
             this.street = street;

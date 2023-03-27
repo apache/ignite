@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,12 +47,12 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import junit.framework.AssertionFailedError;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -66,7 +64,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -83,18 +83,17 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-
+import org.junit.Ignore;
+import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -115,7 +114,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 /**
  * Full API cache test.
  */
-@SuppressWarnings({"TransientFieldInNonSerializableClass", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVariationsAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
@@ -163,6 +162,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     public static final int CNT = 20;
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
     }
@@ -170,6 +174,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testSize() throws Exception {
         assert jcache().localSize() == 0;
 
@@ -273,6 +278,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testContainsKey() throws Exception {
 
         Map<String, Integer> vals = new HashMap<>();
@@ -294,6 +300,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsKeyTx() throws Exception {
         if (!txEnabled())
             return;
@@ -328,6 +335,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsKeysTx() throws Exception {
         if (!txEnabled())
             return;
@@ -369,6 +377,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveInExplicitLocks() throws Exception {
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
@@ -394,6 +403,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAllSkipStore() throws Exception {
         if (!storeEnabled())
             return;
@@ -412,6 +422,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testAtomicOps() throws IgniteCheckedException {
         IgniteCache<String, Integer> c = jcache();
 
@@ -444,6 +455,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGet() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() {
@@ -463,6 +475,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -491,6 +504,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -511,6 +525,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAll() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() {
@@ -602,6 +617,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -622,6 +638,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTxNonExistingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart()) {
@@ -633,6 +650,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAllAsyncOld() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -664,6 +682,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAllAsync() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -691,6 +710,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPut() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -736,6 +756,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutTx() throws Exception {
         if (txShouldBeUsed()) {
             IgniteCache<String, Integer> cache = jcache();
@@ -775,6 +796,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeOptimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -786,6 +808,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeOptimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -797,6 +820,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokePessimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -808,6 +832,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokePessimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -819,6 +844,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteInvokeOptimisticReadCommitted1() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -830,6 +856,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteInvokeOptimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -841,6 +868,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteInvokePessimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -852,6 +880,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteInvokePessimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -947,6 +976,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllOptimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -958,6 +988,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllOptimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -969,6 +1000,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllPessimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -980,6 +1012,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllPessimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -991,6 +1024,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAsyncOptimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1002,6 +1036,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAsyncOptimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1013,6 +1048,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAsyncPessimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1024,6 +1060,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllAsyncPessimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1227,6 +1264,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAllWithNulls() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1279,6 +1317,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testInvokeSequentialOptimisticNoStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1290,6 +1330,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testInvokeSequentialPessimisticNoStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1301,6 +1343,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testInvokeSequentialOptimisticWithStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1312,6 +1356,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testInvokeSequentialPessimisticWithStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1376,6 +1422,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAfterRemoveOptimistic() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1387,6 +1434,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAfterRemovePessimistic() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1429,6 +1477,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReturnValueGetOptimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1440,6 +1489,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReturnValueGetOptimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1451,6 +1501,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReturnValueGetPessimisticReadCommitted() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1462,6 +1513,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReturnValueGetPessimisticRepeatableRead() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1473,6 +1525,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeReturnValuePutInTx() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1526,6 +1579,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAndPutAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -1552,6 +1606,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAndPutAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -1572,6 +1627,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutAsyncOld0() throws Exception {
         IgniteCache cacheAsync = jcache().withAsync();
 
@@ -1590,6 +1646,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutAsync0() throws Exception {
         IgniteFuture<?> fut1 = jcache().getAndPutAsync("key1", 0);
 
@@ -1602,6 +1659,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAsyncOld() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1649,6 +1707,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1669,7 +1728,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 IgniteFuture<?> fut1 = cache.invokeAsync(key2, INCR_PROCESSOR, dataMode);
 
-
                 IgniteFuture<?> fut2 = cache.invokeAsync(key3, RMV_PROCESSOR);
 
                 fut0.get();
@@ -1689,6 +1747,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -1743,6 +1802,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutx() throws Exception {
         if (txShouldBeUsed())
             checkPut(true);
@@ -1751,6 +1811,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutxNoTx() throws Exception {
         checkPut(false);
     }
@@ -1795,6 +1856,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsyncOld() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -1840,6 +1902,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsync() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -1861,7 +1924,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             try {
                 if (f != null)
                     f.get();
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 assert false : "Unexpected exception " + t;
             }
         }
@@ -1879,6 +1943,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutAll() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
@@ -1905,6 +1970,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testNullInTx() throws Exception {
         if (!txShouldBeUsed())
             return;
@@ -1996,6 +2063,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -2124,6 +2192,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutAllAsyncOld() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
@@ -2154,6 +2223,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutAllAsync() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
@@ -2178,6 +2248,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAndPutIfAbsent() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -2264,6 +2335,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutIfAbsentAsyncOld() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -2345,6 +2417,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutIfAbsentAsync() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -2398,7 +2471,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         try {
-            assertEquals(1, (int) cache.getAndPutIfAbsentAsync("key2", 3).get());
+            assertEquals(1, (int)cache.getAndPutIfAbsentAsync("key2", 3).get());
 
             if (tx != null)
                 tx.commit();
@@ -2414,6 +2487,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -2468,6 +2542,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutxIfAbsentAsyncOld() throws Exception {
         if (txShouldBeUsed())
             checkPutxIfAbsentAsyncOld(true);
@@ -2476,6 +2551,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutxIfAbsentAsyncOldNoTx() throws Exception {
         checkPutxIfAbsentAsyncOld(false);
     }
@@ -2483,6 +2559,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutxIfAbsentAsync() throws Exception {
         if (txShouldBeUsed())
             checkPutxIfAbsentAsync(true);
@@ -2491,6 +2568,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutxIfAbsentAsyncNoTx() throws Exception {
         checkPutxIfAbsentAsync(false);
     }
@@ -2643,6 +2721,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutIfAbsentAsyncOldConcurrent() throws Exception {
         IgniteCache cacheAsync = jcache().withAsync();
 
@@ -2661,6 +2740,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutIfAbsentAsyncConcurrent() throws Exception {
         IgniteCache cache = jcache();
 
@@ -2675,6 +2755,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndReplace() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -2769,6 +2850,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -2826,6 +2908,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndReplaceAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -2915,6 +2998,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndReplaceAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -2986,6 +3070,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplacexAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3057,6 +3142,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplacexAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3116,6 +3202,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetAndRemove() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3135,15 +3222,16 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testGetAndRemoveObject() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
                 IgniteCache<String, Object> cache = ignite(0).cache(cacheName());
 
-                Map<String, Object> map = new HashMap<String, Object>() {{
-                    for (int i = 0; i < CNT; i++)
-                        put("key" + i, value(i));
-                }};
+                Map<String, Object> map = new HashMap<>();
+
+                for (int i = 0; i < CNT; i++)
+                    map.put("key" + i, value(i));
 
                 for (Map.Entry<String, Object> e : map.entrySet()) {
                     final String key = e.getKey();
@@ -3183,6 +3271,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutSerializableObject() throws Exception {
         IgniteCache<String, SerializableObject> cache = ignite(0).cache(cacheName());
 
@@ -3205,12 +3294,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
-     * TODO: GG-11241.
-     *
      * @throws Exception If failed.
      */
-    public void _testDeletedEntriesFlag() throws Exception {
-        if (cacheMode() != LOCAL && cacheMode() != REPLICATED) {
+    @Test
+    public void testDeletedEntriesFlag() throws Exception {
+        if (cacheMode() == PARTITIONED) {
             final int cnt = 3;
 
             IgniteCache<String, Integer> cache = jcache();
@@ -3229,6 +3317,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveLoad() throws Exception {
         if (!storeEnabled())
             return;
@@ -3263,6 +3352,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3297,6 +3387,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3321,6 +3412,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemove() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3334,6 +3426,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemovexAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3355,6 +3448,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemovexAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3370,6 +3464,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGlobalRemoveAll() throws Exception {
         globalRemoveAll(false, false);
     }
@@ -3377,6 +3472,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGlobalRemoveAllAsyncOld() throws Exception {
         globalRemoveAll(true, true);
     }
@@ -3384,6 +3480,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGlobalRemoveAllAsync() throws Exception {
         globalRemoveAll(true, false);
     }
@@ -3476,6 +3573,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -3530,6 +3628,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllDuplicates() throws Exception {
         jcache().removeAll(ImmutableSet.of("key1", "key1", "key1"));
     }
@@ -3537,6 +3636,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllDuplicatesTx() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart()) {
@@ -3550,6 +3650,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllEmpty() throws Exception {
         jcache().removeAll();
     }
@@ -3557,6 +3658,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllAsyncOld() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3582,6 +3684,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoveAllAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3603,6 +3706,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testLoadAll() throws Exception {
         if (!storeEnabled())
             return;
@@ -3643,6 +3748,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAfterClear() throws Exception {
         IgniteEx ignite = grid(0);
 
@@ -3689,6 +3795,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testClear() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3836,6 +3944,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearAll() throws Exception {
         globalClearAll(false, false);
     }
@@ -3843,6 +3952,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearAllAsyncOld() throws Exception {
         globalClearAll(true, true);
     }
@@ -3850,6 +3960,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearAllAsync() throws Exception {
         globalClearAll(true, false);
     }
@@ -3889,6 +4000,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception In case of error.
      */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testLockUnlock() throws Exception {
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);
@@ -3948,6 +4060,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception In case of error.
      */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testLockUnlockAll() throws Exception {
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
@@ -4003,6 +4116,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testPeek() throws Exception {
         Ignite ignite = primaryIgnite("key");
         IgniteCache<String, Integer> cache = ignite.cache(cacheName());
@@ -4019,6 +4133,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekTxRemoveOptimistic() throws Exception {
         checkPeekTxRemove(OPTIMISTIC);
     }
@@ -4026,6 +4141,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekTxRemovePessimistic() throws Exception {
         checkPeekTxRemove(PESSIMISTIC);
     }
@@ -4055,6 +4171,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekRemove() throws Exception {
         IgniteCache<String, Integer> cache = primaryCache("key");
 
@@ -4065,10 +4182,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
-     * TODO GG-11133.
      * @throws Exception In case of error.
      */
-    public void _testEvictExpired() throws Exception {
+    @Test
+    public void testEvictExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final String key = primaryKeysForCache(1).get(0);
@@ -4125,6 +4242,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testPeekExpired() throws Exception {
         final IgniteCache<String, Integer> c = jcache();
 
@@ -4160,6 +4279,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPeekExpiredTx() throws Exception {
         if (txShouldBeUsed()) {
             final IgniteCache<String, Integer> c = jcache();
@@ -4190,6 +4310,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTtlTx() throws Exception {
         if (txShouldBeUsed())
             checkTtl(true, false);
@@ -4198,6 +4319,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTtlNoTx() throws Exception {
         checkTtl(false, false);
     }
@@ -4205,6 +4327,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTtlNoTxOldEntry() throws Exception {
         checkTtl(false, true);
     }
@@ -4215,12 +4338,31 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        // TODO GG-11133.
-        if (true)
-            return;
+        int ttlVals[] = {600, 1000, 3000};
 
-        int ttl = 1000;
+        int i = 0;
+        while (i < ttlVals.length) {
+            try {
+                checkTtl0(inTx, oldEntry, ttlVals[i]);
+                break;
+            }
+            catch (AssertionError e) {
+                if (i < ttlVals.length - 1)
+                    info("Ttl test failed, try execute with increased ttl");
+                else
+                    throw e;
+            }
+            i++;
+        }
+    }
 
+    /**
+     * @param inTx In tx flag.
+     * @param oldEntry {@code True} to check TTL on old entry, {@code false} on new.
+     * @param ttl TTL value.
+     * @throws Exception If failed.
+     */
+    private void checkTtl0(boolean inTx, boolean oldEntry, int ttl) throws Exception {
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
         final IgniteCache<String, Integer> c = jcache();
@@ -4282,7 +4424,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
@@ -4310,7 +4451,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
@@ -4338,7 +4478,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertTrue(curEntryTtl.get2() > startTime);
                 expireTimes[i] = curEntryTtl.get2();
             }
@@ -4370,7 +4509,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 assertNotNull(curEntryTtl.get1());
                 assertNotNull(curEntryTtl.get2());
-                assertEquals(ttl, (long)curEntryTtl.get1());
                 assertEquals(expireTimes[i], (long)curEntryTtl.get2());
             }
         }
@@ -4379,7 +4517,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
             @Override public boolean applyx() {
                 try {
                     Integer val = c.get(key);
@@ -4409,22 +4546,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         IgniteCache srvNodeCache = serverNodeCache();
 
-        if (!isMultiJvmObject(srvNodeCache)) {
-            GridCacheAdapter internalCache = internalCache(srvNodeCache);
-
-            if (internalCache.isLocal())
-                return;
-        }
-
         assert c.get(key) == null;
 
         // Ensure that old TTL and expire time are not longer "visible".
         entryTtl = entryTtl(srvNodeCache, key);
-
-        assertNotNull(entryTtl.get1());
-        assertNotNull(entryTtl.get2());
-        assertEquals(0, (long)entryTtl.get1());
-        assertEquals(0, (long)entryTtl.get2());
+        assertNull(entryTtl);
 
         // Ensure that next update will not pick old expire time.
 
@@ -4441,7 +4567,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 tx.close();
         }
 
-        U.sleep(2000);
+        U.sleep(ttl + 500);
 
         entryTtl = entryTtl(srvNodeCache, key);
 
@@ -4456,6 +4582,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Test
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -4509,6 +4637,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * JUnit.
      */
+    @Test
     public void testCacheProxy() {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -4520,6 +4649,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompactExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
@@ -4553,6 +4683,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxMissingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
@@ -4569,6 +4700,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxMissingKeyNoCommit() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
@@ -4583,6 +4715,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxReadCommittedInTx() throws Exception {
         checkRemovexInTx(OPTIMISTIC, READ_COMMITTED);
     }
@@ -4590,6 +4723,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxRepeatableReadInTx() throws Exception {
         checkRemovexInTx(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -4597,6 +4731,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxReadCommittedInTx() throws Exception {
         checkRemovexInTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -4604,6 +4739,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxRepeatableReadInTx() throws Exception {
         checkRemovexInTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -4656,6 +4792,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxMissingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -4672,6 +4809,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxMissingKeyNoCommit() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -4686,6 +4824,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxRepeatableRead() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -4699,6 +4838,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxRepeatableReadOnUpdate() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -4712,6 +4852,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testToMap() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -4869,6 +5010,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(cacheName());
 
@@ -4896,6 +5038,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
@@ -5072,7 +5215,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                 checkIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (AssertionError e) {
                 if (i == 9)
                     throw e;
 
@@ -5086,6 +5229,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalClearKey() throws Exception {
         addKeys();
 
@@ -5137,6 +5281,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalClearKeys() throws Exception {
         Map<String, List<String>> keys = addKeys();
 
@@ -5208,6 +5353,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearKey() throws Exception {
         testGlobalClearKey(false, false, Arrays.asList("key25"));
     }
@@ -5215,6 +5361,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearKeyAsyncOld() throws Exception {
         testGlobalClearKey(true, true, Arrays.asList("key25"));
     }
@@ -5222,6 +5369,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearKeyAsync() throws Exception {
         testGlobalClearKey(true, false, Arrays.asList("key25"));
     }
@@ -5229,6 +5377,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearKeys() throws Exception {
         testGlobalClearKey(false, false, Arrays.asList("key25", "key100", "key150"));
     }
@@ -5236,6 +5385,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearKeysAsyncOld() throws Exception {
         testGlobalClearKey(true, true, Arrays.asList("key25", "key100", "key150"));
     }
@@ -5243,6 +5393,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGlobalClearKeysAsync() throws Exception {
         testGlobalClearKey(true, false, Arrays.asList("key25", "key100", "key150"));
     }
@@ -5309,6 +5460,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithSkipStore() throws Exception {
         if (!storeEnabled())
             return;
@@ -5521,6 +5673,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithSkipStoreRemoveAll() throws Exception {
         if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
             return;
@@ -5565,6 +5718,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithSkipStoreTx() throws Exception {
         if (txShouldBeUsed() && storeEnabled()) {
             IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
@@ -5760,7 +5914,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         assertTrue(storeStgy.getStoreSize() != 0);
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-            assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+            assertTrue(cacheSkipStore.getAll(data.keySet()).isEmpty());
 
             for (String key : keys) {
                 assertNull(cacheSkipStore.get(key));
@@ -5852,6 +6006,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
+    @Test
     public void testGetOutTx() throws Exception {
         checkGetOutTx(false, false);
     }
@@ -5859,6 +6015,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
+    @Test
     public void testGetOutTxAsyncOld() throws Exception {
         checkGetOutTx(true, true);
     }
@@ -5866,6 +6024,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
+    @Test
     public void testGetOutTxAsync() throws Exception {
         checkGetOutTx(true, false);
     }
@@ -5887,7 +6047,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         };
 
         try {
-            IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
+            IgniteCache<String, Integer> cache = grid(0).cache(cacheName()).withAllowAtomicOpsInTx();
 
             List<String> keys = primaryKeysForCache(0, 2, 1);
 
@@ -5915,7 +6075,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
                 }
                 else
                     val0 = cache.get(keys.get(0));
-
 
                 assertEquals(0, val0.intValue());
 
@@ -5963,6 +6122,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeException() throws Exception {
         final IgniteCache cache = jcache();
 
@@ -5986,6 +6146,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockInsideTransaction() throws Exception {
         if (txEnabled()) {
             GridTestUtils.assertThrows(
@@ -6023,6 +6184,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousQuery() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -6086,6 +6248,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetEntry() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -6221,7 +6384,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
                     size++;
 
-                    ctx.evicts().touch(e, null);
+                    e.touch();
                 }
             }
 
@@ -6322,11 +6485,23 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             if (internalCache.context().isNear())
                 internalCache = internalCache.context().near().dht();
 
-            GridCacheEntryEx entry = internalCache.peekEx(key);
+            GridCacheEntryEx entry = internalCache.entryEx(key);
 
-            return entry != null ?
-                new IgnitePair<>(entry.ttl(), entry.expireTime()) :
-                new IgnitePair<Long>(null, null);
+            entry.unswap();
+
+            if (!entry.hasValue()) {
+                assertEquals(0, entry.ttl());
+                assertEquals(0, entry.expireTime());
+
+                return null;
+            }
+
+            IgnitePair<Long> pair = new IgnitePair<>(entry.ttl(), entry.expireTime());
+
+            if (!entry.isNear())
+                entry.context().cache().removeEntry(entry);
+
+            return pair;
         }
     }
 
@@ -6422,16 +6597,19 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      */
     private static class CheckEntriesDeletedTask extends TestIgniteIdxRunnable {
+        /** */
         private final int cnt;
 
         /** */
         private String cacheName;
 
+        /** */
         public CheckEntriesDeletedTask(int cnt, String cacheName) {
             this.cnt = cnt;
             this.cacheName = cacheName;
         }
 
+        /** {@inheritDoc} */
         @Override public void run(int idx) throws Exception {
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);

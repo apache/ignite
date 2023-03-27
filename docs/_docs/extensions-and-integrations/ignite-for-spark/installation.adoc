@@ -1,0 +1,154 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Installation
+
+== Shared Deployment
+
+Shared deployment implies that Apache Ignite nodes are running independently from Apache Spark applications and store state even after Apache Spark jobs die. Similarly to Apache Spark, there are three ways to deploy Apache Ignite to the cluster.
+
+=== Standalone Deployment
+
+In the Standalone deployment mode, Ignite nodes should be deployed together with Spark Worker nodes. Instruction on Ignite installation can be found link:installation[here]. After you install Ignite on all worker nodes, start a node on each Spark worker with your config using `ignite.sh` script.
+
+
+=== Adding Ignite libraries to Spark classpath by default
+
+Spark application deployment model allows dynamic jar distribution during application start. This model, however, has some drawbacks:
+
+  *  Spark dynamic class loader does not implement `getResource` methods, so you will not be able to access resources located in jar files.
+  * Java logger uses application class loader (not the context class loader) to load log handlers which results in `ClassNotFoundException` when using Java logging in Ignite.
+
+There is a way to alter the default Spark classpath for each launched application (this should be done on each machine of the Spark cluster, including master, worker and driver nodes).
+
+. Locate the `$SPARK_HOME/conf/spark-env.sh` file. If this file does not exist, create it from template using `$SPARK_HOME/conf/spark-env.sh.template`
+. Add the following lines to the end of the `spark-env.sh` file (uncomment the line setting `IGNITE_HOME` in case if you do not have it globally set):
+
+
+
+[source, shell]
+----
+# Optionally set IGNITE_HOME here.
+# IGNITE_HOME=/path/to/ignite
+
+IGNITE_LIBS="${IGNITE_HOME}/libs/*"
+
+for file in ${IGNITE_HOME}/libs/*
+do
+    if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
+        IGNITE_LIBS=${IGNITE_LIBS}:${file}/*
+    fi
+done
+
+export SPARK_CLASSPATH=$IGNITE_LIBS
+----
+
+
+Copy any folders required from the `$IGNITE_HOME/libs/optional` folder, such as `ignite-log4j`, to the `$IGNITE_HOME/libs` folder.
+
+You can verify that the Spark classpath is changed by running `bin/spark-shell` and typing a simple import statement:
+
+
+
+[source, shell]
+----
+scala> import org.apache.ignite.configuration._
+import org.apache.ignite.configuration._
+----
+
+== Embedded Deployment
+
+[CAUTION]
+====
+[discrete]
+=== Embedded Mode Deprecation
+Embedded mode implies starting Ignite server nodes within Spark executors which can cause unexpected rebalancing or even data loss. Therefore this mode is currently deprecated and will be eventually discontinued. Consider starting a separate Ignite cluster and using standalone mode to avoid data consistency and performance issues.
+====
+
+
+Embedded deployment means that Apache Ignite nodes are started inside the Apache Spark job processes and are stopped when the job dies. There is no need for additional deployment steps in this case. Apache Ignite code will be distributed to worker machines using the Apache Spark deployment mechanism and nodes will be started on all workers as  part of the `IgniteContext` initialization.
+
+
+== Maven
+
+Ignite's Spark artifact is link:http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.apache.ignite%22[hosted in Maven Central^]. Depending on a Scala version you use, include the artifact using one of the dependencies shown below.
+
+.Scala 2.11+
+[source, scala]
+----
+<dependency>
+  <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-spark-ext</artifactId>
+  <version>2.0.0</version>
+</dependency>
+----
+
+== SBT
+
+If SBT is used as a build tool for a Scala application, then Ignite's Spark artifact can be added into `build.sbt` with one of the commands below:
+
+.Scala 2.11
+[source, scala]
+----
+libraryDependencies += "org.apache.ignite" % "ignite-spark-ext" % "2.0.0"
+----
+
+
+== Classpath Configuration
+
+When IgniteRDD or Ignite Data Frames APIs are used, make sure that Spark executors and drivers have all the required Ignite jars available in their classpath. Spark provides several ways to modify the classpath of both the driver or the executor process.
+
+
+=== Parameters Configuration
+
+Ignite jars can be added to Spark using configuration parameters such as
+`spark.driver.extraClassPath` and `spark.executor.extraClassPath`. Refer to the link:https://spark.apache.org/docs/latest/configuration.html#runtime-environment[Spark official documentation] for all available options.
+
+The following shows how to fill in `spark.driver.extraClassPath` parameters:
+
+
+[source, shell]
+----
+spark.executor.extraClassPath /opt/ignite/libs/*:/opt/ignite/libs/optional/ignite-spark-ext/*:/opt/ignite/libs/optional/ignite-log4j2/*:/opt/ignite/libs/optional/ignite-yarn-ext/*:/opt/ignite/libs/ignite-spring/*
+----
+
+=== Source Code Configuration
+
+Spark provides APIs to set up extra libraries from the application code. You can provide Ignite jars in the following way:
+
+
+
+[source, scala]
+----
+private val MAVEN_HOME = "/home/user/.m2/repository"
+
+val spark = SparkSession.builder()
+       .appName("Spark Ignite data sources example")
+       .master("spark://172.17.0.2:7077")
+       .getOrCreate()
+
+spark.sparkContext.addJar(MAVEN_HOME + "/org/apache/ignite/ignite-core/2.4.0/ignite-core-2.4.0.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/apache/ignite/ignite-spring/2.4.0/ignite-spring-2.4.0.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/apache/ignite/ignite-log4j/2.4.0/ignite-log4j-2.4.0.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/apache/ignite/ignite-spark/2.4.0/ignite-spark-2.4.0.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/apache/ignite/ignite-indexing/2.4.0/ignite-indexing-2.4.0.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/springframework/spring-beans/4.3.7.RELEASE/spring-beans-4.3.7.RELEASE.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/springframework/spring-core/4.3.7.RELEASE/spring-core-4.3.7.RELEASE.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/springframework/spring-context/4.3.7.RELEASE/spring-context-4.3.7.RELEASE.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/org/springframework/spring-expression/4.3.7.RELEASE/spring-expression-4.3.7.RELEASE.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/javax/cache/cache-api/1.0.0/cache-api-1.0.0.jar")
+spark.sparkContext.addJar(MAVEN_HOME + "/com/h2database/h2/1.4.195/h2-1.4.195.jar")
+----
+
+

@@ -39,28 +39,23 @@
         <property name="cacheConfiguration">
             <list>
                 <bean parent="cache-template">
-                    <property name="name" value="local"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                </bean>
-
-                <bean parent="cache-template">
-                    <property name="name" value="local_atomic"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                </bean>
-
-                <bean parent="cache-template">
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="onheapCacheEnabled" value="true"/>
                 </bean>
-				
+
                 <bean parent="cache-template">
                     <property name="name" value="partitioned2"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned3"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="backups" value="1"/>
                 </bean>
 
                 <bean parent="cache-template">
@@ -121,6 +116,13 @@
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
                 <property name="txSerializableEnabled" value="true"/>
             </bean>
+        </property>
+
+        <!-- User attributes to allow to manipulate nodes in the cluster. -->
+        <property name="userAttributes">
+            <map>
+                <entry key="TestAttribute" value="Value"/>
+            </map>
         </property>
     </bean>
 

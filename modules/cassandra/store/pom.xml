@@ -26,20 +26,18 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-cassandra</artifactId>
-        <version>2.1.0-SNAPSHOT</version>
-        <relativePath>..</relativePath>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-cassandra-store</artifactId>
-    <version>2.1.0-SNAPSHOT</version>
+
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <commons-beanutils.version>1.8.3</commons-beanutils.version>
-        <cassandra-driver.version>3.0.0</cassandra-driver.version>
-        <cassandra-all.version>3.3</cassandra-all.version>
-        <netty.version>4.0.33.Final</netty.version>
-        <guava.version>19.0</guava.version>
+        <commons-beanutils.version>1.9.4</commons-beanutils.version>
+        <cassandra-driver.version>3.2.0</cassandra-driver.version>
+        <cassandra-all.version>3.11.3</cassandra-all.version>
         <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
 
@@ -53,21 +51,24 @@
 
         <!-- Ignite -->
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-log4j2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -109,6 +110,12 @@
         </dependency>
 
         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
@@ -121,6 +128,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra-all.version}</version>
@@ -130,16 +143,25 @@
                     <artifactId>log4j-over-slf4j</artifactId>
                     <groupId>org.slf4j</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
-        <!-- Apache log4j -->
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -147,11 +169,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.7.0</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <compilerVersion>1.7</compilerVersion>
                     <encoding>UTF-8</encoding>
                     <fork>true</fork>
                     <debug>false</debug>
@@ -201,7 +220,7 @@
                             <overWriteIfNewer>true</overWriteIfNewer>
                             <excludeTransitive>true</excludeTransitive>
                             <excludeGroupIds>
-                                org.apache.ignite,org.springframework,org.gridgain
+                                ${project.groupId},org.springframework,org.gridgain
                             </excludeGroupIds>
                             <excludeArtifactIds>
                                 commons-logging,slf4j-api,cache-api,slf4j-api,aopalliance
@@ -216,7 +235,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
+
                 <dependencies>
                     <dependency>
                         <groupId>ant-contrib</groupId>
@@ -300,6 +319,14 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

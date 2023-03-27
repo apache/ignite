@@ -19,8 +19,9 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -28,39 +29,25 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Statistics for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
  */
 public class TcpDiscoveryStatistics {
-    /** Join started timestamp. */
-    private long joinStartedTs;
-
-    /** Join finished timestamp. */
-    private long joinFinishedTs;
-
     /** Coordinator since timestamp. */
     private final AtomicLong crdSinceTs = new AtomicLong();
 
     /** Joined nodes count. */
-    private int joinedNodesCnt;
+    private final IntMetricImpl joinedNodesCnt;
 
     /** Failed nodes count. */
-    private int failedNodesCnt;
+    private final IntMetricImpl failedNodesCnt;
 
     /** Left nodes count. */
-    private int leftNodesCnt;
-
-    /** Ack timeouts count. */
-    private int ackTimeoutsCnt;
-
-    /** Socket timeouts count. */
-    private int sockTimeoutsCnt;
+    private final IntMetricImpl leftNodesCnt;
 
     /** Received messages. */
     @GridToStringInclude
@@ -70,52 +57,12 @@ public class TcpDiscoveryStatistics {
     @GridToStringInclude
     private final Map<String, Integer> procMsgs = new HashMap<>();
 
-    /** Average time taken to serialize messages. */
-    @GridToStringInclude
-    private final Map<String, Long> avgMsgsSndTimes = new HashMap<>();
-
-    /** Average time taken to serialize messages. */
-    @GridToStringInclude
-    private final Map<String, Long> maxMsgsSndTimes = new HashMap<>();
-
     /** Sent messages. */
     @GridToStringInclude
     private final Map<String, Integer> sentMsgs = new HashMap<>();
 
-    /** Messages receive timestamps. */
-    private final Map<IgniteUuid, Long> msgsRcvTs = new GridBoundedLinkedHashMap<>(1024);
-
     /** Messages processing start timestamps. */
     private final Map<IgniteUuid, Long> msgsProcStartTs = new GridBoundedLinkedHashMap<>(1024);
-
-    /** Ring messages sent timestamps. */
-    private final Map<IgniteUuid, Long> ringMsgsSndTs = new GridBoundedLinkedHashMap<>(1024);
-
-    /** */
-    @GridToStringInclude
-    private final Map<String, Long> avgMsgsAckTimes = new HashMap<>();
-
-    /** */
-    @GridToStringInclude
-    private final Map<String, Long> maxMsgsAckTimes = new HashMap<>();
-
-    /** Average time messages is in queue. */
-    private long avgMsgQueueTime;
-
-    /** Max time messages is in queue. */
-    private long maxMsgQueueTime;
-
-    /** Total number of ring messages sent. */
-    private int ringMsgsSent;
-
-    /** Average time it takes for messages to pass the full ring. */
-    private long avgRingMsgTime;
-
-    /** Max time it takes for messages to pass the full ring. */
-    private long maxRingMsgTime;
-
-    /** Class name of ring message that required the biggest time for full ring traverse. */
-    private String maxRingTimeMsgCls;
 
     /** Average message processing time. */
     private long avgMsgProcTime;
@@ -123,69 +70,63 @@ public class TcpDiscoveryStatistics {
     /** Max message processing time. */
     private long maxMsgProcTime;
 
-    /** Class name of the message that required the biggest time to process. */
-    private String maxProcTimeMsgCls;
-
-    /** Socket readers created count. */
-    private int sockReadersCreated;
-
-    /** Socket readers removed count. */
-    private int sockReadersRmv;
-
-    /** Average time it takes to initialize connection from another node. */
-    private long avgSrvSockInitTime;
-
-    /** Max time it takes to initialize connection from another node. */
-    private long maxSrvSockInitTime;
-
-    /** Number of outgoing connections established. */
-    private int clientSockCreatedCnt;
-
-    /** Average time it takes to connect to another node. */
-    private long avgClientSockInitTime;
-
-    /** Max time it takes to connect to another node. */
-    private long maxClientSockInitTime;
-
     /** Pending messages registered count. */
-    private int pendingMsgsRegistered;
+    private final IntMetricImpl pendingMsgsRegistered;
 
-    /** Pending messages discarded count. */
-    private int pendingMsgsDiscarded;
+    /** Metric that indicates connections count that were rejected due to SSL errors. */
+    private final IntMetricImpl rejectedSslConnectionsCnt;
+
+    /** */
+    public TcpDiscoveryStatistics() {
+        joinedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedNodes"), "Joined nodes count");
+
+        failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
+
+        leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
+
+        pendingMsgsRegistered = new IntMetricImpl(metricName(DISCO_METRICS, "PendingMessagesRegistered"),
+            "Pending messages registered count");
+
+        rejectedSslConnectionsCnt = new IntMetricImpl(
+            metricName(DISCO_METRICS, "RejectedSslConnectionsCount"),
+            "TCP discovery connections count that were rejected due to SSL errors."
+        );
+    }
+
+    /**
+     * @param discoReg Discovery metric registry.
+     */
+    public void registerMetrics(MetricRegistry discoReg) {
+        discoReg.register("TotalProcessedMessages", this::totalProcessedMessages, "Total processed messages count");
+
+        discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");
+
+        discoReg.register(joinedNodesCnt);
+        discoReg.register(failedNodesCnt);
+        discoReg.register(leftNodesCnt);
+        discoReg.register(pendingMsgsRegistered);
+        discoReg.register(rejectedSslConnectionsCnt);
+    }
 
     /**
      * Increments joined nodes count.
      */
-    public synchronized void onNodeJoined() {
-        joinedNodesCnt++;
+    public void onNodeJoined() {
+        joinedNodesCnt.increment();
     }
 
     /**
      * Increments left nodes count.
      */
-    public synchronized void onNodeLeft() {
-        leftNodesCnt++;
+    public void onNodeLeft() {
+        leftNodesCnt.increment();
     }
 
     /**
      * Increments failed nodes count.
      */
-    public synchronized void onNodeFailed() {
-        failedNodesCnt++;
-    }
-
-    /**
-     * Increments ack timeouts count.
-     */
-    public synchronized void onAckTimeout() {
-        ackTimeoutsCnt++;
-    }
-
-    /**
-     * Increments socket timeouts count.
-     */
-    public synchronized void onSocketTimeout() {
-        sockTimeoutsCnt++;
+    public void onNodeFailed() {
+        failedNodesCnt.increment();
     }
 
     /**
@@ -195,32 +136,9 @@ public class TcpDiscoveryStatistics {
         crdSinceTs.compareAndSet(0, U.currentTimeMillis());
     }
 
-    /**
-     * Initializes join started timestamp.
-     */
-    public synchronized void onJoinStarted() {
-        joinStartedTs = U.currentTimeMillis();
-    }
-
-    /**
-     * Initializes join finished timestamp.
-     */
-    public synchronized void onJoinFinished() {
-        joinFinishedTs = U.currentTimeMillis();
-    }
-
-    /**
-     * @return Join started timestamp.
-     */
-    public synchronized long joinStarted() {
-        return joinStartedTs;
-    }
-
-    /**
-     * @return Join finished timestamp.
-     */
-    public synchronized long joinFinished() {
-        return joinFinishedTs;
+    /** Increments connections count that were rejected due to SSL errors. */
+    public void onSslConnectionRejected() {
+        rejectedSslConnectionsCnt.increment();
     }
 
     /**
@@ -231,17 +149,9 @@ public class TcpDiscoveryStatistics {
     public synchronized void onMessageReceived(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
-        Integer cnt = F.addIfAbsent(rcvdMsgs, msg.getClass().getSimpleName(), new Callable<Integer>() {
-            @Override public Integer call() {
-                return 0;
-            }
-        });
-
-        assert cnt != null;
+        Integer cnt = F.addIfAbsent(rcvdMsgs, msg.getClass().getSimpleName(), 0);
 
         rcvdMsgs.put(msg.getClass().getSimpleName(), ++cnt);
-
-        msgsRcvTs.put(msg.id(), U.currentTimeMillis());
     }
 
     /**
@@ -252,29 +162,9 @@ public class TcpDiscoveryStatistics {
     public synchronized void onMessageProcessingStarted(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
-        Integer cnt = F.addIfAbsent(procMsgs, msg.getClass().getSimpleName(), new Callable<Integer>() {
-            @Override public Integer call() {
-                return 0;
-            }
-        });
-
-        assert cnt != null;
+        Integer cnt = F.addIfAbsent(procMsgs, msg.getClass().getSimpleName(), 0);
 
         procMsgs.put(msg.getClass().getSimpleName(), ++cnt);
-
-        Long rcvdTs = msgsRcvTs.remove(msg.id());
-
-        if (rcvdTs != null) {
-            long duration = U.currentTimeMillis() - rcvdTs;
-
-            if (maxMsgQueueTime < duration)
-                maxMsgQueueTime = duration;
-
-            int totalProcMsgs = totalProcessedMessages();
-
-            if (totalProcMsgs != 0)
-                avgMsgQueueTime = (avgMsgQueueTime * (totalProcMsgs - 1)) / totalProcMsgs;
-        }
 
         msgsProcStartTs.put(msg.id(), U.currentTimeMillis());
     }
@@ -287,7 +177,7 @@ public class TcpDiscoveryStatistics {
     public synchronized void onMessageProcessingFinished(TcpDiscoveryAbstractMessage msg) {
         assert msg != null;
 
-        Long startTs = msgsProcStartTs.get(msg.id());
+        Long startTs = msgsProcStartTs.remove(msg.id());
 
         if (startTs != null) {
             long duration = U.currentTimeMillis() - startTs;
@@ -297,13 +187,8 @@ public class TcpDiscoveryStatistics {
             if (totalProcMsgs != 0)
                 avgMsgProcTime = (avgMsgProcTime * (totalProcMsgs - 1) + duration) / totalProcMsgs;
 
-            if (duration > maxMsgProcTime) {
+            if (duration > maxMsgProcTime)
                 maxMsgProcTime = duration;
-
-                maxProcTimeMsgCls = msg.getClass().getSimpleName();
-            }
-
-            msgsProcStartTs.remove(msg.id());
         }
     }
 
@@ -316,171 +201,16 @@ public class TcpDiscoveryStatistics {
         assert msg != null;
         assert time >= 0 : time;
 
-        if (crdSinceTs.get() > 0 &&
-            (msg instanceof TcpDiscoveryCustomEventMessage) ||
-            (msg instanceof TcpDiscoveryNodeAddedMessage) ||
-            (msg instanceof TcpDiscoveryNodeAddFinishedMessage) ||
-            (msg instanceof TcpDiscoveryNodeLeftMessage) ||
-            (msg instanceof TcpDiscoveryNodeFailedMessage)) {
-            ringMsgsSndTs.put(msg.id(), U.currentTimeMillis());
-
-            ringMsgsSent++;
-        }
-
-        Integer cnt = F.addIfAbsent(sentMsgs, msg.getClass().getSimpleName(), new Callable<Integer>() {
-            @Override public Integer call() {
-                return 0;
-            }
-        });
-
-        assert cnt != null;
+        Integer cnt = F.addIfAbsent(sentMsgs, msg.getClass().getSimpleName(), 0);
 
         sentMsgs.put(msg.getClass().getSimpleName(), ++cnt);
-
-        addTimeInfo(avgMsgsSndTimes, maxMsgsSndTimes, msg, cnt, time);
-
-        addTimeInfo(avgMsgsAckTimes, maxMsgsAckTimes, msg, cnt, time);
-    }
-
-    /**
-     * @param avgTimes Average times.
-     * @param maxTimes Max times.
-     * @param msg Message.
-     * @param cnt Total message count.
-     * @param time Time.
-     */
-    private void addTimeInfo(Map<String, Long> avgTimes,
-        Map<String, Long> maxTimes,
-        TcpDiscoveryAbstractMessage msg,
-        int cnt,
-        long time) {
-        Long avgTime = F.addIfAbsent(avgTimes, msg.getClass().getSimpleName(), new Callable<Long>() {
-            @Override public Long call() {
-                return 0L;
-            }
-        });
-
-        assert avgTime != null;
-
-        avgTime = (avgTime * (cnt - 1) + time) / cnt;
-
-        avgTimes.put(msg.getClass().getSimpleName(), avgTime);
-
-        Long maxTime = F.addIfAbsent(maxTimes, msg.getClass().getSimpleName(), new Callable<Long>() {
-            @Override public Long call() {
-                return 0L;
-            }
-        });
-
-        assert maxTime != null;
-
-        if (time > maxTime)
-            maxTimes.put(msg.getClass().getSimpleName(), time);
-    }
-
-    /**
-     * Called by coordinator when ring message makes full pass.
-     *
-     * @param msg Message.
-     */
-    public synchronized void onRingMessageReceived(TcpDiscoveryAbstractMessage msg) {
-        assert msg != null;
-
-        Long sentTs = ringMsgsSndTs.get(msg.id());
-
-        if (sentTs != null) {
-            long duration  = U.currentTimeMillis() - sentTs;
-
-            if (maxRingMsgTime < duration) {
-                maxRingMsgTime = duration;
-
-                maxRingTimeMsgCls = msg.getClass().getSimpleName();
-            }
-
-            if (ringMsgsSent != 0)
-                avgRingMsgTime = (avgRingMsgTime * (ringMsgsSent - 1) + duration) / ringMsgsSent;
-        }
-    }
-
-    /**
-     * Gets max time for ring message to make full pass.
-     *
-     * @return Max full pass time.
-     */
-    public synchronized long maxRingMessageTime() {
-        return maxRingMsgTime;
-    }
-
-    /**
-     * Gets class name of the message that took max time to make full pass.
-     *
-     * @return Message class name.
-     */
-    public synchronized String maxRingDurationMessageClass() {
-        return maxRingTimeMsgCls;
-    }
-
-    /**
-     * Gets class name of the message took max time to process.
-     *
-     * @return Message class name.
-     */
-    public synchronized String maxProcessingTimeMessageClass() {
-        return maxProcTimeMsgCls;
-    }
-
-    /**
-     * @param initTime Time socket was initialized in.
-     */
-    public synchronized void onServerSocketInitialized(long initTime) {
-        assert initTime >= 0;
-
-        if (maxSrvSockInitTime < initTime)
-            maxSrvSockInitTime = initTime;
-
-        avgSrvSockInitTime = (avgSrvSockInitTime * (sockReadersCreated - 1) + initTime) / sockReadersCreated;
-    }
-
-    /**
-     * @param initTime Time socket was initialized in.
-     */
-    public synchronized void onClientSocketInitialized(long initTime) {
-        assert initTime >= 0;
-
-        clientSockCreatedCnt++;
-
-        if (maxClientSockInitTime < initTime)
-            maxClientSockInitTime = initTime;
-
-        avgClientSockInitTime = (avgClientSockInitTime * (clientSockCreatedCnt - 1) + initTime) / clientSockCreatedCnt;
     }
 
     /**
      * Increments pending messages registered count.
      */
-    public synchronized void onPendingMessageRegistered() {
-        pendingMsgsRegistered++;
-    }
-
-    /**
-     * Increments pending messages discarded count.
-     */
-    public synchronized void onPendingMessageDiscarded() {
-        pendingMsgsDiscarded++;
-    }
-
-    /**
-     * Increments socket readers created count.
-     */
-    public synchronized void onSocketReaderCreated() {
-        sockReadersCreated++;
-    }
-
-    /**
-     * Increments socket readers removed count.
-     */
-    public synchronized void onSocketReaderRemoved() {
-        sockReadersRmv++;
+    public void onPendingMessageRegistered() {
+        pendingMsgsRegistered.increment();
     }
 
     /**
@@ -509,30 +239,12 @@ public class TcpDiscoveryStatistics {
     }
 
     /**
-     * Gets max messages send time (grouped by type).
-     *
-     * @return Map containing messages types and max send times.
-     */
-    public synchronized Map<String, Long> maxMessagesSendTimes() {
-        return new HashMap<>(maxMsgsSndTimes);
-    }
-
-    /**
-     * Gets average messages send time (grouped by type).
-     *
-     * @return Map containing messages types and average send times.
-     */
-    public synchronized Map<String, Long> avgMessagesSendTimes() {
-        return new HashMap<>(avgMsgsSndTimes);
-    }
-
-    /**
      * Gets total received messages count.
      *
      * @return Total received messages count.
      */
     public synchronized int totalReceivedMessages() {
-        return F.sumInt(receivedMessages().values());
+        return F.sumInt(rcvdMsgs.values());
     }
 
     /**
@@ -541,7 +253,7 @@ public class TcpDiscoveryStatistics {
      * @return Total processed messages count.
      */
     public synchronized int totalProcessedMessages() {
-        return F.sumInt(processedMessages().values());
+        return F.sumInt(procMsgs.values());
     }
 
     /**
@@ -549,7 +261,7 @@ public class TcpDiscoveryStatistics {
      *
      * @return Max message processing time.
      */
-    public synchronized long maxMessageProcessingTime(){
+    public synchronized long maxMessageProcessingTime() {
         return maxMsgProcTime;
     }
 
@@ -567,17 +279,8 @@ public class TcpDiscoveryStatistics {
      *
      * @return Pending messages registered count.
      */
-    public synchronized long pendingMessagesRegistered() {
-        return pendingMsgsRegistered;
-    }
-
-    /**
-     * Gets pending messages discarded count.
-     *
-     * @return Pending messages registered count.
-     */
-    public synchronized long pendingMessagesDiscarded() {
-        return pendingMsgsDiscarded;
+    public long pendingMessagesRegistered() {
+        return pendingMsgsRegistered.value();
     }
 
     /**
@@ -585,8 +288,8 @@ public class TcpDiscoveryStatistics {
      *
      * @return Nodes joined count.
      */
-    public synchronized int joinedNodesCount() {
-        return joinedNodesCnt;
+    public int joinedNodesCount() {
+        return joinedNodesCnt.value();
     }
 
     /**
@@ -594,8 +297,8 @@ public class TcpDiscoveryStatistics {
      *
      * @return Nodes left count.
      */
-    public synchronized int leftNodesCount() {
-        return leftNodesCnt;
+    public int leftNodesCount() {
+        return leftNodesCnt.value();
     }
 
     /**
@@ -603,40 +306,8 @@ public class TcpDiscoveryStatistics {
      *
      * @return Failed nodes count.
      */
-    public synchronized int failedNodesCount() {
-        return failedNodesCnt;
-    }
-
-    /**
-     * @return Ack timeouts count.
-     */
-    public synchronized int ackTimeoutsCount() {
-        return ackTimeoutsCnt;
-    }
-
-    /**
-     * @return Socket timeouts count.
-     */
-    public synchronized int socketTimeoutsCount() {
-        return sockTimeoutsCnt;
-    }
-
-    /**
-     * Gets socket readers created count.
-     *
-     * @return Socket readers created count.
-     */
-    public synchronized int socketReadersCreated() {
-        return sockReadersCreated;
-    }
-
-    /**
-     * Gets socket readers removed count.
-     *
-     * @return Socket readers removed count.
-     */
-    public synchronized int socketReadersRemoved() {
-        return sockReadersRmv;
+    public int failedNodesCount() {
+        return failedNodesCnt.value();
     }
 
     /**
@@ -652,39 +323,17 @@ public class TcpDiscoveryStatistics {
      * Clears statistics.
      */
     public synchronized void clear() {
-        ackTimeoutsCnt = 0;
-        avgClientSockInitTime = 0;
         avgMsgProcTime = 0;
-        avgMsgQueueTime = 0;
-        avgMsgsAckTimes.clear();
-        avgMsgsSndTimes.clear();
-        avgRingMsgTime = 0;
-        avgSrvSockInitTime = 0;
-        clientSockCreatedCnt = 0;
         crdSinceTs.set(0);
-        failedNodesCnt = 0;
-        joinedNodesCnt = 0;
-        joinFinishedTs = 0;
-        joinStartedTs = 0;
-        leftNodesCnt = 0;
-        maxClientSockInitTime = 0;
+        failedNodesCnt.reset();
+        joinedNodesCnt.reset();
+        leftNodesCnt.reset();
         maxMsgProcTime = 0;
-        maxMsgQueueTime = 0;
-        maxMsgsAckTimes.clear();
-        maxMsgsSndTimes.clear();
-        maxProcTimeMsgCls = null;
-        maxRingMsgTime = 0;
-        maxRingTimeMsgCls = null;
-        maxSrvSockInitTime = 0;
-        pendingMsgsDiscarded = 0;
-        pendingMsgsRegistered = 0;
+        pendingMsgsRegistered.reset();
         procMsgs.clear();
         rcvdMsgs.clear();
-        ringMsgsSent = 0;
         sentMsgs.clear();
-        sockReadersCreated = 0;
-        sockReadersRmv = 0;
-        sockTimeoutsCnt = 0;
+        rejectedSslConnectionsCnt.reset();
     }
 
     /** {@inheritDoc} */

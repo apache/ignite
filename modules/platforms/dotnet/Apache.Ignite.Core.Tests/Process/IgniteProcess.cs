@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Process
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -31,16 +30,16 @@ namespace Apache.Ignite.Core.Tests.Process
     public class IgniteProcess
     {
         /** Executable file name. */
-        private static readonly string ExeName = "Apache.Ignite.exe";
+        private const string ExeName = "Apache.Ignite.exe";
 
         /** Executable process name. */
         private static readonly string ExeProcName = ExeName.Substring(0, ExeName.LastIndexOf('.'));
 
         /** Executable configuration file name. */
-        private static readonly string ExeCfgName = ExeName + ".config";
+        private const string ExeCfgName = ExeName + ".config";
 
         /** Executable backup configuration file name. */
-        private static readonly string ExeCfgBakName = ExeCfgName + ".bak";
+        private const string ExeCfgBakName = ExeCfgName + ".bak";
 
         /** Directory where binaries are stored. */
         private static readonly string ExeDir;
@@ -66,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Process
         static IgniteProcess()
         {
             // 1. Locate executable file and related stuff.
-            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.CodeBase).LocalPath).Directory;
+            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.Location).LocalPath).Directory;
 
             // ReSharper disable once PossibleNullReferenceException
             ExeDir = dir.FullName;
@@ -147,18 +146,18 @@ namespace Apache.Ignite.Core.Tests.Process
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
 
-            _proc = Start(ExePath, IgniteHome.Resolve(null), outReader, args);
+            _proc = Start(ExePath, IgniteHome.Resolve(), outReader, args);
         }
 
         /// <summary>
         /// Starts a grid process.
         /// </summary>
         /// <param name="exePath">Exe path.</param>
-        /// <param name="ggHome">Ignite home.</param>
+        /// <param name="igniteHome">Ignite home.</param>
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
         /// <returns>Started process.</returns>
-        public static Process Start(string exePath, string ggHome, IIgniteProcessOutputReader outReader = null, 
+        public static Process Start(string exePath, string igniteHome, IIgniteProcessOutputReader outReader = null,
             params string[] args)
         {
             Debug.Assert(!string.IsNullOrEmpty(exePath));
@@ -179,8 +178,8 @@ namespace Apache.Ignite.Core.Tests.Process
                 RedirectStandardError = true
             };
 
-            if (ggHome != null)
-                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = ggHome;
+            if (!string.IsNullOrWhiteSpace(igniteHome))
+                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = igniteHome;
 
             procStart.EnvironmentVariables[Classpath.EnvIgniteNativeTestClasspath] = "true";
 
@@ -197,10 +196,7 @@ namespace Apache.Ignite.Core.Tests.Process
             Debug.Assert(proc != null);
 
             // 3. Attach output readers to avoid hangs.
-            outReader = outReader ?? DfltOutReader;
-
-            Attach(proc, proc.StandardOutput, outReader, false);
-            Attach(proc, proc.StandardError, outReader, true);
+            proc.AttachProcessConsoleReader(outReader ?? DfltOutReader);
 
             return proc;
         }
@@ -276,22 +272,6 @@ namespace Apache.Ignite.Core.Tests.Process
             exitCode = 0;
 
             return false;
-        }
-
-        /// <summary>
-        /// Attach output reader to the process.
-        /// </summary>
-        /// <param name="proc">Process.</param>
-        /// <param name="reader">Process stream reader.</param>
-        /// <param name="outReader">Output reader.</param>
-        /// <param name="err">Whether this is error stream.</param>
-        private static void Attach(Process proc, StreamReader reader, IIgniteProcessOutputReader outReader, bool err)
-        {
-            new Thread(() =>
-            {
-                while (!proc.HasExited)
-                    outReader.OnOutput(proc, reader.ReadLine(), err);
-            }) {IsBackground = true}.Start();
         }
     }
 }

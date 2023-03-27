@@ -17,7 +17,7 @@
 
 package org.apache.ignite.tests.load;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,16 +29,15 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.tests.utils.TestsHelper;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Worker thread abstraction to be inherited by specific load test implementation
  */
 public abstract class Worker extends Thread {
-    /** */
-    private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("hh:mm:ss");
-
     /** */
     private long testStartTime;
 
@@ -99,7 +98,7 @@ public abstract class Worker extends Thread {
     /** */
     public Worker(CacheStore cacheStore, long startPosition, long endPosition) {
         this.cacheStore = cacheStore;
-        this.log = Logger.getLogger(loggerName());
+        this.log = LogManager.getLogger(loggerName());
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }
@@ -107,7 +106,7 @@ public abstract class Worker extends Thread {
     /** */
     public Worker(Ignite ignite, long startPosition, long endPosition) {
         this.ignite = ignite;
-        this.log = Logger.getLogger(loggerName());
+        this.log = LogManager.getLogger(loggerName());
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }
@@ -403,8 +402,12 @@ public abstract class Worker extends Thread {
             builder.append("Test execution successfully completed. ");
 
         builder.append("Statistics: ").append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Start time: ").append(TIME_FORMATTER.format(testStartTime)).append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Finish time: ").append(TIME_FORMATTER.format(finishTime)).append(SystemHelper.LINE_SEPARATOR);
+        builder.append("Start time: ")
+            .append(IgniteUtils.SHORT_DATE_FMT.format(Instant.ofEpochMilli(testStartTime)))
+            .append(SystemHelper.LINE_SEPARATOR);
+        builder.append("Finish time: ")
+            .append(IgniteUtils.SHORT_DATE_FMT.format(Instant.ofEpochMilli(finishTime)))
+            .append(SystemHelper.LINE_SEPARATOR);
         builder.append("Duration: ").append((finishTime - testStartTime) / 1000).append(" sec")
             .append(SystemHelper.LINE_SEPARATOR);
 

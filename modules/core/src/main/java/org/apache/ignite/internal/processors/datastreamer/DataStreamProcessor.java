@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -33,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,11 +48,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.UUID;
-import java.util.concurrent.DelayQueue;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -82,7 +84,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(TOPIC_DATASTREAM, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     assert msg instanceof DataStreamerRequest;
 
                     processRequest(nodeId, (DataStreamerRequest)msg);
@@ -94,10 +96,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
+    @Override public void start() throws IgniteCheckedException {
         marshErrBytes = U.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
             "see node log for details."));
 
@@ -124,6 +123,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             }
         });
 
+        flusher.setUncaughtExceptionHandler(new OomExceptionHandler(ctx));
+
         flusher.start();
 
         if (log.isDebugEnabled())
@@ -132,9 +133,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx.config().isDaemon())
-            return;
-
         if (!ctx.clientNode())
             ctx.io().removeMessageListener(TOPIC_DATASTREAM);
 
@@ -230,7 +228,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ctx.closure().runLocalSafe(new Runnable() {
+                            ctx.closure().runLocalSafe(new GridPlainRunnable() {
                                 @Override public void run() {
                                     processRequest(nodeId, req);
                                 }
@@ -320,8 +318,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         try {
             GridCacheAdapter cache = ctx.cache().internalCache(req.cacheName());
 
-            if (cache == null)
-                throw new IgniteCheckedException("Cache not created or already destroyed.");
+            if (cache == null) {
+                throw new IgniteCheckedException("Cache not created or already destroyed: " +
+                    req.cacheName());
+            }
 
             GridCacheContext cctx = cache.context();
 
@@ -335,18 +335,33 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             GridDhtTopologyFuture topWaitFut = null;
 
             try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+                Exception remapErr = null;
 
-                AffinityTopologyVersion topVer = fut.topologyVersion();
+                AffinityTopologyVersion streamerFutTopVer = null;
 
-                if (!allowOverwrite && !topVer.equals(req.topologyVersion())) {
-                    Exception err = new IgniteCheckedException(
-                        "DataStreamer will retry data transfer at stable topology " +
-                            "[reqTop=" + req.topologyVersion() + ", topVer=" + topVer + ", node=remote]");
+                if (!allowOverwrite) {
+                    GridDhtTopologyFuture topFut = cctx.topologyVersionFuture();
 
-                    sendResponse(nodeId, topic, req.requestId(), err, req.forceLocalDeployment());
+                    AffinityTopologyVersion topVer = topFut.isDone() ? topFut.topologyVersion() :
+                        topFut.initialVersion();
+
+                    if (topVer.compareTo(req.topologyVersion()) > 0) {
+                        remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
+                            "data transfer at stable topology [reqTop=" + req.topologyVersion() +
+                            ", topVer=" + topFut.initialVersion() + ", node=remote]");
+                    }
+                    else if (!topFut.isDone())
+                        topWaitFut = topFut;
+                    else
+                        streamerFutTopVer = topFut.topologyVersion();
                 }
-                else if (allowOverwrite || fut.isDone()) {
+
+                if (remapErr != null) {
+                    sendResponse(nodeId, topic, req.requestId(), remapErr, req.forceLocalDeployment());
+
+                    return;
+                }
+                else if (topWaitFut == null) {
                     job = new DataStreamerUpdateJob(ctx,
                         log,
                         req.cacheName(),
@@ -356,10 +371,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.keepBinary(),
                         updater);
 
-                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(topVer);
+                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);
                 }
-                else
-                    topWaitFut = fut;
             }
             finally {
                 if (!allowOverwrite)
@@ -377,16 +390,14 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            if (job != null) {
-                try {
-                    job.call();
+            try {
+                job.call();
 
-                    sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
-                }
-                finally {
-                    if (waitFut != null)
-                        waitFut.onDone();
-                }
+                sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
+            }
+            finally {
+                if (waitFut != null)
+                    waitFut.onDone();
             }
         }
         catch (Throwable e) {

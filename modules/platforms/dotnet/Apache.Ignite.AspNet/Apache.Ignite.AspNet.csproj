@@ -1,83 +1,31 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{13EA96FC-CC83-4164-A7C0-4F30ED797460}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Apache.Ignite.AspNet</RootNamespace>
+    <TargetFramework>net461</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AssemblyName>Apache.Ignite.AspNet</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup>
+    <RootNamespace>Apache.Ignite.AspNet</RootNamespace>
+    <NoWarn>NU1701</NoWarn>
     <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
+    <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>Apache.Ignite.AspNet.snk</AssemblyOriginatorKeyFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>Apache.Ignite.AspNet</PackageId>
+    <Description>Apache Ignite ASP.NET Integration. Output Cache Provider: caches page output in a distributed in-memory cache. Session State Store Provider: stores session state data in a distributed in-memory cache.</Description>
+    <CodeAnalysisRuleSet>..\Apache.Ignite.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;CODE_ANALYSIS</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>Apache.Ignite.AspNet.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\Release\</OutputPath>
-    <Optimize>true</Optimize>
-    <DebugType>none</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>Apache.Ignite.AspNet.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Release\Apache.Ignite.AspNet.XML</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Configuration" />
-    <Reference Include="System.Core" />
     <Reference Include="System.Web" />
+    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+
+    <!--
+    NOTE: Microsoft.CodeAnalysis.NetAnalyzers is the new replacement for FxCopAnalyzers,
+    but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
+    NOTE: Don't upgrade to 3.x - it does not work on some older 2.x SDKs
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.12" PrivateAssets="all" />
+    <Compile Include="..\SharedAssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="IgniteOutputCacheProvider.cs" />
-    <Compile Include="IgniteSessionStateStoreProvider.cs" />
-    <Compile Include="IgniteWebUtils.cs" />
-    <Compile Include="Impl\ConfigUtil.cs" />
-    <Compile Include="Impl\ExpiryCacheHolder.cs" />
-    <Compile Include="Impl\IgniteSessionStateStoreData.cs" />
-    <Compile Include="Impl\IgniteSessionStateItemCollection.cs" />
-    <Compile Include="Impl\SessionStateLockResult.cs" />
-    <Compile Include="Package-Info.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
-      <Project>{4cd2f726-7e2b-46c4-a5ba-057bb82eecb6}</Project>
-      <Name>Apache.Ignite.Core</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Apache.Ignite.AspNet.nuspec" />
-    <None Include="Apache.Ignite.AspNet.ruleset" />
-    <None Include="Apache.Ignite.AspNet.snk" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

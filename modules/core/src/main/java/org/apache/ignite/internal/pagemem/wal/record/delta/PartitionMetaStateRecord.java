@@ -18,30 +18,34 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PartitionMetaStateRecord extends WALRecord {
+public class PartitionMetaStateRecord extends WALRecord implements WalRecordCacheGroupAware {
     /** State. */
     private final byte state;
 
-    /** Cache id. */
-    private final int cacheId;
+    /** Cache group ID. */
+    private final int grpId;
 
     /** Partition id. */
     private final int partId;
 
-    /** Update counter. */
+    /** @deprecated Update counter. */
     private final long updateCounter;
 
     /**
-     * @param cacheId Cache ID.
-     * @param state Page ID.
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param state State.
+     * @param updateCounter Update counter.
      */
-    public PartitionMetaStateRecord(int cacheId, int partId, GridDhtPartitionState state, long updateCounter) {
-        this.cacheId = cacheId;
+    public PartitionMetaStateRecord(int grpId, int partId, GridDhtPartitionState state, long updateCounter) {
+        this.grpId = grpId;
         this.partId = partId;
         this.state = (byte)state.ordinal();
         this.updateCounter = updateCounter;
@@ -59,24 +63,27 @@ public class PartitionMetaStateRecord extends WALRecord {
         return state;
     }
 
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
+    /** {@inheritDoc} */
+    @Override public int groupId() {
+        return grpId;
     }
 
     /**
      *
      */
-    public int partId() {
+    public int partitionId() {
         return partId;
     }
 
     /**
-     *
+     * @return Rollback counter.
      */
     public long updateCounter() {
         return updateCounter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionMetaStateRecord.class, this, "super", super.toString());
     }
 }

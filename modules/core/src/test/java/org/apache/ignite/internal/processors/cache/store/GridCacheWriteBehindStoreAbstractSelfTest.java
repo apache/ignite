@@ -54,8 +54,6 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
     @Override protected void afterTestsStopped() throws Exception {
         delegate = null;
         store = null;
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -101,7 +99,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
         if (store.getWriteCoalescing())
             assertTrue("Store cache must be empty after shutdown", store.writeCache().isEmpty());
         else
-            for (Map<?,?> fMap : store.flusherMaps())
+            for (Map<?, ?> fMap : store.flusherMaps())
                 assertTrue("Store flusher cache must be empty after shutdown", fMap.isEmpty());
     }
 
@@ -125,7 +123,6 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
         final AtomicInteger operations = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.
                 Set<Integer> set = new HashSet<>();
@@ -205,9 +202,8 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
         Set<Integer> total = new HashSet<>();
 
-        for (Set<Integer> threadVals : perThread.values()) {
+        for (Set<Integer> threadVals : perThread.values())
             total.addAll(threadVals);
-        }
 
         return total;
     }

@@ -18,13 +18,19 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -35,14 +41,19 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstractTest {
+    /** UTF 16 character set name. */
+    private static final String UTF_16 = "UTF-16"; // RAWTOHEX function use UTF-16 for conversion strings to byte arrays.
+
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL =
+        CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-config.xml";
 
     /** JDBC URL for tests involving binary objects manipulation. */
-    static final String BASE_URL_BIN = CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-bin-config.xml";
+    static final String BASE_URL_BIN =
+        CFG_URL_PREFIX + "cache=" + DEFAULT_CACHE_NAME + "@modules/clients/src/test/config/jdbc-bin-config.xml";
 
     /** SQL SELECT query for verification. */
-    static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
+    static final String SQL_SELECT = "select _key, id, firstName, lastName, age, data from Person";
 
     /** Alias for _key */
     private static final String KEY_ALIAS = "key";
@@ -53,18 +64,11 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ignite(0).getOrCreateCache(cacheConfig());
+        ((IgniteEx)ignite(0)).context().cache().dynamicStartSqlCache(cacheConfig());
 
         conn = DriverManager.getConnection(getCfgUrl());
     }
@@ -73,7 +77,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
      * @return Cache configuration for non binary marshaller tests.
      */
     private CacheConfiguration nonBinCacheConfig() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -89,7 +93,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
      * @return Cache configuration for binary marshaller tests.
      */
     final CacheConfiguration binaryCacheConfig() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -107,6 +111,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         e.addQueryField("age", Integer.class.getName(), null);
         e.addQueryField("firstName", String.class.getName(), null);
         e.addQueryField("lastName", String.class.getName(), null);
+        e.addQueryField("data", byte[].class.getName(), null);
 
         cache.setQueryEntities(Collections.singletonList(e));
 
@@ -129,16 +134,64 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+        ((IgniteEx)ignite(0)).context().cache().dynamicDestroyCache(DEFAULT_CACHE_NAME, true, true, false, null);
 
-        conn.close();
-        assertTrue(conn.isClosed());
+        if (conn != null) {
+            conn.close();
+            assertTrue(conn.isClosed());
+        }
+
+        cleanUpWorkingDir();
+    }
+
+    /**
+     * Clean up working directory.
+     */
+    private void cleanUpWorkingDir() throws Exception {
+        String workDir = U.defaultWorkDirectory();
+
+        U.delete(U.resolveWorkDirectory(workDir, DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
+    }
+
+    /**
+     * @param str String.
+     */
+    static byte[] getBytes(String str) {
+        try {
+            return str.getBytes(UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param blob Blob.
+     */
+    static byte[] getBytes(Blob blob) {
+        try {
+            return blob.getBytes(1, (int)blob.length());
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param arr Array.
+     */
+    static String str(byte[] arr) {
+        try {
+            return new String(arr, UTF_16);
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -156,6 +209,10 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
         @QuerySqlField
         private final int age;
 
+        /** Binary data. */
+        @QuerySqlField
+        private final byte[] data;
+
         /**
          * @param id ID.
          * @param firstName First name.
@@ -171,6 +228,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             this.firstName = firstName;
             this.lastName = lastName;
             this.age = age;
+            this.data = getBytes(lastName);
         }
 
         /** {@inheritDoc} */
@@ -178,7 +236,7 @@ public abstract class JdbcAbstractDmlStatementSelfTest extends GridCommonAbstrac
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             if (id != person.id) return false;
             if (age != person.age) return false;

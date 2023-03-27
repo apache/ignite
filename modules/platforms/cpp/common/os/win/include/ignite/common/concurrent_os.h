@@ -24,22 +24,23 @@
 #include <map>
 
 #include <windows.h>
+#include <tlhelp32.h>
 
 #include "ignite/common/common.h"
 namespace ignite
 {
     namespace common
     {
-        namespace concurrent 
+        namespace concurrent
         {
             /**
-             * Static class to manage memory visibility semantics. 
+             * Static class to manage memory visibility semantics.
              */
-            class Memory
+            class IGNITE_IMPORT_EXPORT Memory
             {
             public:
                 /**
-                 * Full fence. 
+                 * Full fence.
                  */
                 static void Fence();
             };
@@ -57,7 +58,7 @@ namespace ignite
                 CriticalSection();
 
                 /**
-                 * Destructor. 
+                 * Destructor.
                  */
                 ~CriticalSection();
 
@@ -75,6 +76,46 @@ namespace ignite
                 CRITICAL_SECTION hnd;
 
                 IGNITE_NO_COPY_ASSIGNMENT(CriticalSection)
+            };
+
+            class IGNITE_IMPORT_EXPORT ReadWriteLock
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ReadWriteLock();
+
+                /**
+                 * Destructor.
+                 */
+                ~ReadWriteLock();
+
+                /**
+                 * Lock in exclusive mode.
+                 */
+                void LockExclusive();
+
+                /**
+                 * Release in exclusive mode.
+                 */
+                void ReleaseExclusive();
+
+                /**
+                 * Lock in shared mode.
+                 */
+                void LockShared();
+
+                /**
+                 * Release in shared mode.
+                 */
+                void ReleaseShared();
+
+            private:
+                /** Lock. */
+                SRWLOCK lock;
+
+                IGNITE_NO_COPY_ASSIGNMENT(ReadWriteLock)
             };
 
             /**
@@ -112,7 +153,7 @@ namespace ignite
             /**
              * Primitives for atomic access.
              */
-            class Atomics
+            class IGNITE_IMPORT_EXPORT Atomics
             {
             public:
                 /**
@@ -134,7 +175,7 @@ namespace ignite
                  * @return Value which were observed during CAS attempt.
                  */
                 static int32_t CompareAndSet32Val(int32_t* ptr, int32_t expVal, int32_t newVal);
-                
+
                 /**
                  * Increment 32-bit integer and return new value.
                  *
@@ -170,7 +211,7 @@ namespace ignite
                  * @return Value which were observed during CAS attempt.
                  */
                 static int64_t CompareAndSet64Val(int64_t* ptr, int64_t expVal, int64_t newVal);
-                
+
                 /**
                  * Increment 64-bit integer and return new value.
                  *
@@ -219,7 +260,7 @@ namespace ignite
                 {
                     // No-op.
                 }
-                
+
                 ~ThreadLocalTypedEntry()
                 {
                     // No-op.
@@ -236,7 +277,7 @@ namespace ignite
                 }
             private:
                 /** Value. */
-                T val; 
+                T val;
             };
 
             /**
@@ -282,11 +323,11 @@ namespace ignite
 
                     if (winVal)
                     {
-                        std::map<int32_t, ThreadLocalEntry*>* map = 
+                        std::map<int32_t, ThreadLocalEntry*>* map =
                             static_cast<std::map<int32_t, ThreadLocalEntry*>*>(winVal);
 
                         ThreadLocalTypedEntry<T>* entry = static_cast<ThreadLocalTypedEntry<T>*>((*map)[idx]);
-                        
+
                         if (entry)
                             return entry->Get();
                     }
@@ -307,7 +348,7 @@ namespace ignite
 
                     if (winVal)
                     {
-                        std::map<int32_t, ThreadLocalEntry*>* map = 
+                        std::map<int32_t, ThreadLocalEntry*>* map =
                             static_cast<std::map<int32_t, ThreadLocalEntry*>*>(winVal);
 
                         ThreadLocalEntry* appVal = (*map)[idx];
@@ -373,6 +414,14 @@ namespace ignite
                 }
 
                 /**
+                 * Destructor.
+                 */
+                ~ThreadLocalInstance()
+                {
+                    Remove();
+                }
+
+                /**
                  * Get value.
                  *
                  * @return Value.
@@ -402,7 +451,7 @@ namespace ignite
 
             private:
                 /** Index. */
-                int32_t idx; 
+                int32_t idx;
             };
 
             /**
@@ -552,6 +601,65 @@ namespace ignite
                 /** Event handle. */
                 HANDLE handle;
             };
+
+            /**
+             * Thread.
+             */
+            class IGNITE_IMPORT_EXPORT Thread
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Thread();
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Thread();
+
+                /**
+                 * Run thread.
+                 */
+                virtual void Run() = 0;
+
+                /**
+                 * Start thread.
+                 */
+                virtual void Start();
+
+                /**
+                 * Join thread.
+                 */
+                virtual void Join();
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(Thread);
+
+                /**
+                 * Routine.
+                 * @param lpParam Param.
+                 * @return Return code.
+                 */
+                static DWORD WINAPI ThreadRoutine(LPVOID lpParam);
+
+                /** Thread handle. */
+                HANDLE handle;
+            };
+
+            /**
+             * Get number of logical processors in system.
+             *
+             * @return Number of logical processors.
+             */
+            IGNITE_IMPORT_EXPORT uint32_t GetNumberOfProcessors();
+
+            /**
+             * Get current processor thread count.
+             *
+             * @return Current processor thread count.
+             */
+            IGNITE_IMPORT_EXPORT int32_t GetThreadsCount();
         }
     }
 }

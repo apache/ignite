@@ -29,11 +29,7 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
-#ifdef IGNITE_TESTS_32
-        grid = StartNode("queries-test-32.xml");
-#else
-        grid = StartNode("queries-test.xml");
-#endif
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -51,7 +47,7 @@ namespace ignite
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache";
+        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -110,6 +106,10 @@ namespace ignite
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     template<>
@@ -129,21 +129,21 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request, const SQLBIGINT& expected)
     {
-        CheckSingleResultNum0<int64_t>(request, expected, SQL_C_SBIGINT);
+        CheckSingleResultNum0<SQLBIGINT>(request, expected, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request, const SQLINTEGER& expected)
     {
-        CheckSingleResultNum0<int32_t>(request, expected, SQL_C_SLONG);
+        CheckSingleResultNum0<SQLINTEGER>(request, expected, SQL_C_SLONG);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request, const SQLSMALLINT& expected)
     {
-        CheckSingleResultNum0<int16_t>(request, expected, SQL_C_SSHORT);
+        CheckSingleResultNum0<SQLSMALLINT>(request, expected, SQL_C_SSHORT);
     }
 
     template<>
@@ -191,12 +191,12 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_GUID, &res, 0, 0);
 
-        BOOST_CHECK_EQUAL(res.Data1, expected.GetMostSignificantBits() & 0xFFFFFFFF00000000ULL >> 32);
-        BOOST_CHECK_EQUAL(res.Data2, expected.GetMostSignificantBits() & 0x00000000FFFF0000ULL >> 16);
-        BOOST_CHECK_EQUAL(res.Data3, expected.GetMostSignificantBits() & 0x000000000000FFFFULL);
+        BOOST_CHECK_EQUAL(res.Data1, expected.GetMostSignificantBits() & 0xFFFFFFFF00000000UL >> 32);
+        BOOST_CHECK_EQUAL(res.Data2, expected.GetMostSignificantBits() & 0x00000000FFFF0000UL >> 16);
+        BOOST_CHECK_EQUAL(res.Data3, expected.GetMostSignificantBits() & 0x000000000000FFFFUL);
 
-        for (int i = 0; i < sizeof(res.Data4); ++i)
-            BOOST_CHECK_EQUAL(res.Data4[i], (expected.GetLeastSignificantBits() & (0xFFULL << (8 * i))) >> (8 * i));
+        for (size_t i = 0; i < sizeof(res.Data4); ++i)
+            BOOST_CHECK_EQUAL(res.Data4[i], (expected.GetLeastSignificantBits() & (0xFFUL << (8 * i))) >> (8 * i));
     }
 
     template<>
@@ -209,21 +209,21 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request)
     {
-        CheckSingleResultNum0<int64_t>(request, SQL_C_SBIGINT);
+        CheckSingleResultNum0<SQLBIGINT>(request, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request)
     {
-        CheckSingleResultNum0<int32_t>(request, SQL_C_SLONG);
+        CheckSingleResultNum0<SQLINTEGER>(request, SQL_C_SLONG);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request)
     {
-        CheckSingleResultNum0<int16_t>(request, SQL_C_SSHORT);
+        CheckSingleResultNum0<SQLSMALLINT>(request, SQL_C_SSHORT);
     }
 
     template<>
@@ -253,7 +253,7 @@ namespace ignite
     {
         SQL_DATE_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_DATE, &res, 0, 0);
     }
 
     template<>
@@ -261,7 +261,7 @@ namespace ignite
     {
         SQL_TIMESTAMP_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIMESTAMP, &res, 0, 0);
     }
 
     template<>
@@ -269,7 +269,7 @@ namespace ignite
     {
         SQL_TIME_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIME, &res, 0, 0);
     }
 
     template<>
@@ -297,6 +297,7 @@ namespace ignite
 
         CheckSingleResult0(request, SQL_C_CHAR, res, ODBC_BUFFER_SIZE, &resLen);
         ignite::common::Decimal actual(std::string(res, res + resLen));
+        BOOST_REQUIRE_EQUAL(actual, expected);
     }
 
     template<>
@@ -304,7 +305,7 @@ namespace ignite
     {
         SQL_DATE_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_DATE, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_DATE, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
         Date actual = common::MakeDateGmt(res.year, res.month, res.day);
@@ -316,7 +317,7 @@ namespace ignite
     {
         SQL_TIMESTAMP_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIMESTAMP, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
         Timestamp actual = common::MakeTimestampGmt(res.year, res.month, res.day, res.hour, res.minute, res.second, res.fraction);
@@ -330,7 +331,7 @@ namespace ignite
     {
         SQL_TIME_STRUCT res;
 
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+        CheckSingleResult0(request, SQL_C_TYPE_TIME, &res, 0, 0);
 
         using ignite::impl::binary::BinaryUtils;
         Time actual = common::MakeTimeGmt(res.hour, res.minute, res.second);

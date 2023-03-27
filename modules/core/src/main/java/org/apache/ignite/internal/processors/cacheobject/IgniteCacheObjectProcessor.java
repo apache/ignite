@@ -17,16 +17,25 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -41,12 +50,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed.
      */
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException;
-
-    /**
-     * @see GridComponent#onKernalStart(boolean)
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onUtilityCacheStarted() throws IgniteCheckedException;
 
     /**
      * @param typeName Type name.
@@ -116,7 +119,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException;
+    public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.
@@ -125,7 +128,8 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If failed.
      */
-    public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
+    public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
+        throws IgniteCheckedException;
 
     /**
      * @param ccfg Cache configuration.
@@ -155,6 +159,17 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj);
+
+    /**
+     * @param ctx Cache context.
+     * @param obj Object.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @return Cache object.
+     */
+    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
+        boolean failIfUnregistered);
 
     /**
      * @param ctx Cache context.
@@ -207,12 +222,159 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @return Ignite binary interface.
+     * @throws IgniteException If failed.
      */
-    public IgniteBinary binary();
+    public IgniteBinary binary() throws IgniteException;
 
     /**
-     * @param keyType Key type name.
-     * @return Affinity filed name or {@code null}.
+     * @param clsName Class name.
+     * @return Builder.
      */
-    public String affinityField(String keyType);
+    public BinaryObjectBuilder builder(String clsName);
+
+    /**
+     * Creates builder initialized by existing binary object.
+     *
+     * @param binaryObj Binary object to edit.
+     * @return Binary builder.
+     */
+    public BinaryObjectBuilder builder(BinaryObject binaryObj);
+
+    /**
+     * @param typeId Type ID.
+     * @param newMeta New metadata.
+     * @param failIfUnregistered Fail if unregistered.
+     * @throws IgniteException In case of error.
+     */
+    public void addMeta(int typeId, final BinaryType newMeta, boolean failIfUnregistered) throws IgniteException;
+
+    /**
+     * Adds metadata locally without triggering discovery exchange.
+     *
+     * Must be used only during startup and only if it is guaranteed that all nodes have the same copy
+     * of BinaryType.
+     *
+     * @param typeId Type ID.
+     * @param newMeta New metadata.
+     * @throws IgniteException In case of error.
+     */
+    public void addMetaLocally(int typeId, final BinaryType newMeta) throws IgniteException;
+
+    /**
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param affKeyFieldName Affinity key field name.
+     * @param fieldTypeIds Fields map.
+     * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
+     * @throws IgniteException In case of error.
+     */
+    public void updateMetadata(int typeId, String typeName, @Nullable String affKeyFieldName,
+        Map<String, BinaryFieldMetadata> fieldTypeIds, boolean isEnum, @Nullable Map<String, Integer> enumMap)
+        throws IgniteException;
+
+    /**
+     * @param typeId Type ID.
+     * @return Metadata.
+     * @throws IgniteException In case of error.
+     */
+    @Nullable public BinaryType metadata(int typeId) throws IgniteException;
+
+
+    /**
+     * @param typeId Type ID.
+     * @param schemaId Schema ID.
+     * @return Metadata.
+     * @throws IgniteException In case of error.
+     */
+    @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
+
+    /**
+     * @param typeIds Type ID.
+     * @return Metadata.
+     * @throws IgniteException In case of error.
+     */
+    public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;
+
+    /**
+     * @return Metadata for all types.
+     * @throws IgniteException In case of error.
+     */
+    public Collection<BinaryType> metadata() throws IgniteException;
+
+    /**
+     * @param types Collection of binary types to write to.
+     * @param dir Destination directory.
+     */
+    public void saveMetadata(Collection<BinaryType> types, File dir);
+
+    /**
+     * Merge the binary metadata files stored in the specified directory.
+     *
+     * @param metadataDir Directory containing binary metadata files.
+     * @param stopChecker Process interrupt checker.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void updateMetadata(File metadataDir, BooleanSupplier stopChecker) throws IgniteCheckedException;
+
+    /**
+     * Merge the binary metadata file stored in the specified directory.
+     *
+     * @param metadataDir Directory containing binary metadata files.
+     * @param typeId Type id to update.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void cacheMetadataLocally(File metadataDir, int typeId) throws IgniteCheckedException;
+
+    /**
+     * @param typeName Type name.
+     * @param ord ordinal.
+     * @return Enum object.
+     * @throws IgniteException If failed.
+     */
+    public BinaryObject buildEnum(String typeName, int ord) throws IgniteException;
+
+    /**
+     * @param typeName Type name.
+     * @param name Name.
+     * @return Enum object.
+     * @throws IgniteException If failed.
+     */
+    public BinaryObject buildEnum(String typeName, String name) throws IgniteException;
+
+    /**
+     * Register enum type
+     *
+     * @param typeName Type name.
+     * @param vals Mapping of enum constant names to ordinals.
+     * @return Binary Type for registered enum.
+     */
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws IgniteException;
+
+    /**
+     * @param obj Original object.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @return Binary object (in case binary marshaller is used).
+     * @throws IgniteException If failed.
+     */
+    public Object marshalToBinary(Object obj, boolean failIfUnregistered) throws IgniteException;
+
+    /**
+     * Remove registered binary type from grid.
+     *
+     * Attention: this is not safe feature, the grid must not contain binary objects
+     * with specified type, operations with specified type must not be processed on the cluster.
+     *
+     * @param typeId Type ID.
+     */
+    public void removeType(int typeId);
+
+    /**
+     * Register binary type for specified class.
+     *
+     * @param cls Class.
+     * @return Metadata.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerClass(Class<?> cls) throws BinaryObjectException;
 }

@@ -28,12 +28,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
-import org.apache.ignite.internal.processors.cache.GridCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -81,8 +81,16 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExpirationOnClient() throws Exception {
         Ignite ignite = grid(NODES - 1);
+
+        // Check size of near entries via reflection because entries is filtered for size() API call.
+        IgniteEx igniteEx = (IgniteEx)ignite;
+
+        GridCacheAdapter internalCache = igniteEx.context().cache().internalCache(DEFAULT_CACHE_NAME);
+
+        GridCacheLocalConcurrentMap map = GridTestUtils.getFieldValue(internalCache, GridCacheAdapter.class, "map");
 
         assertTrue(ignite.configuration().isClientMode());
 
@@ -90,37 +98,31 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
 
         assertTrue(((IgniteCacheProxy)cache).context().isNear());
 
-        for (int i = 0 ; i < KEYS_COUNT; i++)
+        for (int i = 0; i < KEYS_COUNT; i++)
             cache.put(i, i);
 
         CreatedExpiryPolicy plc = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 500));
 
         IgniteCache<Object, Object> cacheWithExpiry = cache.withExpiryPolicy(plc);
 
-        for (int i = KEYS_COUNT ; i < KEYS_COUNT * 2; i++) {
+        for (int i = KEYS_COUNT; i < KEYS_COUNT * 2; i++) {
             cacheWithExpiry.put(i, i);
 
             assertEquals(i, cacheWithExpiry.localPeek(i));
         }
 
+        assertEquals(KEYS_COUNT * 2, map.publicSize(internalCache.context().cacheId()));
 
         U.sleep(1000);
 
-        // Check size of near entries via reflection because entries is filtered for size() API call.
-        IgniteEx igniteEx = (IgniteEx)ignite;
-        GridCacheConcurrentMap map = GridTestUtils.getFieldValue(
-            ((GridCacheProxyImpl)igniteEx.cachex(DEFAULT_CACHE_NAME)).delegate(),
-            GridCacheAdapter.class,
-            "map");
-
-        assertEquals(KEYS_COUNT, map.size());
+        assertEquals(KEYS_COUNT, map.publicSize(internalCache.context().cacheId()));
 
         assertEquals(KEYS_COUNT, cache.size());
 
-        for (int i = 0 ; i < KEYS_COUNT; i++)
+        for (int i = 0; i < KEYS_COUNT; i++)
             assertEquals(i, cacheWithExpiry.localPeek(i));
 
-        for (int i = KEYS_COUNT ; i < KEYS_COUNT * 2; i++)
+        for (int i = KEYS_COUNT; i < KEYS_COUNT * 2; i++)
             assertNull(cache.localPeek(i));
     }
 }

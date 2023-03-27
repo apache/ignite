@@ -1,9 +1,0 @@
-{
-  "presets": ["angular"],
-  "plugins": [[
-    "transform-builtin-extend", {
-      "globals": ["Error", "Array"],
-      "approximate": true
-    }
-  ]]
-}

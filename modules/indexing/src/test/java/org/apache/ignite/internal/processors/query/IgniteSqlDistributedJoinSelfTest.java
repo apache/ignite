@@ -25,18 +25,13 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for correct distributed sql joins.
  */
-public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
 
@@ -52,12 +47,6 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -66,18 +55,13 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(NODES_COUNT, false);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+    protected CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
         return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -89,6 +73,7 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonCollocatedDistributedJoin() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true, String.class, Person.class);
         CacheConfiguration ccfg2 = cacheConfig("org", true, String.class, Organization.class);
@@ -163,17 +148,35 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         @QuerySqlField(index = true)
         private String name;
 
-        public String getId() { return id; }
+        /** */
+        public String getId() {
+            return id;
+        }
 
-        public void setId(String id) { this.id = id; }
+        /** */
+        public void setId(String id) {
+            this.id = id;
+        }
 
-        public String getOrgId() { return orgId; }
+        /** */
+        public String getOrgId() {
+            return orgId;
+        }
 
-        public void setOrgId(String orgId) { this.orgId = orgId; }
+        /** */
+        public void setOrgId(String orgId) {
+            this.orgId = orgId;
+        }
 
-        public String getName() { return name; }
+        /** */
+        public String getName() {
+            return name;
+        }
 
-        public void setName(String name) { this.name = name; }
+        /** */
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
     /**
@@ -188,12 +191,24 @@ public class IgniteSqlDistributedJoinSelfTest extends GridCommonAbstractTest {
         @QuerySqlField(index = true)
         private String name;
 
-        public void setId(String id) { this.id = id; }
+        /** */
+        public void setId(String id) {
+            this.id = id;
+        }
 
-        public String getId() { return id; }
+        /** */
+        public String getId() {
+            return id;
+        }
 
-        public String getName() { return name; }
+        /** */
+        public String getName() {
+            return name;
+        }
 
-        public void setName(String name) { this.name = name; }
+        /** */
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 }

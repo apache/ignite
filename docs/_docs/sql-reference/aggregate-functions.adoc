@@ -1,0 +1,348 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Aggregate Functions
+
+== AVG
+
+
+[source,sql]
+----
+AVG ([DISTINCT] expression)
+----
+
+The average (mean) value. If no rows are selected, the result is `NULL`. Aggregates are only allowed in select statements. The returned value is of the same data type as the parameter.
+
+=== Parameters
+
+- `DISTINCT` - optional keyword. If presents, will average the unique values.
+
+
+=== Examples
+Calculating average players' age:
+
+
+[source,sql]
+----
+SELECT AVG(age) "AverageAge" FROM Players;
+----
+
+
+== BIT_AND
+
+
+[source,sql]
+----
+BIT_AND (expression)
+----
+
+The bitwise AND of all non-null values. If no rows are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+A logical AND operation is performed on each pair of corresponding bits of two binary expressions of equal length.
+
+In each pair, it returns 1 if the first bit is 1 AND the second bit is 1. Else, it returns 0.
+
+
+== BIT_OR
+
+
+[source,sql]
+----
+BIT_OR (expression)
+----
+
+The bitwise OR of all non-null values. If no rows are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+A logical OR operation is performed on each pair of corresponding bits of two binary expressions of equal length.
+
+In each pair, the result is 1 if the first bit is 1 OR the second bit is 1 OR both bits are 1, and otherwise the result is 0.
+
+////
+== BOOL_AND
+
+[source,sql]
+----
+BOOL_AND (boolean)
+----
+
+Returns true if all expressions are true. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+=== Example
+
+[source,sql]
+----
+SELECT item, BOOL_AND(price > 10) FROM Items GROUP BY item;
+----
+
+== BOOL_OR
+
+[source,sql]
+----
+BOOL_AND  (boolean)
+----
+
+Returns true if any expression is true. If no entries​ are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+=== Example
+
+[source,sql]
+----
+SELECT BOOL_OR(CITY LIKE 'W%') FROM Users;
+----
+////
+
+== COUNT
+
+[source,sql]
+----
+COUNT (* | [DISTINCT] expression)
+----
+
+The count of all entries or of the non-null values. This method returns a long. If no entries are selected, the result is 0. Aggregates are only allowed in select statements.
+
+=== Example
+Calculate the number of players in every city:
+
+[source,sql]
+----
+SELECT city_id, COUNT(*) FROM Players GROUP BY city_id;
+----
+
+== GROUP_CONCAT
+
+[source,sql]
+----
+GROUP_CONCAT([DISTINCT] expression || [expression || [expression ...]]
+  [ORDER BY expression [ASC|DESC], [[ORDER BY expression [ASC|DESC]]]
+  [SEPARATOR expression])
+----
+
+Concatenates strings with a separator. The default separator is a ',' (without whitespace). This method returns a string. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+The `expression` can be a concatenation of columns and strings using the `||` operator, for example: `column1 || "=" || column2`.
+
+=== Parameters
+- `DISTINCT` - filters the result set for unique sets of expressions.
+- `expression` - specifies an expression that may be a column name, a result of another function, or a math operation.
+- `ORDER BY` - orders rows by expression.
+- `SEPARATOR` - overrides a string separator. By default, the separator character is the comma ','.
+
+NOTE: The `DISTINCT` and `ORDER BY` expressions inside the GROUP_CONCAT function are only supported if you group the results by the primary or affinity key (i.e. use `GROUP BY`). Moreover, you have to tell Ignite that your data is colocated by specifying the `collocated=true` property in the connection string or by calling `SqlFieldsQuery.setCollocated(true)` if you use the link:{javadoc_base_url}/org/apache/ignite/cache/query/SqlFieldsQuery.html#setCollocated-boolean-[Java API, window=_blank].
+
+
+=== Example
+Group all players' names in one row:
+
+
+[source,sql]
+----
+SELECT GROUP_CONCAT(name ORDER BY id SEPARATOR ', ') FROM Players;
+----
+
+
+== MAX
+
+[source,sql]
+----
+MAX (expression)
+----
+
+Returns the highest value. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements. The returned value is of the same data type as the parameter.
+
+
+=== Parameters
+- `expression` - may be a column name, a result of another function, or a math operation.
+
+
+=== Example
+Return the height of the ​tallest player:
+
+
+[source,sql]
+----
+SELECT MAX(height) FROM Players;
+----
+
+
+== MIN
+
+[source,sql]
+----
+MIN (expression)
+----
+
+Returns the lowest value. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements. The returned value is of the same data type as the parameter.
+
+
+
+=== Parameters
+- `expression` - may be a column name, the result of another function, or a math operation.
+
+=== Example
+Return the age of the youngest player:
+
+
+[source,sql]
+----
+SELECT MIN(age) FROM Players;
+----
+
+
+== SUM
+
+[source,sql]
+----
+SUM ([DISTINCT] expression)
+----
+
+Returns the sum of all values. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements. The data type of the returned value depends on the parameter data.
+
+
+=== Parameters
+- `DISTINCT` - accumulate unique values only.
+- `expression` - may be a column name, the result of another function, or a math operation.
+
+=== Example
+Get the total number of goals scored by all players:
+
+
+[source,sql]
+----
+SELECT SUM(goal) FROM Players;
+----
+
+////
+this function is not supported
+== SELECTIVITY
+
+[source,sql]
+----
+SELECTIVITY (expression)
+----
+Estimates the selectivity (0-100) of a value. The value is defined as `(100 * distinctCount / rowCount)`. The selectivity of 0 rows is 0 (unknown). Aggregates are only allowed in select statements.
+
+
+=== Parameters
+- `expression` - may be a column name.
+
+
+=== Example
+Calculate the selectivity of the `first_name` and `second_name` columns:
+
+
+[source,sql]
+----
+SELECT SELECTIVITY(first_name), SELECTIVITY(second_name) FROM Player
+  WHERE ROWNUM() < 20000;
+----
+
+
+== STDDEV_POP
+
+[source,sql]
+----
+STDDEV_POP ([DISTINCT] expression)
+----
+Returns the population standard deviation. This method returns a `double`. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+
+=== Parameters
+- `DISTINCT` - calculate unique value only.
+- `expression` - may be a column name.
+
+
+=== Example
+Calculate the standard deviation for Players' age:
+
+
+[source,sql]
+----
+SELECT STDDEV_POP(age) from Players;
+----
+
+
+== STDDEV_SAMP
+
+[source,sql]
+----
+STDDEV_SAMP ([DISTINCT] expression)
+----
+
+Calculates the sample standard deviation. This method returns a `double`. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+=== Parameters
+- `DISTINCT` - calculate unique values only.
+- `expression` - may be a column name.
+
+
+=== Example
+Calculates the sample standard deviation for Players' age:
+
+
+[source,sql]
+----
+SELECT STDDEV_SAMP(age) from Players;
+----
+
+
+== VAR_POP
+
+[source,sql]
+----
+VAR_POP ([DISTINCT] expression)
+----
+
+Calculates the _population variance_ (square of the population standard deviation). This method returns a `double`. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+
+=== Parameters
+- `DISTINCT` - calculate unique values only.
+- `expression` - may be a column name.
+
+
+=== Example
+Calculate the variance of Players' age:
+
+
+[source,sql]
+----
+SELECT VAR_POP (age) from Players;
+----
+
+
+
+== VAR_SAMP
+
+[source,sql]
+----
+VAR_SAMP ([DISTINCT] expression)
+----
+
+Calculates the _sample variance_ (square of the sample standard deviation). This method returns a `double`. If no entries are selected, the result is NULL. Aggregates are only allowed in select statements.
+
+
+=== Parameters
+- `DISTINCT` - calculate unique values only.
+- `expression` - may be a column name.
+
+
+=== Example
+Calculate the variance of Players' age:
+
+
+[source,sql]
+----
+SELECT VAR_SAMP(age) FROM Players;
+----
+////

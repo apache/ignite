@@ -29,9 +29,10 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -94,6 +95,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryMetadataOnClient() throws Exception {
         Ignite ignite0 = ignite(gridCount() - 1);
 
@@ -106,7 +108,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
         Affinity<Object> aff0 = ignite0.affinity(DEFAULT_CACHE_NAME);
         Affinity<Object> aff1 = ignite1.affinity(DEFAULT_CACHE_NAME);
 
-        for (int i = 0 ; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             TestObject1 obj1 = new TestObject1(i, i + 1);
 
             assertEquals(aff1.mapKeyToPrimaryAndBackups(obj1),

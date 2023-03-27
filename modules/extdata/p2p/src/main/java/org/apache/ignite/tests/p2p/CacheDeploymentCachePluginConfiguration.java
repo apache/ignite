@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tests.p2p;
 
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -24,12 +25,11 @@ import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.Cache;
-
 /**
  * Test cache plugin configuration for cache deployment tests.
  */
 public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePluginConfiguration<K, V> {
+    /** */
     private static class CacheDeploymentCachePluginProvider implements CachePluginProvider {
         /** {@inheritDoc} */
         @Nullable @Override public Object createComponent(Class cls) {

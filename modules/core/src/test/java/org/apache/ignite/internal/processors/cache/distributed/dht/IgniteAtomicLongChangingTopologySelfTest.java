@@ -42,10 +42,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -67,21 +67,11 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /** Queue. */
     private final Queue<Long> queue = new ConcurrentLinkedQueue<>();
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi).setNetworkTimeout(30_000);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setNetworkTimeout(30_000);
 
         AtomicConfiguration atomicCfg = new AtomicConfiguration();
         atomicCfg.setCacheMode(PARTITIONED);
@@ -90,8 +80,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         cfg.setAtomicConfiguration(atomicCfg);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -108,6 +96,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueCreateNodesJoin() throws Exception {
         CountDownLatch startLatch = new CountDownLatch(GRID_CNT);
         final AtomicBoolean run = new AtomicBoolean(true);
@@ -136,6 +125,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
@@ -151,6 +141,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientQueueCreateCloseFailover() throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
@@ -172,12 +163,31 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9015")
+    @Test
     public void testClientSetCreateCloseFailover() throws Exception {
+        checkClientSetCreateCloseFailover(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientCollocatedSetCreateCloseFailover() throws Exception {
+        checkClientSetCreateCloseFailover(true);
+    }
+
+    /**
+     * @param collocated Collocated flag.
+     * @throws Exception If failed.
+     */
+    private void checkClientSetCreateCloseFailover(boolean collocated) throws Exception {
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
                     CollectionConfiguration colCfg = new CollectionConfiguration();
 
+                    colCfg.setCollocated(collocated);
                     colCfg.setBackups(1);
                     colCfg.setCacheMode(PARTITIONED);
                     colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
@@ -197,13 +207,9 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     private void testFailoverWithClient(IgniteInClosure<Ignite> c) throws Exception {
         startGridsMultiThreaded(GRID_CNT, false);
 
-        client = true;
-
-        Ignite ignite = startGrid(GRID_CNT);
+        Ignite ignite = startClientGrid(GRID_CNT);
 
         assertTrue(ignite.configuration().isClientMode());
-
-        client = false;
 
         final AtomicBoolean finished = new AtomicBoolean();
 
@@ -266,6 +272,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementConsistency() throws Exception {
         startGrids(GRID_CNT);
 
@@ -305,6 +312,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueClose() throws Exception {
         startGrids(GRID_CNT);
 

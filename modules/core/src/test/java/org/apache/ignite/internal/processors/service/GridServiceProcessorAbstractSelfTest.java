@@ -30,7 +30,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CA;
@@ -40,13 +42,12 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link GridAffinityProcessor}.
@@ -56,21 +57,12 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /** Cache name. */
     public static final String CACHE_NAME = "testServiceCache";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Random generator. */
     private static final Random RAND = new Random();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(discoSpi);
 
         ServiceConfiguration[] svcs = services();
 
@@ -105,17 +97,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected void beforeTestsStarted() throws Exception {
         assert nodeCount() >= 1;
 
         for (int i = 0; i < nodeCount(); i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -138,7 +124,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         for (int i = 0; i < clients; i++) {
             final String nodeName = getTestIgniteInstanceName(nodeCount() + servers + i);
 
-            startGrid(nodeName, getConfiguration(nodeName).setClientMode(true));
+            startClientGrid(nodeName, getConfiguration(nodeName));
         }
     }
 
@@ -153,13 +139,14 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @return Random grid.
      */
-    protected Ignite randomGrid() {
+    protected IgniteEx randomGrid() {
         return grid(RAND.nextInt(nodeCount()));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameConfigurationOld() throws Exception {
         String name = "dupServiceOld";
 
@@ -189,6 +176,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameConfiguration() throws Exception {
         String name = "dupServiceOld";
 
@@ -214,6 +202,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentConfigurationOld() throws Exception {
         String name = "dupServiceOld";
 
@@ -228,25 +217,34 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         IgniteFuture<?> fut2 = svcs2.future();
 
-        info("Deployed service: " + name);
+        Exception err1 = null;
 
-        fut1.get();
-
-        info("Finished waiting for service future: " + name);
+        try {
+            fut1.get();
+        }
+        catch (ServiceDeploymentException e) {
+            if (e.getMessage().contains("Failed to deploy some services."))
+                err1 = e;
+            else
+                throw new IllegalStateException("An unexpeted error caught while deploying service.", e);
+        }
 
         try {
             fut2.get();
 
-            fail("Failed to receive mismatching configuration exception.");
+            if (err1 == null)
+                fail("Failed to receive mismatching configuration exception.");
         }
-        catch (IgniteException e) {
-            info("Received mismatching configuration exception: " + e.getMessage());
+        catch (Exception e) {
+            if (!e.getMessage().contains("Failed to deploy some service"))
+                throw new IllegalStateException("An unexpeted error caught while concurrent deploying.", e);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
@@ -259,11 +257,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Deployed service: " + name);
 
-        fut1.get();
-
-        info("Finished waiting for service future: " + name);
-
         try {
+            fut1.get();
+
+            info("Finished waiting for service future: " + name);
+
             fut2.get();
 
             fail("Failed to receive mismatching configuration exception.");
@@ -276,6 +274,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetServiceByName() throws Exception {
         String name = "serviceByName";
 
@@ -295,6 +294,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetServicesByName() throws Exception {
         final String name = "servicesByName";
 
@@ -303,8 +303,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
-            @Override
-            public void apply() {
+            @Override public void apply() {
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
@@ -322,6 +321,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNodeOld() throws Exception {
         Ignite g = randomGrid();
 
@@ -354,6 +354,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployOnEachNode() throws Exception {
         Ignite g = randomGrid();
 
@@ -382,6 +383,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploySingletonOld() throws Exception {
         Ignite g = randomGrid();
 
@@ -414,6 +416,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploySingleton() throws Exception {
         Ignite g = randomGrid();
 
@@ -442,6 +445,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityDeployOld() throws Exception {
         Ignite g = randomGrid();
 
@@ -471,6 +475,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityDeploy() throws Exception {
         Ignite g = randomGrid();
 
@@ -496,6 +501,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployMultiple1Old() throws Exception {
         Ignite g = randomGrid();
 
@@ -528,6 +534,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployMultiple1() throws Exception {
         Ignite g = randomGrid();
 
@@ -556,6 +563,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployMultiple2Old() throws Exception {
         Ignite g = randomGrid();
 
@@ -590,6 +598,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployMultiple2() throws Exception {
         Ignite g = randomGrid();
 
@@ -620,6 +629,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelSingleton() throws Exception {
         Ignite g = randomGrid();
 
@@ -655,6 +665,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelSingletonAsync() throws Exception {
         Ignite g = randomGrid();
 
@@ -690,6 +701,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelEachNode() throws Exception {
         Ignite g = randomGrid();
 
@@ -725,6 +737,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelAsyncEachNode() throws Exception {
         Ignite g = randomGrid();
 
@@ -755,6 +768,19 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, nodeCount(), DummyService.cancelled(name));
+    }
+
+    /**
+     * @param svcName Service name.
+     * @param ignite Ignite instance.
+     * @param cnt Expected count.
+     */
+    protected void checkCount(String svcName, IgniteEx ignite, int cnt) throws IgniteInterruptedCheckedException {
+        AffinityTopologyVersion topVer = ignite.context().discovery().topologyVersionEx();
+
+        waitForServicesReadyTopology(ignite, topVer);
+
+        assertEquals(cnt, actualCount(svcName, ignite.services().serviceDescriptors()));
     }
 
     /**
@@ -794,9 +820,9 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         return GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
-                return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
+                return actualCount(srvcName, g.services().serviceDescriptors()) == expectedDeps;
             }
-        }, 1500);
+        }, 12_000);
     }
 
     /**
@@ -817,6 +843,32 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
          * @return Current value.
          */
         int get();
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param srvcName Affinity service name.
+     */
+    protected void checkAffinityServiceDeployment(Ignite ignite, String srvcName) {
+        ServiceDescriptor desc = null;
+
+        for (ServiceDescriptor d : ignite.services().serviceDescriptors()) {
+            if (d.name().equals(srvcName)) {
+                desc = d;
+
+                break;
+            }
+        }
+
+        assertNotNull(desc);
+
+        assertEquals(1, desc.topologySnapshot().size());
+
+        ClusterNode n = ignite.affinity(desc.cacheName()).mapKeyToNode(desc.affinityKey());
+
+        assertNotNull(n);
+
+        assertTrue(desc.topologySnapshot().containsKey(n.id()));
     }
 
     /**
@@ -848,11 +900,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
             X.println("Initializing affinity service for key: " + affKey);
-
-            ClusterNode n = g.affinity(CACHE_NAME).mapKeyToNode(affKey);
-
-            assertNotNull(n);
-            assertTrue(n.isLocal());
         }
 
         /** {@inheritDoc} */

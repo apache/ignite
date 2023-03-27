@@ -1,0 +1,28 @@
+# name: test/sql/types/collections/array.test
+# description: Test ARRAY creation query
+# group: [collections]
+
+query T
+SELECT ARRAY(SELECT * FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3))
+----
+[1, 2, 3]
+
+query T
+SELECT ARRAY(SELECT * FROM (SELECT NULL UNION ALL SELECT NULL UNION ALL SELECT NULL))
+----
+[NULL, NULL, NULL]
+
+query T
+SELECT ARRAY(SELECT * FROM (SELECT 1) T(a) WHERE a > 1)
+----
+[]
+
+query T
+SELECT ARRAY[1, 2, 3]
+----
+[1, 2, 3]
+
+query T
+SELECT ARRAY(SELECT * FROM (SELECT 1, 2 UNION ALL SELECT 3, 4))
+----
+[[1, 2], [3, 4]]

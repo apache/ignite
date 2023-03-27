@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for injected logger category.
@@ -40,18 +41,12 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that closure gets right log category injected on all nodes using field injection.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureField() throws Exception {
         Ignite ignite = grid(0);
 
@@ -61,7 +56,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
 
             @Override public Object call() throws Exception {
                 if (log instanceof GridLoggerProxy) {
-                    Object category = U.field(log,  "ctgr");
+                    Object category = U.field(log, "ctgr");
 
                     assertTrue("Logger created for the wrong category.",
                         category.toString().contains(GridLoggerInjectionSelfTest.class.getName()));
@@ -79,6 +74,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethod() throws Exception {
         Ignite ignite = grid(0);
 
@@ -86,7 +82,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
             @LoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
-                    Object category = U.field(log,  "ctgr");
+                    Object category = U.field(log, "ctgr");
 
                     assertTrue("Logger created for the wrong category.",
                         category.toString().contains(GridLoggerInjectionSelfTest.class.getName()));
@@ -106,6 +102,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStringCategory() throws Exception {
         Ignite ignite = grid(0);
 
@@ -113,7 +110,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
             @LoggerResource(categoryName = "GridLoggerInjectionSelfTest")
             private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
-                    Object category = U.field(log,  "ctgr");
+                    Object category = U.field(log, "ctgr");
 
                     assertTrue("Logger created for the wrong category.",
                         "GridLoggerInjectionSelfTest".equals(category.toString()));

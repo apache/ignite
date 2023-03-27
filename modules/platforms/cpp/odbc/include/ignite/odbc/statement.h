@@ -23,19 +23,13 @@
 #include <map>
 #include <memory>
 
-#include <ignite/impl/interop/interop_output_stream.h>
-#include <ignite/impl/interop/interop_input_stream.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
-
 #include "ignite/odbc/meta/column_meta.h"
-#include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/common_types.h"
-#include "ignite/odbc/cursor.h"
-#include "ignite/odbc/utility.h"
+#include "sql/sql_set_streaming_command.h"
 
 namespace ignite
 {
@@ -124,11 +118,11 @@ namespace ignite
             void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
 
             /**
-             * Get number of binded parameters.
+             * Get number parameters required by the prepared statement.
              *
-             * @return Number of binded parameters.
+             * @param paramNum Number of parameters.
              */
-            uint16_t GetParametersNumber();
+            void GetParametersNumber(uint16_t& paramNum);
 
             /**
              * Set parameter binding offset pointer.
@@ -136,13 +130,6 @@ namespace ignite
              * @param ptr Parameter binding offset pointer.
              */
             void SetParamBindOffsetPtr(int* ptr);
-
-            /**
-             * Get parameter binding offset pointer.
-             *
-             * @return Parameter binding offset pointer.
-             */
-            int* GetParamBindOffsetPtr();
 
             /**
              * Get value of the column in the result set.
@@ -268,7 +255,7 @@ namespace ignite
              *
              * @return Column metadata.
              */
-            const meta::ColumnMetaVector* GetMeta() const;
+            const meta::ColumnMetaVector* GetMeta();
 
             /**
              * Check if data is available.
@@ -278,11 +265,11 @@ namespace ignite
             bool DataAvailable() const;
 
             /**
-             * Next results.
+             * More results.
              *
              * Move to next result set or affected rows number.
              */
-            void NextResults();
+            void MoreResults();
 
             /**
              * Get column attribute.
@@ -309,28 +296,28 @@ namespace ignite
              *
              * @param ptr Rows fetched buffer pointer.
              */
-            void SetRowsFetchedPtr(size_t* ptr);
+            void SetRowsFetchedPtr(SQLINTEGER* ptr);
 
             /**
              * Get rows fetched buffer pointer.
              *
              * @return Rows fetched buffer pointer.
              */
-            size_t* GetRowsFetchedPtr();
+            SQLINTEGER* GetRowsFetchedPtr();
 
             /**
              * Set row statuses array pointer.
              *
              * @param ptr Row statuses array pointer.
              */
-            void SetRowStatusesPtr(uint16_t* ptr);
+            void SetRowStatusesPtr(SQLUSMALLINT* ptr);
 
             /**
              * Get row statuses array pointer.
              *
              * @return Row statuses array pointer.
              */
-            uint16_t* GetRowStatusesPtr();
+            SQLUSMALLINT* GetRowStatusesPtr();
 
             /**
              * Select next parameter data for which is required.
@@ -394,27 +381,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
-
-            /**
-             * Bind parameter.
-             *
-             * @param paramIdx Parameter index.
-             * @param param Parameter.
-             */
-            void SafeBindParameter(uint16_t paramIdx, const app::Parameter& param);
-
-            /**
-             * Unbind specified parameter.
-             *
-             * @param paramIdx Parameter index.
-             */
-            void SafeUnbindParameter(uint16_t paramIdx);
-
-            /**
-             * Unbind all parameters.
-             */
-            void SafeUnbindAllParameters();
-
+            
             /**
              * Bind parameter.
              *
@@ -456,6 +423,13 @@ namespace ignite
             SqlResult::Type InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
 
             /**
+             * Get number parameters required by the prepared statement.
+             *
+             * @param paramNum Number of parameters.
+             */
+            SqlResult::Type InternalGetParametersNumber(uint16_t& paramNum);
+
+            /**
              * Get value of the column in the result set.
              *
              * @param columnIdx Column index.
@@ -481,6 +455,28 @@ namespace ignite
             SqlResult::Type InternalClose();
 
             /**
+             * Stop streaming.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type StopStreaming();
+
+            /**
+             * Process internal SQL command.
+             *
+             * @param query SQL query.
+             * @return Operation result.
+             */
+            SqlResult::Type ProcessInternalCommand(const std::string& query);
+
+            /**
+             * Check if the streaming is active currently.
+             *
+             * @return @c true, if the streaming is active.
+             */
+            bool IsStreamingActive() const;
+
+            /**
              * Prepare SQL query.
              *
              * @param query SQL query.
@@ -502,6 +498,13 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalExecuteSqlQuery();
+
+            /**
+             * Process internal query.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type ProcessInternalQuery();
 
             /**
              * Fetch query result row with offset
@@ -608,7 +611,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult::Type InternalNextResults();
+            SqlResult::Type InternalMoreResults();
 
             /**
              * Get column attribute.
@@ -668,6 +671,13 @@ namespace ignite
             SqlResult::Type UpdateParamsMeta();
 
             /**
+             * Convert SQLRESULT to SQL_ROW_RESULT.
+             *
+             * @return Operation result.
+             */
+            uint16_t SqlResultToRowResult(SqlResult::Type value);
+
+            /**
              * Constructor.
              * Called by friend classes.
              *
@@ -681,29 +691,26 @@ namespace ignite
             /** Column bindings. */
             app::ColumnBindingMap columnBindings;
 
-            /** Parameter bindings. */
-            app::ParameterBindingMap paramBindings;
-
-            /** Parameter meta. */
-            std::vector<int8_t> paramTypes;
-
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
 
             /** Buffer to store number of rows fetched by the last fetch. */
-            size_t* rowsFetched;
+            SQLINTEGER* rowsFetched;
 
             /** Array to store statuses of rows fetched by the last fetch. */
-            uint16_t* rowStatuses;
-
-            /** Offset added to pointers to change binding of parameters. */
-            int* paramBindOffset;
+            SQLUSMALLINT* rowStatuses;
 
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
-            /** Index of the parameter, which is currently being set. */
-            uint16_t currentParamIdx;
+            /** Row array size. */
+            SqlUlen rowArraySize;
+
+            /** Parameters. */
+            app::ParameterSet parameters;
+
+            /** Query timeout in seconds. */
+            int32_t timeout;
         };
     }
 }

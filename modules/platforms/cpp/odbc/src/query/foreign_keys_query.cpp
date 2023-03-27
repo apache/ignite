@@ -28,7 +28,7 @@ namespace ignite
     {
         namespace query
         {
-            ForeignKeysQuery::ForeignKeysQuery(diagnostic::Diagnosable& diag, Connection& connection,
+            ForeignKeysQuery::ForeignKeysQuery(diagnostic::DiagnosableAdapter& diag, Connection& connection,
                 const std::string& primaryCatalog, const std::string& primarySchema,
                 const std::string& primaryTable, const std::string& foreignCatalog,
                 const std::string& foreignSchema, const std::string& foreignTable) :
@@ -81,12 +81,12 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
             }
 
-            const meta::ColumnMetaVector & ForeignKeysQuery::GetMeta() const
+            const meta::ColumnMetaVector* ForeignKeysQuery::GetMeta()
             {
-                return columnsMeta;
+                return &columnsMeta;
             }
 
-            SqlResult::Type ForeignKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
+            SqlResult::Type ForeignKeysQuery::FetchNextRow(app::ColumnBindingMap&)
             {
                 if (!executed)
                 {
@@ -98,7 +98,7 @@ namespace ignite
                 return SqlResult::AI_NO_DATA;
             }
 
-            SqlResult::Type ForeignKeysQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+            SqlResult::Type ForeignKeysQuery::GetColumn(uint16_t, app::ApplicationDataBuffer&)
             {
                 if (!executed)
                 {
@@ -124,6 +124,11 @@ namespace ignite
             int64_t ForeignKeysQuery::AffectedRows() const
             {
                 return 0;
+            }
+
+            SqlResult::Type ForeignKeysQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
             }
         }
     }

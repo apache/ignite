@@ -1,0 +1,240 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Node.js Thin Client
+
+:source_code_dir: code-snippets/nodejs
+
+== Prerequisites
+
+* Node.js version 8 or higher. Either download the Node.js https://nodejs.org/en/download/[pre-built binary] for the target platform, or install Node.js via a https://nodejs.org/en/download/package-manager[package manager].
+
+Once `node` and `npm` are installed, you can use one of the following installation options.
+
+== Installation
+
+The Node.js thin client is shipped as an `npm` package and as a zip archive. Use any of the methods to install the client in your environment.
+
+=== Using NPM ===
+
+Use the following command to install the client from the NPM repository:
+
+[source,shell]
+----
+npm install -g apache-ignite-client
+----
+
+=== Using ZIP Archive ===
+
+The thin client can be installed from the zip archive available for download from the Ignite website:
+
+*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite Node.js Thin Client,window=_blank].
+*  Unpack the archive and navigate to the root folder.
+*  Run the commands below to finish the installation.
+
+[source,shell]
+----
+npm link
+
+npm link apache-ignite-client
+----
+
+
+== Creating a Client Instance
+The `IgniteClient` class provides the thin client API. You can obtain an instance of the client as follows:
+
+[source, js]
+----
+include::{source_code_dir}/initialize.js[tag=example-block,indent=0]
+----
+
+The constructor accepts one optional parameter that represents a callback function, which is called every time the connection state changes (see below).
+
+You can create as many `IgniteClient` instances as needed. All of them will work independently.
+
+== Connecting to Cluster
+To connect the client to a cluster, use the `IgniteClient.connect()` method.
+It accepts an object of the `IgniteClientConfiguration` class that represents connection parameters. The connection parameters must contain a list of nodes (in the `host:port` format) that will be used for link:thin-clients/getting-started-with-thin-clients#client-connection-failover[failover purposes].
+
+[source, js]
+----
+include::{source_code_dir}/connecting.js[tag=example-block,indent=0]
+----
+
+The client has three connection states: `CONNECTING`, `CONNECTED`, `DISCONNECTED`.
+You can specify a callback function in the client configuration object, which will be called every time the connection state changes.
+
+Interactions with the cluster are only possible in the `CONNECTED` state.
+If the client loses the connection, it automatically switches to the `CONNECTING` state and tries to re-connect using the link:thin-clients/getting-started-with-thin-clients#client-connection-failover[failover mechanism]. If it fails to reconnect to all the endpoints from the provided list, the client switches to the `DISCONNECTED` state.
+
+You can call the `disconnect()` method to close the connection. This will switch the client to the `DISCONNECTED` state.
+
+== Partition Awareness
+
+include::includes/partition-awareness.adoc[]
+
+To enable partition awareness, set the `partitionAwareness` configuration parameter to `true` as shown in the following code snippet:
+
+[source, js]
+----
+const ENDPOINTS = ['127.0.0.1:10800', '127.0.0.1:10801', '127.0.0.1:10802'];
+let cfg = new IgniteClientConfiguration(...ENDPOINTS);
+const useTls = false;
+const partitionAwareness = true;
+
+cfg.setConnectionOptions(useTls, null, partitionAwareness);
+await igniteClient.connect(cfg);
+----
+
+
+== Enabling Debug
+
+////
+TODO: Artem, pls take a look here
+////
+
+[source, js]
+----
+include::{source_code_dir}/enabling-debug.js[tag=example-block,indent=0]
+----
+
+== Using Key-Value API
+
+=== Getting Cache Instance
+
+The key-value API is provided through an instance of a cache. The thin client provides several methods for obtaining a cache instance:
+
+- Get a cache by its name.
+- Create a cache with a specified name and optional cache configuration.
+- Get or create a cache, destroys a cache, etc.
+
+You can obtain as many cache instances as needed - for the same or different caches - and work with all of them in parallel.
+
+The following example shows how to get access to a cache by name and destroy its later:
+
+[source, js]
+----
+include::{source_code_dir}/configuring-cache-1.js[tag=example-block,indent=0]
+----
+
+=== Cache Configuration
+When creating a new cache, you can provide an instance of the cache configuration.
+
+////
+*TODO: need a better example*
+////
+[source, js]
+----
+include::{source_code_dir}/configuring-cache-2.js[tag=example-block,indent=0]
+----
+
+=== Type Mapping Configuration
+The node.js types do not always uniquely map to the java types, and in some cases you may want to explicitly specify the key and value types in the cache configuration.
+The client will use these types to convert the key and value objects between java/javascript data types when executing read/write cache operations.
+
+If you don't specify the types, the client will use the <<Default Mapping>>.
+Here is an example of type mapping:
+[source, js]
+----
+include::{source_code_dir}/types-mapping-configuration.js[tag=mapping,indent=0]
+----
+
+
+=== Data Types
+
+The client supports type mapping between Ignite types and JavaScript types in two ways:
+
+- Explicit mapping
+- Default mapping
+
+==== Explicit Mapping
+
+A mapping occurs every time an application writes or reads a field to/from the cluster via the client's API. The field here is any data stored in Ignite - the whole key or value of an Ignite entry, an element of an array or set, a field of a complex object, etc.
+
+By using the client's API methods, an application can explicitly specify an Ignite type for a particular field. The client uses this information to transform the field from JavaScript to Java type and vice versa during the read/write operations. The field is transformed into JavaScript type as a result of read operations. It validates the corresponding JavaScript type in inputs of write operations.
+
+If an application does not explicitly specify an Ignite type for a field, the client uses the default mapping during the field read/write operations.
+
+==== Default Mapping
+
+The default mapping is explained link:https://www.gridgain.com/sdk/nodejs-thin-client/latest/ObjectType.html[here].
+
+
+=== Basic Key-Value Operations
+The `CacheClient` class provides methods for working with the cache entries using key-value operations - put, get, put all, get all, replace and others.
+The following example shows how to do that:
+
+[source, js]
+----
+include::{source_code_dir}/key-value.js[tag=example-block,indent=0]
+----
+
+////
+=== Asynchronous Execution
+TODO
+////
+
+== Scan Queries
+The `IgniteClient.query(scanquery)` method can be used to fetch all entries from the cache.
+It returns a cursor object that can be used to iterate over a result set lazily or to get all results at once.
+
+To execute a scan query, create a `ScanQuery` object and call `IgniteClient.query(scanquery)`:
+
+[source, js]
+----
+include::{source_code_dir}/scanquery.js[tag="scan-query", indent=0]
+----
+
+== Executing SQL Statements
+The Node.js thin client supports all link:sql-reference[SQL commands] that are supported by Ignite.
+The commands are executed via the `query(SqlFieldQuery)` method of the cache object.
+The method accepts an instance of `SqlFieldsQuery` that represents a SQL statement and returns an instance of the `SqlFieldsCursor` class. Use the cursor to iterate over the result set or get all results at once.
+
+[source, js]
+----
+include::{source_code_dir}/sql.js[tag="sql", indent=0]
+----
+
+////
+TODO: do we need this example?
+[source, js]
+----
+include::{source_code_dir}/sql-fields-query.js[tag=example-block,indent=0]
+----
+////
+
+== Security
+
+=== SSL/TLS
+To use encrypted communication between the thin client and the cluster, you have to enable SSL/TLS both in the cluster configuration and the client configuration. Refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls-for-thin-clients[Enabling SSL/TLS for Thin Clients] section for instructions on the cluster configuration.
+
+Here is an example configuration for enabling SSL in the thin client:
+
+[source, js]
+----
+include::{source_code_dir}/tls.js[tag=example-block,indent=0]
+----
+
+
+
+=== Authentication
+Configure link:security/authentication[authentication on the cluster side] and provide a valid user name and password in the client configuration.
+
+[source, js]
+----
+include::{source_code_dir}/authentication.js[tag=auth,indent=0]
+----
+
+
+

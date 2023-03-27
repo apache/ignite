@@ -29,6 +29,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
@@ -60,6 +61,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testMultipleNodes() throws Exception {
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
@@ -89,6 +91,7 @@ public class GridRoundRobinLoadBalancingSpiMultipleNodesSelfTest
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"ObjectEquality"})
+    @Test
     public void testMultipleTasks() throws Exception {
         ComputeTaskSession ses1 = new GridTestTaskSession(IgniteUuid.randomUuid());
         ComputeTaskSession ses2 = new GridTestTaskSession(IgniteUuid.randomUuid());

@@ -18,40 +18,51 @@
 #ifndef _IGNITE_IMPL_IGNITE_IMPL
 #define _IGNITE_IMPL_IGNITE_IMPL
 
-#include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 #include <ignite/common/utils.h>
+#include <ignite/common/concurrent.h>
+#include <ignite/common/lazy.h>
+#include <ignite/cluster/cluster_group.h>
 
+#include <ignite/impl/ignite_environment.h>
 #include <ignite/impl/cache/cache_impl.h>
 #include <ignite/impl/transactions/transactions_impl.h>
 #include <ignite/impl/cluster/cluster_group_impl.h>
-#include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/cluster/ignite_cluster_impl.h>
+#include <ignite/impl/cache/cache_affinity_impl.h>
+#include <ignite/impl/compute/compute_impl.h>
+#include <ignite/impl/cluster/cluster_group_impl.h>
 
-namespace ignite 
+namespace ignite
 {
-    namespace impl 
+    namespace impl
     {
         /**
          * Ignite implementation.
          */
-        class IGNITE_FRIEND_EXPORT IgniteImpl
+        class IGNITE_FRIEND_EXPORT IgniteImpl : private interop::InteropTarget
         {
-            typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
             typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
-            typedef common::concurrent::SharedPointer<cluster::ClusterGroupImpl> SP_ClusterGroupImpl;
+            typedef common::concurrent::SharedPointer<cluster::IgniteClusterImpl> SP_IgniteClusterImpl;
+            typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
+            typedef common::concurrent::SharedPointer<IgniteBindingImpl> SP_IgniteBindingImpl;
+            typedef common::concurrent::SharedPointer<cache::CacheAffinityImpl> SP_CacheAffinityImpl;
         public:
             /**
              * Constructor used to create new instance.
              *
              * @param env Environment.
-             * @param javaRef Reference to java object.
              */
-            IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
-            
+            IgniteImpl(SP_IgniteEnvironment env);
+
             /**
-             * Destructor.
+             * Get affinity service to provide information about data partitioning and distribution.
+             *
+             * @param name Cache name.
+             * @param err Error.
+             * @return Pointer to cache affinity implementation.
              */
-            ~IgniteImpl();
+            SP_CacheAffinityImpl GetAffinity(const std::string& cacheName, IgniteError& err);
 
             /**
              * Get name of the Ignite.
@@ -80,24 +91,7 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V> 
-            cache::CacheImpl* GetCache(const char* name, IgniteError& err)
-            {
-                ignite::jni::java::JniErrorInfo jniErr;
-
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorCache(javaRef, name, &jniErr);
-
-                if (!cacheJavaRef)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
-            }
+            cache::CacheImpl* GetCache(const char* name, IgniteError& err);
 
             /**
              * Get or create cache.
@@ -105,24 +99,7 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V>
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
-            {
-                ignite::jni::java::JniErrorInfo jniErr;
-
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorGetOrCreateCache(javaRef, name, &jniErr);
-
-                if (!cacheJavaRef)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
-            }
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err);
 
             /**
              * Create cache.
@@ -130,31 +107,14 @@ namespace ignite
              * @param name Cache name.
              * @param err Error.
              */
-            template<typename K, typename V>
-            cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
-            {
-                ignite::jni::java::JniErrorInfo jniErr;
-
-                jobject cacheJavaRef = env.Get()->Context()->ProcessorCreateCache(javaRef, name, &jniErr);
-
-                if (!cacheJavaRef)
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    return NULL;
-                }
-
-                char* name0 = common::CopyChars(name);
-
-                return new cache::CacheImpl(name0, env, cacheJavaRef);
-            }
+            cache::CacheImpl* CreateCache(const char* name, IgniteError& err);
 
             /**
              * Get ignite binding.
              *
              * @return IgniteBinding class instance.
              */
-            common::concurrent::SharedPointer<IgniteBindingImpl> GetBinding();
+            SP_IgniteBindingImpl GetBinding();
 
             /**
              * Get instance of the implementation from the proxy class.
@@ -185,9 +145,9 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl GetTransactions() const
+            SP_TransactionsImpl GetTransactions()
             {
-                return txImpl;
+                return txImpl.Get();
             }
 
             /**
@@ -195,10 +155,93 @@ namespace ignite
              *
              * @return ClusterGroupImpl instance.
              */
-            SP_ClusterGroupImpl GetProjection() const
+            cluster::SP_ClusterGroupImpl GetProjection()
             {
-                return prjImpl;
+                return prjImpl.Get();
             }
+
+            /**
+             * Get cluster.
+             *
+             * @return IgniteClusterImpl instance.
+             */
+            SP_IgniteClusterImpl GetCluster();
+
+            /**
+             * Gets compute instance over all cluster nodes started in server mode.
+             *
+             * @return ComputeImpl instance.
+             */
+            SP_ComputeImpl GetCompute();
+
+            /**
+             * Gets compute instance over the specified cluster group. All operations
+             * on the returned compute instance will only include nodes from
+             * this cluster group.
+             *
+             * @param grp Specified cluster group instance.
+             * @return ComputeImpl instance.
+             */
+            SP_ComputeImpl GetCompute(ignite::cluster::ClusterGroup grp);
+
+            /**
+             * Check if the Ignite grid is active.
+             *
+             * @return True if grid is active and false otherwise.
+             */
+            bool IsActive()
+            {
+                return prjImpl.Get().Get()->IsActive();
+            }
+
+            /**
+             * Change Ignite grid state to active or inactive.
+             *
+             * @param active If true start activation process. If false start
+             *    deactivation process.
+             */
+            void SetActive(bool active)
+            {
+                prjImpl.Get().Get()->SetActive(active);
+            }
+
+            /**
+             * Disable write-ahead logging for specified cache.
+             *
+             * @param cacheName Cache name.
+             */
+            void DisableWal(std::string cacheName);
+
+            /**
+             * Enable write-ahead logging for specified cache.
+             *
+             * @param cacheName Cache name.
+             */
+            void EnableWal(std::string cacheName);
+
+            /**
+             * Check if write - ahead logging is enabled for specified cache.
+             *
+             * @param cacheName Cache name.
+             *
+             * @return True if enabled.
+             */
+            bool IsWalEnabled(std::string cacheName);
+
+            /**
+             * Set baseline topology constructed from the cluster topology of the given version.
+             * The method succeeds only if the cluster topology has not changed.
+             *
+             * @param topVer Topology version.
+             */
+            void SetBaselineTopologyVersion(int64_t topVer);
+
+            /**
+             * Set transaction timeout on partition map exchange.
+             *
+             * @param timeout Timeout in milliseconds.
+             */
+            void SetTxTimeoutOnPartitionMapExchange(int64_t timeout);
 
         private:
             /**
@@ -206,28 +249,34 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+            transactions::TransactionsImpl* InternalGetTransactions();
 
             /**
              * Get current projection internal call.
              *
              * @return ClusterGroupImpl instance.
              */
-            SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
+            cluster::ClusterGroupImpl* InternalGetProjection();
 
             /** Environment. */
             SP_IgniteEnvironment env;
 
-            /** Native Java counterpart. */
-            jobject javaRef;
-
             /** Transactions implementaion. */
-            SP_TransactionsImpl txImpl;
+            common::Lazy<transactions::TransactionsImpl> txImpl;
 
             /** Projection implementation. */
-            SP_ClusterGroupImpl prjImpl;
+            common::Lazy<cluster::ClusterGroupImpl> prjImpl;
 
-            IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
+            IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl);
+
+            /**
+            * Get or create cache.
+            *
+            * @param name Cache name.
+            * @param err Error.
+            * @param op Operation code.
+            */
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err, int32_t op);
         };
     }
 }

@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <ignite/common/common.h>
+#include <ignite/common/concurrent.h>
 
 namespace ignite 
 {
@@ -48,7 +49,25 @@ namespace ignite
 
             /** Flag: acquired. */
             const int IGNITE_MEM_FLAG_ACQUIRED = 0x4;
-                
+
+            /**
+             * A helper union to bitwise conversion from int32_t to float and back.
+             */
+            union BinaryFloatInt32
+            {
+                float f;
+                int32_t i;
+            };
+
+            /**
+             * A helper union to bitwise conversion from int64_t to double and back.
+             */
+            union BinaryDoubleInt64
+            {
+                double d;
+                int64_t i;
+            };
+
             /**
              * Interop memory.
              */
@@ -168,6 +187,11 @@ namespace ignite
                 static bool IsAcquired(int32_t flags);
 
                 /**
+                 * Constructor.
+                 */
+                InteropMemory() : memPtr(0) { }
+
+                /**
                  * Destructor.
                  */
                 virtual ~InteropMemory() { }
@@ -182,7 +206,7 @@ namespace ignite
                 /**
                  * Get cross-platform pointer in long form.
                  */
-                int64_t PointerLong();
+                int64_t PointerLong() const;
 
                 /**
                  * Get raw data pointer.
@@ -190,6 +214,13 @@ namespace ignite
                  * @return Data pointer.
                  */
                 int8_t* Data();
+
+                /**
+                 * Get raw data pointer.
+                 *
+                 * @return Data pointer.
+                 */
+                const int8_t* Data() const;
 
                 /**
                  * Get capacity.
@@ -222,13 +253,16 @@ namespace ignite
                 /**
                  * Reallocate memory.
                  *
-                 * @param cap Desired capactiy.
+                 * @param cap Desired capacity.
                  */
                 virtual void Reallocate(int32_t cap) = 0;
             protected:
                 /** Memory pointer. */
                 int8_t* memPtr; 
             };
+
+            typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
+            typedef common::concurrent::SharedPointer<const interop::InteropMemory> SP_ConstInteropMemory;
 
             /**
              * Interop unpooled memory.
@@ -248,7 +282,7 @@ namespace ignite
                  *
                  * @param memPtr Memory pointer.
                  */
-                explicit InteropUnpooledMemory(int8_t* memPtr);
+                explicit InteropUnpooledMemory(int8_t* memPtr = 0);
 
                 /**
                  * Destructor.
@@ -256,11 +290,25 @@ namespace ignite
                 ~InteropUnpooledMemory();
 
                 virtual void Reallocate(int32_t cap);
+
+                /**
+                 * Try get owning copy.
+                 *
+                 * @param mem Memory instance to transfer ownership to.
+                 * @return True on success
+                 */
+                bool TryGetOwnership(InteropUnpooledMemory& mem);
+
             private:
+                /**
+                 * Release all resources.
+                 */
+                void CleanUp();
+
                 /** Whether this instance is owner of memory chunk. */
                 bool owning; 
 
-                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory);
             };
         }
     }

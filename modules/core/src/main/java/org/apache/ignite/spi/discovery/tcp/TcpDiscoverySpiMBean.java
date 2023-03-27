@@ -20,20 +20,23 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
+import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Management bean for {@link TcpDiscoverySpi}.
  */
-public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
+@MXBeanDescription("MBean provide access to TCP-based discovery SPI.")
+public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, DiscoverySpiMBean {
     /**
      * Gets current SPI state.
      *
      * @return Current SPI state.
      */
     @MXBeanDescription("SPI state.")
-    public String getSpiState();
+    @Override public String getSpiState();
 
     /**
      * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
@@ -50,6 +53,14 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Reconnect count.")
     public int getReconnectCount();
+
+    /**
+     * Gets connection check interval in ms.
+     *
+     * @return Connection check interval.
+     */
+    @MXBeanDescription("Connection check interval.")
+    public long getConnectionCheckInterval();
 
     /**
      * Gets network timeout.
@@ -84,11 +95,13 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public int getThreadPriority();
 
     /**
-     * Gets IP finder clean frequency.
+     * Gets frequency with which coordinator cleans IP finder and keeps it in the correct state, unregistering addresses
+     * of the nodes that have left the topology.
      *
      * @return IP finder clean frequency.
      */
-    @MXBeanDescription("IP finder clean frequency.")
+    @MXBeanDescription("The frequency with which coordinator cleans IP finder and keeps it in the correct state, " +
+        "unregistering addresses of the nodes that have left the topology.")
     public long getIpFinderCleanFrequency();
 
     /**
@@ -113,7 +126,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Nodes joined count.
      */
     @MXBeanDescription("Nodes joined count.")
-    public long getNodesJoined();
+    @Override public long getNodesJoined();
 
     /**
      * Gets left nodes count.
@@ -121,7 +134,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Left nodes count.
      */
     @MXBeanDescription("Nodes left count.")
-    public long getNodesLeft();
+    @Override public long getNodesLeft();
 
     /**
      * Gets failed nodes count.
@@ -129,7 +142,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Failed nodes count.
      */
     @MXBeanDescription("Nodes failed count.")
-    public long getNodesFailed();
+    @Override public long getNodesFailed();
 
     /**
      * Gets pending messages registered count.
@@ -192,7 +205,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @MXBeanDescription("Received messages by type.")
+    @MXBeanDescription("Processed messages by type.")
     public Map<String, Integer> getProcessedMessages();
 
     /**
@@ -209,7 +222,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Gets current coordinator.
      */
     @MXBeanDescription("Coordinator node ID.")
-    @Nullable public UUID getCoordinator();
+    @Override @Nullable public UUID getCoordinator();
 
     /**
      * Gets message acknowledgement timeout.
@@ -236,11 +249,16 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public long getSocketTimeout();
 
     /**
-     * Gets join timeout.
+     * The join timeout, in milliseconds. Time to wait for joining. If node cannot connect to any address from the IP
+     * finder, the node continues to try to join during this timeout. If all addresses still do not respond, an
+     * exception will occur and the node will fail to start. If 0 is specified, it means wait forever.
      *
      * @return Join timeout.
      */
-    @MXBeanDescription("Join timeout.")
+    @MXBeanDescription("The join timeout, in milliseconds. Time to wait for joining. " +
+        "If node cannot connect to any address from the IP finder, the node continues to try to join during this timeout. " +
+        "If all addresses still do not respond, an exception will occur and the node will fail to start. " +
+        "If 0 is specified, it means wait forever.")
     public long getJoinTimeout();
 
     /**
@@ -257,4 +275,31 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Client mode.")
     public boolean isClientMode() throws IllegalStateException;
+
+    /**
+     * Diagnosis method for determining ring message latency.
+     * On this method call special message will be sent across the ring
+     * and stats about the message will appear in the logs of each node.
+     *
+     * @param maxHops Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).
+     */
+    @MXBeanDescription("Check ring latency.")
+    public void checkRingLatency(
+        @MXBeanParameter(name = "maxHops",
+            description = "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).") int maxHops
+    );
+
+    /**
+     * Current topology version.
+     *
+     * @return current topVer.
+     */
+    @MXBeanDescription("Get current topology version.")
+    public long getCurrentTopologyVersion();
+
+    /**
+     * Dumps ring structure to log.
+     */
+    @MXBeanDescription("Dumps ring structure to log.")
+    public void dumpRingStructure();
 }

@@ -314,7 +314,6 @@ namespace ignite
                 default:
                 {
                     // This is a fail case.
-                    std::cout << (int)hdr << std::endl;
                     assert(false);
                     return;
                 }
@@ -326,32 +325,34 @@ namespace ignite
             size = sizeTmp;
         }
 
-        SqlResult::Type Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
+        app::ConversionResult::Type Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
         {
             if (!IsValid())
-                return SqlResult::AI_ERROR;
+                return app::ConversionResult::AI_FAILURE;
 
             if (GetUnreadDataLength() == 0)
             {
                 dataBuf.PutNull();
 
-                return SqlResult::AI_NO_DATA;
+                return app::ConversionResult::AI_NO_DATA;
             }
 
             InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
-                return SqlResult::AI_ERROR;
+                return app::ConversionResult::AI_FAILURE;
 
             InteropStreamPositionGuard<InteropInputStream> guard(*stream);
 
             stream->Position(startPos);
 
+            app::ConversionResult::Type convRes = app::ConversionResult::AI_SUCCESS;
+
             switch (type)
             {
                 case IGNITE_TYPE_BYTE:
                 {
-                    dataBuf.PutInt8(reader.ReadInt8());
+                    convRes = dataBuf.PutInt8(reader.ReadInt8());
 
                     IncreaseOffset(size);
 
@@ -361,7 +362,7 @@ namespace ignite
                 case IGNITE_TYPE_SHORT:
                 case IGNITE_TYPE_CHAR:
                 {
-                    dataBuf.PutInt16(reader.ReadInt16());
+                    convRes = dataBuf.PutInt16(reader.ReadInt16());
 
                     IncreaseOffset(size);
 
@@ -370,7 +371,7 @@ namespace ignite
 
                 case IGNITE_TYPE_INT:
                 {
-                    dataBuf.PutInt32(reader.ReadInt32());
+                    convRes = dataBuf.PutInt32(reader.ReadInt32());
 
                     IncreaseOffset(size);
 
@@ -379,7 +380,7 @@ namespace ignite
 
                 case IGNITE_TYPE_LONG:
                 {
-                    dataBuf.PutInt64(reader.ReadInt64());
+                    convRes = dataBuf.PutInt64(reader.ReadInt64());
 
                     IncreaseOffset(size);
 
@@ -388,7 +389,7 @@ namespace ignite
 
                 case IGNITE_TYPE_FLOAT:
                 {
-                    dataBuf.PutFloat(reader.ReadFloat());
+                    convRes = dataBuf.PutFloat(reader.ReadFloat());
 
                     IncreaseOffset(size);
 
@@ -397,7 +398,7 @@ namespace ignite
 
                 case IGNITE_TYPE_DOUBLE:
                 {
-                    dataBuf.PutDouble(reader.ReadDouble());
+                    convRes = dataBuf.PutDouble(reader.ReadDouble());
 
                     IncreaseOffset(size);
 
@@ -406,7 +407,7 @@ namespace ignite
 
                 case IGNITE_TYPE_BOOL:
                 {
-                    dataBuf.PutInt8(reader.ReadBool() ? 1 : 0);
+                    convRes = dataBuf.PutInt8(reader.ReadBool() ? 1 : 0);
 
                     IncreaseOffset(size);
 
@@ -418,7 +419,8 @@ namespace ignite
                     std::string str;
                     utility::ReadString(reader, str);
 
-                    int32_t written = dataBuf.PutString(str.substr(offset));
+                    int32_t written = 0;
+                    convRes = dataBuf.PutString(str.substr(offset), written);
 
                     IncreaseOffset(written);
 
@@ -429,7 +431,7 @@ namespace ignite
                 {
                     Guid guid = reader.ReadGuid();
 
-                    dataBuf.PutGuid(guid);
+                    convRes = dataBuf.PutGuid(guid);
 
                     IncreaseOffset(size);
 
@@ -438,7 +440,7 @@ namespace ignite
 
                 case IGNITE_HDR_NULL:
                 {
-                    dataBuf.PutNull();
+                    convRes = dataBuf.PutNull();
 
                     IncreaseOffset(size);
 
@@ -451,13 +453,15 @@ namespace ignite
                     int32_t len;
 
                     if (!GetObjectLength(*stream, len))
-                        return SqlResult::AI_ERROR;
+                        return app::ConversionResult::AI_FAILURE;
 
                     std::vector<int8_t> data(len);
 
                     stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
 
-                    int32_t written = dataBuf.PutBinaryData(data.data() + offset, static_cast<size_t>(len - offset));
+                    int32_t written = 0;
+                    convRes = dataBuf.PutBinaryData(data.data() + offset,
+                        static_cast<size_t>(len - offset), written);
 
                     IncreaseOffset(written);
 
@@ -470,7 +474,7 @@ namespace ignite
 
                     utility::ReadDecimal(reader, res);
 
-                    dataBuf.PutDecimal(res);
+                    convRes = dataBuf.PutDecimal(res);
 
                     IncreaseOffset(size);
 
@@ -481,7 +485,7 @@ namespace ignite
                 {
                     Date date = reader.ReadDate();
 
-                    dataBuf.PutDate(date);
+                    convRes = dataBuf.PutDate(date);
 
                     break;
                 }
@@ -490,7 +494,7 @@ namespace ignite
                 {
                     Timestamp ts = reader.ReadTimestamp();
 
-                    dataBuf.PutTimestamp(ts);
+                    convRes = dataBuf.PutTimestamp(ts);
 
                     break;
                 }
@@ -499,7 +503,7 @@ namespace ignite
                 {
                     Time time = reader.ReadTime();
 
-                    dataBuf.PutTime(time);
+                    convRes = dataBuf.PutTime(time);
 
                     break;
                 }
@@ -512,20 +516,18 @@ namespace ignite
 
                     stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
 
-                    int32_t written = dataBuf.PutBinaryData(data.data(), data.size());
+                    int32_t written = 0;
+                    convRes = dataBuf.PutBinaryData(data.data(), data.size(), written);
 
                     IncreaseOffset(written);
                     break;
                 }
 
                 default:
-                {
-                    // This is a fail case. Return false.
-                    return SqlResult::AI_ERROR;
-                }
+                    return app::ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
-            return SqlResult::AI_SUCCESS;
+            return convRes;
         }
 
         void Column::IncreaseOffset(int32_t value)

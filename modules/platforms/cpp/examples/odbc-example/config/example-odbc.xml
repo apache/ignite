@@ -27,9 +27,13 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
 
-        <!-- Enabling ODBC. -->
-        <property name="odbcConfiguration">
-            <bean class="org.apache.ignite.configuration.OdbcConfiguration"></bean>
+        <property name="cacheKeyConfiguration">
+            <list>
+                <bean class="org.apache.ignite.cache.CacheKeyConfiguration">
+                    <property name="typeName" value="PersonKey"/>
+                    <property name="affinityKeyFieldName" value="orgIdAff" />
+                </bean>
+            </list>
         </property>
 
         <property name="cacheConfiguration">
@@ -43,11 +47,13 @@
                     <property name="queryEntities">
                         <list>
                             <bean class="org.apache.ignite.cache.QueryEntity">
-                                <property name="keyType" value="java.lang.Long"/>
+                                <property name="keyType" value="PersonKey"/>
                                 <property name="valueType" value="Person"/>
 
                                 <property name="fields">
                                     <map>
+                                        <entry key="id" value="java.lang.Long"/>
+                                        <entry key="orgIdAff" value="java.lang.Long"/>
                                         <entry key="orgId" value="java.lang.Long"/>
                                         <entry key="firstName" value="java.lang.String"/>
                                         <entry key="lastName" value="java.lang.String"/>
@@ -57,7 +63,10 @@
                                 </property>
 
                                 <property name="keyFields">
-                                    <list></list>
+                                    <list>
+                                        <value>id</value>
+                                        <value>orgIdAff</value>
+                                    </list>
                                 </property>
 
                                 <property name="indexes">

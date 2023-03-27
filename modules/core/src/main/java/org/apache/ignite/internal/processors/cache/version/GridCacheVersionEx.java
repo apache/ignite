@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -51,7 +52,7 @@ public class GridCacheVersionEx extends GridCacheVersion {
      * @param dataCenterId Data center ID.
      * @param drVer DR version.
      */
-    public GridCacheVersionEx(int topVer, long order, int nodeOrder, byte dataCenterId,
+    private GridCacheVersionEx(int topVer, long order, int nodeOrder, byte dataCenterId,
         GridCacheVersion drVer) {
         super(topVer, order, nodeOrder, dataCenterId);
 
@@ -79,6 +80,11 @@ public class GridCacheVersionEx extends GridCacheVersion {
     /** {@inheritDoc} */
     @Override public GridCacheVersion conflictVersion() {
         return drVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheEntryVersion otherClusterVersion() {
+        return conflictVersion();
     }
 
     /** {@inheritDoc} */
@@ -162,6 +168,19 @@ public class GridCacheVersionEx extends GridCacheVersion {
         return "GridCacheVersionEx [topVer=" + topologyVersion() +
             ", order=" + order() +
             ", nodeOrder=" + nodeOrder() +
+            ", dataCenterId=" + dataCenterId() +
             ", drVer=" + drVer + ']';
+    }
+
+    /** @return If {@code ver != conflictVer} then {@code ver} with {@code conflictVer} added to it. */
+    public static GridCacheVersion addConflictVersion(GridCacheVersion ver, GridCacheVersion conflictVer) {
+        if (conflictVer == null || conflictVer == ver)
+            return ver;
+
+        return new GridCacheVersionEx(ver.topologyVersion(),
+            ver.order(),
+            ver.nodeOrder(),
+            ver.dataCenterId(),
+            conflictVer);
     }
 }

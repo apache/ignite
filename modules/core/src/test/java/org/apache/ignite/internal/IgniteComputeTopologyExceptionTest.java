@@ -26,8 +26,10 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  *
@@ -46,6 +48,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectException() throws Exception {
         Ignite ignite = ignite(0);
 
@@ -72,6 +75,7 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectCheckedException() throws Exception {
         IgniteKernal ignite0 = (IgniteKernal)ignite(0);
 
@@ -79,7 +83,8 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        IgniteInternalFuture<?> fut = ignite0.context().closure().callAsyncNoFailover(BALANCE,
+        IgniteInternalFuture<?> fut = ignite0.context().closure().callAsync(
+            BALANCE,
             new IgniteCallable<Object>() {
                 @Override public Object call() throws Exception {
                     fail("Should not be called.");
@@ -87,9 +92,8 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            nodes,
-            false,
-            0);
+            options(nodes).withFailoverDisabled()
+        );
 
         try {
             fut.get();

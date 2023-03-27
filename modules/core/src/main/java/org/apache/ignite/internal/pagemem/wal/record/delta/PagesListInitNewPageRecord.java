@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -38,13 +41,16 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     private final long addDataPageId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
+     * @param ioType IO type.
+     * @param ioVer IO version.
+     * @param newPageId New page ID.
      * @param prevPageId Previous page ID.
      * @param addDataPageId Optional page ID to add.
      */
     public PagesListInitNewPageRecord(
-        int cacheId,
+        int grpId,
         long pageId,
         int ioType,
         int ioVer,
@@ -52,7 +58,30 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
         long prevPageId,
         long addDataPageId
     ) {
-        super(cacheId, pageId, ioType, ioVer, newPageId);
+        this(grpId, pageId, ioType, ioVer, newPageId, prevPageId, addDataPageId, null);
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param ioType IO type.
+     * @param ioVer IO version.
+     * @param newPageId New page ID.
+     * @param prevPageId Previous page ID.
+     * @param addDataPageId Optional page ID to add.
+     * @param log Logger for case data is invalid. Can be {@code null}, but is needed when processing existing storage.
+     */
+    public PagesListInitNewPageRecord(
+        int grpId,
+        long pageId,
+        int ioType,
+        int ioVer,
+        long newPageId,
+        long prevPageId,
+        long addDataPageId,
+        @Nullable IgniteLogger log
+    ) {
+        super(grpId, pageId, ioType, ioVer, newPageId, log);
 
         this.prevPageId = prevPageId;
         this.addDataPageId = addDataPageId;
@@ -76,11 +105,13 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         PagesListNodeIO io = PageIO.getPageIO(PageIO.T_PAGE_LIST_NODE, ioVer);
 
-        io.initNewPage(pageAddr, pageId(), pageMem.pageSize());
+        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(groupId());
+
+        io.initNewPage(pageAddr, pageId(), pageMem.realPageSize(groupId()), metrics);
         io.setPreviousId(pageAddr, prevPageId);
 
         if (addDataPageId != 0L) {
-            int cnt = io.addPage(pageAddr, addDataPageId, pageMem.pageSize());
+            int cnt = io.addPage(pageAddr, addDataPageId, pageMem.realPageSize(groupId()));
 
             assert cnt == 0 : cnt;
         }
@@ -95,6 +126,8 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     @Override public String toString() {
         return S.toString(PagesListInitNewPageRecord.class, this,
             "prevPageId", U.hexLong(prevPageId),
-            "addDataPageId", U.hexLong(addDataPageId));
+            "addDataPageId", U.hexLong(addDataPageId),
+            "super", super.toString()
+        );
     }
 }

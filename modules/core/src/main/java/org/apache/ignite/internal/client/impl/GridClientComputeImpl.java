@@ -33,7 +33,6 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
 
 /**
@@ -44,20 +43,6 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     private static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
-        }
-    };
-
-    /** */
-    private static final GridClientPredicate<GridClientNode> DAEMON = new GridClientPredicate<GridClientNode>() {
-        @Override public boolean apply(GridClientNode e) {
-            return "true".equals(e.<String>attribute(ATTR_DAEMON));
-        }
-    };
-
-    /** */
-    private static final GridClientPredicate<GridClientNode> NOT_DAEMON = new GridClientPredicate<GridClientNode>() {
-        @Override public boolean apply(GridClientNode e) {
-            return !"true".equals(e.<String>attribute(ATTR_DAEMON));
         }
     };
 
@@ -174,11 +159,11 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
      * @return Most recently refreshed topology.
      */
     @Override public Collection<GridClientNode> nodes() throws GridClientException {
-        return applyFilter(projectionNodes(), NOT_DAEMON);
+        return applyFilter(projectionNodes(), n -> true);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<UUID> ids) throws GridClientException  {
+    @Override public Collection<GridClientNode> nodes(Collection<UUID> ids) throws GridClientException {
         A.notNull(ids, "ids");
 
         return client.topology().nodes(ids);
@@ -189,12 +174,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         throws GridClientException {
         A.notNull(filter, "filter");
 
-        return applyFilter(projectionNodes(), new GridClientAndPredicate<>(filter, NOT_DAEMON));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> daemonNodes() throws GridClientException {
-        return applyFilter(projectionNodes(), DAEMON);
+        return applyFilter(projectionNodes(), new GridClientAndPredicate<>(filter, n -> true));
     }
 
     /** {@inheritDoc} */

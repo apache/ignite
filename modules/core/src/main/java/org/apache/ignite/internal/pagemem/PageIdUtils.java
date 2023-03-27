@@ -49,17 +49,22 @@ public final class PageIdUtils {
     /** */
     public static final long TAG_MASK = ~(-1L << TAG_SIZE);
 
-    /** */
+    /** Page Index is a monotonically growing number within each partition */
     public static final long PART_ID_MASK = ~(-1L << PART_ID_SIZE);
 
-    /** */
+    /** Flags mask. Flags consists from a number of reserved bits, and page type (data/index page) */
     public static final long FLAG_MASK = ~(-1L << FLAG_SIZE);
 
     /** */
     private static final long EFFECTIVE_PAGE_ID_MASK = ~(-1L << (PAGE_IDX_SIZE + PART_ID_SIZE));
 
+    /**
+     * Offset of a Rotation ID inside a Page ID.
+     */
+    private static final long ROTATION_ID_OFFSET = PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE;
+
     /** */
-    private static final long PAGE_ID_MASK = ~(-1L << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+    private static final long PAGE_ID_MASK = ~(-1L << ROTATION_ID_OFFSET);
 
     /** Max itemid number. */
     public static final int MAX_ITEMID_NUM = 0xFE;
@@ -85,17 +90,17 @@ public final class PageIdUtils {
      * @return Page link.
      */
     public static long link(long pageId, int itemId) {
-        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM: itemId;
-        assert (pageId >> (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE)) == 0 : U.hexLong(pageId);
+        assert itemId >= 0 && itemId <= MAX_ITEMID_NUM : itemId;
+        assert (pageId >> ROTATION_ID_OFFSET) == 0 : U.hexLong(pageId);
 
-        return pageId | (((long)itemId) << (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE));
+        return pageId | (((long)itemId) << ROTATION_ID_OFFSET);
     }
 
     /**
-     * Extracts a page index from the given pageId.
+     * Extracts a page index from the given page ID.
      *
-     * @param pageId Page id.
-     * @return Page ID.
+     * @param pageId Page ID.
+     * @return Page index.
      */
     public static int pageIndex(long pageId) {
         return (int)(pageId & PAGE_IDX_MASK); // 4 bytes
@@ -108,7 +113,7 @@ public final class PageIdUtils {
      * @return Page ID.
      */
     public static long pageId(long link) {
-        return flag(link) == PageIdAllocator.FLAG_IDX ? link : link & PAGE_ID_MASK;
+        return flag(link) == PageIdAllocator.FLAG_DATA ? link & PAGE_ID_MASK : link;
     }
 
     /**
@@ -127,7 +132,6 @@ public final class PageIdUtils {
         return (pageId & ~EFFECTIVE_PAGE_ID_MASK) == 0;
     }
 
-
     /**
      * Index of the item inside of data page.
      *
@@ -135,7 +139,7 @@ public final class PageIdUtils {
      * @return Offset in 8-byte words.
      */
     public static int itemId(long link) {
-        return (int)((link >> (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE)) & OFFSET_MASK);
+        return (int)((link >> ROTATION_ID_OFFSET) & OFFSET_MASK);
     }
 
     /**
@@ -150,7 +154,9 @@ public final class PageIdUtils {
 
     /**
      * @param partId Partition ID.
-     * @return Part ID constructed from the given cache ID and partition ID.
+     * @param flag Flags (a number of reserved bits, and page type (data/index page))
+     * @param pageIdx Page index, monotonically growing number within each partition
+     * @return Page ID constructed from the given pageIdx and partition ID, see {@link FullPageId}
      */
     public static long pageId(int partId, byte flag, int pageIdx) {
         long pageId = flag & FLAG_MASK;
@@ -178,14 +184,31 @@ public final class PageIdUtils {
     }
 
     /**
+     * Returns the Rotation ID of a page identified by the given ID.
+     */
+    public static long rotationId(long pageId) {
+        return pageId >>> ROTATION_ID_OFFSET;
+    }
+
+    /**
      * @param pageId Page ID.
      * @return New page ID.
      */
     public static long rotatePageId(long pageId) {
-        long updatedRotationId = (pageId >> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
+        long updatedRotationId = rotationId(pageId) + 1;
 
-        return (pageId & PAGE_ID_MASK) |
-            (updatedRotationId << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+        if (updatedRotationId > MAX_ITEMID_NUM)
+            updatedRotationId = 1; // We always want non-zero updatedRotationId
+
+        return (pageId & PAGE_ID_MASK) | (updatedRotationId << ROTATION_ID_OFFSET);
+    }
+
+    /**
+     * Masks partition ID from full page ID.
+     * @param pageId Page ID to mask partition ID from.
+     */
+    public static long maskPartitionId(long pageId) {
+        return pageId & ~((-1L << PAGE_IDX_SIZE) & (~(-1L << PAGE_IDX_SIZE + PART_ID_SIZE)));
     }
 
     /**
@@ -197,5 +220,28 @@ public final class PageIdUtils {
      */
     public static long changeType(long pageId, byte type) {
         return pageId(partId(pageId), type, pageIndex(pageId));
+    }
+
+    /**
+     * @param pageId Page id.
+     */
+    public static String toDetailString(long pageId) {
+        return "pageId=" + pageId +
+            "(offset=" + itemId(pageId) +
+            ", flags=" + Integer.toBinaryString(flag(pageId)) +
+            ", partId=" + partId(pageId) +
+            ", index=" + pageIndex(pageId) +
+            ")";
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param partId Partition ID.
+     */
+    public static long changePartitionId(long pageId, int partId) {
+        byte flag = flag(pageId);
+        int pageIdx = pageIndex(pageId);
+
+        return pageId(partId, flag, pageIdx);
     }
 }

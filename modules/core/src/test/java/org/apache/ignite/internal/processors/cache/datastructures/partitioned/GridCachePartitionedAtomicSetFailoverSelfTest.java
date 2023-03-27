@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetFailoverAbstractSelfTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -32,7 +34,9 @@ public class GridCachePartitionedAtomicSetFailoverSelfTest extends GridCacheSetF
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-170")
+    @Test
     @Override public void testNodeRestart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-170");
+        // No-op
     }
 }

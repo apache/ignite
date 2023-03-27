@@ -1,0 +1,62 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Disk Compression
+
+Disk compression refers to the process of compressing data pages when they are written to disk, reducing the size of the on-disk storage.
+The pages are kept in memory uncompressed, but when the data is flushed to disk it is compressed using the configured algorithm.
+This applies only to data pages that are stored to the persistent storage and does not compress indexes or WAL records.
+link:[WAL records compression] can be enabled separately.
+
+Disk page compression can be enabled on a per cache basis in the cache configuration.
+The cache must reside in a persistent link:[data region].
+There is no option to enable disk page compression globally at the moment.
+Moreover, the following prerequisites must be met:
+
+* Set the `pageSize` property in your data storage configuration to at least 2 times the page size of your file system. It means that the page size must be either 8K or 16K.
+* Enable the `ignite-compress` module.
+
+To enable disk page compression for a cache, provide one of the available compression algorithms in the cache configuration, as shown in the following example:
+
+
+[tabs]
+--
+tab:XML[]
+
+[source, xml]
+----
+include::code-snippets/xml/disk-compression.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/DiskCompression.java[tags=configuration, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[unsupported]
+
+--
+
+== Supported Algorithms
+
+The supported compression algorithms include:
+
+* `ZSTD` — supports compression levels from -131072 to 22 (default: 3).
+* `LZ4` — supports compression levels from 0 to 17 (default: 0).
+* `SNAPPY` —  the Snappy algorithm.
+* `SKIP_GARBAGE` — this algorithm only extracts useful data from half-filled pages and does not compress the data.

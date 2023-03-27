@@ -54,7 +54,7 @@ public abstract class GridTreePrinter<T> {
      * @param prefix Prefix.
      * @param tail Tail child.
      * @param a Output.
-     * @throws IOException
+     * @throws IOException If failed.
      */
     private void printTree(T treeNode, String prefix, boolean tail, Appendable a) throws IOException {
         List<T> children = getChildren(treeNode);
@@ -63,13 +63,22 @@ public abstract class GridTreePrinter<T> {
 
         a.append(prefix).append(tail ? "└── " : "├── ").append(formatTreeNode(treeNode)).append('\n');
 
-        for (int i = 0; i < cnt; i++)
-            printTree(children.get(i), prefix + (tail ? "    " : "│   "), i == cnt - 1, a);
+        String childPrefix = prefix + (tail ? "    " : "│   ");
+
+        if (children == null)
+            a.append(childPrefix).append("└── <list of children is not accessible>\n");
+        else {
+            for (int i = 0; i < cnt; i++)
+                printTree(children.get(i), childPrefix, i == cnt - 1, a);
+        }
     }
 
     /**
-     * @param treeNode Tree node.
-     * @return List of children.
+     * Returns list of tree node children.
+     *
+     * @param treeNode The tree node.
+     * @return List of children (possibly empty, if it is a leaf page)
+     *         or null if the node can't be read (e.g., is locked).
      */
     protected abstract List<T> getChildren(T treeNode);
 

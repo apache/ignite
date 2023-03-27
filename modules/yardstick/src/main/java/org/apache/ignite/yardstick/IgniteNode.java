@@ -17,23 +17,35 @@
 
 package org.apache.ignite.yardstick;
 
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.yardstick.io.FileUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -44,11 +56,16 @@ import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.checkIfNoLocalhost;
+import static org.apache.ignite.yardstick.IgniteBenchmarkUtils.getPortList;
 
 /**
  * Standalone Ignite node.
  */
 public class IgniteNode implements BenchmarkServer {
+    /** Default port range */
+    private static final String DFLT_PORT_RANGE = "47500..47549";
+
     /** Grid instance. */
     private Ignite ignite;
 
@@ -60,12 +77,17 @@ public class IgniteNode implements BenchmarkServer {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param clientMode Run node in client mode.
+     */
     public IgniteNode(boolean clientMode) {
         this.clientMode = clientMode;
     }
 
-    /** */
+    /**
+     * @param clientMode Run node in client mode.
+     * @param ignite Use exist ignite instance.
+     */
     public IgniteNode(boolean clientMode, Ignite ignite) {
         this.clientMode = clientMode;
         this.ignite = ignite;
@@ -77,11 +99,22 @@ public class IgniteNode implements BenchmarkServer {
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
+        if (!F.isEmpty(args.systemProperties())) {
+            for (Map.Entry<String, String> entry : args.systemProperties().entrySet())
+                System.setProperty(entry.getKey(), entry.getValue());
+        }
+
+        if (args.clientNodesAfterId() >= 0 && cfg.memberId() > args.clientNodesAfterId())
+            clientMode = true;
+
         IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
 
         IgniteConfiguration c = tup.get1();
 
         assert c != null;
+
+        if (args.cleanWorkDirectory() && !clientMode)
+            FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
 
         ApplicationContext appCtx = tup.get2();
 
@@ -101,11 +134,16 @@ public class IgniteNode implements BenchmarkServer {
                 if (args.isNearCache()) {
                     NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                    if (args.getNearCacheSize() != 0)
-                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(args.getNearCacheSize()));
+                    int nearCacheSize = args.getNearCacheSize();
+
+                    if (nearCacheSize != 0)
+                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(nearCacheSize));
 
                     cc.setNearConfiguration(nearCfg);
                 }
+
+                if (args.cacheGroup() != null)
+                    cc.setGroupName(args.cacheGroup());
 
                 cc.setWriteSynchronizationMode(args.syncMode());
 
@@ -146,17 +184,39 @@ public class IgniteNode implements BenchmarkServer {
 
         c.setCommunicationSpi(commSpi);
 
-        if (args.getPageSize() != MemoryConfiguration.DFLT_PAGE_SIZE) {
-            MemoryConfiguration dbCfg = c.getMemoryConfiguration();
+        if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
+            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
 
-            if (dbCfg == null) {
-                dbCfg = new MemoryConfiguration();
+            if (memCfg == null) {
+                memCfg = new DataStorageConfiguration();
 
-                c.setMemoryConfiguration(dbCfg);
+                c.setDataStorageConfiguration(memCfg);
             }
 
-            dbCfg.setPageSize(args.getPageSize());
+            memCfg.setPageSize(args.getPageSize());
         }
+
+        // Set data storage configuration with persistence only if there is no data storage configuration
+        // in configuration file.
+        if (args.persistentStoreEnabled() && c.getDataStorageConfiguration() == null) {
+            BenchmarkUtils.println(String.format("Setting 'persistenceEnabled' property to 'true'. WAL mode is %s",
+                args.walMode()));
+
+            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
+
+            pcCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+            pcCfg.setWalMode(WALMode.valueOf(args.walMode()));
+
+            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+            c.setDataStorageConfiguration(pcCfg);
+        }
+
+        // If we use TcpDiscoverySpi try to set addresses from SERVER_HOSTS property to
+        // TcpDiscoveryIpFinder configuration.
+        if (c.getDiscoverySpi() instanceof TcpDiscoverySpi)
+            replaceAdrList(c, cfg);
 
         ignite = IgniteSpring.start(c, appCtx);
 
@@ -168,7 +228,8 @@ public class IgniteNode implements BenchmarkServer {
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(
+        String springCfgPath)
         throws Exception {
         URL url;
 
@@ -229,5 +290,73 @@ public class IgniteNode implements BenchmarkServer {
      */
     public Ignite ignite() {
         return ignite;
+    }
+
+    /**
+     * Replaces addresses in IpFinder list.
+     *
+     * @param c Ignite configuration.
+     * @param cfg Benchmark configuration.
+     */
+    private void replaceAdrList(IgniteConfiguration c, BenchmarkConfiguration cfg) {
+        if (cfg.customProperties() == null)
+            return;
+
+        if (cfg.customProperties().get("AUTOSET_DISCOVERY_VM_IP_FINDER") == null
+            || !Boolean.valueOf(cfg.customProperties().get("AUTOSET_DISCOVERY_VM_IP_FINDER")))
+            return;
+
+        if (cfg.customProperties().get("SERVER_HOSTS") == null)
+            return;
+
+        String hosts = cfg.customProperties().get("SERVER_HOSTS");
+
+        Collection<String> adrSetFromProp = new HashSet<>(Arrays.asList(hosts.split(",")));
+
+        if (adrSetFromProp.isEmpty())
+            return;
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
+
+        Collection<InetSocketAddress> regAdrList = spi.getIpFinder().getRegisteredAddresses();
+
+        Collection<String> adrList = new ArrayList<>(regAdrList.size());
+
+        for (InetSocketAddress adr : regAdrList)
+            adrList.add(adr.getHostString());
+
+        if (checkIfNoLocalhost(adrSetFromProp)) {
+            Collection<InetSocketAddress> newAdrList = new ArrayList<>(adrSetFromProp.size());
+
+            Collection<String> toDisplay = new TreeSet<>();
+
+            String portRange = cfg.customProperties().get("PORT_RANGE") != null ?
+                cfg.customProperties().get("PORT_RANGE") :
+                DFLT_PORT_RANGE;
+
+            for (String adr : adrSetFromProp) {
+                for (Integer port : getPortList(portRange))
+                    newAdrList.add(new InetSocketAddress(adr, port));
+
+                toDisplay.add(String.format("/%s:%s", adr, portRange));
+            }
+
+            BenchmarkUtils.println("Setting SERVER_HOSTS addresses for IpFinder configuration.");
+
+            BenchmarkUtils.println(String.format("Replacing list: \n %s \n to list: \n %s",
+                regAdrList, toDisplay));
+
+            spi.getIpFinder().unregisterAddresses(regAdrList);
+
+            spi.getIpFinder().registerAddresses(newAdrList);
+
+            for (String adr : IgniteUtils.allLocalIps()) {
+                if (adrSetFromProp.contains(adr)) {
+                    BenchmarkUtils.println(String.format("Setting 'localhost' property to %s", adr));
+
+                    c.setLocalHost(adr);
+                }
+            }
+        }
     }
 }

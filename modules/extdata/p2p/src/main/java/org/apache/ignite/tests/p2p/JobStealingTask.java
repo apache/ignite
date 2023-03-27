@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,8 +51,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert !subgrid.isEmpty();
 
@@ -65,12 +65,12 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("SuspiciousMethodCalls")
     @Override public Map<UUID, Integer> reduce(List<ComputeJobResult> results) {
         Map<UUID, Integer> ret = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
-            log.info("Job result: " + res.getData());
+            if (log.isInfoEnabled())
+                log.info("Job result: " + res.getData());
 
             UUID resUuid = (UUID)res.getData();
 
@@ -102,7 +102,8 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
 
         /** {@inheritDoc} */
         @Override public Serializable execute() {
-            log.info("Started job on node: " + ignite.cluster().localNode().id());
+            if (log.isInfoEnabled())
+                log.info("Started job on node: " + ignite.cluster().localNode().id());
 
             try {
                 Long sleep = argument(0);
@@ -112,12 +113,14 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                log.info("Job got interrupted on node: " + ignite.cluster().localNode().id());
+                if (log.isInfoEnabled())
+                    log.info("Job got interrupted on node: " + ignite.cluster().localNode().id());
 
                 throw new IgniteException("Job got interrupted.", e);
             }
             finally {
-                log.info("Job finished on node: " + ignite.cluster().localNode().id());
+                if (log.isInfoEnabled())
+                    log.info("Job finished on node: " + ignite.cluster().localNode().id());
             }
 
             return ignite.cluster().localNode().id();

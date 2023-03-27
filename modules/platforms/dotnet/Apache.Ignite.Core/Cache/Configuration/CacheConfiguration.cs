@@ -25,28 +25,34 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin.Cache;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration
+    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
-        public const int DefaultRebalanceThreadPoolSize = 2;
+        public const int DefaultRebalanceThreadPoolSize = 4;
 
         /// <summary> Default rebalance timeout.</summary>
         public static readonly TimeSpan DefaultRebalanceTimeout = TimeSpan.FromMilliseconds(10000);
@@ -77,6 +83,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default rebalance batch size in bytes. </summary>
         public const int DefaultRebalanceBatchSize = 512*1024; // 512K
+
+        /// <summary> Default value for <see cref="WriteSynchronizationMode"/> property.</summary>
+        public const CacheWriteSynchronizationMode DefaultWriteSynchronizationMode = 
+            CacheWriteSynchronizationMode.PrimarySync;
 
         /// <summary> Default value for eager ttl flag. </summary>
         public const bool DefaultEagerTtl = true;
@@ -109,7 +119,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
 
         /// <summary> Default value for keep portable in store behavior .</summary>
+        [Obsolete("Use DefaultKeepBinaryInStore instead.")]
         public const bool DefaultKeepVinaryInStore = true;
+
+        /// <summary> Default value for <see cref="KeepBinaryInStore"/> property.</summary>
+        public const bool DefaultKeepBinaryInStore = false;
 
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
@@ -125,6 +139,30 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default value for <see cref="PartitionLossPolicy"/>. </summary>
         public const PartitionLossPolicy DefaultPartitionLossPolicy = PartitionLossPolicy.Ignore;
+
+        /// <summary> Default value for <see cref="SqlIndexMaxInlineSize"/>. </summary>
+        public const int DefaultSqlIndexMaxInlineSize = -1;
+
+        /// <summary> Default value for <see cref="StoreConcurrentLoadAllThreshold"/>. </summary>
+        public const int DefaultStoreConcurrentLoadAllThreshold = 5;
+
+        /// <summary> Default value for <see cref="RebalanceOrder"/>. </summary>
+        public const int DefaultRebalanceOrder = 0;
+
+        /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
+        public const long DefaultRebalanceBatchesPrefetchCount = 3;
+
+        /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
+        public const int DefaultMaxQueryIteratorsCount = 1024;
+
+        /// <summary> Default value for <see cref="QueryDetailMetricsSize"/>. </summary>
+        public const int DefaultQueryDetailMetricsSize = 0;
+
+        /// <summary> Default value for <see cref="QueryParallelism"/>. </summary>
+        public const int DefaultQueryParallelism = 1;
+
+        /// <summary> Default value for <see cref="EncryptionEnabled"/>. </summary>
+        public const bool DefaultEncryptionEnabled = false;
 
         /// <summary>
         /// Gets or sets the cache name.
@@ -151,12 +189,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AtomicityMode = DefaultAtomicityMode;
             CacheMode = DefaultCacheMode;
             CopyOnRead = DefaultCopyOnRead;
+            WriteSynchronizationMode = DefaultWriteSynchronizationMode;
             EagerTtl = DefaultEagerTtl;
             Invalidate = DefaultInvalidate;
-            KeepBinaryInStore = DefaultKeepVinaryInStore;
+            KeepBinaryInStore = DefaultKeepBinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
+#pragma warning disable 618
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = DefaultMaxConcurrentAsyncOperations;
             ReadFromBackup = DefaultReadFromBackup;
             RebalanceBatchSize = DefaultRebalanceBatchSize;
@@ -170,17 +211,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
             PartitionLossPolicy = DefaultPartitionLossPolicy;
+            SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
+            StoreConcurrentLoadAllThreshold = DefaultStoreConcurrentLoadAllThreshold;
+            RebalanceOrder = DefaultRebalanceOrder;
+            RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
+            MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
+            QueryParallelism = DefaultQueryParallelism;
+            EncryptionEnabled = DefaultEncryptionEnabled;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class 
         /// and populates <see cref="QueryEntities"/> according to provided query types.
+        /// This constructor is depricated, please use <see cref="CacheConfiguration(string, QueryEntity[])"/>
         /// </summary>
         /// <param name="name">Cache name.</param>
         /// <param name="queryTypes">
         /// Collection of types to be registered as query entities. These types should use 
         /// <see cref="QuerySqlFieldAttribute"/> to configure query fields and properties.
         /// </param>
+        [Obsolete("This constructor is deprecated, please use CacheConfiguration(string, QueryEntity[]) instead.")]
         public CacheConfiguration(string name, params Type[] queryTypes) : this(name)
         {
             QueryEntities = queryTypes.Select(type => new QueryEntity {ValueType = type}).ToArray();
@@ -197,13 +247,45 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class,
+        /// performing a deep copy of specified cache configuration.
+        /// </summary>
+        /// <param name="other">The other configuration to perform deep copy from.</param>
+        public CacheConfiguration(CacheConfiguration other)
+        {
+            if (other != null)
+            {
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
+
+                    stream.SynchronizeOutput();
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
+                }
+
+                CopyLocalProperties(other);
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal CacheConfiguration(IBinaryRawReader reader)
+        internal CacheConfiguration(BinaryReader reader)
+        {
+            Read(reader);
+        }
+
+        /// <summary>
+        /// Reads data into this instance from the specified reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
-            Debug.Assert(((BinaryReader) reader).Marshaller == BinaryUtils.Marshaller);
+            Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
 
             AtomicityMode = (CacheAtomicityMode) reader.ReadInt();
             Backups = reader.ReadInt();
@@ -214,7 +296,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeepBinaryInStore = reader.ReadBoolean();
             LoadPreviousValue = reader.ReadBoolean();
             LockTimeout = reader.ReadLongAsTimespan();
+#pragma warning disable 618
             LongQueryWarningTimeout = reader.ReadLongAsTimespan();
+#pragma warning restore 618
             MaxConcurrentAsyncOperations = reader.ReadInt();
             Name = reader.ReadString();
             ReadFromBackup = reader.ReadBoolean();
@@ -234,12 +318,22 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
             EnableStatistics = reader.ReadBoolean();
-            MemoryPolicyName = reader.ReadString();
+            DataRegionName = reader.ReadString();
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
+            GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
+            SqlIndexMaxInlineSize = reader.ReadInt();
+            OnheapCacheEnabled = reader.ReadBoolean();
+            StoreConcurrentLoadAllThreshold = reader.ReadInt();
+            RebalanceOrder = reader.ReadInt();
+            RebalanceBatchesPrefetchCount = reader.ReadLong();
+            MaxQueryIteratorsCount = reader.ReadInt();
+            QueryDetailMetricsSize = reader.ReadInt();
+            QueryParallelism = reader.ReadInt();
+            SqlSchema = reader.ReadString();
+            EncryptionEnabled = reader.ReadBoolean();
 
-            var count = reader.ReadInt();
-            QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -247,20 +341,55 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
-            count = reader.ReadInt();
-            PluginConfigurations = count == 0
-                ? null
-                : Enumerable.Range(0, count).Select(x => reader.ReadObject<ICachePluginConfiguration>()).ToList();
+            NodeFilter = reader.ReadBoolean() ? new AttributeNodeFilter(reader) : null;
+
+            KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
+            
+            if (reader.ReadBoolean())
+            {
+                PlatformCacheConfiguration = new PlatformCacheConfiguration(reader);
+            }
+
+            var count = reader.ReadInt();
+
+            if (count > 0)
+            {
+                PluginConfigurations = new List<ICachePluginConfiguration>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    if (reader.ReadBoolean())
+                    {
+                        // FactoryId-based plugin: skip.
+                        reader.ReadInt();  // Skip factory id.
+                        var size = reader.ReadInt();
+                        reader.Stream.Seek(size, SeekOrigin.Current);  // Skip custom data.
+                    }
+                    else
+                    {
+                        // Pure .NET plugin.
+                        PluginConfigurations.Add(reader.ReadObject<ICachePluginConfiguration>());
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
+        {
+            Write(writer);
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(BinaryWriter writer)
         {
             // Make sure system marshaller is used.
-            Debug.Assert(((BinaryWriter) writer).Marshaller == BinaryUtils.Marshaller);
+            Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
 
             writer.WriteInt((int) AtomicityMode);
             writer.WriteInt(Backups);
@@ -271,7 +400,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(KeepBinaryInStore);
             writer.WriteBoolean(LoadPreviousValue);
             writer.WriteLong((long) LockTimeout.TotalMilliseconds);
+#pragma warning disable 618
             writer.WriteLong((long) LongQueryWarningTimeout.TotalMilliseconds);
+#pragma warning restore 618
             writer.WriteInt(MaxConcurrentAsyncOperations);
             writer.WriteString(Name);
             writer.WriteBoolean(ReadFromBackup);
@@ -291,24 +422,22 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
             writer.WriteBoolean(EnableStatistics);
-            writer.WriteString(MemoryPolicyName);
+            writer.WriteString(DataRegionName);
             writer.WriteInt((int) PartitionLossPolicy);
+            writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
+            writer.WriteInt(SqlIndexMaxInlineSize);
+            writer.WriteBoolean(OnheapCacheEnabled);
+            writer.WriteInt(StoreConcurrentLoadAllThreshold);
+            writer.WriteInt(RebalanceOrder);
+            writer.WriteLong(RebalanceBatchesPrefetchCount);
+            writer.WriteInt(MaxQueryIteratorsCount);
+            writer.WriteInt(QueryDetailMetricsSize);
+            writer.WriteInt(QueryParallelism);
+            writer.WriteString(SqlSchema);
+            writer.WriteBoolean(EncryptionEnabled);
 
-            if (QueryEntities != null)
-            {
-                writer.WriteInt(QueryEntities.Count);
-
-                foreach (var entity in QueryEntities)
-                {
-                    if (entity == null)
-                        throw new InvalidOperationException("Invalid cache configuration: QueryEntity can't be null.");
-
-                    entity.Write(writer);
-                }
-            }
-            else
-                writer.WriteInt(0);
+            writer.WriteCollectionRaw(QueryEntities);
 
             if (NearConfiguration != null)
             {
@@ -321,6 +450,38 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicyBase.Write(writer, EvictionPolicy);
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+
+            if (NodeFilter != null)
+            {
+                writer.WriteBoolean(true);
+
+                var attributeNodeFilter = NodeFilter as AttributeNodeFilter;
+                if (attributeNodeFilter == null)
+                {
+                    throw new NotSupportedException(string.Format(
+                        "Unsupported CacheConfiguration.NodeFilter: '{0}'. " +
+                        "Only predefined implementations are supported: '{1}'",
+                        NodeFilter.GetType().Name, typeof(AttributeNodeFilter).Name));
+                }
+
+                attributeNodeFilter.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            writer.WriteCollectionRaw(KeyConfiguration);
+            
+            if (PlatformCacheConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PlatformCacheConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
 
             if (PluginConfigurations != null)
             {
@@ -336,7 +497,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     {
                         writer.WriteBoolean(true);
                         writer.WriteInt(cachePlugin.CachePluginConfigurationClosureFactoryId.Value);
+
+                        int pos = writer.Stream.Position;
+                        writer.WriteInt(0);  // Reserve size.
+
                         cachePlugin.WriteBinary(writer);
+
+                        writer.Stream.WriteInt(pos, writer.Stream.Position - pos - 4);  // Write size.
                     }
                     else
                     {
@@ -349,6 +516,39 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 writer.WriteInt(0);
             }
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(CacheConfiguration cfg)
+        {
+            Debug.Assert(cfg != null);
+
+            PluginConfigurations = cfg.PluginConfigurations;
+
+            if (QueryEntities != null && cfg.QueryEntities != null)
+            {
+                var entities = cfg.QueryEntities.Where(x => x != null).ToDictionary(x => GetQueryEntityKey(x), x => x);
+
+                foreach (var entity in QueryEntities.Where(x => x != null))
+                {
+                    QueryEntity src;
+
+                    if (entities.TryGetValue(GetQueryEntityKey(entity), out src))
+                    {
+                        entity.CopyLocalProperties(src);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the query entity key.
+        /// </summary>
+        private static string GetQueryEntityKey(QueryEntity x)
+        {
+            return x.KeyTypeName + "^" + x.ValueTypeName;
         }
 
         /// <summary>
@@ -370,6 +570,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets write synchronization mode. This mode controls whether the main        
         /// caller should wait for update on other nodes to complete or not.
         /// </summary>
+        [DefaultValue(DefaultWriteSynchronizationMode)]
         public CacheWriteSynchronizationMode WriteSynchronizationMode { get; set; }
 
         /// <summary>
@@ -399,7 +600,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the flag indicating whether <see cref="ICacheStore"/> is working with binary objects 
         /// instead of deserialized objects.
         /// </summary>
-        [DefaultValue(DefaultKeepVinaryInStore)]
+        [DefaultValue(DefaultKeepBinaryInStore)]
         public bool KeepBinaryInStore { get; set; }
 
         /// <summary>
@@ -536,8 +737,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
+        /// <para />
+        /// This property is obsolete, use <see cref="IgniteConfiguration.LongQueryWarningTimeout"/> instead.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:03")]
+        [Obsolete("Use IgniteConfiguration.LongQueryWarningTimeout instead.")]
         public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
@@ -627,7 +831,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the name of the <see cref="MemoryPolicyConfiguration"/> for this cache.
         /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
         /// </summary>
-        public string MemoryPolicyName { get; set; }
+        [Obsolete("Use DataRegionName.")]
+        [XmlIgnore]
+        public string MemoryPolicyName
+        {
+            get { return DataRegionName; }
+            set { DataRegionName = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the name of the data region, see <see cref="DataRegionConfiguration"/>.
+        /// </summary>
+        public string DataRegionName { get; set; }
 
         /// <summary>
         /// Gets or sets write coalescing flag for write-behind cache store operations.
@@ -643,5 +858,126 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultPartitionLossPolicy)]
         public PartitionLossPolicy PartitionLossPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache group name. Caches with the same group name share single underlying 'physical'
+        /// cache (partition set), but are logically isolated. 
+        /// <para />
+        /// Since underlying cache is shared, the following configuration properties should be the same within group:
+        /// <see cref="AffinityFunction"/>, <see cref="CacheMode"/>, <see cref="PartitionLossPolicy"/>,
+        /// <see cref="DataRegionName"/>
+        /// <para />
+        /// Grouping caches reduces overall overhead, since internal data structures are shared.
+        /// </summary>
+        public string GroupName { get;set; }
+
+        /// <summary>
+        /// Gets or sets maximum inline size in bytes for sql indexes. See also <see cref="QueryIndex.InlineSize"/>.
+        /// -1 for automatic.
+        /// </summary>
+        [DefaultValue(DefaultSqlIndexMaxInlineSize)]
+        public int SqlIndexMaxInlineSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the key configuration.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether on-heap cache is enabled for the off-heap based page memory.
+        /// </summary>
+        public bool OnheapCacheEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the threshold to use when multiple keys are being loaded from an underlying cache store
+        /// (see <see cref="CacheStoreFactory"/>).
+        /// 
+        /// In the situation when several threads load the same or intersecting set of keys
+        /// and the total number of keys to load is less or equal to this threshold then there will be no
+        /// second call to the storage in order to load a key from thread A if the same key is already being
+        /// loaded by thread B.
+        ///
+        /// The threshold should be controlled wisely. On the one hand if it's set to a big value then the
+        /// interaction with a storage during the load of missing keys will be minimal.On the other hand the big
+        /// value may result in significant performance degradation because it is needed to check
+        /// for every key whether it's being loaded or not.
+        /// </summary>
+        [DefaultValue(DefaultStoreConcurrentLoadAllThreshold)]
+        public int StoreConcurrentLoadAllThreshold { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache rebalance order. Caches with bigger RebalanceOrder are rebalanced later than caches
+        /// with smaller RebalanceOrder.
+        /// <para />
+        /// Default is 0, which means unordered rebalance. All caches with RebalanceOrder=0 are rebalanced without any
+        /// delay concurrently.
+        /// <para />
+        /// This parameter is applicable only for caches with <see cref="RebalanceMode"/> of
+        /// <see cref="CacheRebalanceMode.Sync"/> and <see cref="CacheRebalanceMode.Async"/>.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceOrder)]
+        public int RebalanceOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rebalance batches prefetch count.
+        /// <para />
+        /// Source node can provide more than one batch at rebalance start to improve performance.
+        /// Default is <see cref="DefaultRebalanceBatchesPrefetchCount"/>, minimum is 2.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceBatchesPrefetchCount)]
+        public long RebalanceBatchesPrefetchCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of active query iterators.
+        /// </summary>
+        [DefaultValue(DefaultMaxQueryIteratorsCount)]
+        public int MaxQueryIteratorsCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the query detail metrics to be stored in memory.
+        /// <para />
+        /// 0 means disabled metrics.
+        /// </summary>
+        [DefaultValue(DefaultQueryDetailMetricsSize)]
+        public int QueryDetailMetricsSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SQL schema.
+        /// Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+        /// <para />
+        /// Quoted <see cref="Name"/> is used by default.
+        /// </summary>
+        public string SqlSchema { get; set; }
+
+        /// <summary>
+        /// Gets or sets the desired query parallelism within a single node.
+        /// Query executor may or may not use this hint, depending on estimated query cost.
+        /// <para />
+        /// Default is <see cref="DefaultQueryParallelism"/>.
+        /// </summary>
+        [DefaultValue(DefaultQueryParallelism)]
+        public int QueryParallelism { get; set; }
+
+        /// <summary>
+        /// Gets or sets encryption flag.
+        /// Default is false.
+        /// </summary>
+        [DefaultValue(DefaultEncryptionEnabled)]
+        public bool EncryptionEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets platform cache configuration.
+        /// More details: <see cref="PlatformCacheConfiguration"/>. 
+        /// </summary>
+        [IgniteExperimental]
+        public PlatformCacheConfiguration PlatformCacheConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cluster node filter. Cache will be started only on nodes that match the filter.
+        /// <para />
+        /// Only predefined implementations are supported: <see cref="AttributeNodeFilter"/>.
+        /// </summary>
+        public IClusterNodeFilter NodeFilter { get; set; }
     }
 }

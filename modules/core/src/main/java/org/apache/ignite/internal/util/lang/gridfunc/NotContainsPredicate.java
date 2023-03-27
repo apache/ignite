@@ -48,7 +48,7 @@ public class NotContainsPredicate<T> implements IgnitePredicate<T> {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(NotContainsPredicate.class, this);
     }
 }

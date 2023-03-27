@@ -22,6 +22,8 @@ import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * Join of two tables or subqueries.
  */
@@ -93,17 +95,26 @@ public class GridSqlJoin extends GridSqlElement {
         return child(ON_CHILD);
     }
 
+    /**
+     * @return {@code true} If this is a LEFT OUTER JOIN.
+     */
+    public boolean isLeftOuter() {
+        return leftOuter;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder();
 
         buff.append(leftTable().getSQL());
 
-        buff.append(leftOuter ? " \n LEFT OUTER JOIN " : " \n INNER JOIN ");
+        buff.append(' ').append(delim).append(leftOuter ? " LEFT OUTER JOIN " : " INNER JOIN ");
 
         buff.append(rightTable().getSQL());
 
-        buff.append(" \n ON ").append(StringUtils.unEnclose(on().getSQL()));
+        buff.append(' ').append(delim).append(" ON ").append(StringUtils.unEnclose(on().getSQL()));
 
         return buff.toString();
     }

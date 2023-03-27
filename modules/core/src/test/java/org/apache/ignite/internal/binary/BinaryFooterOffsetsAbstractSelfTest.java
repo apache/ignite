@@ -22,10 +22,10 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Contains tests for compact offsets.
@@ -63,7 +63,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         marsh.setContext(new MarshallerContextTestImpl(null));
 
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+        marsh.setBinaryContext(ctx, iCfg);
     }
 
     /**
@@ -78,6 +78,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test1Byte() throws Exception {
         check(POW_8 >> 2);
     }
@@ -87,6 +88,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test1ByteSign() throws Exception {
         check(POW_8 >> 1);
     }
@@ -96,6 +98,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test2Bytes() throws Exception {
         check(POW_16 >> 2);
     }
@@ -105,6 +108,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test2BytesSign() throws Exception {
         check(POW_16 >> 1);
     }
@@ -114,6 +118,7 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test4Bytes() throws Exception {
         check(POW_16 << 2);
     }
@@ -129,6 +134,8 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
         TestObject obj = new TestObject(len);
 
         BinaryObjectExImpl portObj = toBinary(marsh, obj);
+
+        assertEquals(portObj.size(), portObj.length());
 
         // 1. Test binary object content.
         assert portObj.hasField("field1");

@@ -19,6 +19,9 @@ package org.apache.ignite.internal;
 
 import java.lang.reflect.Constructor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.query.NoOpQueryEngine;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -27,28 +30,32 @@ import org.jetbrains.annotations.Nullable;
  * Component type.
  */
 public enum IgniteComponentType {
-    /** IGFS. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     IGFS(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopProcessor",
         "org.apache.ignite.internal.processors.igfs.IgfsProcessor",
         "ignite-hadoop"
     ),
 
-    /** Hadoop. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     HADOOP(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor",
         "org.apache.ignite.internal.processors.hadoop.HadoopProcessor",
         "ignite-hadoop"
     ),
 
-    /** Hadoop Helper component. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     HADOOP_HELPER(
         "org.apache.ignite.internal.processors.hadoop.HadoopNoopHelper",
         "org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl",
         "ignite-hadoop"
     ),
 
-    /** IGFS helper component. */
+    /** @deprecated Component was removed. Enum can't be removed because enum ordinal is important. */
+    @Deprecated
     IGFS_HELPER(
         "org.apache.ignite.internal.processors.igfs.IgfsNoopHelper",
         "org.apache.ignite.internal.processors.igfs.IgfsHelperImpl",
@@ -89,6 +96,28 @@ public enum IgniteComponentType {
         "org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor",
         "org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessor",
         "ignite-schedule"
+    ),
+
+    /** */
+    COMPRESSION(
+        CompressionProcessor.class.getName(),
+        "org.apache.ignite.internal.processors.compress.CompressionProcessorImpl",
+        "ignite-compress"
+    ),
+
+    /** OpenCensus tracing implementation. */
+    TRACING(
+        null,
+        "org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi",
+        "ignite-opencensus"
+    ),
+
+    /** Experimental calcite based query engine. */
+    QUERY_ENGINE(
+        NoOpQueryEngine.class.getName(),
+        "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor",
+        "ignite-calcite",
+        "org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory"
     );
 
     /** No-op class name. */
@@ -149,14 +178,7 @@ public enum IgniteComponentType {
      * @return {@code True} if in classpath.
      */
     public boolean inClassPath() {
-        try {
-            Class.forName(clsName);
-
-            return true;
-        }
-        catch (ClassNotFoundException ignore) {
-            return false;
-        }
+        return IgniteUtils.inClassPath(clsName);
     }
 
     /**
@@ -235,7 +257,6 @@ public enum IgniteComponentType {
      * @return Created component or no-op implementation.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private <T> T createOptional0(@Nullable GridKernalContext ctx) throws IgniteCheckedException {
         Class<?> cls;
 
@@ -276,7 +297,6 @@ public enum IgniteComponentType {
      * @return Component instance.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private <T> T create0(@Nullable GridKernalContext ctx, String clsName) throws IgniteCheckedException {
         try {
             Class<?> cls = Class.forName(clsName);

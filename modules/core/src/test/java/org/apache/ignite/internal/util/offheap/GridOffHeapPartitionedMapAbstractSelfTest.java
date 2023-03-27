@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Test;
 
 /**
  * Tests off-heap map.
@@ -61,7 +61,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     protected GridOffHeapEvictListener evictLsnr;
 
     /** */
-    protected long mem = 20 * 1024 * 1024;
+    protected long mem = 20L * 1024 * 1024;
 
     /** */
     protected int loadCnt = 100000;
@@ -144,6 +144,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsert() throws Exception {
         map = newMap();
 
@@ -166,6 +167,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehash() throws Exception {
         initCap = 10;
 
@@ -184,7 +186,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 map.insert(p, hash(key), key.getBytes(), val.getBytes());
 
                 assertTrue(map.contains(p, hash(key), key.getBytes()));
-                assertEquals(val,  new String(map.get(p, hash(key), key.getBytes())));
+                assertEquals(val, new String(map.get(p, hash(key), key.getBytes())));
             }
 
             for (Map.Entry<String, String> e : kv.entrySet()) {
@@ -204,6 +206,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPointerAfterRehash() throws Exception {
         initCap = 10;
 
@@ -246,13 +249,11 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 
         AffinityFunction aff = new RendezvousAffinityFunction(parts, null);
-
-        getTestResources().inject(aff);
 
         GridByteArrayWrapper[] keys = new GridByteArrayWrapper[512];
         Random rnd = new Random();
@@ -276,6 +277,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         map = newMap();
 
@@ -287,7 +289,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 map.insert(p, hash(key), key.getBytes(), val.getBytes());
 
                 assertTrue(map.contains(p, hash(key), key.getBytes()));
-                assertEquals(val,  new String(map.get(p, hash(key), key.getBytes())));
+                assertEquals(val, new String(map.get(p, hash(key), key.getBytes())));
                 assertEquals(10 * p + (i + 1), map.size());
             }
         }
@@ -298,6 +300,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut1() throws Exception {
         map = newMap();
 
@@ -320,6 +323,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut2() throws Exception {
         map = newMap();
 
@@ -333,7 +337,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 assertTrue(map.put(p, hash(key), key.getBytes(), val1.getBytes()));
 
                 assertTrue(map.contains(p, hash(key), key.getBytes()));
-                assertEquals(val1,  new String(map.get(p, hash(key), key.getBytes())));
+                assertEquals(val1, new String(map.get(p, hash(key), key.getBytes())));
                 assertEquals(10 * p + i + 1, map.size());
 
                 assertFalse(map.put(p, hash(key), key.getBytes(), val2.getBytes()));
@@ -350,6 +354,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         map = newMap();
 
@@ -381,6 +386,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovex() throws Exception {
         map = newMap();
 
@@ -411,6 +417,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         initCap = 10;
 
@@ -484,6 +491,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorMultithreaded() throws Exception {
         initCap = 10;
 
@@ -509,7 +517,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         final int max = 1024;
 
-        final ConcurrentMap<String, String> m = new ConcurrentHashMap8<>(max * parts);
+        final ConcurrentMap<String, String> m = new ConcurrentHashMap<>(max * parts);
 
         final AtomicInteger part = new AtomicInteger();
 
@@ -581,6 +589,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorRemoveMultithreaded() throws Exception {
         initCap = 10;
 
@@ -638,6 +647,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionIterator() throws Exception {
         initCap = 10;
 
@@ -712,6 +722,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionIteratorMultithreaded() throws Exception {
         initCap = 10;
 
@@ -739,7 +750,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         int threads = 5;
 
-        final Map<String, String> m = new ConcurrentHashMap8<>(max);
+        final Map<String, String> m = new ConcurrentHashMap<>(max);
 
         multithreaded(new Callable() {
             @Override public Object call() throws Exception {
@@ -787,6 +798,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testInsertLoad() {
         mem = 0; // Disable LRU.
 
@@ -827,6 +839,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testPutLoad() {
         mem = 0; // Disable LRU.
 
@@ -840,7 +853,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
             Map<String, String> m = new HashMap<>();
 
             for (int i = 0; i < loadCnt; i++)
-                m.put(string(),  string());
+                m.put(string(), string());
 
             for (Map.Entry<String, String> e : m.entrySet()) {
                 String key = e.getKey();
@@ -868,6 +881,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testLru1() {
         lruStripes = 1;
         mem = 10;
@@ -912,6 +926,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testLru2() {
         mem = 1000 + 64 * 16 * parts; // Add segment size.
 
@@ -951,6 +966,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLruMultithreaded() throws Exception {
         mem = 1000 + 64 * 16 * parts; // Add segment size.
 
@@ -1010,6 +1026,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
      *
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testValuePointerEvict() {
         mem = 90;
 
@@ -1077,6 +1094,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
      *
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testValuePointerEnableEviction() {
         mem = 90;
 
@@ -1143,6 +1161,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     /**
      *
      */
+    @Test
     public void testValuePointerRemove() {
         map = newMap();
 

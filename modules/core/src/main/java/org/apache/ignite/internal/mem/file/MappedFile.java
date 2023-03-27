@@ -28,6 +28,7 @@ import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.nio.ch.FileChannelImpl;
 
+/** */
 public class MappedFile implements Closeable, DirectMemoryRegion {
     /** */
     private static final Method map0 = U.findNonPublicMethod(FileChannelImpl.class, "map0", int.class, long.class, long.class);
@@ -64,7 +65,8 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
             addr = map(file, MAP_RW, 0, size);
 
             this.size = size;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             file.close();
 
             throw e;
@@ -121,14 +123,14 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
      */
     public static long map(RandomAccessFile f, int mode, long start, long size) throws IOException {
         try {
-            return (Long) map0.invoke(f.getChannel(), mode, start, size);
+            return (Long)map0.invoke(f.getChannel(), mode, start, size);
         }
         catch (IllegalAccessException e) {
             throw new IllegalStateException(e);
         }
         catch (InvocationTargetException e) {
             Throwable target = e.getTargetException();
-            throw (target instanceof IOException) ? (IOException) target : new IOException(target);
+            throw (target instanceof IOException) ? (IOException)target : new IOException(target);
         }
     }
 

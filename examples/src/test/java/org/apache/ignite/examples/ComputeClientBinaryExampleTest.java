@@ -18,6 +18,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.binary.computegrid.ComputeClientBinaryTaskExecutionExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  *
@@ -31,6 +32,7 @@ public class ComputeClientBinaryExampleTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryTaskExecutionExample() throws Exception {
         ComputeClientBinaryTaskExecutionExample.main(new String[] {});
     }

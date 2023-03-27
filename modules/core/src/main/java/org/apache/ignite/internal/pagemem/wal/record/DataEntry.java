@@ -20,40 +20,53 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
  */
 public class DataEntry {
+    /** Empty flags. */
+    public static final byte EMPTY_FLAGS = 0;
+
     /** */
+    public static final byte PRIMARY_FLAG = 0b00000001;
+
+    /** */
+    public static final byte PRELOAD_FLAG = 0b00000010;
+
+    /** */
+    public static final byte FROM_STORE_FLAG = 0b00000100;
+
+    /** Cache ID. */
+    @GridToStringInclude
     protected int cacheId;
 
-    /** */
+    /** Cache object key. */
     protected KeyCacheObject key;
 
-    /** */
-    protected CacheObject val;
+    /** Cache object value. May be {@code} null for {@link GridCacheOperation#DELETE} */
+    @Nullable protected CacheObject val;
 
-    /** */
+    /** Entry operation performed. */
     @GridToStringInclude
     protected GridCacheOperation op;
 
-    /** */
+    /** Near transaction version. */
+    @GridToStringInclude
     protected GridCacheVersion nearXidVer;
 
-    /** */
+    /** Write version. */
     @GridToStringInclude
     protected GridCacheVersion writeVer;
 
-    /** */
+    /** Expire time. */
     protected long expireTime;
 
-    /** */
+    /** Partition ID. */
     @GridToStringInclude
     protected int partId;
 
@@ -61,6 +74,18 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
+    /**
+     * Bit flags.
+     * <ul>
+     *  <li>0 bit - primary - seted when current node is primary for entry partition.</li>
+     *  <li>1 bit - preload - seted when entry logged during preload(rebalance).</li>
+     *  <li>2 bit - fromStore - seted when entry loaded from third-party store.</li>
+     * </ul>
+     */
+    @GridToStringInclude
+    protected byte flags;
+
+    /** Constructor. */
     private DataEntry() {
         // No-op, used from factory methods.
     }
@@ -68,24 +93,26 @@ public class DataEntry {
     /**
      * @param cacheId Cache ID.
      * @param key Key.
-     * @param val Value.
+     * @param val Value or null for delete operation.
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
+     * @param flags Entry flags.
      */
     public DataEntry(
         int cacheId,
         KeyCacheObject key,
-        CacheObject val,
+        @Nullable CacheObject val,
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt
+        long partCnt,
+        byte flags
     ) {
         this.cacheId = cacheId;
         this.key = key;
@@ -96,9 +123,37 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
+        this.flags = flags;
 
-        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
-        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
+        // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert op == GridCacheOperation.READ
+            || op == GridCacheOperation.CREATE
+            || op == GridCacheOperation.UPDATE
+            || op == GridCacheOperation.DELETE : op;
+    }
+
+    /**
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
+     * @return Flags value.
+     */
+    public static byte flags(boolean primary) {
+        return flags(primary, false, false);
+    }
+
+    /**
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
+     * @param preload {@code True} if logged during preload(rebalance).
+     * @param fromStore {@code True} if logged during loading from third-party store.
+     * @return Flags value.
+     */
+    public static byte flags(boolean primary, boolean preload, boolean fromStore) {
+        byte val = EMPTY_FLAGS;
+
+        val |= primary ? PRIMARY_FLAG : EMPTY_FLAGS;
+        val |= preload ? PRELOAD_FLAG : EMPTY_FLAGS;
+        val |= fromStore ? FROM_STORE_FLAG : EMPTY_FLAGS;
+
+        return val;
     }
 
     /**
@@ -158,10 +213,30 @@ public class DataEntry {
     }
 
     /**
+     * Sets partition update counter to entry.
+     *
+     * @param partCnt Partition update counter.
+     * @return {@code this} for chaining.
+     */
+    public DataEntry partitionCounter(long partCnt) {
+        this.partCnt = partCnt;
+
+        return this;
+    }
+
+    /**
      * @return Expire time.
      */
     public long expireTime() {
         return expireTime;
+    }
+
+    /**
+     * Entry flags.
+     * @see #flags
+     */
+    public byte flags() {
+        return flags;
     }
 
     /** {@inheritDoc} */

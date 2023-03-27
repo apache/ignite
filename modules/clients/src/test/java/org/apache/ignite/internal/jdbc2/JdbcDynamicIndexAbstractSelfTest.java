@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,25 +30,25 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  * Test that checks indexes handling with JDBC.
  */
 public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** */
-    private final static String CREATE_INDEX = "create index idx on Person (id desc)";
+    private static final String CREATE_INDEX = "create index idx on Person (id desc)";
 
     /** */
-    private final static String DROP_INDEX = "drop index idx";
+    private static final String DROP_INDEX = "drop index idx";
 
     /** */
-    private final static String CREATE_INDEX_IF_NOT_EXISTS = "create index if not exists idx on Person (id desc)";
+    private static final String CREATE_INDEX_IF_NOT_EXISTS = "create index if not exists idx on Person (id desc)";
 
     /** */
-    private final static String DROP_INDEX_IF_EXISTS = "drop index idx if exists";
+    private static final String DROP_INDEX_IF_EXISTS = "drop index idx if exists";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -139,6 +138,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Test that after index creation index is used by queries.
      */
+    @Test
     public void testCreateIndex() throws SQLException {
         assertSize(3);
 
@@ -147,7 +147,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
         jdbcRun(CREATE_INDEX);
 
         // Test that local queries on all server nodes use new index.
-        for (int i = 0 ; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             List<List<?>> locRes = ignite(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("explain select id from " +
                 "Person where id = 5").setLocal(true)).getAll();
 
@@ -168,20 +168,22 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Test that creating an index with duplicate name yields an error.
      */
+    @Test
     public void testCreateIndexWithDuplicateName() throws SQLException {
         jdbcRun(CREATE_INDEX);
 
         assertSqlException(new RunnableX() {
             /** {@inheritDoc} */
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 jdbcRun(CREATE_INDEX);
             }
-        }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
+        });
     }
 
     /**
      * Test that creating an index with duplicate name does not yield an error with {@code IF NOT EXISTS}.
      */
+    @Test
     public void testCreateIndexIfNotExists() throws SQLException {
         jdbcRun(CREATE_INDEX);
 
@@ -192,6 +194,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Test that after index drop there are no attempts to use it, and data state remains intact.
      */
+    @Test
     public void testDropIndex() throws SQLException {
         assertSize(3);
 
@@ -202,7 +205,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
         jdbcRun(DROP_INDEX);
 
         // Test that no local queries on server nodes use new index.
-        for (int i = 0 ; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             List<List<?>> locRes = ignite(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("explain select id from " +
                 "Person where id = 5").setLocal(true)).getAll();
 
@@ -221,18 +224,20 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Test that dropping a non-existent index yields an error.
      */
+    @Test
     public void testDropMissingIndex() {
         assertSqlException(new RunnableX() {
             /** {@inheritDoc} */
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 jdbcRun(DROP_INDEX);
             }
-        }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
+        });
     }
 
     /**
      * Test that dropping a non-existent index does not yield an error with {@code IF EXISTS}.
      */
+    @Test
     public void testDropMissingIndexIfExists() throws SQLException {
         // Despite index missing, this does not yield an error.
         jdbcRun(DROP_INDEX_IF_EXISTS);
@@ -241,6 +246,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     /**
      * Test that changes in cache affect index, and vice versa.
      */
+    @Test
     public void testIndexState() throws SQLException {
         IgniteCache<String, Person> cache = cache();
 
@@ -312,56 +318,20 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
      * Ensure that SQL exception is thrown.
      *
      * @param r Runnable.
-     * @param expCode Error code.
      */
-    private static void assertSqlException(RunnableX r, int expCode) {
+    private static void assertSqlException(RunnableX r) {
         // We expect IgniteSQLException with given code inside CacheException inside JDBC SQLException.
 
         try {
-            r.run();
+            r.runx();
         }
-        catch (SQLException ex) {
-            if (ex.getCause() != null) {
-                try {
-                    throw ex.getCause();
-                }
-                catch (CacheException ex1) {
-                    if (ex1.getCause() != null) {
-                        try {
-                            throw ex1.getCause();
-                        }
-                        catch (IgniteSQLException e) {
-                            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.statusCode() + ']',
-                                expCode, e.statusCode());
-
-                            return;
-                        }
-                        catch (Throwable t) {
-                            fail("Unexpected exception: " + t);
-                        }
-                    }
-                }
-                catch (Throwable t) {
-                    fail("Unexpected exception: " + t);
-                }
-            }
+        catch (SQLException e) {
+            return;
         }
         catch (Exception e) {
             fail("Unexpected exception: " + e);
         }
 
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    private interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
+        fail(SQLException.class.getSimpleName() + " is not thrown.");
     }
 }

@@ -1,0 +1,97 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cluster States
+
+:javaFile: {javaCodeDir}/ClusterAPI.java
+
+== Overview
+
+An Ignite cluster can be in one of the three states: `ACTIVE`, `ACTIVE_READ_ONLY`, and `INACTIVE`.
+
+When you start a pure in-memory cluster (no persistent data regions) for the first time, the cluster is in the `ACTIVE` state.
+When you start a cluster with persistent data regions for the first time, the cluster is `INACTIVE`.
+
+
+* `INACTIVE`: All operations are prohibited.
++
+--
+When you change the cluster state from active to `INACTIVE` (deactivation), the cluster deallocates all memory resources.
+
+include::includes/note-on-deactivation.adoc[]
+
+--
+* `ACTIVE`: This is the normal mode of the cluster. You can execute any operation.
+
+* `ACTIVE_READ_ONLY`: The read-only mode. Only read operations are allowed.
++
+--
+Any attempt to create a cache or modify the data in an existing cache results in an `IgniteClusterReadOnlyException` exception.
+DDL or DML statements that modify the data are prohibited as well.
+--
+
+
+== Changing Cluster State
+
+You can change the cluster state in multiple ways:
+
+* link:control-script#getting-cluster-state[Control script]:
++
+[source, shell]
+----
+control.sh --set-state ACTIVE_READ_ONLY
+----
+
+* link:restapi#change-cluster-state[REST command]:
++
+--
+
+[source, url]
+----
+http://localhost:8080/ignite?cmd=setstate&state=ACTIVE_READ_ONLY
+----
+
+--
+* Programmatically:
++
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=change-state, indent=0]
+----
+
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+* JMX Bean:
++
+--
+
+Mbean's Object Name: ::
+----
+group="Kernal",name=IgniteKernal
+----
+[cols="1,4",opts="header"]
+|===
+|Operation | Description
+
+| `clusterState()` | Get the current cluster state.
+| `clusterState(String, boolean)` | Set the cluster state.
+|===
+--

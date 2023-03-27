@@ -90,8 +90,10 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public Guid? TaskSubjectId { get { return _taskSubjectId; } }
 
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,
 	            "{0}: TaskName={1}, TaskClassName={2}, TaskSessionId={3}, JobId={4}, TaskNode={5}, " +

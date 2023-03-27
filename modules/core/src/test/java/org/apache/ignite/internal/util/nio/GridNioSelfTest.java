@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -103,6 +104,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleMessages() throws Exception {
         final Collection<GridNioSession> sesSet = new GridConcurrentHashSet<>();
 
@@ -134,7 +136,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                     byte[] msg = new byte[MSG_SIZE];
 
                     for (int i = 0; i < msg.length; i++)
-                        msg[i] = (byte) (i ^ (i * i - 1)); // Some data
+                        msg[i] = (byte)(i ^ (i * i - 1)); // Some data
 
                     for (int i = 0; i < RECONNECT_MSG_CNT; i++)
                         validateSendMessage(srvr.port(), msg);
@@ -159,6 +161,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testServerShutdown() throws Exception {
         GridNioServerListener lsnr = new GridNioServerListenerAdapter() {
             @Override public void onConnected(GridNioSession ses) {
@@ -214,6 +217,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectSocketClose() throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -259,6 +263,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThroughput() throws Exception {
         GridNioServerListener lsnr = new GridNioServerListenerAdapter() {
             @Override public void onConnected(GridNioSession ses) {
@@ -288,7 +293,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         byte[] msg = new byte[MSG_SIZE];
 
                         for (int i = 0; i < msg.length; i++)
-                            msg[i] = (byte) (i ^ (i * i - 1)); // Some data
+                            msg[i] = (byte)(i ^ (i * i - 1)); // Some data
 
                         try (Socket s = createSocket()) {
                             s.connect(new InetSocketAddress(U.getLocalHost(), srvr.port()), 1000);
@@ -339,6 +344,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseSession() throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -414,6 +420,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAfterServerStop() throws Exception {
         final AtomicReference<GridNioSession> sesRef = new AtomicReference<>();
 
@@ -609,9 +616,8 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     protected GridNioServer.Builder<?> serverBuilder(int port,
         GridNioParser parser,
-        GridNioServerListener lsnr)
-        throws Exception
-    {
+        GridNioServerListener lsnr
+    ) throws Exception {
         return GridNioServer.builder()
             .address(U.getLocalHost())
             .port(port)
@@ -631,6 +637,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(10);
 
@@ -665,6 +672,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAsyncSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(10);
 
@@ -678,7 +686,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         try {
             SocketChannel ch = SocketChannel.open(new InetSocketAddress(U.getLocalHost(), srvr2.port()));
 
-            GridNioFuture<GridNioSession> fut = srvr1.createSession(ch, null);
+            GridNioFuture<GridNioSession> fut = srvr1.createSession(ch, null, false, null);
 
             ses = fut.get();
 
@@ -703,6 +711,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultiThreadedSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
 
@@ -749,6 +758,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentConnects() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT);
 
@@ -846,6 +856,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if test failed.
      */
+    @Test
     public void testDeliveryDuration() throws Exception {
         idProvider.set(1);
 
@@ -913,6 +924,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionIdleTimeout() throws Exception {
         final int sesCnt = 20;
 
@@ -975,6 +987,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteTimeout() throws Exception {
         final int sesCnt = 20;
 
@@ -1060,7 +1073,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         int maxMsgId, long guessedMaxDuration) {
         DurationAccumulator overall = new DurationAccumulator();
 
-        DurationAccumulator[] msgRange =collectStatistics(deliveryDurations, overall, maxMsgId);
+        DurationAccumulator[] msgRange = collectStatistics(deliveryDurations, overall, maxMsgId);
 
         int[] durationRange = new int[STATISTICS_SEGMENTS_CNT];
 
@@ -1113,7 +1126,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
             int rangeMax = (int)((i + 1) * guessedMaxDuration / durationRange.length);
 
-            float percents = (float) durationRange[i] * 100 / overall.count();
+            float percents = (float)durationRange[i] * 100 / overall.count();
 
             info(">>> [" + rangeMin + '-' + rangeMax + "] ms: " + String.format("%.2f", percents) + "% (" +
                 durationRange[i] + " messages)");

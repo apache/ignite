@@ -22,6 +22,9 @@ package org.apache.ignite.internal.managers.communication;
  * message processing by the communication manager.
  */
 public class GridIoPolicy {
+    /** */
+    public static final byte UNDEFINED = -1;
+
     /** Public execution pool. */
     public static final byte PUBLIC_POOL = 0;
 
@@ -40,9 +43,6 @@ public class GridIoPolicy {
     /** Utility cache execution pool. */
     public static final byte UTILITY_CACHE_POOL = 5;
 
-    /** IGFS pool. */
-    public static final byte IGFS_POOL = 6;
-
     /** Pool for handling distributed index range requests. */
     public static final byte IDX_POOL = 7;
 
@@ -57,6 +57,9 @@ public class GridIoPolicy {
 
     /** Schema pool.  */
     public static final byte SCHEMA_POOL = 12;
+
+    /** Caller thread.  */
+    public static final byte CALLER_THREAD = 13;
 
     /**
      * Defines the range of reserved pools that are not available for plugins.

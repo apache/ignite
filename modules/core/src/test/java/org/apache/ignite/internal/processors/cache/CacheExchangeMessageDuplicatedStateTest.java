@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -27,29 +28,27 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  *
  */
 public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String AFF1_CACHE1 = "a1c1";
 
@@ -65,16 +64,11 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /** */
     private static final String AFF4_FILTER_CACHE2 = "a4c2";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
+        cfg.setUserAttributes(Collections.singletonMap("name", igniteInstanceName));
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -140,16 +134,10 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExchangeMessages() throws Exception {
         ignite(0);
 
@@ -163,9 +151,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             checkMessages(0, true);
         }
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         awaitPartitionMapExchange();
 
@@ -192,7 +178,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         List<Object> msgs = commSpi0.recordedMessages(false);
 
-        assertTrue(msgs.size() > 0);
+        assertTrue(!msgs.isEmpty());
 
         for (Object msg : msgs) {
             assertTrue("Unexpected messages: " + msg, msg instanceof GridDhtPartitionsFullMessage);
@@ -216,7 +202,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
             List<Object> msgs = commSpi0.recordedMessages(false);
 
-            assertTrue(msgs.size() > 0);
+            assertTrue(!msgs.isEmpty());
 
             for (Object msg : msgs) {
                 assertTrue("Unexpected messages: " + msg, msg instanceof GridDhtPartitionsSingleMessage);
@@ -234,7 +220,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
      * @param msg Message.
      */
     private void checkFullMessage(GridDhtPartitionsFullMessage msg) {
-        Map<Integer, Integer> dupPartsData = GridTestUtils.getFieldValue(msg, "dupPartsData");
+        Map<Integer, Integer> dupPartsData = getFieldValue(msg, "dupPartsData");
 
         assertNotNull(dupPartsData);
 
@@ -243,11 +229,19 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
+        Map<Integer, CachePartitionFullCountersMap> partCntrs =
+            getFieldValue(getFieldValue(msg, "partCntrs2"), "map");
 
         if (partCntrs != null) {
-            for (Map<Integer, Long> cntrs : partCntrs.values())
-                assertTrue(cntrs.isEmpty());
+            for (CachePartitionFullCountersMap cntrs : partCntrs.values()) {
+                long[] initialUpdCntrs = getFieldValue(cntrs, "initialUpdCntrs");
+                long[] updCntrs = getFieldValue(cntrs, "updCntrs");
+
+                for (int i = 0; i < initialUpdCntrs.length; i++) {
+                    assertEquals(0, initialUpdCntrs[i]);
+                    assertEquals(0, updCntrs[i]);
+                }
+            }
         }
     }
 
@@ -255,7 +249,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
      * @param msg Message.
      */
     private void checkSingleMessage(GridDhtPartitionsSingleMessage msg) {
-        Map<Integer, Integer> dupPartsData = GridTestUtils.getFieldValue(msg, "dupPartsData");
+        Map<Integer, Integer> dupPartsData = getFieldValue(msg, "dupPartsData");
 
         assertNotNull(dupPartsData);
 
@@ -264,11 +258,11 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         assertFalse(dupPartsData.containsKey(CU.cacheId(AFF3_CACHE1)));
 
-        Map<Integer, Map<Integer, Long>> partCntrs = GridTestUtils.getFieldValue(msg, "partCntrs");
+        Map<Integer, CachePartitionPartialCountersMap> partCntrs = getFieldValue(msg, "partCntrs");
 
         if (partCntrs != null) {
-            for (Map<Integer, Long> cntrs : partCntrs.values())
-                assertTrue(cntrs.isEmpty());
+            for (CachePartitionPartialCountersMap cntrs : partCntrs.values())
+                assertEquals(0, cntrs.size());
         }
     }
 
@@ -281,32 +275,35 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private void checkFullMessage(String cache1,
         String cache2,
         Map<Integer, Integer> dupPartsData,
-        GridDhtPartitionsFullMessage msg)
-    {
-        Integer cacheId;
-        Integer dupCacheId;
+        GridDhtPartitionsFullMessage msg
+    ) {
+        int cache1Grp = groupIdForCache(ignite(0), cache1);
+        int cache2Grp = groupIdForCache(ignite(0), cache2);
 
-        if (dupPartsData.containsKey(CU.cacheId(cache1))) {
-            cacheId = CU.cacheId(cache1);
-            dupCacheId = CU.cacheId(cache2);
+        Integer grpId;
+        Integer dupGrpId;
+
+        if (dupPartsData.containsKey(cache1Grp)) {
+            grpId = cache1Grp;
+            dupGrpId = cache2Grp;
         }
         else {
-            cacheId = CU.cacheId(cache2);
-            dupCacheId = CU.cacheId(cache1);
+            grpId = cache2Grp;
+            dupGrpId = cache1Grp;
         }
 
-        assertTrue(dupPartsData.containsKey(cacheId));
-        assertEquals(dupCacheId, dupPartsData.get(cacheId));
-        assertFalse(dupPartsData.containsKey(dupCacheId));
+        assertTrue(dupPartsData.containsKey(grpId));
+        assertEquals(dupGrpId, dupPartsData.get(grpId));
+        assertFalse(dupPartsData.containsKey(dupGrpId));
 
         Map<Integer, GridDhtPartitionFullMap> parts = msg.partitions();
 
-        GridDhtPartitionFullMap emptyFullMap = parts.get(cacheId);
+        GridDhtPartitionFullMap emptyFullMap = parts.get(grpId);
 
         for (GridDhtPartitionMap map : emptyFullMap.values())
             assertEquals(0, map.map().size());
 
-        GridDhtPartitionFullMap fullMap = parts.get(dupCacheId);
+        GridDhtPartitionFullMap fullMap = parts.get(dupGrpId);
 
         for (GridDhtPartitionMap map : fullMap.values())
             assertFalse(map.map().isEmpty());
@@ -321,31 +318,41 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     private void checkSingleMessage(String cache1,
         String cache2,
         Map<Integer, Integer> dupPartsData,
-        GridDhtPartitionsSingleMessage msg)
-    {
-        Integer cacheId;
-        Integer dupCacheId;
+        GridDhtPartitionsSingleMessage msg
+    ) {
+        if (!F.isEmpty(msg.cacheGroupsAffinityRequest())) {
+            for (GridDhtPartitionMap map : msg.partitions().values())
+                assertTrue(F.isEmpty(map.map()));
 
-        if (dupPartsData.containsKey(CU.cacheId(cache1))) {
-            cacheId = CU.cacheId(cache1);
-            dupCacheId = CU.cacheId(cache2);
+            return;
+        }
+
+        int cache1Grp = groupIdForCache(ignite(0), cache1);
+        int cache2Grp = groupIdForCache(ignite(0), cache2);
+
+        Integer grpId;
+        Integer dupGrpId;
+
+        if (dupPartsData.containsKey(cache1Grp)) {
+            grpId = cache1Grp;
+            dupGrpId = cache2Grp;
         }
         else {
-            cacheId = CU.cacheId(cache2);
-            dupCacheId = CU.cacheId(cache1);
+            grpId = cache2Grp;
+            dupGrpId = cache1Grp;
         }
 
-        assertTrue(dupPartsData.containsKey(cacheId));
-        assertEquals(dupCacheId, dupPartsData.get(cacheId));
-        assertFalse(dupPartsData.containsKey(dupCacheId));
+        assertTrue(dupPartsData.containsKey(grpId));
+        assertEquals(dupGrpId, dupPartsData.get(grpId));
+        assertFalse(dupPartsData.containsKey(dupGrpId));
 
         Map<Integer, GridDhtPartitionMap> parts = msg.partitions();
 
-        GridDhtPartitionMap emptyMap = parts.get(cacheId);
+        GridDhtPartitionMap emptyMap = parts.get(grpId);
 
         assertEquals(0, emptyMap.map().size());
 
-        GridDhtPartitionMap map = parts.get(dupCacheId);
+        GridDhtPartitionMap map = parts.get(dupGrpId);
 
         assertFalse(map.map().isEmpty());
     }
@@ -357,7 +364,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             // Do not start cache on coordinator.
-            return node.order() > 1;
+            return !((String)node.attribute("name")).endsWith("0");
         }
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,9 +47,6 @@ import org.jetbrains.annotations.Nullable;
  * Transaction created by system implicitly on remote nodes.
  */
 public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Evicted keys. */
     private Collection<IgniteTxKey> evicted = new LinkedList<>();
 
@@ -62,13 +58,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** Owned versions. */
     private Map<IgniteTxKey, GridCacheVersion> owned;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridNearTxRemote() {
-        // No-op.
-    }
 
     /**
      * This constructor is meant for optimistic transactions.
@@ -90,6 +79,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param txLbl Transaction label.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
@@ -109,22 +99,24 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         Collection<IgniteTxEntry> writeEntries,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String txLbl
     ) throws IgniteCheckedException {
         super(
-            ctx, 
-            nodeId, 
+            ctx,
+            nodeId,
             xidVer,
             commitVer,
-            sys, 
-            plc, 
-            concurrency, 
-            isolation, 
-            invalidate, 
+            sys,
+            plc,
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
-            subjId, 
-            taskNameHash
+            subjId,
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -168,6 +160,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param txLbl Transaction label.
      */
     public GridNearTxRemote(
         GridCacheSharedContext ctx,
@@ -185,22 +178,24 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String txLbl
     ) {
         super(
-            ctx, 
-            nodeId, 
+            ctx,
+            nodeId,
             xidVer,
             commitVer,
             sys,
             plc,
-            concurrency, 
-            isolation, 
-            invalidate, 
+            concurrency,
+            isolation,
+            invalidate,
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -214,6 +209,11 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean remote() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -238,11 +238,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         return nearXidVer;
     }
 
-    /**
-     * @param cntrs Partition indexes.
-     */
-    @Override public void setPartitionUpdateCounters(long[] cntrs) {
-        // No-op.
+    /** {@inheritDoc} */
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("Near tx doesn't track active caches.");
     }
 
     /**
@@ -318,8 +316,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         GridCacheContext cacheCtx = entry.context();
 
-        if (!cacheCtx.isNear())
-            cacheCtx = cacheCtx.dht().near().context();
+        assert cacheCtx.isNear() : entry;
 
         GridNearCacheEntry cached = cacheCtx.near().peekExx(entry.key());
 
@@ -330,9 +327,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         }
         else {
             try {
-                cached.unswap();
+                // Unswap is no-op for near cache.
 
-                CacheObject val = cached.peek(null);
+                CacheObject val = cached.peek();
 
                 if (val == null && cached.evictInternal(xidVer, null, false)) {
                     evicted.add(entry.txKey());
@@ -393,7 +390,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             else {
                 cached.unswap();
 
-                CacheObject peek = cached.peek(null);
+                CacheObject peek = cached.peek();
 
                 if (peek == null && cached.evictInternal(xidVer, null, false)) {
                     cached.context().cache().removeIfObsolete(key.key());

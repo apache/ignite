@@ -36,6 +36,8 @@ final class BinaryMetadataHolder implements Serializable {
     /** */
     private final int acceptedVer;
 
+    /** */
+    private final transient boolean removing;
 
     /**
      * @param metadata Metadata.
@@ -43,11 +45,29 @@ final class BinaryMetadataHolder implements Serializable {
      * @param acceptedVer Pending updates count.
      */
     BinaryMetadataHolder(BinaryMetadata metadata, int pendingVer, int acceptedVer) {
+        this(metadata, pendingVer, acceptedVer, false);
+    }
+
+    /**
+     * @param metadata Metadata.
+     * @param pendingVer Pending updates count.
+     * @param acceptedVer Version of this metadata - how many updates were issued for this type.
+     * @param removing Flag means the metadata is removing now.
+     */
+    private BinaryMetadataHolder(BinaryMetadata metadata, int pendingVer, int acceptedVer, boolean removing) {
         assert metadata != null;
 
         this.metadata = metadata;
         this.pendingVer = pendingVer;
         this.acceptedVer = acceptedVer;
+        this.removing = removing;
+    }
+
+    /**
+     * @return Holder metadata with remove state where remove pending message has been handled.
+     */
+    BinaryMetadataHolder createRemoving() {
+        return new BinaryMetadataHolder(metadata, pendingVer, acceptedVer, true);
     }
 
     /**
@@ -71,10 +91,19 @@ final class BinaryMetadataHolder implements Serializable {
         return acceptedVer;
     }
 
+    /**
+     * @return {@code true} is the metadata is removing now.
+     */
+    boolean removing() {
+        return removing;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return "[typeId=" + metadata.typeId() +
             ", pendingVer=" + pendingVer +
-            ", acceptedVer=" + acceptedVer + "]";
+            ", acceptedVer=" + acceptedVer +
+            ", removing=" + removing +
+            "]";
     }
 }

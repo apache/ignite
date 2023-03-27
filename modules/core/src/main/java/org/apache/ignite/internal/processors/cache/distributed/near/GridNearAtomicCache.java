@@ -29,6 +29,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -41,12 +42,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -62,6 +63,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -103,7 +107,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
+        ctx.io().addCacheHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
             @Override public void apply(UUID nodeId, GridNearGetResponse res) {
                 processGetResponse(nodeId, res);
             }
@@ -148,7 +152,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         int nearValIdx = 0;
 
-        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
+        boolean needTaskName = ctx.events().isRecordable(EVT_CACHE_OBJECT_READ) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        String taskName = needTaskName ? ctx.kernalContext().task().resolveTaskName(req.taskNameHash()) : null;
 
         for (int i = 0; i < req.size(); i++) {
             if (F.contains(skipped, i))
@@ -159,7 +167,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             if (F.contains(failed, key))
                 continue;
 
-            if (ctx.affinity().partitionBelongs(ctx.localNode(), ctx.affinity().partition(key), req.topologyVersion())) { // Reader became backup.
+            // Reader became backup.
+            if (ctx.affinity().partitionBelongs(ctx.localNode(), ctx.affinity().partition(key), req.topologyVersion())) {
                 GridCacheEntryEx entry = peekEx(key);
 
                 if (entry != null && entry.markObsolete(ver))
@@ -196,8 +205,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     expireTime,
                     req.keepBinary(),
                     req.nodeId(),
-                    req.subjectId(),
-                    taskName);
+                    taskName,
+                    req.operation() == TRANSFORM);
             }
             catch (IgniteCheckedException e) {
                 res.addFailedKey(key, new IgniteCheckedException("Failed to update key in near cache: " + key, e));
@@ -212,8 +221,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param ttl TTL.
      * @param expireTime Expire time.
      * @param nodeId Node ID.
-     * @param subjId Subject ID.
      * @param taskName Task name.
+     * @param transformedValue {@code True} if transformed value.
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
@@ -224,9 +233,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         long expireTime,
         boolean keepBinary,
         UUID nodeId,
-        UUID subjId,
-        String taskName
-    ) throws IgniteCheckedException {
+        String taskName,
+        boolean transformedValue) throws IgniteCheckedException {
         try {
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -254,6 +262,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         /*metrics*/true,
                         /*primary*/false,
                         /*check version*/true,
+                        false,
                         topVer,
                         CU.empty0(),
                         DR_NONE,
@@ -262,11 +271,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         null,
                         false,
                         false,
-                        subjId,
                         taskName,
                         null,
                         null,
-                        null);
+                        null,
+                        transformedValue);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -281,7 +290,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 }
                 finally {
                     if (entry != null)
-                        ctx.evicts().touch(entry, topVer);
+                        entry.touch();
                 }
             }
         }
@@ -307,7 +316,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         boolean intercept = req.forceTransformBackups() && ctx.config().getInterceptor() != null;
 
-        String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
+        boolean needTaskName = ctx.events().isRecordable(EVT_CACHE_OBJECT_READ) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_PUT) ||
+            ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
+
+        String taskName = needTaskName ? ctx.kernalContext().task().resolveTaskName(req.taskNameHash()) : null;
 
         List<KeyCacheObject> nearEvicted = null;
 
@@ -353,6 +366,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             /*metrics*/true,
                             /*primary*/false,
                             /*check version*/!req.forceTransformBackups(),
+                            false,
                             req.topologyVersion(),
                             CU.empty0(),
                             DR_NONE,
@@ -361,11 +375,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             null,
                             false,
                             intercept,
-                            req.subjectId(),
                             taskName,
                             null,
                             null,
-                            null);
+                            null,
+                            false);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -400,12 +414,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        ReadRepairStrategy readRepairStrategy,
         boolean skipVals,
-        boolean canRemap,
         boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -413,24 +426,19 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        if (keyCheck)
-            validateCacheKeys(keys);
+        warnIfUnordered(keys, BulkOperation.GET);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
             forcePrimary,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             opCtx != null && opCtx.skipStore(),
-            canRemap,
             needVer);
     }
 
@@ -445,13 +453,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
         return dht.getAndPutAsync0(key, val, filter);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
         return dht.putAsync0(key, val, filter);
     }
@@ -531,7 +537,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
         return dht.getAndRemoveAsync(key);
     }
@@ -553,7 +558,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, @Nullable CacheEntryPredicate filter) {
         return dht.removeAsync(key, filter);
     }

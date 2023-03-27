@@ -26,14 +26,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,20 +56,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /** Grid 3. */
     private static Ignite ignite3;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /** {@inheritDoc} */
@@ -82,8 +72,6 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite1 = null;
         ignite2 = null;
         ignite3 = null;
@@ -91,6 +79,10 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
+
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).clear();
     }
@@ -99,6 +91,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws Exception If error occur.
      */
+    @Test
     public void testBasicOps() throws Exception {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -174,6 +167,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testBasicOpsAsync() throws Exception {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -206,7 +200,6 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             IgniteFuture<String> f2 = cache2.getAsync("async1");
 
             IgniteFuture<String> f3 = cache3.getAsync("async1");
-
 
             String v2 = f2.get();
             String v3 = f3.get();
@@ -254,6 +247,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
@@ -328,7 +322,10 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testPutWithExpiration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+
         IgniteCache<String, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, String> cache3 = ignite3.cache(DEFAULT_CACHE_NAME);

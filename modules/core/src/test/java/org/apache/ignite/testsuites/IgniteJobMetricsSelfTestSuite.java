@@ -17,22 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessorLoadTest;
+import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Job metrics self test suite.
  */
-public class IgniteJobMetricsSelfTestSuite extends TestSuite {
-    /**
-     * @return Job metrics test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Job metrics Test Suite");
-
-        suite.addTest(new TestSuite(GridJobMetricsProcessorLoadTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridJobMetricsProcessorLoadTest.class,
+    GridJobMetricsSelfTest.class,
+})
+public class IgniteJobMetricsSelfTestSuite {
 }

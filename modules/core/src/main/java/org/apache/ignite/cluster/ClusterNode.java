@@ -22,11 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,7 +98,7 @@ import org.jetbrains.annotations.Nullable;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterNode {
+public interface ClusterNode extends BaselineNode {
     /**
      * Gets globally unique node ID. A new ID is generated every time a node restarts.
      *
@@ -115,7 +112,7 @@ public interface ClusterNode {
      *
      * @return Consistent globally unique node ID.
      */
-    public Object consistentId();
+    @Override public Object consistentId();
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
@@ -135,7 +132,7 @@ public interface ClusterNode {
      *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
-    @Nullable public <T> T attribute(String name);
+    @Override @Nullable public <T> T attribute(String name);
 
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
@@ -167,7 +164,7 @@ public interface ClusterNode {
      *
      * @return All node attributes.
      */
-    public Map<String, Object> attributes();
+    @Override public Map<String, Object> attributes();
 
     /**
      * Gets collection of addresses this node is known by.
@@ -227,35 +224,11 @@ public interface ClusterNode {
     public boolean isLocal();
 
     /**
-     * Tests whether or not this node is a daemon.
-     * <p>
-     * Daemon nodes are the usual cluster nodes that participate in topology but are not
-     * visible on the main APIs, i.e. they are not part of any cluster group. The only
-     * way to see daemon nodes is to use {@link IgniteCluster#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but should be
-     * excluded from the "normal" topology, so that they won't participate in the task execution
-     * or data grid operations.
-     * <p>
-     * Application code should never use daemon nodes.
+     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
      *
-     * @return {@code True} if this node is a daemon, {@code false} otherwise.
-     */
-    public boolean isDaemon();
-
-    /**
-     * Tests whether or not this node is connected to cluster as a client.
-     * <p>
-     * Do not confuse client in terms of
-     * discovery {@link DiscoverySpi#isClientMode()} and client in terms of cache
-     * {@link IgniteConfiguration#isClientMode()}. Cache clients cannot carry data,
-     * while topology clients connect to topology in a different way.
+     * @return {@code True if client}.
      *
-     * @return {@code True} if this node is a client node, {@code false} otherwise.
      * @see IgniteConfiguration#isClientMode()
-     * @see Ignition#isClientMode()
-     * @see DiscoverySpi#isClientMode()
      */
     public boolean isClient();
 }

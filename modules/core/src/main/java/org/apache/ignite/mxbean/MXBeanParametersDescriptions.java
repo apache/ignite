@@ -25,14 +25,17 @@ import java.lang.annotation.Target;
 
 /**
  * Provides MBean method parameters description.
+ *
+ * @deprecated Use {@link MXBeanParameter} instead.
  */
+@Deprecated
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface MXBeanParametersDescriptions {
     /**
      *
-     * Array of descriptions for parameters.
+     * @return Array of descriptions for parameters.
      */
-    @SuppressWarnings({"JavaDoc"}) public String[] value();
+    public String[] value();
 }

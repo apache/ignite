@@ -106,6 +106,6 @@ public abstract class GridSpiAbstractConfigTest<T extends IgniteSpi> extends Gri
                 err = true;
             }
 
-        assert err : "No check for property [property=" + propName +", value=" + val + ']';
+        assert err : "No check for property [property=" + propName + ", value=" + val + ']';
     }
 }

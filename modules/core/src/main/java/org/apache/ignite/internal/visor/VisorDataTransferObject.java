@@ -23,15 +23,38 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for data transfer objects.
+ * Base class for data transfer objects for Visor tasks.
+ *
+ * @deprecated Use {@link IgniteDataTransferObject} instead. This class may be removed in Ignite 3.0.
  */
 public abstract class VisorDataTransferObject implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 6920203681702514010L;
+
     /** Magic number to detect correct transfer objects. */
     private static final int MAGIC = 0x42BEEF00;
+
+    /** Version 1. */
+    protected static final byte V1 = 1;
+
+    /** Version 2. */
+    protected static final byte V2 = 2;
+
+    /** Version 3. */
+    protected static final byte V3 = 3;
+
+    /** Version 4. */
+    protected static final byte V4 = 4;
+
+    /** Version 5. */
+    protected static final byte V5 = 5;
 
     /**
      * @param col Source collection.
@@ -39,8 +62,23 @@ public abstract class VisorDataTransferObject implements Externalizable {
      * @return List based on passed collection.
      */
     @Nullable protected static <T> List<T> toList(Collection<T> col) {
+        if (col instanceof List)
+            return (List<T>)col;
+
         if (col != null)
             return new ArrayList<>(col);
+
+        return null;
+    }
+
+    /**
+     * @param col Source collection.
+     * @param <T> Collection type.
+     * @return List based on passed collection.
+     */
+    @Nullable protected static <T> Set<T> toSet(Collection<T> col) {
+        if (col != null)
+            return new LinkedHashSet<>(col);
 
         return null;
     }
@@ -49,7 +87,7 @@ public abstract class VisorDataTransferObject implements Externalizable {
      * @return Transfer object version.
      */
     public byte getProtocolVersion() {
-        return 1;
+        return V1;
     }
 
     /**
@@ -62,7 +100,7 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        int hdr = MAGIC  + getProtocolVersion();
+        int hdr = MAGIC + getProtocolVersion();
 
         out.writeInt(hdr);
 

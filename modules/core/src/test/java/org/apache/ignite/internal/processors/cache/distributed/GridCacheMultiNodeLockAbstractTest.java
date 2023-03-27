@@ -30,16 +30,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
@@ -57,11 +57,16 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /** Grid 2. */
     private static Ignite ignite2;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Listeners. */
     private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.beforeTest();
+    }
 
     /**
      *
@@ -74,16 +79,12 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
         CacheConfiguration ccfg1 = cacheConfiguration().setName(DEFAULT_CACHE_NAME);
         CacheConfiguration ccfg2 = cacheConfiguration().setName(CACHE2);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -106,12 +107,13 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         ignite2 = startGrid(2);
 
         startGrid(3);
+
+        // Make sure topology is stable to avoid topology deadlocks on lock aquisiotion.
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite1 = null;
         ignite2 = null;
     }
@@ -155,7 +157,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param key Key.
      */
-    private void checkLocked(IgniteCache<Integer,String> cache, Integer key) {
+    private void checkLocked(IgniteCache<Integer, String> cache, Integer key) {
         assert cache.isLocalLocked(key, false);
         assert cache.isLocalLocked(key, true);
     }
@@ -164,7 +166,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param key Key.
      */
-    private void checkRemoteLocked(IgniteCache<Integer,String> cache, Integer key) {
+    private void checkRemoteLocked(IgniteCache<Integer, String> cache, Integer key) {
         assert cache.isLocalLocked(key, false);
         assert !cache.isLocalLocked(key, true);
     }
@@ -175,11 +177,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"BusyWait"})
-    private void checkUnlocked(IgniteCache<Integer,String> cache, Integer key) throws IgniteCheckedException {
+    private void checkUnlocked(IgniteCache<Integer, String> cache, Integer key) throws IgniteCheckedException {
         assert !cache.isLocalLocked(key, true);
 
         if (partitioned()) {
-            for(int i = 0; i < 200; i++)
+            for (int i = 0; i < 200; i++)
                 if (cache.isLocalLocked(key, false)) {
                     try {
                         Thread.sleep(10);
@@ -199,7 +201,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
+    private void checkLocked(IgniteCache<Integer, String> cache, Iterable<Integer> keys) {
         for (Integer key : keys)
             checkLocked(cache, key);
     }
@@ -208,7 +210,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkRemoteLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
+    private void checkRemoteLocked(IgniteCache<Integer, String> cache, Iterable<Integer> keys) {
         for (Integer key : keys)
             checkRemoteLocked(cache, key);
     }
@@ -218,7 +220,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param keys Keys.
      * @throws IgniteCheckedException If failed.
      */
-    private void checkUnlocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) throws IgniteCheckedException {
+    private void checkUnlocked(IgniteCache<Integer, String> cache, Iterable<Integer> keys) throws IgniteCheckedException {
         for (Integer key : keys)
             checkUnlocked(cache, key);
     }
@@ -227,6 +229,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testBasicLock() throws Exception {
         IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -268,6 +271,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodeLock() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
@@ -326,6 +330,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test fails.
      */
+    @Test
     public void testMultiNodeLockWithKeyLists() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
@@ -403,6 +408,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testLockReentry() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -431,6 +437,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockMultithreaded() throws Exception {
         final IgniteCache<Integer, String> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -549,6 +556,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoCaches() throws Exception {
         IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cache2 = ignite1.cache(CACHE2);

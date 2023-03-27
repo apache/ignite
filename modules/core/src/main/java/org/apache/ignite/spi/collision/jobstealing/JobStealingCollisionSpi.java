@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
@@ -55,8 +57,6 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -70,7 +70,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * from slower node and moved to the fast under-utilized node.
  * <p>
  * The design and ideas for this SPI are significantly influenced by
- * <a href="http://gee.cs.oswego.edu/dl/papers/fj.pdf">Java Fork/Join Framework</a>
+ * <a href="https://dl.acm.org/doi/pdf/10.1145/337449.337465">Java Fork/Join Framework</a>
  * authored by Doug Lea and planned for Java 7. {@code GridJobStealingCollisionSpi} took
  * similar concepts and applied them to the grid (as opposed to within VM support planned
  * in Java 7).
@@ -87,8 +87,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Note that this SPI must always be used in conjunction with
  * {@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi JobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
- * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency() IgniteConfiguration#getMetricsUpdateFrequency()}
- * should be set to positive value).
+ * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()
+ * IgniteConfiguration#getMetricsUpdateFrequency()} should be set to positive value).
  * The responsibility of Job Stealing Failover SPI is to properly route <b>stolen</b>
  * jobs to the nodes that initially requested (<b>stole</b>) these jobs. The
  * SPI maintains a counter of how many times a jobs was stolen and
@@ -253,7 +253,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private volatile int activeJobsThreshold = DFLT_ACTIVE_JOBS_THRESHOLD;
 
     /** Configuration parameter defining waiting job count threshold for stealing to start. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private volatile int waitJobsThreshold = DFLT_WAIT_JOBS_THRESHOLD;
 
     /** Message expire time configuration parameter. */
@@ -282,13 +281,13 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private final AtomicInteger totalStolenJobsNum = new AtomicInteger();
 
     /** Map of sent messages. */
-    private final ConcurrentMap<UUID, MessageInfo> sndMsgMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, MessageInfo> sndMsgMap = new ConcurrentHashMap<>();
 
     /** Map of received messages. */
-    private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap<>();
 
     /** */
-    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque8<>();
+    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque<>();
 
     /** */
     private CollisionExternalListener extLsnr;
@@ -309,6 +308,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      * Sets number of jobs that can be executed in parallel.
      *
      * @param activeJobsThreshold Number of jobs that can be executed in parallel.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public JobStealingCollisionSpi setActiveJobsThreshold(int activeJobsThreshold) {
@@ -455,7 +455,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      *
      * @return Node attributes to enable job stealing for.
      */
-     public Map<String, ? extends Serializable> getStealingAttributes() {
+    public Map<String, ? extends Serializable> getStealingAttributes() {
         return stealAttrs;
     }
 
@@ -571,7 +571,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
-                @SuppressWarnings("fallthrough")
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent;
 
@@ -648,7 +647,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
         spiCtx.addMessageListener(
             msgLsnr = new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     MessageInfo info = rcvMsgMap.get(nodeId);
 
                     if (info == null) {
@@ -1118,7 +1117,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         private int jobsToSteal;
 
         /** */
-        private long ts = U.currentTimeMillis();
+        private long ts = System.nanoTime();
 
         /**
          * @return Job to steal.
@@ -1135,7 +1134,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         boolean expired() {
             assert Thread.holdsLock(this);
 
-            return jobsToSteal > 0 && U.currentTimeMillis() - ts >= msgExpireTime;
+            return jobsToSteal > 0 && U.millisSinceNanos(ts) >= msgExpireTime;
         }
 
         /**
@@ -1146,7 +1145,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
             this.jobsToSteal = jobsToSteal;
 
-            ts = U.currentTimeMillis();
+            ts = System.nanoTime();
         }
 
         /** {@inheritDoc} */

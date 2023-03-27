@@ -27,14 +27,13 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,9 +46,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings("unchecked")
 public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Flag indicating whether to include cache to the node configuration. */
     private boolean cache;
 
@@ -57,12 +53,10 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (cache)
             cfg.setCacheConfiguration(cacheConfiguration());
-        else
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -84,6 +78,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinLeave() throws Exception {
         try {
             cache = true;
@@ -120,7 +115,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
                         }
                         catch (Exception e) {
                             if (!X.hasCause(e, ClusterTopologyCheckedException.class))
-                                throw e;
+                                MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
                     }
 
@@ -132,7 +127,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 4; i < 8; i++)
-                    startGrid(i);
+                    startClientGrid(i);
 
                 for (int i = 4; i < 8; i++)
                     stopGrid(i);
@@ -143,13 +138,13 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             startGrid(4);
 
-            U.sleep(500);
+            awaitPartitionMapExchange();
 
             finished.set(true);
 
             fut.get();
 
-            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion());
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion(), 1);
 
             assertEquals(29, topVer.topologyVersion());
 

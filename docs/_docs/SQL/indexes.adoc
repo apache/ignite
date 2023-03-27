@@ -1,0 +1,370 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Defining Indexes
+
+:javaFile: {javaCodeDir}/Indexes.java
+:csharpFile: {csharpCodeDir}/DefiningIndexes.cs
+
+In addition to common DDL commands, such as CREATE/DROP INDEX, developers can use Ignite's link:SQL/sql-api[SQL APIs] to define indexes.
+
+[NOTE]
+====
+Indexing capabilities are provided by the 'ignite-indexing' module. If you start Ignite from Java code, link:setup#enabling-modules[add this module to your classpath].
+====
+
+Ignite automatically creates indexes for each primary key and affinity key field.
+When you define an index on a field in the value object, Ignite creates a composite index consisting of the indexed field and the cache's primary key.
+In SQL terms, it means that the index will be composed of two columns: the column you want to index and the primary key column.
+
+== Creating Indexes With SQL
+
+Refer to the link:sql-reference/ddl#create-index[CREATE INDEX] section.
+
+== Configuring Indexes Using Annotations
+
+Indexes, as well as queryable fields, can be configured from code via the `@QuerySqlField` annotation. In the example below, the Ignite SQL engine will create indexes for the `id` and `salary` fields.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=configuring-with-annotation,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{csharpFile}[tag=idxAnnotationCfg,indent=0]
+----
+tab:C++[unsupported]
+--
+
+The type name is used as the table name in SQL queries. In this case, our table name will be `Person` (schema name usage and definition is explained in the link:SQL/schemas[Schemas] section).
+
+Both `id` and `salary` are indexed fields. `id` will be sorted in ascending order (default) and `salary` in descending order.
+
+If you do not want to index a field, but you still need to use it in SQL queries, then the field must be annotated without the `index = true` parameter.
+Such a field is called a _queryable field_.
+In the example above, `name` is defined as a link:SQL/sql-api#configuring-queryable-fields[queryable field].
+
+The `age` field is neither queryable nor is it an indexed field, and thus it will not be accessible from SQL queries.
+
+When you define the indexed fields, you need to <<Registering Indexed Types,register indexed types>>.
+
+////
+Now you can execute the SQL query as follows:
+
+[source,java]
+----
+SqlFieldsQuery qry = new SqlFieldsQuery("SELECT id, name FROM Person" +
+		"WHERE id > 1500 LIMIT 10");
+----
+////
+
+
+[NOTE]
+====
+[discrete]
+=== Updating Indexes and Queryable Fields at Runtime
+
+Use the link:sql-reference/ddl#create-index[CREATE/DROP INDEX] commands if you need to manage indexes or make an object's new fields visible to the SQL engine at​ runtime.
+====
+
+For more detail, also refer to the link:https://ignite.apache.org/docs/latest/sql-reference/ddl#create-table[CREATE TABLE,window=_blank] section.
+
+=== Indexing Nested Objects
+
+Fields of nested objects can also be indexed and queried using annotations. For example, consider a `Person` object that has an `Address` object as a field:
+
+[source,java]
+----
+public class Person {
+    /** Indexed field. Will be visible for SQL engine. */
+    @QuerySqlField(index = true)
+    private long id;
+
+    /** Queryable field. Will be visible for SQL engine. */
+    @QuerySqlField
+    private String name;
+
+    /** Will NOT be visible for SQL engine. */
+    private int age;
+
+    /** Indexed field. Will be visible for SQL engine. */
+    @QuerySqlField(index = true)
+    private Address address;
+}
+----
+
+Where the structure of the `Address` class might look like:
+
+[source,java]
+----
+public class Address {
+    /** Indexed field. Will be visible for SQL engine. */
+    @QuerySqlField (index = true)
+    private String street;
+
+    /** Indexed field. Will be visible for SQL engine. */
+    @QuerySqlField(index = true)
+    private int zip;
+}
+----
+
+In the above example, the `@QuerySqlField(index = true)` annotation is specified on all the fields of the `Address` class, as well as the `Address` object in the `Person` class.
+
+This makes it possible to execute SQL queries like the following:
+
+[source,java]
+----
+QueryCursor<List<?>> cursor = personCache.query(new SqlFieldsQuery( "select * from Person where street = 'street1'"));
+----
+
+Note that you do not need to specify `address.street` in the WHERE clause of the SQL query. This is because the fields of the `Address` class are flattened within the `Person` table which simply allows us to access the `Address` fields in the queries directly.
+
+WARNING: If you create indexes for nested objects, you won't be able to run UPDATE or INSERT statements on the table.
+
+=== Registering Indexed Types
+
+After indexed and queryable fields are defined, they have to be registered in the SQL engine along with the object types they belong to.
+
+To specify which types should be indexed, pass the corresponding key-value pairs in the `CacheConfiguration.setIndexedTypes()` method as shown in the example below.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=register-indexed-types,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{csharpFile}[tag=register-indexed-types,indent=0]
+----
+tab:C++[unsupported]
+--
+
+This method accepts only pairs of types: one for key class and another for value class. Primitives are passed as boxed types.
+
+[NOTE]
+====
+[discrete]
+=== Predefined Fields
+In addition to all the fields marked with a `@QuerySqlField` annotation, each table will have two special predefined fields: `pass:[_]key` and `pass:[_]val`, which represent links to whole key and value objects. This is useful, for instance, when one of them is of a primitive type and you want to filter by its value. To do this, run a query like: `SELECT * FROM Person WHERE pass:[_]key = 100`.
+====
+
+NOTE: Since Ignite supports link:key-value-api/binary-objects[Binary Objects], there is no need to add classes of indexed types to the classpath of cluster nodes. The SQL query engine can detect values of indexed and queryable fields, avoiding object deserialization.
+
+=== Group Indexes
+
+To set up a multi-field index that can accelerate queries with complex conditions, you can use a `@QuerySqlField.Group` annotation. You can add multiple `@QuerySqlField.Group` annotations in `orderedGroups` if you want a field to be a part of more than one group.
+
+For instance, in the `Person` class below we have the field `age` which belongs to an indexed group named `age_salary_idx` with a group order of "0" and descending sort order. Also, in the same group, we have the field `salary` with a group order of "3" and ascending sort order. Furthermore, the field `salary` itself is a single column index (the `index = true` parameter is specified in addition to the `orderedGroups` declaration). Group `order` does not have to be a particular number. It is needed only to sort fields inside of a particular group.
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaCodeDir}/Indexes_groups.java[tag=group-indexes,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DefiningIndexes.cs[tag=groupIdx,indent=0]
+----
+tab:C++[unsupported]
+--
+
+NOTE: Annotating a field with `@QuerySqlField.Group` outside of `@QuerySqlField(orderedGroups={...})` will have no effect.
+
+== Configuring Indexes Using Query Entities
+
+Indexes and queryable fields can also be configured via the `org.apache.ignite.cache.QueryEntity` class which is convenient for Spring XML based configuration.
+
+All concepts that are discussed as part of the annotation based configuration above are also valid for the `QueryEntity` based approach. Furthermore, the types whose fields are configured with the `@QuerySqlField` annotation and are registered with the `CacheConfiguration.setIndexedTypes()` method are internally converted into query entities.
+
+The example below shows how to define a single field index, group indexes, and queryable fields.
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/query-entities.xml[tags=ignite-config,indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tag=index-using-queryentity,indent=0]
+----
+
+tab:C#/.NET[]
+[source,csharp]
+----
+include::code-snippets/dotnet/DefiningIndexes.cs[tag=queryEntity,indent=0]
+----
+
+tab:C++[unsupported]
+--
+
+A short name of the `valueType` is used as a table name in SQL queries. In this case, our table name will be `Person` (schema name usage and definition is explained on the link:SQL/schemas[Schemas] page).
+
+Once the `QueryEntity` is defined, you can execute the SQL query as follows:
+
+[source,java]
+----
+include::{javaFile}[tag=query,indent=0]
+----
+
+[NOTE]
+====
+[discrete]
+=== Updating Indexes and Queryable Fields at Runtime
+
+Use the link:sql-reference/ddl#create-index[CREATE/DROP INDEX] command if you need to manage indexes or make new fields of the object visible to the SQL engine at​ runtime.
+====
+
+== Configuring Index Inline Size
+
+Proper index inline size can help speed up queries on indexed fields.
+//For primitive types and BinaryObjects, Ignite uses a predefined inline index size
+Refer to the dedicated section in the link:SQL/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
+
+In most cases, you will only need to set the inline size for indexes on variable-length fields, such as strings or arrays.
+The default value is 10.
+
+You can change the default value by setting either
+
+* inline size for each index individually, or
+* `CacheConfiguration.sqlIndexMaxInlineSize` property for all indexes within a given cache, or
+* `IGNITE_MAX_INDEX_PAYLOAD_SIZE` system property for all indexes in the cluster
+
+The settings are applied in the order listed above.
+
+//Ignite automatically creates indexes on the primary key and on the affinity key.
+//The inline size for these indexes can be configured via the `CacheConfiguration.sqlIndexMaxInlineSize` property.
+
+You can also configure inline size for each index individually, which will overwrite the default value.
+To set the index inline size for a user-defined index, use one of the following methods. In all cases, the value is set in bytes.
+
+* When using annotations:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=annotation-with-inline-size,indent=0]
+----
+tab:C#/.NET[]
+[source,java]
+----
+include::{csharpFile}[tag=annotation-with-inline-size,indent=0]
+----
+tab:C++[unsupported]
+--
+
+* When using `QueryEntity`:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=query-entity-with-inline-size,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{csharpFile}[tag=query-entity-with-inline-size,indent=0]
+----
+
+tab:C++[unsupported]
+--
+
+* If you create indexes by using the `CREATE INDEX` command, you can use the `INLINE_SIZE` option to set the inline size. See examples in the link:sql-reference/ddl[corresponding section].
++
+[source, sql]
+----
+create index country_idx on Person (country) INLINE_SIZE 13;
+----
+
+* If you create a table by using the `CREATE TABLE` command, you can use the ` PK_INLINE_SIZE` and `AFFINITY_INDEX_INLINE_SIZE` parameters to set primary key and affinity index sizes.
++
+[source, sql]
+----
+CREATE TABLE IF NOT EXISTS TABLE1 (
+  id varchar(15),
+  col varchar(100),
+  PRIMARY KEY(id) ) WITH "PK_INLINE_SIZE=19,AFFINITY_INDEX_INLINE_SIZE=20"
+----
+
+== Custom Keys
+If you use only predefined SQL data types for primary keys, then you do not need to perform additional manipulation with the SQL schema configuration. Those data types are defined by the `GridQueryProcessor.SQL_TYPES` constant, as listed below.
+
+Predefined SQL data types include:
+
+- all the primitives and their wrappers except `char` and `Character`
+- `String`
+- `BigDecimal`
+- `byte[]`
+- `java.util.Date`, `java.sql.Date`, `java.sql.Timestamp`
+- `java.util.UUID`
+
+However, once you decide to introduce a custom complex key and refer to its fields from DML statements, you need to:
+
+- Define those fields in the `QueryEntity` the same way as you set fields for the value object.
+- Use the new configuration parameter `QueryEntity.setKeyFields(..)` to distinguish key fields from value fields.
+
+The example below shows how to do this.
+
+[tabs]
+--
+
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/custom-keys.xml[tags=ignite-config;!discovery, indent=0]
+
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=custom-key,indent=0]
+----
+tab:C#/.NET[]
+[source,csharp]
+----
+include::{csharpFile}[tag=custom-key,indent=0]
+----
+tab:C++[unsupported]
+--
+
+
+[NOTE]
+====
+[discrete]
+=== Automatic Hash Code Calculation and Equals Implementation
+
+If a custom key can be serialized into a binary form, then Ingnite calculates its hash code and implement the `equals()` method automatically.
+
+However, if the key's type is `Externalizable`, and if it cannot be serialized into the binary form, then you are required to implement the `hashCode` and `equals` methods manually. See the link:key-value-api/binary-objects[Binary Objects] page for more details.
+====
+
+

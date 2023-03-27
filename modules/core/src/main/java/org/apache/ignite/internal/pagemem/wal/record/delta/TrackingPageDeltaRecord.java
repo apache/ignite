@@ -19,7 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Delta record for updates in tracking pages
@@ -28,24 +29,24 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /** Page id to mark. */
     private final long pageIdToMark;
 
-    /** Next snapshot id. */
-    private final long nextSnapshotId;
+    /** Next snapshot tag. */
+    private final long nextSnapshotTag;
 
-    /** Last successful snapshot id. */
-    private final long lastSuccessfulSnapshotId;
+    /** Last successful snapshot tag. */
+    private final long lastSuccessfulSnapshotTag;
 
     /**
-     * @param cacheId Cache id.
+     * @param grpId Cache group id.
      * @param pageId Page id.
-     * @param nextSnapshotId
-     * @param lastSuccessfulSnapshotId
+     * @param nextSnapshotTag Next snapshot tag.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
      */
-    public TrackingPageDeltaRecord(int cacheId, long pageId, long pageIdToMark, long nextSnapshotId, long lastSuccessfulSnapshotId) {
-        super(cacheId, pageId);
+    public TrackingPageDeltaRecord(int grpId, long pageId, long pageIdToMark, long nextSnapshotTag, long lastSuccessfulSnapshotTag) {
+        super(grpId, pageId);
 
         this.pageIdToMark = pageIdToMark;
-        this.nextSnapshotId = nextSnapshotId;
-        this.lastSuccessfulSnapshotId = lastSuccessfulSnapshotId;
+        this.nextSnapshotTag = nextSnapshotTag;
+        this.lastSuccessfulSnapshotTag = lastSuccessfulSnapshotTag;
     }
 
     /**
@@ -58,28 +59,33 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /**
      *
      */
-    public long nextSnapshotId() {
-        return nextSnapshotId;
+    public long nextSnapshotTag() {
+        return nextSnapshotTag;
     }
 
     /**
      *
      */
-    public long lastSuccessfulSnapshotId() {
-        return lastSuccessfulSnapshotId;
+    public long lastSuccessfulSnapshotTag() {
+        return lastSuccessfulSnapshotTag;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         TrackingPageIO.VERSIONS.forPage(pageAddr).markChanged(pageMem.pageBuffer(pageAddr),
             pageIdToMark,
-            nextSnapshotId,
-            lastSuccessfulSnapshotId,
-            pageMem.pageSize());
+            nextSnapshotTag,
+            lastSuccessfulSnapshotTag,
+            pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.TRACKING_PAGE_DELTA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TrackingPageDeltaRecord.class, this, "super", super.toString());
     }
 }

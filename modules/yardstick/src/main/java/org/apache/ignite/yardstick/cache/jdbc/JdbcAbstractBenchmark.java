@@ -30,19 +30,22 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkDriverAdapter;
 
 import static org.yardstickframework.BenchmarkUtils.jcommander;
 
 /** Base class for benchmarks that measure raw performance of JDBC databases */
-public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
+public abstract class JdbcAbstractBenchmark extends IgniteAbstractBenchmark {
     /** Arguments. */
     protected final IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
     /** All {@link Connection}s associated with threads. */
     private final List<Connection> threadConnections = new ArrayList<>();
+
+    /** List of queries. */
+    private final List<String> dbqueries = new ArrayList<>();
 
     /** Each connection is also a transaction, so we better pin them to threads. */
     ThreadLocal<Connection> conn = new ThreadLocal<Connection>() {
@@ -50,7 +53,7 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
             Connection conn;
             try {
                 conn = connection();
-                if (args.createTempDatabase()) {
+                if (args.createTempDatabase() || args.dbn() != null) {
                     assert dbName != null;
                     conn.setCatalog(dbName);
                 }
@@ -76,12 +79,18 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
         Class.forName(args.jdbcDriver());
         if (args.createTempDatabase())
             createTestDatabase();
+        else
+            dbName = (args.dbn() == null) ? null : args.dbn();
 
         try (Connection conn = connection()) {
             if (args.createTempDatabase())
                 conn.setCatalog(dbName);
+
             populateTestDatabase(conn);
         }
+
+        if (args.loadTestQueriesFile() != null)
+            setQueries();
     }
 
     /** {@inheritDoc} */
@@ -89,10 +98,13 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
         synchronized (threadConnections) {
             for (Connection conn : threadConnections)
                 U.closeQuiet(conn);
+
             threadConnections.clear();
         }
+
         if (args.createTempDatabase())
             dropTestDatabase();
+
         super.tearDown();
     }
 
@@ -111,7 +123,8 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
     private void dropTestDatabase() throws SQLException {
         try (Connection conn = connection()) {
             try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("drop database " + dbName);
+                if (!conn.getMetaData().getDatabaseProductName().equals("Apache Ignite"))
+                    stmt.executeUpdate("drop database " + dbName);
             }
         }
     }
@@ -141,11 +154,36 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
         }
     }
 
+    /** Set list of queries defined in file */
+    private void setQueries() throws IOException, SQLException {
+        if (args.loadTestQueriesFile() != null) {
+            try (FileReader fr = new FileReader(args.loadTestQueriesFile())) {
+                try (BufferedReader br = new BufferedReader(fr)) {
+                    String line;
+
+                    while ((line = br.readLine()) != null) {
+                        if (line.trim().isEmpty())
+                            continue;
+
+                        dbqueries.add(line.trim());
+                    }
+                }
+            }
+        }
+    }
+
     /** Create new {@link Connection} from {@link #args}. Intended for use by {@link #setUp} and {@link #tearDown}  */
-    private Connection connection() throws SQLException {
+    public Connection connection() throws SQLException {
         Connection conn = DriverManager.getConnection(args.jdbcUrl());
         conn.setAutoCommit(true);
         return conn;
+    }
+
+    /**
+     * @return List of queries.
+     */
+    public List<String> getDbqueries() {
+        return dbqueries;
     }
 
     /**
@@ -156,7 +194,8 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
     void clearTable(String tblName) throws SQLException {
         try (Connection conn = connection()) {
             try (PreparedStatement stmt = conn.prepareStatement("drop table " + tblName)) {
-                stmt.executeUpdate();
+                if (!conn.getMetaData().getDatabaseProductName().equals("Apache Ignite"))
+                    stmt.executeUpdate();
             }
         }
     }

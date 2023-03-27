@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -45,7 +44,9 @@ import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -54,7 +55,9 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Continuous task test.
@@ -70,6 +73,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsChain() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -89,6 +93,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsChainMultiThreaded() throws Exception {
         try {
             final Ignite ignite = startGrid(0);
@@ -121,6 +126,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsSessionChain() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -137,6 +143,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousSlowMap() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -154,6 +161,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testClearTimeouts() throws Exception {
         int holdccTimeout = 4000;
 
@@ -176,6 +184,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleHoldccCalls() throws Exception {
         try {
             Ignite grid = startGrid(0);
@@ -190,19 +199,21 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testClosureWithNestedInternalTask() throws Exception {
         try {
-            IgniteEx ignite = startGrid(0);
+            IgniteEx ign = startGrid(0);
 
-            ComputeTaskInternalFuture<String> fut = ignite.context().closure().callAsync(GridClosureCallMode.BALANCE, new Callable<String>() {
-                /** */
-                @IgniteInstanceResource
-                private IgniteEx g;
+            IgniteFuture<String> fut = ign.compute(ign.cluster()).callAsync(
+                new IgniteCallable<String>() {
+                    @IgniteInstanceResource
+                    private IgniteEx g;
 
-                @Override public String call() throws Exception {
-                    return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
+                    @Override public String call() throws Exception {
+                        return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
+                    }
                 }
-            }, ignite.cluster().nodes());
+            );
 
             assertEquals("DONE", fut.get(3000));
         }
@@ -215,7 +226,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @GridInternal
     public static class NestedHoldccTask extends ComputeTaskAdapter<String, String> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
@@ -278,6 +289,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         @LoggerResource
         private IgniteLogger log;
 
+        /** {@inheritDoc} */
         @Override public Boolean apply(Object param) {
             counter++;
 
@@ -315,6 +327,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         @JobContextResource
         private ComputeJobContext jobCtx;
 
+        /** {@inheritDoc} */
         @Override public Object apply(Integer holdccTimeout) {
             assert holdccTimeout >= 2000;
 
@@ -353,7 +366,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) {
             assert mapper != null;
             assert arg != null;
 
@@ -529,7 +542,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             mapper.send(new TestJob(++cnt));
 
             try {

@@ -35,8 +35,11 @@ public abstract class GridCloseableIteratorAdapter<T> extends GridIteratorAdapte
 
     /** {@inheritDoc} */
     @Override public final T nextX() throws IgniteCheckedException {
-        if (!hasNextX())
+        if (!hasNextX()) {
+            checkClosed();
+
             throw new NoSuchElementException();
+        }
 
         return onNext();
     }

@@ -48,7 +48,7 @@ public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implemen
     private static final Object FAKE = Boolean.TRUE;
 
     /** */
-    @SuppressWarnings({"TransientFieldNotInitialized", "CollectionDeclaredAsConcreteClass"})
+    @SuppressWarnings({"TransientFieldNotInitialized"})
     private transient HashMap<E, Object> map;
 
     /**
@@ -75,7 +75,7 @@ public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implemen
     public GridBoundedLinkedHashSet(Collection<? extends E> c, int maxCap) {
         assert maxCap > 0;
 
-        map = new GridBoundedLinkedHashMap<>(Math.max((int) (c.size() / 0.75f) + 1, 16), maxCap);
+        map = new GridBoundedLinkedHashMap<>(Math.max((int)(c.size() / 0.75f) + 1, 16), maxCap);
 
         addAll(c);
     }
@@ -199,7 +199,6 @@ public class GridBoundedLinkedHashSet<E> extends GridSerializableSet<E> implemen
      * @return a shallow copy of this set.
      * @throws CloneNotSupportedException Thrown if cloning is not supported.
      */
-    @SuppressWarnings("unchecked")
     @Override public Object clone() throws CloneNotSupportedException {
         GridBoundedLinkedHashSet<E> newSet = (GridBoundedLinkedHashSet<E>)super.clone();
 

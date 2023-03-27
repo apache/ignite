@@ -78,6 +78,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Clears all registered objects.
+        /// </summary>
+        public static void Clear()
+        {
+            var graph = Graph.Value;
+            
+            graph.Objects.Clear();
+            graph.Depth = 0;
+        }
+
+        /// <summary>
         /// Object graph.
         /// </summary>
         private class ObjectGraph

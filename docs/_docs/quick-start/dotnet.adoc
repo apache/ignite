@@ -1,0 +1,95 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite Quick Start Guide for .NET/C#
+
+This chapter explains how to use .NET Core to build and run a simple Hello World example in .NET that starts a node, puts a value into the node and then gets the value.
+
+
+== Prerequisites
+
+Ignite.NET was officially tested on:
+
+include::includes/dotnet-prerequisites.adoc[]
+
+
+== Running a Simple .NET Example
+
+[NOTE]
+====
+Ignite for .NET supports a thick client and a thin client. Because this guide focuses on the _thick_ client, you can run the example below after adding the Ignite library package. You do not need to download and install the Ignite distribution to run the example.
+
+For information about the .NET thin client, see link:thin-clients/dotnet-thin-client[.NET Thin Client].
+====
+
+//TODO??: WARNING: If you use the thick client without downloading and installing Ignite distribution, some functionality (Logging, etc.) will be missing or not configured.
+
+. Install .NET Core SDK (version 2+): https://dotnet.microsoft.com/download
+
+. Use the CLI (unix shell, Windows CMD or PowerShell, etc.) to run the following two commands:
++
+`> dotnet new console`
++
+This creates an empty project, which includes a project file with metadata and a .cs file with code.
++
+And:
++
+`> dotnet add package Apache.Ignite`
++
+This modifies the project file - `.csproj` - to add dependencies.
+
+. Open `Program.cs` in any text editor and replace the contents with the following:
++
+[tabs]
+--
+tab:C#/.NET[]
+[source,csharp]
+----
+using System;
+using Apache.Ignite.Core;
+
+namespace  IgniteTest
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+          var ignite = Ignition.Start();
+          var cache = ignite.GetOrCreateCache<int, string>("my-cache");
+          cache.Put(1, "Hello, World");
+          Console.WriteLine(cache.Get(1));
+        }
+    }
+}
+----
+--
+
+. Save and then run the program:
++
+`> dotnet run`
+
+And that's it! You should see a node launch and then display "Hello, World".
+
+
+== Next Steps
+
+From here, you may want to:
+
+* Check out the link:thin-clients/dotnet-thin-client[.NET thin client] that provides a lightweight form of connectivity
+to Ignite clusters
+* Explore the link:{githubUrl}/modules/platforms/dotnet/examples[additional examples] included with Ignite
+* Refer to the link:net-specific[NET-specific section] of the documentation to learn more about capabilities
+that are available for C# and .NET applications.
+
+

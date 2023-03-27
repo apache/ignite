@@ -19,8 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -34,13 +34,13 @@ public class RemoveRecord extends PageDeltaRecord {
     private int cnt;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param idx Index.
      * @param cnt Count.
      */
-    public RemoveRecord(int cacheId, long pageId, int idx, int cnt) {
-        super(cacheId, pageId);
+    public RemoveRecord(int grpId, long pageId, int idx, int cnt) {
+        super(grpId, pageId);
 
         this.idx = idx;
         this.cnt = cnt;
@@ -77,6 +77,6 @@ public class RemoveRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(RemoveRecord.class, this, super.toString());
+        return S.toString(RemoveRecord.class, this, "super", super.toString());
     }
 }

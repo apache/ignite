@@ -1,0 +1,371 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Services
+
+:javaFile: {javaCodeDir}/services/ServiceExample.java
+:javaEchoServiceFile: {javaCodeDir}/services/EchoServiceImpl.java
+:javaServiceInterceptorFile: {javaCodeDir}/services/EchoServiceAccessInterceptor.java
+
+
+== Overview
+A service is a piece of functionality that can be deployed to an Ignite cluster and execute specific operations.
+You can have multiple instances of a service on one or multiple nodes.
+
+Ignite services have the following features:
+
+Load balancing::
+In all cases, other than singleton service deployment, Ignite automatically makes sure that about an equal number of services are deployed on each node within the cluster. Whenever the cluster topology changes, Ignite re-evaluates service deployments and may re-deploy an already deployed service to another node for better load balancing.
+
+Fault tolerance::
+Ignite always guarantees that services are continuously available, and are deployed according to the specified configuration, regardless of any topology changes or node crashes.
+
+Hot Redeployment::
+You can use Ignite's `DeploymentSpi` configuration to re-deploy services without restarting the cluster. See <<Re-deploying Services>>.
+
+
+Ignite services can be used as a backbone of a micro-services based solution or application. Learn more about this use case from the following series of articles:
+
+* link:https://dzone.com/articles/running-microservices-on-top-of-in-memory-data-gri[Microservices on Top of Apache Ignite - Part I^]
+* link:https://dzone.com/articles/running-microservices-on-top-of-in-memory-data-gri-1[Microservices on Top of Apache Ignite - Part II^]
+* link:https://dzone.com/articles/microservices-on-top-of-an-in-memory-data-grid-par[Microservices on Top of Apache Ignite - Part III^]
+
+Refer to a service example implementation in the Apache Ignite link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/servicegrid[code base^].
+
+== Implementing a Service
+
+A service implements the javadoc:org.apache.ignite.services.Service[Service] interface.
+The `Service` interface has three methods:
+
+* `init()`: this method is called by Ignite before the service is deployed (and before the `execute()` method is called)
+* `execute()`: starts execution of the service
+* `cancel()`:  cancels service execution
+
+//The service must be available in the classpash of all server nodes. *TODO: deployment options*
+
+//Each service is associated with a name.
+//Deploy the service at runtime by calling one of the `IgniteServices.deploy...` methods.
+//Or, specify the service in the node configuration, in which case the service is deployed when the node starts.
+
+== Deploying Services
+
+You can deploy your service either programmatically at runtime, or by providing a service configuration as part of the node configuration.
+In the latter case, the service is deployed when the cluster starts.
+
+=== Deploying Services at Runtime
+
+You can deploy services at runtime via the instance of `IgniteServices`, which can be obtained from an instance of `Ignite` by calling the `Ignite.services()` method.
+
+The `IgniteServices` interface has a number of methods for deploying services:
+
+* `deploy(ServiceConfiguration)` deploys a service defined by a given configuration.
+* `deployNodeSingleton(...)` ensures that an instance of the service is running on each server node.
+* `deployClusterSingleton(...)` deploys a single instance of the service per cluster. If the cluster node on which the service is deployed stops, Ignite automatically redeploys the service on another node.
+* `deployKeyAffinitySingleton(...)` deploys a single instance of the service on the primary node for a given cache key.
+* `deployMultiple(...)` deploys the given number of instances of the service.
+
+
+This is an example of cluster singleton deployment:
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=start-with-method, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+
+And here is how to deploy a cluster singleton using `ServiceConfiguration`:
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=start-with-service-config, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[]
+--
+
+
+=== Deploying Services at Node Startup
+
+You can specify your service as part of the node configuration and start the service together with the node.
+If your service is a node singleton, the service is started on each node of the cluster.
+If the service is a cluster singleton, it is started in the first cluster node, and is redeployed to one of the other nodes if the first node terminates.
+The service must be available on the classpath of each node.
+
+Below is an example of configuring a cluster singleton service:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+include::code-snippets/xml/services.xml[tags=ignite-config;!discovery, indent=0]
+----
+
+tab:Java[]
+
+[source, java]
+----
+include::{javaFile}[tags=service-configuration, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[]
+--
+
+
+== Deploying to a Subset of Nodes
+
+When you obtain the `IgniteServices` interface by calling `ignite.services()`, the `IgniteServices` instance is associated with all server nodes.
+It means that Ignite chooses where to deploy the service from the set of all server nodes.
+You can change the set of nodes considered for service deployment by using various approaches describe below.
+
+=== Cluster Singleton
+
+A cluster singleton is a deployment strategy where there is only one instance of the service in the cluster, and Ignite guarantees that the instance is always available.
+In case the cluster node on which the service is deployed crashes or stops, Ignite automatically redeploys the instance to another node.
+
+=== ClusterGroup
+
+You can use the `ClusterGroup` interface to deploy services to a subset of nodes.
+If the service is a node singleton, the service is deployed on all nodes from the subset.
+If the service is a cluster singleton, it is deployed on one of the nodes from the subset.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=deploy-with-cluster-group, indent=0]
+----
+tab:C#/.NET[]
+
+tab:C++[]
+--
+
+
+=== Node Filter
+
+You can use node attributes to define the subset of nodes meant for service deployment.
+This is achieved by using a node filter.
+A node filter is an `IgnitePredicate<ClusterNode>` that Ignite calls for each node associated with the `IgniteService` interface.
+If the predicate returns `true` for a given node, the node is included.
+
+CAUTION: The class of the node filter must be present in the classpath of all nodes.
+
+Here is an example of a node filter.
+The filter includes the server nodes that have the "west.coast.node" attribute.
+
+[source, java]
+----
+include::{javaFile}[tags=node-filter, indent=0]
+----
+
+Deploy the service using the node filter:
+[source, java]
+----
+include::{javaFile}[tags=deploy-with-node-filter, indent=0]
+
+----
+
+=== Cache Key
+Affinity-based deployment allows you to deploy a service to the primary node for a specific key in a specific cache.
+Refer to the link:data-modeling/affinity-collocation[Affinity Colocation] section for details.
+For an affinity-base deployment, specify the desired cache and key in the service configuration.
+The cache does not have to contain the key. The node is determined by the affinity function.
+If the cluster topology changes in a way that the key is re-assigned to another node, the service is redeployed to that node as well.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=deploy-by-key, indent=0]
+
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+== Accessing Services
+
+You can access the service at runtime via a service proxy.
+Proxies can be either _sticky_ or _non-sticky_.
+A sticky proxy always connects to the same cluster node to access a remotely deployed service.
+A non-sticky proxy load-balances remote service invocations among all cluster nodes on which the service is deployed.
+
+The following code snippet obtains a non-sticky proxy to the service and calls a service method:
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaCodeDir}/services/ServiceExample.java[tags=access-service, indent=0]
+----
+
+tab:C#/.NET[]
+
+tab:C++[]
+--
+
+
+//== Accessing Services from Compute Tasks
+// TODO the @ServiceResource annotation
+
+== Un-deploying Services
+
+To undeploy a service, use the `IgniteServices.cancel(serviceName)` or `IgniteServices.cancelAll()` methods.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=undeploy, indent=0]
+----
+
+tab:C#/.NET[]
+tab:C++[]
+--
+
+== Re-deploying Services
+
+If you want to update the implementation of a service without stopping the cluster, you can do it if you use the Ignite's link:code-deployment/deploying-user-code[DeploymentSPI configuration].
+
+Use the following procedure to redeploy the service:
+
+. Update the JAR file(s) in the location where the service is stored (pointed to by your `UriDeploymentSpi.uriList` property). Ignite will reload the new classes after the configured update period.
+. Add the service implementation to the classpass of a client node and start the client.
+. Call the `Ignite.services().cancel()` method on the client node to stop the service.
+. Deploy the service from the client node.
+. Stop the client node.
+
+In this way, you don't have to stop the server nodes, so you don't interrupt the operation of your cluster.
+
+== Service Statistics
+
+You can measure durations of your service's methods. If you want this analytics, enable service statistics in the
+service configuration. Service statistics are collected under name "Services" in
+link:monitoring-metrics/new-metrics-system.adoc[metrics], in
+link:monitoring-metrics/system-views.adoc[system views], and in JMX.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=start-with-statistics, indent=0]
+----
+tab:C#/.NET[]
+tab:C++[]
+--
+
+[NOTE]
+====
+You should be aware:
+
+1. Direct references to the services like `IgniteServices.service(name)` corrupt the statistics. Use the proxies
+instead (`IgniteServices.serviceProxy(...)`).
+2. Overloaded service methods have the same metric by the method name.
+3. Service statistics do not take in account serialization and network issues.
+4. Service statistics slows down the invocations of service methods. It's not
+an issue for real jobs like working with a DB or a cache.
+====
+
+== Service Middleware
+
+WARNING: This feature is experimental and may change in future releases.
+
+[CAUTION]
+====
+This feature may affect performance of service execution.
+====
+
+Apache Ignite allows users to implement custom middleware logic for their services and provides the following features:
+
+1. Ability to implicitly pass custom immutable parameters from proxy to service (similar to request headers).
+2. Ability to define custom interceptor for service method calls.
+
+=== Service Call Context
+This feature allows users to implicilty pass parameters to any service method without service re-deployment.
+
+The user can create context and bind it to the service proxy. After that, each call to the proxy method will also implicitly pass context parameters to the service.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=service-call-context-create, indent=0]
+----
+tab:C#/.NET[]
+--
+
+The user can read the `call context` using the `currentCallContext` method of `ServiceContext`.
+
+NOTE: Service call context is only accessible from the current thread during the execution of a service method.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaEchoServiceFile}[tags=service-call-context-read, indent=0]
+----
+tab:C#/.NET[]
+--
+
+=== Service Interceptor
+This feature allows users to intercept the call to any service method except
+lifecycle methods (`init()`, `execute()` and `cancel()`).
+
+The user can specify one or more interceptors in the `ServiceConfiguration`. They are deployed with the service using the same class loader.
+
+Each interceptor invokes the next interceptor in the chain using a delegated call, the last interceptor calls the service method.
+So, the interceptor specified first in the configuration is the last interceptor processing the result of the service method execution.
+
+image::images/service-intercept--order.png[invocation order]
+
+[CAUTION]
+====
+An incorrect interceptor implementation can lead to undefined behaviour of the service execution.
+====
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaServiceInterceptorFile}[tags=service-call-interceptor, indent=0]
+----
+tab:C#/.NET[]
+--
+
+=== Complete Example
+link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/servicegrid/ServiceMiddlewareExample.java[ServiceMiddlewareExample.java, window=_blank]
+
+// TODO: add how to  call java services from .NET
+
+

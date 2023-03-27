@@ -35,11 +35,4 @@ public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
     @Override protected long getTestTimeout() {
         return 10 * 60 * 1000;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testCacheLockExample() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4309");
-
-        super.testCacheLockExample();
-    }
 }

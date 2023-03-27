@@ -20,9 +20,7 @@ package org.apache.ignite.internal.visor.compute;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -36,7 +34,7 @@ public class VisorComputeCancelSessionsTaskArg extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Session IDs to cancel. */
-    private Map<UUID, Set<IgniteUuid>> sesIds;
+    private Set<IgniteUuid> sesIds;
 
     /**
      * Default constructor.
@@ -48,25 +46,25 @@ public class VisorComputeCancelSessionsTaskArg extends VisorDataTransferObject {
     /**
      * @param sesIds Session IDs to cancel.
      */
-    public VisorComputeCancelSessionsTaskArg(Map<UUID, Set<IgniteUuid>> sesIds) {
+    public VisorComputeCancelSessionsTaskArg(Set<IgniteUuid> sesIds) {
         this.sesIds = sesIds;
     }
 
     /**
      * @return Session IDs to cancel.
      */
-    public Map<UUID, Set<IgniteUuid>> getSessionIds() {
+    public Set<IgniteUuid> getSessionIds() {
         return sesIds;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, sesIds);
+        U.writeCollection(out, sesIds);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        sesIds = U.readMap(in);
+        sesIds = U.readSet(in);
     }
 
     /** {@inheritDoc} */

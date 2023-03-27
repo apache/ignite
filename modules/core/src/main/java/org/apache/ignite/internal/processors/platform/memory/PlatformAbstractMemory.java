@@ -119,5 +119,4 @@ public abstract class PlatformAbstractMemory implements PlatformMemory {
             return new PlatformBigEndianOutputStreamImpl(mem);
         }
     }
-
 }

@@ -1,1 +1,0 @@
-Contains IDE projects artifacts.

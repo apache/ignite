@@ -17,9 +17,9 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq.Clauses;
@@ -31,22 +31,32 @@ namespace Apache.Ignite.Linq.Impl
     internal class AliasDictionary
     {
         /** */
-        private int _aliasIndex;
+        private int _tableAliasIndex;
 
         /** */
-        private Dictionary<IQuerySource, string> _aliases = new Dictionary<IQuerySource, string>();
+        private Dictionary<IQuerySource, string> _tableAliases = new Dictionary<IQuerySource, string>();
 
         /** */
-        private readonly Stack<Dictionary<IQuerySource, string>> _stack = new Stack<Dictionary<IQuerySource, string>>();
+        private int _fieldAliasIndex;
+
+        /** */
+        private readonly Dictionary<Expression, string> _fieldAliases = new Dictionary<Expression, string>();
+
+        /** */
+        private readonly Stack<Dictionary<IQuerySource, string>> _stack 
+            = new Stack<Dictionary<IQuerySource, string>>();
 
         /// <summary>
         /// Pushes current aliases to stack.
         /// </summary>
-        public void Push()
+        /// <param name="copyAliases">Flag indicating that current aliases should be copied</param>
+        public void Push(bool copyAliases)
         {
-            _stack.Push(_aliases);
+            _stack.Push(_tableAliases);
 
-            _aliases = new Dictionary<IQuerySource, string>();
+            _tableAliases = copyAliases
+                ? _tableAliases.ToDictionary(p => p.Key, p => p.Value)
+                : new Dictionary<IQuerySource, string>();
         }
 
         /// <summary>
@@ -54,7 +64,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public void Pop()
         {
-            _aliases = _stack.Pop();
+            _tableAliases = _stack.Pop();
         }
 
         /// <summary>
@@ -64,30 +74,70 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(expression != null);
 
-            return GetTableAlias(GetQuerySource(expression));
+            return GetTableAlias(ExpressionWalker.GetQuerySource(expression));
         }
 
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         public string GetTableAlias(IFromClause fromClause)
         {
-            return GetTableAlias(GetQuerySource(fromClause.FromExpression) ?? fromClause);
+            return GetTableAlias(ExpressionWalker.GetQuerySource(fromClause.FromExpression) ?? fromClause);
         }
 
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         public string GetTableAlias(JoinClause joinClause)
         {
-            return GetTableAlias(GetQuerySource(joinClause.InnerSequence) ?? joinClause);
+            return GetTableAlias(ExpressionWalker.GetQuerySource(joinClause.InnerSequence) ?? joinClause);
         }
 
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         private string GetTableAlias(IQuerySource querySource)
         {
             Debug.Assert(querySource != null);
 
             string alias;
 
-            if (!_aliases.TryGetValue(querySource, out alias))
+            if (!_tableAliases.TryGetValue(querySource, out alias))
             {
-                alias = "_T" + _aliasIndex++;
+                alias = "_T" + _tableAliasIndex++;
 
-                _aliases[querySource] = alias;
+                _tableAliases[querySource] = alias;
+            }
+
+            return alias;
+        }
+
+        /// <summary>
+        /// Gets the fields alias.
+        /// </summary>
+        public string GetFieldAlias(Expression expression)
+        {
+            Debug.Assert(expression != null);
+
+            var referenceExpression = ExpressionWalker.GetQuerySourceReference(expression);
+
+            return GetFieldAlias(referenceExpression);
+        }
+
+        /// <summary>
+        /// Gets the fields alias.
+        /// </summary>
+        private string GetFieldAlias(QuerySourceReferenceExpression querySource)
+        {
+            Debug.Assert(querySource != null);
+
+            string alias;
+
+            if (!_fieldAliases.TryGetValue(querySource, out alias))
+            {
+                alias = "F" + _fieldAliasIndex++;
+
+                _fieldAliases[querySource] = alias;
             }
 
             return alias;
@@ -107,42 +157,6 @@ namespace Apache.Ignite.Linq.Impl
             builder.AppendFormat("{0} as {1}", tableName, GetTableAlias(clause));
 
             return builder;
-        }
-
-        /// <summary>
-        /// Gets the query source.
-        /// </summary>
-        private static IQuerySource GetQuerySource(Expression expression)
-        {
-            var subQueryExp = expression as SubQueryExpression;
-
-            if (subQueryExp != null)
-                return GetQuerySource(subQueryExp.QueryModel.MainFromClause.FromExpression)
-                    ?? subQueryExp.QueryModel.MainFromClause;
-
-            var srcRefExp = expression as QuerySourceReferenceExpression;
-
-            if (srcRefExp != null)
-            {
-                var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
-
-                if (fromSource != null)
-                    return GetQuerySource(fromSource.FromExpression) ?? fromSource;
-
-                var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
-
-                if (joinSource != null)
-                    return GetQuerySource(joinSource.InnerSequence) ?? joinSource;
-
-                throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
-            }
-
-            var memberExpr = expression as MemberExpression;
-
-            if (memberExpr != null)
-                return GetQuerySource(memberExpr.Expression);
-
-            return null;
         }
     }
 }

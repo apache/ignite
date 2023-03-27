@@ -22,22 +22,20 @@
 #include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc/system/ui/window.h"
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
+#include "ignite/odbc/config/connection_string_parser.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/odbc_error.h"
 
 using ignite::odbc::config::Configuration;
 
-/**
- * Display configuration window for user to configure DSN.
- *
- * @param hwndParent Parent window handle.
- * @param config Output configuration.
- * @return True on success and false on fail.
- */
-bool DisplayConfigureDsnWindow(HWND hwndParent, Configuration& config)
+bool DisplayConnectionWindow(void* windowParent, Configuration& config)
 {
     using namespace ignite::odbc::system::ui;
 
+    HWND hwndParent = (HWND) windowParent;
+
     if (!hwndParent)
-        return false;
+        return true;
 
     try
     {
@@ -89,20 +87,17 @@ bool RegisterDsn(const Configuration& config, LPCSTR driver)
         if (!SQLWriteDSNToIni(dsn, driver))
             ignite::odbc::ThrowLastSetupError();
 
-        const ArgMap& map = config.GetMap();
+        ArgMap map;
+        
+        config.ToMap(map);
 
-        std::set<std::string> ignore;
-
-        ignore.insert(Configuration::Key::dsn);
-        ignore.insert(Configuration::Key::driver);
+        map.erase(ConnectionStringParser::Key::dsn);
+        map.erase(ConnectionStringParser::Key::driver);
 
         for (ArgMap::const_iterator it = map.begin(); it != map.end(); ++it)
         {
             const std::string& key = it->first;
             const std::string& value = it->second;
-
-            if (ignore.find(key) != ignore.end())
-                continue;
 
             ignite::odbc::WriteDsnString(dsn, key.c_str(), value.c_str());
         }
@@ -154,14 +149,16 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
     LOG_MSG("Attributes: " << attributes);
 
-    config.FillFromConfigAttributes(attributes);
+    config::ConnectionStringParser parser(config);
+
+    diagnostic::DiagnosticRecordStorage diag;
+
+    parser.ParseConfigAttributes(attributes, &diag);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
         return FALSE;
 
     LOG_MSG("Driver: " << driver);
-    LOG_MSG("Attributes: " << attributes);
-
     LOG_MSG("DSN: " << config.GetDsn());
 
     switch (req)
@@ -170,7 +167,7 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
         {
             LOG_MSG("ODBC_ADD_DSN");
 
-            if (!DisplayConfigureDsnWindow(hwndParent, config))
+            if (!DisplayConnectionWindow(hwndParent, config))
                 return FALSE;
 
             if (!RegisterDsn(config, driver))
@@ -187,9 +184,9 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
             Configuration loaded(config);
 
-            ReadDsnConfiguration(dsn.c_str(), loaded);
+            ReadDsnConfiguration(dsn.c_str(), loaded, &diag);
 
-            if (!DisplayConfigureDsnWindow(hwndParent, loaded))
+            if (!DisplayConnectionWindow(hwndParent, loaded))
                 return FALSE;
 
             if (!RegisterDsn(loaded, driver))

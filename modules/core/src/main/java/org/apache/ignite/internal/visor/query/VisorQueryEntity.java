@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,6 +57,12 @@ public class VisorQueryEntity extends VisorDataTransferObject {
 
     /** Table name. */
     private String tblName;
+
+    /** Key name. Can be used in field list to denote the key as a whole. */
+    private String keyFieldName;
+
+    /** Value name. Can be used in field list to denote the entire value. */
+    private String valFieldName;
 
     /** Fields to create group indexes for. */
     private List<VisorQueryIndex> grps;
@@ -108,6 +114,10 @@ public class VisorQueryEntity extends VisorDataTransferObject {
 
         for (QueryIndex qryIdx : qryIdxs)
             grps.add(new VisorQueryIndex(qryIdx));
+
+        tblName = q.getTableName();
+        keyFieldName = q.getKeyFieldName();
+        valFieldName = q.getValueFieldName();
     }
 
     /**
@@ -153,6 +163,20 @@ public class VisorQueryEntity extends VisorDataTransferObject {
     }
 
     /**
+     * @return Key name. Can be used in field list to denote the key as a whole.
+     */
+    public String getKeyFieldName() {
+        return keyFieldName;
+    }
+
+    /**
+     * @return Value name. Can be used in field list to denote the entire value.
+     */
+    public String getValueFieldName() {
+        return valFieldName;
+    }
+
+    /**
      * @return Fields to create group indexes for.
      */
     public List<VisorQueryIndex> getGroups() {
@@ -164,10 +188,12 @@ public class VisorQueryEntity extends VisorDataTransferObject {
         U.writeString(out, keyType);
         U.writeString(out, valType);
         U.writeCollection(out, keyFields);
-        IgfsUtils.writeStringMap(out, qryFlds);
+        IgniteUtils.writeStringMap(out, qryFlds);
         U.writeMap(out, aliases);
-        U.writeString(out, tblName);
         U.writeCollection(out, grps);
+        U.writeString(out, tblName);
+        U.writeString(out, keyFieldName);
+        U.writeString(out, valFieldName);
     }
 
     /** {@inheritDoc} */
@@ -175,10 +201,12 @@ public class VisorQueryEntity extends VisorDataTransferObject {
         keyType = U.readString(in);
         valType = U.readString(in);
         keyFields = U.readList(in);
-        qryFlds = IgfsUtils.readStringMap(in);
+        qryFlds = IgniteUtils.readStringMap(in);
         aliases = U.readMap(in);
-        tblName = U.readString(in);
         grps = U.readList(in);
+        tblName = U.readString(in);
+        keyFieldName = U.readString(in);
+        valFieldName = U.readString(in);
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -51,9 +52,10 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
+     * @param ctx Kernal context.
      */
-    public GridRedisMGetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
-        super(log, hnd);
+    public GridRedisMGetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */
@@ -73,7 +75,7 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
         restReq.command(CACHE_GET_ALL);
-        restReq.cacheName(CACHE_NAME);
+        restReq.cacheName(msg.cacheName());
 
         List<String> keys = msg.auxMKeys();
 
@@ -90,6 +92,6 @@ public class GridRedisMGetCommandHandler extends GridRedisRestCommandHandler {
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.toArray((Map<Object, Object>)restRes.getResponse()));
+            : GridRedisProtocolParser.toOrderedArray((Map<Object, Object>)restRes.getResponse(), params));
     }
 }

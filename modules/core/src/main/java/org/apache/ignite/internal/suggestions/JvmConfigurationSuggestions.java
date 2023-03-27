@@ -37,9 +37,6 @@ public class JvmConfigurationSuggestions {
     private static final String MAX_DIRECT_MEMORY_SIZE = "-XX:MaxDirectMemorySize";
 
     /** */
-    private static final String DISABLE_EXPLICIT_GC = "-XX:+DisableExplicitGC";
-
-    /** */
     private static final String NOT_USE_TLAB = "-XX:-UseTLAB";
 
     /** */
@@ -61,8 +58,8 @@ public class JvmConfigurationSuggestions {
         if (!U.jvmName().toLowerCase().contains("server"))
             suggestions.add("Enable server mode for JVM (add '" + SERVER + "' to JVM options)");
 
-        if (!U.jdkVersion().equals("1.8"))
-            suggestions.add("Switch to the most recent 1.8 JVM version");
+        if (!"11".equals(U.jdkVersion()))
+            suggestions.add("Switch to the most recent 11 JVM version");
 
         if (U.jdkVersion().equals("1.8") && !args.contains(USE_G1_GC))
             suggestions.add("Enable G1 Garbage Collector (add '" + USE_G1_GC + "' to JVM options)");
@@ -76,9 +73,6 @@ public class JvmConfigurationSuggestions {
 
         if (args.contains(NOT_USE_TLAB))
             suggestions.add("Enable thread-local allocation buffer (add '-XX:+UseTLAB' to JVM options)");
-
-        if (!args.contains(DISABLE_EXPLICIT_GC))
-            suggestions.add("Disable processing of calls to System.gc() (add '" + DISABLE_EXPLICIT_GC + "' to JVM options)");
 
         return suggestions;
     }

@@ -77,7 +77,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             _header = header;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type id.
+        /// </summary>
         public int TypeId
         {
             get { return _header.TypeId; }
@@ -98,9 +100,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
 
-            int pos;
+            int unused;
 
-            return TryGetFieldPosition(fieldName, out pos);
+            return TryGetFieldPosition(fieldName, out unused);
         }
 
         /// <summary>
@@ -122,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
-            return Deserialize<T>(BinaryMode.Deserialize);
+            return Deserialize<T>(BinaryMode.KeepBinary);
         }
 
         /** <inheritdoc /> */
@@ -131,8 +133,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get
             {
-                throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
-                    "Check IBinaryObject.IsEnum property before accessing Value.");
+                throw new NotSupportedException("IBinaryObject.EnumValue is only supported for enums. " +
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
+            }
+        }
+
+        /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
+        public string EnumName
+        {
+            get
+            {
+                throw new NotSupportedException("IBinaryObject.EnumName is only supported for enums. " +
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
             }
         }
 
@@ -219,7 +232,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private void InitializeFields(IBinaryTypeDescriptor desc = null)
         {
-            if (_fields != null) 
+            if (_fields != null)
                 return;
 
             desc = desc ?? _marsh.GetDescriptor(true, _header.TypeId);
@@ -228,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema,_marsh)
+                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema, _marsh.Ignite)
                     .ToDictionary() ?? EmptyFields;
             }
         }
@@ -262,7 +275,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public override string ToString()
         {
-            return ToString(new Dictionary<int, int>());            
+            return ToString(new Dictionary<int, int>());
         }
 
         /// <summary>
@@ -305,7 +318,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     handled[_offset] = idHash;
 
                     InitializeFields();
-                    
+
                     foreach (string fieldName in meta.Fields)
                     {
                         sb.Append(", ");

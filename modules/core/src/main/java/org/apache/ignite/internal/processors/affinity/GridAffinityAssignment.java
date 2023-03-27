@@ -31,7 +31,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cached affinity calculations.
+ *
+ * Deprecated GridAffinityAssignment doesn't support versioning.
+ * Use GridAffinityAssignmentV2 instead.
  */
+@Deprecated
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridAffinityAssignment implements AffinityAssignment, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -51,14 +56,14 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
     /** Assignment node IDs */
     private transient volatile List<HashSet<UUID>> assignmentIds;
 
+    /** Nodes having primary or backup partition assignments. */
+    private transient volatile Set<ClusterNode> nodes;
+
     /** Nodes having primary partitions assignments. */
     private transient volatile Set<ClusterNode> primaryPartsNodes;
 
     /** */
     private transient List<List<ClusterNode>> idealAssignment;
-
-    /** */
-    private final boolean clientEvtChange;
 
     /**
      * Constructs cached affinity calculations item.
@@ -69,7 +74,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
-        clientEvtChange = false;
     }
 
     /**
@@ -90,7 +94,6 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
 
         primary = new HashMap<>();
         backup = new HashMap<>();
-        clientEvtChange = false;
 
         initPrimaryBackupMaps();
     }
@@ -106,36 +109,26 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
-
-        clientEvtChange = true;
-    }
-
-    /**
-     * @return {@code True} if related discovery event did not not cause affinity assignment change and
-     *    this assignment is just reference to the previous one.
-     */
-    public boolean clientEventChange() {
-        return clientEvtChange;
     }
 
     /**
      * @return Affinity assignment computed by affinity function.
      */
-    public List<List<ClusterNode>> idealAssignment() {
+    @Override public List<List<ClusterNode>> idealAssignment() {
         return idealAssignment;
     }
 
     /**
      * @return Affinity assignment.
      */
-    public List<List<ClusterNode>> assignment() {
+    @Override public List<List<ClusterNode>> assignment() {
         return assignment;
     }
 
     /**
      * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -145,7 +138,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param part Partition.
      * @return Affinity nodes.
      */
-    public List<ClusterNode> get(int part) {
+    @Override public List<ClusterNode> get(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
@@ -158,7 +151,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
-    public HashSet<UUID> getIds(int part) {
+    @Override public HashSet<UUID> getIds(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
@@ -182,29 +175,44 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         return assignmentIds0.get(part);
     }
 
-    /**
-     * @return Nodes having primary partitions assignments.
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    public Set<ClusterNode> primaryPartitionNodes() {
-        Set<ClusterNode> primaryPartsNodes0 = primaryPartsNodes;
+    /** {@inheritDoc} */
+    @Override public Set<ClusterNode> nodes() {
+        Set<ClusterNode> res = nodes;
 
-        if (primaryPartsNodes0 == null) {
-            int parts = assignment.size();
+        if (res == null) {
+            res = new HashSet<>();
 
-            primaryPartsNodes0 = new HashSet<>();
-
-            for (int p = 0; p < parts; p++) {
+            for (int p = 0; p < assignment.size(); p++) {
                 List<ClusterNode> nodes = assignment.get(p);
 
-                if (nodes.size() > 0)
-                    primaryPartsNodes0.add(nodes.get(0));
+                if (!nodes.isEmpty())
+                    res.addAll(nodes);
             }
 
-            primaryPartsNodes = primaryPartsNodes0;
+            nodes = res;
         }
 
-        return primaryPartsNodes0;
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<ClusterNode> primaryPartitionNodes() {
+        Set<ClusterNode> res = primaryPartsNodes;
+
+        if (res == null) {
+            res = new HashSet<>();
+
+            for (int p = 0; p < assignment.size(); p++) {
+                List<ClusterNode> nodes = assignment.get(p);
+
+                if (!nodes.isEmpty())
+                    res.add(nodes.get(0));
+            }
+
+            primaryPartsNodes = res;
+        }
+
+        return res;
     }
 
     /**
@@ -213,7 +221,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param nodeId Node ID to get primary partitions for.
      * @return Primary partitions for specified node ID.
      */
-    public Set<Integer> primaryPartitions(UUID nodeId) {
+    @Override public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
         return set == null ? Collections.<Integer>emptySet() : set;
@@ -225,10 +233,15 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param nodeId Node ID to get backup partitions for.
      * @return Backup partitions for specified node ID.
      */
-    public Set<Integer> backupPartitions(UUID nodeId) {
+    @Override public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
         return set == null ? Collections.<Integer>emptySet() : set;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return Collections.emptySet();
     }
 
     /**
@@ -274,7 +287,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         if (o == this)
             return true;
 
-        if (o == null || !(o instanceof AffinityAssignment))
+        if (!(o instanceof AffinityAssignment))
             return false;
 
         return topVer.equals(((AffinityAssignment)o).topologyVersion());

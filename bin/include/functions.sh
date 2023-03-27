@@ -1,4 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -27,20 +36,37 @@
 #   source "${IGNITE_HOME_TMP}"/bin/include/functions.sh
 #
 
+# Extract java version to `version` variable.
+javaVersion() {
+    version=$("$1" -version 2>&1 | awk -F[\"\-] '/version/ {print $2}')
+}
+
+# Extract only major version of java to `version` variable.
+javaMajorVersion() {
+    javaVersion "$1"
+    version="${version%%.*}"
+
+    if [ ${version} -eq 1 ]; then
+        # Version seems starts from 1, we need second number.
+        javaVersion "$1"
+        version=$(awk -F[\"\.] '{print $2}' <<< ${version})
+    fi
+}
+
 #
 # Discovers path to Java executable and checks it's version.
 # The function exports JAVA variable with path to Java executable.
 #
 checkJava() {
     # Check JAVA_HOME.
-    if [ "$JAVA_HOME" = "" ]; then
+    if [ "${JAVA_HOME:-}" = "" ]; then
         JAVA=`type -p java`
         RETCODE=$?
 
         if [ $RETCODE -ne 0 ]; then
             echo $0", ERROR:"
             echo "JAVA_HOME environment variable is not found."
-            echo "Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8."
+            echo "Please point JAVA_HOME variable to location of JDK 1.8 or later."
             echo "You can also download latest JDK at http://java.com/download"
 
             exit 1
@@ -54,23 +80,13 @@ checkJava() {
     #
     # Check JDK.
     #
-    if [ ! -e "$JAVA" ]; then
-        echo $0", ERROR:"
-        echo "JAVA is not found in JAVA_HOME=$JAVA_HOME."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
+    javaMajorVersion "$JAVA"
+
+    if [ $version -lt 8 ]; then
+        echo "$0, ERROR:"
+        echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
+        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or later."
         echo "You can also download latest JDK at http://java.com/download"
-
-        exit 1
-    fi
-
-    JAVA_VER=`"$JAVA" -version 2>&1 | egrep "1\.[78]\."`
-
-    if [ "$JAVA_VER" == "" ]; then
-        echo $0", ERROR:"
-        echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
-        echo "You can also download latest JDK at http://java.com/download"
-
         exit 1
     fi
 }
@@ -84,7 +100,7 @@ setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
-    if [ "${IGNITE_HOME}" = "" ]; then
+    if [ "${IGNITE_HOME:-}" = "" ]; then
         export IGNITE_HOME=${IGNITE_HOME_TMP}
     fi
 
@@ -105,31 +121,6 @@ setIgniteHome() {
     if [ "${IGNITE_HOME}" != "${IGNITE_HOME_TMP}" ] &&
        [ "${IGNITE_HOME}" != "${IGNITE_HOME_TMP}/" ]; then
         echo $0", WARN: IGNITE_HOME environment variable may be pointing to wrong folder: $IGNITE_HOME"
-    fi
-}
-
-#
-# Finds available port for JMX.
-# The function exports JMX_MON variable with Java JMX options.
-#
-findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.apache.ignite.internal.util.portscanner.GridJmxPortFinder`
-
-    #
-    # This variable defines necessary parameters for JMX
-    # monitoring and management.
-    #
-    # This enables remote unsecure access to JConsole or VisualVM.
-    #
-    # ADD YOUR ADDITIONAL PARAMETERS/OPTIONS HERE
-    #
-    if [ -n "$JMX_PORT" ]; then
-        JMX_MON="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${JMX_PORT} \
-            -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-    else
-        # If JMX port wasn't found do not initialize JMX.
-        echo "$0, WARN: Failed to resolve JMX host (JMX will be disabled): $HOSTNAME"
-        JMX_MON=""
     fi
 }
 

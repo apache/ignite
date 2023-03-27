@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -97,9 +98,18 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
         assert ctx != null;
         assert arr != null;
-        assert arr[0] == GridBinaryMarshaller.ENUM;
 
-        valBytes = arr;
+        if (arr[0] == GridBinaryMarshaller.ENUM)
+            valBytes = arr;
+        else {
+            assert arr[0] == GridBinaryMarshaller.BINARY_ENUM;
+
+            valBytes = new byte[arr.length];
+
+            valBytes[0] = GridBinaryMarshaller.ENUM;
+
+            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+        }
 
         this.ctx = ctx;
 
@@ -164,11 +174,49 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), true);
+    @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
+        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
 
-        return (T)BinaryEnumCache.get(cls, ord);
+        if (ldr != null)
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+
+        try {
+            Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
+
+            return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
+        }
+        finally {
+            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+        }
+
+    }
+
+    /**
+     * Get value for the given class without any caching.
+     *
+     * @param cls Class.
+     */
+    private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
+        assert cls != null;
+
+        assert !GridBinaryMarshaller.USE_CACHE.get();
+
+        if (ord >= 0) {
+            Object[] vals = cls.getEnumConstants();
+
+            if (ord < vals.length)
+                return (T)vals[ord];
+            else
+                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
+                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
+        }
+        else
+            return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T deserialize() throws BinaryObjectException {
+        return (T)deserialize(null);
     }
 
     /** {@inheritDoc} */
@@ -184,6 +232,23 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @Override public int enumOrdinal() throws BinaryObjectException {
         return ord;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String enumName() throws BinaryObjectException {
+        BinaryMetadata metadata = ctx.metadata0(typeId);
+
+        if (metadata == null)
+            throw new BinaryObjectException("Failed to get metadata for enum [typeId=" +
+                typeId + ", typeName='" + clsName + "', ordinal=" + ord + "]");
+
+        String name = metadata.getEnumNameByOrdinal(ord);
+
+        if (name == null)
+            throw new BinaryObjectException("Unable to resolve enum constant name [typeId=" +
+                typeId + ", typeName='" + metadata.typeName() + "', ordinal=" + ord + "]");
+
+        return name;
     }
 
     /** {@inheritDoc} */
@@ -204,7 +269,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (!S.INCLUDE_SENSITIVE)
+        if (!S.includeSensitive())
             return ord >= 0 ? "BinaryEnum" : "null";
 
         // 1. Try deserializing the object.
@@ -254,12 +319,17 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        return deserialize();
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
+        return value(ctx, cpy, null);
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext cacheCtx) throws IgniteCheckedException {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
+        return deserialize(ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] valueBytes(CacheObjectValueContext cacheCtx) throws IgniteCheckedException {
         if (valBytes != null)
             return valBytes;
 
@@ -279,7 +349,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     @Override public int putValue(long addr) throws IgniteCheckedException {
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0);
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes);
     }
 
     /** {@inheritDoc} */
@@ -308,12 +378,12 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).binaryContext();
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext();
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -404,12 +474,17 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         return reader.afterMessageRead(BinaryEnumObjectImpl.class);
     }
 
-    /**
-     * @param cls type to examine.
-     * @return true if typeId equals for passed type and current
-     * binary enum.
-     */
-    public boolean isTypeEquals(final Class<?> cls) {
-        return ctx.descriptorForClass(cls, false).typeId() == typeId();
+    /** {@inheritDoc} */
+    @Override public int size() {
+        if (valBytes == null) {
+            try {
+                valBytes = U.marshal(ctx.marshaller(), this);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        return BinaryPrimitives.readInt(valBytes, ord + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 }

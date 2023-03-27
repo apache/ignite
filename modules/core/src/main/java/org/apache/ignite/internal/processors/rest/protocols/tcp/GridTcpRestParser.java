@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,6 +43,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BOOLEAN_FLAG;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_ARR_FLAG;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.BYTE_FLAG;
@@ -68,11 +68,8 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.PARSER_S
  * Parser for extended memcache protocol. Handles parsing and encoding activity.
  */
 public class GridTcpRestParser implements GridNioParser {
-    /** UTF-8 charset. */
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
-
     /** JDK marshaller. */
-    private final Marshaller jdkMarshaller = new JdkMarshaller();
+    private final Marshaller marsh;
 
     /** Router client flag. */
     private final boolean routerClient;
@@ -81,7 +78,16 @@ public class GridTcpRestParser implements GridNioParser {
      * @param routerClient Router client flag.
      */
     public GridTcpRestParser(boolean routerClient) {
+        this(routerClient, new JdkMarshaller());
+    }
+
+    /**
+     * @param routerClient Router client flag.
+     * @param marsh Marshaller.
+     */
+    public GridTcpRestParser(boolean routerClient, Marshaller marsh) {
         this.routerClient = routerClient;
+        this.marsh = marsh;
     }
 
     /** {@inheritDoc} */
@@ -147,7 +153,7 @@ public class GridTcpRestParser implements GridNioParser {
                 break;
 
             case REDIS:
-                res = GridRedisProtocolParser.readArray(buf);
+                res = parseRedisPacket(buf, state);
 
                 break;
 
@@ -234,6 +240,106 @@ public class GridTcpRestParser implements GridNioParser {
             slice.put(U.uuidToBytes(msg.destinationId()));
 
             return res;
+        }
+    }
+
+    /**
+     * Parses redis protocol message.
+     *
+     * @param buf Buffer containing not parsed bytes.
+     * @param state Current parser state.
+     * @return Parsed packet(s)
+     * @throws IOException If packet cannot be parsed.
+     * @throws IgniteCheckedException If deserialization error occurred.
+     */
+    static GridClientMessage parseRedisPacket(
+        ByteBuffer buf,
+        ParserState state
+    ) throws IOException, IgniteCheckedException {
+        assert state.packetType() == GridClientPacketType.REDIS;
+
+        // If previous data exists add it to buf.
+        if (state.buffer().size() > 0) {
+            byte[] tail = state.buffer().toByteArray();
+
+            buf = ByteBuffer.allocate(tail.length + buf.remaining())
+                .put(tail)
+                .put(buf);
+
+            buf.rewind();
+        }
+
+        int i;
+        int arrLen;
+        GridRedisMessage msg;
+
+        if (state.packet() == null) {
+            i = 0;
+
+            if (!GridRedisProtocolParser.ensureArrayStart(buf)) {
+                saveTail(state.buffer(), buf);
+
+                return null;
+            }
+
+            arrLen = GridRedisProtocolParser.readInt(buf);
+
+            if (arrLen == GridRedisProtocolParser.ERROR_INT) {
+                buf.rewind();
+
+                saveTail(state.buffer(), buf);
+
+                return null;
+            }
+
+            msg = new GridRedisMessage(arrLen);
+
+            state.packet(msg);
+        }
+        else {
+            msg = (GridRedisMessage)state.packet();
+
+            i = msg.messageSize();
+            arrLen = msg.fullLength();
+        }
+
+        for (; i < arrLen; i++) {
+            int pos = buf.position();
+
+            String str = GridRedisProtocolParser.readBulkStr(buf);
+
+            if (str == null) {
+                buf.position(pos);
+
+                saveTail(state.buffer(), buf);
+
+                return null;
+            }
+
+            msg.append(str);
+        }
+
+        return msg;
+    }
+
+    /** */
+    private static void saveTail(ByteArrayOutputStream os, ByteBuffer buf) throws IOException {
+        os.reset();
+
+        if (!buf.hasRemaining())
+            return;
+
+        if (buf.hasArray()) {
+            os.write(buf.array(), buf.position(), buf.remaining());
+
+            buf.position(buf.position() + buf.remaining());
+        }
+        else {
+            byte[] data = new byte[buf.remaining()];
+
+            buf.get(data);
+
+            os.write(data);
         }
     }
 
@@ -735,7 +841,7 @@ public class GridTcpRestParser implements GridNioParser {
         assert bytes != null;
 
         if ((flags & SERIALIZED_FLAG) != 0)
-            return U.unmarshal(jdkMarshaller, bytes, null);
+            return U.unmarshal(marsh, bytes, null);
 
         int masked = flags & 0xff00;
 
@@ -817,7 +923,7 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_ARR_FLAG;
         }
         else {
-            U.marshal(jdkMarshaller, obj, out);
+            U.marshal(marsh, obj, out);
 
             flags |= SERIALIZED_FLAG;
         }
@@ -842,7 +948,7 @@ public class GridTcpRestParser implements GridNioParser {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(GridTcpRestParser.class, this);
     }
 

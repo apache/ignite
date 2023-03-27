@@ -17,11 +17,12 @@
 
 package org.apache.ignite.loadtests.cache;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridFileLock;
@@ -57,7 +58,6 @@ public class GridCacheBenchmark {
      * @param args Arguments.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait")
     public static void main(String[] args) throws Exception {
         GridFileLock fileLock = GridLoadTestUtils.fileLock();
 
@@ -191,7 +191,7 @@ public class GridCacheBenchmark {
                     GridLoadTestUtils.appendLineToFile(
                         outputFileName,
                         "%s,%d,%d",
-                        GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date()),
+                        IgniteUtils.LONG_DATE_FMT.format(Instant.now()),
                         durPutx,
                         durGet);
             }

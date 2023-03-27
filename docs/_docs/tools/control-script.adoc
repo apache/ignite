@@ -1,0 +1,1220 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Control Script
+
+
+Ignite provides a command line script — `control.sh|bat` — that you can use to monitor and control your clusters.
+The script is located under the `/bin/` folder of the installation directory.
+
+The control script syntax is as follows:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+control.sh <connection parameters> <command> <arguments>
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat <connection parameters> <command> <arguments>
+----
+--
+
+== Connecting to Cluster
+
+When executed without connection parameters, the control script tries to connect to a node running on localhost (`localhost:11211`).
+If you want to connect to a node that is running on a remove machine, specify the connection parameters.
+
+[cols="2,3,1",opts="header"]
+|===
+|Parameter | Description | Default Value
+
+| --host HOST_OR_IP | The host name or IP address of the node. | `localhost`
+
+| --port PORT | The port to connect to. | `11211`
+
+| --user USER | The user name. |
+| --password PASSWORD |The user password. |
+| --ping-interval PING_INTERVAL | The ping interval. | 5000
+| --ping-timeout PING_TIMEOUT | Ping response timeout. | 30000
+| --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SunJSSE_Protocols[Supported protocols,window=_blank]. | `TLS`
+| --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/javase/8/docs/technotes/guides/security/SunProviders.html#SupportedCipherSuites[Supported ciphers,window=_blank]. |
+| --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
+| --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
+| --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
+| --keystore-password KEYSTORE_PWD | The password to the keystore.  |
+| --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
+| --truststore TRUSTSTORE_PATH | The path to the truststore. |
+| --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+|===
+
+
+== Activation, Deactivation and Topology Management
+
+You can use the control script to activate or deactivate your cluster, and manage the link:clustering/baseline-topology[Baseline Topology].
+
+
+=== Getting Cluster State
+
+The cluster can be in one of the three states: active, read only, or inactive. Refer to link:monitoring-metrics/cluster-states[Cluster States] for details.
+
+To get the state of the cluster, run the following command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --state
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --state
+----
+--
+
+=== Activating Cluster
+
+Activation sets the baseline topology of the cluster to the set of nodes available at the moment of activation.
+Activation is required only if you use link:persistence/native-persistence[native persistence].
+
+To activate the cluster, run the following command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --set-state ACTIVE
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --set-state ACTIVE
+----
+--
+
+=== Deactivating Cluster
+
+include::includes/note-on-deactivation.adoc[]
+
+To deactivate the cluster, run the following command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --set-state INACTIVE [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --set-state INACTIVE [--yes]
+----
+--
+
+
+
+=== Getting Nodes Registered in Baseline Topology
+
+To get the list of nodes registered in the baseline topology, run the following command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline
+----
+
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline
+----
+--
+
+The output contains the current topology version, the list of consistent IDs of the nodes included in the baseline topology, and the list of nodes that joined the cluster but were not added to the baseline topology.
+
+[source, shell]
+----
+Command [BASELINE] started
+Arguments: --baseline
+--------------------------------------------------------------------------------
+Cluster state: active
+Current topology version: 3
+
+Current topology version: 3 (Coordinator: ConsistentId=dd3d3959-4fd6-4dc2-8199-bee213b34ff1, Order=1)
+
+Baseline nodes:
+    ConsistentId=7d79a1b5-cbbd-4ab5-9665-e8af0454f178, State=ONLINE, Order=2
+    ConsistentId=dd3d3959-4fd6-4dc2-8199-bee213b34ff1, State=ONLINE, Order=1
+--------------------------------------------------------------------------------
+Number of baseline nodes: 2
+
+Other nodes:
+    ConsistentId=30e16660-49f8-4225-9122-c1b684723e97, Order=3
+Number of other nodes: 1
+Command [BASELINE] finished with code: 0
+Control utility has completed execution at: 2019-12-24T16:53:08.392865
+Execution time: 333 ms
+----
+
+=== Adding Nodes to Baseline Topology
+
+To add a node to the baseline topology, run the command given below.
+After the node is added, the link:data-rebalancing[rebalancing process] starts.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline add _consistentId1,consistentId2,..._ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline add _consistentId1,consistentId2,..._ [--yes]
+----
+--
+
+=== Removing Nodes from Baseline Topology
+
+To remove a node from the baseline topology, use the `remove` command.
+Only offline nodes can be removed from the baseline topology: shut down the node first and then use the `remove` command.
+This operation starts the rebalancing process, which re-distributes the data across the nodes that remain in the baseline topology.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline remove _consistentId1,consistentId2,..._ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline remove _consistentId1,consistentId2,..._ [--yes]
+----
+--
+
+=== Setting Baseline Topology
+
+You can set the baseline topology by either providing a list of nodes (consistent IDs) or by specifying the desired version of the baseline topology.
+
+To set a list of node as the baseline topology, use the following command:
+
+[tabs]
+--
+tab:Unix[]
+
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline set _consistentId1,consistentId2,..._ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline set _consistentId1,consistentId2,..._ [--yes]
+----
+--
+
+
+To restore a specific version of the baseline topology, use the following command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --baseline version _topologyVersion_ [--yes]
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --baseline version _topologyVersion_ [--yes]
+----
+--
+
+=== Enabling Baseline Topology Autoadjustment
+
+link:clustering/baseline-topology#baseline-topology-autoadjustment[Baseline topology autoadjustment] refers to automatic update of baseline topology after the topology has been stable for a specific amount of time.
+
+For in-memory clusters, autoadjustment is enabled by default with the timeout set to 0. It means that baseline topology changes immediately after server nodes join or leave the cluster.
+For clusters with persistence, the automatic baseline adjustment is disabled by default.
+To enable it, use the following command:
+
+[tabs]
+--
+tab:Unix[]
+
+[source, shell]
+----
+control.sh --baseline auto_adjust enable timeout 30000
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --baseline auto_adjust enable timeout 30000
+----
+--
+
+The timeout is set in milliseconds. The baseline is set to the current topology when a given number of milliseconds has passed after the last JOIN/LEFT/FAIL event.
+Every new JOIN/LEFT/FAIL event restarts the timeout countdown.
+
+To disable baseline autoadjustment, use the following command:
+
+[tabs]
+--
+tab:Unix[]
+
+[source, shell]
+----
+control.sh --baseline auto_adjust disable
+----
+tab:Windows[]
+[source, shell]
+----
+control.bat --baseline auto_adjust disable
+----
+--
+
+
+== Transaction Management
+
+The control script allows you to get the information about the transactions being executed in the cluster.
+You can also cancel specific transactions.
+
+The following command returns a list of transactions that satisfy a given filter (or all transactions if no filter is provided):
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --tx _<transaction filter>_ --info
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --tx _<transaction filter>_ --info
+----
+--
+
+The transaction filter parameters are listed in the following table.
+
+[cols="2,5",opts="header"]
+|===
+|Parameter | Description
+| --xid _XID_ | Transaction ID.
+| --min-duration _SECONDS_ | Minimum number of seconds a transaction has been executing.
+|--min-size _SIZE_ | Minimum size of a transaction
+|--label _LABEL_ | User label for transactions. You can use a regular expression.
+|--servers\|--clients | Limit the scope of the operation to either server or client nodes.
+| --nodes _nodeId1,nodeId2..._ |  The list of consistent IDs of the nodes you want to get transactions from.
+|--limit _NUMBER_ | Limit the number of transactions to the given value.
+|--order DURATION\|SIZE\|START_TIME | The parameter that is used to sort the output.
+|===
+
+
+To cancel transactions, use the following command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --tx _<transaction filter>_ --kill
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --tx _<transaction filter>_ --kill
+----
+--
+
+For example, to cancel the transactions that have been running for more than 100 seconds, execute the following command:
+
+[source, shell]
+----
+control.sh --tx --min-duration 100 --kill
+----
+
+== Contention Detection in Transactions
+
+The `contention` command detects when multiple transactions are in contention to create a lock for the same key. The command is useful if you have long-running or hanging transactions.
+
+Example:
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Reports all keys that are point of contention for at least 5 transactions on all cluster nodes.
+control.sh|bat --cache contention 5
+
+# Reports all keys that are point of contention for at least 5 transactions on specific server node.
+control.sh|bat --cache contention 5 f2ea-5f56-11e8-9c2d-fa7a
+----
+--
+
+If there are any highly contended keys, the utility dumps extensive information including the keys, transactions, and nodes where the contention took place.
+
+Example:
+
+[source,text]
+----
+[node=TcpDiscoveryNode [id=d9620450-eefa-4ab6-a821-644098f00001, addrs=[127.0.0.1], sockAddrs=[/127.0.0.1:47501], discPort=47501, order=2, intOrder=2, lastExchangeTime=1527169443913, loc=false, ver=2.5.0#20180518-sha1:02c9b2de, isClient=false]]
+
+// No contention on node d9620450-eefa-4ab6-a821-644098f00001.
+
+[node=TcpDiscoveryNode [id=03379796-df31-4dbd-80e5-09cef5000000, addrs=[127.0.0.1], sockAddrs=[/127.0.0.1:47500], discPort=47500, order=1, intOrder=1, lastExchangeTime=1527169443913, loc=false, ver=2.5.0#20180518-sha1:02c9b2de, isClient=false]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=CREATE, val=UserCacheObjectImpl [val=0, hasValBytes=false], tx=GridNearTxLocal[xid=e9754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439646, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1247], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=8a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439656, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=6a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439654, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=7a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439655, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+    TxEntry [cacheId=1544803905, key=KeyCacheObjectImpl [part=0, val=0, hasValBytes=false], queue=10, op=READ, val=null, tx=GridNearTxLocal[xid=4a754629361-00000000-0843-9f61-0000-000000000001, xidVersion=GridCacheVersion [topVer=138649441, order=1527169439652, nodeOrder=1], concurrency=PESSIMISTIC, isolation=REPEATABLE_READ, state=ACTIVE, invalidate=false, rollbackOnly=false, nodeId=03379796-df31-4dbd-80e5-09cef5000000, timeout=0, duration=1175], other=[]]
+
+// Node 03379796-df31-4dbd-80e5-09cef5000000 is place for contention on key KeyCacheObjectImpl [part=0, val=0, hasValBytes=false].
+----
+
+
+== Monitoring Cache State
+
+One of the most important commands that `control.sh|bat` provides is `--cache list`, which is used for cache monitoring. The command provides a list of deployed caches and their affinity/distributiong parameters and distribution within cache groups. There is also a command for viewing existing atomic sequences.
+
+[source,shell]
+----
+# Displays a list of all caches
+control.sh|bat --cache list .
+
+# Displays a list of caches whose names start with "account-".
+control.sh|bat --cache list account-.*
+
+# Displays info about cache group distribution for all caches.
+control.sh|bat --cache list . --groups
+
+# Displays info about cache group distribution for the caches whose names start with "account-".
+control.sh|bat --cache list account-.* --groups
+
+# Displays info about all atomic sequences.
+control.sh|bat --cache list . --seq
+
+# Displays info about the atomic sequnces whose names start with "counter-".
+control.sh|bat --cache list counter-.* --seq
+----
+
+== Destroying Caches
+
+You can use the control script to destroy specific caches.
+
+[source, shell]
+----
+control.sh|bat --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1,...,cacheN`| Specifies a comma-separated list of cache names to be destroyed.
+| `--destroy-all-caches` | Permanently destroy all user-created caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Destroy cache1 and cache2.
+control.sh|bat --cache destroy --caches cache1,cache2
+
+# Destroy all user-created caches.
+control.sh|bat --cache destroy --destroy-all-caches
+----
+
+== Clearing Caches
+
+You can use the control script to clear specific caches.
+
+[source, shell]
+----
+control.sh|bat --cache clear --caches cache1,...,cacheN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1,...,cacheN`| Specifies a comma-separated list of cache names to be cleared.
+|===
+
+Examples:
+[source, shell]
+----
+# Clear cache1 and cache2.
+control.sh|bat --cache clear --caches cache1,cache2
+----
+
+== Resetting Lost Partitions
+
+You can use the control script to reset lost partitions for specific caches.
+Refer to link:configuring-caches/partition-loss-policy[Partition Loss Policy] for details.
+
+[source, shell]
+----
+control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
+----
+
+
+== Consistency Check and Repair Commands
+
+`control.sh|bat` includes a set of consistency check commands that enable you to verify and repair internal data consistency.
+
+First, the commands can be used for debugging and troubleshooting purposes especially if you're in active development.
+
+Second, if there is a suspicion that a query (such as a SQL query, etc.) returns an incomplete or wrong result set, the commands can verify whether there is inconsistency in the data.
+
+Third, the consistency check commands can be utilized as a part of regular cluster health monitoring.
+
+Finally, consistency can be repaired if necessary.
+
+Let's review these usage scenarios in more detail.
+
+=== Verifying Partition Checksums
+
+Even if update counters and size are equal on the primary and backup nodes, the primary and backup might diverge due to some critical failure.
+
+The `idle_verify` command compares the hash of the primary partition with that of the backup partitions and reports any differences.
+The differences might be the result of node failure or incorrect shutdown during an update operation.
+
+If any inconsistency is detected, we recommend removing the incorrect partitions or repairing the consistency using the `--consistency repair` command.
+
+[source,shell]
+----
+# Checks partitions of all caches that their partitions actually contain same data.
+control.sh|bat --cache idle_verify
+
+# Checks partitions of specific caches that their partitions actually contain same data.
+control.sh|bat --cache idle_verify cache1,cache2,cache3
+----
+
+If any partitions diverge, a list of conflict partitions is printed out, as follows:
+
+[source,text]
+----
+idle_verify check has finished, found 2 conflict partitions.
+
+Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=5]
+Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97506054, updateCntr=3, size=3, consistentId=bltTest1], PartitionHashRecord [isPrimary=false, partHash=65957380, updateCntr=3, size=2, consistentId=bltTest0]]
+Conflict partition: PartitionKey [grpId=1544803905, grpName=default, partId=6]
+Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, updateCntr=3, size=3, consistentId=bltTest1], PartitionHashRecord [isPrimary=false, partHash=66016964, updateCntr=3, size=2, consistentId=bltTest0]]
+----
+
+[WARNING]
+====
+[discrete]
+=== Cluster Should Be Idle During `idle_verify` Check
+All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
+====
+
+=== Repairing cache consistency
+[WARNING]
+====
+[discrete]
+===  Experimental feature
+The command may not work on some special/unique configurations or even cause a cluster/node failure.
+
+Command execution MUST be checked on the test environment using the data/configuration similar to the production before the execution on the real production environment.
+====
+
+[WARNING]
+====
+[discrete]
+===  Additional configuration required
+The command uses special link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Consistency Violation Event] to detect the consistency violations. This event must be enabled before the command execution.
+
+Please, refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
+====
+
+`idle_verify` command provides the inconsistent cache group names and partitions list as a result.
+The `repair` command allows performing cache consistency check and repair (when possible) using the link:key-value-api/read-repair[Read Repair] approach for every inconsistent partition found by `idle_verify`.
+
+The command uses special strategies to perform the repair. It's recommended to use `CHECK_ONLY` strategy to list inconsistent values and then choose the proper link:key-value-api/read-repair#strategies[Repair Strategy].
+
+By default, found inconsistent entries will be listed in the application log. You may change the location by configuring the logger for a special logging path for the `org.apache.ignite.internal.visor.consistency` package.
+
+By default, found inconsistent entries will be listed as is but may be masked by enabling link:logging#suppressing-sensitive-information[IGNITE_TO_STRING_INCLUDE_SENSITIVE] system property.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
+----
+--
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `cache-name`| Cache (or cache group) name to be checked/repaired.
+| `partitions`| Comma separated list of cache's partitions to be checked/repaired.
+| `strategy`| See link:key-value-api/read-repair#strategies[Repair Strategies].
+|===
+
+Optional parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--parallel`| Allows performing check/repair in the fastest way, by parallel execution at all partition owners.
+|===
+
+=== Cache consistency check/repair operations status
+
+The command allows to check `--consistency repair` commands status.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency status
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency status
+----
+--
+
+=== Partition update counters finalization
+
+The command allows fo finalize partition update counters after the manual repair.
+Finalization closes gaps at transactional cache partition update counters.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency finalize
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency finalize
+----
+--
+
+=== Validating SQL Index Consistency
+The `validate_indexes` command validates the indexes of given caches on all cluster nodes.
+
+The following is checked by the validation process:
+
+. All the key-value entries that are referenced from a primary index has to be reachable from secondary SQL indexes.
+. All the key-value entries that are referenced from a primary index has to be reachable. A reference from the primary index shouldn't point to nowhere.
+. All the key-value entries that are referenced from secondary SQL indexes have to be reachable from the primary index.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Checks indexes of all caches on all cluster nodes.
+control.sh|bat --cache validate_indexes
+
+# Checks indexes of specific caches on all cluster nodes.
+control.sh|bat --cache validate_indexes cache1,cache2
+
+# Checks indexes of specific caches on node with given node ID.
+control.sh|bat --cache validate_indexes cache1,cache2 f2ea-5f56-11e8-9c2d-fa7a
+----
+--
+
+If indexes refer to non-existing entries (or some entries are not indexed), errors are dumped to the output, as follows:
+
+[source,text]
+----
+PartitionKey [grpId=-528791027, grpName=persons-cache-vi, partId=0] ValidateIndexesPartitionResult [updateCntr=313, size=313, isPrimary=true, consistentId=bltTest0]
+IndexValidationIssue [key=0, cacheName=persons-cache-vi, idxName=_key_PK], class org.apache.ignite.IgniteCheckedException: Key is present in CacheDataTree, but can't be found in SQL index.
+IndexValidationIssue [key=0, cacheName=persons-cache-vi, idxName=PERSON_ORGID_ASC_IDX], class org.apache.ignite.IgniteCheckedException: Key is present in CacheDataTree, but can't be found in SQL index.
+validate_indexes has finished with errors (listed above).
+----
+
+[WARNING]
+====
+[discrete]
+=== Cluster Should Be Idle During `validate_indexes` Check
+Like `idle_verify`, index validation tool works correctly only if updates are stopped. Otherwise, there may be a race between the checker thread and the thread that updates the entry/index, which can result in a false positive error report.
+====
+
+=== Checking Snapshot Consistency
+
+The checking snapshot consistency command works the same way as the `idle_verify` command does. It compares hashes between
+a primary partition and a corresponding backup partitions and prints a report if any differences are found.
+Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
+recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
+
+This procedure does not require the cluster to be in the `idle` state.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+# Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
+control.(sh|bat) --snapshot check snapshot_name
+----
+--
+
+=== Check SQL Index Inline Size
+
+A running Ignite cluster could have different SQL index inline sizes on its cluster nodes.
+For example, it could happen due to the `IGNITE_MAX_INDEX_PAYLOAD_SIZE` property value is different on the cluster nodes. The difference
+between index inline sizes may lead to a performance drop.
+
+The `check_index_inline_sizes` command validates the indexes inline size of given caches on all cluster nodes. The inline
+size of secondary indexes is always checked on a node join and a WARN message is printed to the log if they differ.
+
+Use the command below to check if the secondary indexes inline sizes are the same on all cluster nodes.
+
+[tabs]
+--
+tab:Shell[]
+[source,shell]
+----
+control.sh|bat --cache check_index_inline_sizes
+----
+--
+
+If the index inline sizes are different, the console output is similar to the data below:
+
+[source,text]
+----
+Control utility [ver. 2.10.0]
+2022 Copyright(C) Apache Software Foundation
+User: test
+Time: 2021-04-27T16:13:21.213
+Command [CACHE] started
+Arguments: --cache check_index_inline_sizes --yes
+
+Found 4 secondary indexes.
+3 index(es) have different effective inline size on nodes. It can lead to
+performance degradation in SQL queries.
+Index(es):
+  Full index name: PUBLIC#TEST_TABLE#L_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+  Full index name: PUBLIC#TEST_TABLE#S1_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+  Full index name: PUBLIC#TEST_TABLE#I_IDX nodes:
+[ca1d23ae-89d4-4e8d-ae12-6c68f3900000] inline size: 1, nodes:
+[8327bbd1-df08-4b97-8721-de95e363e745] inline size: 2
+----
+
+== Tracing Configuration
+
+You can enable or disable sampling of traces for a specific API by using the `--tracing-configuration` command.
+Refer to the link:monitoring-metrics/tracing[Tracing] section for details.
+
+Before using the command, enable experimental features of the control script:
+
+[source, shell]
+----
+export IGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
+----
+
+To view the current tracing configuration, execute the following command:
+
+[source, shell]
+----
+control.sh --tracing-configuration
+----
+
+To enable trace sampling for a specific API:
+
+
+[source, shell]
+----
+control.sh --tracing-configuration set --scope <scope> --sampling-rate <rate> --label <label>
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--scope` a| The API you want to trace:
+
+* `DISCOVERY`: discovery events
+* `EXCHANGE`: exchange events
+* `COMMUNICATION`: communication events
+* `TX`: transactions
+
+| `--sampling-rate` a|  The probabilistic sampling rate, a number between `0.0` and `1.0` inclusive.
+ `0` means no sampling (default), `1` means always sampling. Ex. `0.5` means every trace is sampled with the probability of 50%.
+
+| `--label` | Only applicable to the `TX` scope. The parameter defines the sampling rate for the transactions with the given label.
+When the `--label` parameter is specified, Ignite will trace transactions with the given label. You can configure different sampling rates for different labels.
+
+Transaction traces with no label will be sampled at the default sampling rate.
+The default rate for the `TX` scope can be set by using this command without the `--label` parameter.
+|===
+
+
+Examples:
+
+* Trace all discovery events:
++
+[source, shell]
+----
+control.sh --tracing-configuration set --scope DISCOVER --sampling-rate 1
+----
+* Trace all transactions:
++
+[source, shell]
+----
+control.sh --tracing-configuration set --scope TX --sampling-rate 1
+----
+* Trace transactions with label "report" at a 50% rate:
++
+[source, shell]
+----
+control.sh --tracing-configuration set --scope TX --sampling-rate 0.5
+----
+
+
+
+== Cluster ID and Tag
+
+A cluster ID is a unique identifier of the cluster that is generated automatically when the cluster starts for the first time. Read link:monitoring-metrics/cluster-id[Cluster ID and Tag] for more information.
+
+To view the cluster ID, run the `--state` command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --state
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --state
+----
+--
+
+And check the output:
+
+[source, text]
+----
+Command [STATE] started
+Arguments: --state
+--------------------------------------------------------------------------------
+Cluster  ID: bf9764ea-995e-4ea9-b35d-8c6d078b0234
+Cluster tag: competent_black
+--------------------------------------------------------------------------------
+Cluster is active
+Command [STATE] finished with code: 0
+----
+
+A cluster tag is a user friendly name that you can assign to your cluster.
+To change the tag, use the following command (the tag must contain no more than 280 characters):
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --change-tag _<new-tag>_
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --change-tag _<new-tag>_
+----
+--
+
+== Metric Command
+
+The metrics command prints out the value of a metric or metric registry provided in the parameters list. Use the `--node-id` parameter, If you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --metric sys
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --metric sys
+----
+--
+
+Example of the metric output:
+[source, text]
+control.sh --metric sysCurrentThreadCpuTime
+Command [METRIC] started
+Arguments: --metric sys
+--------------------------------------------------------------------------------
+metric                          value
+sys.CurrentThreadCpuTime        17270000
+Command [METRIC] finished with code: 0
+
+
+Example of the metric registry output:
+[source, text]
+control.sh --metric io.dataregion.default
+Command [METRIC] started
+Arguments: --metric sys
+--------------------------------------------------------------------------------
+metric                          value
+io.dataregion.default.TotalAllocatedSize          0
+io.dataregion.default.LargeEntriesPagesCount      0
+io.dataregion.default.PagesReplaced               0
+io.dataregion.default.PhysicalMemorySize          0
+io.dataregion.default.CheckpointBufferSize        0
+io.dataregion.default.PagesReplaceRate            0
+io.dataregion.default.InitialSize                 268435456
+io.dataregion.default.PagesRead                   0
+io.dataregion.default.AllocationRate              0
+io.dataregion.default.OffHeapSize                 0
+io.dataregion.default.UsedCheckpointBufferSize    0
+io.dataregion.default.MaxSize                     6871947673
+io.dataregion.default.OffheapUsedSize             0
+io.dataregion.default.EmptyDataPages              0
+io.dataregion.default.PagesFillFactor             0.0
+io.dataregion.default.DirtyPages                  0
+io.dataregion.default.TotalThrottlingTime         0
+io.dataregion.default.EvictionRate                0
+io.dataregion.default.PagesWritten                0
+io.dataregion.default.TotalAllocatedPages         0
+io.dataregion.default.PagesReplaceAge             0
+io.dataregion.default.PhysicalMemoryPages         0
+Command [METRIC] finished with code: 0
+
+== Metric configure command
+
+The metrics command configure bounds of histogram metrics or rate time interval of hitrate metric.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --metric --configure-histogram histogram-metric-name 1,2,3
+control.sh --metric --configure-hitrate hitrate-metric-name 1000
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --metric --configure-histogram histogram-metric-name 1,2,3
+control.bat --metric --configure-hitrate hitrate-metric-name 1000
+----
+--
+
+NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+
+== Indexes Management
+
+The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.
+
+To get the list of all indexes that match specified filters, use the command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--node-id nodeId`| Node ID for the job execution. If the ID is not specified, a node is chosen by the grid.
+| `--group-name regExp`| Regular expression enabling filtering by cache group name.
+| `--cache-name regExp`| Regular expression enabling filtering by cache name.
+| `--index-name regExp`| Regular expression enabling filtering by index name.
+|===
+
+To get the list of all caches that have index rebuild in progress, use the command below:
+
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --cache indexes_rebuild_status [--node-id nodeId]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_rebuild_status [--node-id nodeId]
+----
+--
+
+
+To trigger the rebuild process of all indexes for the specified caches or the cache groups, use the command:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--node-id`| Node ID for the indexes rebuild.
+| `--cache-names`| Comma-separated list of cache names for which indexes should be rebuilt.
+| `--group-names`| Comma-separated list of cache group names for which indexes should be rebuilt.
+|===
+
+
+== System View Command
+
+The system view command prints out the content of a system view provided in the parameters list. Use the `--node-id` parameter, if you need to get a metric from a specific node. Ignite selects a random node, if the `--node-id` is not set.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.sh --system-view views
+----
+tab:Windows[]
+[source,shell,subs="verbatim,quotes"]
+----
+control.bat --system-view views
+----
+--
+
+
+Examples of the output:
+
+[source, text]
+control.sh --system-view nodes
+Command [SYSTEM-VIEW] started
+Arguments: --system-view nodes
+--------------------------------------------------------------------------------
+nodeId                                  consistentId                                         version                          isClient    nodeOrder    addresses                                          hostnames          isLocal
+a8a28869-cac6-4b17-946a-6f7f547b9f62    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47500    2.10.0#20201230-sha1:00000000    false               1    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    true
+d580433d-c621-45ff-a558-b4df82d09613    0:0:0:0:0:0:0:1%lo0,127.0.0.1,192.168.31.45:47501    2.10.0#20201230-sha1:00000000    false               2    [0:0:0:0:0:0:0:1%lo0, 127.0.0.1, 192.168.31.45]    [192.168.31.45]    false
+Command [SYSTEM-VIEW] finished with code: 0
+
+
+[source, text]
+control.sh --system-view views
+Command [SYSTEM-VIEW] started
+Arguments: --system-view views
+--------------------------------------------------------------------------------
+name                           schema    description
+NODES                          SYS       Cluster nodes
+SQL_QUERIES_HISTORY            SYS       SQL queries history.
+INDEXES                        SYS       SQL indexes
+BASELINE_NODES                 SYS       Baseline topology nodes
+STRIPED_THREADPOOL_QUEUE       SYS       Striped thread pool task queue
+LOCAL_CACHE_GROUPS_IO          SYS       Local node IO statistics for cache groups
+SCAN_QUERIES                   SYS       Scan queries
+CLIENT_CONNECTIONS             SYS       Client connections
+PARTITION_STATES               SYS       Distribution of cache group partitions across cluster nodes
+VIEW_COLUMNS                   SYS       SQL view columns
+SQL_QUERIES                    SYS       Running SQL queries.
+CACHE_GROUP_PAGE_LISTS         SYS       Cache group page lists
+METRICS                        SYS       Ignite metrics
+CONTINUOUS_QUERIES             SYS       Continuous queries
+TABLE_COLUMNS                  SYS       SQL table columns
+TABLES                         SYS       SQL tables
+DISTRIBUTED_METASTORAGE        SYS       Distributed metastorage data
+SERVICES                       SYS       Services
+DATASTREAM_THREADPOOL_QUEUE    SYS       Datastream thread pool task queue
+NODE_METRICS                   SYS       Node metrics
+BINARY_METADATA                SYS       Binary metadata
+JOBS                           SYS       Running compute jobs, part of compute task started on remote host.
+SCHEMAS                        SYS       SQL schemas
+CACHE_GROUPS                   SYS       Cache groups
+VIEWS                          SYS       SQL views
+DATA_REGION_PAGE_LISTS         SYS       Data region page lists
+NODE_ATTRIBUTES                SYS       Node attributes
+TRANSACTIONS                   SYS       Running transactions
+CACHES                         SYS       Caches
+TASKS                          SYS       Running compute tasks
+Command [SYSTEM-VIEW] finished with code: 0
+
+
+== Performance Statistics
+
+Ignite provides a built-in tool for cluster profiling. Read link:monitoring-metrics/performance-statistics[Performance Statistics] for more information.
+
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --performance-statistics [start|stop|rotate|status]
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --performance-statistics [start|stop|rotate|status]
+----
+--
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `start`| Start collecting performance statistics in the cluster.
+| `stop`| Stop collecting performance statistics in the cluster.
+| `rotate`| Rotate collecting performance statistics in the cluster.
+| `status`| Get status of collecting performance statistics in the cluster.
+|===
+
+== Working with Cluster Properties
+
+The `control.sh|bat` script provides an ability to work with link:SQL/sql-statistics[SQL statistics,window=_blank] functionality.
+
+To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property list
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property list
+----
+--
+
+You can set property value with `--property set` command. For example, to enable or disable SQL statistics in cluster use, specify `ON`, `OFF`,  or `NO_UPDATE` values:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name 'statistics.usage.state' --val 'ON'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+----
+--
+
+You can also get property value with `--property get` command. For example:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property get --name 'statistics.usage.state'
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property get --name 'statistics.usage.state'
+----
+--
+
+== Manage cache metrics collection
+
+The command provides an ability to enable, disable or show status of cache metrics collection.
+
+[source, shell]
+----
+control.sh|bat --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--caches cache1[,...,cacheN]`| Specifies a comma-separated list of cache names to which operation should be applied.
+| `--all-caches` | Applies operation to all user caches.
+|===
+
+Examples:
+[source, shell]
+----
+# Show metrics statuses for all caches:
+control.sh|bat --cache metrics status --all-caches
+
+# Enable metrics collection for cache-1 and cache-2:
+control.sh|bat --cache metrics enable --caches cache-2,cache-1
+----
+
+== Rebuild index
+
+The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for specified caches or cache groups. Target caches or cache groups must be in Maintenance Mode.
+
+[source, shell]
+----
+ control.sh|bat --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+|--node-id | A list of nodes to rebuild indexes on. If not specified, schedules rebuild on all nodes.
+|--cache-names | Comma-separated list of cache names, optionally with indexes. If indexes are not specified, all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
+|--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Inner replace on remove.
@@ -38,14 +39,14 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
     private long rmvId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId  Page ID.
      * @param dstIdx Destination index.
      * @param srcPageId Source page ID.
      * @param srcIdx Source index.
      */
-    public InnerReplaceRecord(int cacheId, long pageId, int dstIdx, long srcPageId, int srcIdx, long rmvId) {
-        super(cacheId, pageId);
+    public InnerReplaceRecord(int grpId, long pageId, int dstIdx, long srcPageId, int srcIdx, long rmvId) {
+        super(grpId, pageId);
 
         this.dstIdx = dstIdx;
         this.srcPageId = srcPageId;
@@ -92,5 +93,10 @@ public class InnerReplaceRecord<L> extends PageDeltaRecord {
      */
     public long removeId() {
         return rmvId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(InnerReplaceRecord.class, this, "super", super.toString());
     }
 }

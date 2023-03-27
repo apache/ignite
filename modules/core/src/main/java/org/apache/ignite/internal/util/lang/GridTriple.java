@@ -46,7 +46,6 @@ public class GridTriple<T> extends GridTuple3<T, T, T> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         return super.clone();
     }

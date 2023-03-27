@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
@@ -50,9 +51,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hsqldb.jdbc.jdbcDataSource;
@@ -111,9 +109,6 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /** */
     private static final String SES_VAL_OVERWRITTEN = SES_VAL + "-overwritten";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Static variable to control whether test should retry checkpoint read attempts.
      * It is needed for s3-based tests because of weak s3 consistency model.
@@ -130,7 +125,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private GridCheckpointManager checkpoints(Ignite ignite) {
         assert ignite != null;
 
-        return ((IgniteKernal) ignite).context().checkpoint();
+        return ((IgniteKernal)ignite).context().checkpoint();
     }
 
     /** {@inheritDoc} */
@@ -138,12 +133,6 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         assert igniteInstanceName != null;
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         if (igniteInstanceName.contains("cache")) {
             String cacheName = "test-checkpoints";
@@ -180,6 +169,8 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             cfg.setCheckpointSpi(spi);
         }
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -199,7 +190,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CheckpointEvent;
 
-                    CheckpointEvent e = (CheckpointEvent) evt;
+                    CheckpointEvent e = (CheckpointEvent)evt;
 
                     info("Checkpoint event: " + e);
 
@@ -379,7 +370,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 0);
 
-            ((IgniteMXBean) ignite).removeCheckpoint(key1);
+            getMxBean(ignite.name(), "Kernal", "IgniteKernal", IgniteMXBean.class).removeCheckpoint(key1);
 
             // This checkpoint will not be automatically removed for cache SPI.
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 5000);

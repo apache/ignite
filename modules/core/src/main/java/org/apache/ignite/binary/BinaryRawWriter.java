@@ -213,12 +213,15 @@ public interface BinaryRawWriter {
     public void writeObjectArray(@Nullable Object[] val) throws BinaryObjectException;
 
     /**
+     * @param <T> Type of elements in collection to write.
      * @param col Collection to write.
      * @throws BinaryObjectException In case of error.
      */
     public <T> void writeCollection(@Nullable Collection<T> col) throws BinaryObjectException;
 
     /**
+     * @param <K> Type of keys in the map to write.
+     * @param <V> Type of mapped values in the map to write.
      * @param map Map to write.
      * @throws BinaryObjectException In case of error.
      */
@@ -226,12 +229,14 @@ public interface BinaryRawWriter {
 
     /**
      * @param val Value to write.
+     * @param <T> Type of the enum to write.
      * @throws BinaryObjectException In case of error.
      */
     public <T extends Enum<?>> void writeEnum(T val) throws BinaryObjectException;
 
     /**
      * @param val Value to write.
+     * @param <T> Type of the enum values in array to write.
      * @throws BinaryObjectException In case of error.
      */
     public <T extends Enum<?>> void writeEnumArray(T[] val) throws BinaryObjectException;

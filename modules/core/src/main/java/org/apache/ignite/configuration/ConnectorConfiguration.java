@@ -22,6 +22,8 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,6 +71,7 @@ public class ConnectorConfiguration {
     private String jettyPath;
 
     /** REST secret key. */
+    @GridToStringExclude
     private String secretKey;
 
     /** TCP host. */
@@ -342,18 +345,18 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Gets REST TCP server receive buffer size.
+     * Gets REST TCP server receive buffer size in bytes.
      *
-     * @return REST TCP server receive buffer size (0 for default).
+     * @return REST TCP server receive buffer size in bytes(0 for default).
      */
     public int getReceiveBufferSize() {
         return rcvBufSize;
     }
 
     /**
-     * Sets REST TCP server receive buffer size.
+     * Sets REST TCP server receive buffer size in bytes.
      *
-     * @param rcvBufSize Receive buffer size.
+     * @param rcvBufSize Receive buffer size in bytes.
      * @see #getReceiveBufferSize()
      * @return {@code this} for chaining.
      */
@@ -667,5 +670,10 @@ public class ConnectorConfiguration {
      */
     public long getIdleQueryCursorCheckFrequency() {
         return idleQryCurCheckFreq;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ConnectorConfiguration.class, this);
     }
 }

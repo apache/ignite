@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.database;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.database.DataStructure;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
@@ -33,7 +35,10 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  */
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
-    private static final int CONCURRENCY_LEVEL = 8;
+    private static final int CONCURRENCY_LEVEL = 16;
+
+    /** */
+    private static final int MIN_PAGE_CACHE_SIZE = 1048576 * CONCURRENCY_LEVEL;
 
     /** */
     private volatile Exception ex;
@@ -72,8 +77,13 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected void configure(MemoryConfiguration mCfg) {
+    @Override protected void configure(DataStorageConfiguration mCfg) {
         mCfg.setConcurrencyLevel(CONCURRENCY_LEVEL);
+
+        long size = (1024 * (isLargePage() ? 16 : 4) + 24) * pagesMax();
+
+        mCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(Math.max(size, MIN_PAGE_CACHE_SIZE)).setName("default"));
     }
 
     /**
@@ -164,6 +174,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryLeak() throws Exception {
         final IgniteEx ignite = grid(0);
 
@@ -225,7 +236,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
      * @throws Exception If failed.
      */
     protected final void check(IgniteCache cache) throws Exception {
-        long pagesActual = ((IgniteCacheProxy)cache).context().memoryPolicy().pageMemory().loadedPages();
+        long pagesActual = ((IgniteCacheProxy)cache).context().dataRegion().pageMemory().loadedPages();
 
         if (loadedPages > 0) {
             delta += pagesActual - loadedPages;
@@ -243,7 +254,10 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
 
         long pagesAllowed = pagesMax();
 
-        assertTrue("Allocated pages count is more than expected [allowed=" + pagesAllowed + ", actual=" + pagesActual + "]", pagesActual < pagesAllowed);
+        assertTrue(
+            "Allocated pages count is more than expected [allowed=" + pagesAllowed + ", actual=" + pagesActual + "]",
+            pagesActual < pagesAllowed
+        );
 
         loadedPages = pagesActual;
     }

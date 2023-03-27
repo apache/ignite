@@ -108,7 +108,6 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param name Plugin name.
      * @return Plugin provider.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T extends PluginProvider> T pluginProvider(String name) {
         return (T)plugins.get(name);
     }
@@ -124,7 +123,6 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param provider Plugin context.
      * @return Plugin context.
      */
-    @SuppressWarnings("unchecked")
     public <T extends PluginContext> T pluginContextForProvider(PluginProvider provider) {
         return (T)pluginCtxMap.get(provider);
     }
@@ -148,7 +146,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         ackPluginsInfo();
     }
 
@@ -196,7 +194,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (data.hasJoiningNodeData()) {
-            Map<String, Serializable> pluginsData = (Map<String, Serializable>) data.joiningNodeData();
+            Map<String, Serializable> pluginsData = (Map<String, Serializable>)data.joiningNodeData();
 
             applyPluginsData(data.joiningNodeId(), pluginsData);
         }
@@ -211,7 +209,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
             for (Serializable v : nodeSpecificData.values()) {
                 if (v != null) {
-                    Map<String, Serializable> pluginsData = (Map<String, Serializable>) v;
+                    Map<String, Serializable> pluginsData = (Map<String, Serializable>)v;
 
                     applyPluginsData(joiningNodeId, pluginsData);
                 }

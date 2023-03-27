@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryBasicIdMapper;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,17 +44,15 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Closure to apply dot net configuration.
  */
-@SuppressWarnings({"UnusedDeclaration"})
 public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigurationClosure {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Whether to use platform logger (when custom logger is defined on .NET side). */
+    private final boolean useLogger;
 
     /** Configuration. */
     private IgniteConfiguration cfg;
@@ -68,14 +65,15 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param envPtr Environment pointer.
      */
-    public PlatformDotNetConfigurationClosure(long envPtr) {
+    public PlatformDotNetConfigurationClosure(long envPtr, boolean useLogger) {
         super(envPtr);
+
+        this.useLogger = useLogger;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
-        // 3. Validate and copy Interop configuration setting environment pointer along the way.
+        // Validate and copy Interop configuration setting environment pointer along the way.
         PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformDotNetConfiguration))
@@ -89,15 +87,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformLogger userLogger = null;
+        PlatformLogger logger = null;
 
-        if (igniteCfg.getGridLogger() instanceof PlatformLogger) {
-            userLogger = (PlatformLogger)igniteCfg.getGridLogger();
-            userLogger.setGateway(gate);
+        if (useLogger) {
+            logger = new PlatformLogger();
+            logger.setGateway(gate);
+            igniteCfg.setGridLogger(logger);
         }
 
         PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
-            userLogger);
+            logger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -107,7 +106,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (ggHome != null)
             U.setIgniteHome(ggHome);
 
-        // 4. Callback to .Net.
+        // Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
 
         // Make sure binary config is right.
@@ -118,7 +117,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * Sets binary config.
      *
      * @param igniteCfg Ignite config.
-     * @param dotNetCfg Dotnet config.
+     * @param dotNetCfg .NET config.
      */
     private void setBinaryConfiguration(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx dotNetCfg) {
         // Check marshaller.
@@ -143,7 +142,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * @param igniteCfg Ignite configuration.
      * @param interopCfg Interop configuration.
      */
-    @SuppressWarnings("ConstantConditions")
     private void prepare(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx interopCfg) {
         cfg = igniteCfg;
 
@@ -166,7 +164,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                     writer.writeMap(bean.getProperties());
                 }
 
-                // Write .NET affinity funcs
+                // Write .NET affinity functions
                 List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
 
                 writer.writeInt(affFuncs.size());

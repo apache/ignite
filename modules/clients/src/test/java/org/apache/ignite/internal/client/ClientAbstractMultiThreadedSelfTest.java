@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -43,26 +42,16 @@ import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 
 /**
  *
  */
 public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Partitioned cache name. */
     protected static final String PARTITIONED_CACHE_NAME = "partitioned";
 
@@ -174,66 +163,34 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         c.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        CacheConfiguration<?, ?> ccfg1 = defaultCacheConfiguration()
+            .setName(PARTITIONED_CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setBackups(0);
 
-        disco.setIpFinder(IP_FINDER);
+        CacheConfiguration<?, ?> ccfg2 = defaultCacheConfiguration()
+            .setName(PARTITIONED_ASYNC_BACKUP_CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setBackups(1)
+            .setWriteSynchronizationMode(FULL_ASYNC);
 
-        c.setDiscoverySpi(disco);
+        CacheConfiguration<?, ?> ccfg3 = defaultCacheConfiguration()
+            .setName(REPLICATED_CACHE_NAME)
+            .setCacheMode(REPLICATED);
 
-        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
-            cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(PARTITIONED_ASYNC_BACKUP_CACHE_NAME),
-            cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
+        CacheConfiguration<?, ?> ccfg4 = defaultCacheConfiguration()
+            .setName(REPLICATED_ASYNC_CACHE_NAME)
+            .setCacheMode(REPLICATED)
+            .setWriteSynchronizationMode(FULL_ASYNC);
+
+        c.setCacheConfiguration(ccfg1, ccfg2, ccfg3, ccfg4);
 
         return c;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return Cache configuration.
-     * @throws Exception In case of error.
-     */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setAffinity(new RendezvousAffinityFunction());
-
-        cfg.setAtomicityMode(TRANSACTIONAL);
-
-        switch (cacheName) {
-            case DEFAULT_CACHE_NAME:
-                cfg.setCacheMode(LOCAL);
-                break;
-            case PARTITIONED_CACHE_NAME:
-                cfg.setCacheMode(PARTITIONED);
-
-                cfg.setBackups(0);
-                break;
-            case PARTITIONED_ASYNC_BACKUP_CACHE_NAME:
-                cfg.setCacheMode(PARTITIONED);
-
-                cfg.setBackups(1);
-                break;
-            default:
-                cfg.setCacheMode(REPLICATED);
-                break;
-        }
-
-        cfg.setName(cacheName);
-
-        if (!DEFAULT_CACHE_NAME.equals(cacheName) && !cacheName.contains("async"))
-            cfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -251,6 +208,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedTaskRun() throws Exception {
         final AtomicLong cnt = new AtomicLong();
 

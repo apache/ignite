@@ -33,7 +33,7 @@ namespace ignite
             /**
              * Interop external memory.
              */
-            class IGNITE_IMPORT_EXPORT InteropExternalMemory : public interop::InteropMemory
+            class IGNITE_IMPORT_EXPORT InteropExternalMemory : public InteropMemory
             {
             public:
                 /**
@@ -45,7 +45,7 @@ namespace ignite
 
                 virtual void Reallocate(int32_t cap);
             private:
-                IGNITE_NO_COPY_ASSIGNMENT(InteropExternalMemory)
+                IGNITE_NO_COPY_ASSIGNMENT(InteropExternalMemory);
             };
         }
     }

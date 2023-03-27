@@ -21,12 +21,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.ipc.loopback.IpcServerTcpEndpoint;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryClientEndpoint;
-import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Igfs endpoint factory for inter-process communication.
+ * endpoint factory for inter-process communication.
  */
 public class IpcEndpointFactory {
     /**
@@ -56,9 +54,7 @@ public class IpcEndpointFactory {
             // Use default port.
             port = -1;
 
-        return "shmem".equalsIgnoreCase(split[0]) ?
-            connectSharedMemoryEndpoint(port > 0 ? port : IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log) :
-            connectTcpEndpoint(split[0], port > 0 ? port : IpcServerTcpEndpoint.DFLT_IPC_PORT);
+        return connectTcpEndpoint(split[0], port > 0 ? port : IpcServerTcpEndpoint.DFLT_IPC_PORT);
     }
 
     /**
@@ -70,18 +66,6 @@ public class IpcEndpointFactory {
      * @throws IgniteCheckedException If connection failed.
      */
     private static IpcEndpoint connectTcpEndpoint(String host, int port) throws IgniteCheckedException {
-       return new IpcClientTcpEndpoint(host, port);
-    }
-
-    /**
-     * Connects IPC shared memory endpoint.
-     *
-     * @param port Endpoint port.
-     * @param log Log.
-     * @return Connected client endpoint.
-     * @throws IgniteCheckedException If connection failed.
-     */
-    private static IpcEndpoint connectSharedMemoryEndpoint(int port, IgniteLogger log) throws IgniteCheckedException {
-        return new IpcSharedMemoryClientEndpoint(port, log);
+        return new IpcClientTcpEndpoint(host, port);
     }
 }

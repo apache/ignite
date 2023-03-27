@@ -30,7 +30,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -53,6 +56,16 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     /** Near enabled flag. */
     private boolean nearEnabled = true;
 
+    /** */
+    @Before
+    public void beforeGridCacheReloadSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cacheMode = null;
@@ -62,6 +75,12 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
@@ -114,22 +133,12 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that eviction works with reload() on local cache.
-     *
-     * @throws Exception If error occurs.
-     */
-    public void testReloadEvictionLocalCache() throws Exception {
-        cacheMode = CacheMode.LOCAL;
-
-        doTest();
-    }
-
-    /**
      * Checks that eviction works with reload() on partitioned cache
      * with near enabled.
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -142,6 +151,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearDisabled() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -154,6 +164,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionReplicatedCache() throws Exception {
         cacheMode = CacheMode.REPLICATED;
 

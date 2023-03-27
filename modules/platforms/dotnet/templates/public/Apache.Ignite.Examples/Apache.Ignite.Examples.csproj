@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageType>Template</PackageType>
+        <PackageVersion>2.11.0</PackageVersion>
+        <PackageId>Apache.Ignite.Examples</PackageId>
+        <Title>Apache Ignite Examples</Title>
+        <Authors>Apache Ignite</Authors>
+        <Description>Apache Ignite.NET example projects. This package is a convenient way to download and explore the examples. Documentation: https://ignite.apache.org/docs/latest/quick-start/dotnet</Description>
+        <PackageTags>apache;ignite;examples;distributed;cache;sql;nosql;linq;dotnet-new;templates;</PackageTags>
+        <TargetFramework>net6.0</TargetFramework>
+        <PackageProjectUrl>https://ignite.apache.org</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/apache/ignite</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <NoWarn>NU5119,NU5128</NoWarn>
+
+        <IncludeContentInPack>true</IncludeContentInPack>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <ContentTargetFolders>content</ContentTargetFolders>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="examples\**\*.*"
+                 Exclude="examples\**\bin\**;examples\**\obj\**;examples\.idea" />
+        <Compile Remove="**\*" />
+    </ItemGroup>
+
+</Project>

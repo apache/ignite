@@ -144,10 +144,10 @@ public class GridJobLoadTestJob implements ComputeJob {
             boolean valMissed = false;
 
             for (int i = 0; i < EMIT_SEQUENCE_LENGTH; i++) {
-                Integer val = (Integer) attrs.get(String.valueOf(i));
+                Integer val = (Integer)attrs.get(String.valueOf(i));
 
                 // We shouldn't run in situation when some elements emitted before are missed and the current exists.
-                assert ! (valMissed && val != null) :
+                assert !(valMissed && val != null) :
                     "Inconsistent session attribute set was received [missedAttribute=" + i +
                     ", jobId=" + cntx.getJobId() + ", attrs=" + attrs + ", nodeId=" +
                     ignite.configuration().getNodeId() + "]";

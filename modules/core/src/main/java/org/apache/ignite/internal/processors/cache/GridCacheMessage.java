@@ -69,6 +69,10 @@ public abstract class GridCacheMessage implements Message {
     private GridDeploymentInfoBean depInfo;
 
     /** */
+    @GridToStringInclude
+    private @Nullable AffinityTopologyVersion lastAffChangedTopVer;
+
+    /** */
     @GridDirectTransient
     protected boolean addDepInfo;
 
@@ -84,9 +88,15 @@ public abstract class GridCacheMessage implements Message {
     @GridDirectTransient
     private boolean skipPrepare;
 
-    /** Cache ID. */
-    @GridToStringInclude
-    protected int cacheId;
+    /**
+     * @return ID to distinguish message handlers for the same messages but for different caches/cache groups.
+     */
+    public abstract int handlerId();
+
+    /**
+     * @return {@code True} if cache group message.
+     */
+    public abstract boolean cacheGroupMessage();
 
     /**
      * @return Error, if any.
@@ -170,26 +180,33 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /**
      * Gets topology version or -1 in case of topology version is not required for this message.
      *
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion() {
         return AffinityTopologyVersion.NONE;
+    }
+
+    /**
+     * Returns the earliest affinity topology version for which this message is valid.
+     *
+     * @return Last affinity topology version when affinity was modified.
+     */
+    public AffinityTopologyVersion lastAffinityChangedTopologyVersion() {
+        if (lastAffChangedTopVer == null || lastAffChangedTopVer.topologyVersion() <= 0)
+            return topologyVersion();
+
+        return lastAffChangedTopVer;
+    }
+
+    /**
+     * Sets the earliest affinity topology version for which this message is valid.
+     *
+     * @param topVer Last affinity topology version when affinity was modified.
+     */
+    public void lastAffinityChangedTopologyVersion(AffinityTopologyVersion topVer) {
+        lastAffChangedTopVer = topVer;
     }
 
     /**
@@ -205,6 +222,15 @@ public abstract class GridCacheMessage implements Message {
      * @throws IgniteCheckedException If failed.
      */
     protected final void prepareObject(@Nullable Object o, GridCacheContext ctx) throws IgniteCheckedException {
+        prepareObject(o, ctx.shared());
+    }
+
+    /**
+     * @param o Object to prepare for marshalling.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final void prepareObject(@Nullable Object o, GridCacheSharedContext ctx) throws IgniteCheckedException {
         assert addDepInfo || forceAddDepInfo;
 
         if (!skipPrepare && o != null) {
@@ -279,24 +305,28 @@ public abstract class GridCacheMessage implements Message {
     /**
      * @param info Entry to marshal.
      * @param ctx Context.
+     * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfo(GridCacheEntryInfo info, GridCacheContext ctx) throws IgniteCheckedException {
+    protected final void marshalInfo(GridCacheEntryInfo info,
+        GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx
+    ) throws IgniteCheckedException {
         assert ctx != null;
 
         if (info != null) {
-            info.marshal(ctx);
+            info.marshal(cacheObjCtx);
 
             if (addDepInfo) {
                 if (info.key() != null)
-                    prepareObject(info.key().value(ctx.cacheObjectContext(), false), ctx);
+                    prepareObject(info.key().value(cacheObjCtx, false), ctx);
 
                 CacheObject val = info.value();
 
                 if (val != null) {
-                    val.finishUnmarshal(ctx.cacheObjectContext(), ctx.deploy().globalLoader());
+                    val.finishUnmarshal(cacheObjCtx, ctx.deploy().globalLoader());
 
-                    prepareObject(CU.value(val, ctx, false), ctx);
+                    prepareObject(val.value(cacheObjCtx, false), ctx);
                 }
             }
         }
@@ -314,7 +344,7 @@ public abstract class GridCacheMessage implements Message {
         assert ctx != null;
 
         if (info != null)
-            info.unmarshal(ctx, ldr);
+            info.unmarshal(ctx.cacheObjectContext(), ldr);
     }
 
     /**
@@ -324,13 +354,14 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void marshalInfos(
         Iterable<? extends GridCacheEntryInfo> infos,
-        GridCacheContext ctx
+        GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx
     ) throws IgniteCheckedException {
         assert ctx != null;
 
         if (infos != null)
             for (GridCacheEntryInfo e : infos)
-                marshalInfo(e, ctx);
+                marshalInfo(e, ctx, cacheObjCtx);
     }
 
     /**
@@ -369,14 +400,14 @@ public abstract class GridCacheMessage implements Message {
 
                 if (addDepInfo) {
                     if (e.key() != null)
-                        prepareObject(e.key().value(cctx.cacheObjectContext(), false), cctx);
+                        prepareObject(e.key().value(cctx.cacheObjectContext(), false), ctx);
 
                     if (e.value() != null)
-                        prepareObject(e.value().value(cctx.cacheObjectContext(), false), cctx);
+                        prepareObject(e.value().value(cctx.cacheObjectContext(), false), ctx);
 
                     if (e.entryProcessors() != null) {
                         for (T2<EntryProcessor<Object, Object, Object>, Object[]> entProc : e.entryProcessors())
-                            prepareObject(entProc.get1(), cctx);
+                            prepareObject(entProc.get1(), ctx);
                     }
                 }
                 else if (p2pEnabled && e.entryProcessors() != null) {
@@ -384,7 +415,7 @@ public abstract class GridCacheMessage implements Message {
                         forceAddDepInfo = true;
 
                     for (T2<EntryProcessor<Object, Object, Object>, Object[]> entProc : e.entryProcessors())
-                        prepareObject(entProc.get1(), cctx);
+                        prepareObject(entProc.get1(), ctx);
                 }
             }
         }
@@ -435,7 +466,7 @@ public abstract class GridCacheMessage implements Message {
             Object arg = args[i];
 
             if (addDepInfo)
-                prepareObject(arg, ctx);
+                prepareObject(arg, ctx.shared());
 
             argsBytes[i] = arg == null ? null : CU.marshal(ctx, arg);
         }
@@ -487,7 +518,7 @@ public abstract class GridCacheMessage implements Message {
 
         for (Object o : col) {
             if (addDepInfo)
-                prepareObject(o, ctx);
+                prepareObject(o, ctx.shared());
 
             byteCol.add(o == null ? null : CU.marshal(ctx, o));
         }
@@ -508,7 +539,7 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++)
+        for (int i = 0; i < size; i++)
             prepareMarshalCacheObject(col.get(i), ctx);
     }
 
@@ -522,7 +553,7 @@ public abstract class GridCacheMessage implements Message {
             obj.prepareMarshal(ctx.cacheObjectContext());
 
             if (addDepInfo)
-                prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx);
+                prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
         }
     }
 
@@ -541,7 +572,7 @@ public abstract class GridCacheMessage implements Message {
                 obj.prepareMarshal(ctx.cacheObjectContext());
 
                 if (addDepInfo)
-                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx);
+                    prepareObject(obj.value(ctx.cacheObjectContext(), false), ctx.shared());
             }
         }
     }
@@ -555,15 +586,14 @@ public abstract class GridCacheMessage implements Message {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public final void finishUnmarshalCacheObjects(@Nullable List<? extends CacheObject> col,
         GridCacheContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (col == null)
             return;
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             CacheObject obj = col.get(i);
 
             if (obj != null)
@@ -579,9 +609,8 @@ public abstract class GridCacheMessage implements Message {
      */
     protected final void finishUnmarshalCacheObjects(@Nullable Collection<? extends CacheObject> col,
         GridCacheContext ctx,
-        ClassLoader ldr)
-        throws IgniteCheckedException
-    {
+        ClassLoader ldr
+    ) throws IgniteCheckedException {
         if (col == null)
             return;
 
@@ -630,6 +659,11 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -642,13 +676,13 @@ public abstract class GridCacheMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeMessage("depInfo", depInfo))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("depInfo", depInfo))
+                if (!writer.writeAffinityTopologyVersion("lastAffChangedTopVer", lastAffChangedTopVer))
                     return false;
 
                 writer.incrementState();
@@ -673,7 +707,7 @@ public abstract class GridCacheMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                depInfo = reader.readMessage("depInfo");
 
                 if (!reader.isLastRead())
                     return false;
@@ -681,7 +715,7 @@ public abstract class GridCacheMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                depInfo = reader.readMessage("depInfo");
+                lastAffChangedTopVer = reader.readAffinityTopologyVersion("lastAffChangedTopVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -714,6 +748,6 @@ public abstract class GridCacheMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheMessage.class, this, "cacheId", cacheId);
+        return S.toString(GridCacheMessage.class, this);
     }
 }

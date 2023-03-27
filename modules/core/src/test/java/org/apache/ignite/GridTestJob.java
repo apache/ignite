@@ -17,10 +17,9 @@
 
 package org.apache.ignite;
 
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.resources.LoggerResource;
-
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Test job.
@@ -30,6 +29,7 @@ public class GridTestJob extends ComputeJobAdapter {
     @LoggerResource
     private IgniteLogger log;
 
+    /** */
     CountDownLatch latch;
 
     /** */
@@ -59,7 +59,8 @@ public class GridTestJob extends ComputeJobAdapter {
         if (latch != null) {
             try {
                 latch.await();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException ignore) {
                 // Nothing to do
             }
         }

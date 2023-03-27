@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -24,17 +25,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.List;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /** Test for SQL min() and max() optimization */
-public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
     /** Name of the cache for test */
     private static final String CACHE_NAME = "intCache";
 
@@ -52,16 +47,14 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        awaitPartitionMapExchange(true, false, null);
+
         stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
 
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
@@ -73,15 +66,13 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg, ccfg2);
 
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
     /** Check min() and max() functions in queries */
+    @Test
     public void testQueryMinMax() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
             int count = 1_000;
@@ -118,8 +109,9 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() on empty cache */
+    @Test
     public void testQueryMinMaxEmptyCache() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select min(idxVal), max(idxVal) from ValueObj"));
@@ -135,15 +127,16 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over _key use correct index
      * Test uses value object cache
      */
+    @Test
     public void testMinMaxQueryPlanOnKey() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_key), max(_key) from ValueObj"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String) result.get(0).get(0)).toLowerCase().contains("_key_pk"));
-            assertTrue(((String) result.get(0).get(0)).toLowerCase().contains("direct lookup"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("_key_pk"));
+            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
         }
     }
 
@@ -151,8 +144,9 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over value fields use correct index.
      * Test uses value object cache
      */
+    @Test
     public void testMinMaxQueryPlanOnFields() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(idxVal), max(idxVal) from ValueObj"));
@@ -167,15 +161,17 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over _key uses correct index
      * Test uses primitive cache
      */
+    @Test
     public void testSimpleMinMaxQueryPlanOnKey() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_key), max(_key) from Integer"));
             List<List<?>> result = cursor.getAll();
             assertEquals(2, result.size());
-            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("_key_pk"));
-            assertTrue(((String)result.get(0).get(0)).toLowerCase().contains("direct lookup"));
+            String res = ((String)result.get(0).get(0)).toLowerCase();
+            assertTrue(res, res.contains("_key_pk"));
+            assertTrue(res, res.contains("direct lookup"));
         }
     }
 
@@ -183,8 +179,9 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
      * Check min() and max() over _val uses correct index.
      * Test uses primitive cache
      */
+    @Test
     public void testSimpleMinMaxQueryPlanOnValue() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("explain select min(_val), max(_val) from Integer"));
@@ -196,8 +193,9 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
     }
 
     /** Check min() and max() over group */
+    @Test
     public void testGroupMinMax() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
             int count = 1_000;
@@ -213,20 +211,21 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
             assertEquals(count / groupSize, result.size());
 
             for (int idx = 0; idx < result.size(); ++idx) {
-                assertEquals(idx, result.get(idx).get(0));//groupVal
+                assertEquals(idx, result.get(idx).get(0)); //groupVal
                 int min = idx * groupSize;
                 int max = (idx + 1) * groupSize - 1;
-                assertEquals(min, result.get(idx).get(1));//min(idxVal)
-                assertEquals(max, result.get(idx).get(2));//max(idxVal)
-                assertEquals(min, result.get(idx).get(3));//min(nonIdxVal)
-                assertEquals(max, result.get(idx).get(4));//max(nonIdxVal)
+                assertEquals(min, result.get(idx).get(1)); //min(idxVal)
+                assertEquals(max, result.get(idx).get(2)); //max(idxVal)
+                assertEquals(min, result.get(idx).get(3)); //min(nonIdxVal)
+                assertEquals(max, result.get(idx).get(4)); //max(nonIdxVal)
             }
         }
     }
 
     /** Check min() and max() over group with having clause */
+    @Test
     public void testGroupHavingMinMax() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, ValueObj> cache = client.cache(CACHE_NAME_2);
 
             int count = 1_000;
@@ -240,11 +239,11 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
 
             List<List<?>> result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals(0, result.get(0).get(0));//groupVal
-            assertEquals(0, result.get(0).get(1));//min(idxVal)
-            assertEquals(groupSize - 1, result.get(0).get(2));//max(idxVal)
-            assertEquals(0, result.get(0).get(3));//min(nonIdxVal)
-            assertEquals(groupSize - 1, result.get(0).get(4));//max(nonIdxVal)
+            assertEquals(0, result.get(0).get(0)); //groupVal
+            assertEquals(0, result.get(0).get(1)); //min(idxVal)
+            assertEquals(groupSize - 1, result.get(0).get(2)); //max(idxVal)
+            assertEquals(0, result.get(0).get(3)); //min(nonIdxVal)
+            assertEquals(groupSize - 1, result.get(0).get(4)); //max(nonIdxVal)
 
             cursor = cache.query(new SqlFieldsQuery(
                     "select groupVal, min(idxVal), max(idxVal), min(nonIdxVal), max(nonIdxVal) " +
@@ -252,17 +251,18 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
 
             result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals((count - 1)/groupSize, result.get(0).get(0));//groupVal
-            assertEquals(count - groupSize, result.get(0).get(1));//min(idxVal)
-            assertEquals(count - 1, result.get(0).get(2));//max(idxVal)
-            assertEquals(count - groupSize, result.get(0).get(3));//min(nonIdxVal)
-            assertEquals(count - 1, result.get(0).get(4));//max(nonIdxVal)
+            assertEquals((count - 1) / groupSize, result.get(0).get(0)); //groupVal
+            assertEquals(count - groupSize, result.get(0).get(1)); //min(idxVal)
+            assertEquals(count - 1, result.get(0).get(2)); //max(idxVal)
+            assertEquals(count - groupSize, result.get(0).get(3)); //min(nonIdxVal)
+            assertEquals(count - 1, result.get(0).get(4)); //max(nonIdxVal)
         }
     }
 
     /** Check min() and max() over group with joins */
+    @Test
     public void testJoinGroupMinMax() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
             IgniteCache<Integer, ValueObj> cache2 = client.cache(CACHE_NAME_2);
 
@@ -289,16 +289,16 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
                 int revMin = count - max - 1;
                 int revMax = count - min - 1;
 
-                assertEquals(revMin, result.get(idx).get(1));//min(a._key)
-                assertEquals(revMax, result.get(idx).get(2));//max(a._key)
-                assertEquals(revMin, result.get(idx).get(3));//min(a._val)
-                assertEquals(revMax, result.get(idx).get(4));//max(a._val)
-                assertEquals(revMin, result.get(idx).get(5));//min(b._key)
-                assertEquals(revMax, result.get(idx).get(6));//max(b_key)
-                assertEquals(min, result.get(idx).get(7));//min(b.idxVal)
-                assertEquals(max, result.get(idx).get(8));//max(b.idxVal),
-                assertEquals(min, result.get(idx).get(9));//min(b.nonIdxVal)
-                assertEquals(max, result.get(idx).get(10));//max(b.nonIdxVal)
+                assertEquals(revMin, result.get(idx).get(1)); //min(a._key)
+                assertEquals(revMax, result.get(idx).get(2)); //max(a._key)
+                assertEquals(revMin, result.get(idx).get(3)); //min(a._val)
+                assertEquals(revMax, result.get(idx).get(4)); //max(a._val)
+                assertEquals(revMin, result.get(idx).get(5)); //min(b._key)
+                assertEquals(revMax, result.get(idx).get(6)); //max(b_key)
+                assertEquals(min, result.get(idx).get(7)); //min(b.idxVal)
+                assertEquals(max, result.get(idx).get(8)); //max(b.idxVal),
+                assertEquals(min, result.get(idx).get(9)); //min(b.nonIdxVal)
+                assertEquals(max, result.get(idx).get(10)); //max(b.nonIdxVal)
             }
 
             //join a.key = b.val, non-collocated
@@ -319,16 +319,16 @@ public class IgniteSqlQueryMinMaxTest extends GridCommonAbstractTest {
                 int revMin = count - max - 1;
                 int revMax = count - min - 1;
 
-                assertEquals(min, result.get(idx).get(1));//min(a._key)
-                assertEquals(max, result.get(idx).get(2));//max(a._key)
-                assertEquals(min, result.get(idx).get(3));//min(a._val)
-                assertEquals(max, result.get(idx).get(4));//max(a._val)
-                assertEquals(revMin, result.get(idx).get(5));//min(b._key)
-                assertEquals(revMax, result.get(idx).get(6));//max(b_key)
-                assertEquals(min, result.get(idx).get(7));//min(b.idxVal)
-                assertEquals(max, result.get(idx).get(8));//max(b.idxVal),
-                assertEquals(min, result.get(idx).get(9));//min(b.nonIdxVal)
-                assertEquals(max, result.get(idx).get(10));//max(b.nonIdxVal)
+                assertEquals(min, result.get(idx).get(1)); //min(a._key)
+                assertEquals(max, result.get(idx).get(2)); //max(a._key)
+                assertEquals(min, result.get(idx).get(3)); //min(a._val)
+                assertEquals(max, result.get(idx).get(4)); //max(a._val)
+                assertEquals(revMin, result.get(idx).get(5)); //min(b._key)
+                assertEquals(revMax, result.get(idx).get(6)); //max(b_key)
+                assertEquals(min, result.get(idx).get(7)); //min(b.idxVal)
+                assertEquals(max, result.get(idx).get(8)); //max(b.idxVal),
+                assertEquals(min, result.get(idx).get(9)); //min(b.nonIdxVal)
+                assertEquals(max, result.get(idx).get(10)); //max(b.nonIdxVal)
             }
         }
     }

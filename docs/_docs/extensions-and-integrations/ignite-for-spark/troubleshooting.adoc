@@ -1,0 +1,23 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Troubleshooting
+
+*  My Spark application or Spark shell hangs when I invoke any action on IgniteRDD
+
+This will happen if you have created `IgniteContext` in client mode (which is default mode) and you do not have any Ignite server nodes started up. In this case Ignite client will wait until server nodes are started or fail after cluster join timeout has elapsed. You should start at least one Ignite server node when using `IgniteContext` in client mode.
+
+*  I am getting `java.lang.ClassNotFoundException` `org.apache.ignite.logger.java.JavaLoggerFileHandler` when using IgniteContext
+
+This issue appears when you do not have any loggers included in classpath and Ignite tries to use standard Java logging. By default Spark loads all user jar files using separate class loader. Java logging framework, on the other hand, uses application class loader to initialize log handlers. To resolve this, you can either add `ignite-log4j2` module to the list of the used jars so that Ignite would use Log4j2 as a logging subsystem, or alter default Spark classpath as described link:ignite-for-spark/installation[here].

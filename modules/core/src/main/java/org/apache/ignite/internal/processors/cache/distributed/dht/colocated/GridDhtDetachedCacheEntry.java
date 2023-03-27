@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -36,14 +37,9 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     /**
      * @param ctx Cache context.
      * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header ID.
      */
-    public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key, int hash, CacheObject val,
-        GridCacheMapEntry next, int hdrId) {
-        super(ctx, key, hash, val);
+    public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key) {
+        super(ctx, key);
     }
 
     /**
@@ -59,7 +55,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheDataRow unswap(boolean needVal, boolean checkExpire) throws IgniteCheckedException {
+    @Nullable @Override public CacheDataRow unswap(CacheDataRow row, boolean checkExpire) throws IgniteCheckedException {
         return null;
     }
 
@@ -69,16 +65,34 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void storeValue(CacheObject val,
+    @Override protected boolean storeValue(CacheObject val,
         long expireTime,
-        GridCacheVersion ver,
-        CacheDataRow oldRow) throws IgniteCheckedException {
+        GridCacheVersion ver) throws IgniteCheckedException {
+        return false;
         // No-op for detached entries, index is updated on primary nodes.
     }
 
     /** {@inheritDoc} */
-    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long expireTime, long updCntr) throws IgniteCheckedException {
+    @Override protected void logUpdate(
+        GridCacheOperation op,
+        CacheObject val,
+        GridCacheVersion writeVer,
+        long expireTime,
+        long updCntr,
+        boolean primary
+    ) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary or backup nodes.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected WALPointer logTxUpdate(
+        IgniteInternalTx tx,
+        CacheObject val,
+        GridCacheVersion writeVer,
+        long expireTime,
+        long updCntr
+    ) {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -92,8 +106,8 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized String toString() {
-        return S.toString(GridDhtDetachedCacheEntry.class, this, "super", super.toString());
+    @Override public String toString() {
+        return toStringWithTryLock(() -> S.toString(GridDhtDetachedCacheEntry.class, this, "super", super.toString()));
     }
 
     /** {@inheritDoc} */

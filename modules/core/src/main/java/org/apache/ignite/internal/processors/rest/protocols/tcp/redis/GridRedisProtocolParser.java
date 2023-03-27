@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
@@ -66,26 +68,28 @@ public class GridRedisProtocolParser {
     private static final byte[] OK = "OK".getBytes();
 
     /**
-     * Reads an array into {@link GridRedisMessage}.
-     *
-     * @param buf Buffer.
-     * @return {@link GridRedisMessage}.
-     * @throws IgniteCheckedException
+     * Error while reading int.
+     * {@code -1} used to mark null array.
+     * @see #NIL
      */
-    public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
+    public static final int ERROR_INT = -2;
+
+    /**
+     * Checks first byte is {@link #ARRAY}.
+     * @param buf Buffer.
+     * @return {@code False} if no data available in buffer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean ensureArrayStart(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return false;
+
         byte b = buf.get();
 
         if (b != ARRAY)
             throw new IgniteCheckedException("Invalid request byte! " + b);
 
-        int arrLen = elCnt(buf);
-
-        GridRedisMessage msg = new GridRedisMessage(arrLen);
-
-        for (int i = 0; i < arrLen; i++)
-            msg.append(readBulkStr(buf));
-
-        return msg;
+        return true;
     }
 
     /**
@@ -93,21 +97,37 @@ public class GridRedisProtocolParser {
      *
      * @param buf Buffer.
      * @return Bulk string.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return null;
+
         byte b = buf.get();
 
         if (b != BULK_STRING)
             throw new IgniteCheckedException("Invalid bulk string prefix! " + b);
 
-        int len = elCnt(buf);
+        if (!buf.hasRemaining())
+            return null;
+
+        int len = readInt(buf);
+
+        if (len == ERROR_INT || buf.remaining() < len)
+            return null;
+
         byte[] bulkStr = new byte[len];
 
         buf.get(bulkStr, 0, len);
 
-        if (buf.get() != CR || buf.get() != LF)
-            throw new IgniteCheckedException("Invalid request syntax!");
+        if (buf.remaining() < 2)
+            return null;
+
+        byte b0 = buf.get();
+        byte b1 = buf.get();
+
+        if (b0 != CR || b1 != LF)
+            throw new IgniteCheckedException("Invalid request syntax[len=" + len + ']');
 
         return new String(bulkStr);
     }
@@ -118,15 +138,25 @@ public class GridRedisProtocolParser {
      * @param buf Buffer.
      * @return Count of elements.
      */
-    private static int elCnt(ByteBuffer buf) throws IgniteCheckedException {
+    public static int readInt(ByteBuffer buf) throws IgniteCheckedException {
+        if (!buf.hasRemaining())
+            return ERROR_INT;
+
         byte[] arrLen = new byte[9];
 
         int idx = 0;
         byte b = buf.get();
+
         while (b != CR) {
+            if (!buf.hasRemaining())
+                return ERROR_INT;
+
             arrLen[idx++] = b;
             b = buf.get();
         }
+
+        if (!buf.hasRemaining())
+            return ERROR_INT;
 
         if (buf.get() != LF)
             throw new IgniteCheckedException("Invalid request syntax!");
@@ -286,6 +316,44 @@ public class GridRedisProtocolParser {
      */
     public static ByteBuffer toArray(Map<Object, Object> vals) {
         return toArray(vals.values());
+    }
+
+    /**
+     * Converts a resultant map response to an array,
+     * the order of elements in the resulting array is defined by the order of elements in the {@code origin} collection.
+     *
+     * @param vals Map.
+     * @param origin List that defines the order of the resulting array.
+     * @return Array response.
+     */
+    public static ByteBuffer toOrderedArray(Map<Object, Object> vals, List<?> origin) {
+        assert vals != null : "The resulting map is null.";
+        assert origin != null : "The origin list is null.";
+
+        int capacity = 0;
+
+        ArrayList<ByteBuffer> res = new ArrayList<>();
+        for (Object o : origin) {
+            Object val = vals.get(o);
+
+            if (val != null) {
+                ByteBuffer b = toBulkString(val);
+                res.add(b);
+                capacity += b.limit();
+            }
+        }
+
+        byte[] arrSize = String.valueOf(res.size()).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
+        buf.put(ARRAY);
+        buf.put(arrSize);
+        buf.put(CRLF);
+        res.forEach(o -> buf.put(o));
+
+        buf.flip();
+
+        return buf;
     }
 
     /**

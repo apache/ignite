@@ -176,6 +176,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /**
+     * @param nodeId Node ID.
      * @return {@code True} if this message contains metrics.
      */
     public boolean hasMetrics(UUID nodeId) {
@@ -215,11 +216,6 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean highPriority() {
         return true;
     }
 

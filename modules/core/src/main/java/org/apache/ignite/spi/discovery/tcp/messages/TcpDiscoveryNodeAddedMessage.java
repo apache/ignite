@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractTraceableMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -79,8 +79,8 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
         TcpDiscoveryNode node,
         DiscoveryDataPacket dataPacket,
-        long gridStartTime)
-    {
+        long gridStartTime
+    ) {
         super(creatorNodeId);
 
         assert node != null;
@@ -225,6 +225,15 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      */
     public void clearDiscoveryData() {
         dataPacket = null;
+    }
+
+    /**
+     * Clears unmarshalled discovery data to minimize message size.
+     * These data are used only on "collect" stage and are not part of persistent state.
+     */
+    public void clearUnmarshalledDiscoveryData() {
+        if (dataPacket != null)
+            dataPacket.clearUnmarshalledJoiningNodeData();
     }
 
     /**

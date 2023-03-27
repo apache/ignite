@@ -26,11 +26,10 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 /**
  * TCP discovery spi test.
  */
-@SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
 public class TcpDiscoverySpiSelfTest extends AbstractDiscoverySelfTest<TcpDiscoverySpi> {
     /** */
-    private TcpDiscoveryIpFinder ipFinder =  new TcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected DiscoverySpi getSpi(int idx) {

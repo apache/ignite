@@ -124,6 +124,9 @@ namespace ignite
         /** Binary error. */
         static const int IGNITE_ERR_BINARY = 1002;
 
+        /** Standard library exception. */
+        static const int IGNITE_ERR_STD = 1003;
+
         /** Generic %Ignite error. */
         static const int IGNITE_ERR_GENERIC = 2000;
 
@@ -198,6 +201,19 @@ namespace ignite
 
         /** Future state error. */
         static const int IGNITE_ERR_FUTURE_STATE = 2024;
+
+        /** Networking error. */
+        static const int IGNITE_ERR_NETWORK_FAILURE = 2025;
+
+        /** SSL/TLS error. */
+        static const int IGNITE_ERR_SECURE_CONNECTION_FAILURE = 2026;
+
+        /** Transaction already started by current thread. */
+        static const int IGNITE_ERR_TX_THIS_THREAD = 2027;
+
+        /** Generic transaction error. */
+        static const int IGNITE_ERR_TX = 2028;
+        
         
         /** Unknown error. */
         static const int IGNITE_ERR_UNKNOWN = -1;

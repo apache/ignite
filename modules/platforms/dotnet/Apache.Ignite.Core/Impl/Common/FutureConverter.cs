@@ -35,18 +35,21 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Converting function. */
         private readonly Func<BinaryReader, T> _func;
 
+        /** Register same java type flag. */
+        private readonly bool _registerSameJavaType;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="func">Converting function.</param>
-        public FutureConverter(Marshaller marsh, bool keepBinary,
-            Func<BinaryReader, T> func = null)
+        public FutureConverter(Marshaller marsh, bool keepBinary, Func<BinaryReader, T> func = null)
         {
             _marsh = marsh;
             _keepBinary = keepBinary;
             _func = func ?? (reader => reader == null ? default(T) : reader.ReadObject<T>());
+            _registerSameJavaType = marsh.RegisterSameJavaType;
         }
 
         /// <summary>
@@ -54,9 +57,20 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public T Convert(IBinaryStream stream)
         {
-            var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepBinary);
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
 
-            return _func(reader);
+            Marshaller.RegisterSameJavaTypeTl.Value = _registerSameJavaType;
+
+            try
+            {
+                var reader = stream == null ? null : _marsh.StartUnmarshal(stream, _keepBinary);
+
+                return _func(reader);
+            }
+            finally
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+            }
         }
     }
 }

@@ -17,9 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
-
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,24 +44,11 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
-
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -58,14 +56,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries execute in primary node tests.
  */
-public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstractTest
-    implements Serializable {
-
+public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstractTest implements Serializable {
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -99,16 +94,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testLocalCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, LOCAL);
-
-        doTestWithoutEventsEntries(ccfg);
-        doTestWithEventsEntries(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, REPLICATED);
 
@@ -119,6 +105,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, PARTITIONED);
 
@@ -129,16 +116,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testTransactionLocalCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, LOCAL);
-
-        doTestWithoutEventsEntries(ccfg);
-        doTestWithEventsEntries(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testTransactionReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, REPLICATED);
 
@@ -149,8 +127,31 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, PARTITIONED);
+
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTransactionReplicatedCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, REPLICATED);
+
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccTransactionPartitionedCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, PARTITIONED);
 
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
@@ -186,7 +187,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
                         }
                     }));
 
-                executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
+                executeQuery(cache, qry, ccfg.getAtomicityMode() != ATOMIC);
             }
 
             assertTrue(noOneListen.get());
@@ -197,6 +198,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
         }
     }
 
+    /** */
     private void executeQuery(IgniteCache<Integer, String> cache, ContinuousQuery<Integer, String> qry,
         boolean isTransactional) {
         try (QueryCursor<Cache.Entry<Integer, String>> qryCursor = cache.query(qry)) {
@@ -284,7 +286,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             ));
 
             // Execute query.
-            executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
+            executeQuery(cache, qry, ccfg.getAtomicityMode() != ATOMIC);
 
             assertTrue(latch.await(LATCH_TIMEOUT, MILLISECONDS));
             assertEquals(16, cnt.get());
@@ -293,10 +295,5 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             ignite(0).destroyCache(ccfg.getName());
         }
 
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 }

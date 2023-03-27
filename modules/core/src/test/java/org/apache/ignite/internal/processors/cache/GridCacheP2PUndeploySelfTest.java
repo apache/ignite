@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,14 +30,12 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,15 +47,10 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Test p2p value. */
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";
-
-    /** */
-    private static final long OFFHEAP = 0;// 4 * 1024 * 1024;
-
-    /** */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private final AtomicInteger idxGen = new AtomicInteger();
@@ -73,12 +66,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNetworkTimeout(2000);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         cfg.setMarshaller(new JdkMarshaller());
 
@@ -122,6 +109,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PReplicated() throws Exception {
         offheap = false;
 
@@ -129,6 +117,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PReplicated() throws Exception {
         offheap = true;
 
@@ -136,6 +125,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PPartitioned() throws Exception {
         offheap = false;
 
@@ -143,6 +133,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffheapP2PPartitioned() throws Exception {
         offheap = true;
 
@@ -150,6 +141,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
         offheap = false;
@@ -158,6 +150,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PReplicatedNoPreloading() throws Exception {
         mode = NONE;
         offheap = true;
@@ -166,6 +159,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSwapP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
         offheap = false;
@@ -174,6 +168,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOffHeapP2PPartitionedNoPreloading() throws Exception {
         mode = NONE;
         offheap = true;
@@ -275,17 +270,6 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param grid Kernal.
-     * @return Name for swap space.
-     */
-    private String swapSpaceName(String cacheName, IgniteKernal grid) {
-        GridCacheContext<Object, Object> cctx = grid.internalCache(cacheName).context();
-
-        return CU.swapSpaceName(cctx.isNear() ? cctx.near().dht().context() : cctx);
     }
 
     /**

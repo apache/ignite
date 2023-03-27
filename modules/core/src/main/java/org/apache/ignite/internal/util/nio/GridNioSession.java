@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -144,6 +145,11 @@ public interface GridNioSession {
      * @return {@code True} if this connection was initiated from remote node.
      */
     public boolean accepted();
+
+    /**
+     * @return Client SSL certificates
+     */
+    @Nullable public Certificate[] certificates();
 
     /**
      * Resumes session reads.

@@ -45,9 +45,9 @@ namespace ignite
              * copy-constructable and assignable. Also BinaryType class
              * template should be specialized for both types.
              *
-             * This class implemented as a reference to an implementation so copying
+             * This class is implemented as a reference to an implementation so copying
              * of this class instance will only create another reference to the same
-             * underlying object. Underlying object released automatically once all
+             * underlying object. Underlying object will be released automatically once all
              * the instances are destructed.
              */
             template<typename K, typename V>
@@ -158,19 +158,14 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0) {
-                        impl::Out2Operation<K, V> outOp;
+                        K key;
+                        V val;
+
+                        impl::Out2Operation<K, V> outOp(key, val);
 
                         impl0->GetNext(outOp, err);
 
-                        if (err.GetCode() == IgniteError::IGNITE_SUCCESS) 
-                        {
-                            K& key = outOp.Get1();
-                            V& val = outOp.Get2();
-
-                            return CacheEntry<K, V>(key, val);
-                        }
-                        else 
-                            return CacheEntry<K, V>();
+                        return CacheEntry<K, V>(key, val);
                     }
                     else
                     {

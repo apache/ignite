@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -47,8 +46,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache atomic reference implementation.
  */
-public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicReferenceEx<T>,
-    IgniteChangeGlobalStateSupport, Externalizable {
+public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructureProxy<GridCacheAtomicReferenceValue<T>>
+    implements GridCacheAtomicReferenceEx<T>, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,24 +58,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                 return new IgniteBiTuple<>();
             }
         };
-
-    /** Atomic reference name. */
-    private String name;
-
-    /** Status.*/
-    private volatile boolean rmvd;
-
-    /** Check removed flag. */
-    private boolean rmvCheck;
-
-    /** Atomic reference key. */
-    private GridCacheInternalKey key;
-
-    /** Atomic reference projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
-
-    /** Cache context. */
-    private GridCacheContext ctx;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -91,21 +72,11 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param name Atomic reference name.
      * @param key Atomic reference key.
      * @param atomicView Atomic projection.
-     * @param ctx Cache context.
      */
     public GridCacheAtomicReferenceImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
-        GridCacheContext ctx) {
-        assert key != null;
-        assert atomicView != null;
-        assert ctx != null;
-        assert name != null;
-
-        this.ctx = ctx;
-        this.key = key;
-        this.atomicView = atomicView;
-        this.name = name;
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView) {
+        super(name, key, atomicView);
     }
 
     /** {@inheritDoc} */
@@ -118,15 +89,15 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         checkRemoved();
 
         try {
-            GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
+            GridCacheAtomicReferenceValue<T> ref = cacheView.get(key);
 
             if (ref == null)
-                throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
+                throw new IgniteException("Failed to find atomic reference with given name: " + name);
 
             return ref.get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -135,18 +106,23 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         checkRemoved();
 
         try {
-            if (ctx.dataStructures().knownType(val))
-                atomicView.invoke(key, new ReferenceSetEntryProcessor<>(val));
+            if (ctx.dataStructures().knownType(val)) {
+                EntryProcessorResult res = cacheView.invoke(key, new ReferenceSetEntryProcessor<>(val));
+
+                assert res != null;
+
+                res.get();
+            }
             else {
                 CU.retryTopologySafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheAtomicReferenceValue<T> ref = cacheView.get(key);
 
                             if (ref == null)
                                 throw new IgniteException("Failed to find atomic reference with given name: " + name);
 
-                            atomicView.put(key, new GridCacheAtomicReferenceValue<>(val));
+                            cacheView.put(key, new GridCacheAtomicReferenceValue<>(val));
 
                             tx.commit();
                         }
@@ -156,11 +132,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -171,7 +144,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         try {
             if (ctx.dataStructures().knownType(expVal) && ctx.dataStructures().knownType(newVal)) {
                 EntryProcessorResult<Boolean> res =
-                    atomicView.invoke(key, new ReferenceCompareAndSetEntryProcessor<>(expVal, newVal));
+                    cacheView.invoke(key, new ReferenceCompareAndSetEntryProcessor<>(expVal, newVal));
 
                 assert res != null && res.get() != null : res;
 
@@ -180,8 +153,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             else {
                 return CU.retryTopologySafe(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheAtomicReferenceValue<T> ref = cacheView.get(key);
 
                             if (ref == null)
                                 throw new IgniteException("Failed to find atomic reference with given name: " + name);
@@ -191,7 +164,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                             if (!F.eq(expVal, curVal))
                                 return false;
                             else {
-                                atomicView.put(key, new GridCacheAtomicReferenceValue<>(newVal));
+                                cacheView.put(key, new GridCacheAtomicReferenceValue<>(newVal));
 
                                 tx.commit();
 
@@ -202,11 +175,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -223,7 +193,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         try {
             if (ctx.dataStructures().knownType(expVal) && ctx.dataStructures().knownType(newVal)) {
                 EntryProcessorResult<T> res =
-                    atomicView.invoke(key, new ReferenceCompareAndSetAndGetEntryProcessor<T>(expVal, newVal));
+                    cacheView.invoke(key, new ReferenceCompareAndSetAndGetEntryProcessor<T>(expVal, newVal));
 
                 assert res != null;
 
@@ -232,8 +202,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             else {
                 return CU.retryTopologySafe(new Callable<T>() {
                     @Override public T call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheAtomicReferenceValue<T> ref = cacheView.get(key);
 
                             if (ref == null)
                                 throw new IgniteException("Failed to find atomic reference with given name: " + name);
@@ -243,7 +213,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                             if (!F.eq(expVal, curVal))
                                 return curVal;
                             else {
-                                atomicView.put(key, new GridCacheAtomicReferenceValue<>(newVal));
+                                cacheView.put(key, new GridCacheAtomicReferenceValue<>(newVal));
 
                                 tx.commit();
 
@@ -254,32 +224,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                 });
             }
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
+        catch (EntryProcessorException | IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onRemoved() {
-        return rmvd = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void needCheckNotRemoved() {
-        rmvCheck = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheInternalKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return rmvd;
     }
 
     /** {@inheritDoc} */
@@ -288,48 +235,10 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             return;
 
         try {
-            ctx.kernalContext().dataStructures().removeAtomicReference(name);
+            ctx.kernalContext().dataStructures().removeAtomicReference(name, ctx.group().name());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.atomicView = kctx.cache().atomicsCache();
-        this.ctx = atomicView.context();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
-     * Check removed status.
-     *
-     * @throws IllegalStateException If removed.
-     */
-    private void checkRemoved() throws IllegalStateException {
-        if (rmvd)
-            throw removedError();
-
-        if (rmvCheck) {
-            try {
-                rmvd = atomicView.get(key) == null;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            rmvCheck = false;
-
-            if (rmvd) {
-                ctx.kernalContext().dataStructures().onRemoved(key, this);
-
-                throw removedError();
-            }
         }
     }
 
@@ -360,12 +269,11 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @return Reconstructed object.
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
-    @SuppressWarnings("unchecked")
     private Object readResolve() throws ObjectStreamException {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().atomicReference(t.get2(), null, false);
+            return t.get1().dataStructures().atomicReference(t.get2(), null, null, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

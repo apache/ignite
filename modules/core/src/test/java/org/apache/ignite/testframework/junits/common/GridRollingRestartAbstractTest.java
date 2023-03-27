@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testframework.junits.common;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,16 +28,13 @@ import org.apache.ignite.testframework.assertions.AlwaysAssertion;
 import org.apache.ignite.testframework.assertions.Assertion;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 /**
  * Base class for tests which use a {@link RollingRestartThread} to stop and start
  * remote grid JVMs for failover testing.
  */
 public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractTest {
     /** Thread that shuts down and restarts Grid nodes for this test. */
-    protected RollingRestartThread rollingRestartThread;
+    protected static volatile RollingRestartThread rollingRestartThread;
 
     /** Default predicate used to determine if a Grid node should be restarted. */
     protected final IgnitePredicate<Ignite> dfltRestartCheck = new IgnitePredicate<Ignite>() {
@@ -122,13 +121,8 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-
         rollingRestartThread.shutdown();
     }
-
 
     /**
      * Thread that performs a "rolling restart" of a set of Ignite grid processes.
@@ -305,7 +299,7 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
             assert remote instanceof IgniteProcessProxy : remote;
 
-            IgniteProcessProxy proc = (IgniteProcessProxy) remote;
+            IgniteProcessProxy proc = (IgniteProcessProxy)remote;
 
             int pid = proc.getProcess().getPid();
 

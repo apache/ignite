@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,19 +27,15 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
 /**
@@ -50,9 +44,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Path to jetty config configured with SSL. */
     private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Host. */
     private static final String HOST = "127.0.0.1";
@@ -69,9 +60,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
-    /** Name of node local cache. */
-    private static final String LOCAL_CACHE = "local";
-
     /** JSON to java mapper. */
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
@@ -84,8 +72,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-
         System.clearProperty(IGNITE_JETTY_PORT);
     }
 
@@ -106,21 +92,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cLoc.setName(LOCAL_CACHE);
-
-        cLoc.setCacheMode(CacheMode.LOCAL);
-
-        cLoc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        cfg.setCacheConfiguration(defaultCacheConfiguration(), cLoc);
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         return cfg;
     }
@@ -185,11 +157,12 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Json format string in cache should not transform to Json object on get request.
      */
+    @Test
     public void testSkipString2JsonTransformation() throws Exception {
         String val = "{\"v\":\"my Value\",\"t\":1422559650154}";
 
         // Put to cache JSON format string value.
-        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", LOCAL_CACHE,
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", DEFAULT_CACHE_NAME,
             "key", "a", "val", URLEncoder.encode(val, CHARSET)));
 
         JsonNode res = jsonResponse(ret);
@@ -197,7 +170,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         assertEquals("Incorrect put response", true, res.asBoolean());
 
         // Escape '\' symbols disappear from response string on transformation to JSON object.
-        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", LOCAL_CACHE, "key", "a"));
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", DEFAULT_CACHE_NAME, "key", "a"));
 
         res = jsonResponse(ret);
 

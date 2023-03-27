@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "sql_test_suite_fixture.h"
@@ -54,7 +50,7 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
     testCache.Put(1, in1);
     testCache.Put(2, in2);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE guidField = {guid '04cc382a-0b82-f520-08d0-07a0620c0004'}", in2.i32Field);
 }
 
@@ -128,7 +124,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 
     const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -157,11 +153,59 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
     BOOST_REQUIRE_EQUAL_COLLECTIONS(out.i8ArrayField.begin(), out.i8ArrayField.end(), paramData.begin(), paramData.end());
 }
 
+BOOST_AUTO_TEST_CASE(TestStringParamNullLen)
+{
+    SQLRETURN ret;
+
+    TestType in;
+    in.i8Field = 45;
+    in.strField = "Lorem Ipsum";
+
+    testCache.Put(1, in);
+
+    SQLLEN colLen = 0;
+    SQLCHAR colData = 0;
+
+    ret = SQLBindCol(stmt, 1, SQL_C_TINYINT, &colData, sizeof(colData), &colLen);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i8Field FROM TestType WHERE strField = ?";
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    std::vector<SQLCHAR> paramData(in.strField.begin(), in.strField.end());
+    SQLLEN paramLen = static_cast<SQLLEN>(paramData.size());
+
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,
+       paramData.size(), 0, &paramData[0], paramLen, &paramLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_REQUIRE_EQUAL(colData, in.i8Field);
+    BOOST_REQUIRE_EQUAL(colLen, sizeof(colData));
+
+    ret = SQLFetch(stmt);
+    BOOST_REQUIRE(ret == SQL_NO_DATA);
+}
+
 BOOST_AUTO_TEST_CASE(TestByteParamInsert)
 {
     SQLRETURN ret;
 
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -197,7 +241,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE timestampField = '2017-01-13 19:54:01.987654321'", in1.i32Field);
 
     CheckSingleResult<Timestamp>(
@@ -259,7 +303,7 @@ BOOST_AUTO_TEST_CASE(TestTimeSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
+    CheckSingleResult<SQLINTEGER>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
 
     CheckSingleResult<Time>("SELECT timeField FROM TestType WHERE i32Field = 1", in1.timeField);
 }
@@ -281,7 +325,10 @@ BOOST_AUTO_TEST_CASE(TestTimeInsert)
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-    SQL_TIME_STRUCT data = { 0 };
+    SQL_TIME_STRUCT data;
+
+    std::memset(&data, 0, sizeof(data));
+
     data.hour = 19;
     data.minute = 54;
     data.second = 1;
@@ -303,6 +350,130 @@ BOOST_AUTO_TEST_CASE(TestTimeInsert)
     TestType out = testCache.Get(key);
 
     BOOST_REQUIRE_EQUAL(out.timeField.GetSeconds(), expected.GetSeconds());
+}
+
+void FetchAndCheckDate(SQLHSTMT stmt, const std::string& req, SQLSMALLINT dataType)
+{
+    std::vector<SQLCHAR> req0(req.begin(), req.end());
+    req0.push_back(0);
+
+    SQLExecDirect(stmt, &req0[0], SQL_NTS);
+
+    SQL_DATE_STRUCT res;
+
+    memset(&res, 0, sizeof(res));
+
+    SQLLEN resLen = 0;
+    SQLRETURN ret = SQLBindCol(stmt, 1, dataType, &res, 0, &resLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(res.day, 25);
+    BOOST_CHECK_EQUAL(res.month, 10);
+    BOOST_CHECK_EQUAL(res.year, 2020);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchLiteralDate)
+{
+    FetchAndCheckDate(stmt, "select DATE '2020-10-25'", SQL_C_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchLiteralDateLegacy)
+{
+    FetchAndCheckDate(stmt, "select DATE '2020-10-25'", SQL_C_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchFieldDateAsDate)
+{
+    TestType val1;
+    val1.dateField = common::MakeDateGmt(2020, 10, 25);
+
+    testCache.Put(1, val1);
+
+    FetchAndCheckDate(stmt, "select CAST (dateField as DATE) from TestType", SQL_C_TYPE_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchFieldDateAsDateLegacy)
+{
+    TestType val1;
+    val1.dateField = common::MakeDateGmt(2020, 10, 25);
+
+    testCache.Put(1, val1);
+
+    FetchAndCheckDate(stmt, "select CAST (dateField as DATE) from TestType", SQL_C_DATE);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchFieldDateAsIs)
+{
+    TestType val1;
+    val1.dateField = common::MakeDateGmt(2020, 10, 25);
+
+    testCache.Put(1, val1);
+
+    FetchAndCheckDate(stmt, "select dateField from TestType", SQL_C_TYPE_DATE);
+}
+
+void FetchAndCheckTime(SQLHSTMT stmt, const std::string& req, SQLSMALLINT dataType)
+{
+    std::vector<SQLCHAR> req0(req.begin(), req.end());
+    req0.push_back(0);
+
+    SQLExecDirect(stmt, &req0[0], SQL_NTS);
+
+    SQL_TIME_STRUCT res;
+
+    memset(&res, 0, sizeof(res));
+
+    SQLLEN resLen = 0;
+    SQLRETURN ret = SQLBindCol(stmt, 1, dataType, &res, 0, &resLen);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(res.hour,   12);
+    BOOST_CHECK_EQUAL(res.minute, 42);
+    BOOST_CHECK_EQUAL(res.second, 13);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchLiteralTime)
+{
+    FetchAndCheckTime(stmt, "select TIME '12:42:13'", SQL_C_TYPE_TIME);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchLiteralTimeLegacy)
+{
+    FetchAndCheckTime(stmt, "select TIME '12:42:13'", SQL_C_TYPE_TIME);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchFieldTimeAsIs)
+{
+    TestType val1;
+    val1.timeField = common::MakeTimeGmt(12, 42, 13);
+
+    testCache.Put(1, val1);
+
+    FetchAndCheckTime(stmt, "select timeField from TestType", SQL_C_TYPE_TIME);
+}
+
+BOOST_AUTO_TEST_CASE(TestFetchFieldTimeAsIsLegacy)
+{
+    TestType val1;
+    val1.timeField = common::MakeTimeGmt(12, 42, 13);
+
+    testCache.Put(1, val1);
+
+    FetchAndCheckTime(stmt, "select timeField from TestType", SQL_C_TIME);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

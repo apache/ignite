@@ -26,13 +26,13 @@ namespace ignite
     {
         namespace binary
         {
-            void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
+            IGNITE_IMPORT_EXPORT void BinaryFieldMeta::Write(ignite::binary::BinaryRawWriter& writer) const
             {
                 writer.WriteInt32(typeId);
                 writer.WriteInt32(fieldId);
             }
 
-            void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
+            IGNITE_IMPORT_EXPORT void BinaryFieldMeta::Read(ignite::binary::BinaryRawReader& reader)
             {
                 typeId = reader.ReadInt32();
                 fieldId = reader.ReadInt32();

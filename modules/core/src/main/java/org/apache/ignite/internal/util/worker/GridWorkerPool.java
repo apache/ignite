@@ -59,7 +59,7 @@ public class GridWorkerPool {
      * @param w Runnable task.
      * @throws IgniteCheckedException Thrown if any exception occurred.
      */
-    @SuppressWarnings({"CatchGenericClass", "ProhibitedExceptionThrown"})
+    @SuppressWarnings({"ProhibitedExceptionThrown"})
     public void execute(final GridWorker w) throws IgniteCheckedException {
         workers.add(w);
 

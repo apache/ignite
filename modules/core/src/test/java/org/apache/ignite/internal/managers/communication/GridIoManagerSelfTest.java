@@ -37,10 +37,12 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.spy;
@@ -87,6 +89,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendIfOneOfNodesIsLocalAndTopicIsEnum() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -101,13 +105,15 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendUserMessageThinVersionIfOneOfNodesIsLocal() throws Exception {
         Object msg = new Object();
 
         GridIoManager ioMgr = spy(new TestGridIoManager(ctx));
 
         try {
-            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg);
+            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, null, false, 0, false);
         }
         catch (IgniteCheckedException ignored) {
             // No-op. We are using mocks so real sending is impossible.
@@ -125,6 +131,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendUserMessageUnorderedThickVersionIfOneOfNodesIsLocal() throws Exception {
         Object msg = new Object();
 
@@ -149,6 +157,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendUserMessageOrderedThickVersionIfOneOfNodesIsLocal() throws Exception {
         Object msg = new Object();
 
@@ -191,7 +201,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /**
      * Mockito argument matcher to compare collections produced by {@code F.view()} methods.
      */
-    private static class IsEqualCollection extends ArgumentMatcher<Collection<? extends ClusterNode>> {
+    private static class IsEqualCollection implements ArgumentMatcher<Collection<? extends ClusterNode>> {
         /** Expected collection. */
         private final Collection<? extends ClusterNode> expCol;
 
@@ -211,8 +221,8 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
          * @param colToCheck Collection to be matched against the expected one.
          * @return True if collections matches.
          */
-        @Override public boolean matches(Object colToCheck) {
-            return CollectionUtils.isEqualCollection(expCol, (Collection)colToCheck);
+        @Override public boolean matches(Collection<? extends ClusterNode> colToCheck) {
+            return CollectionUtils.isEqualCollection(expCol, colToCheck);
         }
     }
 

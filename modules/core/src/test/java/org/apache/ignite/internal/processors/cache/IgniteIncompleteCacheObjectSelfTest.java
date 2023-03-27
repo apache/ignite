@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
+import org.junit.Test;
 
 /**
  * Simple test for arbitrary CacheObject reading/writing.
@@ -36,6 +36,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncompleteObject() throws Exception {
         final byte[] data = new byte[1024];
 
@@ -46,7 +47,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         int off = 0;
         int len = 3;
 
-        final TestCacheObject obj = new TestCacheObject((byte) 1);
+        final TestCacheObject obj = new TestCacheObject((byte)1);
 
         // Write part of the cache object and cut on header (3 bytes instead of 5)
         assert CacheObjectAdapter.putValue(obj.cacheObjectType(), dataBuf, off, len, data, 0);
@@ -102,12 +103,17 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(final CacheObjectContext ctx, final boolean cpy) {
+        @Nullable @Override public <T> T value(final CacheObjectValueContext ctx, final boolean cpy) {
+            return value(ctx, cpy, null);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T value(final CacheObjectValueContext ctx, final boolean cpy, ClassLoader ldr) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public byte[] valueBytes(final CacheObjectValueContext ctx) throws IgniteCheckedException {
             return new byte[0];
         }
 
@@ -148,13 +154,13 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(final CacheObjectContext ctx,
-            final ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(final CacheObjectValueContext ctx, final ClassLoader ldr)
+            throws IgniteCheckedException {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(final CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(final CacheObjectValueContext ctx) throws IgniteCheckedException {
             // No-op
         }
 

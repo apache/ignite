@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
+import org.junit.Test;
 
 /**
  * Stopped node when client operations are executing.
@@ -30,6 +31,7 @@ public class IgniteCacheAtomicStopBusySelfTest extends IgniteCacheAbstractStopBu
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPut() throws Exception {
         bannedMsg.set(GridNearAtomicSingleUpdateRequest.class);
 
@@ -37,6 +39,7 @@ public class IgniteCacheAtomicStopBusySelfTest extends IgniteCacheAbstractStopBu
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutBatch() throws Exception {
         bannedMsg.set(GridNearAtomicSingleUpdateRequest.class);
 
@@ -44,6 +47,7 @@ public class IgniteCacheAtomicStopBusySelfTest extends IgniteCacheAbstractStopBu
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPutAsync() throws Exception {
         bannedMsg.set(GridNearAtomicSingleUpdateRequest.class);
 
@@ -51,6 +55,7 @@ public class IgniteCacheAtomicStopBusySelfTest extends IgniteCacheAbstractStopBu
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testRemove() throws Exception {
         bannedMsg.set(GridNearAtomicSingleUpdateRequest.class);
 

@@ -21,10 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -133,15 +134,18 @@ public class TxDeadlock {
             IgniteTxKey txKey = e.getKey();
 
             try {
-                CacheObjectContext objCtx = ctx.cacheObjectContext(txKey.cacheId());
+                GridCacheContext cctx = ctx.cacheContext(txKey.cacheId());
 
-                Object val = txKey.key().value(objCtx, true);
+                Object val = txKey.key().value(cctx.cacheObjectContext(), true);
 
                 sb.append(e.getValue())
-                    .append(" [key=")
-                    .append(val)
-                    .append(", cache=")
-                    .append(objCtx.cacheName())
+                    .append(" [");
+                if (S.includeSensitive())
+                    sb.append("key=")
+                        .append(val)
+                        .append(", ");
+                sb.append("cache=")
+                    .append(cctx.name())
                     .append("]\n");
             }
             catch (Exception ex) {

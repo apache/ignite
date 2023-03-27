@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
@@ -49,11 +50,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Local flag. */
         private readonly bool _isLocal;
 
-        /** Daemon flag. */
-        private readonly bool _isDaemon;
-
         /** Client flag. */
         private readonly bool _isClient;
+
+        /** Consistent id. */
+        private readonly object _consistentId;
+
+        /** Ignite version. */
+        private readonly IgniteProductVersion _version;
 
         /** Metrics. */
         private volatile ClusterMetricsImpl _metrics;
@@ -73,13 +77,14 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _id = id.Value;
 
-            _attrs = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
+            _attrs = ReadAttributes(reader);
             _addrs = reader.ReadCollectionAsList<string>().AsReadOnly();
             _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
             _isLocal = reader.ReadBoolean();
-            _isDaemon = reader.ReadBoolean();
             _isClient = reader.ReadBoolean();
+            _consistentId = reader.ReadObject<object>();
+            _version = new IgniteProductVersion(reader);
 
             _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
@@ -119,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IDictionary<string, object> GetAttributes()
         {
-            return _attrs.AsReadOnly();
+            return _attrs;
         }
 
         /** <inheritDoc /> */
@@ -147,12 +152,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public bool IsDaemon
+        public IgniteProductVersion Version
         {
-            get { return _isDaemon; }
+            get { return _version; }
         }
 
-        /** <inheritDoc /> */
         public IClusterMetrics GetMetrics()
         {
             var ignite = (Ignite)_igniteRef.Target;
@@ -178,6 +182,18 @@ namespace Apache.Ignite.Core.Impl.Cluster
             }
 
             return oldMetrics;
+        }
+
+        /** <inheritDoc /> */
+        public object ConsistentId
+        {
+            get { return _consistentId; }
+        }
+
+        /** <inheritDoc /> */
+        public IDictionary<string, object> Attributes
+        {
+            get { return _attrs; }
         }
 
         /** <inheritDoc /> */
@@ -217,6 +233,24 @@ namespace Apache.Ignite.Core.Impl.Cluster
         internal void Init(Ignite grid)
         {
             _igniteRef = new WeakReference(grid);
+        }
+
+        /// <summary>
+        /// Reads the attributes.
+        /// </summary>
+        internal static IDictionary<string, object> ReadAttributes(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var count = reader.ReadInt();
+            var res = new Dictionary<string, object>(count);
+
+            for (var i = 0; i < count; i++)
+            {
+                res[reader.ReadString()] = reader.ReadObject<object>();
+            }
+
+            return res.AsReadOnly();
         }
     }
 }

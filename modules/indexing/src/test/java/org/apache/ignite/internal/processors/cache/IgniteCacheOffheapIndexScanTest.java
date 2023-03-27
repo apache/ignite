@@ -26,20 +26,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import org.junit.Test;
 
 /**
  * Based scanCount with offheap index issue.
  */
 public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static IgniteCache<Integer, Object> cache;
 
@@ -47,18 +40,9 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-
-        cacheCfg.setCacheMode(LOCAL);
-        cacheCfg.setIndexedTypes(
-            Integer.class, Person.class
-        );
+        cacheCfg.setIndexedTypes(Integer.class, Person.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -74,21 +58,24 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        super.afterTestsStopped();
+
+        cache = null;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPlan() throws Exception {
-        for (int i = 0 ; i < 1000; i++)
+        for (int i = 0; i < 1000; i++)
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i % 100));
 
         final AtomicBoolean end = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                while(!end.get())
+                while (!end.get())
                     cache.query(new SqlFieldsQuery("select _val from Person")).getAll();
 
                 return null;
@@ -99,7 +86,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
             String plan = (String)cache.query(new SqlFieldsQuery(
                 "explain analyze select count(*) from Person where salary = 50")).getAll().get(0).get(0);
 
-            assertTrue(plan, plan.contains("scanCount: 11 "));
+            assertTrue(plan, plan.contains("PERSON_SALARY_IDX: SALARY = 50.0"));
 
             Thread.sleep(100);
         }

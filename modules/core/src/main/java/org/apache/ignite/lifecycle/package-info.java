@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains lifecycle-related classes.
  */
+
 package org.apache.ignite.lifecycle;

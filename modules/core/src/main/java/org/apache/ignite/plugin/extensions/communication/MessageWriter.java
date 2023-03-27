@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -173,6 +174,16 @@ public interface MessageWriter {
     public boolean writeLongArray(String name, long[] val);
 
     /**
+     * Writes {@code long} array.
+     *
+     * @param name Field name.
+     * @param val {@code long} array.
+     * @param len Length.
+     * @return Whether array was fully written.
+     */
+    public boolean writeLongArray(String name, long[] val, int len);
+
+    /**
      * Writes {@code float} array.
      *
      * @param name Field name.
@@ -245,6 +256,15 @@ public interface MessageWriter {
     public boolean writeIgniteUuid(String name, IgniteUuid val);
 
     /**
+     * Writes {@link AffinityTopologyVersion}.
+     *
+     * @param name Field name.
+     * @param val {@link AffinityTopologyVersion}.
+     * @return Whether value was fully written.
+     */
+    public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val);
+
+    /**
      * Writes nested message.
      *
      * @param name Field name.
@@ -259,6 +279,7 @@ public interface MessageWriter {
      * @param name Field name.
      * @param arr Array of objects.
      * @param itemType Array component type.
+     * @param <T> Type of the objects that array contains.
      * @return Whether array was fully written.
      */
     public <T> boolean writeObjectArray(String name, T[] arr, MessageCollectionItemType itemType);
@@ -269,6 +290,7 @@ public interface MessageWriter {
      * @param name Field name.
      * @param col Collection.
      * @param itemType Collection item type.
+     * @param <T> Type of the objects that collection contains.
      * @return Whether value was fully written.
      */
     public <T> boolean writeCollection(String name, Collection<T> col, MessageCollectionItemType itemType);
@@ -280,6 +302,8 @@ public interface MessageWriter {
      * @param map Map.
      * @param keyType Map key type.
      * @param valType Map value type.
+     * @param <K> Initial key types of the map to write.
+     * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
     public <K, V> boolean writeMap(String name, Map<K, V> map, MessageCollectionItemType keyType,

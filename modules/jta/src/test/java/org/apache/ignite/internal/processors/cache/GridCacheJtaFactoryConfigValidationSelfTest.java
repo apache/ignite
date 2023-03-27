@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -53,6 +54,7 @@ public class GridCacheJtaFactoryConfigValidationSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullFactory() throws Exception {
         factory = new NullTxFactory();
 
@@ -70,6 +72,7 @@ public class GridCacheJtaFactoryConfigValidationSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWrongTypeFactory() throws Exception {
         factory = new IntegerTxFactory();
 
@@ -87,6 +90,7 @@ public class GridCacheJtaFactoryConfigValidationSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExceptionFactory() throws Exception {
         factory = new ExceptionTxFactory();
 

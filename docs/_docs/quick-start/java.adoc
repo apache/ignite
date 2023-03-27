@@ -1,0 +1,171 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite Quick Start Guide for Java
+
+This page explains system requirements for running Ignite, how to install Ignite, start a cluster and run a simple Hello World example.
+
+== Prerequisites
+
+Ignite was officially tested on:
+
+include::includes/prereqs.adoc[]
+
+If you use Java version 11 or later, see <<Running Ignite with Java 11 or later>> for details.
+
+== Installing Ignite
+
+include::includes/install-ignite.adoc[]
+
+
+== Starting a Node
+
+include::includes/starting-node.adoc[]
+
+== Running Your First Application
+
+
+Once the cluster is started, follow the steps below to run a simple HelloWorld example.
+
+=== 1. Add Maven Dependency
+
+
+The easiest way to get started with Ignite in Java is to use Maven dependency management.
+
+Create a new Maven project with your favorite IDE and add the following dependencies in your project’s pom.xml file.
+
+[source,xml,subs="attributes,specialchars"]
+----
+<properties>
+    <ignite.version>{version}</ignite.version>
+</properties>
+
+<dependencies>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-core</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-spring</artifactId>
+        <version>${ignite.version}</version>
+    </dependency>
+</dependencies>
+----
+
+=== 2. HelloWorld.java
+
+
+Here is a sample HelloWord.java file that prints 'Hello World' and some other environment details on all
+the server nodes of the cluster.
+The sample shows how to prepare a cluster configuration with Java APIs, create a sample cache with some data in it, and execute custom Java logic on the server nodes.
+
+[source,java]
+----
+public class HelloWorld {
+    public static void main(String[] args) throws IgniteException {
+        // Preparing IgniteConfiguration using Java APIs
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // The node will be started as a client node.
+        cfg.setClientMode(true);
+
+        // Classes of custom Java logic will be transferred over the wire from this app.
+        cfg.setPeerClassLoadingEnabled(true);
+
+        // Setting up an IP Finder to ensure the client can locate the servers.
+        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
+
+        // Starting the node
+        Ignite ignite = Ignition.start(cfg);
+
+        // Create an IgniteCache and put some values in it.
+        IgniteCache<Integer, String> cache = ignite.getOrCreateCache("myCache");
+        cache.put(1, "Hello");
+        cache.put(2, "World!");
+
+        System.out.println(">> Created the cache and add the values.");
+
+        // Executing custom Java compute task on server nodes.
+        ignite.compute(ignite.cluster().forServers()).broadcast(new RemoteTask());
+
+        System.out.println(">> Compute task is executed, check for output on the server nodes.");
+
+        // Disconnect from the cluster.
+        ignite.close();
+    }
+
+    /**
+     * A compute tasks that prints out a node ID and some details about its OS and JRE.
+     * Plus, the code shows how to access data stored in a cache from the compute task.
+     */
+    private static class RemoteTask implements IgniteRunnable {
+        @IgniteInstanceResource
+        Ignite ignite;
+
+        @Override public void run() {
+            System.out.println(">> Executing the compute task");
+
+            System.out.println(
+                "   Node ID: " + ignite.cluster().localNode().id() + "\n" +
+                "   OS: " + System.getProperty("os.name") +
+                "   JRE: " + System.getProperty("java.runtime.name"));
+
+            IgniteCache<Integer, String> cache = ignite.cache("myCache");
+
+            System.out.println(">> " + cache.get(1) + " " + cache.get(2));
+        }
+    }
+}
+----
+[NOTE]
+====
+Don't forget to add imports for HelloWorld.java. It should be trivial as long as Maven solves all of the dependencies.
+
+Plus, you might need to add these settings to your pom.xml if the IDE keeps using Java compiler from a version earlier than 1.8:
+[source,xml]
+----
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <source>1.8</source>
+                <target>1.8</target>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+----
+====
+
+
+=== 3. Run HelloWorld.java
+
+
+Run HelloWorld.java. You will see 'Hello World!' and other environment details printed on all the server nodes.
+
+
+== Further Examples
+
+include::includes/exampleprojects.adoc[]
+
+== Running Ignite with Java 11 or later
+
+include::includes/java9.adoc[]
+

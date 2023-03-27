@@ -17,73 +17,165 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
-
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
 /**
  * Tests for dynamic schema changes.
  */
 @SuppressWarnings("unchecked")
-public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
     /** Table name. */
     protected static final String TBL_NAME = tableName(ValueClass.class);
 
-    /** Table name 2. */
-    protected static final String TBL_NAME_2 = tableName(ValueClass2.class);
+    /** Escaped table name. */
+    protected static final String TBL_NAME_ESCAPED = typeName(ValueClass.class);
 
     /** Index name 1. */
-    protected static final String IDX_NAME_1 = "idx_1";
+    protected static final String IDX_NAME_1 = "IDX_1";
+
+    /** Index name 1 escaped. */
+    protected static final String IDX_NAME_1_ESCAPED = "idx_1";
 
     /** Index name 2. */
-    protected static final String IDX_NAME_2 = "idx_2";
+    protected static final String IDX_NAME_2 = "IDX_2";
 
-    /** Index name 3. */
-    protected static final String IDX_NAME_3 = "idx_3";
+    /** Index name 2 escaped. */
+    protected static final String IDX_NAME_2_ESCAPED = "idx_2";
+
+    /** Index name 2. */
+    protected static final String IDX_NAME_LOCAL = "IDX_LOC";
 
     /** Key ID field. */
     protected static final String FIELD_KEY = "id";
 
-    /** Field 1. */
-    protected static final String FIELD_NAME_1 = "field1";
-
-    /** Field 1. */
-    protected static final String FIELD_NAME_2 = "field2";
-
-    /** Field 3. */
-    protected static final String FIELD_NAME_3 = "field3";
-
     /** Key alias */
     protected static final String FIELD_KEY_ALIAS = "key";
+
+    /** Field 1. */
+    protected static final String FIELD_NAME_1 = "FIELD1";
+
+    /** Field 1 escaped. */
+    protected static final String FIELD_NAME_1_ESCAPED = "field1";
+
+    /** Field 2. */
+    protected static final String FIELD_NAME_2 = "FIELD2";
+
+    /** Field 2 escaped. */
+    protected static final String FIELD_NAME_2_ESCAPED = "field2";
+
+    /**
+     * Extra index key fields to override default extra index fields in
+     * {@link #indexFields(IgniteCache, String, IgniteBiTuple[])}.
+     */
+    protected static List<IgniteBiTuple<String, Boolean>> extraIdxKeyFields;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        extraIdxKeyFields = null;
+    }
+
+    /**
+     * Create common node configuration.
+     *
+     * @param idx Index.
+     * @return Configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
+
+        cfg.setMarshaller(new BinaryMarshaller());
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(128 * 1024 * 1024));
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        return optimize(cfg);
+    }
+
+    /**
+     * Ensure that SQL exception is thrown.
+     *
+     * @param r Runnable.
+     * @param expCode Error code.
+     */
+    static void assertSqlException(Runnable r, int expCode) {
+        try {
+            try {
+                r.run();
+            }
+            catch (CacheException e) {
+                if (e.getCause() != null)
+                    throw (Exception)e.getCause();
+                else
+                    throw e;
+            }
+        }
+        catch (IgniteSQLException e) {
+            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.statusCode() + ']',
+                expCode, e.statusCode());
+
+            return;
+        }
+        catch (Exception e) {
+            fail("Unexpected exception: " + e);
+        }
+
+        fail(IgniteSQLException.class.getSimpleName() + " is not thrown.");
+    }
 
     /**
      * Get type on the given node for the given cache and table name. Type must exist.
@@ -93,7 +185,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param tblName Table name.
      * @return Type.
      */
-    protected static QueryTypeDescriptorImpl typeExisting(IgniteEx node, String cacheName, String tblName) {
+    static QueryTypeDescriptorImpl typeExisting(IgniteEx node, String cacheName, String tblName) {
         QueryTypeDescriptorImpl res = type(node, cacheName, tblName);
 
         assertNotNull(res);
@@ -140,106 +232,103 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @param tblName Table name.
      * @param idxName Index name.
+     * @param inlineSize Inline size.
      * @param fields Fields.
      */
-    protected static void assertIndex(String cacheName, String tblName, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
-        assertIndex(cacheName, false, tblName, idxName, fields);
-    }
-
-    /**
-     * Assert index state on all nodes.
-     *
-     * @param cacheName Cache name.
-     * @param checkNonAffinityNodes Whether existence of {@link GridQueryIndexDescriptor} must be checked on non
-     *     affinity nodes as well.
-     * @param tblName Table name.
-     * @param idxName Index name.
-     * @param fields Fields.
-     */
-    protected static void assertIndex(String cacheName, boolean checkNonAffinityNodes, String tblName, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
+    static void assertIndex(String cacheName, String tblName, String idxName,
+        int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         for (Ignite node : Ignition.allGrids())
-            assertIndex(node, checkNonAffinityNodes, cacheName, tblName, idxName, fields);
+            assertIndex(node, cacheName, tblName, idxName, inlineSize, fields);
     }
 
     /**
      * Assert index state on particular node.
      *
      * @param node Node.
-     * @param checkNonAffinityNode Whether existence of {@link GridQueryIndexDescriptor} must be checked regardless of
-     * whether this node is affinity node or not.
      * @param cacheName Cache name.
      * @param tblName Table name.
      * @param idxName Index name.
+     * @param inlineSize Inline size.
      * @param fields Fields.
      */
-    protected static void assertIndex(Ignite node, boolean checkNonAffinityNode, String cacheName, String tblName,
-        String idxName, IgniteBiTuple<String, Boolean>... fields) {
-        IgniteEx node0 = (IgniteEx)node;
-
-        assertIndexDescriptor(node0, cacheName, tblName, idxName, fields);
-
-        if (checkNonAffinityNode || affinityNode(node0, cacheName)) {
-            QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
-
-            assertIndex(typeDesc, idxName, fields);
-        }
-    }
-
-    /**
-     * Make sure index exists in cache descriptor.
-     *
-     * @param node Node.
-     * @param cacheName Cache name.
-     * @param tblName Table name.
-     * @param idxName Index name.
-     * @param fields Fields.
-     */
-    protected static void assertIndexDescriptor(IgniteEx node, String cacheName, String tblName, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
+    static void assertIndex(Ignite node, String cacheName, String tblName,
+        String idxName, int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         awaitCompletion();
 
-        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
+        IgniteCache<?, ?> cache = node.cache(cacheName);
 
-        assert desc != null;
+        IgniteEx node0 = (IgniteEx)node;
 
-        for (QueryEntity entity : desc.schema().entities()) {
-            if (F.eq(tblName, QueryUtils.tableName(entity))) {
-                for (QueryIndex idx : entity.getIndexes()) {
-                    if (F.eq(QueryUtils.indexName(entity, idx), idxName)) {
-                        LinkedHashMap<String, Boolean> idxFields = idx.getFields();
+        ArrayList<IgniteBiTuple<String, Boolean>> res = new ArrayList<>();
 
-                        assertEquals(idxFields.size(), fields.length);
-
-                        int i = 0;
-
-                        for (String idxField : idxFields.keySet()) {
-                            assertEquals(idxField, fields[i].get1());
-                            assertEquals(idxFields.get(idxField), fields[i].get2());
-
-                            i++;
-                        }
-
-                        return;
+        try {
+            try (Connection c = connect(node0)) {
+                try (ResultSet rs = c.getMetaData().getIndexInfo(null, cacheName, tblName, false, false)) {
+                    while (rs.next()) {
+                        if (F.eq(idxName, rs.getString("INDEX_NAME")))
+                            res.add(new T2<>(rs.getString("COLUMN_NAME"), F.eq("A", rs.getString("ASC_OR_DESC"))));
                     }
                 }
             }
+
+            assertFalse("Index not found: " + idxName, res.isEmpty());
+
+            assertEquals(indexFields(cache, idxName, fields), res);
+        }
+        catch (SQLException e) {
+            throw new AssertionError(e);
         }
 
-        fail("Index not found [node=" + node.name() + ", cacheName=" + cacheName + ", tlbName=" + tblName +
-            ", idxName=" + idxName + ']');
+        // Also, let's check internal stuff not visible via JDBC - like inline size.
+        QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
+
+        assertInternalIndexParams(typeDesc, idxName, inlineSize);
     }
 
     /**
-     * Assert index state.
+     * Forms full list of index fields. It is assumed that cache has the only QueryEntity.
      *
+     * @param cache Cache with index.
+     * @param idxName Index name.
+     * @param fields Index fields specified in configuration or DDL.
+     */
+    static Collection<IgniteBiTuple<String, Boolean>> indexFields(IgniteCache<?, ?> cache, String idxName,
+        IgniteBiTuple<String, Boolean>... fields) {
+        Collection<QueryEntity> qryEntities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
+
+        assertEquals(1, qryEntities.size());
+
+        QueryEntity qryEntity = qryEntities.iterator().next();
+
+        List<IgniteBiTuple<String, Boolean>> keyFields;
+
+        if (F.isEmpty(extraIdxKeyFields)) {
+            // Indexes, created dynamically via DDL contains extra unwrapped primary key fields.
+            keyFields = qryEntity.getKeyFields()
+                .stream()
+                .map(f -> F.t(f.toUpperCase(), true))
+                .collect(Collectors.toList());
+
+            // All indexes have system field '_KEY'.
+            keyFields.add(F.t(KEY_FIELD_NAME, true));
+        }
+        else
+            keyFields = extraIdxKeyFields;
+
+        // Index fields are followed by primary key fields and _KEY field.
+        List<IgniteBiTuple<String, Boolean>> fieldsList = new ArrayList<>(Arrays.asList(fields));
+        fieldsList.addAll(keyFields);
+
+        return fieldsList;
+    }
+
+    /**
+     * Assert index details not available via JDBC.
      * @param typeDesc Type descriptor.
      * @param idxName Index name.
-     * @param fields Fields (order is important).
+     * @param inlineSize Inline size.
      */
-    protected static void assertIndex(QueryTypeDescriptorImpl typeDesc, String idxName,
-        IgniteBiTuple<String, Boolean>... fields) {
+    private static void assertInternalIndexParams(QueryTypeDescriptorImpl typeDesc, String idxName, int inlineSize) {
         QueryIndexDescriptorImpl idxDesc = typeDesc.index(idxName);
 
         assertNotNull(idxDesc);
@@ -247,22 +336,44 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         assertEquals(idxName, idxDesc.name());
         assertEquals(typeDesc, idxDesc.typeDescriptor());
         assertEquals(QueryIndexType.SORTED, idxDesc.type());
+        assertEquals(inlineSize, idxDesc.inlineSize());
+    }
 
-        List<String> fieldNames = new ArrayList<>(idxDesc.fields());
+    /**
+     * @param node Node to connect to.
+     * @return Thin JDBC connection to specified node.
+     */
+    public static Connection connect(IgniteEx node) {
+        Collection<GridPortRecord> recs = node.context().ports().records();
 
-        assertEquals(fields.length, fieldNames.size());
+        GridPortRecord cliLsnrRec = null;
 
-        for (int i = 0; i < fields.length; i++) {
-            String expFieldName = fields[i].get1();
-            boolean expFieldAsc = fields[i].get2();
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
 
-            assertEquals("Index field mismatch [pos=" + i + ", expField=" + expFieldName +
-                ", actualField=" + fieldNames.get(i) + ']', expFieldName, fieldNames.get(i));
+                break;
+            }
+        }
 
-            boolean fieldAsc = !idxDesc.descending(expFieldName);
+        assertNotNull(cliLsnrRec);
 
-            assertEquals("Index field sort mismatch [pos=" + i + ", field=" + expFieldName +
-                ", expAsc=" + expFieldAsc + ", actualAsc=" + fieldAsc + ']', expFieldAsc, fieldAsc);
+        try {
+            return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port());
+        }
+        catch (SQLException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * @param conn Connection.
+     * @param sql Statement.
+     * @throws SQLException if failed.
+     */
+    public static void execute(Connection conn, String sql) throws SQLException {
+        try (Statement s = conn.createStatement()) {
+            s.execute(sql);
         }
     }
 
@@ -273,9 +384,9 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param tblName Table name.
      * @param idxName Index name.
      */
-    protected static void assertNoIndex(String cacheName, String tblName, String idxName) {
+    static void assertNoIndex(String cacheName, String tblName, String idxName) {
         for (Ignite node : Ignition.allGrids())
-            assertNoIndex((IgniteEx)node, cacheName, tblName, idxName);
+            assertNoIndex(node, cacheName, tblName, idxName);
     }
 
     /**
@@ -286,38 +397,23 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param tblName Table name.
      * @param idxName Index name.
      */
-    protected static void assertNoIndex(Ignite node, String cacheName, String tblName, String idxName) {
-        IgniteEx node0 = (IgniteEx)node;
-
-        assertNoIndexDescriptor(node0, cacheName, idxName);
-
-        if (affinityNode(node0, cacheName)) {
-            QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
-
-            assertNoIndex(typeDesc, idxName);
-        }
-    }
-
-    /**
-     * Assert index doesn't exist in particular node's cache descriptor.
-     *
-     * @param node Node.
-     * @param cacheName Cache name.
-     * @param idxName Index name.
-     */
-    protected static void assertNoIndexDescriptor(IgniteEx node, String cacheName, String idxName) {
+    static void assertNoIndex(Ignite node, String cacheName, String tblName, String idxName) {
         awaitCompletion();
 
-        DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(cacheName);
+        node.cache(cacheName);
 
-        if (desc == null)
-            return;
-
-        for (QueryEntity entity : desc.schema().entities()) {
-            for (QueryIndex idx : entity.getIndexes()) {
-                if (F.eq(idxName, QueryUtils.indexName(entity, idx)))
-                    fail("Index exists: " + idxName);
+        try {
+            try (Connection c = connect((IgniteEx)node)) {
+                try (ResultSet rs = c.getMetaData().getIndexInfo(null, cacheName, tblName, false, false)) {
+                    while (rs.next()) {
+                        assertFalse("Index exists, although shouldn't: " + tblName + '.' + idxName,
+                            F.eq(idxName, rs.getString("INDEX_NAME")));
+                    }
+                }
             }
+        }
+        catch (SQLException e) {
+            throw new AssertionError(e);
         }
     }
 
@@ -334,31 +430,13 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assert index doesn't exist.
+     * Get table name for class.
      *
-     * @param typeDesc Type descriptor.
-     * @param idxName Index name.
+     * @param cls Class.
+     * @return Table name.
      */
-    protected static void assertNoIndex(QueryTypeDescriptorImpl typeDesc, String idxName) {
-        assertNull(typeDesc.index(idxName));
-    }
-
-    /**
-     * Check whether this is affinity node for cache.
-     *
-     * @param node Node.
-     * @param cacheName Cache name.
-     * @return {@code True} if affinity node.
-     */
-    private static boolean affinityNode(IgniteEx node, String cacheName) {
-        if (node.configuration().isClientMode())
-            return false;
-
-        DynamicCacheDescriptor cacheDesc = node.context().cache().cacheDescriptor(cacheName);
-
-        IgnitePredicate<ClusterNode> filter = cacheDesc.cacheConfiguration().getNodeFilter();
-
-        return filter == null || filter.apply(node.localNode());
+    protected static String typeName(Class cls) {
+        return cls.getSimpleName();
     }
 
     /**
@@ -367,8 +445,8 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param cls Class.
      * @return Table name.
      */
-    protected static String tableName(Class cls) {
-        return cls.getSimpleName();
+    static String tableName(Class cls) {
+        return QueryUtils.normalizeObjectName(typeName(cls), true);
     }
 
     /**
@@ -394,13 +472,33 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Execute SQL statement on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    protected List<List<?>> execute(Ignite node, String sql) {
+        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    }
+
+    /**
      * Get query processor.
      *
      * @param node Node.
      * @return Query processor.
      */
-    protected static GridQueryProcessor queryProcessor(Ignite node) {
-        return ((IgniteEx)node).context().query();
+    public static GridQueryProcessor queryProcessor(Ignite node) {
+        return queryProcessor((IgniteEx)node);
+    }
+
+    /**
+     * Get query processor.
+     *
+     * @param node Node.
+     * @return Query processor.
+     */
+    protected static GridQueryProcessor queryProcessor(IgniteEx node) {
+        return node.context().query();
     }
 
     /**
@@ -421,7 +519,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @return Field.
      */
     protected static IgniteBiTuple<String, Boolean> field(String name, boolean asc) {
-        return F.t(name, asc);
+        return F.t(name.toUpperCase(), asc);
     }
 
     /**
@@ -430,6 +528,116 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      */
     protected static String alias(String fieldName) {
         return fieldName + "_alias";
+    }
+
+    /**
+     * Synchronously create index.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idx Index.
+     * @param ifNotExists When set to true operation will fail if index already exists.
+     * @param parallel Parallelism level.
+     * @throws Exception If failed.
+     */
+    void dynamicIndexCreate(Ignite node, String cacheName, String tblName, QueryIndex idx,
+        boolean ifNotExists, int parallel)
+        throws Exception {
+        GridStringBuilder sql = new SB("CREATE INDEX ")
+            .a(ifNotExists ? "IF NOT EXISTS " : "")
+            .a(idx.getName())
+            .a(" ON ")
+            .a(tblName)
+            .a(" (");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Boolean> fieldEntry : idx.getFields().entrySet()) {
+            if (first)
+                first = false;
+            else
+                sql.a(", ");
+
+            String name = fieldEntry.getKey();
+            boolean asc = fieldEntry.getValue();
+
+            sql.a(name).a(" ").a(asc ? "ASC" : "DESC");
+        }
+
+        sql.a(')');
+
+        if (idx.getInlineSize() != QueryIndex.DFLT_INLINE_SIZE)
+            sql.a(" INLINE_SIZE ").a(idx.getInlineSize());
+
+        if (parallel != 0)
+            sql.a(" PARALLEL ").a(parallel);
+
+        executeSql(node, cacheName, sql.toString());
+    }
+
+    /**
+     * Synchronously drop index.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param idxName Index name.
+     * @param ifExists When set to true operation fill fail if index doesn't exists.
+     * @throws Exception if failed.
+     */
+    protected void dynamicIndexDrop(Ignite node, String cacheName, String idxName, boolean ifExists) throws Exception {
+        String sql = "DROP INDEX " + (ifExists ? "IF EXISTS " : "") + idxName;
+
+        executeSql(node, cacheName, sql);
+    }
+
+    /**
+     * Start SQL cache on given node.
+     * @param node Node to create cache on.
+     * @param ccfg Cache configuration.
+     * @return Created cache.
+     */
+    protected IgniteCache<?, ?> createSqlCache(Ignite node, CacheConfiguration ccfg) throws IgniteCheckedException {
+        ((IgniteEx)node).context().cache().dynamicStartSqlCache(ccfg).get();
+
+        IgniteCache<?, ?> res = node.cache(CACHE_NAME);
+
+        assertNotNull(res);
+
+        return res;
+    }
+
+    /**
+     * Destroy SQL cache on given node.
+     *
+     * @param node Node to create cache on.
+     * @throws IgniteCheckedException if failed.
+     */
+    protected void destroySqlCache(Ignite node) throws IgniteCheckedException {
+        destroySqlCacheFuture(node).get();
+    }
+
+    /**
+     * Starting destroy SQL cache with return of future.
+     *
+     * @param node Node to create cache on.
+     * @return Future that will be completed when cache is destroyed.
+     */
+    protected IgniteInternalFuture<Boolean> destroySqlCacheFuture(Ignite node) {
+        return ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false, null);
+    }
+
+    /**
+     * Execute SQL.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     * @param sql SQL.
+     */
+    private void executeSql(Ignite node, String cacheName, String sql) {
+        log.info("Executing DDL: " + sql);
+
+        node.cache(cacheName).query(new SqlFieldsQuery(sql)).getAll();
     }
 
     /**
@@ -461,7 +669,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            KeyClass keyClass = (KeyClass) o;
+            KeyClass keyClass = (KeyClass)o;
 
             return id == keyClass.id;
 
@@ -469,7 +677,7 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return (int) (id ^ (id >>> 32));
+            return (int)(id ^ (id >>> 32));
         }
     }
 
@@ -479,21 +687,21 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     public static class ValueClass {
         /** Field 1. */
         @QuerySqlField
-        private String field1;
+        private Long field1;
 
         /**
          * Constructor.
          *
          * @param field1 Field 1.
          */
-        public ValueClass(String field1) {
+        public ValueClass(Long field1) {
             this.field1 = field1;
         }
 
         /**
          * @return Field 1
          */
-        public String field1() {
+        public Long field1() {
             return field1;
         }
     }
@@ -521,17 +729,5 @@ public class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         public String field() {
             return field;
         }
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    protected interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
     }
 }

@@ -17,23 +17,89 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesFastTest;
+import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesLongTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryReservationOnUnstableTopologyTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
+import org.apache.ignite.internal.processors.query.DmlBatchSizeDeadlockTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateTest;
+import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
+import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
+import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
+import org.apache.ignite.internal.processors.query.SqlPartOfComplexPkLookupTest;
+import org.apache.ignite.internal.processors.query.SqlQueriesTopologyMappingTest;
+import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
+import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessorTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.CreateTableWithDateKeySelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheWasNotFoundMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.NonCollocatedRetryMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.NoneOrSinglePartitionsQueryOptimizationsTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageSelfTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
+import org.apache.ignite.sqltests.SqlByteArrayTest;
+import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Cache query suite with binary marshaller.
+ * Test suite for cache queries.
  */
-public class IgniteBinaryCacheQueryTestSuite4 extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    CacheQueryMemoryLeakTest.class,
 
-        TestSuite suite = IgniteCacheQuerySelfTestSuite4.suite();
+    CreateTableWithDateKeySelfTest.class,
 
-        return suite;
+    CacheQueryEntityWithDateTimeApiFieldsTest.class,
+
+    DmlStatementsProcessorTest.class,
+
+    NonCollocatedRetryMessageSelfTest.class,
+    RetryCauseMessageSelfTest.class,
+    DisappearedCacheCauseRetryMessageSelfTest.class,
+    DisappearedCacheWasNotFoundMessageSelfTest.class,
+
+    TableViewSubquerySelfTest.class,
+
+    SqlLocalQueryConnectionAndStatementTest.class,
+
+    NoneOrSinglePartitionsQueryOptimizationsTest.class,
+
+    IgniteSqlCreateTableTemplateTest.class,
+
+    LocalQueryLazyTest.class,
+
+    LongRunningQueryTest.class,
+
+    SqlStatisticsUserQueriesFastTest.class,
+    SqlStatisticsUserQueriesLongTest.class,
+
+    DmlBatchSizeDeadlockTest.class,
+
+    GridCachePartitionedTxMultiNodeSelfTest.class,
+    GridCacheReplicatedTxMultiNodeBasicTest.class,
+
+    SqlPartOfComplexPkLookupTest.class,
+
+    SqlDataTypesCoverageTests.class,
+    SqlByteArrayTest.class,
+    SqlPartOfComplexPkLookupTest.class,
+
+    SqlQueriesTopologyMappingTest.class,
+
+    IgniteCacheQueryReservationOnUnstableTopologyTest.class
+
+})
+public class IgniteBinaryCacheQueryTestSuite4 {
+    /** Setup lazy mode default. */
+    @BeforeClass
+    public static void setupLazy() {
+        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
     }
 }

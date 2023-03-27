@@ -84,13 +84,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos)
+        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos,
+            Type typeOverride)
         {
             Debug.Assert(_rActions != null);
             Debug.Assert(reader != null);
             Debug.Assert(desc != null);
 
-            var obj = FormatterServices.GetUninitializedObject(desc.Type);
+            var obj = FormatterServices.GetUninitializedObject(typeOverride ?? desc.Type);
 
             var ctx = GetStreamingContext(reader);
 
@@ -106,11 +107,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     action(obj, reader);
 
                 _serializableDescriptor.OnDeserialized(obj, ctx);
-
-            }
-            finally
-            {
+                
                 DeserializationCallbackProcessor.Pop();
+            }
+            catch (Exception)
+            {
+                // Clear callbacks on exception to avoid dangling objects.
+                DeserializationCallbackProcessor.Clear();
+                throw;
             }
 
             return (T) obj;
@@ -122,13 +126,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return true; }
         }
 
-        /// <summary>Register type.</summary>
+        /// <summary>
+        /// Register type.
+        /// </summary>
         /// <param name="type">Type.</param>
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
+        /// <param name="forceTimestamp">Force timestamp serialization for DateTime fields..</param>
+        /// <returns>Resulting serializer.</returns>
         internal BinaryReflectiveSerializerInternal Register(Type type, int typeId, IBinaryNameMapper converter,
-            IBinaryIdMapper idMapper)
+            IBinaryIdMapper idMapper, bool forceTimestamp)
         {
             Debug.Assert(_wActions == null && _rActions == null);
 
@@ -144,9 +152,17 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (idMap.ContainsKey(fieldId))
                 {
-                    throw new BinaryObjectException("Conflicting field IDs [type=" +
-                                                    type.Name + ", field1=" + idMap[fieldId] + ", field2=" + fieldName +
-                                                    ", fieldId=" + fieldId + ']');
+                    if (fieldName == idMap[fieldId])
+                    {
+                        string baseClassName = field.DeclaringType != null ? field.DeclaringType.Name : null;
+                        throw new BinaryObjectException(string.Format(
+                            "{0} derives from {1} and hides field {2} from the base class. " +
+                            "Ignite can not serialize two fields with the same name.", type.Name, baseClassName, fieldName));
+                    }
+
+                    throw new BinaryObjectException(string.Format(
+                        "Conflicting field IDs [type={0}, field1={1}, field2={2}, fieldId={3}])",
+                        type.Name, idMap[fieldId], fieldName, fieldId));
                 }
 
                 idMap[fieldId] = fieldName;
@@ -162,7 +178,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryReflectiveWriteAction writeAction;
                 BinaryReflectiveReadAction readAction;
 
-                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode);
+                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode, forceTimestamp);
 
                 wActions[i] = writeAction;
                 rActions[i] = readAction;

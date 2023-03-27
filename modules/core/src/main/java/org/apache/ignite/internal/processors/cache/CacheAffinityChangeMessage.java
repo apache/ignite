@@ -20,17 +20,20 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * CacheAffinityChangeMessage represent a message that switches to a new affinity assignmentafter rebalance is finished.
+ * This message should not be mutated  in any way outside the "disco-notifier-worker" thread.
  */
 public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
@@ -54,23 +57,27 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
     private GridDhtPartitionsFullMessage partsMsg;
 
-    /** */
-    private transient boolean exchangeNeeded;
+    /** If this flag is {@code true} then this message should lead to partition map exchnage. */
+    private boolean exchangeNeeded;
+
+    /**
+     * This flag indicates that this message should not be passed to other nodes except the coordinator.
+     * Instead of this message, the message which is returned by {@link #ackMessage()} will be sent.
+     * See {@link DiscoveryCustomMessage#stopProcess()}.
+     *
+     * This flag is used when discovery SPI does not support mutable custom messages.
+     * See {@link DiscoverySpiMutableCustomMessageSupport}.
+     */
+    private transient boolean stopProc;
 
     /**
      * Constructor used when message is created after cache rebalance finished.
      *
      * @param topVer Topology version.
-     * @param assignmentChange Assignment change.
      * @param cacheDeploymentIds Cache deployment ID.
      */
-    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
-        Map<Integer, IgniteUuid> cacheDeploymentIds) {
-        assert !F.isEmpty(assignmentChange) : assignmentChange;
-
+    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer, Map<Integer, IgniteUuid> cacheDeploymentIds) {
         this.topVer = topVer;
-        this.assignmentChange = assignmentChange;
         this.cacheDeploymentIds = cacheDeploymentIds;
     }
 
@@ -81,7 +88,8 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * @param partsMsg Partitions messages.
      * @param assignmentChange Assignment change.
      */
-    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId,
+    public CacheAffinityChangeMessage(
+        GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsFullMessage partsMsg,
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
         this.exchId = exchId;
@@ -114,7 +122,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * @return Partitions message.
      */
     public GridDhtPartitionsFullMessage partitionsMessage() {
-        return partsMsg;
+        return partsMsg != null ? partsMsg.copy() : null;
     }
 
     /**
@@ -145,12 +153,45 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+        if (!stopProc)
+            return null;
+
+        // If stopProc is equal to true, then Discovery SPI does not support mutable custom messages.
+        // Let's return the same message, that was muted on the coordinator node. This message will be sent to all nodes
+        // instead of the original one.
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return false;
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return stopProc;
+    }
+
+    /**
+     * Sets stop processing flag. If this flag is {@code true} then this message is not passed to other nodes after
+     * the coordinator node notitied its own listner. If method {@link #ackMessage()} returns non-null ack message,
+     * it is sent to all nodes.
+     * This flag is used when discovery SPI does not support mutable custom messages.
+     * See {@link DiscoverySpiMutableCustomMessageSupport}.
+     *
+     * @param stopProc If {@code true} then this message is not passed to other nodes.
+     */
+    public void stopProcess(boolean stopProc) {
+        this.stopProc = stopProc;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache createDiscoCache(
+        GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer,
+        DiscoCache discoCache
+    ) {
+        return discoCache.copy(topVer, null);
     }
 
     /** {@inheritDoc} */

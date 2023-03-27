@@ -20,15 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
@@ -37,91 +35,72 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
  * Implementation of concurrent cache map.
  */
 public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
-    /** Default load factor. */
-    private static final float DFLT_LOAD_FACTOR = 0.75f;
-
-    /** Default concurrency level. */
-    private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
-
-    /** Internal map. */
-    private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map;
-
     /** Map entry factory. */
     private final GridCacheMapEntryFactory factory;
-
-    /** Cache context. */
-    private final GridCacheContext ctx;
 
     /**
      * Creates a new, empty map with the specified initial
      * capacity.
      *
-     * @param ctx Cache context.
      * @param factory Entry factory.
-     * @param initialCapacity the initial capacity. The implementation
-     *      performs internal sizing to accommodate this many elements.
 
      * @throws IllegalArgumentException if the initial capacity is
      *      negative.
      */
-    public GridCacheConcurrentMapImpl(GridCacheContext ctx, GridCacheMapEntryFactory factory, int initialCapacity) {
-        this(ctx, factory, initialCapacity, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
+    public GridCacheConcurrentMapImpl(GridCacheMapEntryFactory factory) {
+        this.factory = factory;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
+        CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
+
+        key = (KeyCacheObject)ctx.kernalContext().cacheObjects().prepareForCache(key, ctx);
+
+        return hld != null ? hld.map.get(key) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+        GridCacheContext ctx,
+        final AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        final boolean create,
+        final boolean skipReserve) {
+        return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, skipReserve);
     }
 
     /**
-     * Creates a new, empty map with the specified initial
-     * capacity, load factor and concurrency level.
-     *
-     * @param ctx Cache context.
-     * @param factory Entry factory.
-     * @param initialCapacity the initial capacity. The implementation
-     *      performs internal sizing to accommodate this many elements.
-     * @param loadFactor  the load factor threshold, used to control resizing.
-     *      Resizing may be performed when the average number of elements per
-     *      bin exceeds this threshold.
-     * @param concurrencyLevel the estimated number of concurrently
-     *      updating threads. The implementation performs internal sizing
-     *      to try to accommodate this many threads.
-     * @throws IllegalArgumentException if the initial capacity is
-     *      negative or the load factor or concurrencyLevel are
-     *      non-positive.
+     * @param hld Holder.
+     * @param ctx Context.
+     * @param topVer Topology version.
+     * @param key Key.
+     * @param create Create flag.
+     * @param skipReserve {@code True} if a partition reservation should be skipped.
      */
-    public GridCacheConcurrentMapImpl(
+    protected final GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+        @Nullable CacheMapHolder hld,
         GridCacheContext ctx,
-        GridCacheMapEntryFactory factory,
-        int initialCapacity,
-        float loadFactor,
-        int concurrencyLevel
-    ) {
-        this.ctx = ctx;
-        this.factory = factory;
-
-        map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
-        return map.get(key);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
+        final AffinityTopologyVersion topVer,
         KeyCacheObject key,
-        @Nullable final CacheObject val,
         final boolean create,
-        final boolean touch) {
+        final boolean skipReserve
+    ) {
+        if (hld == null)
+            hld = entriesMapIfExists(ctx.cacheIdBoxed());
+
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
         GridCacheMapEntry created0 = null;
         GridCacheMapEntry doomed = null;
 
         boolean done = false;
-        boolean reserved = false;
+        boolean reserved = skipReserve;
         int sizeChange = 0;
 
         try {
             while (!done) {
-                GridCacheMapEntry entry = map.get(key);
+                GridCacheMapEntry entry = hld != null ? hld.map.get(ctx.kernalContext().cacheObjects().prepareForCache(key, ctx)) : null;
                 created = null;
                 doomed = null;
 
@@ -135,12 +114,18 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                 reserved = true;
                             }
 
-                            created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            if (hld == null) {
+                                hld = entriesMap(ctx);
+
+                                assert hld != null;
+                            }
+
+                            created0 = factory.create(ctx, topVer, key);
                         }
 
                         cur = created = created0;
 
-                        done = map.putIfAbsent(created.key(), created) == null;
+                        done = hld.map.putIfAbsent(created.key(), created) == null;
                     }
                     else
                         done = true;
@@ -158,15 +143,15 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                                     reserved = true;
                                 }
 
-                                created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                                created0 = factory.create(ctx, topVer, key);
                             }
 
                             cur = created = created0;
 
-                            done = map.replace(entry.key(), doomed, created);
+                            done = hld.map.replace(entry.key(), doomed, created);
                         }
                         else
-                            done = map.remove(entry.key(), doomed);
+                            done = hld.map.remove(entry.key(), doomed);
                     }
                     else {
                         cur = entry;
@@ -179,23 +164,28 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             sizeChange = 0;
 
             if (doomed != null) {
-                synchronized (doomed) {
+                doomed.lockEntry();
+
+                try {
                     if (!doomed.deleted())
                         sizeChange--;
+                }
+                finally {
+                    doomed.unlockEntry();
                 }
 
                 if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                     ctx.events().addEvent(doomed.partition(),
                         doomed.key(),
                         ctx.localNodeId(),
-                        (IgniteUuid)null,
+                        null,
+                        null,
                         null,
                         EVT_CACHE_ENTRY_DESTROYED,
                         null,
                         false,
                         null,
                         false,
-                        null,
                         null,
                         null,
                         true);
@@ -208,7 +198,8 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                     ctx.events().addEvent(created.partition(),
                         created.key(),
                         ctx.localNodeId(),
-                        (IgniteUuid)null,
+                        null,
+                        null,
                         null,
                         EVT_CACHE_ENTRY_CREATED,
                         null,
@@ -217,13 +208,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                         false,
                         null,
                         null,
-                        null,
                         true);
-
-                if (touch)
-                    ctx.evicts().touch(
-                        cur,
-                        topVer);
             }
 
             assert Math.abs(sizeChange) <= 1;
@@ -231,17 +216,38 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             return cur;
         }
         finally {
-            if (reserved)
-                release(sizeChange, cur);
-            else {
-                if (sizeChange != 0) {
-                    assert sizeChange == -1;
+            if (!skipReserve) {
+                if (reserved)
+                    release(sizeChange, hld, cur);
+                else {
+                    if (sizeChange != 0) {
+                        assert sizeChange == -1;
+                        assert doomed != null;
 
-                    decrementPublicSize(cur);
+                        decrementPublicSize(hld, doomed);
+                    }
                 }
+            }
+            else {
+                if (sizeChange == 1)
+                    incrementPublicSize(hld, cur);
+                else if (sizeChange == -1)
+                    decrementPublicSize(hld, doomed);
             }
         }
     }
+
+    /**
+     * @param cctx Cache context.
+     * @return Map for given cache ID.
+     */
+    @Nullable protected abstract CacheMapHolder entriesMap(GridCacheContext cctx);
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Map for given cache ID.
+     */
+    @Nullable protected abstract CacheMapHolder entriesMapIfExists(Integer cacheId);
 
     /**
      *
@@ -259,91 +265,80 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /**
      * @param sizeChange Size delta.
+     * @param hld Map holder.
      * @param e Map entry.
      */
-    protected void release(int sizeChange, GridCacheEntryEx e) {
+    protected void release(int sizeChange, CacheMapHolder hld, GridCacheEntryEx e) {
         if (sizeChange == 1)
-            incrementPublicSize(e);
+            incrementPublicSize(hld, e);
         else if (sizeChange == -1)
-            decrementPublicSize(e);
+            decrementPublicSize(hld, e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
-        boolean removed = map.remove(entry.key(), entry);
+        GridCacheContext ctx = entry.context();
 
-        if (removed) {
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+        CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
+
+        boolean rmv = hld != null && hld.map.remove(entry.key(), entry);
+
+        if (rmv) {
+            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED)) {
                 // Event notification.
-                ctx.events().addEvent(entry.partition(), entry.key(), ctx.localNodeId(), (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
+                ctx.events().addEvent(entry.partition(),
+                    entry.key(),
+                    ctx.localNodeId(),
+                    null,
+                    null,
+                    null,
+                    EVT_CACHE_ENTRY_DESTROYED,
+                    null,
+                    false,
+                    null,
+                    false,
+                    null,
+                    null,
+                    false);
+            }
 
-            synchronized (entry) {
+            entry.lockEntry();
+
+            try {
                 if (!entry.deleted())
-                    decrementPublicSize(entry);
+                    decrementPublicSize(hld, entry);
+            }
+            finally {
+                entry.unlockEntry();
             }
         }
 
-        return removed;
+        return rmv;
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
-        return map.size();
-    }
+    @Override public Collection<GridCacheMapEntry> entries(int cacheId, final CacheEntryPredicate... filter) {
+        CacheMapHolder hld = entriesMapIfExists(cacheId);
 
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
-        final IgnitePredicate<KeyCacheObject> p = new IgnitePredicate<KeyCacheObject>() {
-            @Override public boolean apply(KeyCacheObject key) {
-                GridCacheMapEntry entry = map.get(key);
+        if (hld == null)
+            return Collections.emptyList();
 
-                return entry != null && entry.visitable(filter);
-            }
-        };
-
-        return new AbstractSet<KeyCacheObject>() {
-            @Override public Iterator<KeyCacheObject> iterator() {
-                return F.iterator0(map.keySet(), true, p);
-            }
-
-            @Override public int size() {
-                return F.size(iterator());
-            }
-
-            @Override public boolean contains(Object o) {
-                if (!(o instanceof KeyCacheObject))
-                    return false;
-
-                return map.keySet().contains(o) && p.apply((KeyCacheObject)o);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
             @Override public boolean apply(GridCacheMapEntry entry) {
                 return entry.visitable(filter);
             }
         };
 
-        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), p);
+        return F.viewReadOnly(hld.map.values(), F.<GridCacheMapEntry>identity(), p);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
-        final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
-            @Override public boolean apply(GridCacheMapEntry entry) {
-                return F.isAll(entry, filter);
-            }
-        };
+    @Override public Set<GridCacheMapEntry> entrySet(int cacheId, final CacheEntryPredicate... filter) {
+        final CacheMapHolder hld = entriesMapIfExists(cacheId);
 
-        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), p);
-    }
+        if (hld == null)
+            return Collections.emptySet();
 
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
         final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
             @Override public boolean apply(GridCacheMapEntry entry) {
                 return entry.visitable(filter);
@@ -352,7 +347,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
         return new AbstractSet<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                return F.iterator0(map.values(), true, p);
+                return F.iterator0(hld.map.values(), true, p);
             }
 
             @Override public int size() {
@@ -365,7 +360,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
                 GridCacheMapEntry entry = (GridCacheMapEntry)o;
 
-                return entry.equals(map.get(entry.key())) && p.apply(entry);
+                return entry.equals(hld.map.get(entry.key())) && p.apply(entry);
             }
         };
     }

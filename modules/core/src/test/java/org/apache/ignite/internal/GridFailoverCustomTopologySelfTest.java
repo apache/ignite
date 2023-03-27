@@ -40,6 +40,11 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Test failover and custom topology. Topology returns local node if remote node fails.
@@ -75,34 +80,35 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         return cfg;
     }
+
     /**
      * Tests that failover don't pick local node if it has been excluded from topology.
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait", "unchecked"})
+    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait"})
+    @Test
     public void testFailoverTopology() throws Exception {
         try {
-            Ignite ignite1 = startGrid(1);
-            Ignite ignite2 = startGrid(2);
+            Ignite ignite1 = startGrids(2);
 
-            assert ignite1 != null;
-            assert ignite2 != null;
+            // We change it because compute jobs will go to sleep.
+            assertTrue(computeJobWorkerInterruptTimeout(ignite1).propagate(10L));
 
             ignite1.compute().localDeployTask(JobTask.class, JobTask.class.getClassLoader());
 
             try {
                 ComputeTaskFuture<String> fut;
 
-                synchronized(mux){
+                synchronized (mux) {
                     fut = ignite1.compute().executeAsync(JobTask.class, null);
 
                     mux.wait();
                 }
 
-                stopAndCancelGrid(2);
+                stopAndCancelGrid(1);
 
-                String res = fut.get();
+                String res = fut.get(getTestTimeout());
 
                 info("Task result: " + res);
             }
@@ -112,13 +118,10 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
             info("Failed over: " + failCnt.get());
 
-            assert failCnt.get() == 1 : "Invalid fail over counter [expected=1, actual=" + failCnt.get() + ']';
+            assertThat(failCnt.get(), equalTo(1));
         }
         finally {
-            stopGrid(1);
-
-            // Stopping stopped instance just in case.
-            stopGrid(2);
+            stopAllGrids();
         }
     }
 
@@ -134,12 +137,12 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
-            assert ignite != null;
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+            assertNotNull(ignite);
 
             UUID locNodeId = ignite.configuration().getNodeId();
 
-            assert locNodeId != null;
+            assertNotNull(locNodeId);
 
             if (log.isInfoEnabled())
                 log.info("Mapping jobs [subgrid=" + subgrid + ", arg=" + arg + ']');
@@ -153,8 +156,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(locNodeId) {
                 /** */
-               @IgniteInstanceResource
-               private Ignite ignite;
+                @IgniteInstanceResource
+                private Ignite ignite;
 
                 /** {@inheritDoc} */
                 @SuppressWarnings("NakedNotify")
@@ -163,11 +166,11 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                     UUID nodeId = ignite.configuration().getNodeId();
 
-                    assert nodeId != null;
+                    assertNotNull(nodeId);
 
                     if (!nodeId.equals(argument(0))) {
                         try {
-                            synchronized(mux) {
+                            synchronized (mux) {
                                 mux.notifyAll();
                             }
 

@@ -17,23 +17,22 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryPositionReadable;
-import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.BinaryUtils;
-
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryPositionReadable;
+import org.apache.ignite.internal.binary.BinaryPrimitives;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -52,7 +51,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
     private final BinaryReaderExImpl reader;
 
     /** */
-    private final Map<Integer, BinaryObjectBuilderImpl> objMap;
+    private final Map<Integer, Object> objMap;
 
     /** */
     private int pos;
@@ -162,7 +161,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
      * @param pos Position in the source array.
      * @return Read byte value.
      */
-    public byte readBytePositioned(int pos) {
+    @Override public byte readBytePositioned(int pos) {
         return BinaryPrimitives.readByte(arr, pos);
     }
 
@@ -274,7 +273,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.DECIMAL:
-                len = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                len = /** scale */ 4 + /** mag len */ 4 + /** mag bytes count */ readInt(4);
 
                 break;
 
@@ -383,19 +382,21 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.HANDLE: {
                 int objStart = pos - readIntPositioned(pos + 1);
 
-                BinaryObjectBuilderImpl res = objMap.get(objStart);
+                Object res = objMap.get(objStart);
 
-                if (res == null) {
-                    res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, objStart), objStart);
+                if (res != null)
+                    return res;
 
-                    objMap.put(objStart, res);
-                }
+                // Read handle by position
+                res = getValueQuickly(objStart, len - (objStart - pos));
+
+                objMap.put(objStart, res);
 
                 return res;
             }
 
             case GridBinaryMarshaller.OBJ: {
-                BinaryObjectBuilderImpl res = objMap.get(pos);
+                Object res = objMap.get(pos);
 
                 if (res == null) {
                     res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, pos), pos);
@@ -455,8 +456,18 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.ENUM_ARR:
             case GridBinaryMarshaller.OBJ_ARR:
             case GridBinaryMarshaller.COL:
-            case GridBinaryMarshaller.MAP:
-                return new LazyCollection(pos);
+            case GridBinaryMarshaller.MAP: {
+                Object res = objMap.get(pos);
+
+                if (res != null)
+                    return res;
+
+                res = new LazyCollection(pos);
+
+                objMap.put(pos, res);
+
+                return res;
+            }
 
             case GridBinaryMarshaller.ENUM: {
                 if (len == 1) {
@@ -517,13 +528,20 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.HANDLE: {
                 int objStart = pos - 1 - readInt();
 
-                BinaryObjectBuilderImpl res = objMap.get(objStart);
+                Object res = objMap.get(objStart);
 
-                if (res == null) {
-                    res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, objStart), objStart);
+                if (res != null)
+                    return res;
 
-                    objMap.put(objStart, res);
-                }
+                // Read handle by position
+                int savedPos = pos;
+                pos = objStart;
+
+                res = parseValue();
+
+                pos = savedPos;
+
+                objMap.put(objStart, res);
 
                 return res;
             }
@@ -531,7 +549,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OBJ: {
                 pos--;
 
-                BinaryObjectBuilderImpl res = objMap.get(pos);
+                Object res = objMap.get(pos);
 
                 if (res == null) {
                     res = new BinaryObjectBuilderImpl(new BinaryBuilderReader(this, pos), pos);
@@ -580,7 +598,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 return arr[pos++] != 0;
 
             case GridBinaryMarshaller.DECIMAL:
-                plainLazyValLen = /** scale */ 4  + /** mag len */ 4  + /** mag bytes count */ readInt(4);
+                plainLazyValLen = /** scale */ 4 + /** mag len */ 4 + /** mag bytes count */ readInt(4);
 
                 break;
 
@@ -765,24 +783,52 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 int size = readInt();
                 byte colType = arr[pos++];
 
+                Object res = objMap.get(valPos);
+                Object parseRes;
+
                 switch (colType) {
                     case GridBinaryMarshaller.USER_COL:
                     case GridBinaryMarshaller.ARR_LIST:
-                        return new BinaryLazyArrayList(this, size);
+                        parseRes = new BinaryLazyArrayList(this, size);
+
+                        break;
 
                     case GridBinaryMarshaller.LINKED_LIST:
-                        return new BinaryLazyLinkedList(this, size);
+                        parseRes = new BinaryLazyLinkedList(this, size);
+
+                        break;
 
                     case GridBinaryMarshaller.HASH_SET:
                     case GridBinaryMarshaller.LINKED_HASH_SET:
-                        return new BinaryLazySet(this, size);
+                        parseRes = new BinaryLazySet(this, size);
+
+                        break;
+
+                    default:
+                        throw new BinaryObjectException("Unknown collection type: " + colType);
                 }
 
-                throw new BinaryObjectException("Unknown collection type: " + colType);
+                if (res == null || res instanceof LazyCollection) {
+                    objMap.put(valPos, parseRes);
+
+                    res = parseRes;
+                }
+
+                return res;
             }
 
-            case GridBinaryMarshaller.MAP:
-                return BinaryLazyMap.parseMap(this);
+            case GridBinaryMarshaller.MAP: {
+                Object res = objMap.get(valPos);
+                Object parseRes = BinaryLazyMap.parseMap(this);
+
+                if (res == null || res instanceof LazyCollection) {
+                    objMap.put(valPos, parseRes);
+
+                    res = parseRes;
+                }
+
+                return res;
+            }
 
             case GridBinaryMarshaller.ENUM:
                 return new BinaryBuilderEnum(this);
@@ -797,8 +843,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr,
-                    pos - 4 - size + start);
+                BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }

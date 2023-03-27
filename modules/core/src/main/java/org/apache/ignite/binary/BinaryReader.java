@@ -138,6 +138,7 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @param <T> Type of the read object.
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
@@ -250,6 +251,7 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @param <T> Type of elements in collection to read.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
@@ -258,6 +260,7 @@ public interface BinaryReader {
     /**
      * @param fieldName Field name.
      * @param factory Collection factory.
+     * @param <T> Type of elements in collection to read.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
@@ -266,6 +269,8 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @param <K> Type of keys in the map to read.
+     * @param <V> Type of mapped values in the map to read.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
@@ -274,6 +279,8 @@ public interface BinaryReader {
     /**
      * @param fieldName Field name.
      * @param factory Map factory.
+     * @param <K> Type of keys in the map to read.
+     * @param <V> Type of mapped values in the map to read.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
@@ -281,6 +288,7 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @param <T> Type of the enum to read.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -288,6 +296,7 @@ public interface BinaryReader {
 
     /**
      * @param fieldName Field name.
+     * @param <T> Type of the enum values in array to read.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */

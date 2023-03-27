@@ -21,10 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
-
 import org.apache.ignite.IgniteException;
-
-import static org.apache.ignite.yardstick.IgniteAbstractBenchmark.nextRandom;
 
 /** JDBC benchmark that performs raw SQL insert */
 public class JdbcPutBenchmark extends JdbcAbstractBenchmark {

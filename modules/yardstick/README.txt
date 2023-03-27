@@ -69,6 +69,10 @@ If you want to execute all the available benchmarks across the remote hosts then
 execute the following command on the DRIVER side:
 ./bin/benchmark-run-all.sh config/benchmark-remote.properties
 
+5. If you use TcpDiscoverySpi in your IgniteConfiguration use AUTOSET_DISCOVERY_VM_IP_FINDER=true property to enable replacing
+addresses from SERVER_HOSTS property to IpFinder configuration. That way you can leave default values '127.0.0.1' in
+Ignite configuration files as is and those values will be replaced with actual addresses. Use PORT_RANGE property to set
+port range for host addresses.
 
 Provided Benchmarks
 ===================
@@ -98,7 +102,10 @@ The following benchmarks are provided:
 22. `SqlQueryPutOffHeapBenchmark` - benchmarks distributed SQL query with simultaneous cache updates off heap
 23. `PutAllBenchmark` - benchmarks atomic distributed cache batch put operation
 24. `PutAllTxBenchmark` - benchmarks transactional distributed cache batch put operation
-
+25. `IgnitePutGetWithPageReplacements` - benchmarks atomic cache put with active page replacement
+26. `IgniteScanQueryGetAllBenchmark` - benchmarks distributed ScanQuery
+27. `IgniteTextQueryGetAllBenchmark` - benchmarks distributed TextQuery
+28. `IgniteIndexQueryGetAllBenchmark` - benchmarks distributed IndexQuery.
 
 Properties And Command Line Arguments
 =====================================

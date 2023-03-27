@@ -19,6 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.computegrid.ComputeContinuousMapperExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * ContinuousMapperExample self test.
@@ -27,6 +28,7 @@ public class ContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContinuousMapperExample() throws Exception {
         ComputeContinuousMapperExample.main(EMPTY_ARGS);
     }

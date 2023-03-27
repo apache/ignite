@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -29,6 +28,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
@@ -38,10 +38,8 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
@@ -66,9 +64,6 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ROUTER_JETTY_PORT = 8081;
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         GridClientFactory.stopAll();
@@ -91,18 +86,13 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
     /**
      *
      */
+    @Test
     public void testEmptyAddresses() {
         try {
             GridClientFactory.start(new GridClientConfiguration());
@@ -117,6 +107,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRoutersAndServersAddressesProvided() {
         try {
             GridClientConfiguration c = new GridClientConfiguration();
@@ -136,6 +127,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpClient() throws Exception {
         doTestClient(TCP);
     }
@@ -143,6 +135,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTcpRouter() throws Exception {
         doTestRouter(TCP);
     }
@@ -222,7 +215,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
      * @return Grid.
      * @throws Exception If failed.
      */
-    @Override protected Ignite startGrid() throws Exception {
+    @Override protected IgniteEx startGrid() throws Exception {
         System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         try {

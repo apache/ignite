@@ -17,24 +17,29 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Services implementation.
     /// </summary>
-    internal sealed class Services : PlatformTarget, IServices
+    internal sealed class Services : PlatformTargetAdapter, IServices
     {
+        /*
+         * Please keep the following constants in sync with
+         * \modules\core\src\main\java\org\apache\ignite\internal\processors\platform\services\PlatformServices.java
+         */
+
         /** */
         private const int OpDeploy = 1;
         
@@ -75,6 +80,12 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpCancelAllAsync = 14;
 
         /** */
+        private const int OpDeployAll = 15;
+
+        /** */
+        private const int OpDeployAllAsync = 16;
+
+        /** */
         private readonly IClusterGroup _clusterGroup;
 
         /** Invoker binary flag. */
@@ -87,13 +98,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Initializes a new instance of the <see cref="Services" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
         /// <param name="keepBinary">Invoker binary flag.</param>
         /// <param name="srvKeepBinary">Server binary flag.</param>
-        public Services(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup, 
+        public Services(IPlatformTargetInternal target, IClusterGroup clusterGroup, 
             bool keepBinary, bool srvKeepBinary)
-            : base(target, marsh)
+            : base(target)
         {
             Debug.Assert(clusterGroup  != null);
 
@@ -108,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_keepBinary)
                 return this;
 
-            return new Services(Target, Marshaller, _clusterGroup, true, _srvKeepBinary);
+            return new Services(Target, _clusterGroup, true, _srvKeepBinary);
         }
 
         /** <inheritDoc /> */
@@ -117,7 +127,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (_srvKeepBinary)
                 return this;
 
-            return new Services(DoOutOpObject(OpWithServerKeepBinary), Marshaller, _clusterGroup, _keepBinary, true);
+            return new Services(DoOutOpObject(OpWithServerKeepBinary), _clusterGroup, _keepBinary, true);
         }
 
         /** <inheritDoc /> */
@@ -204,13 +214,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(service, "service");
 
-            DoOutOp(OpDeployMultiple, w =>
+            DoOutInOp(OpDeployMultiple, w =>
             {
                 w.WriteString(name);
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -225,23 +235,41 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteObject(service);
                 w.WriteInt(totalCount);
                 w.WriteInt(maxPerNodeCount);
-            });
+            }, _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
         public void Deploy(ServiceConfiguration configuration)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            ValidateConfiguration(configuration, "configuration");
 
-            DoOutOp(OpDeploy, w => WriteServiceConfiguration(configuration, w));
+            DoOutInOp(OpDeploy, w => configuration.Write(w), ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
         public Task DeployAsync(ServiceConfiguration configuration)
         {
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            ValidateConfiguration(configuration, "configuration");
 
-            return DoOutOpAsync(OpDeployAsync, w => WriteServiceConfiguration(configuration, w));
+            return DoOutOpAsync(OpDeployAsync, w => configuration.Write(w), 
+                _keepBinary, ReadDeploymentResult);
+        }
+
+        /** <inheritDoc /> */
+        public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
+        {
+            IgniteArgumentCheck.NotNull(configurations, "configurations");
+
+            DoOutInOp(OpDeployAll, w => SerializeConfigurations(configurations, w), ReadDeploymentResult);
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
+        {
+            IgniteArgumentCheck.NotNull(configurations, "configurations");
+ 
+            return DoOutOpAsync(OpDeployAllAsync, w => SerializeConfigurations(configurations, w),
+                _keepBinary, ReadDeploymentResult);
         }
 
         /** <inheritDoc /> */
@@ -325,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<ServiceContext>(r.ReadLong()).Service);
 
                     return res;
                 });
@@ -340,15 +368,15 @@ namespace Apache.Ignite.Core.Impl.Services
         /** <inheritDoc /> */
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
+            return GetServiceProxy<T>(name, sticky, null);
+        }
+
+        /** <inheritDoc /> */
+        public T GetServiceProxy<T>(string name, bool sticky, IServiceCallContext callCtx) where T : class
+        {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-            IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", "Service proxy type should be an interface: " + typeof(T));
-
-            // In local scenario try to return service instance itself instead of a proxy
-            // Get as object because proxy interface may be different from real interface
-            var locInst = GetService<object>(name) as T;
-
-            if (locInst != null)
-                return locInst;
+            IgniteArgumentCheck.Ensure(typeof(T).IsInterface, "T", 
+                "Service proxy type should be an interface: " + typeof(T));
 
             var javaProxy = DoOutOpObject(OpServiceProxy, w =>
             {
@@ -356,49 +384,156 @@ namespace Apache.Ignite.Core.Impl.Services
                 w.WriteBoolean(sticky);
             });
 
-            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
+            var callAttrs = GetCallerContextAttributes(callCtx);
 
-            return new ServiceProxy<T>((method, args) =>
-                InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();
+            return ServiceProxyFactory<T>.CreateProxy((method, args) =>
+                InvokeProxyMethod(javaProxy, method.Name, method, args, platform, callAttrs));
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name)
+        {
+            return GetDynamicServiceProxy(name, false);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky)
+        {
+            return GetDynamicServiceProxy(name, sticky, null);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky, IServiceCallContext callCtx)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var javaProxy = DoOutOpObject(OpServiceProxy, w =>
+            {
+                w.WriteString(name);
+                w.WriteBoolean(sticky);
+            });
+
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).PlatformType;
+            var callAttrs = GetCallerContextAttributes(callCtx);
+
+            return new DynamicServiceProxy((methodName, args) =>
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform, callAttrs));
         }
 
         /// <summary>
         /// Invokes the service proxy method.
         /// </summary>
         /// <param name="proxy">Unmanaged proxy.</param>
+        /// <param name="methodName">Name of the method.</param>
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
-        /// <param name="platform">The platform.</param>
+        /// <param name="platformType">The platform.</param>
+        /// <param name="callAttrs">Service call context attributes.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
-        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args, 
-            Platform platform)
+        private object InvokeProxyMethod(IPlatformTargetInternal proxy, string methodName,
+            MethodBase method, object[] args, PlatformType platformType, IDictionary callAttrs)
         {
-            return DoOutInOp(OpInvokeMethod,
-                writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
-                (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            if (platformType == PlatformType.Java)
+            {
+                Marshaller.RegisterSameJavaTypeTl.Value = true;
+            }
+
+            try
+            {
+                return DoOutInOp(OpInvokeMethod,
+                    writer => ServiceProxySerializer.WriteProxyMethod(writer, methodName, method, args, platformType, callAttrs),
+                    (stream, res) => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary),
+                    proxy);
+            }
+            finally
+            {
+                if (platformType == PlatformType.Java)
+                {
+                    Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
+                }
+            }
+
         }
 
         /// <summary>
-        /// Writes the service configuration.
+        /// Reads the deployment result.
         /// </summary>
-        private static void WriteServiceConfiguration(ServiceConfiguration configuration, IBinaryRawWriter w)
+        private object ReadDeploymentResult(BinaryReader r)
         {
-            Debug.Assert(configuration != null);
-            Debug.Assert(w != null);
+            return r != null ? ReadDeploymentResult(r.Stream) : null;
+        }
 
-            w.WriteString(configuration.Name);
-            w.WriteObject(configuration.Service);
-            w.WriteInt(configuration.TotalCount);
-            w.WriteInt(configuration.MaxPerNodeCount);
-            w.WriteString(configuration.CacheName);
-            w.WriteObject(configuration.AffinityKey);
+        /// <summary>
+        /// Reads the deployment result.
+        /// </summary>
+        private object ReadDeploymentResult(IBinaryStream s)
+        {
+            ServiceProxySerializer.ReadDeploymentResult(s, Marshaller, _keepBinary);
+            return null;
+        }
 
-            if (configuration.NodeFilter != null)
-                w.WriteObject(configuration.NodeFilter);
-            else
-                w.WriteObject<object>(null);
+        /// <summary>
+        /// Gets the attributes of the service call context.
+        /// </summary>
+        /// <param name="callCtx">Service call context.</param>
+        /// <returns>Service call context attributes.</returns>
+        private IDictionary GetCallerContextAttributes(IServiceCallContext callCtx)
+        {
+            IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx", 
+                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
+                " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
+
+            return callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
+        }
+
+        /// <summary>
+        /// Performs ServiceConfiguration validation.
+        /// </summary>
+        /// <param name="configuration">Service configuration</param>
+        /// <param name="argName">argument name</param>
+        private static void ValidateConfiguration(ServiceConfiguration configuration, string argName)
+        {
+            IgniteArgumentCheck.NotNull(configuration, argName);
+            IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, string.Format("{0}.Name", argName));
+            IgniteArgumentCheck.NotNull(configuration.Service, string.Format("{0}.Service", argName));
+
+            if (configuration.Interceptors != null)
+            {
+                foreach (var interceptor in configuration.Interceptors)
+                    IgniteArgumentCheck.NotNull(interceptor, string.Format("{0}.Interceptors[]", argName));
+            }
+
+        }
+
+        /// <summary>
+        /// Writes a collection of service configurations using passed BinaryWriter
+        /// Also it performs basic validation of each service configuration and could throw exceptions
+        /// </summary>
+        /// <param name="configurations">a collection of service configurations </param>
+        /// <param name="writer">Binary Writer</param>
+        private static void SerializeConfigurations(IEnumerable<ServiceConfiguration> configurations, 
+            BinaryWriter writer)
+        {
+            var pos = writer.Stream.Position;
+            writer.WriteInt(0);  // Reserve count.
+
+            var cnt = 0;
+
+            foreach (var cfg in configurations)
+            {
+                ValidateConfiguration(cfg, string.Format("configurations[{0}]", cnt));
+                cfg.Write(writer);
+                cnt++;
+            }
+
+            IgniteArgumentCheck.Ensure(cnt > 0, "configurations", "empty collection");
+
+            writer.Stream.WriteInt(pos, cnt);
         }
     }
 }

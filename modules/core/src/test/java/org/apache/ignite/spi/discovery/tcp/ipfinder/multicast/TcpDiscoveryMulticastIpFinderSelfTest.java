@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * GridTcpDiscoveryMulticastIpFinder test.
@@ -48,7 +49,8 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope", "BusyWait"})
+    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testExchange() throws Exception {
         String locAddr = null;
 

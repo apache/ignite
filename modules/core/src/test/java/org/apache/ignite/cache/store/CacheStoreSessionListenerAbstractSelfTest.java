@@ -29,21 +29,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 /**
  * Tests for store session listeners.
  */
 public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridCommonAbstractTest implements Serializable {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected static final String URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
@@ -69,26 +63,8 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     protected static final AtomicBoolean fail = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -114,6 +90,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicCache() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.ATOMIC);
 
@@ -139,6 +116,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransactionalCache() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
@@ -164,6 +142,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitTransaction() throws Exception {
         CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
@@ -189,6 +168,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCrossCacheTransaction() throws Exception {
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);
@@ -217,6 +197,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCommit() throws Exception {
         write.set(true);
 
@@ -246,6 +227,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRollback() throws Exception {
         write.set(true);
         fail.set(true);

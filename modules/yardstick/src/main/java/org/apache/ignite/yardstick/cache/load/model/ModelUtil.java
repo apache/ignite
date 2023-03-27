@@ -38,6 +38,7 @@ public class ModelUtil {
      * Classes of keys.
      */
     private static Class[] keyClasses = {
+        Integer.class,
         Double.class,
         Identifier.class,
         Mark.class,
@@ -104,7 +105,7 @@ public class ModelUtil {
      * @return object from model
      */
     public static Object create(Class c, int id) {
-        Object res = null;
+        Object res;
 
         switch (c.getSimpleName()) {
             case "Double":
@@ -131,7 +132,7 @@ public class ModelUtil {
                 res = new Truck(id, "Mark " + id, id / 2.123 * 100, Color.values()[id % colors], id / 4.123 * 100);
                 break;
             case "Person":
-                res = new Person(id, id+1, "First Name " + id, "Last Name " + id, id / 2.123 * 100);
+                res = new Person(id, id + 1, "First Name " + id, "Last Name " + id, id / 2.123 * 100);
                 break;
             case "Organization":
                 res = new Organization(id, "Organization " + id);
@@ -150,6 +151,9 @@ public class ModelUtil {
                 break;
             case "String":
                 res = String.valueOf(id);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported class: " + c.getSimpleName());
         }
 
         return res;

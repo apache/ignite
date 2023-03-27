@@ -47,7 +47,7 @@ public class ComputeFailoverExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteException{
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
@@ -66,6 +66,7 @@ public class ComputeFailoverExample {
         }
     }
 
+    /** */
     @ComputeTaskSessionFullSupport
     private static final class CheckPointJob implements IgniteClosure<String, Integer> {
         /** Injected distributed task session. */

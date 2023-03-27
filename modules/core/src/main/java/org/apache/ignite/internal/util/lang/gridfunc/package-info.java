@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains utilities classes for {@link org.apache.ignite.internal.util.lang.GridFunc}.
  */
+
 package org.apache.ignite.internal.util.lang.gridfunc;

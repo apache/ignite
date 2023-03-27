@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.platform.compute;
 
 import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.internal.PlatformSecurityAwareJob;
 
 /**
  * Platform closure job interface.
  */
-public interface PlatformJob extends ComputeJob {
+public interface PlatformJob extends ComputeJob, PlatformSecurityAwareJob {
     /**
      * Gets native pointer to deployed job.
      *

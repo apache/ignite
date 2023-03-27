@@ -1,0 +1,85 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Random Forest
+
+== Random Forest in Apache Ignite
+
+Random forest is an ensemble learning method to solve any classification and regression problem. Random forest training builds a model composition (ensemble) of one type and uses some aggregation algorithm of several answers from models. Each model is trained on a part of the training dataset. The part is defined according to bagging and feature subspace methods. More information about these concepts may be found here: https://en.wikipedia.org/wiki/Random_forest, https://en.wikipedia.org/wiki/Bootstrap_aggregating and https://en.wikipedia.org/wiki/Random_subspace_method.
+
+There are several implementations of aggregation algorithms in Apache Ignite ML:
+
+* `MeanValuePredictionsAggregator` - computes answer of a random forest as mean value of predictions from all models in the given composition. Often this is is used for regression tasks.
+* `OnMajorityPredictionsAggegator` - gets a mode of predictions from all models in the given composition. This can be useful for a classification task. NOTE: This aggregator supports multi-classification tasks.
+
+
+== Model
+
+The random forest algorithm is implemented in Ignite ML as a special case of a model composition with specific aggregators for different problems (`MeanValuePredictionsAggregator` for regression, `OnMajorityPredictionsAggegator` for classification).
+
+Here is an example of model usage:
+
+
+[source, java]
+----
+ModelsComposition randomForest = ….
+
+double prediction = randomForest.apply(featuresVector);
+
+----
+
+
+== Trainer
+
+The random forest training algorithm is implemented with RandomForestRegressionTrainer and RandomForestClassifierTrainer trainers with the following parameters:
+
+`meta` - features meta, list of feature type description such as:
+
+  * `featureId` - index in features vector.
+  * `isCategoricalFeature` - flag having true value if a feature is categorical.
+  * `featureName`.
+
+This meta-information is important for random forest training algorithms because it builds feature histograms and categorical features should be represented in histograms for all feature values:
+
+  * `featuresCountSelectionStrgy` - sets strategy defining count of random features for learning one tree. There are several strategies: SQRT, LOG2, ALL and ONE_THIRD strategies implemented in the FeaturesCountSelectionStrategies class.
+  * `maxDepth` - sets the maximum tree depth.
+  * `minInpurityDelta` - a node in a decision tree is split into two nodes if the impurity values on these two nodes is less than the unspilt node's minImpurityDecrease value.
+  * `subSampleSize` - value lying in the [0; MAX_DOUBLE]-interval. This parameter defines the count of sample repetitions in uniformly sampling with replacement.
+  * `seed` - seed value used in random generators.
+
+Random forest training may be used as follows:
+
+
+[source, java]
+----
+RandomForestClassifierTrainer trainer = new RandomForestClassifierTrainer(featuresMeta)
+  .withCountOfTrees(101)
+  .withFeaturesCountSelectionStrgy(FeaturesCountSelectionStrategies.ONE_THIRD)
+  .withMaxDepth(4)
+  .withMinImpurityDelta(0.)
+  .withSubSampleSize(0.3)
+  .withSeed(0);
+
+ModelsComposition rfModel = trainer.fit(
+  ignite,
+  dataCache,
+  vectorizer
+);
+----
+
+
+
+== Example
+
+To see how Random Forest Classifier can be used in practice, try this https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/tree/randomforest/RandomForestClassificationExample.java[example] that is available on GitHub and delivered with every Apache Ignite distribution. In this example, a Wine recognition dataset was used. Description of this dataset and data are available from the https://archive.ics.uci.edu/ml/datasets/wine[UCI Machine Learning Repository].

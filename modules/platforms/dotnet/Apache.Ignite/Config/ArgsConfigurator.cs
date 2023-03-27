@@ -33,7 +33,7 @@ namespace Apache.Ignite.Config
         {
             return args
                 .Select(x => x.Trim().TrimStart('-'))
-                .Select(x => x.StartsWith(Configurator.CmdJvmOpt + "-")
+                .Select(x => x.StartsWith(Configurator.CmdJvmOpt + "-", StringComparison.Ordinal)
                     ? new[] {Configurator.CmdJvmOpt, x.Substring(Configurator.CmdJvmOpt.Length)}
                     : x.Split(new[] {'='}, 2))
                 .Select(x => Tuple.Create(x[0], x.Length > 1 ? x[1] : string.Empty));

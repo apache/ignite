@@ -54,7 +54,7 @@ public final class LifecycleExample {
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(bean);
 
-        try (Ignite ignite  = Ignition.start(cfg)) {
+        try (Ignite ignite = Ignition.start(cfg)) {
             // Make sure that lifecycle bean was notified about ignite startup.
             assert bean.isStarted();
         }

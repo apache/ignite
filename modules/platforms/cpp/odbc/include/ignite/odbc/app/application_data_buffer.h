@@ -38,6 +38,36 @@ namespace ignite
         namespace app
         {
             /**
+             * Conversion result
+             */
+            struct ConversionResult
+            {
+                enum Type
+                {
+                    /** Conversion successful. No data lost. */
+                    AI_SUCCESS,
+
+                    /** Conversion successful, but fractional truncation occurred. */
+                    AI_FRACTIONAL_TRUNCATED,
+
+                    /** Conversion successful, but right-side variable length data truncation occurred. */
+                    AI_VARLEN_DATA_TRUNCATED,
+
+                    /** Conversion is not supported. */
+                    AI_UNSUPPORTED_CONVERSION,
+
+                    /** Indicator buffer needed to complete the operation but it is NULL. */
+                    AI_INDICATOR_NEEDED,
+
+                    /** No data found. */
+                    AI_NO_DATA,
+
+                    /** General operation failure. */
+                    AI_FAILURE
+                };
+            };
+
+            /**
              * User application data buffer.
              */
             class ApplicationDataBuffer
@@ -55,10 +85,9 @@ namespace ignite
                  * @param buffer Data buffer pointer.
                  * @param buflen Data buffer length.
                  * @param reslen Resulting data length.
-                 * @param offset Pointer to buffer and reslen offset pointer.
                  */
                 ApplicationDataBuffer(type_traits::OdbcNativeType::Type type, void* buffer,
-                    SqlLen buflen, SqlLen* reslen, int** offset = 0);
+                    SqlLen buflen, SqlLen* reslen);
 
                 /**
                  * Copy constructor.
@@ -81,113 +110,145 @@ namespace ignite
                 ApplicationDataBuffer& operator=(const ApplicationDataBuffer& other);
 
                 /**
-                 * Set pointer to offset pointer.
+                 * Set offset in bytes for all bound pointers.
                  *
-                 * @param offset Pointer to offset pointer.
+                 * @param offset Offset.
                  */
-                void SetPtrToOffsetPtr(int** offset)
+                void SetByteOffset(int offset)
                 {
-                    this->offset = offset;
+                    this->byteOffset = offset;
+                }
+
+                /**
+                 * Set offset in elements for all bound pointers.
+                 *
+                 * @param
+                 */
+                void SetElementOffset(SqlUlen idx)
+                {
+                    this->elementOffset = idx;
                 }
 
                 /**
                  * Put in buffer value of type int8_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt8(int8_t value);
+                ConversionResult::Type PutInt8(int8_t value);
 
                 /**
                  * Put in buffer value of type int16_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt16(int16_t value);
+                ConversionResult::Type PutInt16(int16_t value);
 
                 /**
                  * Put in buffer value of type int32_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt32(int32_t value);
+                ConversionResult::Type PutInt32(int32_t value);
 
                 /**
                  * Put in buffer value of type int64_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt64(int64_t value);
+                ConversionResult::Type PutInt64(int64_t value);
 
                 /**
                  * Put in buffer value of type float.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutFloat(float value);
+                ConversionResult::Type PutFloat(float value);
 
                 /**
                  * Put in buffer value of type double.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutDouble(double value);
+                ConversionResult::Type PutDouble(double value);
 
                 /**
                  * Put in buffer value of type string.
                  *
                  * @param value Value.
-                 * @return Number of bytes that have been put in buffer.
+                 * @return Conversion result.
                  */
-                int32_t PutString(const std::string& value);
+                ConversionResult::Type PutString(const std::string& value);
+
+                /**
+                 * Put in buffer value of type string.
+                 *
+                 * @param value Value.
+                 * @param written Number of written characters.
+                 * @return Conversion result.
+                 */
+                ConversionResult::Type PutString(const std::string& value, int32_t& written);
 
                 /**
                  * Put in buffer value of type GUID.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutGuid(const Guid& value);
+                ConversionResult::Type PutGuid(const Guid& value);
 
                 /**
                  * Put binary data in buffer.
                  *
                  * @param data Data pointer.
                  * @param len Data length.
-                 * @return Number of bytes that have been put in buffer.
+                 * @param written Number of written characters.
+                 * @return Conversion result.
                  */
-                int32_t PutBinaryData(void* data, size_t len);
+                ConversionResult::Type PutBinaryData(void* data, size_t len, int32_t& written);
 
                 /**
                  * Put NULL.
+                 * @return Conversion result.
                  */
-                void PutNull();
+                ConversionResult::Type PutNull();
 
                 /**
                  * Put decimal value to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutDecimal(const common::Decimal& value);
+                ConversionResult::Type PutDecimal(const common::Decimal& value);
 
                 /**
                  * Put date to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutDate(const Date& value);
+                ConversionResult::Type PutDate(const Date& value);
 
                 /**
                  * Put timestamp to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutTimestamp(const Timestamp& value);
+                ConversionResult::Type PutTimestamp(const Timestamp& value);
 
                 /**
                  * Put time to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutTime(const Time& value);
+                ConversionResult::Type PutTime(const Time& value);
 
                 /**
                  * Get string.
@@ -329,6 +390,13 @@ namespace ignite
                 SqlLen GetDataAtExecSize() const;
 
                 /**
+                 * Get single element size.
+                 *
+                 * @return Size of the single element.
+                 */
+                SqlLen GetElementSize() const;
+
+                /**
                  * Get size of the input buffer.
                  *
                  * @return Input buffer size, or zero if the data is going
@@ -351,49 +419,57 @@ namespace ignite
                  * Put value of numeric type in the buffer.
                  *
                  * @param value Numeric value to put.
+                 * @return Conversion result.
                  */
                 template<typename T>
-                void PutNum(T value);
+                ConversionResult::Type PutNum(T value);
 
                 /**
                  * Put numeric value to numeric buffer.
                  *
                  * @param value Numeric value.
+                 * @return Conversion result.
                  */
                 template<typename Tbuf, typename Tin>
-                void PutNumToNumBuffer(Tin value);
+                ConversionResult::Type PutNumToNumBuffer(Tin value);
 
                 /**
                  * Put value to string buffer.
                  *
                  * @param value Value that can be converted to string.
+                 * @return Conversion result.
                  */
                 template<typename CharT, typename Tin>
-                void PutValToStrBuffer(const Tin& value);
+                ConversionResult::Type PutValToStrBuffer(const Tin& value);
 
                 /**
                  * Put value to string buffer.
                  * Specialisation for int8_t.
                  * @param value Value that can be converted to string.
+                 * @return Conversion result.
                  */
                 template<typename CharT>
-                void PutValToStrBuffer(const int8_t & value);
+                ConversionResult::Type PutValToStrBuffer(const int8_t & value);
 
                 /**
                  * Put string to string buffer.
                  *
                  * @param value String value.
+                 * @param written Number of characters written.
+                 * @return Conversion result.
                  */
                 template<typename OutCharT, typename InCharT>
-                void PutStrToStrBuffer(const std::basic_string<InCharT>& value);
+                ConversionResult::Type PutStrToStrBuffer(const std::basic_string<InCharT>& value, int32_t& written);
 
                 /**
                  * Put raw data to any buffer.
                  *
                  * @param data Data pointer.
                  * @param len Data length.
+                 * @param written Number of characters written.
+                 * @return Conversion result.
                  */
-                void PutRawDataToBuffer(void *data, size_t len);
+                ConversionResult::Type PutRawDataToBuffer(void *data, size_t len, int32_t& written);
 
                 /**
                  * Get int of type T.
@@ -407,10 +483,11 @@ namespace ignite
                  * Apply buffer offset to pointer.
                  * Adds offset to pointer if offset pointer is not null.
                  * @param ptr Pointer.
+                 * @param elemSize Element size.
                  * @return Pointer with applied offset.
                  */
                 template<typename T>
-                T* ApplyOffset(T* ptr) const;
+                T* ApplyOffset(T* ptr, size_t elemSize) const;
 
                 /** Underlying data type. */
                 type_traits::OdbcNativeType::Type type;
@@ -424,8 +501,11 @@ namespace ignite
                 /** Result length. */
                 SqlLen* reslen;
 
-                /** Pointer to implementation pointer to application offset */
-                int** offset;
+                /** Current byte offset */
+                int byteOffset;
+
+                /** Current element offset. */
+                SqlUlen elementOffset;
             };
 
             /** Column binging map type alias. */

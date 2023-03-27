@@ -34,7 +34,7 @@ class GridUriDeploymentSpringDocument {
     /** Initialized springs beans factory. */
     private final XmlBeanFactory factory;
 
-    /** List of tasks from GAR description. */
+    /** List of tasks from package description. */
     private List<Class<? extends ComputeTask<?, ?>>> tasks;
 
     /**
@@ -58,7 +58,7 @@ class GridUriDeploymentSpringDocument {
      */
     @SuppressWarnings({"unchecked"})
     List<Class<? extends ComputeTask<?, ?>>> getTasks(ClassLoader clsLdr) throws IgniteSpiException {
-        assert clsLdr!= null;
+        assert clsLdr != null;
 
         try {
             if (tasks == null) {

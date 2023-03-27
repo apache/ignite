@@ -132,7 +132,7 @@ namespace ignite
                 /** Information about written fields. */
                 FieldContainer* fieldsInfo;
 
-                IGNITE_NO_COPY_ASSIGNMENT(BinarySchema)
+                IGNITE_NO_COPY_ASSIGNMENT(BinarySchema);
             };
         }
     }

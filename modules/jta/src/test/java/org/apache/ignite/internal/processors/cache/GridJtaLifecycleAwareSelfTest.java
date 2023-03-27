@@ -31,6 +31,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -111,7 +112,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
 
         ccfg.setName(CACHE_NAME);
 
-        switch (tmConfigurationType){
+        switch (tmConfigurationType) {
             case CACHE_LOOKUP:
                 ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
                 break;
@@ -132,7 +133,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
     @SuppressWarnings("OverlyStrongTypeCast")
     @Override protected void afterGridStart(Ignite ignite) {
         TestTxLookup tmLookup =
-            (TestTxLookup)((IgniteKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
+            (TestTxLookup)((IgniteKernal)ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
 
         assertNotNull(tmLookup);
 
@@ -140,25 +141,29 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLifecycleAware() throws Exception {
         // No-op, see anothre tests.
     }
 
-    /** {@inheritDoc} */
+    /** */
+    @Test
     public void testCacheLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.CACHE_LOOKUP;
 
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
+    @Test
     public void testGlobalLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.GLOBAL_LOOKUP;
 
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
+    @Test
     public void testFactoryLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.FACTORY;
 
@@ -187,5 +192,6 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         GLOBAL_LOOKUP,
 
         /** */
-        FACTORY}
+        FACTORY
+    }
 }

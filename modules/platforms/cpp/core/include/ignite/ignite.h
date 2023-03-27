@@ -23,19 +23,23 @@
 #ifndef _IGNITE_IGNITE
 #define _IGNITE_IGNITE
 
-#include "ignite/cache/cache.h"
-#include "ignite/transactions/transactions.h"
-#include "ignite/impl/ignite_impl.h"
-#include "ignite/ignite_configuration.h"
+#include <ignite/impl/ignite_impl.h>
+
+#include <ignite/ignite_configuration.h>
+#include <ignite/cache/cache.h>
+#include <ignite/cache/cache_affinity.h>
+#include <ignite/transactions/transactions.h>
+#include <ignite/compute/compute.h>
+#include <ignite/cluster/ignite_cluster.h>
 
 namespace ignite
 {
     /**
      * Main interface to operate with %Ignite.
      *
-     * This class implemented as a reference to an implementation so copying
+     * This class is implemented as a reference to an implementation so copying
      * of this class instance will only create another reference to the same
-     * underlying object. Underlying object released automatically once all
+     * underlying object. Underlying object will be released automatically once all
      * the instances are destructed.
      */
     class IGNITE_IMPORT_EXPORT Ignite
@@ -52,6 +56,26 @@ namespace ignite
          */
         Ignite(impl::IgniteImpl* impl);
         
+        /**
+         * Get affinity service to provide information about data partitioning and distribution.
+         *
+         * @tparam K Cache affinity key type.
+         *
+         * @param cacheName Cache name.
+         * @return Cache data affinity service.
+         */
+        template<typename K>
+        cache::CacheAffinity<K> GetAffinity(const std::string& cacheName)
+        {
+            IgniteError err;
+
+            cache::CacheAffinity<K> ret(impl.Get()->GetAffinity(cacheName, err));
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return ret;
+        }
+
         /**
          * Get Ignite instance name.
          *
@@ -100,7 +124,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -137,7 +161,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -174,10 +198,25 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> CreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
+
+        /**
+         * Check if the Ignite grid is active.
+         *
+         * @return True if grid is active and false otherwise.
+         */
+        bool IsActive();
+
+        /**
+         * Change Ignite grid state to active or inactive.
+         *
+         * @param active If true start activation process. If false start
+         *    deactivation process.
+         */
+        void SetActive(bool active);
 
         /**
          * Get transactions.
@@ -187,6 +226,36 @@ namespace ignite
          * @return Transaction class instance.
          */
         transactions::Transactions GetTransactions();
+
+        /**
+         * Get cluster.
+         *
+         * This method should only be called on the valid instance.
+         *
+         * @return Cluster class instance.
+         */
+        cluster::IgniteCluster GetCluster();
+
+        /**
+         * Gets compute instance over all cluster nodes started in server mode.
+         *
+         * This method should only be called on the valid instance.
+         *
+         * @return Compute class instance.
+         */
+        compute::Compute GetCompute();
+
+        /**
+         * Gets compute instance over the specified cluster group. All operations
+         * on the returned compute instance will only include nodes from
+         * this cluster group.
+         *
+         * This method should only be called on the valid instance.
+         *
+         * @param grp Specified cluster group instance.
+         * @return Compute class instance over the specified cluster group.
+         */
+        compute::Compute GetCompute(cluster::ClusterGroup grp);
 
         /**
          * Get ignite binding.

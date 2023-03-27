@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.util.lang;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,12 +38,22 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -52,7 +66,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
@@ -88,7 +101,9 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformFilteringIterator;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView;
 import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -98,8 +113,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -134,9 +147,6 @@ public class GridFunc {
     private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
 
     /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
-
-    /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
 
     /** */
@@ -162,6 +172,14 @@ public class GridFunc {
 
     /** */
     private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
+
+    /** */
+    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
+        new IgniteClosure<BaselineNode, Object>() {
+            @Override public Object apply(BaselineNode node) {
+                return node.consistentId();
+            }
+        };
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -289,13 +307,13 @@ public class GridFunc {
      * @param delim Delimiter (optional).
      * @return Concatenated string.
      */
-    public static String concat(Iterable<String> c, @Nullable String delim) {
+    public static String concat(Iterable<?> c, @Nullable String delim) {
         A.notNull(c, "c");
 
         IgniteReducer<? super String, String> f = new StringConcatReducer(delim);
 
-        for (String x : c)
-            if (!f.collect(x))
+        for (Object x : c)
+            if (!f.collect(x == null ? null : x.toString()))
                 break;
 
         return f.reduce();
@@ -319,17 +337,36 @@ public class GridFunc {
     }
 
     /**
+     * Convenient utility method that returns collection of node consistent IDs for a given
+     * collection of grid nodes.
+     * <p>
+     * Note that this method doesn't create a new collection but simply iterates
+     * over the input one.
+     *
+     * @param nodes Collection of grid nodes.
+     * @return Collection of node consistent IDs for given collection of grid nodes.
+     */
+    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
+        if (nodes == null || nodes.isEmpty())
+            return Collections.emptyList();
+
+        return F.viewReadOnly(nodes, NODE2CONSISTENTID);
+    }
+
+    /**
      * Gets random value from given collection.
      *
      * @param c Input collection (no {@code null} and not emtpy).
      * @param <T> Type of the collection.
      * @return Random value from the input collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
-        int n = ThreadLocalRandom8.current().nextInt(c.size());
+        int n = ThreadLocalRandom.current().nextInt(c.size());
+
+        if (c instanceof List)
+            return ((List<? extends T>)c).get(n);
 
         int i = 0;
 
@@ -353,7 +390,7 @@ public class GridFunc {
     public static <T> T rand(List<T> l) {
         A.notNull(l, "l");
 
-        return l.get(ThreadLocalRandom8.current().nextInt(l.size()));
+        return l.get(ThreadLocalRandom.current().nextInt(l.size()));
     }
 
     /**
@@ -368,7 +405,7 @@ public class GridFunc {
     public static <T> T rand(T... c) {
         A.notNull(c, "c");
 
-        return c[ThreadLocalRandom8.current().nextInt(c.length)];
+        return c[ThreadLocalRandom.current().nextInt(c.length)];
     }
 
     /**
@@ -486,7 +523,7 @@ public class GridFunc {
      * @return Single iterator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+    public static <T> Iterator<T> concat(Iterator<T>... iters) {
         if (iters.length == 1)
             return iters[0];
 
@@ -499,7 +536,6 @@ public class GridFunc {
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(final Iterator<Iterator<T>> iters) {
         if (!iters.hasNext())
             return Collections.<T>emptySet().iterator();
@@ -681,7 +717,7 @@ public class GridFunc {
      *
      * @return Closure which converts node to node ID.
      */
-    public static IgniteClosure<ClusterNode, UUID> node2id() {
+    public static IgniteClosure<? super ClusterNode, UUID> node2id() {
         return NODE2ID;
     }
 
@@ -982,7 +1018,6 @@ public class GridFunc {
      * @param <T1> Type of the collection.
      * @return Light-weight view on given collection with provided predicate.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @SafeVarargs
     public static <T1, T2> Collection<T2> viewReadOnly(@Nullable final Collection<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
@@ -1104,7 +1139,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Light-weight view on given map with provided predicates and mapping.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public static <K0, K extends K0, V0, V extends V0> Map<K, V> viewAsMap(@Nullable final Set<K> c,
         final IgniteClosure<? super K, V> mapClo, @Nullable final IgnitePredicate<? super K>... p) {
         A.notNull(mapClo, "trans");
@@ -1183,13 +1217,23 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable char[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
      * Tests if the given collection is either {@code null} or empty.
      *
      * @param c Collection to test.
      * @return Whether or not the given collection is {@code null} or empty.
      */
     public static boolean isEmpty(@Nullable Iterable<?> c) {
-        return c == null || (c instanceof Collection<?> ? ((Collection<?>) c).isEmpty() : !c.iterator().hasNext());
+        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
     }
 
     /**
@@ -1213,16 +1257,37 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
-     * Note that this method does not create a new closure but returns a static one.
+     * Tests if the given path is not {@code null} and is an empty directory.
      *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is an empty directory.
      */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
+    public static boolean isEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return !files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Tests if the given path is not {@code null} and is a not empty directory.
+     *
+     * @param dir Path to test.
+     * @return Whether or not the given path is not {@code null} and is a not empty directory.
+     */
+    public static boolean isNotEmptyDirectory(Path dir) {
+        if (dir == null || !Files.isDirectory(dir))
+            return false;
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir)) {
+            return files.iterator().hasNext();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -1246,7 +1311,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Set} instance every time
      *      its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <T> IgniteCallable<Set<T>> newSet() {
         return (IgniteCallable<Set<T>>)SET_FACTORY;
     }
@@ -1260,7 +1324,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <K, V> IgniteCallable<Map<K, V>> newMap() {
         return (IgniteCallable<Map<K, V>>)MAP_FACTORY;
@@ -1275,7 +1338,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link Map} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <K, V> IgniteCallable<ConcurrentMap<K, V>> newCMap() {
         return (IgniteCallable<ConcurrentMap<K, V>>)CONCURRENT_MAP_FACTORY;
     }
@@ -1287,7 +1349,6 @@ public class GridFunc {
      * @return Factory closure that creates new {@link GridConcurrentHashSet} instance every
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
-    @SuppressWarnings("unchecked")
     public static <E> IgniteCallable<Set<E>> newCSet() {
         return (IgniteCallable<Set<E>>)CONCURRENT_SET_FACTORY;
     }
@@ -1347,11 +1408,12 @@ public class GridFunc {
      * @param p Optional filtering predicates.
      * @return Iterator from given iterator and optional filtering predicate.
      */
+    @SafeVarargs
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,
-        @Nullable final IgnitePredicate<? super T1>... p)
-    {
+        @Nullable final IgnitePredicate<? super T1>... p
+    ) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -1367,7 +1429,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -1379,7 +1440,6 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -1438,7 +1498,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is not {@code null}.
      */
     public static <T> IgnitePredicate<T> notNull() {
-        return (IgnitePredicate<T>) IS_NOT_NULL;
+        return (IgnitePredicate<T>)IS_NOT_NULL;
     }
 
     /**
@@ -1510,7 +1570,7 @@ public class GridFunc {
      * @return List' first element or {@code null} in case if list is empty.
      */
     public static <T> T first(List<? extends T> list) {
-        if (list.isEmpty())
+        if (list == null || list.isEmpty())
             return null;
 
         return list.get(0);
@@ -1601,7 +1661,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if each of its component predicates
      *      evaluates to {@code true}.
      */
-    @SuppressWarnings({"unchecked", "ConfusingArgumentToVarargsMethod"})
+    @SuppressWarnings({"unchecked"})
     public static <T> IgnitePredicate<T> and(@Nullable final IgnitePredicate<? super T>... ps) {
         if (isEmpty(ps))
             return F.alwaysTrue();
@@ -1674,7 +1734,6 @@ public class GridFunc {
      * @param it Iterable to fetch.
      * @return Modified target collection.
      */
-    @SuppressWarnings("unchecked")
     @Deprecated
     public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
         if (it == null)
@@ -1718,7 +1777,7 @@ public class GridFunc {
      *      does not exist in the map. Return {@code null} if key is not found and
      *      closure is {@code null}.
      */
-    public static <K, V>  V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
+    public static <K, V> V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
         A.notNull(map, "map", key, "key");
 
         V v = map.get(key);
@@ -1863,7 +1922,6 @@ public class GridFunc {
      * @param <X> Type of the free variable for the closure and type of the array
      *      elements.
      */
-    @SuppressWarnings("RedundantTypeArguments")
     @Deprecated
     public static <X> void forEach(X[] c, IgniteInClosure<? super X> f, @Nullable IgnitePredicate<? super X>... p) {
         A.notNull(c, "c", f, "f");
@@ -2028,36 +2086,6 @@ public class GridFunc {
     }
 
     /**
-     * Finds, transforms and returns first element in given collection for which any of
-     * the provided predicates evaluates to {@code true}.
-     *
-     * @param c Input collection.
-     * @param dfltVal Default value to return when no element is found.
-     * @param f Transforming closure.
-     * @param p Optional set of finder predicates.
-     * @param <V> Type of the collection elements.
-     * @return First element in given collection for which predicate evaluates to
-     *      {@code true} - or {@code null} if such element cannot be found.
-     */
-    @Deprecated
-    public static <V, Y> Y find(Iterable<? extends V> c, @Nullable Y dfltVal, IgniteClosure<? super V, Y> f,
-        @Nullable IgnitePredicate<? super V>... p) {
-        A.notNull(c, "c", f, "f");
-
-        if (isAlwaysTrue(p) && c.iterator().hasNext())
-            return f.apply(c.iterator().next());
-
-        if (!isEmpty(p) && !isAlwaysFalse(p)) {
-            for (V v : c) {
-                if (isAny(v, p))
-                    return f.apply(v);
-            }
-        }
-
-        return dfltVal;
-    }
-
-    /**
      * Checks if collection {@code c1} contains any elements from collection {@code c2}.
      *
      * @param c1 Collection to check for containment. If {@code null} - this method returns {@code false}.
@@ -2124,6 +2152,7 @@ public class GridFunc {
      * @param t2 Second object in pair.
      * @param <T> Type of objects in pair.
      * @return Pair of objects.
+     * @deprecated Use {@link T2} instead.
      */
     @Deprecated
     public static <T> IgnitePair<T> pair(@Nullable T t1, @Nullable T t2) {
@@ -2751,6 +2780,60 @@ public class GridFunc {
     }
 
     /**
+     * Checks if key is contained in the map passed in. If the map
+     * is {@code null}, then {@code false} is returned.
+     *
+     * @param m Map to check.
+     * @param k Key to check for containment.
+     * @param <T> Key type.
+     * @return {@code true} if map is not {@code null} and contains given
+     *      key, {@code false} otherwise.
+     */
+    public static <T> boolean mapContainsKey(@Nullable final Map<T, ?> m, final T k) {
+        return m != null && m.containsKey(k);
+    }
+
+    /**
+     * Check's that {@code val} contains ignore case in collection {@code col}.
+     *
+     * @param col Collection of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code col} and {@code @val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable Collection<String> col, String val) {
+        if (F.isEmpty(col))
+            return false;
+
+        for (String v : col) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check's that {@code val} contains ignore case in array {@code arr}.
+     *
+     * @param arr Array of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code arr} and {@code val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable String[] arr, String val) {
+        if (F.isEmpty(arr))
+            return false;
+
+        for (String v : arr) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param arr Array.
      * @param val Value to find.
      * @return {@code True} if array contains given value.
@@ -2929,7 +3012,7 @@ public class GridFunc {
             V v2 = m2.get(e.getKey());
 
             if (v1 == v2)
-                return true;
+                continue;
 
             if (v1 == null || v2 == null)
                 return false;
@@ -2944,7 +3027,7 @@ public class GridFunc {
                         return false;
                 }
                 else {
-                    if (!eq(v1, v2))
+                    if (!(v1.getClass().isArray() ? arrayEq(v1, v2) : eq(v1, v2)))
                         return false;
                 }
             }
@@ -2983,7 +3066,6 @@ public class GridFunc {
      * @param <V> Value type.
      * @return Closure that returns value for an entry.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Get() {
         return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
@@ -2995,7 +3077,6 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry has peek value.
      */
-    @SuppressWarnings({"unchecked"})
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
         return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }
@@ -3082,5 +3163,431 @@ public class GridFunc {
         }
 
         return rdc == null ? null : rdc.reduce();
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code True} if array sorted, {@code false} otherwise.
+     */
+    public static boolean isSorted(long[] arr) {
+        if (isEmpty(arr) || arr.length == 1)
+            return true;
+
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, false, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code .0d} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, .0d, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static IntSupplier nonThrowableSupplier(IntSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, 0, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static LongSupplier nonThrowableSupplier(LongSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, 0, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code null} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, IgniteLogger log) {
+        return nonThrowableSupplier(s, null, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, boolean dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsBoolean();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, double dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsDouble();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static IntSupplier nonThrowableSupplier(IntSupplier s, int dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsInt();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static LongSupplier nonThrowableSupplier(LongSupplier s, long dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsLong();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, T dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.get();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if not null and array.
+     */
+    public static boolean isArray(Object val) {
+        return val != null && val.getClass().isArray();
+    }
+
+    /**
+     * Check for arrays equality.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return {@code True} if arrays equal.
+     */
+    public static boolean arrayEq(Object a1, Object a2) {
+        if (a1 == a2)
+            return true;
+
+        if (a1 == null || a2 == null)
+            return a1 != null || a2 != null;
+
+        if (a1.getClass() != a2.getClass())
+            return false;
+
+        if (a1 instanceof byte[])
+            return Arrays.equals((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return Arrays.equals((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return Arrays.equals((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return Arrays.equals((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return Arrays.equals((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return Arrays.equals((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return Arrays.equals((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return Arrays.equals((double[])a1, (double[])a2);
+        else if (a1 instanceof BinaryArray)
+            return a1.equals(a2);
+
+        return Arrays.deepEquals((Object[])a1, (Object[])a2);
+    }
+
+    /**
+     * Compare arrays.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to,
+     * or greater than the second.
+     */
+    public static int compareArrays(Object a1, Object a2) {
+        if (a1 == a2)
+            return 0;
+
+        if (a1 == null || a2 == null)
+            return a1 != null ? 1 : -1;
+
+        if (a1.getClass() != a2.getClass()) {
+            throw new IllegalArgumentException(
+                "Can't compare arrays of different types[a1=" + a1.getClass() + ",a2=" + a2.getClass() + ']'
+            );
+        }
+
+        if (a1 instanceof byte[])
+            return compareArrays((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return compareArrays((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return compareArrays((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return compareArrays((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return compareArrays((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return compareArrays((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return compareArrays((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return compareArrays((double[])a1, (double[])a2);
+        else if (a1 instanceof Object[])
+            return compareArrays((Object[])a1, (Object[])a2);
+
+        throw new IllegalStateException("Unknown array type " + a1.getClass());
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(Object[] a1, Object[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] == null || a2[i] == null) {
+                if (a1[i] != null || a2[i] != null)
+                    return a1[i] != null ? 1 : -1;
+
+                continue;
+            }
+
+            if (F.isArray(a1[i]) && F.isArray(a2[i])) {
+                int res = compareArrays(a1[i], a2[i]);
+
+                if (res != 0)
+                    return res;
+            }
+
+            return ((Comparable)a1[i]).compareTo(a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(byte[] a1, byte[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Byte.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(boolean[] a1, boolean[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Boolean.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(short[] a1, short[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Short.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(char[] a1, char[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Character.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(int[] a1, int[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Integer.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(long[] a1, long[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+
+        for (int i = 0; i < l; i++) {
+            if (a1[i] != a2[i])
+                return Long.compare(a1[i], a2[i]);
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(float[] a1, float[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Float.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
+    }
+
+    /** Compare arrays. */
+    public static int compareArrays(double[] a1, double[] a2) {
+        if (a1 == a2)
+            return 0;
+
+        int l = Math.min(a1.length, a2.length);
+        int res;
+
+        for (int i = 0; i < l; i++) {
+            if ((res = Double.compare(a1[i], a2[i])) != 0)
+                return res;
+        }
+
+        return Integer.compare(a1.length, a2.length);
     }
 }

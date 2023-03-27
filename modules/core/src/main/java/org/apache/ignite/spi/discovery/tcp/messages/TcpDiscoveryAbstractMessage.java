@@ -46,10 +46,16 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** */
+    protected static final int CHANGE_TOPOLOGY_FLAG_POS = 3;
+
+    /** */
     protected static final int CLIENT_ACK_FLAG_POS = 4;
 
     /** */
     protected static final int FORCE_FAIL_FLAG_POS = 8;
+
+    /** */
+    protected static final int COMPRESS_DATA_PACKET = 9;
 
     /** Sender of the message (transient). */
     private transient UUID sndNodeId;
@@ -57,7 +63,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** Message ID. */
     private IgniteUuid id;
 
-    /** Verifier node ID. */
+    /**
+     * Verifier node ID.
+     * Node can mark the messages as verified for rest of nodes to apply the
+     * changes this message is issued for, i.e. node added message, node failed or
+     * left message are processed by other nodes only after coordinator
+     * verification.
+     */
     private UUID verifierNodeId;
 
     /** Topology version. */

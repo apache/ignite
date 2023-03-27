@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.utils;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.security.Timestamp;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,38 +33,57 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.EventType;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServiceImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.service.LazyServiceConfiguration;
+import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
@@ -72,10 +91,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
 public class PlatformUtils {
     /** Node attribute: platform. */
-    public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
+    public static final String ATTR_PLATFORM = ATTR_PREFIX + ".platform";
 
     /** Platform: CPP. */
     public static final String PLATFORM_CPP = "cpp";
@@ -603,6 +621,23 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+        writeEventType(writer, evt.getEventType());
+    }
+
+    /**
+     * Write event type to the writer.
+     * @param writer Writer.
+     * @param evtType Type of event.
+     */
+    private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
+        switch (evtType) {
+            case CREATED: writer.writeByte((byte)0); break;
+            case UPDATED: writer.writeByte((byte)1); break;
+            case REMOVED: writer.writeByte((byte)2); break;
+            case EXPIRED: writer.writeByte((byte)3); break;
+            default:
+                throw new IllegalArgumentException("Unknown event type: " + evtType);
+        }
     }
 
     /**
@@ -611,7 +646,6 @@ public class PlatformUtils {
      * @param ex Error.
      * @param writer Writer.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
 
@@ -685,13 +719,13 @@ public class PlatformUtils {
     }
 
     /**
-     * Get GridGain platform processor.
+     * Get platform processor.
      *
      * @param grid Ignite instance.
      * @return Platform processor.
      */
     public static PlatformProcessor platformProcessor(Ignite grid) {
-        GridKernalContext ctx = ((IgniteKernal) grid).context();
+        GridKernalContext ctx = ((IgniteKernal)grid).context();
 
         return ctx.platform();
     }
@@ -722,7 +756,6 @@ public class PlatformUtils {
      * @param err Error.
      * @return Error data.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static byte[] errorData(Throwable err) {
         if (err instanceof PlatformExtendedException) {
             PlatformContext ctx = ((PlatformExtendedException)err).context();
@@ -768,8 +801,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
-    {
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err) {
         if (err == null) {
             writer.writeBoolean(true);
             writer.writeObject(resObj);
@@ -807,12 +839,26 @@ public class PlatformUtils {
      */
     public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
+        return readInvocationResult(ctx, reader, false);
+    }
+
+    /**
+     * Reads invocation result (of a job/service/etc) using a common protocol.
+     *
+     * @param ctx Platform context.
+     * @param reader Reader.
+     * @param deserialize If {@code true} deserialize invocation result.
+     * @return Result.
+     * @throws IgniteCheckedException When invocation result is an error.
+     */
+    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader, boolean deserialize)
+            throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
 
         if (success)
             // 2. Return result as is.
-            return reader.readObjectDetached();
+            return deserialize ? reader.readObject() : reader.readObjectDetached();
         else {
             // 3. Read whether exception is in form of object or string.
             boolean hasException = reader.readBoolean();
@@ -841,16 +887,15 @@ public class PlatformUtils {
      *
      * @return Marshaller.
      */
-    @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         BinaryContext ctx =
             new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null));
+        marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh);
 
         return new GridBinaryMarshaller(ctx);
     }
@@ -941,7 +986,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return col0;
+        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
     }
 
     /**
@@ -951,6 +996,9 @@ public class PlatformUtils {
      * @return Result.
      */
     public static Object[] unwrapBinariesInArray(Object[] arr) {
+        if (arr.getClass().getComponentType() != Object.class)
+            return arr;
+
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
@@ -973,6 +1021,7 @@ public class PlatformUtils {
 
         return map0;
     }
+
     /**
      * Create Java object.
      *
@@ -1021,12 +1070,17 @@ public class PlatformUtils {
                     throw new IgniteException("Java object/factory class field is not found [" +
                         "className=" + clsName + ", fieldName=" + fieldName + ']');
 
+                Object val = prop.getValue();
+
                 try {
-                    field.set(obj, prop.getValue());
+                    field.set(
+                        obj,
+                        BinaryUtils.isObjectArray(field.getType()) ? BinaryUtils.rawArrayFromBinary(val) : val
+                    );
                 }
                 catch (Exception e) {
                     throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
-                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
+                        ", fieldName=" + fieldName + ", fieldValue=" + val + ']', e);
                 }
             }
         }
@@ -1049,6 +1103,297 @@ public class PlatformUtils {
      */
     public static String getFullStackTrace(Throwable throwable) {
         return X.getFullStackTrace(throwable);
+    }
+
+    /**
+     * Gets the schema.
+     *
+     * @param cacheObjProc Cache object processor.
+     * @param typeId Type id.
+     * @param schemaId Schema id.
+     */
+    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+        assert cacheObjProc != null;
+
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            if (meta != null) {
+                for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                    if (schemaId == typeSchema.schemaId()) {
+                        schema = typeSchema;
+                        break;
+                    }
+                }
+            }
+
+            if (schema != null) {
+                schemaReg.addSchema(schemaId, schema);
+            }
+        }
+
+        return schema == null ? null : schema.fieldIds();
+    }
+
+    /**
+     * Writes the binary metadata to a writer.
+     *
+     * @param writer Writer.
+     * @param meta Meta.
+     */
+    public static void writeBinaryMetadata(BinaryRawWriter writer, BinaryMetadata meta, boolean includeSchemas) {
+        assert meta != null;
+
+        Map<String, BinaryFieldMetadata> fields = meta.fieldsMap();
+
+        writer.writeInt(meta.typeId());
+        writer.writeString(meta.typeName());
+        writer.writeString(meta.affinityKeyFieldName());
+
+        writer.writeInt(fields.size());
+
+        for (Map.Entry<String, BinaryFieldMetadata> e : fields.entrySet()) {
+            writer.writeString(e.getKey());
+
+            writer.writeInt(e.getValue().typeId());
+            writer.writeInt(e.getValue().fieldId());
+        }
+
+        if (meta.isEnum()) {
+            writer.writeBoolean(true);
+
+            Map<String, Integer> enumMap = meta.enumMap();
+
+            writer.writeInt(enumMap.size());
+
+            for (Map.Entry<String, Integer> e: enumMap.entrySet()) {
+                writer.writeString(e.getKey());
+                writer.writeInt(e.getValue());
+            }
+        }
+        else {
+            writer.writeBoolean(false);
+        }
+
+        if (!includeSchemas) {
+            return;
+        }
+
+        // Schemas.
+        Collection<BinarySchema> schemas = meta.schemas();
+
+        writer.writeInt(schemas.size());
+
+        for (BinarySchema schema : schemas) {
+            writer.writeInt(schema.schemaId());
+
+            int[] ids = schema.fieldIds();
+            writer.writeInt(ids.length);
+
+            for (int id : ids) {
+                writer.writeInt(id);
+            }
+        }
+    }
+
+    /**
+     * Reads the binary metadata.
+     *
+     * @param reader Reader.
+     * @return Collection of metas.
+     */
+    public static Collection<BinaryMetadata> readBinaryMetadataCollection(BinaryRawReaderEx reader) {
+        return readCollection(reader,
+                new PlatformReaderClosure<BinaryMetadata>() {
+                    @Override public BinaryMetadata read(BinaryRawReaderEx reader) {
+                        return readBinaryMetadata(reader);
+                    }
+                }
+        );
+    }
+
+    /**
+     * Reads the binary metadata.
+     *
+     * @param reader Reader.
+     * @return Binary type metadata.
+     */
+    public static BinaryMetadata readBinaryMetadata(BinaryRawReaderEx reader) {
+        int typeId = reader.readInt();
+        String typeName = reader.readString();
+        String affKey = reader.readString();
+
+        Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
+                new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                        String name = reader.readString();
+                        int typeId = reader.readInt();
+                        int fieldId = reader.readInt();
+
+                        return new IgniteBiTuple<String, BinaryFieldMetadata>(name,
+                                new BinaryFieldMetadata(typeId, fieldId));
+                    }
+                });
+
+        Map<String, Integer> enumMap = null;
+
+        boolean isEnum = reader.readBoolean();
+
+        if (isEnum) {
+            int size = reader.readInt();
+
+            enumMap = new LinkedHashMap<>(size);
+
+            for (int idx = 0; idx < size; idx++)
+                enumMap.put(reader.readString(), reader.readInt());
+        }
+
+        // Read schemas
+        int schemaCnt = reader.readInt();
+
+        List<BinarySchema> schemas = null;
+
+        if (schemaCnt > 0) {
+            schemas = new ArrayList<>(schemaCnt);
+
+            for (int i = 0; i < schemaCnt; i++) {
+                int id = reader.readInt();
+                int fieldCnt = reader.readInt();
+                List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                for (int j = 0; j < fieldCnt; j++)
+                    fieldIds.add(reader.readInt());
+
+                schemas.add(new BinarySchema(id, fieldIds));
+            }
+        }
+
+        return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
+    }
+
+    /**
+     * Writes node attributes.
+     *
+     * @param writer Writer.
+     * @param attrs Attributes.
+     */
+    public static void writeNodeAttributes(BinaryRawWriterEx writer, Map<String, Object> attrs) {
+        assert writer != null;
+        assert attrs != null;
+
+        if (attrs != null) {
+            writer.writeInt(attrs.size());
+
+            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                writer.writeString(e.getKey());
+                writer.writeObjectDetached(e.getValue());
+            }
+        }
+        else {
+            writer.writeInt(0);
+        }
+    }
+
+    /**
+     * Reads node attributes.
+     *
+     * @param reader Reader.
+     * @return Attributes.
+     */
+    public static Map<String, Object> readNodeAttributes(BinaryRawReaderEx reader) {
+        assert reader != null;
+
+        int attrCnt = reader.readInt();
+        Map<String, Object> attrs = new HashMap<>(attrCnt);
+
+        for (int j = 0; j < attrCnt; j++) {
+            attrs.put(reader.readString(), reader.readObjectDetached());
+        }
+
+        return attrs;
+    }
+
+    /**
+     * Write binary productVersion.
+     *
+     * @param out Writer.
+     * @param productVersion IgniteProductVersion.
+     */
+    public static void writeNodeVersion(BinaryRawWriterEx out, IgniteProductVersion productVersion) {
+        out.writeByte(productVersion.major());
+        out.writeByte(productVersion.minor());
+        out.writeByte(productVersion.maintenance());
+        out.writeString(productVersion.stage());
+        out.writeLong(productVersion.revisionTimestamp());
+        out.writeByteArray(productVersion.revisionHash());
+    }
+
+    /**
+     * Reads collection of strings.
+     *
+     * @param reader Reader.
+     */
+    public static Collection<String> readStrings(BinaryRawReader reader) {
+        assert reader != null;
+
+        int cnt = reader.readInt();
+
+        Collection<String> strings = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            strings.add(reader.readString());
+
+        return strings;
+    }
+
+    /**
+     * Get service platform.
+     *
+     * @param svcCfg Service configuration.
+     * @return Service platform or empty string if this is a java service.
+     */
+    public static String servicePlatform(ServiceConfiguration svcCfg) {
+        if (svcCfg instanceof LazyServiceConfiguration) {
+            String svcClsName = ((LazyServiceConfiguration)svcCfg).serviceClassName();
+
+            if (PlatformDotNetServiceImpl.class.getName().equals(svcClsName))
+                return PLATFORM_DOTNET;
+        }
+        else if (svcCfg instanceof ServiceConfiguration && svcCfg.getService() instanceof PlatformDotNetServiceImpl)
+            return PLATFORM_DOTNET;
+
+        return "";
+    }
+
+    /**
+     * Read cache object from the stream as raw bytes to avoid marshalling.
+     *
+     * @param reader Reader.
+     * @param isKey {@code True} if object is a key.
+     */
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
+        BinaryInputStream in = reader.in();
+
+        int pos0 = in.position();
+
+        Object obj = reader.readObjectDetached();
+
+        if (obj == null)
+            return null;
+
+        if (obj instanceof CacheObject)
+            return (T)obj;
+
+        int pos1 = in.position();
+
+        in.position(pos0);
+
+        byte[] objBytes = in.readByteArray(pos1 - pos0);
+
+        return isKey ? (T)new KeyCacheObjectImpl(obj, objBytes, -1) : (T)new CacheObjectImpl(obj, objBytes);
     }
 
     /**

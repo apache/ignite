@@ -60,15 +60,13 @@ public class TestThreadLocalCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T attachment() {
         TestCacheSession ses = sesHolder.get();
 
-        return ses!= null ? (T)ses.attachment() : null;
+        return ses != null ? (T)ses.attachment() : null;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> Map<K, V> properties() {
         TestCacheSession ses = sesHolder.get();
 

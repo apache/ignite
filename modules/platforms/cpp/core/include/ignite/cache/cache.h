@@ -56,9 +56,9 @@ namespace ignite
          * copy-constructable and assignable. Also BinaryType class
          * template should be specialized for both types.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
-         * underlying object. Underlying object released automatically once all
+         * underlying object. Underlying object will be released automatically once all
          * the instances are destructed.
          *
          * @tparam K Cache key type.
@@ -259,12 +259,14 @@ namespace ignite
              */
             V LocalPeek(const K& key, int32_t peekModes, IgniteError& err)
             {
+                V val;
+
                 impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(val);
 
-                impl.Get()->LocalPeek(inOp, outOp, peekModes, err);
+                impl.Get()->LocalPeek(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return val;
             }
 
             /**
@@ -305,12 +307,13 @@ namespace ignite
              */
             V Get(const K& key, IgniteError& err)
             {
+                V val;
                 impl::In1Operation<K> inOp(key);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(val);
 
                 impl.Get()->Get(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return val;
             }
 
             /**
@@ -351,12 +354,14 @@ namespace ignite
              */
             std::map<K, V> GetAll(const std::set<K>& keys, IgniteError& err)
             {
+                std::map<K, V> res;
+
                 impl::InSetOperation<K> inOp(keys);
-                impl::OutMapOperation<K, V> outOp;
+                impl::OutMapOperation<K, V> outOp(res);
 
                 impl.Get()->GetAll(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return res;
             }
 
             /**
@@ -464,6 +469,9 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
+             * Keys are locked in the order of iteration. It is caller's responsibility to make sure keys always follow
+             * same order. If that is not observed, calling this method in parallel <b>will lead to deadlock</b>.
+             *
              * @param begin Iterator pointing to the beggining of the key-value pair sequence.
              * @param end Iterator pointing to the end of the key-value pair sequence.
              */
@@ -515,24 +523,26 @@ namespace ignite
              */
             V GetAndPut(const K& key, const V& val, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In2Operation<K, V> inOp(key, val);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndPut(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
-             * Atomically replaces the value for a given key if and only if there is
-             * a value currently mapped by the key.
+             * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+             * the key.
              *
              * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
-             * @return The previous value associated with the specified key, or
-             *     null if there was no mapping for the key.
+             * @return The previous value associated with the specified key, or null if there was no mapping for
+             *     the key.
              */
             V GetAndReplace(const K& key, const V& val)
             {
@@ -546,25 +556,27 @@ namespace ignite
             }
 
             /**
-             * Atomically replaces the value for a given key if and only if there is
-             * a value currently mapped by the key.
+             * Atomically replaces the value for a given key if and only if there is a value currently mapped by
+             * the key.
              *
              * This method should only be used on the valid instance.
              *
              * @param key Key with which the specified value is to be associated.
              * @param val Value to be associated with the specified key.
              * @param err Error.
-             * @return The previous value associated with the specified key, or
-             *     null if there was no mapping for the key.
+             * @return The previous value associated with the specified key, or null if there was no mapping for
+             *     the key.
              */
             V GetAndReplace(const K& key, const V& val, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In2Operation<K, V> inOp(key, val);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndReplace(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
@@ -597,17 +609,19 @@ namespace ignite
              */
             V GetAndRemove(const K& key, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In1Operation<K> inOp(key);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndRemove(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
-             * Atomically associates the specified key with the given value if it is not
-             * already associated with a value.
+             * Atomically associates the specified key with the given value if it is not already associated with
+             * a value.
              *
              * This method should only be used on the valid instance.
              *
@@ -627,8 +641,8 @@ namespace ignite
             }
 
             /**
-             * Atomically associates the specified key with the given value if it is not
-             * already associated with a value.
+             * Atomically associates the specified key with the given value if it is not already associated with
+             * a value.
              *
              * This method should only be used on the valid instance.
              *
@@ -694,12 +708,14 @@ namespace ignite
              */
             V GetAndPutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
+                V oldVal;
+
                 impl::In2Operation<K, V> inOp(key, val);
-                impl::Out1Operation<V> outOp;
+                impl::Out1Operation<V> outOp(oldVal);
 
                 impl.Get()->GetAndPutIfAbsent(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return oldVal;
             }
 
             /**
@@ -752,8 +768,8 @@ namespace ignite
             }
 
             /**
-             * Stores given key-value pair in cache only if only if the previous value is equal to the
-             * old value passed as argument.
+             * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+             * as argument.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
              * This method should only be used on the valid instance.
@@ -775,8 +791,8 @@ namespace ignite
             }
 
             /**
-             * Stores given key-value pair in cache only if only if the previous value is equal to the
-             * old value passed as argument.
+             * Stores given key-value pair in cache only if the previous value is equal to the old value passed
+             * as argument.
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
              * This method should only be used on the valid instance.
@@ -1201,6 +1217,9 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
+             * Keys are locked in the order of iteration. It is caller's responsibility to make sure keys always follow
+             * same order. If that is not observed, calling this method in parallel <b>will lead to deadlock</b>.
+             *
              * @param begin Iterator pointing to the beggining of the key sequence.
              * @param end Iterator pointing to the end of the key sequence.
              */
@@ -1369,6 +1388,7 @@ namespace ignite
 
             /**
              * Perform SQL query.
+             * @deprecated Will be removed in future releases. Use SqlFieldsQuery instead.
              *
              * This method should only be used on the valid instance.
              *
@@ -1519,17 +1539,17 @@ namespace ignite
              * BinaryType class template should be specialized for every custom
              * class.
              *
-             * Processor class should be registered as a cache entry processor using
-             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
-             * #IgniteModuleInit() function to register your cache processors upon
-             * module loading. There should be at most one instance of such function
-             * per module.
+             * Processor class should be registered as a cache entry processor
+             * using IgniteBinding::RegisterCacheEntryProcessor() method. You
+             * can declare #IgniteModuleInit() function to register your cache
+             * processors upon module loading. There should be at most one
+             * instance of such function per module.
              *
              * See the example below for details:
              * @code{.cpp}
              * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
              * {
-             *     IgniteBinding binding = context.GetBingding();
+             *     IgniteBinding binding = context.GetBinding();
              *
              *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
              *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
@@ -1572,17 +1592,17 @@ namespace ignite
              * BinaryType class template should be specialized for every custom
              * class.
              *
-             * Processor class should be registered as a cache entry processor using
-             * IgniteBinding::RegisterCacheEntryProcessor() method. You can declare
-             * #IgniteModuleInit() function to register your cache processors upon
-             * module loading. There should be at most one instance of such function
-             * per module.
+             * Processor class should be registered as a cache entry processor
+             * using IgniteBinding::RegisterCacheEntryProcessor() method. You
+             * can declare #IgniteModuleInit() function to register your cache
+             * processors upon module loading. There should be at most one
+             * instance of such function per module.
              *
              * See the example below for details:
              * @code{.cpp}
              * IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::IgniteBindingContext& context)
              * {
-             *     IgniteBinding binding = context.GetBingding();
+             *     IgniteBinding binding = context.GetBinding();
              *
              *     binding.RegisterCacheEntryProcessor<MyProcessor1>();
              *     binding.RegisterCacheEntryProcessor<MyProcessor2>();
@@ -1600,21 +1620,100 @@ namespace ignite
              * @param processor The processor.
              * @param arg The argument.
              * @param err Error.
-             * @return Result of the processing. Default-constructed value on error.
+             * @return Result of the processing. Default-constructed value on
+             *   error.
              */
             template<typename R, typename P, typename A>
             R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
             {
                 typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
 
+                R res;
                 ProcessorHolder procHolder(processor, arg);
 
-                impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
-                impl::Out1Operation<R> outOp;
+                impl::InCacheInvokeOperation<K, ProcessorHolder> inOp(key, procHolder);
+                impl::Out1Operation<R> outOp(res);
 
                 impl.Get()->Invoke(inOp, outOp, err);
 
-                return outOp.GetResult();
+                return res;
+            }
+
+            /**
+             * Invokes an instance of Java class CacheEntryProcessor against the
+             * entry specified by the provided key. If an entry does not exist
+             * for the specified key, an attempt is made to load it (if a loader
+             * is configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * If task for given name has not been deployed yet, then
+             * @c processorName will be used as task class name to auto-deploy
+             * the task.
+             *
+             * Return value and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * For additional information on CacheEntryProcessor class and
+             * details of its invocation refer to Java API documentation for
+             * method org.apache.ignite.IgniteCache#invoke(...).
+             *
+             * @throw IgniteError on fail.
+             *
+             * @param key The key.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename A>
+            R InvokeJava(const K& key, const std::string& processorName, const A& arg)
+            {
+                IgniteError err;
+
+                R res = InvokeJava<R>(key, processorName, arg, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Invokes an instance of Java class CacheEntryProcessor against the
+             * entry specified by the provided key. If an entry does not exist
+             * for the specified key, an attempt is made to load it (if a loader
+             * is configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * If task for given name has not been deployed yet, then
+             * @c processorName will be used as task class name to auto-deploy
+             * the task.
+             *
+             * Return value and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType class template should be specialized for every custom
+             * class.
+             *
+             * For additional information on CacheEntryProcessor class and
+             * details of its invocation refer to Java API documentation for
+             * method org.apache.ignite.IgniteCache#invoke(...).
+             *
+             * @throw IgniteError on fail.
+             *
+             * @param key The key.
+             * @param arg The argument.
+             * @return Result of the processing.
+             */
+            template<typename R, typename A>
+            R InvokeJava(const K& key, const std::string& processorName, const A& arg, IgniteError& err)
+            {
+                R res;
+
+                impl::In3Operation<std::string, K, A> inOp(processorName, key, arg);
+                impl::Out1Operation<R> outOp(res);
+
+                impl.Get()->InvokeJava(inOp, outOp, err);
+
+                return res;
             }
 
             /**

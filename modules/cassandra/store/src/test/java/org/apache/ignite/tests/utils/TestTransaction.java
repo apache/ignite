@@ -17,6 +17,7 @@
 
 package org.apache.ignite.tests.utils;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
@@ -26,8 +27,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  * Dummy transaction for test purposes.
@@ -139,5 +138,20 @@ public class TestTransaction implements Transaction {
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void suspend() throws IgniteException{
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() throws IgniteException {
+        // No-op.
     }
 }

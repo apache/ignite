@@ -19,7 +19,8 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * New root in meta page.
@@ -29,12 +30,12 @@ public class MetaPageAddRootRecord extends PageDeltaRecord {
     private long rootId;
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache ID.
      * @param pageId  Page ID.
      * @param rootId Root ID.
      */
-    public MetaPageAddRootRecord(int cacheId, long pageId, long rootId) {
-        super(cacheId, pageId);
+    public MetaPageAddRootRecord(int grpId, long pageId, long rootId) {
+        super(grpId, pageId);
 
         this.rootId = rootId;
     }
@@ -43,7 +44,7 @@ public class MetaPageAddRootRecord extends PageDeltaRecord {
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.addRoot(pageAddr, rootId, pageMem.pageSize());
+        io.addRoot(pageAddr, rootId, pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */
@@ -51,7 +52,15 @@ public class MetaPageAddRootRecord extends PageDeltaRecord {
         return RecordType.BTREE_META_PAGE_ADD_ROOT;
     }
 
+    /**
+     *
+     */
     public long rootId() {
         return rootId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageAddRootRecord.class, this, "super", super.toString());
     }
 }

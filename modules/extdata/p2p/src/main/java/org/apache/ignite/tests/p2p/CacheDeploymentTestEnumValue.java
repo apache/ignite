@@ -21,8 +21,13 @@ package org.apache.ignite.tests.p2p;
  * Test enum for cache deployment tests.
  */
 public enum CacheDeploymentTestEnumValue {
+    /** */
     ONE("one"),
+
+    /** */
     TWO("two"),
+
+    /** */
     THREE("three");
 
     /** */

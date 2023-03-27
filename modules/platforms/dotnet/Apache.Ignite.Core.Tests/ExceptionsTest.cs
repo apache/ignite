@@ -16,19 +16,20 @@
  */
 
 #pragma warning disable 618
-namespace Apache.Ignite.Core.Tests 
+namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -39,15 +40,6 @@ namespace Apache.Ignite.Core.Tests
     {
         /** */
         private const string ExceptionTask = "org.apache.ignite.platform.PlatformExceptionTask";
-
-        /// <summary>
-        /// Before test.
-        /// </summary>
-        [SetUp]
-        public void SetUp()
-        {
-            TestUtils.KillProcesses();
-        }
 
         /// <summary>
         /// After test.
@@ -93,11 +85,12 @@ namespace Apache.Ignite.Core.Tests
             CheckException<TransactionHeuristicException>(comp, "TransactionHeuristicException");
             CheckException<TransactionDeadlockException>(comp, "TransactionDeadlockException");
             CheckException<IgniteFutureCancelledException>(comp, "IgniteFutureCancelledException");
+            CheckException<ServiceDeploymentException>(comp, "ServiceDeploymentException");
 
             // Check stopped grid.
             grid.Dispose();
 
-            Assert.Throws<InvalidOperationException>(() => grid.GetCache<object, object>("cache1"));
+            Assert.Throws<IgniteIllegalStateException>(() => grid.GetCache<object, object>("cache1"));
         }
 
         /// <summary>
@@ -118,6 +111,7 @@ namespace Apache.Ignite.Core.Tests
             var formatter = new BinaryFormatter();
             using (var ms = new MemoryStream())
             {
+#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete
                 formatter.Serialize(ms, ex);
 
                 ms.Seek(0, SeekOrigin.Begin);
@@ -138,6 +132,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(javaEx.StackTrace, resJavaEx.StackTrace);
                 Assert.AreEqual(javaEx.Source, resJavaEx.Source);
                 Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
+#pragma warning restore SYSLIB0011 // BinaryFormatter is obsolete
             }
         }
 
@@ -219,11 +214,13 @@ namespace Apache.Ignite.Core.Tests
                 var stream = new MemoryStream();
                 var formatter = new BinaryFormatter();
 
+#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete
                 formatter.Serialize(stream, ex);
                 stream.Seek(0, SeekOrigin.Begin);
 
                 ex = (Exception) formatter.Deserialize(stream);
                 Assert.AreEqual("myMessage", ex.Message);
+#pragma warning restore SYSLIB0011 // BinaryFormatter is obsolete
 
                 // Message+cause ctor.
                 var msgCauseCtor = type.GetConstructor(new[] { typeof(string), typeof(Exception) });
@@ -245,11 +242,13 @@ namespace Apache.Ignite.Core.Tests
 
             var stream = new MemoryStream();
 
+#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete
             formatter.Serialize(stream, ex);
 
             stream.Seek(0, SeekOrigin.Begin);
 
             var ex0 = (Exception) formatter.Deserialize(stream);
+#pragma warning restore SYSLIB0011 // BinaryFormatter is obsolete
 
             var updateEx = ((CachePartialUpdateException) ex);
 
@@ -346,7 +345,7 @@ namespace Apache.Ignite.Core.Tests
                     cache = cache.WithKeepBinary<TK, int>();
 
                 // Do cache puts in parallel
-                var putTask = Task.Factory.StartNew(() =>
+                var putTask = TaskRunner.Run(() =>
                 {
                     try
                     {

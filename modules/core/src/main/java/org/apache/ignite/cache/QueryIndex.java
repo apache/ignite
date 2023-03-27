@@ -16,13 +16,16 @@
  */
 package org.apache.ignite.cache;
 
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Objects;
+
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Contains list of fields to be indexed. It is possible to provide field name
@@ -37,6 +40,9 @@ public class QueryIndex implements Serializable {
     /** */
     private static final QueryIndexType DFLT_IDX_TYP = QueryIndexType.SORTED;
 
+    /** Default index inline size. */
+    public static final int DFLT_INLINE_SIZE = -1;
+
     /** Index name. */
     private String name;
 
@@ -48,7 +54,7 @@ public class QueryIndex implements Serializable {
     private QueryIndexType type = DFLT_IDX_TYP;
 
     /** */
-    private int inlineSize = -1;
+    private int inlineSize = DFLT_INLINE_SIZE;
 
     /**
      * Creates an empty index. Should be populated via setters.
@@ -248,21 +254,67 @@ public class QueryIndex implements Serializable {
     }
 
     /**
-     * Gets inline size.
+     * Gets index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus increasing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
      *
-     * @return inline size.
+     * @return Index inline size in bytes.
      */
     public int getInlineSize() {
         return inlineSize;
     }
 
     /**
-     * Sets inline size.
+     * Sets index inline size in bytes. When enabled part of indexed value will be placed directly to index pages,
+     * thus minimizing data page accesses, thus increasing query performance.
+     * <p>
+     * Allowed values:
+     * <ul>
+     *     <li>{@code -1} (default) - determine inline size automatically (see below)</li>
+     *     <li>{@code 0} - index inline is disabled (not recommended)</li>
+     *     <li>positive value - fixed index inline</li>
+     * </ul>
+     * When set to {@code -1}, Ignite will try to detect inline size automatically. It will be no more than
+     * {@link CacheConfiguration#getSqlIndexMaxInlineSize()}. Index inline will be enabled for all fixed-length types,
+     * but <b>will not be enabled</b> for {@code String}.
      *
      * @param inlineSize Inline size.
+     * @return {@code this} for chaining.
      */
-    public void setInlineSize(int inlineSize) {
+    public QueryIndex setInlineSize(int inlineSize) {
         this.inlineSize = inlineSize;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        QueryIndex index = (QueryIndex)o;
+
+        return inlineSize == index.inlineSize &&
+            F.eq(name, index.name) &&
+            F.eq(fields, index.fields) &&
+            type == index.type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(name, fields, type, inlineSize);
     }
 
     /** {@inheritDoc} */

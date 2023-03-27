@@ -55,6 +55,8 @@ public class IgniteGetAllPutAllTxBenchmark extends IgniteCacheAbstractBenchmark<
                     vals.put(key, key);
                 }
 
+                IgniteCache<Integer, Integer> cache = cacheForOperation();
+
                 cache.getAll(vals.keySet());
 
                 cache.putAll(vals);

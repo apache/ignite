@@ -39,22 +39,28 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Invokes the service method according to data from a stream,
         /// and writes invocation result to the output stream.
         /// </summary>
-        /// <param name="svc">Service instance.</param>
+        /// <param name="svcCtx">Service context.</param>
         /// <param name="methodName">Name of the method.</param>
         /// <param name="arguments">Arguments.</param>
         /// <returns>Pair of method return value and invocation exception.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static KeyValuePair<object, Exception> InvokeServiceMethod(object svc, string methodName, 
+        public static KeyValuePair<object, Exception> InvokeServiceMethod(ServiceContext svcCtx, string methodName, 
             object[] arguments)
         {
-            Debug.Assert(svc != null);
+            Debug.Assert(svcCtx != null);
+            Debug.Assert(svcCtx.Service != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
 
-            var method = GetMethodOrThrow(svc.GetType(), methodName, arguments);
+            var method = GetMethodOrThrow(svcCtx.Service.GetType(), methodName, arguments);
 
             try
             {
-                return new KeyValuePair<object, Exception>(method.Invoke(svc, arguments), null);
+                var res = svcCtx.Interceptor == null
+                    ? method.Invoke(svcCtx.Service, arguments)
+                    : svcCtx.Interceptor.Invoke(methodName, arguments, svcCtx,
+                        () => method.Invoke(svcCtx.Service, arguments));
+
+                return new KeyValuePair<object, Exception>(res, null);
             }
             catch (TargetInvocationException invokeErr)
             {
@@ -68,23 +74,42 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /// <summary>
         /// Finds suitable method in the specified type, or throws an exception.
+        /// <para />
+        /// We do not try to cover all kinds of intricate use cases with complex class hierarchies,
+        /// explicit interface implementations, and so on.
+        /// It is not possible given only the type, name, and arguments - the call can come from other languages too.
+        /// So we do our best or throw an error.
         /// </summary>
-        private static Func<object, object[], object> GetMethodOrThrow(Type svcType, string methodName, object[] arguments)
+        private static Func<object, object[], object> GetMethodOrThrow(Type svcType, string methodName,
+            object[] arguments)
         {
             Debug.Assert(svcType != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
+            
+            var argsLength = arguments == null ? 0 : arguments.Length;
 
             // 0) Check cached methods
-            var cacheKey = Tuple.Create(svcType, methodName, arguments.Length);
+            var cacheKey = Tuple.Create(svcType, methodName, argsLength);
             Func<object, object[], object> res;
 
             if (Methods.TryGetValue(cacheKey, out res))
                 return res;
 
             // 1) Find methods by name
-            var methods = svcType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == arguments.Length)
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+            var methods = svcType.GetMethods(bindingFlags)
+                .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                 .ToArray();
+
+            if (methods.Length == 0)
+            {
+                // Check default interface implementations.
+                // This does not cover exotic use cases when methods with same signature come from multiple interfaces.
+                methods = svcType.GetInterfaces().SelectMany(x => x.GetMethods(bindingFlags))
+                    .Where(m => !m.IsAbstract && CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
+                    .ToArray();
+            }
 
             if (methods.Length == 1)
             {
@@ -95,8 +120,8 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methods.Length == 0)
                 throw new InvalidOperationException(
                     string.Format(CultureInfo.InvariantCulture,
-                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments", 
-                        methodName, svcType, arguments.Length));
+                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments",
+                        methodName, svcType, argsLength));
 
             // 2) There is more than 1 method with specified name - resolve with argument types.
             methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters())).ToArray();
@@ -104,11 +129,19 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methods.Length == 1)
                 return (obj, args) => methods[0].Invoke(obj, args);
 
+            if (methods.Length > 1)
+                // Try to search applicable without equality of all arguments.
+                methods = methods.Where(m => AreMethodArgsCompatible(arguments, m.GetParameters(), true)).ToArray();
+
+            if (methods.Length == 1)
+                return (obj, args) => methods[0].Invoke(obj, args);
+
             // 3) 0 or more than 1 matching method - throw.
-            var argsString = arguments.Length == 0
+            var argsString = argsLength == 0
                 ? "0"
                 : "(" +
                   // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                  // ReSharper disable once AssignNullToNotNullAttribute
                   arguments.Select(x => x == null ? "null" : x.GetType().Name).Aggregate((x, y) => x + ", " + y)
                   + ")";
 
@@ -142,8 +175,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         /// <param name="methodArgs">Method argument types.</param>
         /// <param name="targetParameters">Target method parameter definitions.</param>
+        /// <param name="strictTypeCheck">If true check argument type for equality.</param>
         /// <returns>True if a target method can be called with specified set of arguments; otherwise, false.</returns>
-        private static bool AreMethodArgsCompatible(object[] methodArgs, ParameterInfo[] targetParameters)
+        private static bool AreMethodArgsCompatible(object[] methodArgs, ParameterInfo[] targetParameters,
+            bool strictTypeCheck = false)
         {
             if (methodArgs == null || methodArgs.Length == 0)
                 return targetParameters.Length == 0;
@@ -151,8 +186,18 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methodArgs.Length != targetParameters.Length)
                 return false;
 
+            Func<object, ParameterInfo, bool> checker;
+            if (strictTypeCheck)
+            {
+                checker = (arg, param) => arg == null || param.ParameterType == arg.GetType();
+            }
+            else
+            {
+                checker = (arg, param) => arg == null || param.ParameterType.IsInstanceOfType(arg);
+            }
+
             return methodArgs
-                .Zip(targetParameters, (arg, param) => arg == null || param.ParameterType.IsInstanceOfType(arg))
+                .Zip(targetParameters, checker)
                 .All(x => x);
         }
     }

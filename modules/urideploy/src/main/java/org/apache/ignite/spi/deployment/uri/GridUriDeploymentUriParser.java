@@ -66,7 +66,7 @@ class GridUriDeploymentUriParser {
             p++;            // Skip ':'
 
             if (at(p, n, '/')) {
-                if (at(p, n, '/') == true && at(p + 1, n, '/')) {
+                if (at(p, n, '/') && at(p + 1, n, '/')) {
                     p += 2;
 
                     // Seek authority.
@@ -149,10 +149,10 @@ class GridUriDeploymentUriParser {
     private String encodePath(String path) {
         StringBuilder buf = new StringBuilder(path.length());
 
-        for (int i = 0; i < path.length() ; i++) {
+        for (int i = 0; i < path.length(); i++) {
             char c = path.charAt(i);
 
-            switch(c) {
+            switch (c) {
                 case ' ': {
                     buf.append("%20"); break;
                 }
@@ -160,7 +160,7 @@ class GridUriDeploymentUriParser {
                 case '%': {
                     buf.append("%25"); break;
                 }
-                case ';':{
+                case ';': {
                     buf.append("%3B"); break;
                 }
 
@@ -170,7 +170,7 @@ class GridUriDeploymentUriParser {
             }
         }
 
-        return  buf.toString();
+        return buf.toString();
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,46 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<Project>
+    <PropertyGroup>
+        <RunAnalyzers>false</RunAnalyzers>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Core.dll')">
+        <IgniteBinaryDistro>true</IgniteBinaryDistro>
+    </PropertyGroup>
+
+    <!-- Dev mode is enabled when sources are present and were built. -->
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Ignition.cs') And Exists('$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\bin')">
+        <IgniteDevMode>true</IgniteDevMode>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$(IgniteDevMode) == 'true'">
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Core\Apache.Ignite.Core.csproj" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(IgniteBinaryDistro) == 'true' And $(IgniteDevMode) == ''">
+        <Reference Include="Apache.Ignite.Core">
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="Apache.Ignite.Linq">
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Linq.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+</Project>

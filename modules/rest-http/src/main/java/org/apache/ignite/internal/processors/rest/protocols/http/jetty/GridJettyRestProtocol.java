@@ -23,7 +23,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Properties;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
@@ -32,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -63,37 +62,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            Properties p = new Properties();
-
-            p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
-            p.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
-            p.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
-
-            StdErrLog.setProperties(p);
-
-            try {
-                Class<?> logCls = Class.forName("org.apache.log4j.Logger");
-
-                String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
-                String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
-                String ctgrJettyUtilComp = "org.eclipse.jetty.util.component";  // ...and this.
-
-                Object logJetty = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJetty);
-                Object logJettyUtil = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtil);
-                Object logJettyUtilComp = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtilComp);
-
-                Class<?> lvlCls = Class.forName("org.apache.log4j.Level");
-
-                Object warnLvl = lvlCls.getField("WARN").get(null);
-                Object errLvl = lvlCls.getField("ERROR").get(null);
-
-                logJetty.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, warnLvl);
-                logJettyUtil.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
-                logJettyUtilComp.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
+            // See also https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging
+            // It seems that using system properties should be fine.
+            System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
+            System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
+            System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
         }
     }
 
@@ -116,26 +89,23 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
-        InetAddress locHost;
+        String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
         try {
-            locHost = U.resolveLocalHost(ctx.config().getLocalHost());
+            System.setProperty(IGNITE_JETTY_HOST, U.resolveLocalHost(jettyHost).getHostAddress());
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
+            throw new IgniteCheckedException("Failed to resolve host to bind address: " + jettyHost, e);
         }
-
-        System.setProperty(IGNITE_JETTY_HOST, locHost.getHostAddress());
 
         jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {
                 return F.isEmpty(secretKey) || authenticate(tok);
             }
-        }, log);
+        }, ctx);
 
         String jettyPath = config().getJettyPath();
 
@@ -214,7 +184,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if Jetty started.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private boolean startJetty() throws IgniteCheckedException {
         try {
             httpSrv.start();
@@ -230,33 +199,35 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 return true;
             }
 
-            return  false;
-        }
-        catch (SocketException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to bind HTTP server to configured port.");
-
-            stopJetty();
-
-            return false;
-        }
-        catch (MultiException e) {
-            if (log.isDebugEnabled())
-                log.debug("Caught multi exception: " + e);
-
-            for (Object obj : e.getThrowables())
-                if (!(obj instanceof SocketException))
-                    throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
-
-            if (log.isDebugEnabled())
-                log.debug("Failed to bind HTTP server to configured port.");
-
-            stopJetty();
-
             return false;
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
+            boolean failedToBind = e instanceof SocketException;
+
+            if (e instanceof MultiException) {
+                if (log.isDebugEnabled())
+                    log.debug("Caught multi exception: " + e);
+
+                failedToBind = true;
+
+                for (Object obj : ((MultiException)e).getThrowables())
+                    if (!(obj instanceof SocketException))
+                        failedToBind = false;
+            }
+
+            if (e instanceof IOException && X.hasCause(e, SocketException.class))
+                failedToBind = true;
+
+            if (failedToBind) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to bind HTTP server to configured port.");
+
+                stopJetty();
+            }
+            else
+                throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
+
+            return false;
         }
     }
 

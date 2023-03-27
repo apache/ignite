@@ -1,0 +1,315 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+= Apache Ignite Hibernate L2 Cache
+
+== Overview
+
+Apache Ignite can be used as a http://hibernate.org[Hibernate, window=_blank] second-Level cache,
+which can significantly speed-up the persistence layer of your application.
+
+All work with Hibernate database-mapped objects is done within a session, usually bound to a worker thread or a Web session.
+By default, Hibernate only uses per-session (L1) cache, so, objects, cached in one session, are not seen in another.
+However, an L2 cache may be used, in which the cached objects are seen for all sessions that use
+the same L2 cache configuration. This usually gives a significantly greater performance gain, because each newly-created
+session can take full advantage of the data already present in L2 cache memory (which outlives any session-local L1 cache).
+
+image::images/integrations/hibernate-l2-cache.png[Ignite Cluster]
+
+While the L1 cache is always enabled and fully implemented by Hibernate internally, L2 cache is optional and can have
+multiple pluggable implementaions. Ignite can be easily plugged-in as an L2 cache implementation, and can be used in all
+access modes (`READ_ONLY`, `READ_WRITE`, `NONSTRICT_READ_WRITE`, and `TRANSACTIONAL`), supporting a wide range of related features:
+
+* caching to memory and disk, as well as off-heap memory.
+* cache transactions, that make `TRANSACTIONAL` mode possible.
+* clustering, with 2 different replication modes: `REPLICATED` and `PARTITIONED`
+
+To start using Ignite as a Hibernate L2 cache, you need to perform 3 simple steps:
+
+* Add Ignite libraries to your application's classpath.
+* Enable L2 cache and specify Ignite implementation class in L2 cache configuration.
+* Configure Ignite caches for L2 cache regions and start the embedded Ignite node (and, optionally, external Ignite nodes).
+
+In the section below we cover these steps in more detail.
+
+== L2 Cache Configuration
+
+[CAUTION]
+====
+[discrete]
+The `ignite-hibernate` module has been moved to the Apache Ignite Extensions project since the Apache Ignite 2.14 version.
+====
+
+To configure Ignite with as a Hibernate L2 cache, without any changes required to the existing Hibernate code, you need to:
+
+* Add the `ignite-hibernate` module version `5.3.0`, `5.1.0` or `4.2.0` as a dependency to your project depending on whether
+Hibernate 5 or Hibernate 4 is used. Alternatively, you can copy JAR files of the same name from
+`+{apache_ignite_release}/libs/optional+` to `+{apache_ignite_release}/libs+` folder if you start an Apache Ignite node
+from a command line.
+* Configure Hibernate itself to use Ignite as an L2 cache.
+* Configure Ignite caches appropriately.
+
+=== Maven Configuration
+
+To add Apache Ignite Hibernate integration to your project, add the following dependency to your pom.xml file:
+
+[tabs]
+--
+tab:Hibernate 5[]
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-hibernate-ext</artifactId>
+  <version>5.3.0</version>
+</dependency>
+----
+tab:Hibernate 4[]
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-hibernate-ext</artifactId>
+  <version>4.2.0</version>
+</dependency>
+----
+--
+
+=== Hibernate Configuration Example
+
+A typical Hibernate configuration for L2 cache with Ignite would look like the one below:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<hibernate-configuration>
+    <session-factory>
+        ...
+        <!-- Enable L2 cache. -->
+        <property name="cache.use_second_level_cache">true</property>
+
+        <!-- Generate L2 cache statistics. -->
+        <property name="generate_statistics">true</property>
+
+        <!-- Specify Ignite as L2 cache provider. -->
+        <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.HibernateRegionFactory</property>
+
+        <!-- Specify the name of the grid, that will be used for second level caching. -->
+        <property name="org.apache.ignite.hibernate.ignite_instance_name">hibernate-grid</property>
+
+        <!-- Set default L2 cache access type. -->
+        <property name="org.apache.ignite.hibernate.default_access_type">READ_ONLY</property>
+
+        <!-- Specify the entity classes for mapping. -->
+        <mapping class="com.mycompany.MyEntity1"/>
+        <mapping class="com.mycompany.MyEntity2"/>
+
+        <!-- Per-class L2 cache settings. -->
+        <class-cache class="com.mycompany.MyEntity1" usage="read-only"/>
+        <class-cache class="com.mycompany.MyEntity2" usage="read-only"/>
+        <collection-cache collection="com.mycompany.MyEntity1.children" usage="read-only"/>
+        ...
+    </session-factory>
+</hibernate-configuration>
+----
+--
+
+Here, we do the following:
+
+* Enable L2 cache (and, optionally, the L2 cache statistics generation).
+* Specify Ignite as L2 cache implementation.
+* Specify the name of the caching grid (should correspond to the one in Ignite configuration).
+* Specify the entity classes and configure caching for each class (a corresponding cache region should be configured in Ignite).
+
+=== Ignite Configuration Example
+A typical Ignite configuration for Hibernate L2 caching looks like this:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<!-- Basic configuration for atomic cache. -->
+<bean id="atomic-cache" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
+    <property name="cacheMode" value="PARTITIONED"/>
+    <property name="atomicityMode" value="ATOMIC"/>
+    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+</bean>
+
+<!-- Basic configuration for transactional cache. -->
+<bean id="transactional-cache" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
+    <property name="cacheMode" value="PARTITIONED"/>
+    <property name="atomicityMode" value="TRANSACTIONAL"/>
+    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+</bean>
+
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <!--
+        Specify the name of the caching grid (should correspond to the
+        one in Hibernate configuration).
+    -->
+    <property name="igniteInstanceName" value="hibernate-grid"/>
+    ...
+    <!--
+        Specify cache configuration for each L2 cache region (which corresponds
+        to a full class name or a full association name).
+    -->
+    <property name="cacheConfiguration">
+        <list>
+            <!--
+                Configurations for entity caches.
+            -->
+            <bean parent="transactional-cache">
+                <property name="name" value="com.mycompany.MyEntity1"/>
+            </bean>
+            <bean parent="transactional-cache">
+                <property name="name" value="com.mycompany.MyEntity2"/>
+            </bean>
+            <bean parent="transactional-cache">
+                <property name="name" value="com.mycompany.MyEntity1.children"/>
+            </bean>
+
+            <!-- Configuration for update timestamps cache. -->
+            <bean parent="atomic-cache">
+                <property name="name" value="org.hibernate.cache.spi.UpdateTimestampsCache"/>
+            </bean>
+
+            <!-- Configuration for query result cache. -->
+            <bean parent="atomic-cache">
+                <property name="name" value="org.hibernate.cache.internal.StandardQueryCache"/>
+            </bean>
+        </list>
+    </property>
+    ...
+</bean>
+----
+--
+
+Here, we specify the cache configuration for each L2 cache region:
+
+* We use `PARTITIONED` cache to split the data between caching nodes. Another possible strategy is to enable `REPLICATED` mode,
+thus replicating a full dataset between all caching nodes. See Cache Distribution Models for more information.
+* We specify the cache name that corresponds an L2 cache region name (either a full class name or a full association name).
+* We use `TRANSACTIONAL` atomicity mode to take advantage of cache transactions.
+* We enable `FULL_SYNC` to be always fully synchronized with backup nodes.
+
+Additionally, we specify a cache for update timestamps, which may be `ATOMIC`, for better performance.
+
+Having configured Ignite caching node, we can start it from within our code the following way:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+Ignition.start("my-config-folder/my-ignite-configuration.xml");
+----
+--
+
+After the above line is executed, the internal Ignite node is started and is ready to cache the data. We can also start
+additional standalone nodes by running the following command from console:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+$IGNITE_HOME/bin/ignite.sh my-config-folder/my-ignite-configuration.xml
+----
+tab:Windows[]
+[source,shell]
+----
+$IGNITE_HOME\bin\ignite.bat my-config-folder\my-ignite-configuration.xml
+----
+--
+
+[NOTE]
+====
+The nodes may be started on other hosts as well, forming a distributed caching cluster.
+Be sure to specify the right network settings in Ignite configuration file for that.
+====
+
+== Query Cache
+
+In addition to L2 cache, Hibernate offers a query cache. This cache stores the results of queries (either HQL or Criteria)
+with a given set of parameters, so, when you repeat the query with the same parameter set, it hits the cache without going to the database.
+
+Query cache may be useful if you have a number of queries, which may repeat with the same parameter values.
+Like in case of L2 cache, Hibernate relies on a 3-rd party cache implementation, and Ignite can be used as such.
+
+== Query Cache Configuration
+
+The configuration information above totally applies to query cache, but some additional configuration and code change is required.
+
+=== Hibernate Configuration
+To enable query cache in Hibernate, you only need one additional line in configuration file:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<!-- Enable query cache. -->
+<property name="cache.use_query_cache">true</property>
+----
+--
+
+Yet, a code modification is required: for each query that you want to cache, you should enable `cacheable` flag by calling `setCacheable(true)`:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+Session ses = ...;
+
+// Create Criteria query.
+Criteria criteria = ses.createCriteria(cls);
+
+// Enable cacheable flag.
+criteria.setCacheable(true);
+
+...
+----
+--
+
+After this is done, your query results will be cached.
+
+=== Ignite Configuration
+To enable Hibernate query caching in Ignite, you need to specify an additional cache configuration:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<property name="cacheConfiguration">
+    <list>
+        ...
+        <!-- Query cache (refers to atomic cache defined in above example). -->
+        <bean parent="atomic-cache">
+            <property name="name" value="org.hibernate.cache.internal.StandardQueryCache"/>
+        </bean>
+    </list>
+</property>
+----
+--
+
+== Example
+
+See a complete https://github.com/apache/ignite/blob/master/examples/src/main/java-lgpl/org/apache/ignite/examples/datagrid/hibernate/HibernateL2CacheExample.java[example, window=_blank]
+that is available on GitHub and in every Apache Ignite distribution.

@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Compute client also allows fetching contents of remote log files (including backwards mode) via any of
  * the provided {@code log(...)} methods.
- * <h1 class="header">Affinity Awareness</h1>
+ * <h1 class="header">Partition awareness</h1>
  * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
@@ -213,7 +213,7 @@ public interface GridClientCompute {
         Object taskArg);
 
     /**
-     * Gets most recently refreshed topology (only non-daemon nodes included).
+     * Gets most recently refreshed topology.
      * If this compute instance is a projection, then only nodes that
      * satisfy projection criteria will be returned.
      *
@@ -229,7 +229,7 @@ public interface GridClientCompute {
      * @return Node for given ID or {@code null} if node with given id was not found.
      * @throws GridClientException If client doesn't have an actual topology version.
      */
-     public GridClientNode node(UUID id) throws GridClientException;
+    public GridClientNode node(UUID id) throws GridClientException;
 
     /**
      * Gets cached nodes for the given IDs based on most recently refreshed topology.
@@ -252,15 +252,6 @@ public interface GridClientCompute {
      */
     public Collection<GridClientNode> nodes(GridClientPredicate<GridClientNode> filter)
         throws GridClientException;
-
-    /**
-     * Gets most recently refreshed set of daemon nodes. If this compute instance is a projection,
-     * then only nodes that satisfy projection criteria will be returned.
-     *
-     * @return Daemon nodes in most recently refreshed topology.
-     * @throws GridClientException If client doesn't have an actual topology version.
-     */
-    public Collection<GridClientNode> daemonNodes() throws GridClientException;
 
     /**
      * Refreshes and returns node by its ID from remote grid. Use {@code includeAttrs} and

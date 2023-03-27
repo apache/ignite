@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.junit.Test;
 
 /**
  * Checks that top value at {@link GridCachePartitionExchangeManager#exchangeFutures()} is the newest one.
@@ -55,6 +56,7 @@ public class IgniteExchangeFutureHistoryTest extends IgniteCacheAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExchangeFutures() throws Exception {
         GridCachePartitionExchangeManager mgr = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).context().shared().exchange();
 

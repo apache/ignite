@@ -1,0 +1,5 @@
+>>> Cache full-text query example started.
+
+>>> Employees living in Texas:
+>>> Employee [name=Breana Robbin, salary=6500, address=Address [street=3960 Sundown Lane, Austin, TX, zip=78130], departments=[Sales]]
+>>> Employee [name=Daniel Adams, salary=11000, address=Address [street=184 Fidler Drive, San Antonio, TX, zip=78130], departments=[Development, QA]]

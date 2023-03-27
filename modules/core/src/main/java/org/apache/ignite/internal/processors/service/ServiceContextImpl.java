@@ -23,9 +23,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,6 +52,7 @@ public class ServiceContextImpl implements ServiceContext {
     private final String cacheName;
 
     /** Affinity key. */
+    @GridToStringInclude
     private final Object affKey;
 
     /** Executor service. */
@@ -57,12 +62,22 @@ public class ServiceContextImpl implements ServiceContext {
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
 
+    /** Invocation metrics. */
+    private ReadOnlyMetricRegistry metrics;
+
     /** Service. */
     @GridToStringExclude
     private volatile Service svc;
 
+    /** Service call interceptor. */
+    @GridToStringExclude
+    private volatile ServiceCallInterceptor interceptor;
+
     /** Cancelled flag. */
     private volatile boolean isCancelled;
+
+    /** Service statistics flag. */
+    private final boolean isStatisticsEnabled;
 
     /**
      * @param name Service name.
@@ -70,17 +85,21 @@ public class ServiceContextImpl implements ServiceContext {
      * @param cacheName Cache name.
      * @param affKey Affinity key.
      * @param exe Executor service.
+     * @param statisticsEnabled Service statistics flag.
      */
     ServiceContextImpl(String name,
         UUID execId,
         String cacheName,
         Object affKey,
-        ExecutorService exe) {
+        ExecutorService exe,
+        boolean statisticsEnabled
+    ) {
         this.name = name;
         this.execId = execId;
         this.cacheName = cacheName;
         this.affKey = affKey;
         this.exe = exe;
+        this.isStatisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */
@@ -104,7 +123,6 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <K> K affinityKey() {
         return (K)affKey;
     }
@@ -124,10 +142,47 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /**
+     * @param interceptor Service call interceptor.
+     */
+    void interceptor(ServiceCallInterceptor interceptor) {
+        this.interceptor = interceptor;
+    }
+
+    /**
+     * @return Service call interceptor.
+     */
+    ServiceCallInterceptor interceptor() {
+        return interceptor;
+    }
+
+    /**
      * @return Executor service.
      */
     ExecutorService executor() {
         return exe;
+    }
+
+    /**
+     * @return Invocation metrics.
+     */
+    @Nullable ReadOnlyMetricRegistry metrics() {
+        return metrics;
+    }
+
+    /**
+     * Sets the invocation metrics.
+     *
+     * @return {@code this}.
+     */
+    ServiceContextImpl metrics(ReadOnlyMetricRegistry metrics) {
+        this.metrics = metrics;
+
+        return this;
+    }
+
+    /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
+    boolean isStatisticsEnabled() {
+        return isStatisticsEnabled;
     }
 
     /**
@@ -151,6 +206,11 @@ public class ServiceContextImpl implements ServiceContext {
         }
 
         return mtd == NULL_METHOD ? null : mtd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceCallContext currentCallContext() {
+        return ServiceCallContextHolder.current();
     }
 
     /**

@@ -21,6 +21,7 @@ import java.util.Set;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.ignite.internal.util.GridLeanMap}.
@@ -32,6 +33,7 @@ public class GridLeanIdentitySetSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddSizeContainsClear() throws Exception {
         Set<Integer> set = new GridLeanIdentitySet<>();
 

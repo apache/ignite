@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -31,6 +32,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,18 +72,6 @@ public interface IgniteSpiContext {
      * @see org.apache.ignite.spi.discovery.DiscoverySpi
      */
     public ClusterNode localNode();
-
-    /**
-     * Gets a collection of all remote daemon nodes in topology. The daemon nodes are discovered via
-     * underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used.
-     *
-     * @return Collection of all daemon nodes.
-     * @see #localNode()
-     * @see #remoteNodes()
-     * @see #nodes()
-     * @see org.apache.ignite.spi.discovery.DiscoverySpi
-     */
-    public Collection<ClusterNode> remoteDaemonNodes();
 
     /**
      * Gets a node instance based on its ID.
@@ -221,6 +212,8 @@ public interface IgniteSpiContext {
      *
      * @param cacheName Cache name.
      * @param key Object key.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return Cached object.
      * @throws CacheException Thrown if any exception occurs.
      */
@@ -296,6 +289,13 @@ public interface IgniteSpiContext {
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
+     * @param node Node.
+     * @param discoData Disco data.
+     * @return Validation result or {@code null} in case of success.
+     */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData);
+
+    /**
      * Gets collection of authenticated subjects together with their permissions.
      *
      * @return Collection of authenticated subjects.
@@ -358,4 +358,44 @@ public interface IgniteSpiContext {
      * @return Current node attributes.
      */
     public Map<String, Object> nodeAttributes();
+
+    /**
+     * @return {@code True} if cluster supports communication error resolving.
+     */
+    public boolean communicationFailureResolveSupported();
+
+    /**
+     * @param node Problem node.
+     * @param err Error.
+     */
+    public void resolveCommunicationFailure(ClusterNode node, Exception err);
+
+    /**
+     * Returns existing or newly created instance of metric registry with given name.
+     *
+     * @param name Metric registry name.
+     * @return Existing or newly created instance of metric registry.
+     */
+    public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name);
+
+    /**
+     * Removes metric registry with given name.
+     *
+     * @param name Metric registry name.
+     */
+    public void removeMetricRegistry(String name);
+
+    /**
+     * Returns all registered metric registries.
+     *
+     * @return All registered metric registries.
+     */
+    public Iterable<ReadOnlyMetricRegistry> metricRegistries();
+
+    /**
+     * Register listener which will be notified on metric registry creation.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 }

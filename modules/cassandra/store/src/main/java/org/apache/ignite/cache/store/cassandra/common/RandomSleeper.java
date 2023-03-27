@@ -51,6 +51,7 @@ public class RandomSleeper {
      * @param min minimum sleep time (in milliseconds)
      * @param max maximum sleep time (in milliseconds)
      * @param incr time range shift increment (in milliseconds)
+     * @param log Instance of the Ignite logger.
      */
     public RandomSleeper(int min, int max, int incr, IgniteLogger log) {
         if (min <= 0)

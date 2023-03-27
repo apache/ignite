@@ -21,16 +21,20 @@ import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
+    /** INSERT statement. */
+    private static final String INSERT = "insert into Person(_key, name) values (5, 'x')";
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -39,6 +43,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If error.
      */
+    @Test
     public void testSqlFieldsQuery() throws Exception {
         startGrids(2);
 
@@ -50,6 +55,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If error.
      */
+    @Test
     public void testSqlFieldsQueryWithTopologyChanges() throws Exception {
         startGrid(0);
 
@@ -66,13 +72,18 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     private void executeQuery() {
         IgniteCache<?, ?> cache = grid(1).cache("person");
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person where age > 10");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name as \"Full Name\", age from person where age > 10");
 
-        QueryCursor<List<?>> qryCursor = cache.query(qry);
+        FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
 
         assertEquals(2, qryCursor.getAll().size());
-    }
 
+        assertEquals(2, qryCursor.getColumnsCount()); // Row contains "name" and "age" fields.
+
+        assertEquals("Full Name", qryCursor.getFieldName(0));
+
+        assertEquals("AGE", qryCursor.getFieldName(1));
+    }
 
     /**
      *
@@ -93,6 +104,11 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         cache.put(2, new Person("moon", 50));
 
         return cache;
+    }
+
+    /** */
+    private void destroyCache() {
+        grid(0).destroyCache("person");
     }
 
     /**

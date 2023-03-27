@@ -121,7 +121,9 @@ namespace ignite
 
         void HandleRegistry::Release(int64_t hnd)
         {
-            if (hnd < fastCap)
+            if (hnd < 0)
+                return;
+            else if (hnd < fastCap)
                 fast[static_cast<int32_t>(hnd)] = SharedPointer<void>();
             else
             {

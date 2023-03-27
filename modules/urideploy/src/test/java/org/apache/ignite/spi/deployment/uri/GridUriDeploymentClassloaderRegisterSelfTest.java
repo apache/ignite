@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Test for classloader registering.
@@ -54,7 +55,9 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         getSpi().setListener(new DeploymentListener() {
-            @Override public void onUnregistered(ClassLoader ldr) { tasks.remove(ldr); }
+            @Override public void onUnregistered(ClassLoader ldr) {
+                tasks.remove(ldr);
+            }
         });
     }
 
@@ -87,6 +90,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploy() throws Exception {
         Class<? extends ComputeTask<?, ?>> task = GridFileDeploymentTestTask.class;
 
@@ -111,6 +115,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRedeploy() throws Exception {
         // Test non-versioned redeploy.
         Class<? extends ComputeTask<?, ?>> t1 = GridFileDeploymentTestTask.class;

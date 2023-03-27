@@ -21,7 +21,6 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,27 +30,19 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for cache put with error in event listener.
  */
 public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_PUT);
 
@@ -60,40 +51,31 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         startGridsMultiThreaded(3);
 
-        Ignition.setClientMode(true);
+        Ignite ignite = startClientGrid("client");
 
-        try {
-            Ignite ignite = startGrid("client");
-
-            ignite.events().remoteListen(
-                new IgniteBiPredicate<UUID, Event>() {
-                    @Override public boolean apply(UUID uuid, Event evt) {
-                        return true;
-                    }
-                },
-                new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        throw new NoClassDefFoundError("XXX");
-                    }
-                },
-                EventType.EVT_CACHE_OBJECT_PUT
-            );
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        ignite.events().remoteListen(
+            new IgniteBiPredicate<UUID, Event>() {
+                @Override public boolean apply(UUID uuid, Event evt) {
+                    return true;
+                }
+            },
+            new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    throw new NoClassDefFoundError("XXX");
+                }
+            },
+            EventType.EVT_CACHE_OBJECT_PUT
+        );
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomicOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC);
     }
@@ -101,6 +83,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -108,6 +91,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomicOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC);
     }
@@ -115,6 +99,7 @@ public class CachePutEventListenerErrorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactionalOnHeap() throws Exception {
         doTest(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }

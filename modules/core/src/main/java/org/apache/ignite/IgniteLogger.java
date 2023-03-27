@@ -23,17 +23,17 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This interface defines basic logging functionality used throughout the system. We had to
  * abstract it out so that we can use whatever logging is used by the hosting environment.
- * Currently, <a target=_new href="http://logging.apache.org/log4j/1.2/">log4j</a>,
- * <a target=_new href="http://docs.jboss.org/hibernate/orm/4.3/topical/html/logging/Logging">JBoss</a>,
+ * Currently, <a target=_new href="http://https://logging.apache.org/log4j/2.x/">log4j2</a>,
+ * <a target=_new href="https://docs.jboss.org/hibernate/orm/5.4/topical/html_single/logging/Logging.html">JBoss</a>,
  * <a target=_new href="http://jakarta.apache.org/commons/logging/">JCL</a> and
  * console logging are provided as supported implementations.
  * <p>
- * Ignite logger could be configured either from code (for example log4j logger):
+ * Ignite logger could be configured either from code (for example log4j2 logger):
  * <pre name="code" class="java">
  *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
- *      IgniteLogger log = new Log4JLogger(xml);
+ *      IgniteLogger log = new Log4J2Logger(xml);
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
- *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
+ *                  &lt;bean class="org.apache.commons.logging.impl.Log4J2Logger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *                  &lt;/bean&gt;
  *              &lt;/constructor-arg&gt;
@@ -66,40 +66,80 @@ import org.jetbrains.annotations.Nullable;
 @GridToStringExclude
 public interface IgniteLogger {
     /**
+     * Marker for log messages that are useful in development environments, but not in production.
+     */
+    String DEV_ONLY = "DEV_ONLY";
+
+    /**
      * Creates new logger with given category based off the current instance.
      *
      * @param ctgr Category for new logger.
      * @return New logger with given category.
      */
-    public IgniteLogger getLogger(Object ctgr);
+    IgniteLogger getLogger(Object ctgr);
 
     /**
      * Logs out trace message.
      *
      * @param msg Trace message.
      */
-    public void trace(String msg);
+    void trace(String msg);
+
+    /**
+     * Logs out trace message.
+     * The default implementation calls {@code this.trace(msg)}.
+     *
+     * @param marker Name of the marker to be associated with the message.
+     * @param msg Trace message.
+     */
+    default void trace(@Nullable String marker, String msg) {
+        trace(msg);
+    }
 
     /**
      * Logs out debug message.
      *
      * @param msg Debug message.
      */
-    public void debug(String msg);
+    void debug(String msg);
+
+    /**
+     * Logs out debug message.
+     * The default implementation calls {@code this.debug(msg)}.
+     *
+     * @param marker Name of the marker to be associated with the message.
+     * @param msg Debug message.
+     */
+    default void debug(@Nullable String marker, String msg) {
+        debug(msg);
+    }
 
     /**
      * Logs out information message.
      *
      * @param msg Information message.
      */
-    public void info(String msg);
+    void info(String msg);
+
+    /**
+     * Logs out information message.
+     * The default implementation calls {@code this.info(msg)}.
+     *
+     * @param marker Name of the marker to be associated with the message.
+     * @param msg Information message.
+     */
+    default void info(@Nullable String marker, String msg) {
+        info(msg);
+    }
 
     /**
      * Logs out warning message.
      *
      * @param msg Warning message.
      */
-    public void warning(String msg);
+    default void warning(String msg) {
+        warning(msg, null);
+    }
 
     /**
      * Logs out warning message with optional exception.
@@ -107,14 +147,28 @@ public interface IgniteLogger {
      * @param msg Warning message.
      * @param e Optional exception (can be {@code null}).
      */
-    public void warning(String msg, @Nullable Throwable e);
+    void warning(String msg, @Nullable Throwable e);
+
+    /**
+     * Logs out warning message with optional exception.
+     * The default implementation calls {@code this.warning(msg)}.
+     *
+     * @param marker Name of the marker to be associated with the message.
+     * @param msg Warning message.
+     * @param e Optional exception (can be {@code null}).
+     */
+    default void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
+    }
 
     /**
      * Logs out error message.
      *
      * @param msg Error message.
      */
-    public void error(String msg);
+    default void error(String msg) {
+        error(null, msg, null);
+    }
 
     /**
      * Logs error message with optional exception.
@@ -122,40 +176,52 @@ public interface IgniteLogger {
      * @param msg Error message.
      * @param e Optional exception (can be {@code null}).
      */
-    public void error(String msg, @Nullable Throwable e);
+    void error(String msg, @Nullable Throwable e);
+
+    /**
+     * Logs error message with optional exception.
+     * The default implementation calls {@code this.error(msg)}.
+     *
+     * @param marker Name of the marker to be associated with the message.
+     * @param msg Error message.
+     * @param e Optional exception (can be {@code null}).
+     */
+    default void error(@Nullable String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
+    }
 
     /**
      * Tests whether {@code trace} level is enabled.
      *
      * @return {@code true} in case when {@code trace} level is enabled, {@code false} otherwise.
      */
-    public boolean isTraceEnabled();
+    boolean isTraceEnabled();
 
     /**
      * Tests whether {@code debug} level is enabled.
      *
      * @return {@code true} in case when {@code debug} level is enabled, {@code false} otherwise.
      */
-    public boolean isDebugEnabled();
+    boolean isDebugEnabled();
 
     /**
      * Tests whether {@code info} level is enabled.
      *
      * @return {@code true} in case when {@code info} level is enabled, {@code false} otherwise.
      */
-    public boolean isInfoEnabled();
+    boolean isInfoEnabled();
 
     /**
      * Tests whether Logger is in "Quiet mode".
      *
      * @return {@code true} "Quiet mode" is enabled, {@code false} otherwise
      */
-    public boolean isQuiet();
+    boolean isQuiet();
 
     /**
      * Gets name of the file being logged to if one is configured or {@code null} otherwise.
      *
      * @return Name of the file being logged to if one is configured or {@code null} otherwise.
      */
-    public String fileName();
+    String fileName();
 }

@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/common/utils.h"
@@ -106,7 +102,7 @@ BOOST_AUTO_TEST_CASE(LoadCacheSingleNodeNoPredicate)
 
 BOOST_AUTO_TEST_CASE(LoadCacheSeveralNodesNoPredicate)
 {
-    BOOST_CHECKPOINT("Starting additional node");
+    BOOST_TEST_CHECKPOINT("Starting additional node");
 #ifdef IGNITE_TESTS_32
     Ignite node2 = ignite_test::StartNode("cache-store-32.xml", "node2");
 #else

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import java.util.Arrays;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.GridArrays.remove;
@@ -32,6 +33,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testSet() {
         String[] arr = set(EMPTY, 4, "aa");
 
@@ -71,6 +73,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testClearTail() {
         String[] arr = new String[10];
 
@@ -90,7 +93,7 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
 
         assertNull(arr[9]);
 
-        for (int i = 0; i < 9 ; i++)
+        for (int i = 0; i < 9; i++)
             assertEquals("zz", arr[i]);
 
         clearTail(arr, 7);
@@ -99,31 +102,33 @@ public class GridArraysSelfTest extends GridCommonAbstractTest {
         assertNull(arr[8]);
         assertNull(arr[9]);
 
-        for (int i = 0; i < 7 ; i++)
+        for (int i = 0; i < 7; i++)
             assertEquals("zz", arr[i]);
     }
 
     /**
      */
+    @Test
     public void testRemoveLong() {
-        long[] arr = {0,1,2,3,4,5,6};
+        long[] arr = {0, 1, 2, 3, 4, 5, 6};
 
-        assertTrue(Arrays.equals(new long[]{1,2,3,4,5,6}, remove(arr, 0)));
-        assertTrue(Arrays.equals(new long[]{0,2,3,4,5,6}, remove(arr, 1)));
-        assertTrue(Arrays.equals(new long[]{0,1,2,3,5,6}, remove(arr, 4)));
-        assertTrue(Arrays.equals(new long[]{0,1,2,3,4,5}, remove(arr, 6)));
+        assertTrue(Arrays.equals(new long[] {1, 2, 3, 4, 5, 6}, remove(arr, 0)));
+        assertTrue(Arrays.equals(new long[] {0, 2, 3, 4, 5, 6}, remove(arr, 1)));
+        assertTrue(Arrays.equals(new long[] {0, 1, 2, 3, 5, 6}, remove(arr, 4)));
+        assertTrue(Arrays.equals(new long[] {0, 1, 2, 3, 4, 5}, remove(arr, 6)));
         assertTrue(Arrays.equals(new long[0], remove(new long[]{1}, 0)));
     }
 
     /**
      */
+    @Test
     public void testRemove() {
-        Integer[] arr = {0,1,2,3,4,5,6};
+        Integer[] arr = {0, 1, 2, 3, 4, 5, 6};
 
-        assertTrue(Arrays.equals(new Integer[]{1,2,3,4,5,6}, remove(arr, 0)));
-        assertTrue(Arrays.equals(new Integer[]{0,2,3,4,5,6}, remove(arr, 1)));
-        assertTrue(Arrays.equals(new Integer[]{0,1,2,3,5,6}, remove(arr, 4)));
-        assertTrue(Arrays.equals(new Integer[]{0,1,2,3,4,5}, remove(arr, 6)));
+        assertTrue(Arrays.equals(new Integer[] {1, 2, 3, 4, 5, 6}, remove(arr, 0)));
+        assertTrue(Arrays.equals(new Integer[] {0, 2, 3, 4, 5, 6}, remove(arr, 1)));
+        assertTrue(Arrays.equals(new Integer[] {0, 1, 2, 3, 5, 6}, remove(arr, 4)));
+        assertTrue(Arrays.equals(new Integer[] {0, 1, 2, 3, 4, 5}, remove(arr, 6)));
         assertTrue(Arrays.equals(new Integer[0], remove(new Integer[]{1}, 0)));
     }
 }

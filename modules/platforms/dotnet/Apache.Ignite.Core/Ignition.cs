@@ -28,16 +28,19 @@ namespace Apache.Ignite.Core
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
@@ -58,11 +61,23 @@ namespace Apache.Ignite.Core
         /// </summary>
         public const string ConfigurationSectionName = "igniteConfiguration";
 
+        /// <summary>
+        /// Default configuration section name.
+        /// </summary>
+        public const string ClientConfigurationSectionName = "igniteClientConfiguration";
+
+        /// <summary>
+        /// Environment variable name to enable alternate stack checks on .NET Core 3+ and .NET 5+.
+        /// This is required to fix "Stack smashing detected" errors that occur instead of NullReferenceException
+        /// on Linux and macOS when Java overwrites SIGSEGV handler installed by .NET in thick client or server mode.
+        /// </summary>
+        private const string EnvEnableAlternateStackCheck = "COMPlus_EnableAlternateStackCheck";
+
         /** */
         private static readonly object SyncRoot = new object();
 
         /** GC warning flag. */
-        private static int _gcWarn;
+        private static int _diagPrinted;
 
         /** */
         private static readonly IDictionary<NodeKey, Ignite> Nodes = new Dictionary<NodeKey, Ignite>();
@@ -84,7 +99,6 @@ namespace Apache.Ignite.Core
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static Ignition()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
         }
 
@@ -124,7 +138,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration
         /// <see cref="IgniteConfigurationSection"/> with <see cref="ConfigurationSectionName"/>
         /// name and starts Ignite.
         /// </summary>
@@ -169,26 +183,41 @@ namespace Apache.Ignite.Core
         /// <returns>Started Ignite.</returns>
         public static IIgnite StartFromApplicationConfiguration(string sectionName, string configPath)
         {
+            var section = GetConfigurationSection<IgniteConfigurationSection>(sectionName, configPath);
+
+            if (section.IgniteConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+            }
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Gets the configuration section.
+        /// </summary>
+        private static T GetConfigurationSection<T>(string sectionName, string configPath)
+            where T : class
+        {
             IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
             IgniteArgumentCheck.NotNullOrEmpty(configPath, "configPath");
 
             var fileMap = GetConfigMap(configPath);
             var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
 
-            var section = config.GetSection(sectionName) as IgniteConfigurationSection;
+            var section = config.GetSection(sectionName) as T;
 
             if (section == null)
+            {
                 throw new ConfigurationErrorsException(
                     string.Format("Could not find {0} with name '{1}' in file '{2}'",
-                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
+                        typeof(T).Name, sectionName, configPath));
+            }
 
-            if (section.IgniteConfiguration == null)
-                throw new ConfigurationErrorsException(
-                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
-                                  "but not present in configuration.",
-                        typeof(IgniteConfigurationSection).Name, sectionName, configPath));
-
-            return Start(section.IgniteConfiguration);
+            return section;
         }
 
         /// <summary>
@@ -208,9 +237,11 @@ namespace Apache.Ignite.Core
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public static unsafe IIgnite Start(IgniteConfiguration cfg)
+        public static IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
+
+            cfg = new IgniteConfiguration(cfg);  // Create a copy so that config can be modified and reused.
 
             lock (SyncRoot)
             {
@@ -219,15 +250,14 @@ namespace Apache.Ignite.Core
 
                 log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
 
-                // 1. Check GC settings.
-                CheckServerGc(cfg, log);
+                // 1. Log diagnostics.
+                LogDiagnosticMessages(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
+                JvmDll.Load(cfg.JvmDllPath, log);
 
-                var cbs = new UnmanagedCallbacks(log);
-
-                IgniteManager.CreateJvmContext(cfg, cbs, log);
+                var cbs = IgniteManager.CreateJvmContext(cfg, log);
+                var env = cbs.Jvm.AttachCurrentThread();
                 log.Debug("JVM started.");
 
                 var gridName = cfg.IgniteInstanceName;
@@ -240,21 +270,23 @@ namespace Apache.Ignite.Core
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
 
-                IUnmanagedTarget interopProc = null;
+                PlatformJniTarget interopProc = null;
 
                 try
                 {
                     // 4. Initiate Ignite start.
-                    UU.IgnitionStart(cbs.Context, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null);
-
+                    UU.IgnitionStart(env, cfg.SpringConfigUrl, gridName, ClientMode, cfg.Logger != null, cbs.IgniteId,
+                        cfg.RedirectJavaConsoleOutput);
 
                     // 5. At this point start routine is finished. We expect STARTUP object to have all necessary data.
                     var node = _startup.Ignite;
-                    interopProc = node.InteropProcessor;
+                    interopProc = (PlatformJniTarget)node.InteropProcessor;
 
                     var javaLogger = log as JavaLogger;
                     if (javaLogger != null)
-                        javaLogger.SetProcessor(interopProc);
+                    {
+                        javaLogger.SetIgnite(node);
+                    }
 
                     // 6. On-start callback (notify lifecycle components).
                     node.OnStart();
@@ -263,7 +295,7 @@ namespace Apache.Ignite.Core
 
                     return node;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // 1. Perform keys cleanup.
                     string name = _startup.Name;
@@ -278,39 +310,65 @@ namespace Apache.Ignite.Core
 
                     // 2. Stop Ignite node if it was started.
                     if (interopProc != null)
-                        UU.IgnitionStop(interopProc.Context, gridName, true);
+                        UU.IgnitionStop(gridName, true);
 
                     // 3. Throw error further (use startup error if exists because it is more precise).
                     if (_startup.Error != null)
                     {
                         // Wrap in a new exception to preserve original stack trace.
-                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details", 
+                        throw new IgniteException("Failed to start Ignite.NET, check inner exception for details",
                             _startup.Error);
                     }
 
-                    throw;
+                    var jex = ex as JavaException;
+
+                    if (jex == null)
+                    {
+                        throw;
+                    }
+
+                    throw ExceptionUtils.GetException(null, jex);
                 }
                 finally
                 {
+                    var ignite = _startup.Ignite;
+
                     _startup = null;
 
-                    if (interopProc != null)
-                        UU.ProcessorReleaseStart(interopProc);
+                    if (ignite != null)
+                    {
+                        ignite.ProcessorReleaseStart();
+                    }
                 }
             }
         }
 
         /// <summary>
-        /// Check whether GC is set to server mode.
+        /// Performs system checks and logs diagnostic messages.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="log">Log.</param>
-        private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
+        private static void LogDiagnosticMessages(IgniteConfiguration cfg, ILogger log)
         {
-            if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                log.Warn("GC server mode is not enabled, this could lead to less " +
-                    "than optimal performance on multi-core machines (to enable see " +
-                    "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
+            if (!cfg.SuppressWarnings &&
+                Interlocked.CompareExchange(ref _diagPrinted, 1, 0) == 0)
+            {
+                if (!GCSettings.IsServerGC)
+                {
+                    log.Warn("GC server mode is not enabled, this could lead to less " +
+                             "than optimal performance on multi-core machines (to enable see " +
+                             "https://docs.microsoft.com/en-us/dotnet/core/run-time-config/garbage-collector).");
+                }
+
+                if ((Os.IsLinux || Os.IsMacOs) &&
+                    Environment.GetEnvironmentVariable(EnvEnableAlternateStackCheck) != "1")
+                {
+                    log.Warn("Alternate stack check is not enabled, this will cause 'Stack smashing detected' " +
+                             "error when NullReferenceException occurs on .NET Core on Linux and macOS. " +
+                             "To enable alternate stack check on .NET Core 3+ and .NET 5+, " +
+                             "set {0} environment variable to 1.", EnvEnableAlternateStackCheck);
+                }
+            }
         }
 
         /// <summary>
@@ -354,14 +412,14 @@ namespace Apache.Ignite.Core
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
 
-            LoadAssemblies(cfg.Assemblies);
+            LoadAllAssemblies(cfg.Assemblies);
 
             ICollection<string> cfgAssembllies;
             BinaryConfiguration binaryCfg;
 
             BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out binaryCfg);
 
-            LoadAssemblies(cfgAssembllies);
+            LoadAllAssemblies(cfgAssembllies);
 
             // 2. Create marshaller only after assemblies are loaded.
             if (cfg.BinaryConfiguration == null)
@@ -371,7 +429,8 @@ namespace Apache.Ignite.Core
 
             // 3. Send configuration details to Java
             cfg.Validate(log);
-            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));  // Use system marshaller.
+            // Use system marshaller.
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>
@@ -445,7 +504,9 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="interopProc">Interop processor.</param>
         /// <param name="stream">Stream.</param>
-        internal static void OnStart(IUnmanagedTarget interopProc, IBinaryStream stream)
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "PlatformJniTarget is passed further")]
+        internal static void OnStart(GlobalRef interopProc, IBinaryStream stream)
         {
             try
             {
@@ -461,7 +522,8 @@ namespace Apache.Ignite.Core
                 if (Nodes.ContainsKey(new NodeKey(name)))
                     throw new IgniteException("Ignite with the same name already started: " + name);
 
-                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name, interopProc, _startup.Marshaller, 
+                _startup.Ignite = new Ignite(_startup.Configuration, _startup.Name,
+                    new PlatformJniTarget(interopProc, _startup.Marshaller), _startup.Marshaller,
                     _startup.LifecycleHandlers, _startup.Callbacks);
             }
             catch (Exception e)
@@ -478,72 +540,78 @@ namespace Apache.Ignite.Core
         /// Load assemblies.
         /// </summary>
         /// <param name="assemblies">Assemblies.</param>
-        private static void LoadAssemblies(IEnumerable<string> assemblies)
+        private static void LoadAllAssemblies(IEnumerable<string> assemblies)
         {
             if (assemblies != null)
             {
-                foreach (string s in assemblies)
+                foreach (var s in assemblies)
                 {
-                    // 1. Try loading as directory.
-                    if (Directory.Exists(s))
-                    {
-                        string[] files = Directory.GetFiles(s, "*.dll");
-
-#pragma warning disable 0168
-
-                        foreach (string dllPath in files)
-                        {
-                            if (!SelfAssembly(dllPath))
-                            {
-                                try
-                                {
-                                    Assembly.LoadFile(dllPath);
-                                }
-
-                                catch (BadImageFormatException)
-                                {
-                                    // No-op.
-                                }
-                            }
-                        }
-
-#pragma warning restore 0168
-
-                        continue;
-                    }
-
-                    // 2. Try loading using full-name.
-                    try
-                    {
-                        Assembly assembly = Assembly.Load(s);
-
-                        if (assembly != null)
-                            continue;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!(e is FileNotFoundException || e is FileLoadException))
-                            throw new IgniteException("Failed to load assembly: " + s, e);
-                    }
-
-                    // 3. Try loading using file path.
-                    try
-                    {
-                        Assembly assembly = Assembly.LoadFrom(s);
-
-                        if (assembly != null)
-                            continue;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!(e is FileNotFoundException || e is FileLoadException))
-                            throw new IgniteException("Failed to load assembly: " + s, e);
-                    }
-
-                    // 4. Not found, exception.
-                    throw new IgniteException("Failed to load assembly: " + s);
+                    LoadAssembly(s);
                 }
             }
+        }
+
+        /// <summary>
+        /// Load assembly from file, directory, or full name.
+        /// </summary>
+        /// <param name="asm">Assembly file, directory, or full name.</param>
+        internal static void LoadAssembly(string asm)
+        {
+            // 1. Try loading as directory.
+            if (Directory.Exists(asm))
+            {
+                string[] files = Directory.GetFiles(asm, "*.dll");
+
+                foreach (string dllPath in files)
+                {
+                    if (!SelfAssembly(dllPath))
+                    {
+                        try
+                        {
+                            Assembly.LoadFile(dllPath);
+                        }
+
+                        catch (BadImageFormatException)
+                        {
+                            // No-op.
+                        }
+                    }
+                }
+
+                return;
+            }
+
+            // 2. Try loading using full-name.
+            try
+            {
+                Assembly assembly = Assembly.Load(asm);
+
+                if (assembly != null)
+                    return;
+            }
+            catch (Exception e)
+            {
+                if (!(e is FileNotFoundException || e is FileLoadException))
+                    throw new IgniteException("Failed to load assembly: " + asm, e);
+            }
+
+            // 3. Try loading using file path.
+            try
+            {
+                Assembly assembly = Assembly.LoadFrom(asm);
+
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                if (assembly != null)
+                    return;
+            }
+            catch (Exception e)
+            {
+                if (!(e is FileNotFoundException || e is FileLoadException))
+                    throw new IgniteException("Failed to load assembly: " + asm, e);
+            }
+
+            // 4. Not found, exception.
+            throw new IgniteException("Failed to load assembly: " + asm);
         }
 
         /// <summary>
@@ -651,14 +719,22 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets an instance of default no-name grid, or <c>null</c> if none found. Note that
-        /// caller of this method should not assume that it will return the same
-        /// instance every time.
+        /// Gets the default Ignite instance with null name, or an instance with any name when there is only one.
+        /// Returns null when there are no Ignite instances started, or when there are more than one,
+        /// and none of them has null name.
         /// </summary>
         /// <returns>An instance of default no-name grid, or null.</returns>
         public static IIgnite TryGetIgnite()
         {
-            return TryGetIgnite(null);
+            lock (SyncRoot)
+            {
+                if (Nodes.Count == 1)
+                {
+                    return Nodes.Single().Value;
+                }
+
+                return TryGetIgnite(null);
+            }
         }
 
         /// <summary>
@@ -714,18 +790,89 @@ namespace Apache.Ignite.Core
 
             GC.Collect();
         }
-        
+
         /// <summary>
-        /// Handles the AssemblyResolve event of the CurrentDomain control.
+        /// Connects Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
         /// </summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="args">The <see cref="ResolveEventArgs"/> instance containing the event data.</param>
-        /// <returns>Manually resolved assembly, or null.</returns>
-        private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        /// <param name="clientConfiguration">The client configuration.</param>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
-            return LoadedAssembliesResolver.Instance.GetAssembly(args.Name);
+            IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
+
+            return new IgniteClient(clientConfiguration);
         }
-                
+
+        /// <summary>
+        /// Reads <see cref="IgniteClientConfiguration"/> from application configuration
+        /// <see cref="IgniteClientConfigurationSection"/> with <see cref="ClientConfigurationSectionName"/>
+        /// name and connects Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient()
+        {
+            // ReSharper disable once IntroduceOptionalParameters.Global
+            return StartClient(ClientConfigurationSectionName);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteClientConfiguration" /> from application configuration
+        /// <see cref="IgniteClientConfigurationSection" /> with specified name and connects
+        /// Ignite lightweight (thin) client to an Ignite node.
+        /// <para />
+        /// Thin client connects to an existing Ignite node with a socket and does not start JVM in process.
+        /// </summary>
+        /// <param name="sectionName">Name of the configuration section.</param>
+        /// <returns>Ignite client instance.</returns>
+        public static IIgniteClient StartClient(string sectionName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteClientConfigurationSection;
+
+            if (section == null)
+            {
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'.",
+                    typeof(IgniteClientConfigurationSection).Name, sectionName));
+            }
+
+            if (section.IgniteClientConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteClientConfigurationSection).Name, sectionName));
+            }
+
+            return StartClient(section.IgniteClientConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration" /> from application configuration
+        /// <see cref="IgniteConfigurationSection" /> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <param name="configPath">Path to the configuration file.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgniteClient StartClient(string sectionName, string configPath)
+        {
+            var section = GetConfigurationSection<IgniteClientConfigurationSection>(sectionName, configPath);
+
+            if (section.IgniteClientConfiguration == null)
+            {
+                throw new ConfigurationErrorsException(
+                    string.Format("{0} with name '{1}' in file '{2}' is defined in <configSections>, " +
+                                  "but not present in configuration.",
+                        typeof(IgniteClientConfigurationSection).Name, sectionName, configPath));
+            }
+
+            return StartClient(section.IgniteClientConfiguration);
+        }
+
         /// <summary>
         /// Handles the DomainUnload event of the CurrentDomain control.
         /// </summary>
@@ -765,6 +912,7 @@ namespace Apache.Ignite.Core
             }
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "Not available on .NET FW")]
             public override int GetHashCode()
             {
                 return _name == null ? 0 : _name.GetHashCode();
@@ -772,7 +920,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Value object to pass data between .Net methods during startup bypassing Java.
+        /// Value object to pass data between .NET methods during startup bypassing Java.
         /// </summary>
         private class Startup
         {

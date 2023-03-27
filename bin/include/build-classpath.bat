@@ -27,20 +27,19 @@
 
 for /D %%F in (modules\*) do if not %%F == "modules" call :includeToClassPath %%F
 
-for /D %%F in (%IGNITE_HOME%\modules\*) do if not %%F == "%IGNITE_HOME%\modules" call :includeToClassPath %%F
-
+for /F %%F in ('dir /A:D /b "%IGNITE_HOME%\modules\*" /b') do call :includeToClassPath "%IGNITE_HOME%\modules\%%F"
 goto :eof
 
 :includeToClassPath
-if exist "%1\target\" (
-    if exist "%1\target\classes\" call :concat %1\target\classes
+if exist "%~1\target\" (
+    if exist "%~1\target\classes\" call :concat "%~1\target\classes"
 
-    if exist "%1\target\test-classes\" call :concat %1\target\test-classes
+    if exist "%~1\target\test-classes\" call :concat "%~1\target\test-classes"
 
-    if exist "%1\target\libs\" call :concat %1\target\libs\*
+    if exist "%~1\target\libs\" call :concat "%~1\target\libs\*"
 )
 goto :eof
 
 :concat
-set IGNITE_LIBS=%IGNITE_LIBS%;%1
+	set IGNITE_LIBS=%IGNITE_LIBS%;%~1
 goto :eof

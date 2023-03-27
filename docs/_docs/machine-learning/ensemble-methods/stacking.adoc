@@ -1,0 +1,49 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Stacking
+
+Stacking (sometimes called stacked generalization) involves training a learning algorithm to combine the predictions of several other learning algorithms.
+
+First, all of the other algorithms are trained using the available data, then a combiner algorithm is trained to make a final prediction using all the predictions of the other algorithms as additional inputs. If an arbitrary combiner algorithm is used, then stacking can theoretically represent any of the widely known ensemble techniques, although, in practice, a logistic regression model is often used as the combiner like in the example below.
+
+
+[source, java]
+----
+DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
+DecisionTreeClassificationTrainer trainer1 = new DecisionTreeClassificationTrainer(3, 0);
+DecisionTreeClassificationTrainer trainer2 = new DecisionTreeClassificationTrainer(4, 0);
+
+LogisticRegressionSGDTrainer aggregator = new LogisticRegressionSGDTrainer()
+  .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
+                                         SimpleGDParameterUpdate.SUM_LOCAL,
+                                         SimpleGDParameterUpdate.AVG));
+
+StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl = new StackedVectorDatasetTrainer<>(aggregator)
+  .addTrainerWithDoubleOutput(trainer)
+  .addTrainerWithDoubleOutput(trainer1)
+  .addTrainerWithDoubleOutput(trainer2)
+  .fit(ignite,
+       dataCache,
+       vectorizer
+      );
+
+----
+
+NOTE: The Evaluator works well with the StackedModel
+
+
+== Example
+
+The full example could be found as a part of the Titanic tutorial https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/tutorial/Step_9_Scaling_With_Stacking.java[here].

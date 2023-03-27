@@ -18,17 +18,19 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Transactions facade.
     /// </summary>
-    internal class TransactionsImpl : PlatformTarget, ITransactions
+    internal class TransactionsImpl : PlatformTargetAdapter, ITransactions
     {
         /** */
         private const int OpCacheConfigParameters = 1;
@@ -67,6 +69,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private const int OpPrepare = 12;
 
         /** */
+        private const int OpLocalActiveTransactions = 13;
+
+        /** */
+        private const int OpLocalActiveTransactionsRemove = 14;
+
+        /** */
         private readonly TransactionConcurrency _dfltConcurrency;
 
         /** */
@@ -76,35 +84,42 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private readonly TimeSpan _dfltTimeout;
 
         /** */
+        private readonly TimeSpan _dfltTimeoutOnPartitionMapExchange;
+
+        /** */
         private readonly Guid _localNodeId;
+
+        /** */
+        private readonly Ignite _ignite;
+
+        /** */
+        private readonly string _label;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionsImpl" /> class.
         /// </summary>
+        /// <param name="ignite">Parent target, actually <see cref="Ignite"/> (used for withLabel)</param>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IUnmanagedTarget target, Marshaller marsh,
-            Guid localNodeId) : base(target, marsh)
+        /// <param name="label">TX label. </param>
+        public TransactionsImpl(Ignite ignite, IPlatformTargetInternal target, Guid localNodeId, string label = null) 
+            : base(target)
         {
             _localNodeId = localNodeId;
 
-            TransactionConcurrency concurrency = default(TransactionConcurrency);
-            TransactionIsolation isolation = default(TransactionIsolation);
-            TimeSpan timeout = default(TimeSpan);
+            var res = target.OutStream(OpCacheConfigParameters, reader => Tuple.Create(
+                (TransactionConcurrency) reader.ReadInt(),
+                (TransactionIsolation) reader.ReadInt(),
+                reader.ReadLongAsTimespan(),
+                reader.ReadLongAsTimespan()
+            ));
 
-            DoInOp(OpCacheConfigParameters, stream =>
-            {
-                var reader = marsh.StartUnmarshal(stream).GetRawReader();
-
-                concurrency = (TransactionConcurrency) reader.ReadInt();
-                isolation = (TransactionIsolation) reader.ReadInt();
-                timeout = reader.ReadLongAsTimespan();
-            });
-
-            _dfltConcurrency = concurrency;
-            _dfltIsolation = isolation;
-            _dfltTimeout = timeout;
+            _dfltConcurrency = res.Item1;
+            _dfltIsolation = res.Item2;
+            _dfltTimeout = res.Item3;
+            _dfltTimeoutOnPartitionMapExchange = res.Item4;
+            _ignite = ignite;
+            _label = label;
         }
 
         /** <inheritDoc /> */
@@ -132,8 +147,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 w.WriteInt(txSize);
             }, s => s.ReadLong());
 
-            var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _localNodeId);
-            
+            var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _label, _localNodeId);
+
             return new Transaction(innerTx);
         }
 
@@ -161,6 +176,53 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
+        public ITransactions WithLabel(string label)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(label, "label");
+
+            return _ignite.GetTransactionsWithLabel(label);
+        }
+
+        /** <inheritDoc /> */
+        public ITransactions WithTracing()
+        {
+            return this;
+        }
+
+        /** <inheritDoc /> */
+        public ITransactionCollection GetLocalActiveTransactions()
+        {
+            return DoInOp(OpLocalActiveTransactions, stream =>
+            {
+                var reader = Marshaller.StartUnmarshal(stream);
+
+                var size = reader.ReadInt();
+
+                var result = new List<ITransaction>(size);
+
+                for (var i = 0; i < size; i++)
+                {
+                    var id = reader.ReadLong();
+
+                    var concurrency = reader.ReadInt();
+
+                    var isolation = reader.ReadInt();
+
+                    var timeout = reader.ReadLongAsTimespan();
+
+                    var label = reader.ReadString();
+
+                    var innerTx = new TransactionRollbackOnlyProxy(this, id, (TransactionConcurrency) concurrency,
+                        (TransactionIsolation) isolation, timeout, label, _localNodeId);
+
+                    result.Add(innerTx);
+                }
+
+                return new TransactionCollectionImpl(result);
+            });
+        }
+
+        /** <inheritDoc /> */
         public TransactionConcurrency DefaultTransactionConcurrency
         {
             get { return _dfltConcurrency; }
@@ -176,6 +238,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public TimeSpan DefaultTimeout
         {
             get { return _dfltTimeout; }
+        }
+
+        /** <inheritDoc /> */
+        public TimeSpan DefaultTimeoutOnPartitionMapExchange
+        {
+            get { return _dfltTimeoutOnPartitionMapExchange; }
         }
 
         /// <summary>
@@ -207,6 +275,15 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Rollback transaction.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        internal void TxRollback(TransactionRollbackOnlyProxy tx)
+        {
+            DoOutInOp(OpRollback, tx.Id);
+        }
+        
+        /// <summary>
         /// Close transaction.
         /// </summary>
         /// <param name="tx">Transaction.</param>
@@ -217,11 +294,31 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Close transaction.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        /// <returns>Final transaction state.</returns>
+        public void TxClose(TransactionRollbackOnlyProxy tx)
+        {
+            DoOutInOp(OpClose, tx.Id);
+        }
+
+        /// <summary>
         /// Get transaction current state.
         /// </summary>
         /// <param name="tx">Transaction.</param>
         /// <returns>Transaction current state.</returns>
         internal TransactionState TxState(TransactionImpl tx)
+        {
+            return (TransactionState) DoOutInOp(OpState, tx.Id);
+        }
+
+        /// <summary>
+        /// Get transaction current state.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        /// <returns>Transaction current state.</returns>
+        internal TransactionState TxState(TransactionRollbackOnlyProxy tx)
         {
             return (TransactionState) DoOutInOp(OpState, tx.Id);
         }
@@ -237,6 +334,15 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /// <summary>
+        /// Remove transaction.
+        /// </summary>
+        /// <param name="tx">Transaction.</param>
+        internal void TxRemove(TransactionRollbackOnlyProxy tx)
+        {
+            DoOutInOp(OpLocalActiveTransactionsRemove, tx.Id);
+        }
+
+        /// <summary>
         /// Commits tx in async mode.
         /// </summary>
         internal Task CommitAsync(TransactionImpl tx)
@@ -248,6 +354,14 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// Rolls tx back in async mode.
         /// </summary>
         internal Task RollbackAsync(TransactionImpl tx)
+        {
+            return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
+        }
+        
+        /// <summary>
+        /// Rolls tx back in async mode.
+        /// </summary>
+        internal Task TxRollbackAsync(TransactionRollbackOnlyProxy tx)
         {
             return DoOutOpAsync(OpRollbackAsync, w => w.WriteLong(tx.Id));
         }

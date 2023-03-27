@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 /**
  * Demonstrates a simple use of {@link IgniteRunnable}.
  * <p>
- * Remote nodes should always be started with special configuration file which
+ * Remote nodes should always be 0started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
@@ -50,11 +50,9 @@ public class ComputeRunnableExample {
             // Iterate through all words in the sentence and create runnable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                compute.run(new IgniteRunnable() {
-                    @Override public void run() {
-                        System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
-                    }
+                compute.run(() -> {
+                    System.out.println();
+                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
             }
 

@@ -24,9 +24,9 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
+    using Apache.Ignite.Core.Platform;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
@@ -134,9 +134,6 @@ namespace Apache.Ignite.Core.Tests.Services
             prx.VoidMethod(10);
             Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
-            prx.VoidMethod(10, "string");
-            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
-
             prx.VoidMethod(10, "string", "arg");
             Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
@@ -154,7 +151,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("ObjectMethod", prx.ObjectMethod());
             Assert.AreEqual("ObjectMethod987", prx.ObjectMethod(987));
-            Assert.AreEqual("ObjectMethod987str123", prx.ObjectMethod(987, "str123"));
             Assert.AreEqual("ObjectMethod987str123TestClass", prx.ObjectMethod(987, "str123", new TestClass()));
             Assert.AreEqual("ObjectMethod987str123TestClass34arg5arg6",
                 prx.ObjectMethod(987, "str123", new TestClass(), 3, 4, "arg5", "arg6"));
@@ -190,6 +186,9 @@ namespace Apache.Ignite.Core.Tests.Services
                             "can't resolve ambiguity.", ex.Message);
         }
 
+        /// <summary>
+        /// Tests the exception.
+        /// </summary>
         [Test]
         public void TestException()
         {
@@ -215,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMarshallingException()
         {
             var prx = GetProxy();
-                
+
             var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(false, false));
 
             if (KeepBinary)
@@ -261,7 +260,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc = new TestIgniteService(Binary);
 
-            var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
+            var prx = ServiceProxyFactory<T>.CreateProxy(InvokeProxyMethod);
 
             Assert.IsFalse(ReferenceEquals(_svc, prx));
 
@@ -284,7 +283,8 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
-                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args, Platform.DotNet);
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name,
+                    method, args, PlatformType.DotNet, null);
 
                 inStream.SynchronizeOutput();
 
@@ -293,16 +293,18 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 2) call InvokeServiceMethod
                 string mthdName;
                 object[] mthdArgs;
+                IServiceCallContext unused;
 
-                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs);
+                ServiceProxySerializer.ReadProxyMethod(inStream, _marsh, out mthdName, out mthdArgs, out unused);
 
-                var result = ServiceProxyInvoker.InvokeServiceMethod(_svc, mthdName, mthdArgs);
+                var result = ServiceProxyInvoker.InvokeServiceMethod(
+                    new ServiceContext(_svc, null, null), mthdName, mthdArgs);
 
                 ServiceProxySerializer.WriteInvocationResult(outStream, _marsh, result.Key, result.Value);
 
                 var writer = _marsh.StartMarshal(outStream);
-                writer.WriteString("unused");  // fake Java exception details
-                writer.WriteString("unused");  // fake Java exception details
+                writer.WriteString("unused"); // fake Java exception details
+                writer.WriteString("unused"); // fake Java exception details
 
                 outStream.SynchronizeOutput();
 
@@ -315,7 +317,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestIgniteServiceProperties
+        public interface ITestIgniteServiceProperties
         {
             /** */
             int IntProp { get; set; }
@@ -330,7 +332,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface to check ambiguity handling.
         /// </summary>
-        protected interface ITestIgniteServiceAmbiguity
+        public interface ITestIgniteServiceAmbiguity
         {
             /** */
             int AmbiguousMethod(int arg);
@@ -339,7 +341,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestIgniteService : ITestIgniteServiceProperties
+        public interface ITestIgniteService : ITestIgniteServiceProperties, IService
         {
             /** */
             void VoidMethod();
@@ -390,7 +392,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface. Does not derive from actual interface, but has all the same method signatures.
         /// </summary>
-        protected interface ITestIgniteServiceProxyInterface
+        public interface ITestIgniteServiceProxyInterface
         {
             /** */
             int IntProp { get; set; }
@@ -408,10 +410,10 @@ namespace Apache.Ignite.Core.Tests.Services
             void VoidMethod(int arg);
 
             /** */
-            void VoidMethod(int arg, string arg1, object arg2 = null);
+            void VoidMethod(int arg, string arg1, object arg2);
 
             /** */
-            void VoidMethod(int arg, string arg1, object arg2 = null, params object[] args);
+            void VoidMethod(int arg, string arg1, object arg2, params object[] args);
 
             /** */
             object ObjectMethod();
@@ -420,10 +422,10 @@ namespace Apache.Ignite.Core.Tests.Services
             object ObjectMethod(int arg);
 
             /** */
-            object ObjectMethod(int arg, string arg1, object arg2 = null);
+            object ObjectMethod(int arg, string arg1, object arg2);
 
             /** */
-            object ObjectMethod(int arg, string arg1, object arg2 = null, params object[] args);
+            object ObjectMethod(int arg, string arg1, object arg2, params object[] args);
 
             /** */
             void ExceptionMethod();
@@ -570,6 +572,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
+                // ReSharper disable once NonReadonlyMemberInGetHashCode
                 return IntProp.GetHashCode();
             }
 
@@ -583,6 +586,24 @@ namespace Apache.Ignite.Core.Tests.Services
             int ITestIgniteServiceAmbiguity.AmbiguousMethod(int arg)
             {
                 return -arg;
+            }
+
+            /** <inheritdoc /> */
+            public void Init(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Execute(IServiceContext context)
+            {
+                throw new NotImplementedException();
+            }
+
+            /** <inheritdoc /> */
+            public void Cancel(IServiceContext context)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -653,7 +674,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Binarizable object for method argument/result.
         /// </summary>
-        protected class TestBinarizableClass : IBinarizable
+        public class TestBinarizableClass : IBinarizable
         {
             /** */
             public string Prop { get; set; }
@@ -757,7 +778,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestBinarizableMethods()
         {
             var prx = GetProxy();
-            
+
             var obj = new TestBinarizableClass { Prop = "PropValue" };
             var portObj = Binary.ToBinary<IBinaryObject>(obj);
 

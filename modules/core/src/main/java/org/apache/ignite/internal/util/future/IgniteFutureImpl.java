@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.future;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of public API future.
@@ -36,13 +38,25 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     /** */
     protected final IgniteInternalFuture<V> fut;
 
+    /** */
+    protected final Executor defaultExecutor;
+
     /**
      * @param fut Future.
      */
     public IgniteFutureImpl(IgniteInternalFuture<V> fut) {
+        this(fut, null);
+    }
+
+    /**
+     * @param fut Future.
+     * @param defaultExecutor Default executor.
+     */
+    public IgniteFutureImpl(IgniteInternalFuture<V> fut, @Nullable Executor defaultExecutor) {
         assert fut != null;
 
         this.fut = fut;
+        this.defaultExecutor = defaultExecutor;
     }
 
     /**
@@ -66,20 +80,41 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     @Override public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
         A.notNull(lsnr, "lsnr");
 
-        fut.listen(new InternalFutureListener(lsnr));
+        if (defaultExecutor != null && !isDone())
+            fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, defaultExecutor)));
+        else
+            fut.listen(new InternalFutureListener(lsnr));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr, Executor exec) {
+        A.notNull(lsnr, "lsnr");
+        A.notNull(exec, "exec");
+
+        fut.listen(new InternalFutureListener(new AsyncFutureListener<>(lsnr, exec)));
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return new IgniteFutureImpl<>(chainInternal(doneCb));
+        return new IgniteFutureImpl<>(chainInternal(doneCb, null), defaultExecutor);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> chainAsync(final IgniteClosure<? super IgniteFuture<V>, T> doneCb,
+        Executor exec) {
+        A.notNull(doneCb, "doneCb");
+        A.notNull(exec, "exec");
+
+        return new IgniteFutureImpl<>(chainInternal(doneCb, exec), defaultExecutor);
     }
 
     /**
      * @param doneCb Done callback.
      * @return Internal future
      */
-    protected  <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return fut.chain(new C1<IgniteInternalFuture<V>, T>() {
+    protected <T> IgniteInternalFuture<T> chainInternal(final IgniteClosure<? super IgniteFuture<V>, T> doneCb,
+        @Nullable Executor exec) {
+        C1<IgniteInternalFuture<V>, T> clos = new C1<IgniteInternalFuture<V>, T>() {
             @Override public T apply(IgniteInternalFuture<V> fut) {
                 assert IgniteFutureImpl.this.fut == fut;
 
@@ -90,7 +125,15 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
                     throw new GridClosureException(e);
                 }
             }
-        });
+        };
+
+        if (exec != null)
+            return fut.chain(clos, exec);
+
+        if (defaultExecutor != null && !isDone())
+            return fut.chain(clos, defaultExecutor);
+
+        return fut.chain(clos);
     }
 
     /** {@inheritDoc} */
@@ -173,7 +216,6 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public boolean equals(Object obj) {
             if (obj == null || !obj.getClass().equals(InternalFutureListener.class))
                 return false;

@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Async;
 
 /**
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
@@ -107,6 +108,7 @@ public interface IgniteInternalFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
+    @Async.Schedule
     public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
 
     /**
@@ -116,6 +118,7 @@ public interface IgniteInternalFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
+    @Async.Schedule
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
 
     /**
@@ -126,7 +129,35 @@ public interface IgniteInternalFuture<R> {
      * @param exec Executor to run callback.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
+    @Async.Schedule
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb, Executor exec);
+
+    /**
+     * Make a chained future that is completed when {@code doneCb} is executed. Callback is called with this future
+     * as the argument, when this future completes. It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback.
+     * @param <T> Type parameter.
+     * @return Chained future.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb
+    );
+
+    /**
+     * Make a chained future that is completed when {@code doneCb} is executed. Callback is called with this future
+     * as the argument, when this future completes. It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback.
+     * @param exec Executor to run callback.
+     * @param <T> Type parameter.
+     * @return Chained future.
+     */
+    @Async.Schedule
+    public <T> IgniteInternalFuture<T> chainCompose(
+        IgniteClosure<? super IgniteInternalFuture<R>, IgniteInternalFuture<T>> doneCb, Executor exec
+    );
 
     /**
      * @return Error value if future has already been completed with error.

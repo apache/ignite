@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectFailoverAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -73,6 +74,7 @@ public class IgniteClientReconnectCacheQueriesFailoverTest extends IgniteClientR
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectCacheQueries() throws Exception {
         final Ignite client = grid(serverCount());
 
@@ -101,7 +103,7 @@ public class IgniteClientReconnectCacheQueriesFailoverTest extends IgniteClientR
 
                     assertEquals(1, res.size());
 
-                    Double avg = (Double)res.get(0).get(0);
+                    Integer avg = (Integer)res.get(0).get(0);
 
                     assertEquals(5_000, avg.intValue());
                 }
@@ -120,6 +122,7 @@ public class IgniteClientReconnectCacheQueriesFailoverTest extends IgniteClientR
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectScanQuery() throws Exception {
         final Ignite client = grid(serverCount());
 

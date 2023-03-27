@@ -50,9 +50,11 @@ namespace ignite
                  * Get handler.
                  *
                  * @param typeName Type name.
+                 * @param affFieldName Affinity field name.
                  * @param typeId Type ID.
                  */
-                ignite::common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName, int32_t typeId);
+                common::concurrent::SharedPointer<BinaryTypeHandler> GetHandler(const std::string& typeName,
+                    const std::string& affFieldName, int32_t typeId);
 
                 /**
                  * Submit handler for processing.
@@ -89,10 +91,7 @@ namespace ignite
                  *
                  * @param updater Updater.
                  */
-                void SetUpdater(BinaryTypeUpdater* updater)
-                {
-                    this->updater = updater;
-                }
+                void SetUpdater(BinaryTypeUpdater* updater);
 
                 /**
                  * Get metadata snapshop for the type.
@@ -104,13 +103,13 @@ namespace ignite
 
             private:
                 /** Current snapshots. */
-                ignite::common::concurrent::SharedPointer<std::map<int32_t, SPSnap> > snapshots;
+                std::map<int32_t, SPSnap>* snapshots;
 
                 /** Pending snapshots. */
                 std::vector<SPSnap>* pending;
 
                 /** Critical section. */
-                ignite::common::concurrent::CriticalSection cs;
+                common::concurrent::CriticalSection cs;
 
                 /** Type updater */
                 BinaryTypeUpdater* updater;

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util.worker;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -28,61 +30,73 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Extension to standard {@link Runnable} interface. Adds proper details to be used
- * with {@link Executor} implementations. Only for internal use.
+ * Extension to standard {@link Runnable} interface. Adds proper details to be used with {@link Executor}
+ * implementations. Only for internal use.
  */
-public abstract class GridWorker implements Runnable {
+public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
     /** Ignite logger. */
     protected final IgniteLogger log;
 
     /** Thread name. */
     private final String name;
 
-    /** */
+    /** Ignite instance name. */
     private final String igniteInstanceName;
 
-    /** */
+    /** Listener. */
     private final GridWorkerListener lsnr;
 
-    /** */
+    /** Finish mark. */
     private volatile boolean finished;
 
     /** Whether or not this runnable is cancelled. */
-    protected volatile boolean isCancelled;
+    protected final AtomicBoolean isCancelled = new AtomicBoolean();
 
     /** Actual thread runner. */
     private volatile Thread runner;
 
-    /** */
+    /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
+    private volatile long heartbeatTs;
+
+    /** Atomic field updater to change heartbeat. */
+    private static final AtomicLongFieldUpdater<GridWorker> HEARTBEAT_UPDATER =
+        AtomicLongFieldUpdater.newUpdater(GridWorker.class, "heartbeatTs");
+
+    /** Mutex for finish awaiting. */
     private final Object mux = new Object();
 
     /**
      * Creates new grid worker with given parameters.
      *
      * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two
-     *      different things. The same worker can be executed by multiple threads and therefore
-     *      for logging and debugging purposes we separate the two.
+     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
+     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
+     * the two.
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
      */
-    protected GridWorker(String igniteInstanceName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
+    protected GridWorker(
+        String igniteInstanceName,
+        String name,
+        IgniteLogger log,
+        @Nullable GridWorkerListener lsnr
+    ) {
         assert name != null;
         assert log != null;
 
         this.igniteInstanceName = igniteInstanceName;
         this.name = name;
-        this.lsnr = lsnr;
         this.log = log;
+        this.lsnr = lsnr;
     }
 
     /**
      * Creates new grid worker with given parameters.
      *
      * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
-     * @param name Worker name. Note that in general thread name and worker (runnable) name are two
-     *      different things. The same worker can be executed by multiple threads and therefore
-     *      for logging and debugging purposes we separate the two.
+     * @param name Worker name. Note that in general thread name and worker (runnable) name are two different things.
+     * The same worker can be executed by multiple threads and therefore for logging and debugging purposes we separate
+     * the two.
      * @param log Grid logger to be used.
      */
     protected GridWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
@@ -91,6 +105,8 @@ public abstract class GridWorker implements Runnable {
 
     /** {@inheritDoc} */
     @Override public final void run() {
+        updateHeartbeat();
+
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
@@ -99,9 +115,8 @@ public abstract class GridWorker implements Runnable {
             log.debug("Grid runnable started: " + name);
 
         try {
-            // Special case, when task gets cancelled before it got scheduled.
-            if (isCancelled)
-                runner.interrupt();
+            if (isCancelled.get())
+                onCancelledBeforeWorkerScheduled();
 
             // Listener callback.
             if (lsnr != null)
@@ -122,7 +137,9 @@ public abstract class GridWorker implements Runnable {
         // Catch everything to make sure that it gets logged properly and
         // not to kill any threads from the underlying thread pool.
         catch (Throwable e) {
-            if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedCheckedException.class) && !X.hasCause(e, IgniteInterruptedException.class))
+            if (!X.hasCause(e, InterruptedException.class) &&
+                !X.hasCause(e, IgniteInterruptedCheckedException.class) &&
+                !X.hasCause(e, IgniteInterruptedException.class))
                 U.error(log, "Runtime error caught during grid runnable execution: " + this, e);
             else
                 U.warn(log, "Runtime exception occurred during grid runnable execution caused by thread interruption: " + e.getMessage());
@@ -143,7 +160,7 @@ public abstract class GridWorker implements Runnable {
                 lsnr.onStopped(this);
 
             if (log.isDebugEnabled())
-                if (isCancelled)
+                if (isCancelled.get())
                     log.debug("Grid runnable finished due to cancellation: " + name);
                 else if (runner.isInterrupted())
                     log.debug("Grid runnable finished due to interruption without cancellation: " + name);
@@ -167,17 +184,16 @@ public abstract class GridWorker implements Runnable {
     protected abstract void body() throws InterruptedException, IgniteInterruptedCheckedException;
 
     /**
-     * Optional method that will be called after runnable is finished. Default
-     * implementation is no-op.
+     * Optional method that will be called after runnable is finished. Default implementation is no-op.
      */
     protected void cleanup() {
         /* No-op. */
     }
 
     /**
-     * @return Runner thread.
+     * @return Runner thread, {@code null} if the worker has not yet started executing.
      */
-    public Thread runner() {
+    public @Nullable Thread runner() {
         return runner;
     }
 
@@ -200,20 +216,13 @@ public abstract class GridWorker implements Runnable {
     }
 
     /**
-     * Cancels this runnable interrupting actual runner.
+     * Cancels this runnable.
      */
     public void cancel() {
         if (log.isDebugEnabled())
             log.debug("Cancelling grid runnable: " + this);
 
-        isCancelled = true;
-
-        Thread runner = this.runner;
-
-        // Cannot apply Future.cancel() because if we do, then Future.get() would always
-        // throw CancellationException and we would not be able to wait for task completion.
-        if (runner != null)
-            runner.interrupt();
+        onCancel(isCancelled.compareAndSet(false, true));
     }
 
     /**
@@ -225,7 +234,7 @@ public abstract class GridWorker implements Runnable {
         if (log.isDebugEnabled())
             log.debug("Joining grid runnable: " + this);
 
-        if ((runner == null && isCancelled) || finished)
+        if ((runner == null && isCancelled.get()) || finished)
             return;
 
         synchronized (mux) {
@@ -243,7 +252,7 @@ public abstract class GridWorker implements Runnable {
     public boolean isCancelled() {
         Thread runner = this.runner;
 
-        return isCancelled || (runner != null && runner.isInterrupted());
+        return isCancelled.get() || (runner != null && runner.isInterrupted());
     }
 
     /**
@@ -253,6 +262,66 @@ public abstract class GridWorker implements Runnable {
      */
     public boolean isDone() {
         return finished;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long heartbeatTs() {
+        return heartbeatTs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateHeartbeat() {
+        long curTs = U.currentTimeMillis();
+        long hbTs = heartbeatTs;
+
+        // Avoid heartbeat update while in the blocking section.
+        while (hbTs < curTs) {
+            if (HEARTBEAT_UPDATER.compareAndSet(this, hbTs, curTs))
+                return;
+
+            hbTs = heartbeatTs;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void blockingSectionBegin() {
+        heartbeatTs = Long.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void blockingSectionEnd() {
+        heartbeatTs = U.currentTimeMillis();
+    }
+
+    /** Can be called from {@link #runner()} thread to perform idleness handling. */
+    protected void onIdle() {
+        if (lsnr != null)
+            lsnr.onIdle(this);
+    }
+
+    /**
+     * Callback on runner cancellation.
+     *
+     * @param firstCancelRequest Flag indicating that worker cancellation was requested for the first time.
+     */
+    protected void onCancel(boolean firstCancelRequest) {
+        Thread runner = this.runner;
+
+        // Cannot apply Future.cancel() because if we do, then Future.get() would always
+        // throw CancellationException, and we would not be able to wait for task completion.
+        if (runner != null)
+            runner.interrupt();
+    }
+
+    /**
+     * Callback on special case, when task is cancelled before is has been scheduled.
+     */
+    protected void onCancelledBeforeWorkerScheduled() {
+        Thread runner = this.runner;
+
+        assert runner != null : this;
+
+        runner.interrupt();
     }
 
     /** {@inheritDoc} */

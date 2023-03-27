@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -24,14 +26,14 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Schema operation executor.
@@ -65,7 +67,10 @@ public class SchemaOperationWorker extends GridWorker {
     private final AtomicBoolean startGuard = new AtomicBoolean();
 
     /** Cancellation token. */
-    private final SchemaIndexOperationCancellationToken cancelToken = new SchemaIndexOperationCancellationToken();
+    private final IndexRebuildCancelToken cancelTok = new IndexRebuildCancelToken();
+
+    /** Workers registry. */
+    private final WorkersRegistry workersRegistry;
 
     /**
      * Constructor.
@@ -90,12 +95,13 @@ public class SchemaOperationWorker extends GridWorker {
         this.nop = nop;
         this.cacheRegistered = cacheRegistered;
         this.type = type;
+        this.workersRegistry = ctx.workersRegistry();
 
         fut = new GridFutureAdapter();
 
         if (err != null)
             fut.onDone(err);
-        else if (nop || !cacheRegistered)
+        else if (nop || (!cacheRegistered && !(op instanceof SchemaAddQueryEntityOperation)))
             fut.onDone();
 
         pubFut = publicFuture(fut);
@@ -105,11 +111,11 @@ public class SchemaOperationWorker extends GridWorker {
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
         try {
             // Execute.
-            qryProc.processIndexOperationLocal(op, type, depId, cancelToken);
+            qryProc.processSchemaOperationLocal(op, type, depId, cancelTok);
 
             fut.onDone();
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             fut.onDone(QueryUtils.wrapIfNeeded(e));
         }
     }
@@ -177,9 +183,18 @@ public class SchemaOperationWorker extends GridWorker {
     /**
      * Cancel operation.
      */
-    public void cancel() {
-        if (cancelToken.cancel())
+    @Override public void cancel() {
+        if (cancelTok.cancel(new SchemaIndexOperationCancellationException("Index creation was cancelled."))) {
+            try {
+                fut.get(workersRegistry.getSystemWorkerBlockedTimeout());
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.error("Error completing operation", e);
+            }
+
             super.cancel();
+        }
     }
 
     /**

@@ -21,8 +21,11 @@ namespace ignite
 {
     namespace odbc
     {
-        Cursor::Cursor(int64_t queryId) : queryId(queryId), currentPage(),
-            currentPagePos(0), currentRow()
+        Cursor::Cursor(int64_t queryId) :
+            queryId(queryId),
+            currentPage(),
+            currentPagePos(0),
+            currentRow()
         {
             // No-op.
         }
@@ -62,6 +65,11 @@ namespace ignite
         {
             return !currentPage.get() || !currentPage->IsLast() ||
                 currentPagePos < currentPage->GetSize();
+        }
+
+        bool Cursor::IsClosedRemotely() const
+        {
+            return currentPage.get() && currentPage->IsLast();
         }
 
         void Cursor::UpdateData(std::auto_ptr<ResultPage>& newPage)

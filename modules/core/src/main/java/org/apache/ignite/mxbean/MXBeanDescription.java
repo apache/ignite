@@ -31,8 +31,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface MXBeanDescription {
     /**
-     *
-     * Description for Mbean.
+     * @return Description for Mbean.
      */
-    @SuppressWarnings({"JavaDoc"}) public String value();
+    public String value();
 }

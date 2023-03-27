@@ -75,9 +75,10 @@ namespace Apache.Ignite.Core.Tests.Log
 
             // Test that all levels are present
             foreach (var level in AllLevels.Where(x => x != LogLevel.Error))
+            {
                 Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == level), "No messages with level " + level);
+            }
         }
-
 
         /// <summary>
         /// Tests startup error in Java.
@@ -130,14 +131,17 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 var compute = ignite.GetCluster().ForRemotes().GetCompute();
 
-                Assert.Throws<ArithmeticException>(() => compute.Call(new FailFunc()));
+                var ex = Assert.Throws<AggregateException>(() => compute.Call(new FailFunc()));
+                Assert.IsNotNull(ex.InnerException);
+                Assert.IsInstanceOf<ArithmeticException>(ex.InnerException.InnerException);
 
                 // Log updates may not arrive immediately
                 TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.Exception != null), 3000);
 
                 var errFromJava = TestLogger.Entries.Single(x => x.Exception != null);
                 Assert.IsNotNull(errFromJava.Exception.InnerException);
-                Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception.InnerException).Message);
+                Assert.AreEqual("Error in func.",
+                    ((ArithmeticException) errFromJava.Exception.InnerException).Message);
             }
         }
 
@@ -203,6 +207,89 @@ namespace Apache.Ignite.Core.Tests.Log
                                 "Long', QueryField 'myField': Type 'System.UInt16' maps to Java type 'java.lang." +
                                 "Short' using unchecked conversion. This may cause issues in SQL queries. You " +
                                 "can use 'System.Int16' instead to achieve direct mapping.", warns[5]);
+            }
+        }
+
+        /// <summary>
+        /// Tests the nullable <see cref="QueryEntity"/> validation.
+        /// </summary>
+        [TestCase(typeof(sbyte?), "java.lang.Byte", typeof(byte))]
+        [TestCase(typeof(ushort?), "java.lang.Short", typeof(short))]
+        [TestCase(typeof(uint?), "java.lang.Integer", typeof(int))]
+        [TestCase(typeof(ulong?), "java.lang.Long", typeof(long))]
+        public void TestNullableQueryEntityValidation(Type type, string javaType, Type hintType)
+        {
+            var cfg = new IgniteConfiguration(GetConfigWithLogger())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("cache1", new QueryEntity(type, type)
+                    {
+                        Fields = new[]
+                        {
+                            new QueryField("myField", type)
+                        }
+                    })
+                }
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                var warns = TestLogger.Entries.Where(x => x.Level == LogLevel.Warn && x.Args != null)
+                    .Select(x => string.Format(x.Message, x.Args)).ToList();
+
+                Assert.AreEqual(3, warns.Count);
+
+                string pattern = "Validating cache configuration 'cache1', QueryEntity '{0}:{0}': " +
+                                 "Type '{1}' maps to Java type '{0}' using unchecked " +
+                                 "conversion. This may cause issues in SQL queries. You can use '{2}' " +
+                                 "instead to achieve direct mapping.";
+
+                string expected = string.Format(pattern, javaType, type, hintType);
+
+                Assert.AreEqual(expected, warns[0]);
+                Assert.AreEqual(expected, warns[1]);
+
+                string fieldsPattern = "Validating cache configuration 'cache1', QueryEntity '{0}:{0}', " +
+                                       "QueryField 'myField': Type '{1}' maps to Java type '{0}' using " +
+                                       "unchecked conversion. This may cause issues in SQL queries. " +
+                                       "You can use '{2}' instead to achieve direct mapping.";
+
+                string fieldsExpected = string.Format(fieldsPattern, javaType, type, hintType);
+                Assert.AreEqual(fieldsExpected, warns[2]);
+            }
+        }
+
+        /// <summary>
+        /// Tests cache creation with nullable <see cref="QueryEntity"/> does not log warnings.
+        /// </summary>
+        [TestCase(typeof(int))]
+        [TestCase(typeof(int?))]
+        [TestCase(typeof(string))]
+        [TestCase(typeof(LogEntry))]
+        [TestCase(typeof(CustomLoggerTest))]
+        [TestCase(typeof(CustomEnum))]
+        [TestCase(typeof(CustomEnum?))]
+        public void TestCacheCreationWithDirectQueryEntityMappingsDoesNotLogWarnings(Type type)
+        {
+            var cfg = new IgniteConfiguration(GetConfigWithLogger())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("cache1", new QueryEntity(type, type)
+                    {
+                        Fields = new[]
+                        {
+                            new QueryField("myField", type)
+                        }
+                    })
+                }
+            };
+
+            using (Ignition.Start(cfg))
+            {
+                int warnsCount = TestLogger.Entries.Count(x => x.Level == LogLevel.Warn && x.Args != null);
+                Assert.AreEqual(0, warnsCount);
             }
         }
 
@@ -312,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Log
         /// <summary>
         /// Checks the last message.
         /// </summary>
-        private static void CheckLastMessage(LogLevel level, string message, object[] args = null, 
+        private static void CheckLastMessage(LogLevel level, string message, object[] args = null,
             IFormatProvider formatProvider = null, string category = null, string nativeErr = null, Exception e = null)
         {
             var msg = TestLogger.Entries.Last();
@@ -353,7 +440,7 @@ namespace Apache.Ignite.Core.Tests.Log
             public override string ToString()
             {
                 return string.Format("Level: {0}, Message: {1}, Args: {2}, FormatProvider: {3}, Category: {4}, " +
-                                     "NativeErrorInfo: {5}, Exception: {6}", Level, Message, Args, FormatProvider, 
+                                     "NativeErrorInfo: {5}, Exception: {6}", Level, Message, Args, FormatProvider,
                                      Category, NativeErrorInfo, Exception);
             }
         }
@@ -383,7 +470,7 @@ namespace Apache.Ignite.Core.Tests.Log
                 }
             }
 
-            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, 
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider,
                 string category, string nativeErrorInfo, Exception ex)
             {
                 if (!IsEnabled(level))
@@ -444,6 +531,15 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 throw new ArithmeticException("Error in func.");
             }
+        }
+
+        /// <summary>
+        /// Custom enum for testing.
+        /// </summary>
+        private struct CustomEnum
+        {
+            // ReSharper disable once UnusedMember.Local
+            public int Field { get; set; }
         }
     }
 }

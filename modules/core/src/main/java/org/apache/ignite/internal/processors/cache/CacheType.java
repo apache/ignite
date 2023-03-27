@@ -30,9 +30,14 @@ public enum CacheType {
     USER(true, SYSTEM_POOL),
 
     /**
-     * Internal cache, should not be visible via public API (caches used by IGFS, Hadoop, data structures).
+     * Internal cache, should not be visible via public API.
      */
     INTERNAL(false, SYSTEM_POOL),
+
+    /**
+     * Cache for data structures, should not be visible via public API.
+     */
+    DATA_STRUCTURES(false, SYSTEM_POOL),
 
     /**
      * Internal replicated cache, should use separate thread pool.

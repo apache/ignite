@@ -18,4 +18,5 @@
 /**
  * Contains classes responsible for handling sessions and communication with Cassandra
  */
+
 package org.apache.ignite.cache.store.cassandra.session;

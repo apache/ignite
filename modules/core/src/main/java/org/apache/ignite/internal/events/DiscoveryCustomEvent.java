@@ -21,7 +21,11 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Custom event.
@@ -84,5 +88,44 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DiscoveryCustomEvent.class, this, super.toString());
+    }
+
+    /**
+     * @param evt Discovery event.
+     * @return {@code True} if event is DiscoveryCustomEvent that requires centralized affinity assignment.
+     */
+    public static boolean requiresCentralizedAffinityAssignment(DiscoveryEvent evt) {
+        if (!(evt instanceof DiscoveryCustomEvent))
+            return false;
+
+        return requiresCentralizedAffinityAssignment(((DiscoveryCustomEvent)evt).customMessage());
+    }
+
+    /**
+     * @param msg Discovery custom message.
+     * @return {@code True} if message belongs to event that requires centralized affinity assignment.
+     */
+    public static boolean requiresCentralizedAffinityAssignment(@Nullable DiscoveryCustomMessage msg) {
+        if (msg == null)
+            return false;
+
+        if (msg instanceof ChangeGlobalStateMessage && ((ChangeGlobalStateMessage)msg).activate())
+            return true;
+
+        if (msg instanceof SnapshotDiscoveryMessage) {
+            SnapshotDiscoveryMessage snapMsg = (SnapshotDiscoveryMessage)msg;
+
+            return snapMsg.needExchange() && snapMsg.needAssignPartitions();
+        }
+
+        if (msg instanceof DynamicCacheChangeBatch) {
+            DynamicCacheChangeBatch cacheMsg = (DynamicCacheChangeBatch)msg;
+
+            return cacheMsg.exchangeActions() != null &&
+                (!cacheMsg.exchangeActions().cachesToResetLostPartitions().isEmpty() ||
+                    cacheMsg.exchangeActions().finalizePartitionCounters());
+        }
+
+        return false;
     }
 }

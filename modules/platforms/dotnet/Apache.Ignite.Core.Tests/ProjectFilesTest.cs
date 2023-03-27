@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using System.Text.RegularExpressions;
     using NUnit.Framework;
 
@@ -31,15 +30,24 @@ namespace Apache.Ignite.Core.Tests
     public class ProjectFilesTest
     {
         /// <summary>
-        /// Tests that tools version is compatible with VS2010.
+        /// Tests that target framework is set correctly.
         /// </summary>
         [Test]
-        public void TestCsprojToolsVersion()
+        public void TestCsprojTargetFramework()
         {
-            var projFiles = GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories);
-            Assert.GreaterOrEqual(projFiles.Length, 7);
+            var projFiles = TestUtils.GetDotNetSourceDir()
+                .GetFiles("*.csproj", SearchOption.AllDirectories)
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") &&
+                            !x.FullName.Contains("Benchmark") &&
+                            !x.FullName.Contains("templates") &&
+                            !x.FullName.Contains("examples"))
+                .ToArray();
 
-            CheckFiles(projFiles, x => !x.Contains("ToolsVersion=\"4.0\""), "Invalid csproj files: ");
+            Assert.GreaterOrEqual(projFiles.Length, 7);
+            CheckFiles(
+                projFiles,
+                x => !x.Contains("<TargetFramework>net461</TargetFramework>") && !x.Contains("<TargetFramework>netstandard2.0</TargetFramework>"),
+                "Invalid csproj files: ");
         }
 
         /// <summary>
@@ -48,8 +56,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojReleaseDocs()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("DocumentationFile"), 
-                "Missing XML doc in release mode: ");
+            CheckFiles(GetReleaseCsprojFiles(), x => !x.Contains("GenerateDocumentationFile"), "Missing XML doc: ");
         }
 
         /// <summary>
@@ -58,28 +65,55 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCsprojBuildSettings()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"), 
+            CheckFiles(GetReleaseCsprojFiles(), x => GetReleaseSection(x).Contains("DefineConstants"),
                 "Invalid constants in release mode: ");
         }
 
         /// <summary>
-        /// Tests that release build settings are correct: debug information is disabled.
+        /// Tests that there are no public types in Apache.Ignite.Core.Impl namespace.
         /// </summary>
         [Test]
-        public void TestCsprojPdbSettings()
+        public void TestImplNamespaceHasNoPublicTypes()
         {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<DebugType>none</DebugType>"), 
-                "Invalid DebugType in release mode: ");
-        }
+            var excluded = new[]
+            {
+                "ProjectFilesTest.cs",
+                "CopyOnWriteConcurrentDictionary.cs",
+                "IgniteArgumentCheck.cs",
+                "DelegateConverter.cs",
+                "IgniteHome.cs",
+                "TypeCaster.cs",
+                "FutureType.cs",
+                "CollectionExtensions.cs",
+                "IQueryEntityInternal.cs",
+                "ICacheInternal.cs",
+                "CacheEntry.cs",
+                "HandleRegistry.cs",
+                "BinaryObjectHeader.cs"
+            };
 
-        /// <summary>
-        /// Tests that release build settings are correct: debug information is disabled.
-        /// </summary>
-        [Test]
-        public void TestCsprojOptimizeCode()
-        {
-            CheckFiles(GetReleaseCsprojFiles(), x => !GetReleaseSection(x).Contains("<Optimize>true</Optimize>"), 
-                "Invalid optimize setting in release mode: ");
+            var csFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+
+            foreach (var csFile in csFiles)
+            {
+                if (excluded.Contains(csFile.Name))
+                {
+                    continue;
+                }
+
+                var text = File.ReadAllText(csFile.FullName);
+
+                if (!text.Contains("namespace Apache.Ignite.Core.Impl"))
+                {
+                    continue;
+                }
+
+                StringAssert.DoesNotContain("public class", text, csFile.FullName);
+                StringAssert.DoesNotContain("public static class", text, csFile.FullName);
+                StringAssert.DoesNotContain("public interface", text, csFile.FullName);
+                StringAssert.DoesNotContain("public enum", text, csFile.FullName);
+                StringAssert.DoesNotContain("public struct", text, csFile.FullName);
+            }
         }
 
         /// <summary>
@@ -87,10 +121,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IEnumerable<FileInfo> GetReleaseCsprojFiles()
         {
-            return GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
+            return TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
                 .Where(x => x.Name != "Apache.Ignite.csproj" &&
                             !x.Name.Contains("Test") &&
-                            !x.Name.Contains("Example") &&
+                            !x.Name.Contains(".Schema") &&
+                            !x.FullName.Contains("examples") &&
+                            !x.FullName.Contains("templates") &&
+                            !x.Name.Contains("DotNetCore") &&
                             !x.Name.Contains("Benchmark"));
         }
 
@@ -99,22 +136,8 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static string GetReleaseSection(string csproj)
         {
-            return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>", 
+            return Regex.Match(csproj, @"<PropertyGroup[^>]*Release\|AnyCPU(.*?)<\/PropertyGroup>",
                 RegexOptions.Singleline).Value;
-        }
-
-        /// <summary>
-        /// Tests that tools version is compatible with VS2010.
-        /// </summary>
-        [Test]
-        public void TestSlnToolsVersion()
-        {
-            var slnFiles = GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories);
-            Assert.GreaterOrEqual(slnFiles.Length, 2);
-
-            CheckFiles(slnFiles, x => !x.Contains("# Visual Studio 2010") ||
-                                      !x.Contains("Microsoft Visual Studio Solution File, Format Version 11.00"),
-                "Invalid sln files: ");
         }
 
         /// <summary>
@@ -123,8 +146,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAsciiChars()
         {
-            var srcFiles = GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories)
-                .Where(x => x.Name != "BinaryStringTest.cs" && x.Name != "BinarySelfTest.cs");
+            var allowedFiles = new[]
+            {
+                "BinaryStringTest.cs",
+                "BinarySelfTest.cs",
+                "CacheDmlQueriesTest.cs",
+                "CacheTest.cs",
+                "PartitionAwarenessTest.cs"
+            };
+
+            var srcFiles = TestUtils.GetDotNetSourceDir()
+                .GetFiles("*.cs", SearchOption.AllDirectories)
+                .Where(x => !allowedFiles.Contains(x.Name));
 
             CheckFiles(srcFiles, x => x.Any(ch => ch > 255), "Files with non-ASCII chars: ");
         }
@@ -138,25 +171,6 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(0, invalidFiles.Length,
                 errorText + string.Join("\n ", invalidFiles.Select(x => x.FullName)));
-        }
-
-        /// <summary>
-        /// Gets the dot net source dir.
-        /// </summary>
-        private static DirectoryInfo GetDotNetSourceDir()
-        {
-            // ReSharper disable once AssignNullToNotNullAttribute
-            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
-
-            while (dir != null)
-            {
-                if (dir.GetFiles().Any(x => x.Name == "Apache.Ignite.sln"))
-                    return dir;
-
-                dir = dir.Parent;
-            }
-
-            throw new InvalidOperationException("Could not resolve Ignite.NET source directory.");
         }
     }
 }

@@ -17,19 +17,32 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import java.util.Arrays;
 
 /**
  *
  */
 public class CacheState {
     /** */
-    @GridToStringInclude
-    private Map<Integer, PartitionState> parts;
+    private int[] parts;
+
+    /** */
+    private long[] vals;
+
+    /** */
+    private byte[] states;
+
+    /** */
+    private int idx;
+
+    /**
+     * @param partsCnt Partitions count.
+     */
+    public CacheState(int partsCnt) {
+        parts = new int[partsCnt];
+        vals = new long[partsCnt * 2];
+        states = new byte[partsCnt];
+    }
 
     /**
      * @param partId Partition ID to add.
@@ -37,60 +50,108 @@ public class CacheState {
      * @param cntr Partition counter.
      */
     public void addPartitionState(int partId, long size, long cntr) {
-        if (parts == null)
-            parts = new HashMap<>();
-
-        parts.put(partId, new PartitionState(size, cntr));
+        addPartitionState(partId, size, cntr, (byte)-1);
     }
 
     /**
-     * @return Partitions map.
+     * @param partId Partition ID to add.
+     * @param size Partition size.
+     * @param cntr Partition counter.
+     * @param state Partition state.
      */
-    public Map<Integer, PartitionState> partitions() {
-        return parts == null ? Collections.<Integer, PartitionState>emptyMap() : parts;
+    public void addPartitionState(int partId, long size, long cntr, byte state) {
+        if (idx == parts.length)
+            throw new IllegalStateException("Failed to add new partition to the partitions state " +
+                "(no enough space reserved) [partId=" + partId + ", reserved=" + parts.length + ']');
+
+        if (idx > 0) {
+            if (parts[idx - 1] >= partId)
+                throw new IllegalStateException("Adding partition in a wrong order [prev=" + parts[idx - 1] +
+                    ", cur=" + partId + ']');
+        }
+
+        parts[idx] = partId;
+        states[idx] = state;
+
+        vals[2 * idx] = size;
+        vals[2 * idx + 1] = cntr;
+
+        idx++;
+    }
+
+    /**
+     * Gets partition size by partition ID.
+     *
+     * @param partId Partition ID.
+     * @return Partition size (will return {@code -1} if partition is not present in the record).
+     */
+    public long sizeByPartition(int partId) {
+        int idx = indexByPartition(partId);
+
+        return idx >= 0 ? vals[2 * idx] : -1;
+    }
+
+    /**
+     * Gets partition counter by partition ID.
+     *
+     * @param partId Partition ID.
+     * @return Partition update counter (will return {@code -1} if partition is not present in the record).
+     */
+    public long counterByPartition(int partId) {
+        int idx = indexByPartition(partId);
+
+        return idx >= 0 ? vals[2 * idx + 1] : 0;
+    }
+
+    /**
+     * @param idx Index to get.
+     * @return Partition ID.
+     */
+    public int partitionByIndex(int idx) {
+        return parts[idx];
+    }
+
+    /**
+     * @param idx Index to get.
+     * @return State partition.
+     */
+    public byte stateByIndex(int idx) {
+        return states[idx];
+    }
+
+    /**
+     * @param idx Index to get.
+     * @return Partition size by index.
+     */
+    public long partitionSizeByIndex(int idx) {
+        return vals[idx * 2];
+    }
+
+    /**
+     * @param idx Index to get.
+     * @return Partition size by index.
+     */
+    public long partitionCounterByIndex(int idx) {
+        return vals[idx * 2 + 1];
+    }
+
+    /**
+     * @return State size.
+     */
+    public int size() {
+        return idx;
+    }
+
+    /**
+     * @param partId Partition ID to search.
+     * @return Non-negative index of partition if found or negative value if not found.
+     */
+    private int indexByPartition(int partId) {
+        return Arrays.binarySearch(parts, 0, idx, partId);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheState.class, this);
-    }
-
-    /**
-     *
-     */
-    public static class PartitionState {
-        /** */
-        private final long size;
-
-        /** */
-        private final long partCnt;
-
-        /**
-         * @param size Partition size.
-         * @param partCnt Partition counter.
-         */
-        public PartitionState(long size, long partCnt) {
-            this.size = size;
-            this.partCnt = partCnt;
-        }
-
-        /**
-         * @return Partition size.
-         */
-        public long size() {
-            return size;
-        }
-
-        /**
-         * @return Partition counter.
-         */
-        public long partitionCounter() {
-            return partCnt;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(PartitionState.class, this);
-        }
+        return "CacheState [cap=" + parts.length + ", size=" + idx + ']';
     }
 }

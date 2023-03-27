@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteTxMultiNodeAbstractTest;
@@ -37,44 +39,11 @@ public class GridCacheReplicatedTxMultiNodeBasicTest extends IgniteTxMultiNodeAb
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity()
+            .setKeyType(String.class.getCanonicalName()).setValueType(Integer.class.getCanonicalName())));
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutOneEntryInTx() throws Exception {
-        super.testPutOneEntryInTx();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutTwoEntriesInTx() throws Exception {
-        super.testPutTwoEntriesInTx();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutOneEntryInTxMultiThreaded() throws Exception {
-        super.testPutOneEntryInTxMultiThreaded();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutTwoEntryInTxMultiThreaded() throws Exception {
-        super.testPutTwoEntryInTxMultiThreaded();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testRemoveInTxQueried() throws Exception {
-        super.testRemoveInTxQueried();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testRemoveInTxSimple() throws Exception {
-        super.testRemoveInTxSimple();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testRemoveInTxQueriedMultiThreaded() throws Exception {
-        super.testRemoveInTxQueriedMultiThreaded();
     }
 }

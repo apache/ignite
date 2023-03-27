@@ -17,11 +17,19 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
+import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -38,16 +46,23 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public boolean isFullSync();
 
     /**
+     * @return Current serializer version.
+     */
+    public int serializerVersion();
+
+    /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
+     *
+     * @throws IgniteCheckedException If fails.
      */
     public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
 
     /**
      * Appends the given log entry to the write-ahead log.
      *
-     * @param entry entry to log.
-     * @return WALPointer that may be passed to {@link #fsync(WALPointer)} method to make sure the record is
+     * @param entry Entry to log.
+     * @return WALPointer that may be passed to {@link #flush(WALPointer, boolean)} method to make sure the record is
      *      written to the log.
      * @throws IgniteCheckedException If failed to construct log entry.
      * @throws StorageException If IO error occurred while writing log entry.
@@ -55,14 +70,44 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException;
 
     /**
-     * Makes sure that all log entries written to the log up until the specified pointer are actually persisted to
-     * the underlying storage.
+     * Appends the given log entry to the write-ahead log. If entry logging leads to rollover, caller can specify
+     * whether to write the entry to the current segment or to th next one.
      *
-     * @param ptr Optional pointer to sync. If {@code null}, will sync up to the latest record.
-     * @throws IgniteCheckedException If
-     * @throws StorageException
+     * @param entry Entry to log.
+     * @param rolloverType Rollover type.
+     * @return WALPointer that may be passed to {@link #flush(WALPointer, boolean)} method to make sure the record is
+     *      written to the log.
+     * @throws IgniteCheckedException If failed to construct log entry.
+     * @throws StorageException If IO error occurred while writing log entry.
+     *
+     * @see RolloverType
      */
-    public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException;
+    public WALPointer log(WALRecord entry, RolloverType rolloverType)
+        throws IgniteCheckedException, StorageException;
+
+    /**
+     * Makes sure that all log entries written to the log up until the specified pointer are actually written
+     * to the underlying storage.
+     *
+     * @param ptr Optional pointer to write. If {@code null}, will sync up to the latest record.
+     * @param explicitFsync If true, data will be synced to the storage device on hardware level.
+     * @throws IgniteCheckedException If failed to write.
+     * @throws StorageException If IO exception occurred during the write. If an exception is thrown from this
+     *      method, the WAL will be invalidated and the node will be stopped.
+     * @return Last WAL position which was flushed to WAL segment file. May be greater than or equal to a {@code ptr}.
+     * May be {@code null}, it means nothing has been flushed.
+     */
+    public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
+
+    /**
+     * Reads WAL record by the specified pointer.
+     *
+     * @param ptr WAL pointer.
+     * @return WAL record.
+     * @throws IgniteCheckedException If failed to read.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException;
 
     /**
      * Invoke this method to iterate over the written log entries.
@@ -75,12 +120,139 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
 
     /**
-     * Gives a hint to WAL manager to clear entries logged before the given pointer. Some entries before the
-     * the given pointer will be kept because there is a configurable WAL history size. Those entries may be used
-     * for partial partition rebalancing.
+     * Invoke this method to iterate over the written log entries.
      *
-     * @param ptr Pointer for which it is safe to clear the log.
+     * @param start Optional WAL pointer from which to start iteration.
+     * @param recordDeserializeFilter Specify a filter to skip WAL records. Those records will not be explicitly deserialized.
+     * @return Records iterator.
+     * @throws IgniteException If failed to start iteration.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALIterator replay(
+        WALPointer start,
+        @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
+    ) throws IgniteCheckedException, StorageException;
+
+    /**
+     * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.
+     *
+     * NOTE: If the {@link DataStorageConfiguration#getMaxWalArchiveSize()} is exceeded, the segment will be released.
+     *
+     * @param start WAL pointer.
+     * @return {@code True} if the reservation was successful.
+     */
+    public boolean reserve(WALPointer start);
+
+    /**
+     * Invoke this method to release WAL history since provided pointer that was previously reserved.
+     *
+     * @param start WAL pointer.
+     */
+    public void release(WALPointer start);
+
+    /**
+     * Gives a hint to WAL manager to clear entries logged before the given pointer.
+     * If entries are needed for binary recovery, they will not be affected.
+     * Some entries may be reserved eg for historical rebalance and they also will not be affected.
+     *
+     * @param high Upper border to which WAL segments will be deleted.
      * @return Number of deleted WAL segments.
      */
-    public int truncate(WALPointer ptr);
+    public int truncate(@Nullable WALPointer high);
+
+    /**
+     * Notifies {@code this} about latest checkpoint pointer.
+     * <p>
+     * Current implementations, in fact, react by keeping all WAL segments uncompacted starting from index prior to
+     * the index of {@code ptr}. Compaction implies filtering out physical records and ZIP compression.
+     *
+     * @param ptr Pointer for which it is safe to compact the log.
+     */
+    public void notchLastCheckpointPtr(WALPointer ptr);
+
+    /**
+     * @return Current segment index.
+     */
+    public long currentSegment();
+
+    /**
+     * @return Total number of segments in the WAL archive.
+     */
+    public int walArchiveSegments();
+
+    /**
+     * @return Last archived segment index.
+     */
+    public long lastArchivedSegment();
+
+    /**
+     * @return Last compacted segment index.
+     */
+    public long lastCompactedSegment();
+
+    /**
+     * Checks if WAL segment is under lock or reserved
+     *
+     * @param ptr Pointer to check.
+     * @return True if given pointer is located in reserved segment.
+     */
+    public boolean reserved(WALPointer ptr);
+
+    /**
+     * Checks if WAL segments is under lock or reserved.
+     *
+     * @param low Pointer since which WAL is locked or reserved. If {@code null}, checks from the oldest segment.
+     * @param high Pointer for which WAL is locked or reserved.
+     * @return Number of reserved WAL segments.
+     */
+    public int reserved(WALPointer low, WALPointer high);
+
+    /**
+     * Checks WAL disabled for cache group.
+     *
+     * @param grpId Group id.
+     * @param pageId Page id.
+     */
+    public boolean disabled(int grpId, long pageId);
+
+    /**
+     * Getting local WAL segment size.
+     *
+     * @param idx Absolute segment index.
+     * @return Segment size, {@code 0} if size is unknown.
+     */
+    long segmentSize(long idx);
+
+    /**
+     * Get last written pointer.
+     *
+     * @return Last written pointer.
+     */
+    WALPointer lastWritePointer();
+
+    /**
+     * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
+     */
+    void startAutoReleaseSegments();
+
+    /**
+     * Archive directory if any.
+     *
+     * @return Archive directory.
+     */
+    @Nullable File archiveDir();
+
+    /**
+     * @param idx Segment index.
+     * @return Compressed archive segment.
+     */
+    @Nullable File compactedSegment(long idx);
+
+    /**
+     * Blocks current thread while segment with the {@code idx} not compressed.
+     * If segment compressed, already, returns immediately.
+     *
+     * @param idx Segment index.
+     */
+    void awaitCompacted(long idx) throws IgniteInterruptedCheckedException;
 }

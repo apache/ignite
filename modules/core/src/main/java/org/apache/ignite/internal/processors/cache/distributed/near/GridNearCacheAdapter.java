@@ -37,7 +37,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
-import org.apache.ignite.internal.processors.cache.GridCacheValueCollection;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
@@ -66,7 +64,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common logic for near caches.
+ * Common logic for near caches (smaller local cache that stores most recently or most frequently accessed data).
  */
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */
@@ -86,20 +84,30 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param ctx Context.
      */
     protected GridNearCacheAdapter(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
+        super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
+    @Override public void start() throws IgniteCheckedException {
+        if (map == null) {
+            map = new GridCacheLocalConcurrentMap(
+                ctx,
+                entryFactory(),
+                ctx.config().getNearConfiguration().getNearStartSize());
+        }
+    }
+
+    /**
+     * @return Entry factory.
+     */
+    private GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridNearCacheEntry(ctx, key, hash, val);
+                return new GridNearCacheEntry(ctx, key);
             }
         };
     }
@@ -108,13 +116,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @return DHT cache.
      */
     public abstract GridDhtCacheAdapter<K, V> dht();
-
-    /** {@inheritDoc} */
-    @Override public void forceKeyCheck() {
-        super.forceKeyCheck();
-
-        dht().forceKeyCheck();
-    }
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
@@ -202,13 +203,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param forcePrimary Force primary flag.
-     * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
-     * @param canRemap Can remap flag.
      * @param needVer Need version.
      * @return Loaded values.
      */
@@ -216,14 +215,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable IgniteInternalTx tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean forcePrimary,
-        @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
-        boolean canRemap,
         boolean needVer
     ) {
         if (F.isEmpty(keys))
@@ -238,12 +235,10 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             !skipStore,
             forcePrimary,
             txx,
-            subjId,
             taskName,
             deserializeBinary,
             expiry,
             skipVal,
-            canRemap,
             needVer,
             false,
             recovery);
@@ -288,7 +283,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return nearEntries().size() + dht().size();
+        return dht().size();
     }
 
     /** {@inheritDoc} */
@@ -315,7 +310,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @return Near entries.
      */
     public Set<Cache.Entry<K, V>> nearEntries() {
-        final AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+        final AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
         return super.entrySet(new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx entry) {
@@ -338,23 +333,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         };
 
         return new EntrySet(super.entrySet(p), dht().entrySet(p));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        return dht().entrySet(part);
-    }
-
-    /**
-     * @return Keys for near cache only.
-     */
-    public Set<K> nearKeySet() {
-        return super.keySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V> values() {
-        return new GridCacheValueCollection<>(ctx, entrySet(), ctx.vararg(F.<K, V>cacheHasPeekValue()));
     }
 
     /** {@inheritDoc} */
@@ -393,37 +371,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return dht().isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return dht().igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgfsDataSizeChanged(long delta) {
-        dht().onIgfsDataSizeChanged(delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return dht().isMongoDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return dht().isMongoMetaCache();
-    }
-
-    /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,
         boolean readers) {
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {
-            GridCacheVersion obsoleteVer = ctx.versions().next();
+            GridCacheVersion obsoleteVer = nextVersion();
 
             List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally(srv, near, readers);
 
@@ -466,7 +419,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
                     @Override public boolean apply(Cache.Entry<K, V> e) {
                         try {
-                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
+                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE) == null;
                         }
                         catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);

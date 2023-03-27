@@ -26,6 +26,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -40,7 +41,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Lock to prevent activities from running kernal related call while it's stopping. */
     @GridToStringExclude
     private final ReadWriteLock rwLock =
         new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
@@ -71,8 +72,8 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
-    @Override public void readLock() throws IllegalStateException {
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
+    @Override public void readLock() throws IgniteIllegalStateException {
         if (stackTrace == null)
             stackTrace = stackTrace();
 
@@ -197,8 +198,8 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
      *
      * @return Newly created exception.
      */
-    private IllegalStateException illegalState() {
-        return new IllegalStateException("Grid is in invalid state to perform this operation. " +
+    private IgniteIllegalStateException illegalState() {
+        return new IgniteIllegalStateException("Grid is in invalid state to perform this operation. " +
             "It either not started yet or has already being or have stopped [igniteInstanceName=" + igniteInstanceName +
             ", state=" + state + ']');
     }

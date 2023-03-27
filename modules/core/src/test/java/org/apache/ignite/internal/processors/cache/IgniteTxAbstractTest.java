@@ -24,18 +24,16 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -48,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
+@SuppressWarnings({"BusyWait"})
 abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
@@ -56,27 +54,11 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     /** Execution count. */
     private static final AtomicInteger cntr = new AtomicInteger();
 
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Start grid by default.
      */
     protected IgniteTxAbstractTest() {
         super(false /*start grid. */);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
-        return c;
     }
 
     /**
@@ -109,25 +91,15 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected abstract boolean printMemoryStats();
 
-    /** {@inheritDoc} */
+    /** */
     private void debug(String msg) {
         if (isTestDebug())
             info(msg);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 0; i < gridCount(); i++)
-            startGrid(i);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        startGridsMultiThreaded(gridCount());
     }
 
     /**
@@ -149,12 +121,17 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected OP getOp() {
         switch (RAND.nextInt(3)) {
-            case 0: { return OP.READ; }
-            case 1: { return OP.WRITE; }
-            case 2: { return OP.REMOVE; }
+            case 0:
+                return OP.READ;
+            case 1:
+                return OP.WRITE;
+            case 2:
+                return OP.REMOVE;
 
             // Should never be reached.
-            default: { assert false; return null; }
+            default:
+                assert false;
+                return null;
         }
     }
 
@@ -216,14 +193,15 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                         case REMOVE: {
                             if (isTestDebug())
-                                debug("Removing key [key=" + key + ", i=" + i  + ']');
+                                debug("Removing key [key=" + key + ", i=" + i + ']');
 
                             cache.remove(key);
 
                             break;
                         }
 
-                        default: { assert false; }
+                        default:
+                            assert false;
                     }
                 }
 
@@ -238,6 +216,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                     throw e;
                 }
+            }
+            catch (CacheException e) {
+                MvccFeatureChecker.assertMvccWriteConflict(e);
             }
             catch (Throwable e) {
                 log.error("Unexpected error: " + e, e);
@@ -325,7 +306,8 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             break;
                         }
 
-                        default: { assert false; }
+                        default:
+                            assert false;
                     }
                 }
 

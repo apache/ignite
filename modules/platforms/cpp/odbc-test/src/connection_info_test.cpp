@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <iostream>
 
 #include <boost/test/unit_test.hpp>
@@ -36,7 +32,8 @@ BOOST_AUTO_TEST_CASE(TestConnectionInfoSupportedInfo)
     char buffer[4096];
     short reslen = 0;
 
-    ConnectionInfo info;
+    Configuration cfg;
+    ConnectionInfo info(cfg);
 
     SqlResult::Type result;
 

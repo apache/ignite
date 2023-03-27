@@ -46,11 +46,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -216,7 +214,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param <V1> Cache value type.
      * @return Base cache for this projection.
      */
-    @SuppressWarnings({"ClassReferencesSubclass"})
     public <K1, V1> IgniteInternalCache<K1, V1> cache();
 
     /**
@@ -303,11 +300,10 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @param key Key.
      * @param peekModes Peek modes.
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V localPeek(K key, CachePeekMode[] peekModes, @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public V localPeek(K key, CachePeekMode[] peekModes)
         throws IgniteCheckedException;
 
     /**
@@ -878,46 +874,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Set<K> keySet();
 
     /**
-     * @return Set of keys including internal keys.
-     */
-    public Set<K> keySetx();
-
-    /**
-     * Set of keys for which this node is primary.
-     * This set is dynamic and may change with grid topology changes.
-     * Note that this set will contain mappings for all keys, even if their values are
-     * {@code null} because they were invalidated. You can remove elements from
-     * this set, but you cannot add elements to this set. All removal operation will be
-     * reflected on the cache itself.
-     * <p>
-     * Iterator over this set will not fail if set was concurrently updated
-     * by another thread. This means that iterator may or may not return latest
-     * keys depending on whether they were added before or after current
-     * iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the keys cached on this node.
-     *
-     * @return Primary key set for the current node.
-     */
-    public Set<K> primaryKeySet();
-
-    /**
-     * Collection of values cached on this node. You can remove
-     * elements from this collection, but you cannot add elements to this collection.
-     * All removal operation will be reflected on the cache itself.
-     * <p>
-     * Iterator over this collection will not fail if collection was
-     * concurrently updated by another thread. This means that iterator may or
-     * may not return latest values depending on whether they were added before
-     * or after current iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the values cached on this node.
-     *
-     * @return Collection of cached values.
-     */
-    public Iterable<V> values();
-
-    /**
      * Gets set of all entries cached on this node. You can remove
      * elements from this set, but you cannot add elements to this set.
      * All removal operation will be reflected on the cache itself.
@@ -927,26 +883,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Entries that pass through key filter.
      */
     public Set<Cache.Entry<K, V>> entrySet();
-
-    /**
-     * Gets set containing cache entries that belong to provided partition or {@code null}
-     * if partition is not found locally.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the entries cached on this node.
-     *
-     * @param part Partition.
-     * @return Set containing partition's entries or {@code null} if partition is
-     *      not found locally.
-     */
-    @Nullable public Set<Cache.Entry<K, V>> entrySet(int part);
-
-    /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
-     */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
 
     /**
      * Starts new transaction with the specified concurrency and isolation.
@@ -1510,8 +1446,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int nearSize();
 
     /**
-     * Gets the number of all primary entries cached on this node. For {@link CacheMode#LOCAL} non-distributed
-     * cache mode, this method is identical to {@link #size()}.
+     * Gets the number of all primary entries cached on this node.
      * <p>
      * For {@link CacheMode#PARTITIONED} and {@link CacheMode#REPLICATED} modes, this method will
      * return number of primary entries cached on this node (excluding any backups). The complexity of
@@ -1524,8 +1459,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int primarySize();
 
     /**
-     * Gets the number of all primary entries cached on this node as a long value. For {@link CacheMode#LOCAL}
-     * non-distributed cache mode, this method is identical to {@link #size()}.
+     * Gets the number of all primary entries cached on this node as a long value.
      * <p>
      * For {@link CacheMode#PARTITIONED} and {@link CacheMode#REPLICATED} modes, this method will
      * return number of primary entries cached on this node (excluding any backups). The complexity of
@@ -1575,20 +1509,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public CacheMetrics localMetrics();
 
     /**
-     * Gets whole cluster metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean clusterMxBean();
-
-    /**
-     * Gets local metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public CacheMetricsMXBean localMxBean();
-
-    /**
      * Gets number of cache entries stored in off-heap memory.
      *
      * @return Number of cache entries stored in off-heap memory.
@@ -1623,14 +1543,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteInternalFuture<?> rebalance();
-
-    /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Client ID.
-     * @return Internal projection.
-     */
-    public IgniteInternalCache<K, V> forSubjectId(UUID subjId);
 
     /**
      * Store DR data.
@@ -1705,34 +1617,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys);
 
     /**
-     * Checks whether this cache is IGFS data cache.
-     *
-     * @return {@code True} in case this cache is IGFS data cache.
-     */
-    public boolean isIgfsDataCache();
-
-    /**
-     * Get current amount of used IGFS space in bytes.
-     *
-     * @return Amount of used IGFS space in bytes.
-     */
-    public long igfsDataSpaceUsed();
-
-    /**
-     * Checks whether this cache is Mongo data cache.
-     *
-     * @return {@code True} if this cache is mongo data cache.
-     */
-    public boolean isMongoDataCache();
-
-    /**
-     * Checks whether this cache is Mongo meta cache.
-     *
-     * @return {@code True} if this cache is mongo meta cache.
-     */
-    public boolean isMongoMetaCache();
-
-    /**
      * @param keepBinary Keep binary flag.
      * @param p Optional key/value predicate.
      * @return Scan query iterator.
@@ -1756,6 +1640,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteInternalCache<K, V> withNoRetries();
+
+    /**
+     * @return New projection based on this one, but with atomic cache operations allowed to be used.
+     */
+    public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx();
 
     /**
      * @param key Key.
@@ -1871,15 +1760,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args);
 
     /**
-     * Gets value without waiting for toplogy changes.
-     *
-     * @param key Key.
-     * @return Value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public V getTopologySafe(K key) throws IgniteCheckedException;
-
-    /**
      * @param topVer Locked topology version.
      * @param key Key.
      * @param entryProcessor Entry processor.
@@ -1897,4 +1777,27 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return A collection of lost partitions if a cache is in recovery state.
      */
     public Collection<Integer> lostPartitions();
+
+    /**
+     * Preload cache partition.
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void preloadPartition(int part) throws IgniteCheckedException;
+
+    /**
+     * Preload cache partition.
+     * @param part Partition.
+     * @return Future to be completed whenever preloading completes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException;
+
+    /**
+     * Preloads cache partition if it exists on local node.
+     * @param part Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean localPreloadPartition(int part) throws IgniteCheckedException;
 }

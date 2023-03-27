@@ -18,64 +18,110 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Topology validator test.
  */
+@RunWith(Parameterized.class)
 public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
+    /** */
+    @Parameterized.Parameter()
+    public Boolean isPluginTopValidatorProvider;
+
+    /** */
+    @Parameterized.Parameters(name = "isPluginTopValidatorProvider={0}")
+    public static Iterable<Object[]> data() {
+        return Arrays.asList(new Object[] {true}, new Object[] {false});
+    }
+
     /** key-value used at test. */
-    protected static String KEY_VAL = "1";
+    private static String KEY_VAL = "1";
 
     /** cache name 1. */
-    protected static String CACHE_NAME_1 = "cache1";
+    static String CACHE_NAME_1 = "cache1";
 
     /** cache name 2. */
     protected static String CACHE_NAME_2 = "cache2";
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected final int gridCount() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cCfg0 = cacheConfiguration(igniteInstanceName);
+        if (!cfg.isClientMode()) {
+            CacheConfiguration cCfg0 = cacheConfiguration(igniteInstanceName);
 
-        CacheConfiguration cCfg1 = cacheConfiguration(igniteInstanceName);
-        cCfg1.setName(CACHE_NAME_1);
+            CacheConfiguration cCfg1 = cacheConfiguration(igniteInstanceName);
+            cCfg1.setName(CACHE_NAME_1);
 
-        CacheConfiguration cCfg2 = cacheConfiguration(igniteInstanceName);
-        cCfg2.setName(CACHE_NAME_2);
+            CacheConfiguration cCfg2 = cacheConfiguration(igniteInstanceName);
+            cCfg2.setName(CACHE_NAME_2);
 
-        iCfg.setCacheConfiguration(cCfg0, cCfg1, cCfg2);
+            cfg.setCacheConfiguration(cCfg0, cCfg1, cCfg2);
 
-        for (CacheConfiguration cCfg : iCfg.getCacheConfiguration()) {
-            if (cCfg.getName().equals(CACHE_NAME_1))
-                cCfg.setTopologyValidator(new TopologyValidator() {
-                    @Override public boolean validate(Collection<ClusterNode> nodes) {
-                        return nodes.size() == 2;
-                    }
-                });
-            else if (cCfg.getName().equals(CACHE_NAME_2))
-                cCfg.setTopologyValidator(new TopologyValidator() {
-                    @Override public boolean validate(Collection<ClusterNode> nodes) {
-                        return nodes.size() >= 2;
-                    }
-                });
+            TestCacheTopologyValidatorProvider topValidatorProvider = new TestCacheTopologyValidatorProvider();
+
+            if (!isPluginTopValidatorProvider) {
+                for (CacheConfiguration cCfg : cfg.getCacheConfiguration())
+                    cCfg.setTopologyValidator(topValidatorProvider.topologyValidator(cCfg.getName()));
+            }
+            else
+                cfg.setPluginProviders(new TestCacheTopologyValidatorPluginProvider(topValidatorProvider));
         }
 
-        return iCfg;
+        return cfg;
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @return Number of server nodes.
+     */
+    private static int servers(Collection<ClusterNode> nodes) {
+        int c = 0;
+
+        for (ClusterNode node : nodes) {
+            if (!node.isClient())
+                c++;
+        }
+
+        return c;
     }
 
     /**
@@ -83,11 +129,16 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      *
      * @param cacheName cache name.
      */
-    protected void putInvalid(String cacheName) {
+    void putInvalid(String cacheName) {
         try {
-            grid(0).cache(cacheName).put(KEY_VAL, KEY_VAL);
+            List<Ignite> nodes = nodes();
 
-            assert false : "topology validation broken";
+            assertFalse(nodes.isEmpty());
+
+            for (Ignite node : nodes)
+                node.cache(cacheName).put(KEY_VAL, KEY_VAL);
+
+            fail("Topology validation broken");
         }
         catch (CacheException ex) {
             assert ex.getCause() instanceof IgniteCheckedException &&
@@ -100,11 +151,17 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      *
      * @param cacheName cache name.
      */
-    protected void putValid(String cacheName) {
+    void putValid(String cacheName) {
         try {
-            grid(0).cache(cacheName).put(KEY_VAL, KEY_VAL);
+            List<Ignite> nodes = nodes();
 
-            assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
+            assertFalse(nodes.isEmpty());
+
+            for (Ignite node : nodes)
+                node.cache(cacheName).put(KEY_VAL, KEY_VAL);
+
+            for (Ignite node : nodes)
+                assertEquals(KEY_VAL, node.cache(cacheName).get(KEY_VAL));
         }
         catch (CacheException ignored) {
             assert false : "topology validation broken";
@@ -116,13 +173,13 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      *
      * @param cacheName cache name.
      */
-    protected void getInvalid(String cacheName) {
-        try {
-            assert grid(0).cache(cacheName).get(KEY_VAL).equals(KEY_VAL);
-        }
-        catch (CacheException ignored) {
-            assert false : "topology validation broken";
-        }
+    void getInvalid(String cacheName) {
+        List<Ignite> nodes = nodes();
+
+        assertFalse(nodes.isEmpty());
+
+        for (Ignite node : nodes)
+            assertEquals(KEY_VAL, node.cache(cacheName).get(KEY_VAL));
     }
 
     /**
@@ -130,11 +187,16 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      *
      * @param cacheName cache name.
      */
-    protected void removeInvalid(String cacheName) {
+    void removeInvalid(String cacheName) {
         try {
-            grid(0).cache(cacheName).remove(KEY_VAL);
+            List<Ignite> nodes = nodes();
 
-            assert false : "topology validation broken";
+            assertFalse(nodes.isEmpty());
+
+            for (Ignite node : nodes)
+                node.cache(cacheName).remove(KEY_VAL);
+
+            fail("Topology validation broken");
         }
         catch (CacheException ex) {
             assert ex.getCause() instanceof IgniteCheckedException &&
@@ -143,13 +205,26 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     }
 
     /**
+     * @return Nodes.
+     */
+    private List<Ignite> nodes() {
+        if (this instanceof IgniteTopologyValidatorAbstractTxCacheTest ||
+            this instanceof IgniteTopologyValidatorAbstractTxCacheGroupsTest)
+            return Collections.singletonList(ignite(0));
+        else
+            return G.allGrids();
+    }
+
+    /**
      * Commits with error.
      *
      * @param tx transaction.
      */
-    protected void commitFailed(Transaction tx) {
+    void commitFailed(Transaction tx) {
         try {
             tx.commit();
+
+            fail();
         }
         catch (IgniteException ex) {
             assert ex.getCause() instanceof IgniteCheckedException &&
@@ -163,7 +238,12 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      * @param cacheName cache name.
      */
     public void remove(String cacheName) {
-        assert grid(0).cache(cacheName).get(KEY_VAL) != null;
+        List<Ignite> nodes = G.allGrids();
+
+        assertFalse(nodes.isEmpty());
+
+        for (Ignite node : nodes)
+            assertNotNull(node.cache(cacheName).get(KEY_VAL));
 
         grid(0).cache(cacheName).remove(KEY_VAL);
     }
@@ -173,12 +253,16 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
      *
      * @param cacheName cache name.
      */
-    public void assertEmpty(String cacheName) {
-        assert grid(0).cache(cacheName).get(KEY_VAL) == null;
+    void assertEmpty(String cacheName) {
+        assertNull(grid(0).cache(cacheName).get(KEY_VAL));
     }
 
-    /** topology validator test. */
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testTopologyValidator() throws Exception {
+        startGrid(0);
 
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);
@@ -210,5 +294,61 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         putValid(CACHE_NAME_2);
         remove(CACHE_NAME_2);
+
+        startClientGrid(3);
+
+        putValid(DEFAULT_CACHE_NAME);
+        remove(DEFAULT_CACHE_NAME);
+
+        getInvalid(CACHE_NAME_1);
+        putInvalid(CACHE_NAME_1);
+        removeInvalid(CACHE_NAME_1);
+
+        putValid(CACHE_NAME_2);
+        remove(CACHE_NAME_2);
+    }
+
+    /** */
+    public static class TestCacheTopologyValidatorPluginProvider extends AbstractTestPluginProvider {
+        /** */
+        private final CacheTopologyValidatorProvider provider;
+
+        /** */
+        public TestCacheTopologyValidatorPluginProvider(CacheTopologyValidatorProvider provider) {
+            this.provider = provider;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "CacheTopologyValidatorProviderPlugin";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(CacheTopologyValidatorProvider.class, provider);
+        }
+    }
+
+    /** */
+    private static class TestCacheTopologyValidatorProvider implements CacheTopologyValidatorProvider, Serializable {
+        /** {@inheritDoc} */
+        @Override public TopologyValidator topologyValidator(String cacheName) {
+            if (CACHE_NAME_1.equals(cacheName)) {
+                return new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return servers(nodes) == 2;
+                    }
+                };
+            }
+            else if (CACHE_NAME_2.equals(cacheName)) {
+                return new TopologyValidator() {
+                    @Override public boolean validate(Collection<ClusterNode> nodes) {
+                        return servers(nodes) >= 2;
+                    }
+                };
+            }
+            else
+                return null;
+        }
     }
 }

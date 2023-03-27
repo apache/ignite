@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 /**
  * JDBC result set metadata implementation.
@@ -49,6 +52,24 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
         this.cols = cols;
         this.types = types;
     }
+
+    /**
+     * Creates metadata object for the statement that have been compiled, but not yet executed.
+     *
+     * @param meta list of field descriptions to be returned by db on this Prepared Statement execution.
+     */
+    JdbcResultSetMetadata(List<GridQueryFieldMetadata> meta) {
+        tbls = new ArrayList<>(meta.size());
+        cols = new ArrayList<>(meta.size());
+        types = new ArrayList<>(meta.size());
+
+        for (GridQueryFieldMetadata column : meta) {
+            tbls.add(column.typeName());
+            cols.add(column.fieldName());
+            types.add(column.fieldTypeName());
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override public int getColumnCount() throws SQLException {
@@ -156,7 +177,6 @@ public class JdbcResultSetMetadata implements ResultSetMetaData {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set meta data is not a wrapper for " + iface.getName());

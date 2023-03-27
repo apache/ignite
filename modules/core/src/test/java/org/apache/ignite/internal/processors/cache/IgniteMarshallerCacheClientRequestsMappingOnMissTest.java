@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -41,6 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -62,16 +64,11 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientMode(clientMode);
-
-        if (clientMode)
+        if (cfg.isClientMode())
             cfg.setWorkDirectory(TMP_DIR);
 
         TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
@@ -103,7 +100,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
      *
      */
     private void cleanupMarshallerFileStore() throws IOException {
-        Path marshCache = Paths.get(TMP_DIR, "marshaller");
+        Path marshCache = Paths.get(TMP_DIR, DataStorageConfiguration.DFLT_MARSHALLER_PATH);
 
         for (File file : marshCache.toFile().listFiles())
             Files.delete(file.toPath());
@@ -114,6 +111,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRequestedMappingIsStoredInFS() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -121,9 +119,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         srv1.cache(DEFAULT_CACHE_NAME).put(1, org);
 
-        clientMode = true;
-
-        Ignite cl1 = startGrid(1);
+        Ignite cl1 = startClientGrid(1);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -131,7 +127,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         stopGrid(1);
 
-        File[] files = Paths.get(TMP_DIR, "marshaller").toFile().listFiles();
+        File[] files = Paths.get(TMP_DIR, DataStorageConfiguration.DFLT_MARSHALLER_PATH).toFile().listFiles();
 
         assertNotNull(TMP_DIR + "/marshaller directory should contain at least one file", files);
 
@@ -151,6 +147,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoNodesDieOnRequest() throws Exception {
         Ignite srv1 = startGrid(0);
 
@@ -167,9 +164,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
-        clientMode = true;
-
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -181,6 +176,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testOneNodeDiesOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(1);
 
@@ -200,9 +196,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
-        clientMode = true;
-
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -216,6 +210,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testTwoNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(2);
 
@@ -236,9 +231,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
-        clientMode = true;
-
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -252,6 +245,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /**
      *
      */
+    @Test
     public void testAllNodesDieOnRequest() throws Exception {
         CountDownLatch nodeStopLatch = new CountDownLatch(3);
 
@@ -273,9 +267,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
-        clientMode = true;
-
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         try {
             cl1.cache(DEFAULT_CACHE_NAME).get(1);
@@ -300,10 +292,10 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         final GridMessageListener delegate = lsnrs[GridTopic.TOPIC_MAPPING_MARSH.ordinal()];
 
         GridMessageListener wrapper = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 mappingReqsCounter.incrementAndGet();
 
-                delegate.onMessage(nodeId, msg);
+                delegate.onMessage(nodeId, msg, plc);
             }
         };
 
@@ -321,7 +313,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         ioMgr.removeMessageListener(GridTopic.TOPIC_MAPPING_MARSH);
 
         ioMgr.addMessageListener(GridTopic.TOPIC_MAPPING_MARSH, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 new Thread(new Runnable() {
                     @Override public void run() {
                         mappingReqsCounter.incrementAndGet();

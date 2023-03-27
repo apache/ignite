@@ -32,8 +32,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -152,9 +153,6 @@ class OptimizedMarshallerUtils {
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** JDK marshaller. */
-    static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
-
     static {
         long mapOff;
 
@@ -185,6 +183,7 @@ class OptimizedMarshallerUtils {
      *
      * @param clsMap Class descriptors by class map.
      * @param cls Class.
+     * @param useCache True if class loader cache will be used, false otherwise.
      * @param ctx Context.
      * @param mapper ID mapper.
      * @return Descriptor.
@@ -193,21 +192,25 @@ class OptimizedMarshallerUtils {
     static OptimizedClassDescriptor classDescriptor(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         Class cls,
+        boolean useCache,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
-        throws IOException
-    {
+        OptimizedMarshallerIdMapper mapper
+    ) throws IOException {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
-        if (desc == null) {
+        if (desc == null && !useCache) {
+            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(),
+                mapper), clsMap, ctx, mapper, false);
+        }
+        else if (desc == null) {
             int typeId = resolveTypeId(cls.getName(), mapper);
 
             boolean registered;
 
             try {
-                registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName());
+                registered = ctx.registerClassName(JAVA_ID, typeId, cls.getName(), false);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
@@ -250,6 +253,7 @@ class OptimizedMarshallerUtils {
      * @param clsMap Class descriptors by class map.
      * @param typeId ID.
      * @param ldr Class loader.
+     * @param useCache True if class loader cache will be used, false otherwise.
      * @param ctx Context.
      * @param mapper ID mapper.
      * @return Descriptor.
@@ -260,8 +264,64 @@ class OptimizedMarshallerUtils {
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         int typeId,
         ClassLoader ldr,
+        boolean useCache,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
+        OptimizedClassDescriptor desc;
+
+        if (useCache)
+            desc = descriptorFromCache(clsMap, typeId, ldr, ctx, mapper);
+        else
+            desc = descriptorWithoutCache(clsMap, typeId, ldr, ctx, mapper);
+
+        return desc;
+    }
+
+    /**
+     * @param clsMap Class descriptors by class map.
+     * @param typeId Type id.
+     * @param ldr Loader.
+     * @param ctx Context.
+     * @param mapper Mapper.
+     */
+    @NotNull
+    private static OptimizedClassDescriptor descriptorWithoutCache(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        int typeId, ClassLoader ldr, MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper) throws ClassNotFoundException, IOException {
+        String clsName;
+
+        try {
+            clsName = ctx.getClassName(JAVA_ID, typeId);
+
+            if (clsName == null)
+                throw new ClassNotFoundException("Unknown type ID: " + typeId);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to resolve class for ID: " + typeId, e);
+        }
+
+        Class cls = U.forName(clsName, ldr, null);
+
+        OptimizedClassDescriptor desc = clsMap.get(cls);
+
+        if (desc == null)
+            desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(),
+                mapper), clsMap, ctx, mapper, false);
+
+        return desc;
+    }
+
+    /**
+     * @param clsMap Class descriptors by class map.
+     * @param typeId Type id.
+     * @param ldr Loader.
+     * @param ctx Context.
+     * @param mapper Mapper.
+     */
+    @NotNull
+    private static OptimizedClassDescriptor descriptorFromCache(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        int typeId, ClassLoader ldr, MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper) throws ClassNotFoundException, IOException {
         Class cls;
 
         try {
@@ -274,13 +334,12 @@ class OptimizedMarshallerUtils {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
-            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls,
+                desc = new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
 
             if (old != null)
                 desc = old;
         }
-
         return desc;
     }
 

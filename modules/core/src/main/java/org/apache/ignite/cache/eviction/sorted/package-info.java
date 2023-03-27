@@ -18,4 +18,5 @@
 /**
  * Contains cache sorted eviction policy implementation.
  */
+
 package org.apache.ignite.cache.eviction.sorted;

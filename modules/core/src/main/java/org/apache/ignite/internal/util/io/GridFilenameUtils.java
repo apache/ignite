@@ -115,6 +115,7 @@ public class GridFilenameUtils {
      * The separator character that is the opposite of the system separator.
      */
     private static final char OTHER_SEPARATOR;
+
     static {
         if (isSystemWindows())
             OTHER_SEPARATOR = UNIX_SEPARATOR;
@@ -194,6 +195,7 @@ public class GridFilenameUtils {
     public static String normalize(String filename) {
         return doNormalize(filename, SYSTEM_SEPARATOR, true);
     }
+
     /**
      * Normalizes a path, removing double and single dot path steps.
      * <p>
@@ -388,7 +390,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 System.arraycopy(array, i + 1, array, i - 1, size - i);
-                size -=2;
+                size -= 2;
                 i--;
             }
         }
@@ -403,7 +405,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 int j;
-                for (j = i - 4 ; j >= prefix; j--) {
+                for (j = i - 4; j >= prefix; j--) {
                     if (array[j] == separator) {
                         // remove b/../ from a/b/../c
                         System.arraycopy(array, i + 1, array, j + 1, size - i);
@@ -612,7 +614,8 @@ public class GridFilenameUtils {
             if (ch0 == '~')
                 return 2;  // return a length greater than the input
             return isSeparator(ch0) ? 1 : 0;
-        } else {
+        }
+        else {
             if (ch0 == '~') {
                 int posUnix = filename.indexOf(UNIX_SEPARATOR, 1);
                 int posWin = filename.indexOf(WINDOWS_SEPARATOR, 1);
@@ -626,13 +629,14 @@ public class GridFilenameUtils {
             if (ch1 == ':') {
                 ch0 = Character.toUpperCase(ch0);
                 if (ch0 >= 'A' && ch0 <= 'Z') {
-                    if (len == 2 || isSeparator(filename.charAt(2)) == false)
+                    if (len == 2 || !isSeparator(filename.charAt(2)))
                         return 2;
                     return 3;
                 }
                 return -1;
 
-            } else if (isSeparator(ch0) && isSeparator(ch1)) {
+            }
+            else if (isSeparator(ch0) && isSeparator(ch1)) {
                 int posUnix = filename.indexOf(UNIX_SEPARATOR, 2);
                 int posWin = filename.indexOf(WINDOWS_SEPARATOR, 2);
                 if (posUnix == -1 && posWin == -1 || posUnix == 2 || posWin == 2)
@@ -640,7 +644,8 @@ public class GridFilenameUtils {
                 posUnix = posUnix == -1 ? posWin : posUnix;
                 posWin = posWin == -1 ? posUnix : posWin;
                 return Math.min(posUnix, posWin) + 1;
-            } else
+            }
+            else
                 return isSeparator(ch0) ? 1 : 0;
         }
     }
@@ -794,7 +799,7 @@ public class GridFilenameUtils {
         if (prefix < 0)
             return null;
         int index = indexOfLastSeparator(filename);
-        int endIndex = index+separatorAdd;
+        int endIndex = index + separatorAdd;
         if (prefix >= filename.length() || index < 0 || prefix >= endIndex)
             return "";
         return filename.substring(prefix, endIndex);
@@ -881,7 +886,7 @@ public class GridFilenameUtils {
         int index = indexOfLastSeparator(filename);
         if (index < 0)
             return filename.substring(0, prefix);
-        int end = index + (includeSeparator ?  1 : 0);
+        int end = index + (includeSeparator ? 1 : 0);
         if (end == 0)
             end++;
         return filename.substring(0, end);
@@ -1097,7 +1102,7 @@ public class GridFilenameUtils {
     public static boolean isExtension(String filename, String extension) {
         if (filename == null)
             return false;
-        if (extension == null || extension.length() == 0)
+        if (extension == null || extension.isEmpty())
             return indexOfExtension(filename) == -1;
         String fileExt = getExtension(filename);
         return fileExt.equals(extension);
@@ -1233,7 +1238,7 @@ public class GridFilenameUtils {
 
         // loop around a backtrack stack, to handle complex * matching
         do {
-            if (backtrack.size() > 0) {
+            if (!backtrack.isEmpty()) {
                 int[] array = backtrack.pop();
                 wcsIdx = array[0];
                 textIdx = array[1];
@@ -1250,13 +1255,15 @@ public class GridFilenameUtils {
                         break;
                     anyChars = false;
 
-                } else if (wcs[wcsIdx].equals("*")) {
+                }
+                else if (wcs[wcsIdx].equals("*")) {
                     // set any chars status
                     anyChars = true;
                     if (wcsIdx == wcs.length - 1)
                         textIdx = filename.length();
 
-                } else {
+                }
+                else {
                     // matching text token
                     if (anyChars) {
                         // any chars then try to locate text token
@@ -1268,7 +1275,8 @@ public class GridFilenameUtils {
                         int repeat = caseSensitivity.checkIndexOf(filename, textIdx + 1, wcs[wcsIdx]);
                         if (repeat >= 0)
                             backtrack.push(new int[] {wcsIdx, repeat});
-                    } else {
+                    }
+                    else {
                         // matching from current position
                         if (!caseSensitivity.checkRegionMatches(filename, textIdx, wcs[wcsIdx])) {
                             // couldnt match token
@@ -1288,7 +1296,7 @@ public class GridFilenameUtils {
             if (wcsIdx == wcs.length && textIdx == filename.length())
                 return true;
 
-        } while (backtrack.size() > 0);
+        } while (!backtrack.isEmpty());
 
         return false;
     }
@@ -1320,9 +1328,10 @@ public class GridFilenameUtils {
                 if (array[i] == '?')
                     list.add("?");
                 else if (list.isEmpty() ||
-                        i > 0 && list.get(list.size() - 1).equals("*") == false)
+                        i > 0 && !list.get(list.size() - 1).equals("*"))
                     list.add("*");
-            } else
+            }
+            else
                 buffer.append(array[i]);
         }
         if (buffer.length() != 0)
@@ -1554,8 +1563,7 @@ public class GridFilenameUtils {
          *
          * @return a string describing the sensitivity
          */
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return name;
         }
 

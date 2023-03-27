@@ -29,15 +29,12 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -48,25 +45,15 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
     private static final String CACHE_NAME = "testCache";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -91,6 +78,7 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseInvoke() throws Exception {
         boolean flags[] = {true, false};
 
@@ -113,9 +101,8 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
      */
     private void onePhaseInvoke(final boolean withOldVal,
         final boolean setVal,
-        final boolean retPrev)
-        throws Exception
-    {
+        final boolean retPrev
+    ) throws Exception {
         log.info("Test onePhaseInvoke [withOldVal=" + withOldVal + ", setVal=" + setVal + ", retPrev=" + retPrev + ']');
 
         Ignite srv0 = startGrid(0);
@@ -123,18 +110,16 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
         if (withOldVal)
             srv0.cache(CACHE_NAME).put(1, 1);
 
-        client = true;
+        final Ignite clientNode = startClientGrid(1);
 
-        final Ignite clientNode = startGrid(1);
+        final int grpId = groupIdForCache(srv0, CACHE_NAME);
 
         TestRecordingCommunicationSpi.spi(srv0).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 return msg instanceof GridDhtPartitionSupplyMessage &&
-                    ((GridDhtPartitionSupplyMessage)msg).cacheId() == CU.cacheId(CACHE_NAME);
+                    ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
             }
         });
-
-        client = false;
 
         Ignite srv1 = startGrid(2);
 

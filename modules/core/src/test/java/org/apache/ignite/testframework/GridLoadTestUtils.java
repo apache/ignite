@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.text.SimpleDateFormat;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Utility class for load tests.
  */
 public class GridLoadTestUtils {
-    /** Date and time format. */
-    public static final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-
     /** Lock file. */
     public static final File LOCK_FILE = new File(System.getProperty("user.home"), ".gg-loadtest-lock");
 

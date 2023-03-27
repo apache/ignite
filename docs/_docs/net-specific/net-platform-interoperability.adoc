@@ -1,0 +1,194 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite.NET and Platform Interoperability
+
+Ignite allows different platforms, such as .NET, Java and C{pp}, to interoperate with each other.
+Classes and objects defined and written to Ignite by one platform can be read and used by another platform.
+
+== Identifiers
+
+To achieve interoperability Ignite writes objects using the common binary format. This format encodes object type and
+fields using integer identifiers.
+
+To transform an object's type and field names to an integer value, Ignite passes them through two stage:
+
+* Name transformation: full type name and field names are passed to `IBinaryNameMapper` interface and converted to some common form.
+* ID transformation: resulting strings are passed to `IBinaryIdMapper` to produce either type ID or field ID.
+
+Mappers can be set either globally in `BinaryConfiguration` or for concrete type in `BinaryTypeConfiguration`.
+
+Java has the same interfaces `BinaryNameMapper` and `BinaryIdMapper`. They are set on `BinaryConfiguration` or `BinaryTypeConfiguration`.
+
+.NET and Java types must map to the same type ID and relevant fields must map to the same field ID.
+
+== Default Behavior
+
+The .NET part of Ignite.NET applies the following conversions by default:
+
+* Name transformation: the `System.Type.FullName` property for non-generics types; field or property name is unchanged.
+* ID transformation: names are converted to lower case and then ID is calculated in the same way as in the `java.lang.String.hashCode()` method in Java.
+
+The Java part of Ignite.NET applies the following conversions by default:
+
+* Name transformation: the `Class.getName()` method to get class name; field name is unchanged.
+* ID transformation: names are converted to lower case and then `java.lang.String.hashCode()` is used to calculate IDs.
+
+For example, the following two types will automatically map to each other, if they are outside namespaces (.NET) and packages (Java):
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+class Person
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public byte[] Data { get; set; }
+}
+----
+tab:Java[]
+[source,java]
+----
+class Person
+{
+    public int id;
+    public String name;
+    public byte[] data;
+}
+----
+--
+
+However, the types are normally within some namespace or package. And naming conventions for packages and namespaces
+differ in Java and .NET. It may be problematic to have .NET namespace be the same as Java package.
+
+Simple name mapper (which ignores namespace) can be used to avoid this problem. It should be configured both for .NET and Java:
+
+[tabs]
+--
+tab:Java Spring XML[]
+[source,xml]
+----
+<bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    ...
+    <property name="binaryConfiguration">
+        <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+            <property name="nameMapper">
+                <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+                    <property name="simpleName" value="true"/>
+                </bean>
+            </property>
+        </bean>
+    </property>
+    ...
+</bean>
+----
+tab:C#[]
+[source,csharp]
+----
+var cfg = new IgniteConfiguration
+{
+  BinaryConfiguration = new BinaryConfiguration
+  {
+    NameMapper = new BinaryBasicNameMapper {IsSimpleName = true}
+  }
+}
+----
+tab:app.config[]
+[source,xml]
+----
+<igniteConfiguration>
+  <binaryConfiguration>
+    <nameMapper type="Apache.Ignite.Core.Binary.BinaryBasicNameMapper, Apache.Ignite.Core" isSimpleName="true" />
+  </binaryConfiguration>
+</igniteConfiguration>
+----
+--
+
+== Types Compatibility
+
+[width="100%",cols="1,3",opts="header"]
+|===
+|`C#`| `Java`
+|`bool`| `boolean`
+|`byte (*), sbyte`| `byte`
+|`short, ushort (*)`| `short`
+|`int, uint (*)`| `int`
+|`long, ulong (*)`| `long`
+|`char`| `char`
+|`float`| `float`
+|`double`| `double`
+|`decimal`| `java.math.BigDecimal (**)`
+|`string`| `java.lang.String`
+|`Guid`| `java.util.UUID`
+|`DateTime`| `java.util.Date, java.sql.Timestamp`
+|===
+`* byte, ushort, uint, ulong` do not have Java counterparts, and are mapped directly byte-by-byte (no range check).
+For example, `byte` value of `200` in C# will result in signed `byte` value of `-56` in Java.
+
+`** Java BigDecimal` has arbitrary size and precision, while C# decimal is fixed to 16 bytes and 28-29 digit precision. Ignite.NET will throw `BinaryObjectException` if a `BigDecimal` value does not fit into `decimal` on deserialization.
+
+`Enum` - In Ignite, Java `writeEnum` can only write ordinal values, but in .NET you can assign any number to the `enumValue`.
+So, note that any custom enum-to-primitive value bindings are not taken into account.
+
+[CAUTION]
+====
+[discrete]
+=== DateTime Serialization
+DateTime can be Local and UTC; Java Timestamp can only be UTC. Because of that, Ignite.NET can serialize DateTime in
+following ways:
+
+* .NET style (can work with non-UTC values, does not work in SQL) and as Timestamp (throws exception on non-UTC values, works properly in SQL).
+
+* Reflective serialization: mark field with `[QuerySqlField]` to enforce Timestamp serialization, or set `BinaryReflectiveSerializer.ForceTimestamp`
+to true; this can be done on per-type basis, or globally like this:
+`IgniteConfiguration.BinaryConfiguration = new BinaryConfiguration { Serializer = new BinaryReflectiveSerializer { ForceTimestamp = true } }`
+
+* `IBinarizable`: use IBinaryWriter.WriteTimestamp method.
+
+When it is not possible to modify class to mark fields with `[QuerySqlField]` or implement `IBinarizable`, use the `IBinarySerializer` approach.
+See link:net-specific/net-serialization[Serialization page] for more details.
+====
+
+== Collection Compatibility
+
+Arrays of simple types (from the table above) and arrays of objects are interoperable in all cases. For all other collections
+and arrays default behavior (with reflective serialization or `IBinaryWriter.WriteObject`) in Ignite.NET is to use `BinaryFormatter`,
+and the result can not be read by Java code (this is done to properly support generics). To write collections in interoperable
+format, implement 'IBinarizable' interface and use `IBinaryWriter.WriteCollection`, `IBinaryWriter.WriteDictionary`,
+`IBinaryReader.ReadCollection`, `IBinaryReader.ReadDictionary`methods.
+
+== Mixed-Platform Clusters
+
+Ignite, Ignite.NET and Ignite.C{pp} nodes can join the same cluster
+
+All platforms are built on top of Java, so any node can execute Java computations.
+However, .NET and C{pp} computations can be executed only by corresponding nodes.
+
+The following Ignite.NET functionality is not supported when there is at least one non-.NET node in the cluster:
+
+* Scan Queries with filter
+* Continuous Queries with filter
+* ICache.Invoke methods
+* ICache.LoadCache with filter
+* IMessaging.RemoteListen
+* IEvents.RemoteQuery
+
+Blog post with detailed walk-through: https://ptupitsyn.github.io/Ignite-Multi-Platform-Cluster/[Multi-Platform Ignite Cluster: Java + .NET, window=_blank]
+
+== Compute in Mixed-Platform Clusters
+
+The `ICompute.ExecuteJavaTask` methods work without limitations in any cluster. Other `ICompute` methods will execute
+closures only on .NET nodes.

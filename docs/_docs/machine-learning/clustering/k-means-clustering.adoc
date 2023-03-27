@@ -1,0 +1,80 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= K-Means Clustering
+
+K-means is one of the most commonly used clustering algorithms that clusters the data points into a predefined number of clusters.
+
+== Model
+
+K-Means clustering aims to partition n observations into k clusters in which each observation belongs to the cluster with the nearest mean, serving as a prototype of the cluster.
+
+The model holds a vector of k centers and one of the distance metrics provided by the ML framework such as Euclidean, Hamming, Manhattan and etc.
+
+It creates the label as follows:
+
+
+
+[source, java]
+----
+KMeansModel mdl = trainer.fit(
+    ignite,
+    dataCache,
+    vectorizer
+);
+
+
+double clusterLabel = mdl.predict(inputVector);
+----
+
+== Trainer
+
+
+KMeans is an unsupervised learning algorithm. It solves a clustering task which is the task of grouping a set of objects in such a way that objects in the same group (called a cluster) are more similar (in some sense) to each other than to those in other groups (clusters).
+
+KMeans is a parametrized iterative algorithm which calculates the new means to be the centroids of the observations in the clusters on each iteration.
+
+Presently, Ignite supports a few parameters for the KMeans classification algorithm:
+
+* `k` - a number of possible clusters
+* `maxIterations` - one stop criteria (the other one is epsilon)
+* `epsilon` - delta of convergence (delta between old and new centroid's values)
+* `distance` - one of the distance metrics provided by the ML framework such as Euclidean, Hamming or Manhattan
+* `seed` - one of initialization parameters which helps to reproduce models (trainer has a random initialization step to get the first centroids)
+
+
+[source, java]
+----
+// Set up the trainer
+KMeansTrainer trainer = new KMeansTrainer()
+   .withDistance(new EuclideanDistance())
+   .withK(AMOUNT_OF_CLUSTERS)
+   .withMaxIterations(MAX_ITERATIONS)
+   .withEpsilon(PRECISION);
+
+// Build the model
+KMeansModel mdl = trainer.fit(
+    ignite,
+    dataCache,
+    vectorizer
+);
+----
+
+
+== Example
+
+
+To see how K-Means clustering can be used in practice, try this https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/clustering/KMeansClusterizationExample.java[example^] that is available on GitHub and delivered with every Apache Ignite distribution.
+
+The training dataset is the subset of the Iris dataset (classes with labels 1 and 2, which are presented linear separable two-classes dataset) which can be loaded from the https://archive.ics.uci.edu/ml/datasets/iris[UCI Machine Learning Repository].

@@ -30,16 +30,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-
+import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 
@@ -47,9 +45,6 @@ import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
  *
  */
 public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache mode for the current test. */
     private CacheMode mode;
 
@@ -59,12 +54,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -79,6 +68,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAtomicLongPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -93,6 +83,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAtomicLongReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -107,18 +98,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testAtomicLongLocal() throws Exception {
-        mode = CacheMode.LOCAL;
-
-        try {
-            checkReferenceCleanup(atomicLongCallable());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
+    @Test
     public void testOneAsyncOpPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -133,6 +113,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testOneAsyncOpReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -147,18 +128,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testOneAsyncOpLocal() throws Exception {
-        mode = CacheMode.LOCAL;
-
-        try {
-            checkReferenceCleanup(oneAsyncOpCallable());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
+    @Test
     public void testSeveralAsyncOpsPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -173,6 +143,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSeveralAsyncOpsReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -187,18 +158,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testSeveralAsyncOpsLocal() throws Exception {
-        mode = CacheMode.LOCAL;
-
-        try {
-            checkReferenceCleanup(severalAsyncOpsCallable());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
+    @Test
     public void testSyncOpAsyncCommitPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -213,6 +173,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSyncOpAsyncCommitReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
@@ -227,18 +188,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void testSyncOpAsyncCommitLocal() throws Exception {
-        mode = CacheMode.LOCAL;
-
-        try {
-            checkReferenceCleanup(syncOpAsyncCommitCallable());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
+    @Test
     public void testAsyncOpsAsyncCommitPartitioned() throws Exception {
         mode = CacheMode.PARTITIONED;
 
@@ -253,22 +203,11 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAsyncOpsAsyncCommitReplicated() throws Exception {
         mode = CacheMode.REPLICATED;
 
         startGrids(2);
-
-        try {
-            checkReferenceCleanup(asyncOpsAsyncCommitCallable());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** @throws Exception If failed. */
-    public void testAsyncOpsAsyncCommitLocal() throws Exception {
-        mode = CacheMode.LOCAL;
 
         try {
             checkReferenceCleanup(asyncOpsAsyncCommitCallable());
@@ -287,6 +226,12 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
             this.cancel = cancel;
 
             final Collection<WeakReference<Object>> refs = call.call();
+
+            // Hack. Serializer can not be cleaned with the IndexProcessor stop callback due to concurrent tasks
+            // that depends on BPlusTree and then on serializer.
+            // This test worked without this hack when serializer was part of the indexing module.
+            // But actaully serializer never cleaned, so this test failed if runs within classpath of the indexing module.
+            IndexProcessor.serializer = null;
 
             GridTestUtils.retryAssert(log, 10, 1000, new CA() {
                 @Override public void apply() {
@@ -494,7 +439,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     /** Test value class. Created mostly to simplify heap dump analysis. */
     private static class TestValue {
         /** */
-        @SuppressWarnings("UnusedDeclaration")
         private final int i;
 
         /** @param i Value. */

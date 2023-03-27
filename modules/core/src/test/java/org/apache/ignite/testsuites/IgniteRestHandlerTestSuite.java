@@ -17,28 +17,32 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.rest.RestProcessorHangTest;
+import org.apache.ignite.internal.processors.rest.RestProcessorInitializationTest;
+import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
+import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheMetadataCommandTest;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
+import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * REST support tests.
  */
-public class IgniteRestHandlerTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("REST Support Test Suite");
-
-        suite.addTestSuite(GridCacheCommandHandlerSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicCommandHandlerSelfTest.class);
-        suite.addTestSuite(GridLogCommandHandlerTest.class);
-        suite.addTestSuite(GridQueryCommandHandlerTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCacheCommandHandlerSelfTest.class,
+    GridCacheAtomicCommandHandlerSelfTest.class,
+    GridCacheMetadataCommandTest.class,
+    GridLogCommandHandlerTest.class,
+    GridQueryCommandHandlerTest.class,
+    CacheTopologyCommandHandlerTest.class,
+    RestProtocolStartTest.class,
+    RestProcessorInitializationTest.class,
+    RestProcessorHangTest.class
+})
+public class IgniteRestHandlerTestSuite {
 }

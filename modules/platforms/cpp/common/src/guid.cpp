@@ -58,8 +58,50 @@ namespace ignite
         return static_cast<int32_t>(hilo >> 32) ^ static_cast<int32_t>(hilo);
     }
 
+    int64_t Guid::Compare(const Guid& other) const
+    {
+        if (most < other.most)
+            return -1;
+
+        if (most > other.most)
+            return 1;
+
+        if (least < other.least)
+            return -1;
+
+        if (least > other.least)
+            return 1;
+
+        return 0;
+    }
+    
     bool operator==(const Guid& val1, const Guid& val2)
     {
-        return val1.least == val2.least && val1.most == val2.most;
+        return val1.Compare(val2) == 0;
+    }
+
+    bool operator!=(const Guid& val1, const Guid& val2)
+    {
+        return val1.Compare(val2) != 0;
+    }
+
+    bool operator<(const Guid& val1, const Guid& val2)
+    {
+        return val1.Compare(val2) < 0;
+    }
+
+    bool operator<=(const Guid& val1, const Guid& val2)
+    {
+        return val1.Compare(val2) <= 0;
+    }
+
+    bool operator>(const Guid& val1, const Guid& val2)
+    {
+        return val1.Compare(val2) > 0;
+    }
+
+    bool operator>=(const Guid& val1, const Guid& val2)
+    {
+        return val1.Compare(val2) >= 0;
     }
 }

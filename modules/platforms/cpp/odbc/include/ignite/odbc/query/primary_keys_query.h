@@ -43,7 +43,7 @@ namespace ignite
                  * @param schema Schema name.
                  * @param table Table name.
                  */
-                PrimaryKeysQuery(diagnostic::Diagnosable& diag,
+                PrimaryKeysQuery(diagnostic::DiagnosableAdapter& diag,
                     Connection& connection, const std::string& catalog,
                     const std::string& schema, const std::string& table);
 
@@ -64,7 +64,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector* GetMeta();
 
                 /**
                  * Fetch next result row to application buffers.
@@ -102,6 +102,13 @@ namespace ignite
                  * @return Number of rows affected by the statement.
                  */
                 virtual int64_t AffectedRows() const;
+
+                /**
+                 * Move to the next result set.
+                 *
+                 * @return Operation result.
+                 */
+                virtual SqlResult::Type NextResultSet();
                 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(PrimaryKeysQuery);

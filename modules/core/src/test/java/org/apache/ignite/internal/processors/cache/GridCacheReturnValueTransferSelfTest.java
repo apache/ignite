@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,9 +41,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests transform for extra traffic.
  */
 public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest {
-    /** Distribution mode. */
-    private boolean cache;
-
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
@@ -66,9 +64,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        if (!cache)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -76,10 +71,9 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
+    @Test
     public void testTransformTransactionalNoBackups() throws Exception {
         // Test works too long and fails.
-        fail("https://issues.apache.org/jira/browse/IGNITE-581");
-
         checkTransform(TRANSACTIONAL, 0);
     }
 
@@ -87,10 +81,9 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
+    @Test
     public void testTransformTransactionalOneBackup() throws Exception {
         // Test works too long and fails.
-        fail("https://issues.apache.org/jira/browse/IGNITE-581");
-
         checkTransform(TRANSACTIONAL, 1);
     }
 
@@ -106,13 +99,8 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
             backups = b;
 
-            cache = true;
-
             startGrids(2);
-
-            cache = false;
-
-            startGrid(2);
+            startClientGrid(2);
 
             failDeserialization = false;
 
@@ -152,7 +140,10 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     private static class Transform implements EntryProcessor<Integer, TestObject, Void>, Serializable {
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, TestObject> entry, Object... args) {
-            entry.setValue(new TestObject());
+            if (entry.getKey() < 100)
+                assertNotNull(entry.getValue());
+            else
+                assertNull(entry.getValue());
 
             return null;
         }
@@ -176,7 +167,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            assert !failDeserialization;
+            // No-op.
         }
     }
 }

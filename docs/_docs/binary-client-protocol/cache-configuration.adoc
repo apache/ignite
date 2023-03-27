@@ -1,0 +1,714 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Cache Configuration
+
+== Operation Codes
+
+Upon successful handshake with an Ignite server node, a client can start performing various cahe configuration operations by sending a request (see request/response structure below) with a specific operation code:
+
+
+[cols="2,1",opts="header"]
+|===
+| Operation | OP_CODE
+|OP_CACHE_GET_NAMES|  1050
+|OP_CACHE_CREATE_WITH_NAME|   1051
+|OP_CACHE_GET_OR_CREATE_WITH_NAME|    1052
+|OP_CACHE_CREATE_WITH_CONFIGURATION|  1053
+|OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION|   1054
+|OP_CACHE_GET_CONFIGURATION|  1055
+|OP_CACHE_DESTROY|    1056
+|OP_QUERY_SCAN|   2000
+|OP_QUERY_SCAN_CURSOR_GET_PAGE|   2001
+|OP_QUERY_SQL|    2002
+|OP_QUERY_SQL_CURSOR_GET_PAGE|    2003
+|OP_QUERY_SQL_FIELDS| 2004
+|OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE| 2005
+|OP_BINARY_TYPE_NAME_GET| 3000
+|OP_BINARY_TYPE_NAME_PUT| 3001
+|OP_BINARY_TYPE_GET|  3002
+|OP_BINARY_TYPE_PUT|  3003
+|===
+
+Note that the above mentioned op_codes are part of the request header, as explained link:binary-client-protocol/binary-client-protocol#standard-message-header[here].
+
+[NOTE]
+====
+[discrete]
+=== Customs Methods Used in Sample Code Snippets Implementation
+
+Some of the code snippets below use `readDataObject(...)` introduced in link:binary-client-protocol/binary-client-protocol#data-objects[this section] and little-endian versions of methods for reading and writing multiple-byte values that are covered in link:binary-client-protocol/binary-client-protocol#data-objects[this example].
+====
+
+
+== OP_CACHE_CREATE_WITH_NAME
+
+Creates a cache with a given name. Cache template can be applied if there is '{asterisk}' in the cache name. Throws exception if a cache with specified name already exists.
+
+
+[cols="1,2",opts="header"]
+|===
+|Request Type  |  Description
+|Header|  Request header.
+|String|  Cache name.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+String cacheName = "myNewCache";
+
+int nameLength = cacheName.getBytes("UTF-8").length;
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5 + nameLength, OP_CACHE_CREATE_WITH_NAME, 1, out);
+
+// Cache name
+writeString(cacheName, out);
+
+// Send request
+out.flush();
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+
+----
+--
+
+
+
+== OP_CACHE_GET_OR_CREATE_WITH_NAME
+
+Creates a cache with a given name. Cache template can be applied if there is '{asterisk}' in the cache name. Does nothing if the cache exists.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|String|  Cache name.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+String cacheName = "myNewCache";
+
+int nameLength = cacheName.getBytes("UTF-8").length;
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5 + nameLength, OP_CACHE_GET_OR_CREATE_WITH_NAME, 1, out);
+
+// Cache name
+writeString(cacheName, out);
+
+// Send request
+out.flush();
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_GET_NAMES
+
+Gets existing cache names.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|int| Cache count.
+|String|  Cache name.
+
+Repeat for as many times as the cache count that is obtained in the previous parameter.
+|===
+
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5, OP_CACHE_GET_NAMES, 1, out);
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+
+// Cache count
+int cacheCount = readIntLittleEndian(in);
+
+// Cache names
+for (int i = 0; i < cacheCount; i++) {
+  int type = readByteLittleEndian(in); // type code
+
+  int strLen = readIntLittleEndian(in); // length
+
+  byte[] buf = new byte[strLen];
+
+  readFully(in, buf, 0, strLen);
+
+  String s = new String(buf); // cache name
+
+  System.out.println(s);
+}
+
+----
+--
+
+
+== OP_CACHE_GET_CONFIGURATION
+
+Gets configuration for the given cache.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Flag.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|int| Length of the configuration in bytes (all the configuration parameters).
+|CacheConfiguration|  Structure of Cache configuration (See below).
+|===
+
+
+Cache Configuration
+
+[cols="1,2",opts="header"]
+|===
+|Type |    Description
+|int| Number of backups.
+|int| CacheMode:
+
+LOCAL = 0
+
+REPLICATED = 1
+
+PARTITIONED = 2
+
+|bool|    CopyOnRead
+|String|  DataRegionName
+|bool|    EagerTTL
+|bool|    StatisticsEnabled
+|String|  GroupName
+|bool|    Invalidate
+|long|    DefaultLockTimeout (milliseconds)
+|int| MaxQueryIterators
+|String|  Name
+|bool|    IsOnheapCacheEnabled
+|int| PartitionLossPolicy:
+
+READ_ONLY_SAFE = 0
+
+READ_ONLY_ALL = 1
+
+READ_WRITE_SAFE = 2
+
+READ_WRITE_ALL = 3
+
+IGNORE = 4
+
+|int| QueryDetailMetricsSize
+|int| QueryParellelism
+|bool|    ReadFromBackup
+|int| RebalanceBatchSize
+|long|    RebalanceBatchesPrefetchCount
+|long|    RebalanceDelay (milliseconds)
+|int| RebalanceMode:
+
+SYNC = 0
+
+ASYNC = 1
+
+NONE = 2
+
+|int| RebalanceOrder
+|long|    RebalanceThrottle (milliseconds)
+|long|    RebalanceTimeout (milliseconds)
+|bool|    SqlEscapeAll
+|int| SqlIndexInlineMaxSize
+|String|  SqlSchema
+|int| WriteSynchronizationMode:
+
+FULL_SYNC = 0
+
+FULL_ASYNC = 1
+
+PRIMARY_SYNC = 2
+
+|int| CacheKeyConfiguration count.
+|CacheKeyConfiguration|   Structure of CacheKeyConfiguration:
+
+`String` Type name
+
+`String` Affinity key field name
+
+Repeat for as many times as the CacheKeyConfiguration count that is obtained in the previous parameter.
+int QueryEntity count.
+|QueryEntity * count| Structure of QueryEntity (see below).
+|===
+
+
+QueryEntity
+
+[cols="1,2",opts="header"]
+|===
+|Type |    Description
+|String|  Key type name.
+|String|  Value type name.
+|String|  Table name.
+|String|  Key field name.
+|String|  Value field name.
+|int| QueryField count
+|QueryField * count|  Structure of QueryField:
+
+`String` Name
+
+`String` Type name
+
+`bool` Is key field
+
+`bool` Is notNull constraint field
+
+Repeat for as many times as the QueryField count that is obtained in the previous parameter.
+|int| Alias count
+|(String + String) * count|   Field name aliases.
+|int| QueryIndex count
+|QueryIndex * count | Structure of QueryIndex:
+
+`String`  Index name
+
+`byte`    Index type:
+
+SORTED = 0
+
+FULLTEXT = 1
+
+GEOSPATIAL = 2
+
+`int` Inline size
+
+`int` Field count
+
+`(string + bool) * count`  Fields (name + IsDescensing)
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String cacheName = "myCache";
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5, OP_CACHE_GET_CONFIGURATION, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+
+// Config length
+int configLen = readIntLittleEndian(in);
+
+// CacheAtomicityMode
+int cacheAtomicityMode = readIntLittleEndian(in);
+
+// Backups
+int backups = readIntLittleEndian(in);
+
+// CacheMode
+int cacheMode = readIntLittleEndian(in);
+
+// CopyOnRead
+boolean copyOnRead = readBooleanLittleEndian(in);
+
+// Other configurations
+
+----
+--
+
+
+== OP_CACHE_CREATE_WITH_CONFIGURATION
+
+Creates cache with provided configuration. An exception is thrown if the name is already in use.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|int| Length of the configuration in bytes (all the used configuration parameters).
+|short|   Number of configuration parameters.
+|short + property type |   Configuration Property data.
+
+Repeat for as many times as the number of configuration parameters.
+|===
+
+
+Any number of configuration parameters can be provided. Note that `Name` is required.
+
+Cache configuration data is specified in key-value form, where key is the `short` property id and value is property-specific data. Table below describes all available parameters.
+
+
+[cols="1,1,3",opts="header"]
+|===
+|Property Code |   Property Type|   Description
+|2|   int| CacheAtomicityMode:
+
+TRANSACTIONAL = 0,
+
+ATOMIC = 1
+|3|   int| Backups
+|1|   int| CacheMode:
+LOCAL = 0, REPLICATED = 1, PARTITIONED = 2
+|5|   boolean| CopyOnRead
+|100| String|  DataRegionName
+|405| boolean| EagerTtl
+|406| boolean| StatisticsEnabled
+|400| String|  GroupName
+|402| long|    DefaultLockTimeout (milliseconds)
+|403| int| MaxConcurrentAsyncOperations
+|206| int| MaxQueryIterators
+|0|   String|  Name
+|101| bool|    IsOnheapcacheEnabled
+|404| int| PartitionLossPolicy:
+
+READ_ONLY_SAFE = 0,
+
+ READ_ONLY_ALL = 1,
+
+ READ_WRITE_SAFE = 2,
+
+ READ_WRITE_ALL = 3,
+
+ IGNORE = 4
+|202| int| QueryDetailMetricsSize
+|201| int| QueryParallelism
+|6|   bool|    ReadFromBackup
+|303| int| RebalanceBatchSize
+|304| long|    RebalanceBatchesPrefetchCount
+|301| long|    RebalanceDelay (milliseconds)
+|300| int| RebalanceMode: SYNC = 0, ASYNC = 1, NONE = 2
+|305| int| RebalanceOrder
+|306| long|    RebalanceThrottle (milliseconds)
+|302| long|    RebalanceTimeout (milliseconds)
+|205| bool|    SqlEscapeAll
+|204| int| SqlIndexInlineMaxSize
+|203| String|  SqlSchema
+|4|   int| WriteSynchronizationMode:
+
+FULL_SYNC = 0,
+
+ FULL_ASYNC = 1,
+
+PRIMARY_SYNC = 2
+|401| int + CacheKeyConfiguration * count| CacheKeyConfiguration count + CacheKeyConfiguration
+
+Structure of CacheKeyConfiguration:
+
+`String` Type name
+
+`String` Affinity key field name
+|200 | int + QueryEntity * count |  QueryEntity count + QueryEntity
+
+Structure of QueryEntity: (see below)
+|===
+
+
+
+QueryEntity
+
+[cols="1,2",opts="header"]
+|===
+|Type |    Description
+|String|  Key type name.
+|String|  Value type name.
+|String|  Table name.
+|String|  Key field name.
+|String|  Value field name.
+|int| QueryField count
+|QueryField|  Structure of QueryField:
+
+`String` Name
+
+`String` Type name
+
+`bool` Is key field
+
+`bool` Is notNull constraint field
+
+Repeat for as many times as the QueryField count.
+|int| Alias count
+|String + String| Field name alias.
+
+Repeat for as many times as the alias count.
+|int| QueryIndex count
+|QueryIndex|  Structure of QueryIndex:
+
+`String`  Index name
+
+`byte`    Index type:
+
+SORTED = 0
+
+FULLTEXT = 1
+
+GEOSPATIAL = 2
+
+`int` Inline size
+
+`int` Field count
+
+`string + bool` Fields (name + IsDescensing)
+
+Repeat for as many times as the field count that is passed in the previous parameter.
+
+Repeat for as many times as the QueryIndex count.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(30, OP_CACHE_CREATE_WITH_CONFIGURATION, 1, out);
+
+// Config length in bytes
+writeIntLittleEndian(16, out);
+
+// Number of properties
+writeShortLittleEndian(2, out);
+
+// Backups opcode
+writeShortLittleEndian(3, out);
+// Backups: 2
+writeIntLittleEndian(2, out);
+
+// Name opcode
+writeShortLittleEndian(0, out);
+// Name
+writeString("myNewCache", out);
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION
+
+Creates cache with provided configuration. Does nothing if the name is already in use.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|CacheConfiguration|  Cache configuration (see format above).
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+writeRequestHeader(30, OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION, 1, out);
+
+// Config length in bytes
+writeIntLittleEndian(16, out);
+
+// Number of properties
+writeShortLittleEndian(2, out);
+
+// Backups opcode
+writeShortLittleEndian(3, out);
+
+// Backups: 2
+writeIntLittleEndian(2, out);
+
+// Name opcode
+writeShortLittleEndian(0, out);
+
+// Name
+writeString("myNewCache", out);
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_DESTROY
+
+Destroys the cache with a given name.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+String cacheName = "myCache";
+
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(4, OP_CACHE_DESTROY, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Send request
+out.flush();
+----
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+readResponseHeader(in);
+----
+--
+

@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
@@ -34,8 +35,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests custom executor named pools.
@@ -96,6 +99,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testInvalidCustomExecutor() throws Exception {
         grid(0).compute().withExecutor("invalid").broadcast(new IgniteRunnable() {
             @Override public void run() {
@@ -107,6 +111,7 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testAllComputeApiByCustomExecutor() throws Exception {
         IgniteCompute comp = grid(0).compute().withExecutor(EXEC_NAME0);
 
@@ -157,12 +162,14 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
             }
         }, Collections.singletonList(0));
 
-        comp.apply(new IgniteClosure<Integer, Object>() {
-                       @Override public Object apply(Integer o) {
-                           assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
-                           return null;
-                       }
-                   }, Collections.singletonList(0),
+        IgniteClosure<Integer, Object> job = new IgniteClosure<Integer, Object>() {
+            @Override public Object apply(Integer o) {
+                assertTrue(Thread.currentThread().getName().contains(EXEC_NAME0));
+                return null;
+            }
+        };
+
+        comp.apply(job, Collections.singletonList(0),
             new IgniteReducer<Object, Object>() {
                 @Override public boolean collect(@Nullable Object o) {
                     return true;
@@ -216,6 +223,25 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
         comp.execute(TestTask.class, null);
     }
 
+    /** */
+    @Test
+    public void testMultipleTaskModifiersWithExecutorName() throws Exception {
+        String taskName = "test-task-name";
+
+        IgniteCompute compute = grid(0).compute().withName(taskName);
+
+        // Here we check that withExecutor call does not affect existing compute instances.
+        compute.withExecutor(EXEC_NAME0);
+        compute.broadcast(new TestRunnable(taskName, "pub"));
+
+        IgniteCompute computeWithExecutor = compute.withName(taskName).withExecutor(EXEC_NAME0);
+
+        computeWithExecutor.broadcast(new TestRunnable(taskName, EXEC_NAME0));
+        computeWithExecutor.broadcast(new TestRunnable(TestRunnable.class.getName(), EXEC_NAME0));
+        computeWithExecutor.withName(taskName).broadcast(new TestRunnable(taskName, EXEC_NAME0));
+        computeWithExecutor.withExecutor(EXEC_NAME1).withName(taskName).broadcast(new TestRunnable(taskName, EXEC_NAME1));
+    }
+
     /**
      * Test task
      */
@@ -240,6 +266,31 @@ public class IgniteComputeCustomExecutorSelfTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
+        }
+    }
+
+    /** */
+    private static class TestRunnable implements IgniteRunnable {
+        /** */
+        private final String expTaskName;
+
+        /** */
+        private final String expExecName;
+
+        /** */
+        public TestRunnable(String expTaskName, String expExecName) {
+            this.expTaskName = expTaskName;
+            this.expExecName = expExecName;
+        }
+
+        /** */
+        @TaskSessionResource
+        ComputeTaskSession ses;
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            assertEquals(expTaskName, ses.getTaskName());
+            assertTrue(Thread.currentThread().getName().contains(expExecName));
         }
     }
 }

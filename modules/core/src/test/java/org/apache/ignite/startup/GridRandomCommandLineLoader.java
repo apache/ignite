@@ -35,14 +35,12 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.varia.NullAppender;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -61,7 +59,7 @@ public final class GridRandomCommandLineLoader {
     private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** Copyright text. Ant processed. */
-    private static final String COPYRIGHT = "2017 Copyright(C) Apache Software Foundation.";
+    private static final String COPYRIGHT = IgniteVersionUtils.COPYRIGHT;
 
     /** Version. Ant processed. */
     private static final String VER = "x.x.x";
@@ -299,7 +297,6 @@ public final class GridRandomCommandLineLoader {
      * @return List of configurations.
      * @throws IgniteCheckedException If an error occurs.
      */
-    @SuppressWarnings("unchecked")
     private static IgniteConfiguration getConfiguration(String springCfgPath, @Nullable String logCfgPath)
         throws IgniteCheckedException {
         assert springCfgPath != null;
@@ -312,11 +309,6 @@ public final class GridRandomCommandLineLoader {
 
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);
-
-        // Add no-op logger to remove no-appender warning.
-        Appender app = new NullAppender();
-
-        Logger.getRootLogger().addAppender(app);
 
         ApplicationContext springCtx;
 
@@ -340,9 +332,6 @@ public final class GridRandomCommandLineLoader {
 
         if (cfgMap == null)
             throw new IgniteCheckedException("Failed to find a single grid factory configuration in: " + path);
-
-        // Remove previously added no-op logger.
-        Logger.getRootLogger().removeAppender(app);
 
         if (cfgMap.size() != 1)
             throw new IgniteCheckedException("Spring configuration file should contain exactly 1 grid configuration: " + path);

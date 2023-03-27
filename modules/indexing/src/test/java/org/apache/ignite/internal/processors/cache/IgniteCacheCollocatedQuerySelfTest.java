@@ -30,10 +30,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,20 +59,11 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final long SEED = ThreadLocalRandom.current().nextLong();
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -97,11 +86,6 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
@@ -111,15 +95,16 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * @param collocated Colocated.
      * @return Result.
      */
-    private static List<List<?>> query(IgniteCache<AffinityUuid,Purchase> c, boolean collocated) {
+    private static List<List<?>> query(IgniteCache<AffinityUuid, Purchase> c, boolean collocated) {
         return c.query(new SqlFieldsQuery(QRY).setArgs(30, 5).setCollocated(collocated)).getAll();
     }
 
     /**
      * Correct affinity.
      */
+    @Test
     public void testColocatedQueryRight() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<AffinityUuid, Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 
@@ -145,8 +130,9 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Correct affinity.
      */
+    @Test
     public void testColocatedQueryWrong() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<AffinityUuid, Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 

@@ -38,12 +38,15 @@ import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -55,6 +58,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTest {
     /** Excluded classes. */
     private static final String[] EXCLUDE_CLASSES = new String[] {
+        GridMultipleVersionsDeploymentSelfTest.class.getName(),
         GridDeploymentTestTask.class.getName(),
         GridDeploymentTestJob.class.getName()
     };
@@ -80,6 +84,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         cfg.setPeerClassLoadingLocalClassPathExclude(
             "org.apache.ignite.internal.GridMultipleVersionsDeploymentSelfTest*");
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -100,7 +106,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
             Ignite ignite = startGrid(1);
@@ -159,7 +165,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {
             Ignite g1 = startGrid(1);
@@ -206,7 +212,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             // Since we loader task/job classes with different class loaders we cannot
             // use any kind of mutex because of the illegal state exception.
             // We have to use timer here. DO NOT CHANGE 2 seconds here.
-            Thread.sleep(2000);
+            Thread.sleep(1000);
 
             // Deploy new one - this should move first task to the obsolete list.
             g1.compute().localDeployTask(taskCls2, ldr2);
@@ -245,14 +251,14 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
      * or on remote nodes if there are any. Never on both.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    @ComputeTaskName(value="GridDeploymentTestTask")
+    @ComputeTaskName(value = "GridDeploymentTestTask")
     public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** Ignite instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;

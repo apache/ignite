@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines memory page eviction algorithm. A mode is set for a specific
- * {@link MemoryPolicyConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
+ * {@link DataRegionConfiguration}. Only data pages, that store key-value entries, are eligible for eviction. The
  * other types of pages, like index or meta pages, are not evictable.
  */
 public enum DataPageEvictionMode {
@@ -31,11 +31,11 @@ public enum DataPageEvictionMode {
     /**
      * Random-LRU algorithm.
      * <ul>
-     * <li>Once a memory region defined by a memory policy is configured, an off-heap array is allocated to track
+     * <li>Once a memory region defined by a data region is configured, an off-heap array is allocated to track
      * last usage timestamp for every individual data page. The size of the array is calculated this way - size =
-     * ({@link MemoryPolicyConfiguration#getMaxSize()} / {@link MemoryConfiguration#pageSize})</li>
+     * ({@link DataRegionConfiguration#getMaxSize()} / {@link DataStorageConfiguration#pageSize})</li>
      * <li>When a data page is accessed, its timestamp gets updated in the tracking array. The page index in the
-     * tracking array is calculated this way - index = (pageAddress / {@link MemoryPolicyConfiguration#getMaxSize()}</li>
+     * tracking array is calculated this way - index = (pageAddress / {@link DataRegionConfiguration#getMaxSize()}</li>
      * <li>When it's required to evict some pages, the algorithm randomly chooses 5 indexes from the tracking array and
      * evicts a page with the latest timestamp. If some of the indexes point to non-data pages (index or system pages)
      * then the algorithm picks other pages.</li>

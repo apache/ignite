@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.CacheException;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,9 +43,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String PERSON_CACHE = "person";
 
     /** */
@@ -60,15 +52,11 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     private static final String ORG_CACHE_REPLICATED = "orgRepl";
 
     /** */
-    private boolean client;
+    private static final int NUMBER_OF_PARTITIONS = 32;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -122,8 +110,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -138,6 +124,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(1);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, NUMBER_OF_PARTITIONS));
 
         return ccfg;
     }
@@ -148,16 +135,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(2);
     }
 
     /** {@inheritDoc} */
@@ -178,9 +156,8 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5016");
-
+    @Test
+    public void testJoin() {
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
@@ -230,52 +207,104 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     }
 
     /**
+     * @throws Exception If failed.
      */
-    public void testReplicatedToPartitionedLeftJoin() {
+    @Test
+    public void testSubquery() {
         Ignite client = grid(2);
 
         IgniteCache<Object, Object> personCache = client.cache(PERSON_CACHE);
         IgniteCache<Object, Object> orgCache = client.cache(ORG_CACHE);
         IgniteCache<Object, Object> orgCacheRepl = client.cache(ORG_CACHE_REPLICATED);
 
-        List<Integer> keys = primaryKeys(ignite(0).cache(PERSON_CACHE), 3, 200_000);
+        List<Integer> keys = primaryKeys(ignite(0).cache(PERSON_CACHE), 4, 200_000);
 
         orgCache.put(keys.get(0), new Organization(0, "org1"));
         orgCacheRepl.put(keys.get(0), new Organization(0, "org1"));
+
         personCache.put(keys.get(1), new Person(0, "p1"));
         personCache.put(keys.get(2), new Person(0, "p2"));
+        personCache.put(keys.get(3), new Person(0, "p3"));
 
-        checkQuery("select o.name, p._key, p.name " +
-            "from \"person\".Person p left join \"org\".Organization o " +
-            "on (p.orgId = o.id)", orgCache, 2);
+        // Subquery in `WHERE` clause
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId in (select o.id from \"org\".Organization o)", orgCache, 3);
 
-        checkQuery("select o.name, p._key, p.name " +
-            "from \"org\".Organization o right join \"person\".Person p " +
-            "on (p.orgId = o.id)", orgCache, 2);
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id in (select p.orgId from \"person\".Person p)", orgCache, 1);
 
-        checkQuery("select o.name, p._key, p.name " +
-            "from \"person\".Person p left join \"org\".Organization o " +
-            "on (p.orgId = o.id)", personCache, 2);
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId in (select o.id from \"org\".Organization o)", orgCacheRepl, 3);
 
-        checkQuery("select o.name, p._key, p.name " +
-            "from \"org\".Organization o right join \"person\".Person p " +
-            "on (p.orgId = o.id)", personCache, 2);
-    }
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id in (select p.orgId from \"person\".Person p)", orgCacheRepl, 1);
 
-    /**
-     * @param sql SQL.
-     * @param cache Cache.
-     */
-    private void checkQueryFails(final String sql, final IgniteCache<Object, Object> cache) {
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+        // Prevent `IN` optimization.
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)", orgCache, 3);
 
-                cache.query(qry).getAll();
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id < 10 or o.id in (select p.orgId from \"person\".Person p)", orgCache, 1);
 
-                return null;
-            }
-        }, CacheException.class, null);
+        checkQuery("select p._key, p.name " +
+            "from \"person\".Person p where " +
+            "p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)", orgCacheRepl, 3);
+
+        checkQuery("select o.name " +
+            "from \"org\".Organization o where " +
+            "o.id < 10 or o.id in (select p.orgId from \"person\".Person p)", orgCacheRepl, 1);
+
+        // Subquery in `FROM` clause
+        checkQuery("select p1._key, p1.name " +
+            "from (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "where p1.orgId > -1", orgCache, 3);
+
+        checkQuery("select o1.name " +
+            "from (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "where o1.id > -1", orgCache, 1);
+
+        checkQuery("select p1._key, p1.name " +
+            "from (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "where p1.orgId > -1", orgCacheRepl, 3);
+
+        checkQuery("select o1.name " +
+            "from (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "where o1.id > -1", orgCacheRepl, 1);
+
+        // Join with subquery
+        checkQuery("select o1.name, p._key, p.name " +
+            "from \"person\".Person p " +
+            "join (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "on (p.orgId = o1.id)", orgCache, 3);
+
+        checkQuery("select o.name, p1._key, p1.name " +
+            "from \"org\".Organization o " +
+            "join  (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "on (p1.orgId = o.id)", orgCache, 3);
+
+        checkQuery("select o1.name, p._key, p.name " +
+            "from \"person\".Person p " +
+            "join (select o.id, o.name from \"org\".Organization o " +
+            "    where o.id < 10 or o.id in (select p.orgId from \"person\".Person p)) o1 " +
+            "on (p.orgId = o1.id)", orgCacheRepl, 3);
+
+        checkQuery("select o.name, p1._key, p1.name " +
+            "from \"org\".Organization o " +
+            "join (select p._key, p.name, p.orgId from \"person\".Person p " +
+            "    where p.orgId < 10 or p.orgId in (select o.id from \"org\".Organization o)) p1 " +
+            "on (p1.orgId = o.id)", orgCacheRepl, 3);
     }
 
     /**

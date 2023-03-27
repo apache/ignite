@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         {
             _curStructAction++;
 
-            if (_curStructUpdates == null)
+            if (_curStructUpdates == null && _portStruct != null)
             {
                 var fieldId = _portStruct.GetFieldId(fieldName, fieldTypeId, ref _curStructPath,
                     _curStructAction);
@@ -86,18 +86,20 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         public void UpdateReaderStructure()
         {
             if (_curStructUpdates != null)
-                _desc.UpdateReadStructure(_desc.ReaderTypeStructure, _curStructPath, _curStructUpdates);
+                _desc.UpdateReadStructure(_curStructPath, _curStructUpdates);
         }
 
         /// <summary>
         /// Updates the type structure and metadata for the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        public void UpdateWriterStructure(BinaryWriter writer)
+        /// <param name="isNewSchema">Whether the current schema is know to be new.</param>
+        public void UpdateWriterStructure(BinaryWriter writer, bool isNewSchema)
         {
             if (_curStructUpdates != null)
             {
-                _desc.UpdateWriteStructure(_desc.WriterTypeStructure, _curStructPath, _curStructUpdates);
+                // The following line assumes that cluster meta update will succeed (BinaryProcessor.PutBinaryTypes).
+                _desc.UpdateWriteStructure(_curStructPath, _curStructUpdates);
 
                 var marsh = writer.Marshaller;
 
@@ -110,10 +112,23 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
 
                     var fields = metaHnd.OnObjectWriteFinished();
 
-                    // A new schema may be added, but no new fields. 
+                    // A new schema may be added, but no new fields.
                     // In this case, we should still call SaveMetadata even if fields are null
                     writer.SaveMetadata(_desc, fields);
                 }
+            }
+            else if (_desc.WriterTypeStructure == null)
+            {
+                // Empty object (no fields).
+                // Null WriterTypeStructure indicates that meta has never been sent for this type.
+                writer.Marshaller.GetBinaryTypeHandler(_desc);
+                writer.SaveMetadata(_desc, null);
+                _desc.UpdateWriteStructure(_curStructPath, null);
+            }
+            else if (isNewSchema && _portStruct != null && !_portStruct.IsPathEnd(_curStructPath, _curStructAction))
+            {
+                // Subset of current schema is a different schema and should be saved.
+                writer.SaveMetadata(_desc, null);
             }
         }
 

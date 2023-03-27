@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,6 +31,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
@@ -40,12 +42,12 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -83,10 +85,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
     /** */
     private final ConcurrentMap<MarshallerMappingItem, GridFutureAdapter<MappingExchangeResult>> mappingExchangeSyncMap
-            = new ConcurrentHashMap8<>();
+            = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<MarshallerMappingItem, ClientRequestFuture> clientReqSyncMap = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -100,7 +102,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(boolean activeOnStart) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         GridDiscoveryManager discoMgr = ctx.discovery();
         GridIoManager ioMgr = ctx.io();
 
@@ -112,7 +114,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
         marshallerCtx.onMarshallerProcessorStarted(ctx, transport);
 
-        discoMgr.setCustomEventListener(MappingProposedMessage.class, new MarshallerMappingExchangeListener());
+        discoMgr.setCustomEventListener(MappingProposedMessage.class, new MappingProposedListener());
 
         discoMgr.setCustomEventListener(MappingAcceptedMessage.class, new MappingAcceptedListener());
 
@@ -124,7 +126,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         if (ctx.clientNode())
             ctx.event().addLocalEventListener(new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
-                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
                     if (!ctx.isStopping()) {
                         for (ClientRequestFuture fut : clientReqSyncMap.values())
@@ -167,10 +169,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingRequestMessage : msg;
 
-            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage) msg;
+            MissingMappingRequestMessage msg0 = (MissingMappingRequestMessage)msg;
 
             byte platformId = msg0.platformId();
             int typeId = msg0.typeId();
@@ -184,6 +186,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                         new MissingMappingResponseMessage(platformId, typeId, resolvedClsName),
                         SYSTEM_POOL);
             }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send missing mapping response, node failed: " + nodeId);
+            }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send missing mapping response.", e);
             }
@@ -195,10 +201,10 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
      */
     private final class MissingMappingResponseListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MissingMappingResponseMessage : msg;
 
-            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage) msg;
+            MissingMappingResponseMessage msg0 = (MissingMappingResponseMessage)msg;
 
             byte platformId = msg0.platformId();
             int typeId = msg0.typeId();
@@ -210,7 +216,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
             if (fut != null) {
                 if (resolvedClsName != null) {
-                    marshallerCtx.onMissedMappingResolved(item, resolvedClsName);
+                    marshallerCtx.onMappingAccepted(new MarshallerMappingItem(platformId, typeId, resolvedClsName));
 
                     fut.onDone(MappingExchangeResult.createSuccessfulResult(resolvedClsName));
                 }
@@ -228,7 +234,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private final class MarshallerMappingExchangeListener implements CustomEventListener<MappingProposedMessage> {
+    private final class MappingProposedListener implements CustomEventListener<MappingProposedMessage> {
         /** {@inheritDoc} */
         @Override public void onCustomEvent(
                 AffinityTopologyVersion topVer,
@@ -241,13 +247,15 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
 
                 if (!msg.inConflict()) {
                     MarshallerMappingItem item = msg.mappingItem();
-                    String conflictingName = marshallerCtx.onMappingProposed(item);
+                    MappedName existingName = marshallerCtx.onMappingProposed(item);
 
-                    if (conflictingName != null) {
-                        if (conflictingName.equals(item.className()))
+                    if (existingName != null) {
+                        String existingClsName = existingName.className();
+
+                        if (existingClsName.equals(item.className()) && !existingName.accepted())
                             msg.markDuplicated();
-                        else
-                            msg.conflictingWithClass(conflictingName);
+                        else if (!existingClsName.equals(item.className()))
+                            msg.conflictingWithClass(existingClsName);
                     }
                 }
                 else {
@@ -256,7 +264,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                     if (origNodeId.equals(ctx.localNodeId())) {
                         GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.mappingItem());
 
-                        assert fut != null: msg;
+                        assert fut != null : msg;
 
                         fut.onDone(MappingExchangeResult.createFailureResult(
                                 duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));
@@ -297,12 +305,17 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             final MarshallerMappingItem item = msg.getMappingItem();
             marshallerCtx.onMappingAccepted(item);
 
-            closProc.runLocalSafe(new Runnable() {
+            closProc.runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     for (MappingUpdatedListener lsnr : mappingUpdatedLsnrs)
                         lsnr.mappingUpdated(item.platformId(), item.typeId(), item.className());
                 }
             });
+
+            ClientRequestFuture rqFut = clientReqSyncMap.get(new MarshallerMappingItem(item.platformId(), item.typeId(), null));
+
+            if (rqFut != null)
+                rqFut.onDone(MappingExchangeResult.createSuccessfulResult(item.className()));
 
             GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(item);
 
@@ -312,23 +325,35 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        dataBag.addJoiningNodeData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
+    }
+
+    /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(MARSHALLER_PROC.ordinal()))
             dataBag.addGridCommonData(MARSHALLER_PROC.ordinal(), marshallerCtx.getCachedMappings());
     }
 
     /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
+        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.joiningNodeData();
+
+        processIncomingMappings(mappings);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
-        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>) data.commonData();
+        List<Map<Integer, MappedName>> mappings = (List<Map<Integer, MappedName>>)data.commonData();
 
-        if (mappings != null) {
-            for (int i = 0; i < mappings.size(); i++) {
-                Map<Integer, MappedName> map;
+        processIncomingMappings(mappings);
+    }
 
-                if ((map = mappings.get(i)) != null)
-                    marshallerCtx.onMappingDataReceived((byte) i, map);
-            }
-        }
+    /**
+     * @param mappings Incoming marshaller mappings.
+     */
+    private void processIncomingMappings(List<Map<Integer, MappedName>> mappings) {
+        marshallerCtx.onMappingDataReceived(log, mappings);
     }
 
     /** {@inheritDoc} */

@@ -18,19 +18,28 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.net.InetSocketAddress;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -39,7 +48,13 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 
 /**
  *
@@ -54,6 +69,16 @@ abstract class TcpDiscoveryImpl {
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
 
+    /** Response join impossible. */
+    protected static final int RES_JOIN_IMPOSSIBLE = 255;
+
+    /** How often the warning message should occur in logs to prevent log spam. */
+    public static final long LOG_WARN_MSG_TIMEOUT = 60 * 60 * 1000L;
+
+    /** Debug log date formatter. */
+    private static final DateTimeFormatter DEBUG_FORMATTER =
+        DateTimeFormatter.ofPattern("[HH:mm:ss,SSS]").withZone(ZoneId.systemDefault());
+
     /** */
     protected final TcpDiscoverySpi spi;
 
@@ -61,7 +86,7 @@ abstract class TcpDiscoveryImpl {
     protected final IgniteLogger log;
 
     /** */
-    protected TcpDiscoveryNode locNode;
+    protected volatile TcpDiscoveryNode locNode;
 
     /** Debug mode. */
     protected boolean debugMode;
@@ -70,8 +95,13 @@ abstract class TcpDiscoveryImpl {
     private int debugMsgHist = 512;
 
     /** Received messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     protected ConcurrentLinkedDeque<String> debugLogQ;
+
+    /** Logging a warning message when metrics quantity exceeded a specified number. */
+    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, DFLT_DISCOVERY_METRICS_QNT_WARN);
+
+    /** */
+    protected long endTimeMetricsSizeProcessWait = System.currentTimeMillis();
 
     /** */
     protected final ServerImpl.DebugLogger debugLog = new DebugLogger() {
@@ -99,6 +129,21 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
+    /** Tracing. */
+    protected Tracing tracing;
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    protected static <T extends R, R> Collection<R> upcast(Collection<T> c) {
+        A.notNull(c, "c");
+
+        return (Collection<R>)c;
+    }
+
     /**
      * @param spi Adapter.
      */
@@ -106,6 +151,11 @@ abstract class TcpDiscoveryImpl {
         this.spi = spi;
 
         log = spi.log;
+
+        if (spi.ignite() instanceof IgniteEx)
+            tracing = ((IgniteEx)spi.ignite()).context().tracing();
+        else
+            tracing = new NoopTracing();
     }
 
     /**
@@ -133,7 +183,7 @@ abstract class TcpDiscoveryImpl {
     protected void debugLog(@Nullable TcpDiscoveryAbstractMessage discoMsg, String msg) {
         assert debugMode;
 
-        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
+        String msg0 = DEBUG_FORMATTER.format(Instant.now()) +
             '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
             "-" + locNode.internalOrder() + "] " +
             msg;
@@ -164,7 +214,7 @@ abstract class TcpDiscoveryImpl {
      * @param msg Error message.
      * @param e Exception.
      */
-    protected void onException(String msg, Exception e){
+    protected void onException(String msg, Exception e) {
         spi.getExceptionRegistry().onException(msg, e);
     }
 
@@ -201,6 +251,12 @@ abstract class TcpDiscoveryImpl {
     public abstract Collection<ClusterNode> getRemoteNodes();
 
     /**
+     * @param feature Feature to check.
+     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
+     */
+    public abstract boolean allNodesSupport(IgniteFeatures feature);
+
+    /**
      * @param nodeId Node id.
      * @return Node with given ID or {@code null} if node is not found.
      */
@@ -232,6 +288,20 @@ abstract class TcpDiscoveryImpl {
     public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
+     * Dumps ring structure to logger.
+     *
+     * @param log Logger.
+     */
+    public abstract void dumpRingStructure(IgniteLogger log);
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    public abstract long getCurrentTopologyVersion();
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      * @throws IgniteSpiException If failed.
      */
@@ -244,6 +314,13 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      */
     public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
+     * @return connection check interval.
+     */
+    public long connectionCheckInterval() {
         return 0;
     }
 
@@ -292,20 +369,37 @@ abstract class TcpDiscoveryImpl {
     public abstract void brakeConnection();
 
     /**
+     * @param maxHops Maximum hops for {@link TcpDiscoveryRingLatencyCheckMessage}.
+     */
+    public abstract void checkRingLatency(int maxHops);
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      *
-     * @return Worker thread.
+     * @return Worker threads.
      */
-    protected abstract IgniteSpiThread workerThread();
+    protected abstract Collection<IgniteSpiThread> threads();
+
+    /**
+     * @param nodeId Node ID.
+     * @param metrics Metrics.
+     * @param cacheMetrics Cache metrics.
+     * @param tsNanos Timestamp as returned by {@link System#nanoTime()}.
+     */
+    public abstract void updateMetrics(UUID nodeId,
+        ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics,
+        long tsNanos);
 
     /**
      * @throws IgniteSpiException If failed.
      */
-    @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
+        long spiJoinTimeout = spi.getJoinTimeout();
+
         // Make sure address registration succeeded.
         // ... but limit it if join timeout is configured.
-        long start = spi.getJoinTimeout() > 0 ? U.currentTimeMillis() : 0;
+        long startNanos = spiJoinTimeout > 0 ? System.nanoTime() : 0;
 
         while (true) {
             try {
@@ -321,18 +415,19 @@ abstract class TcpDiscoveryImpl {
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
-                    "(retrying every 2000 ms).");
+                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
+                    "change 'reconnectDelay' to configure the frequency of retries).");
             }
 
-            if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
+            if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
                 throw new IgniteSpiException(
                     "Failed to register local addresses with IP finder within join timeout " +
                         "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
                         "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
-                        "[joinTimeout=" + spi.getJoinTimeout() + ']');
+                        "[joinTimeout=" + spiJoinTimeout + ']');
 
             try {
-                U.sleep(2000);
+                U.sleep(spi.getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -355,6 +450,31 @@ abstract class TcpDiscoveryImpl {
         }
 
         return true;
+    }
+
+    /** */
+    public void processMsgCacheMetrics(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
+        for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
+            UUID nodeId = e.getKey();
+
+            TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
+
+            Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
+                msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
+
+            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis()
+                && cacheMetrics.size() >= METRICS_QNT_WARN) {
+                log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
+                    "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
+
+                endTimeMetricsSizeProcessWait = U.currentTimeMillis() + LOG_WARN_MSG_TIMEOUT;
+            }
+
+            updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tsNanos);
+
+            for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
+                updateMetrics(t.get1(), t.get2(), cacheMetrics, tsNanos);
+        }
     }
 
     /**

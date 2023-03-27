@@ -49,7 +49,10 @@ public class GridRedisMessage implements GridClientMessage {
     private static final int AUX_OFFSET = 2;
 
     /** Request message parts. */
-    private transient final List<String> msgParts;
+    private final transient List<String> msgParts;
+
+    /** Count of message parts . */
+    private final transient int fullLen;
 
     /** Response. */
     private ByteBuffer response;
@@ -57,13 +60,27 @@ public class GridRedisMessage implements GridClientMessage {
     /** Cache name. */
     private String cacheName;
 
+    /** Cache name prefix. */
+    public static final String CACHE_NAME_PREFIX = "redis-ignite-internal-cache";
+
+    /** Default cache name. */
+    public static final String DFLT_CACHE_NAME = CACHE_NAME_PREFIX + "-0";
+
     /**
      * Constructor.
      *
-     * @param msgLen Length of the Redis message (command with parameters).
+     * @param fullLen Length of the Redis message (command with parameters).
      */
-    public GridRedisMessage(int msgLen) {
-        msgParts = new ArrayList<>(msgLen);
+    public GridRedisMessage(int fullLen) {
+        this.fullLen = fullLen;
+        msgParts = new ArrayList<>(fullLen);
+
+        cacheName = DFLT_CACHE_NAME;
+    }
+
+    /** @return Full message length; */
+    public int fullLength() {
+        return fullLen;
     }
 
     /**

@@ -114,6 +114,9 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
                 return UUID.fromString((String)res);
         }
 
+        if (type == byte[].class)
+            return rs.getBytes(colIdx);
+
         if (type.isEnum()) {
             if (NUMERIC_TYPES.contains(rs.getMetaData().getColumnType(colIdx))) {
                 int ordinal = rs.getInt(colIdx);
@@ -126,7 +129,7 @@ public class JdbcTypesDefaultTransformer implements JdbcTypesTransformer {
             String str = rs.getString(colIdx);
 
             try {
-                return rs.wasNull() ? null : Enum.valueOf((Class<? extends Enum>) type, str.trim());
+                return rs.wasNull() ? null : Enum.valueOf((Class<? extends Enum>)type, str.trim());
             }
             catch (IllegalArgumentException ignore) {
                 return null;

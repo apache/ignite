@@ -48,7 +48,7 @@ public class VariationsTestsConfig {
     private boolean stopCache;
 
     /** */
-    private boolean awaitPartMapExchange = true;
+    private boolean awaitPartMapExchange;
 
     /** */
     private boolean withClients;
@@ -88,7 +88,7 @@ public class VariationsTestsConfig {
         boolean withClients,
         boolean awaitPartMapExchange
     ) {
-        A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
+        A.ensure(gridCnt >= 1, "Grids count cannot be less than 1.");
 
         this.factory = factory;
         this.desc = desc;

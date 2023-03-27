@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -37,6 +38,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
  *
@@ -76,11 +79,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param writeVer Write version for cache values.
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
-     * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
+     * @param readRepairRecovery Recovery on Read Repair flag.
      */
     GridDhtAtomicSingleUpdateRequest(
         int cacheId,
@@ -89,11 +92,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
-        UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
         boolean keepBinary,
-        boolean skipStore
+        boolean skipStore,
+        boolean readRepairRecovery
     ) {
         super(cacheId,
             nodeId,
@@ -101,11 +104,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             writeVer,
             syncMode,
             topVer,
-            subjId,
             taskNameHash,
             addDepInfo,
             keepBinary,
-            skipStore);
+            skipStore,
+            readRepairRecovery);
     }
 
     /**
@@ -118,6 +121,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param addPrevVal If {@code true} adds previous value.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
+     * @param cacheOp Corresponding cache operation.
      */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
@@ -127,8 +131,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
-        long updateCntr
-    ) {
+        long updateCntr,
+        GridCacheOperation cacheOp) {
         assert entryProcessor == null;
         assert ttl <= 0 : ttl;
         assert conflictExpireTime <= 0 : conflictExpireTime;
@@ -144,6 +148,23 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             this.prevVal = prevVal;
 
         this.updateCntr = updateCntr;
+
+        if (cacheOp == TRANSFORM)
+            setFlag(true, DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if near cache update request.
+     */
+    private boolean near() {
+        return isFlag(DHT_ATOMIC_NEAR_FLAG_MASK);
+    }
+
+    /**
+     * @param near Near cache update flag.
+     */
+    private void near(boolean near) {
+        setFlag(near, DHT_ATOMIC_NEAR_FLAG_MASK);
     }
 
     /**

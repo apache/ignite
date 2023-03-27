@@ -18,10 +18,22 @@
 package org.apache.ignite.internal.processors.jobmetrics;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Job metrics.
+ *
+ * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=compute.jobs" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 public class GridJobMetrics {
     /** */
     private int maxActiveJobs;
@@ -85,6 +97,9 @@ public class GridJobMetrics {
 
     /** */
     private double avgJobExecTime;
+
+    /** */
+    private long totalJobExecTime;
 
     /** */
     private long totalIdleTime;
@@ -244,6 +259,15 @@ public class GridJobMetrics {
      */
     public double getAverageJobExecuteTime() {
         return avgJobExecTime;
+    }
+
+    /**
+     * Gets total jobs execution time.
+     *
+     * @return Total jobs execution time.
+     */
+    public long getTotalJobsExecutionTime() {
+        return totalJobExecTime;
     }
 
     /**
@@ -418,6 +442,13 @@ public class GridJobMetrics {
      */
     void setAverageJobExecutionTime(double avgJobExecTime) {
         this.avgJobExecTime = avgJobExecTime;
+    }
+
+    /**
+     * @param totalJobExecTime The totalJobExecTime to set.
+     */
+    public void setTotalJobsExecutionTime(long totalJobExecTime) {
+        this.totalJobExecTime = totalJobExecTime;
     }
 
     /**

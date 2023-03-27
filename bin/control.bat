@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -37,18 +37,31 @@ goto error_finish
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo %0, ERROR:
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
-if %ERRORLEVEL% equ 0 goto checkIgniteHome1
+set cmd="%JAVA_HOME%\bin\java.exe"
+for /f "tokens=* USEBACKQ" %%f in (`%cmd% -version 2^>^&1`) do (
+    set var=%%f
+    goto :LoopEscape
+)
+:LoopEscape
+
+for /f "tokens=1-3  delims= " %%a in ("%var%") do set JAVA_VER_STR=%%c
+set JAVA_VER_STR=%JAVA_VER_STR:"=%
+
+for /f "tokens=1,2 delims=." %%a in ("%JAVA_VER_STR%.x") do set MAJOR_JAVA_VER=%%a& set MINOR_JAVA_VER=%%b
+if %MAJOR_JAVA_VER% == 1 set MAJOR_JAVA_VER=%MINOR_JAVA_VER%
+
+if %MAJOR_JAVA_VER% LSS 8 (
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to installation of JDK 1.8 or later.
     echo You can also download latest JDK at http://java.com/download.
-goto error_finish
+    goto error_finish
+)
 
 :: Check IGNITE_HOME.
 :checkIgniteHome1
@@ -103,7 +116,8 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-set CP=%IGNITE_LIBS%
+call "%SCRIPTS_HOME%\include\build-classpath.bat"
+set CP=%IGNITE_LIBS%;%IGNITE_HOME%\libs\optional\ignite-zookeeper\*
 
 ::
 :: Process 'restart'.
@@ -115,62 +129,37 @@ set RESTART_SUCCESS_FILE="%IGNITE_HOME%\work\ignite_success_%RANDOM_NUMBER%"
 set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 
 ::
-:: Find available port for JMX
-::
-:: You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
-::
-:: This is executed if -nojmx is not specified
-::
-if not "%NO_JMX%" == "1" (
-    for /F "tokens=*" %%A in ('""!JAVA_HOME!\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
-        set JMX_PORT=%%A
-    )
-)
-
-::
-:: This variable defines necessary parameters for JMX
-:: monitoring and management.
-::
-:: This enables remote unsecure access to JConsole or VisualVM.
-::
-:: ADD YOUR ADDITIONAL PARAMETERS/OPTIONS HERE
-::
-if "%JMX_PORT%" == "" (
-    echo %0, WARN: Failed to resolve JMX host. JMX will be disabled.
-    set JMX_MON=
-) else (
-    set JMX_MON=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=%JMX_PORT% ^
-    -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
-)
-
-::
 :: JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[7]\." > nul
 if %ERRORLEVEL% equ 0 (
-    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
+    if "%CONTROL_JVM_OPTS%" == "" set CONTROL_JVM_OPTS=-Xms256m -Xmx1g
 ) else (
-    if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms256m -Xmx1g
+    if "%CONTROL_JVM_OPTS%" == "" set CONTROL_JVM_OPTS=-Xms256m -Xmx1g
 )
+
+::
+:: Uncomment to enable experimental commands [--wal]
+::
+:: set CONTROL_JVM_OPTS=%CONTROL_JVM_OPTS% -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
 
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 ::
-:: set JVM_OPTS=%JVM_OPTS% -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m
-:: set JVM_OPTS=%JVM_OPTS% -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60
+:: set CONTROL_JVM_OPTS=%CONTROL_JVM_OPTS% -XX:+UseG1GC
 
 ::
 :: Uncomment if you get StackOverflowError.
 :: On 64 bit systems this value can be larger, e.g. -Xss16m
 ::
-:: set JVM_OPTS=%JVM_OPTS% -Xss4m
+:: set CONTROL_JVM_OPTS=%CONTROL_JVM_OPTS% -Xss4m
 
 ::
 :: Uncomment to set preference to IPv4 stack.
 ::
-:: set JVM_OPTS=%JVM_OPTS% -Djava.net.preferIPv4Stack=true
+:: set CONTROL_JVM_OPTS=%CONTROL_JVM_OPTS% -Djava.net.preferIPv4Stack=true
 
 ::
 :: Assertions are disabled by default since version 3.5.
@@ -181,7 +170,7 @@ set ENABLE_ASSERTIONS=1
 ::
 :: Set '-ea' options if assertions are enabled.
 ::
-if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS=%JVM_OPTS% -ea
+if %ENABLE_ASSERTIONS% == 1 set CONTROL_JVM_OPTS=%CONTROL_JVM_OPTS% -ea
 
 :run_java
 
@@ -194,15 +183,25 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.Co
 ::
 :: Remote debugging (JPDA).
 :: Uncomment and change if remote debugging is required.
-:: set JVM_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 %JVM_OPTS%
+:: set CONTROL_JVM_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 %CONTROL_JVM_OPTS%
 ::
 
+::
+:: Final CONTROL_JVM_OPTS for Java 9+ compatibility
+::
+call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%CONTROL_JVM_OPTS%" CONTROL_JVM_OPTS
+
+if defined JVM_OPTS (
+    echo JVM_OPTS environment variable is set, but will not be used. To pass JVM options use CONTROL_JVM_OPTS
+    echo JVM_OPTS=%JVM_OPTS%
+)
+
 if "%INTERACTIVE%" == "1" (
-    "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
+    "%JAVA_HOME%\bin\java.exe" %CONTROL_JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% ^
     -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% %*
 ) else (
-    "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
+    "%JAVA_HOME%\bin\java.exe" %CONTROL_JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% ^
     -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% %*
 )

@@ -1,0 +1,37 @@
+# name: test/sql/function/numeric/test_invalid_math.test
+# description: Test invalid input for math functions
+# group: [numeric]
+
+query RR
+SELECT SQRT(-1), SQRT(0)
+----
+NaN	0.000000
+
+query RRRR
+SELECT LN(-1), LN(0), LOG10(-1), LOG10(0)
+----
+NaN
+-Infinity
+NaN
+-Infinity
+
+query RRR
+SELECT POWER(1e300,100), POWER(-1e300,100), POWER(-1.0, 0.5)
+----
+Infinity
+Infinity
+NaN
+
+query RR
+SELECT EXP(1e300), EXP(1e100)
+----
+Infinity
+Infinity
+
+query RRR
+SELECT ACOS(3), ACOS(100), DEGREES(1e308)
+----
+NaN
+NaN
+Infinity
+

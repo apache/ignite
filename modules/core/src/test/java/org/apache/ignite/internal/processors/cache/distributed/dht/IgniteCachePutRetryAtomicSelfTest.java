@@ -46,6 +46,7 @@ public class IgniteCachePutRetryAtomicSelfTest extends IgniteCachePutRetryAbstra
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutInsideTransaction() throws Exception {
         ignite(0).createCache(cacheConfiguration(false, false));
 

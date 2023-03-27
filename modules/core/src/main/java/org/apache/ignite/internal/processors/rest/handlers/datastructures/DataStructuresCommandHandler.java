@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.datastructures;
 
 import java.util.Collection;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,6 +28,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -73,6 +73,7 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
             }
         );
     }
+
     /**
      * Handles increment and decrement commands.
      *
@@ -96,8 +97,8 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
             return new GridFinishedFuture(err);
         }
 
-        return ctx.closure().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
+        return ctx.closure().callLocalSafe(new GridPlainCallable<Object>() {
+            @Override public Object call() {
                 Long init = req.initial();
                 Long delta = req.delta();
 

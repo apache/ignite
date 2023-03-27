@@ -28,6 +28,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -76,6 +77,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedContains() throws Exception {
         String key = "1";
 
@@ -91,6 +93,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsInTx() throws Exception {
         if (atomicityMode() == TRANSACTIONAL) {
             String key = "1";

@@ -26,43 +26,43 @@ namespace ignite
     {
         namespace bits
         {
+            int32_t NumberOfTrailingZerosU32(uint32_t i) {
+                int32_t c = 32;
+                if (!i)
+                    return c;
+
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_ctz(i);
+#else
+                // See https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
+                // for details.
+                i &= ~i + 1u;
+
+                if (i)
+                    c--;
+
+                if (i & 0x0000FFFF)
+                    c -= 16;
+
+                if (i & 0x00FF00FF)
+                    c -= 8;
+
+                if (i & 0x0F0F0F0F)
+                    c -= 4;
+
+                if (i & 0x33333333)
+                    c -= 2;
+
+                if (i & 0x55555555)
+                    c -= 1;
+
+                return c;
+#endif
+            }
+
             int32_t NumberOfTrailingZerosI32(int32_t i)
             {
-                int32_t y;
-
-                if (i == 0) return 32;
-
-                int32_t n = 31;
-
-                y = i << 16;
-
-                if (y != 0) {
-                    n = n - 16;
-                    i = y;
-                }
-
-                y = i << 8; 
-
-                if (y != 0) {
-                    n = n - 8;
-                    i = y;
-                }
-
-                y = i << 4;
-
-                if (y != 0) {
-                    n = n - 4;
-                    i = y;
-                }
-
-                y = i << 2;
-
-                if (y != 0) {
-                    n = n - 2;
-                    i = y;
-                }
-
-                return n - static_cast<int32_t>(static_cast<uint32_t>(i << 1) >> 31);
+                return NumberOfTrailingZerosU32(static_cast<uint32_t>(i));
             }
 
             int32_t NumberOfLeadingZerosI32(int32_t i)
@@ -72,9 +72,12 @@ namespace ignite
 
             int32_t NumberOfLeadingZerosU32(uint32_t i)
             {
-                if (i == 0)
+                if (!i)
                     return 32;
 
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_clz(i);
+#else
                 int32_t n = 1;
 
                 if (i >> 16 == 0) {
@@ -98,6 +101,7 @@ namespace ignite
                 }
 
                 return n - static_cast<int32_t>(i >> 31);
+#endif
             }
 
             int32_t NumberOfLeadingZerosI64(int64_t i)
@@ -107,8 +111,11 @@ namespace ignite
 
             int32_t NumberOfLeadingZerosU64(uint64_t i)
             {
-                if (i == 0)
+                if (!i)
                     return 64;
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_clzll(i);
+#else
 
                 int32_t n = 1;
 
@@ -139,13 +146,17 @@ namespace ignite
                     x <<= 2;
                 }
 
-                n -= x >> 31;
+                n -= static_cast<int32_t>(x >> 31);
 
                 return n;
+#endif
             }
 
             int32_t BitCountI32(int32_t i)
             {
+#if defined(__GNUC__) || defined(__clang__)
+                return __builtin_popcount(i);
+#else
                 uint32_t ui = static_cast<uint32_t>(i);
 
                 ui -= (ui >> 1) & 0x55555555;
@@ -155,6 +166,7 @@ namespace ignite
                 ui += ui >> 16;
 
                 return static_cast<int32_t>(ui & 0x3f);
+#endif
             }
 
             int32_t BitLengthI32(int32_t i)
@@ -202,26 +214,26 @@ namespace ignite
             uint64_t TenPowerU64(int32_t n)
             {
                 static const uint64_t TEN_POWERS_TABLE[UINT64_MAX_PRECISION] = {
-                    1ULL,                     // 0  / 10^0
-                    10ULL,                    // 1  / 10^1
-                    100ULL,                   // 2  / 10^2
-                    1000ULL,                  // 3  / 10^3
-                    10000ULL,                 // 4  / 10^4
-                    100000ULL,                // 5  / 10^5
-                    1000000ULL,               // 6  / 10^6
-                    10000000ULL,              // 7  / 10^7
-                    100000000ULL,             // 8  / 10^8
-                    1000000000ULL,            // 9  / 10^9
-                    10000000000ULL,           // 10 / 10^10
-                    100000000000ULL,          // 11 / 10^11
-                    1000000000000ULL,         // 12 / 10^12
-                    10000000000000ULL,        // 13 / 10^13
-                    100000000000000ULL,       // 14 / 10^14
-                    1000000000000000ULL,      // 15 / 10^15
-                    10000000000000000ULL,     // 16 / 10^16
-                    100000000000000000ULL,    // 17 / 10^17
-                    1000000000000000000ULL,   // 18 / 10^18
-                    10000000000000000000ULL   // 19 / 10^19
+                    1U,                     // 0  / 10^0
+                    10U,                    // 1  / 10^1
+                    100U,                   // 2  / 10^2
+                    1000U,                  // 3  / 10^3
+                    10000U,                 // 4  / 10^4
+                    100000U,                // 5  / 10^5
+                    1000000U,               // 6  / 10^6
+                    10000000U,              // 7  / 10^7
+                    100000000U,             // 8  / 10^8
+                    1000000000U,            // 9  / 10^9
+                    10000000000U,           // 10 / 10^10
+                    100000000000U,          // 11 / 10^11
+                    1000000000000U,         // 12 / 10^12
+                    10000000000000U,        // 13 / 10^13
+                    100000000000000U,       // 14 / 10^14
+                    1000000000000000U,      // 15 / 10^15
+                    10000000000000000U,     // 16 / 10^16
+                    100000000000000000U,    // 17 / 10^17
+                    1000000000000000000U,   // 18 / 10^18
+                    10000000000000000000U   // 19 / 10^19
                 };
 
                 assert(n >= 0 && n < UINT64_MAX_PRECISION);

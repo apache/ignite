@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.ignite.lang.IgniteUuid}.
@@ -42,6 +43,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testToString() {
         IgniteUuid id1 = IgniteUuid.randomUuid();
 
@@ -73,7 +75,8 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
-    public void testGridUuid() {
+    @Test
+    public void testIgniteUuid() {
         IgniteUuid id1 = IgniteUuid.randomUuid();
         IgniteUuid id2 = IgniteUuid.randomUuid();
 
@@ -95,7 +98,8 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
-    public void testGridUuidPerformance() {
+    @Test
+    public void testIgniteUuidPerformance() {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < NUM; i++)
@@ -113,7 +117,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         if (dur2 == 0)
             dur2 = 1;
 
-        System.out.println("Creation: UUID=" + dur1 + "ms, GridUuid=" + dur2 + "ms, " + (dur1 / dur2) + "x faster.");
+        System.out.println("Creation: UUID=" + dur1 + "ms, IgniteUuid=" + dur2 + "ms, " + (dur1 / dur2) + "x faster.");
     }
 
     /**
@@ -121,6 +125,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializationPerformance() throws Exception {
         UuidBean[] uids = new UuidBean[NUM];
 
@@ -128,11 +133,11 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < uids.length; i++)
             uids[i] = new UuidBean(UUID.randomUUID());
 
-        GridUuidBean[] guids = new GridUuidBean[NUM];
+        IgniteUuidBean[] guids = new IgniteUuidBean[NUM];
 
         // Populate.
         for (int i = 0; i < guids.length; i++)
-            guids[i] = new GridUuidBean(IgniteUuid.randomUuid());
+            guids[i] = new IgniteUuidBean(IgniteUuid.randomUuid());
 
         // Warm up.
         testArray(uids, NUM);
@@ -158,7 +163,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
 
         String metric = res == 1 ? "as fast as UUID" : dur1 < dur2 ? res + "x **SLOWER**" : res + "x faster";
 
-        System.out.println("Serialization: UUID=" + dur1 + "ms, GridUuid=" + dur2 + "ms, GridUuid is " +
+        System.out.println("Serialization: UUID=" + dur1 + "ms, IgniteUuid=" + dur2 + "ms, IgniteUuid is " +
             metric + ".");
     }
 
@@ -218,7 +223,6 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
      * @throws ClassNotFoundException If failed.
      * @throws IOException If failed.
      */
-    @SuppressWarnings({"unchecked"})
     private <T> T read(byte[] bytes) throws ClassNotFoundException, IOException {
         ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
 
@@ -238,21 +242,21 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class GridUuidBean implements Externalizable {
+    private static class IgniteUuidBean implements Externalizable {
         /** */
         private IgniteUuid uid;
 
         /**
          * Empty constructor required for {@link Externalizable}.
          */
-        public GridUuidBean() {
+        public IgniteUuidBean() {
             // No-op.
         }
 
         /**
-         * @param uid Grid UUID.
+         * @param uid Ignite UUID.
          */
-        private GridUuidBean(IgniteUuid uid) {
+        private IgniteUuidBean(IgniteUuid uid) {
             this.uid = uid;
         }
 
@@ -261,20 +265,20 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
             // Uncomment if you would like to see raw serialization performance.
             //out.writeObject(uid);
 
-            U.writeGridUuid(out, uid);
+            U.writeIgniteUuid(out, uid);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             // Uncomment if you would like to see raw serialization performance.
-            //uid = (GridUuid)in.readObject();
+            //uid = (IgniteUuid)in.readObject();
 
-            uid = U.readGridUuid(in);
+            uid = U.readIgniteUuid(in);
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return this == o || uid.equals(((GridUuidBean)o).uid);
+            return this == o || uid.equals(((IgniteUuidBean)o).uid);
         }
 
         /** {@inheritDoc} */
@@ -283,7 +287,9 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() { return S.toString(GridUuidBean.class, this); }
+        @Override public String toString() {
+            return S.toString(IgniteUuidBean.class, this);
+        }
     }
 
     /**
@@ -301,7 +307,7 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @param uid Grid UUID.
+         * @param uid Ignite UUID.
          */
         private UuidBean(UUID uid) {
             this.uid = uid;
@@ -328,6 +334,8 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() { return S.toString(UuidBean.class, this); }
+        @Override public String toString() {
+            return S.toString(UuidBean.class, this);
+        }
     }
 }

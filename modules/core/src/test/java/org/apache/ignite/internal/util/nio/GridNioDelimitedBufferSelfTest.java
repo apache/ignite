@@ -22,18 +22,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link GridNioDelimitedBuffer}.
  */
-public class GridNioDelimitedBufferSelfTest extends TestCase {
+public class GridNioDelimitedBufferSelfTest {
     /** */
     private static final String ASCII = "ASCII";
 
     /**
      * Tests simple delimiter (excluded from alphabet)
      */
+    @Test
     public void testReadZString() throws Exception {
         Random rnd = new Random();
 
@@ -52,7 +55,6 @@ public class GridNioDelimitedBufferSelfTest extends TestCase {
 
             for (int j = 0; j < len; j++)
                 sb.append((char)(rnd.nextInt(26) + 'a'));
-
 
             strs.add(sb.toString());
         }
@@ -81,6 +83,7 @@ public class GridNioDelimitedBufferSelfTest extends TestCase {
     /**
      * Tests compound delimiter (included to alphabet)
      */
+    @Test
     public void testDelim() throws Exception {
         byte[] delim = "aabb".getBytes(ASCII);
 

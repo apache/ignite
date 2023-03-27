@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -31,12 +27,11 @@ import org.jetbrains.annotations.Nullable;
  * Convenient adapter for working with metadata. <h2 class="header">Thread Safety</h2> This class provides necessary
  * synchronization for thread-safe access.
  */
-@SuppressWarnings({"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter {
     /**
      * Enum stored predefined keys.
      */
-    public enum EntryKey {//keys sorted by usage rate, descending.
+    public enum EntryKey { //keys sorted by usage rate, descending.
         /** Predefined key. */
         CACHE_STORE_MANAGER_KEY(0),
 
@@ -108,7 +103,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return Metadata previously associated with given name, or {@code null} if there was none.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V addMeta(int key, V val) {
         assert val != null;
 
@@ -133,7 +127,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return Metadata value or {@code null}.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V meta(int key) {
         synchronized (this) {
             return data != null && data.length > key ? (V)data[key] : null;
@@ -147,7 +140,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return Value of removed metadata or {@code null}.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V removeMeta(int key) {
         synchronized (this) {
             if (data == null || data.length <= key)
@@ -169,7 +161,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Value type.
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
-    @SuppressWarnings({"unchecked"})
     public <V> boolean removeMeta(int key, V val) {
         assert val != null;
 
@@ -244,7 +235,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return {@code null} if new value was put, or current value if put didn't happen.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V putMetaIfAbsent(int key, V val) {
         assert val != null;
 
@@ -267,7 +257,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
-    @SuppressWarnings({"unchecked"})
     public <V> V addMetaIfAbsent(int key, V val) {
         assert val != null;
 
@@ -292,7 +281,6 @@ public class GridMetadataAwareAdapter {
      * @param <V> Type of the value.
      * @return The value of the metadata after execution of this method.
      */
-    @SuppressWarnings({"unchecked"})
     @Nullable public <V> V addMetaIfAbsent(int key, @Nullable Callable<V> c) {
         assert c != null;
 
@@ -340,45 +328,7 @@ public class GridMetadataAwareAdapter {
         }
     }
 
-    /**
-     * Convenience way for super-classes which implement {@link Externalizable} to serialize metadata. Super-classes
-     * must call this method explicitly from within {@link Externalizable#writeExternal(ObjectOutput)} methods
-     * implementation.
-     *
-     * @param out Output to write to.
-     * @throws IOException If I/O error occurred.
-     */
-    protected void writeExternalMeta(ObjectOutput out) throws IOException {
-        Object[] cp;
-
-        // Avoid code warning (suppressing is bad here, because we need this warning for other places).
-        synchronized (this) {
-            cp = Arrays.copyOf(this.data, this.data.length);
-        }
-
-        out.writeObject(cp);
-    }
-
-    /**
-     * Convenience way for super-classes which implement {@link Externalizable} to serialize metadata. Super-classes
-     * must call this method explicitly from within {@link Externalizable#readExternal(ObjectInput)} methods
-     * implementation.
-     *
-     * @param in Input to read from.
-     * @throws IOException If I/O error occurred.
-     * @throws ClassNotFoundException If some class could not be found.
-     */
-    @SuppressWarnings({"unchecked"})
-    protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
-        Object[] cp = (Object[])in.readObject();
-
-        synchronized (this) {
-            this.data = cp;
-        }
-    }
-
     /** {@inheritDoc} */
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "OverriddenMethodCallDuringObjectConstruction"})
     @Override public Object clone() {
         try {
             GridMetadataAwareAdapter clone = (GridMetadataAwareAdapter)super.clone();

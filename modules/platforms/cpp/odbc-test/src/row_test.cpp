@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/impl/binary/binary_writer_impl.h>
 
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/row.h"
 
@@ -62,8 +59,8 @@ void FillMemWithData(ignite::impl::interop::InteropUnpooledMemory& mem, size_t r
         writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
 
         // Third column is GUID.
-        ignite::Guid guid(0x2b218f63642a4a64ULL, 0x9674098f388ac298ULL + i);
-        
+        ignite::Guid guid(0x2b218f63642a4a64UL, 0x9674098f388ac298UL + i);
+
         writer.WriteGuid(guid);
 
         // The last column is bool.
@@ -78,26 +75,25 @@ void CheckRowData(Row& row, size_t rowIdx)
 {
     SqlLen reslen;
 
-    long longBuf;
+    SQLINTEGER longBuf;
     char strBuf[1024];
     SQLGUID guidBuf;
     char bitBuf;
-    int* offset = 0;
 
-    ApplicationDataBuffer appLongBuf(type_traits::OdbcNativeType::AI_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen, &offset);
-    ApplicationDataBuffer appStrBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
-    ApplicationDataBuffer appGuidBuf(type_traits::OdbcNativeType::AI_GUID, &guidBuf, sizeof(guidBuf), &reslen, &offset);
-    ApplicationDataBuffer appBitBuf(type_traits::OdbcNativeType::AI_BIT, &bitBuf, sizeof(bitBuf), &reslen, &offset);
+    ApplicationDataBuffer appLongBuf(type_traits::OdbcNativeType::AI_SIGNED_LONG, &longBuf, sizeof(longBuf), &reslen);
+    ApplicationDataBuffer appStrBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
+    ApplicationDataBuffer appGuidBuf(type_traits::OdbcNativeType::AI_GUID, &guidBuf, sizeof(guidBuf), &reslen);
+    ApplicationDataBuffer appBitBuf(type_traits::OdbcNativeType::AI_BIT, &bitBuf, sizeof(bitBuf), &reslen);
 
     // Checking size.
     BOOST_REQUIRE(row.GetSize() == 4);
 
     // Checking 1st column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(1, appLongBuf) == SqlResult::AI_SUCCESS);
-    BOOST_REQUIRE(longBuf == rowIdx * 10);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(1, appLongBuf) == ConversionResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(static_cast<size_t>(longBuf), rowIdx * 10);
 
     // Checking 2nd column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(2, appStrBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(2, appStrBuf) == ConversionResult::AI_SUCCESS);
 
     std::string strReal(strBuf, static_cast<size_t>(reslen));
     std::string strExpected(GetStrColumnValue(rowIdx));
@@ -105,7 +101,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(strReal == strExpected);
 
     // Checking 3rd column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(3, appGuidBuf) == SqlResult::AI_SUCCESS);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(3, appGuidBuf) == ConversionResult::AI_SUCCESS);
 
     BOOST_REQUIRE(guidBuf.Data1 == 0x2b218f63UL);
     BOOST_REQUIRE(guidBuf.Data2 == 0x642aU);
@@ -121,8 +117,8 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(guidBuf.Data4[7] == 0x98 + rowIdx);
 
     // Checking 4th column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(4, appBitBuf) == SqlResult::AI_SUCCESS);
-    BOOST_REQUIRE(bitBuf == rowIdx % 2);
+    BOOST_REQUIRE(row.ReadColumnToBuffer(4, appBitBuf) == ConversionResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(static_cast<size_t>(bitBuf), rowIdx % 2);
 }
 
 
@@ -174,8 +170,6 @@ BOOST_AUTO_TEST_CASE(TestSingleRow)
 {
     ignite::impl::interop::InteropUnpooledMemory mem(4096);
 
-    const size_t rowNum = 1;
-
     FillMemWithData(mem, 1);
 
     Row row(mem);
@@ -188,8 +182,6 @@ BOOST_AUTO_TEST_CASE(TestSingleRow)
 BOOST_AUTO_TEST_CASE(TestTwoRows)
 {
     ignite::impl::interop::InteropUnpooledMemory mem(4096);
-
-    const size_t rowNum = 2;
 
     FillMemWithData(mem, 2);
 

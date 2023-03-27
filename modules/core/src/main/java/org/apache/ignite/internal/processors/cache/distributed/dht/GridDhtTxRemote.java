@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,9 +51,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  * Transaction created by system implicitly on remote nodes.
  */
 public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -64,16 +60,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /** Near transaction ID. */
     private GridCacheVersion nearXidVer;
 
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridDhtTxRemote() {
-        // No-op.
-    }
+    /** Store write through flag. */
+    private boolean storeWriteThrough;
 
     /**
      * This constructor is meant for optimistic transactions.
      *
+     * @param ctx Cache context.
      * @param nearNodeId Near node ID.
      * @param rmtFutId Remote future ID.
      * @param nodeId Node ID.
@@ -85,10 +78,11 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
-     * @param ctx Cache context.
      * @param txSize Expected transaction size.
      * @param nearXidVer Near transaction ID.
      * @param txNodes Transaction nodes mapping.
+     * @param storeWriteThrough Cache store write through flag.
+     * @param txLbl Transaction label.
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
@@ -109,8 +103,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean single
-    ) {
+        boolean single,
+        boolean storeWriteThrough,
+        @Nullable String txLbl) {
         super(
             ctx,
             nodeId,
@@ -124,7 +119,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -134,11 +130,12 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         this.rmtFutId = rmtFutId;
         this.nearXidVer = nearXidVer;
         this.txNodes = txNodes;
+        this.storeWriteThrough = storeWriteThrough;
 
         txState = single ? new IgniteTxRemoteSingleStateImpl() :
             new IgniteTxRemoteStateImpl(
-            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
-            new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+                Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
+                new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
         assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
@@ -148,6 +145,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      * This constructor is meant for pessimistic transactions.
      *
+     * @param ctx Cache context.
      * @param nearNodeId Near node ID.
      * @param rmtFutId Remote future ID.
      * @param nodeId Node ID.
@@ -160,8 +158,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
-     * @param ctx Cache context.
      * @param txSize Expected transaction size.
+     * @param storeWriteThrough Cache store write through flag.
+     * @param txLbl Transaction label.
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
@@ -180,8 +179,9 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
-    ) {
+        int taskNameHash,
+        boolean storeWriteThrough,
+        @Nullable String txLbl) {
         super(
             ctx,
             nodeId,
@@ -195,7 +195,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             timeout,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            txLbl
         );
 
         assert nearNodeId != null;
@@ -204,6 +205,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         this.nearXidVer = nearXidVer;
         this.nearNodeId = nearNodeId;
         this.rmtFutId = rmtFutId;
+        this.storeWriteThrough = storeWriteThrough;
 
         txState = new IgniteTxRemoteStateImpl(
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
@@ -217,13 +219,23 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      * @param txNodes Transaction nodes.
      */
-    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+    @Override public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
         this.txNodes = txNodes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean remote() {
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean storeWriteThrough() {
+        return storeWriteThrough;
     }
 
     /** {@inheritDoc} */
@@ -278,10 +290,10 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
-        super.addInvalidPartition(cacheCtx, part);
+    @Override public void addInvalidPartition(int cacheId, int part) {
+        super.addInvalidPartition(cacheId, part);
 
-        txState.invalidPartition(part);
+        txState.invalidPartition(cacheId, part, xidVersion());
     }
 
     /**
@@ -294,21 +306,16 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
         GridCacheContext cacheCtx = entry.context();
 
-        try {
-            GridDhtCacheEntry cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
+        GridDhtCacheEntry cached = cacheCtx.dht().entryExx(entry.key(), topologyVersion());
 
-            checkInternal(entry.txKey());
+        checkInternal(entry.txKey());
 
-            // Initialize cache entry.
-            entry.cached(cached);
+        // Initialize cache entry.
+        entry.cached(cached);
 
-            txState.addWriteEntry(entry.txKey(), entry);
+        txState.addWriteEntry(entry.txKey(), entry);
 
-            addExplicit(entry);
-        }
-        catch (GridDhtInvalidPartitionException e) {
-            addInvalidPartition(cacheCtx, e.partition());
-        }
+        addExplicit(entry);
     }
 
     /**

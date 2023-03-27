@@ -19,7 +19,7 @@
 #define _IGNITE_ODBC_QUERY_DATA_QUERY
 
 #include "ignite/odbc/query/query.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/cursor.h"
 
 namespace ignite
@@ -44,9 +44,10 @@ namespace ignite
                  * @param connection Associated connection.
                  * @param sql SQL query string.
                  * @param params SQL params.
+                 * @param timeout Timeout.
                  */
-                DataQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                    const std::string& sql, const app::ParameterBindingMap& params);
+                DataQuery(diagnostic::DiagnosableAdapter& diag, Connection& connection, const std::string& sql,
+                    const app::ParameterSet& params, int32_t& timeout);
 
                 /**
                  * Destructor.
@@ -65,7 +66,7 @@ namespace ignite
                  *
                  * @return Column metadata.
                  */
-                virtual const meta::ColumnMetaVector& GetMeta() const;
+                virtual const meta::ColumnMetaVector* GetMeta();
 
                 /**
                  * Fetch next result row to application buffers.
@@ -74,7 +75,7 @@ namespace ignite
                  * @return Operation result.
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
-                
+
                 /**
                  * Get data of the specified column in the result set.
                  *
@@ -106,6 +107,13 @@ namespace ignite
                 virtual int64_t AffectedRows() const;
 
                 /**
+                 * Move to the next result set.
+                 *
+                 * @return Operaion result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
+                /**
                  * Get SQL query string.
                  *
                  * @return SQL query string.
@@ -119,27 +127,77 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(DataQuery);
 
                 /**
+                 * Check whether all cursors are closed remotely.
+                 *
+                 * @return true, if all cursors closed remotely.
+                 */
+                bool IsClosedRemotely() const;
+
+                /**
+                 * Make query prepare request and use response to set internal
+                 * state.
+                 *
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestPrepare();
+
+                /**
                  * Make query execute request and use response to set internal
                  * state.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 SqlResult::Type MakeRequestExecute();
 
                 /**
                  * Make query close request.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 SqlResult::Type MakeRequestClose();
 
                 /**
                  * Make data fetch request and use response to set internal state.
                  *
-                 * @return True on success.
+                 * @return Result.
                  */
                 SqlResult::Type MakeRequestFetch();
-                
+
+                /**
+                 * Make next result set request and use response to set internal state.
+                 *
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestMoreResults();
+
+                /**
+                 * Make result set metadata request.
+                 *
+                 * @return Result.
+                 */
+                SqlResult::Type MakeRequestResultsetMeta();
+
+                /**
+                 * Process column conversion operation result.
+                 *
+                 * @param convRes Conversion result.
+                 * @param rowIdx Row index.
+                 * @param columnIdx Column index.
+                 * @return General SQL result.
+                 */
+                SqlResult::Type ProcessConversionResult(app::ConversionResult::Type convRes, int32_t rowIdx,
+                    int32_t columnIdx);;
+
+                /**
+                 * Process column conversion operation result.
+                 *
+                 * @param convRes Conversion result.
+                 * @param rowIdx Row index.
+                 * @param columnIdx Column index.
+                 * @return General SQL result.
+                 */
+                void SetResultsetMeta(const meta::ColumnMetaVector& value);
+
                 /**
                  * Close query.
                  *
@@ -154,13 +212,28 @@ namespace ignite
                 std::string sql;
 
                 /** Parameter bindings. */
-                const app::ParameterBindingMap& params;
+                const app::ParameterSet& params;
 
-                /** Columns metadata. */
+                /** Result set metadata is available */
+                bool resultMetaAvailable;
+
+                /** Result set metadata. */
                 meta::ColumnMetaVector resultMeta;
 
                 /** Cursor. */
                 std::auto_ptr<Cursor> cursor;
+
+                /** Number of rows affected. */
+                std::vector<int64_t> rowsAffected;
+
+                /** Rows affected index. */
+                size_t rowsAffectedIdx;
+
+                /** Cached next result page. */
+                std::auto_ptr<ResultPage> cachedNextPage;
+
+                /** Timeout. */
+                int32_t& timeout;
             };
         }
     }

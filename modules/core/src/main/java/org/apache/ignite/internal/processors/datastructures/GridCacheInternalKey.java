@@ -24,8 +24,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheInternal;
  */
 public interface GridCacheInternalKey extends GridCacheInternal {
     /**
-     *
      * @return Name of cache data structure.
      */
     public String name();
+
+    /**
+     * @return Name of cache group where data structure is stored.
+     */
+    public String groupName();
 }

@@ -22,9 +22,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
@@ -37,6 +41,11 @@ import org.jetbrains.annotations.Nullable;
  * caching nodes, and get other useful information about topology.
  */
 public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
+    /**
+     * Maximum length of {@link IgniteCluster#tag()} tag.
+     */
+    public static final int MAX_TAG_LENGTH = 280;
+
     /**
      * Gets local grid node.
      *
@@ -62,6 +71,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * There's only one instance of node local storage per local node. Node local storage is
      * based on {@link java.util.concurrent.ConcurrentMap} and is safe for multi-threaded access.
      *
+     * @param <K> Type of keys in the node local map.
+     * @param <V> Type of mapped values in the node local map.
      * @return Node local storage instance for the local node.
      */
     public <K, V> ConcurrentMap<K, V> nodeLocalMap();
@@ -412,6 +423,28 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /**
+     * Enables/disables statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(Collection<String> caches, boolean enabled);
+
+    /**
+     * Clear statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     */
+    public void clearStatistics(Collection<String> caches);
+
+    /**
+     * Sets transaction timeout on partition map exchange.
+     *
+     * @param timeout Transaction timeout on partition map exchange in milliseconds.
+     */
+    public void setTxTimeoutOnPartitionMapExchange(long timeout);
+
+    /**
      * If local client node disconnected from cluster returns future
      * that will be completed when client reconnected.
      *
@@ -419,7 +452,213 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     @Nullable public IgniteFuture<?> clientReconnectFuture();
 
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link #state()} instead.
+     */
+    @Deprecated
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @deprecated Use {@link #state(ClusterState)} instead.
+     */
+    @Deprecated
+    public void active(boolean active);
+
+    /**
+     * Gets current cluster state.
+     *
+     * @return Current cluster state.
+     */
+    public ClusterState state();
+
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param newState New cluster state.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void state(ClusterState newState) throws IgniteException;
+
+    /**
+     * Gets current baseline topology. If baseline topology was not set, will return {@code null}.
+     *
+     * @return Collection of nodes included to the current baseline topology.
+     */
+    @Nullable public Collection<BaselineNode> currentBaselineTopology();
+
+    /**
+     * Sets baseline topology. The cluster must be activated for this method to be called.
+     *
+     * @param baselineTop A collection of nodes to be included to the baseline topology.
+     */
+    public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop);
+
+    /**
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds
+     * only if the cluster topology has not changed). All client nodes will be filtered out of the
+     * resulting baseline.
+     *
+     * @param topVer Topology version to set.
+     */
+    public void setBaselineTopology(long topVer);
+
     /** {@inheritDoc} */
     @Deprecated
     @Override public IgniteCluster withAsync();
+
+    /**
+     * Disables write-ahead logging for specified cache. When WAL is disabled, changes are not logged to disk.
+     * This significantly improves cache update speed. The drawback is absence of local crash-recovery guarantees.
+     * If node is crashed, local content of WAL-disabled cache will be cleared on restart to avoid data corruption.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
+     *
+     * @param cacheName Cache name.
+     * @return Whether WAL disabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean disableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
+     * {@link #disableWal(String)}.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all data is persisted to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
+     *
+     * @param cacheName Cache name.
+     * @return Whether WAL enabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean enableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Checks if write-ahead logging is enabled for specified cache.
+     *
+     * @param cacheName Cache name.
+     * @return {@code True} if WAL is enabled for cache.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     */
+    public boolean isWalEnabled(String cacheName);
+
+    /**
+     * Cluster ID is a unique identifier automatically generated when cluster starts up for the very first time.
+     *
+     * It is a cluster-wide property so all nodes of the cluster (including client nodes) return the same value.
+     *
+     * In in-memory clusters ID is generated again upon each cluster restart.
+     * In clusters running in persistent mode cluster ID is stored to disk and is used even after full cluster restart.
+     *
+     * @return Unique cluster ID.
+     */
+    public UUID id();
+
+    /**
+     * User-defined tag describing the cluster.
+     *
+     * @return Current tag value same across all nodes of the cluster.
+     */
+    public String tag();
+
+    /**
+     * Enables user to add a specific label to the cluster e.g. to describe purpose of the cluster
+     * or any its characteristics.
+     * Tag is set cluster-wide,
+     * value set on one node will be distributed across all nodes (including client nodes) in the cluster.
+     *
+     * Maximum tag length is limited by {@link #MAX_TAG_LENGTH} value.
+     *
+     * @param tag New tag to be set.
+     *
+     * @throws IgniteCheckedException In case tag change is requested on inactive cluster
+     *  or concurrent tag change request was completed before the current one.
+     *  Also provided tag is checked for max length.
+     */
+    public void tag(String tag) throws IgniteCheckedException;
+
+    /**
+     * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
+     * {@code False} If cluster in manual.
+     */
+    public boolean isBaselineAutoAdjustEnabled();
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @throws IgniteException If operation failed.
+     */
+    public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
+
+    /**
+     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * (node join/left/fail).
+     * @throws IgniteException If operation failed.
+     */
+    public long baselineAutoAdjustTimeout();
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @throws IgniteException If failed.
+     */
+    public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException;
+
+    /**
+     * @return Status of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus();
+
+    /**
+     * Returns a policy of shutdown or default value {@code IgniteConfiguration.DFLT_SHUTDOWN_POLICY}
+     * if the property is not set.
+     *
+     * @return Shutdown policy.
+     */
+    public ShutdownPolicy shutdownPolicy();
+
+    /**
+     * Sets a shutdown policy on a cluster.
+     * If a policy is specified here the value will override static configuration on
+     * {@link IgniteConfiguration#setShutdownPolicy(ShutdownPolicy)} and persists to cluster meta storage.
+     *
+     * @param shutdownPolicy Shutdown policy.
+     */
+    public void shutdownPolicy(ShutdownPolicy shutdownPolicy);
 }

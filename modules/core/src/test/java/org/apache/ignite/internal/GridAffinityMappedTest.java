@@ -28,10 +28,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -39,9 +37,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests affinity mapping when {@link AffinityKeyMapper} is used.
  */
 public class GridAffinityMappedTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -53,24 +48,17 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
-
         if (igniteInstanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
         else {
             assert igniteInstanceName.endsWith("2") || igniteInstanceName.endsWith("3");
 
-            CacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration<Object, Object> cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setAffinity(new MockCacheAffinityFunction());
             cacheCfg.setAffinityMapper(new MockCacheAffinityKeyMapper());
+            cacheCfg.setNodeFilter(node -> node.attribute(GridCacheModuloAffinityFunction.IDX_ATTR) != null);
 
             cfg.setCacheConfiguration(cacheCfg);
             cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR,
@@ -87,27 +75,19 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-        stopGrid(3);
-    }
-
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testMappedAffinity() throws IgniteCheckedException {
+    @Test
+    public void testMappedAffinity() throws IgniteCheckedException, InterruptedException {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
         Ignite g3 = grid(3);
 
-        assert g1.configuration().getCacheConfiguration().length == 0;
-        assert g2.configuration().getCacheConfiguration()[0].getCacheMode() == PARTITIONED;
-        assert g3.configuration().getCacheConfiguration()[0].getCacheMode() == PARTITIONED;
-
         ClusterNode first = g2.cluster().localNode();
         ClusterNode second = g3.cluster().localNode();
+
+        awaitPartitionMapExchange(true, true, null);
 
         //When MockCacheAfinity and MockCacheAffinityKeyMapper are set to cache configuration we expect the following.
         //Key 0 is mapped to partition 0, first node.
@@ -122,12 +102,12 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1).id();
 
         assertNotNull(id1);
-        assertEquals(second.id(),  id1);
+        assertEquals(second.id(), id1);
 
         UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(2).id();
 
         assertNotNull(id2);
-        assertEquals(first.id(),  id2);
+        assertEquals(first.id(), id2);
     }
 
     /**
@@ -159,7 +139,7 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     private static class MockCacheAffinityKeyMapper implements AffinityKeyMapper {
         /** {@inheritDoc} */
         @Override public Object affinityKey(Object key) {
-            return key instanceof Integer ? 1 == (Integer)key ? key : 0 : key;
+            return key instanceof Integer ? ((1 == (Integer)key) ? key : 0) : key;
         }
 
         /** {@inheritDoc} */

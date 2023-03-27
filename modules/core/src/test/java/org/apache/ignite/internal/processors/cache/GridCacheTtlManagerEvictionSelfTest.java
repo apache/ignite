@@ -28,14 +28,15 @@ import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * TTL manager eviction self test.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRIES_TO_PUT = 10_100;
@@ -43,21 +44,20 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
     /** */
     private static final int ENTRIES_LIMIT = 1_000;
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache mode. */
     private volatile CacheMode cacheMode;
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -75,13 +75,7 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testLocalEviction() throws Exception {
-        checkEviction(CacheMode.LOCAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testPartitionedEviction() throws Exception {
         checkEviction(CacheMode.PARTITIONED);
     }
@@ -89,6 +83,7 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedEviction() throws Exception {
         checkEviction(CacheMode.REPLICATED);
     }

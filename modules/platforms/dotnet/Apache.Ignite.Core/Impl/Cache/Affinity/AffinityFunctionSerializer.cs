@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
@@ -77,6 +78,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 
                 // Do not write user func if there is nothing overridden
                 WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null, userFuncOverride);
+
+                WriteBackupFilter(writer, p);
             }
             else
             {
@@ -114,29 +117,24 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 {
                     rendezvous.Partitions = partitions;
                     rendezvous.ExcludeNeighbors = exclNeighbors;
+                    rendezvous.AffinityBackupFilter = ReadBackupFilter(reader);
                 }
 
                 return userFunc;
             }
 
             Debug.Assert(overrideFlags == UserOverrides.None);
-            AffinityFunctionBase fun;
 
-            switch (typeCode)
+            if (typeCode != TypeCodeRendezvous)
+                throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
+
+            return new RendezvousAffinityFunction
             {
-                case TypeCodeRendezvous:
-                    fun = new RendezvousAffinityFunction();
-                    break;
-                default:
-                    throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
-            }
-
-            fun.Partitions = partitions;
-            fun.ExcludeNeighbors = exclNeighbors;
-
-            return fun;
+                Partitions = partitions,
+                ExcludeNeighbors = exclNeighbors,
+                AffinityBackupFilter = ReadBackupFilter(reader)
+            };
         }
-
 
         /// <summary>
         /// Writes the partitions assignment to a stream.
@@ -242,6 +240,61 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             }
 
             writer.WriteObject(func);
+        }
+
+        /// <summary>
+        /// Reads the backup filter.
+        /// </summary>
+        private static ClusterNodeAttributeAffinityBackupFilter ReadBackupFilter(IBinaryRawReader reader)
+        {
+            var attrCount = reader.ReadInt();
+
+            if (attrCount <= 0)
+            {
+                return null;
+            }
+
+            var attrs = new string[attrCount];
+
+            for (var i = 0; i < attrCount; i++)
+            {
+                attrs[i] = reader.ReadString();
+            }
+
+            return new ClusterNodeAttributeAffinityBackupFilter{AttributeNames = attrs};
+        }
+
+        /// <summary>
+        /// Writes the backup filter.
+        /// </summary>
+        private static void WriteBackupFilter(IBinaryRawWriter writer, RendezvousAffinityFunction func)
+        {
+            if (func.AffinityBackupFilter == null)
+            {
+                writer.WriteInt(-1);
+                return;
+            }
+
+            var filter = func.AffinityBackupFilter as ClusterNodeAttributeAffinityBackupFilter;
+
+            if (filter == null)
+            {
+                throw new NotSupportedException(string.Format(
+                    "Unsupported RendezvousAffinityFunction.AffinityBackupFilter: '{0}'. " +
+                    "Only predefined implementations are supported: '{1}'",
+                    func.AffinityBackupFilter.GetType().FullName,
+                    typeof(ClusterNodeAttributeAffinityBackupFilter).Name));
+            }
+
+            IgniteArgumentCheck.NotNullOrEmpty(filter.AttributeNames,
+                "ClusterNodeAttributeAffinityBackupFilter.AttributeNames");
+
+            writer.WriteInt(filter.AttributeNames.Count);
+
+            foreach (var attr in filter.AttributeNames)
+            {
+                writer.WriteString(attr);
+            }
         }
 
         /// <summary>

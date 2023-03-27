@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -28,7 +29,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests kernal stop while it is being accessed from asynchronous even listener.
  */
-public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractTest {
+public class GridKernalConcurrentAccessStopSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRIDS = 2;
 
@@ -38,22 +39,18 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = GRIDS; i-- >= 0;)
-            stopGrid(i);
-    }
-
     /**
      *
      */
+    @Test
     public void testConcurrentAccess() {
         for (int i = 0; i < GRIDS; i++) {
             grid(i).events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     try {
                         Thread.sleep(2000);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 

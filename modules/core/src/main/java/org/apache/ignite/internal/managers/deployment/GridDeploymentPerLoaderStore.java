@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.GridAnnotationsCache;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.AbstractMarshaller;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
@@ -183,7 +184,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Override public Collection<GridDeployment> getDeployments() {
         synchronized (mux) {
-            return new LinkedList<GridDeployment>(cache.values());
+            return new LinkedList<>(cache.values());
         }
     }
 
@@ -219,7 +220,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         IsolatedDeployment dep;
 
         synchronized (mux) {
-            dep = cache.get(meta.classLoaderId());
+            dep = (IsolatedDeployment)searchDeploymentCache(meta);
 
             if (dep == null) {
                 long undeployTimeout = 0;
@@ -248,7 +249,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                         // If we received execution request even after we waited for P2P
                         // timeout period, we simply ignore it.
                         else if (d.sequenceNumber() > meta.sequenceNumber()) {
-                            if (d.deployedClass(meta.className()) != null) {
+                            if (d.deployedClass(meta.className()).get1() != null) {
                                 long time = U.currentTimeMillis() - d.timestamp();
 
                                 if (time < ctx.config().getNetworkTimeout()) {
@@ -319,16 +320,21 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
         // Make sure that requested class is loaded and cached.
         if (dep != null) {
-            Class<?> cls = dep.deployedClass(meta.className(), meta.alias());
+            IgniteBiTuple<Class<?>, Throwable> cls = dep.deployedClass(meta.className(), meta.alias());
 
-            if (cls == null) {
-                U.warn(log, "Failed to load peer class [alias=" + meta.alias() + ", dep=" + dep + ']');
+            if (cls.get1() == null) {
+                U.warn(log, "Failed to load peer class [alias=" + meta.alias() + ", dep=" + dep + ']', cls.get2());
 
                 return null;
             }
         }
 
         return dep;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridDeployment searchDeploymentCache(GridDeploymentMetadata meta) {
+        return cache.get(meta.classLoaderId());
     }
 
     /** {@inheritDoc} */

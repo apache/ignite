@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.checkpoint.noop;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,9 +42,12 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     @LoggerResource
     private IgniteLogger log;
 
+    /** Whether a warning about disabled checkpoints was already logged. */
+    private final AtomicBoolean warnedAboutDisabledCheckpoints = new AtomicBoolean(false);
+
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        U.warn(log, "Checkpoints are disabled (to enable configure any GridCheckpointSpi implementation)");
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -52,16 +57,19 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] loadCheckpoint(String key) throws IgniteSpiException {
+        warnOnceAboutDisabledCheckpoints();
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean saveCheckpoint(String key, byte[] state, long timeout, boolean overwrite) {
+        warnOnceAboutDisabledCheckpoints();
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeCheckpoint(String key) {
+        warnOnceAboutDisabledCheckpoints();
         return false;
     }
 
@@ -75,6 +83,14 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
         super.setName(name);
 
         return this;
+    }
+
+    /**
+     * Logs a warning that checkpoints are disabled. Only does so on first invocation, subsequent ones are ignored.
+     */
+    private void warnOnceAboutDisabledCheckpoints() {
+        if (warnedAboutDisabledCheckpoints.compareAndSet(false, true))
+            U.warn(log, "Checkpoints are disabled (to enable configure any GridCheckpointSpi implementation)");
     }
 
     /** {@inheritDoc} */

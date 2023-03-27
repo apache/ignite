@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -52,6 +54,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSameVmStartup() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -75,19 +78,27 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             ignite2.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() != EVT_NODE_FAILED :
-                        "Node1 did not exit gracefully.";
+                    boolean tcpDiscovery = tcpDiscovery();
+
+                    if (tcpDiscovery)
+                        assert evt.type() != EVT_NODE_FAILED : "Node1 did not exit gracefully.";
 
                     if (evt instanceof DiscoveryEvent) {
                         // Local node can send METRICS_UPDATED event.
-                        assert ((DiscoveryEvent) evt).eventNode().id().equals(grid1LocNodeId) ||
+                        assert ((DiscoveryEvent)evt).eventNode().id().equals(grid1LocNodeId) ||
                             evt.type() == EVT_NODE_METRICS_UPDATED :
                             "Received event about invalid node [received=" +
-                                ((DiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
+                                ((DiscoveryEvent)evt).eventNode().id() + ", expected=" + grid1LocNodeId +
                                 ", type=" + evt.type() + ']';
 
-                        if (evt.type() == EVT_NODE_LEFT)
-                            latch.countDown();
+                        if (tcpDiscovery) {
+                            if (evt.type() == EVT_NODE_LEFT)
+                                latch.countDown();
+                        }
+                        else {
+                            if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+                                latch.countDown();
+                        }
                     }
 
                     return true;
@@ -96,7 +107,7 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             stopGrid(1);
 
-            latch.await();
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             Collection<ClusterNode> top2 = ignite2.cluster().forRemotes().nodes();
 

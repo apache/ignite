@@ -26,6 +26,11 @@ import org.apache.ignite.binary.BinaryObject;
  */
 public interface BinaryFieldEx extends BinaryField {
     /**
+     * @return Type ID this field relates to.
+     */
+    public int typeId();
+
+    /**
      * Writes field value to the given byte buffer.
      *
      * @param obj Object from which the field should be extracted.

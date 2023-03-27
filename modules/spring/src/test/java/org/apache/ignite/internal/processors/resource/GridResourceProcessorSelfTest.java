@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.springframework.util.Assert;
 
 /**
@@ -116,6 +117,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceToAnnotatedField() throws Exception {
         TestClassWithAnnotatedField target = new TestClassWithAnnotatedField();
 
@@ -148,6 +150,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceToAnnotatedMethod() throws Exception {
         TestClassWithAnnotatedMethod target = new TestClassWithAnnotatedMethod();
 
@@ -174,7 +177,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         private String str2;
 
         /** */
-        @SuppressWarnings({"UnusedDeclaration"}) @TestAnnotation3
+        @TestAnnotation3
         private String str7;
 
         /**
@@ -207,13 +210,17 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
              * @param str3 New value.
              */
             @TestAnnotation2
-            public void setValue3(String str3) { this.str3 = str3; }
+            public void setValue3(String str3) {
+                this.str3 = str3;
+            }
 
             /**
              * @param str4 New value.
              */
             @TestAnnotation2
-            public void setValue4(String str4) { this.str4 = str4; }
+            public void setValue4(String str4) {
+                this.str4 = str4;
+            }
 
             /** */
             private class TestClassWithAnnotationsDeep {
@@ -225,12 +232,13 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                 @TestAnnotation
                 private String str6;
 
+                /** */
                 private Callable<String> c = new Callable<String>() {
-                    @SuppressWarnings({"UnusedDeclaration"}) @TestAnnotation
+                    @TestAnnotation
                     private String cStr;
 
                     private Runnable r = new Runnable() {
-                        @SuppressWarnings({"UnusedDeclaration"}) @TestAnnotation
+                        @TestAnnotation
                         private String rStr;
 
                         @Override public void run() {
@@ -255,13 +263,17 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                  * @param str5 New value.
                  */
                 @TestAnnotation2
-                public void setValue5(String str5) { this.str5 = str5; }
+                public void setValue5(String str5) {
+                    this.str5 = str5;
+                }
 
                 /**
                  * @param str6 New value.
                  */
                 @TestAnnotation2
-                public void setValue6(String str6) { this.str6 = str6; }
+                public void setValue6(String str6) {
+                    this.str6 = str6;
+                }
             }
         }
     }
@@ -269,13 +281,15 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceInnerClasses() throws Exception {
         // Test fields.
         TestClassWithAnnotationsOuter outer = new TestClassWithAnnotationsOuter();
 
         TestClassWithAnnotationsOuter.TestClassWithAnnotationsInner inner = outer.new TestClassWithAnnotationsInner();
 
-        TestClassWithAnnotationsOuter.TestClassWithAnnotationsInner.TestClassWithAnnotationsDeep deep = inner.new TestClassWithAnnotationsDeep();
+        TestClassWithAnnotationsOuter.TestClassWithAnnotationsInner.TestClassWithAnnotationsDeep deep =
+            inner.new TestClassWithAnnotationsDeep();
 
         String testStr = Long.toString(System.currentTimeMillis());
 
@@ -383,6 +397,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourceGridTaskAndJob() throws Exception {
         Ignite g = startGrid();
 
@@ -398,6 +413,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInjectResourcePerformance() throws Exception {
         int injNum = 50000;
 
@@ -417,6 +433,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testInjectResourceMultiThreaded() throws Exception {
         final int threadsCnt = 100;
         final int iters = 2000000;
@@ -471,7 +488,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
      */
     private static final class Test1 {
         /** */
-        @SuppressWarnings({"unused", "UnusedDeclaration"})
+        @SuppressWarnings({"unused"})
         @TestAnnotation1
         private String val1;
     }

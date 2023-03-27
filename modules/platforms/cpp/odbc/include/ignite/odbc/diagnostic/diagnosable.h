@@ -24,6 +24,8 @@ namespace ignite
 {
     namespace odbc
     {
+        class OdbcError;
+
         namespace diagnostic
         {
             /**
@@ -45,14 +47,14 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
+                virtual const DiagnosticRecordStorage& GetDiagnosticRecords() const = 0;
 
                 /**
                  * Get diagnostic record.
                  *
                  * @return Diagnostic record.
                  */
-                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
+                virtual DiagnosticRecordStorage& GetDiagnosticRecords() = 0;
 
                 /**
                  * Add new status record.
@@ -72,6 +74,20 @@ namespace ignite
                  * @param message Message.
                  */
                 virtual void AddStatusRecord(SqlState::Type sqlState, const std::string& message) = 0;
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param err Error.
+                 */
+                virtual void AddStatusRecord(const OdbcError& err) = 0;
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param rec Record.
+                 */
+                virtual void AddStatusRecord(const DiagnosticRecord& rec) = 0;
 
             protected:
                 /**

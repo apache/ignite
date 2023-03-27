@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.messaging;
 
+import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
@@ -25,8 +26,6 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-
-import java.util.UUID;
 
 /**
  * Platform message filter. Delegates apply to native platform.
@@ -38,8 +37,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
     /**
      * Constructor.
      */
-    public PlatformMessageFilterImpl()
-    {
+    public PlatformMessageFilterImpl() {
         super();
     }
 

@@ -30,23 +30,17 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
-public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
+public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends AbstractBinaryArraysTest {
     /** */
     protected final Marshaller marsh;
 
@@ -74,12 +68,6 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -155,11 +143,6 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
             return ignite(0).cache("S2P-bin").withKeepBinary();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.
@@ -226,7 +209,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            Person person = (Person) o;
+            Person person = (Person)o;
 
             return id == person.id && name.equals(person.name) && secondName.equals(person.secondName);
 

@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
@@ -41,14 +42,19 @@ import org.apache.ignite.testframework.GridTestUtils;
 public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
     /** Atomic cache. */
     private static final String ATOMIC_CACHE = "atomic";
+
     /** Transact cache. */
     private static final String TRANSACT_CACHE = "transact";
+
     /** Transact cache. */
     private static final long TEST_TIMEOUT = 10 * 60_000;
+
     /** Keys count. */
     private static int KEYS_CNT = 100;
+
     /** Keys count. */
     private static int PARTS_CNT = 16;
+
     /** Key. */
     private static AtomicInteger key = new AtomicInteger(0);
 
@@ -70,6 +76,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                     for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
                         startGrid(i);
 
+                    // Wait for rebalancing to prevent data loss.
+                    awaitPartitionMapExchange();
+
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
                             return !stopRestartThread.get();
@@ -81,20 +90,12 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         }, "restart-node");
     }
 
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-        ccfg.setBackups(0);
-
-        return  ccfg;
-    }
-
     /**
      * @param cacheName Cache name.
      * @param mode Atomicity mode.
      * @throws Exception If failed.
      */
-    private void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
+    protected void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName(cacheName);
 
@@ -109,17 +110,27 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        key.set(0);
-        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
-        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+        createCaches();
 
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    protected void createCaches() throws Exception {
+        key.set(0);
+        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
+        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    protected void destroyCaches() throws Exception {
         grid(0).destroyCache(ATOMIC_CACHE);
         grid(0).destroyCache(TRANSACT_CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        destroyCaches();
 
         super.afterTest();
     }
@@ -127,6 +138,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReservedAtomicCacheOp() throws Exception {
         notReservedCacheOp(ATOMIC_CACHE);
     }
@@ -134,6 +146,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReservedTxCacheOp() throws Exception {
         notReservedCacheOp(TRANSACT_CACHE);
     }
@@ -192,6 +205,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();
@@ -240,7 +254,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             cache.clear();
         }
     }
-
 
     /**
      *

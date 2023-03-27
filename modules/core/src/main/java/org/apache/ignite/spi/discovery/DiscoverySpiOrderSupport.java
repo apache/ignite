@@ -45,8 +45,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 public @interface DiscoverySpiOrderSupport {
     /**
-     * Whether or not target SPI supports node startup order.
+     * @return Whether or not target SPI supports node startup order.
      */
-    @SuppressWarnings({"JavaDoc"})
     public boolean value();
 }

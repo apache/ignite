@@ -18,37 +18,65 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * GridCacheConcurrentMap implementation for local and near caches.
  */
 public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     /** */
-    private final AtomicInteger pubSize = new AtomicInteger();
+    private final int cacheId;
 
-    public GridCacheLocalConcurrentMap(GridCacheContext ctx,
-        GridCacheMapEntryFactory factory, int initialCapacity) {
-        super(ctx, factory, initialCapacity);
-    }
+    /** */
+    private final CacheMapHolder entryMap;
 
-    public GridCacheLocalConcurrentMap(GridCacheContext ctx,
-        GridCacheMapEntryFactory factory, int initialCapacity, float loadFactor, int concurrencyLevel) {
-        super(ctx, factory, initialCapacity, loadFactor, concurrencyLevel);
-    }
+    /**
+     * @param cctx Cache context.
+     * @param factory Entry factory.
+     * @param initCap Initial capacity.
+     */
+    public GridCacheLocalConcurrentMap(GridCacheContext cctx, GridCacheMapEntryFactory factory, int initCap) {
+        super(factory);
 
-    /** {@inheritDoc} */
-    @Override public int publicSize() {
-        return pubSize.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        pubSize.incrementAndGet();
+        this.cacheId = cctx.cacheId();
+        this.entryMap = new CacheMapHolder(cctx,
+            new ConcurrentHashMap<>(initCap, 0.75f, Runtime.getRuntime().availableProcessors() * 2));
     }
 
     /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        pubSize.decrementAndGet();
+    @Override public int internalSize() {
+        return entryMap.map.size();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected CacheMapHolder entriesMap(GridCacheContext cctx) {
+        return entryMap;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected CacheMapHolder entriesMapIfExists(Integer cacheId) {
+        return entryMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int publicSize(int cacheId) {
+        assert this.cacheId == cacheId;
+
+        return entryMap.size.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
+        assert cacheId == e.context().cacheId();
+
+        entryMap.size.incrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void decrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
+        assert cacheId == e.context().cacheId();
+
+        entryMap.size.decrementAndGet();
     }
 }

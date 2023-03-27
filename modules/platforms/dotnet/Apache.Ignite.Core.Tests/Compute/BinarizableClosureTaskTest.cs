@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(res != null);
 
-            BinarizableResult res0 = res as BinarizableResult;
+            var res0 = res as BinarizableResult;
 
-            Assert.IsTrue(res0 != null);
+            Assert.IsNotNull(res0);
             Assert.AreEqual(1, res0.Res);
         }
 
@@ -67,14 +67,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Assert.IsTrue(err != null);
 
-            var aggregate = err as AggregateException;
+            err = err.InnerException;
+            Assert.IsNotNull(err);
 
-            if (aggregate != null)
-                err = aggregate.InnerException;
+            var err0 = err.InnerException as BinarizableException;
 
-            BinarizableException err0 = err as BinarizableException;
-
-            Assert.IsTrue(err0 != null);
+            Assert.IsNotNull(err0);
             Assert.AreEqual(ErrMsg, err0.Msg);
         }
 

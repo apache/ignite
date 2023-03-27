@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.IgniteCache;
+import java.util.Collection;
+import java.util.HashSet;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task that stop specified caches on specified node.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -46,23 +50,23 @@ public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, 
         /**
          * Create job.
          *
-         * @param cacheName Cache name to clear.
+         * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorCacheStopJob(VisorCacheStopTaskArg cacheName, boolean debug) {
-            super(cacheName, debug);
+        private VisorCacheStopJob(VisorCacheStopTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorCacheStopTaskArg arg) {
-            String cacheName = arg.getCacheName();
+            Collection<String> cacheNames = F.isEmpty(arg.getCacheNames())
+                ? F.asList(arg.getCacheName())
+                : new HashSet<>(arg.getCacheNames());
 
-            IgniteCache cache = ignite.cache(cacheName);
+            if (F.isEmpty(cacheNames))
+                throw new IllegalStateException("Cache names was not specified.");
 
-            if (cache == null)
-                throw new IllegalStateException("Failed to find cache for name: " + cacheName);
-
-            cache.destroy();
+            ignite.destroyCaches(cacheNames);
 
             return null;
         }

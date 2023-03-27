@@ -1,0 +1,256 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Ignite.NET LINQ Provider
+
+== Overview
+
+Apache Ignite.NET includes a LINQ provider that is integrated with Ignite SQL APIs. You can avoid dealing with SQL
+syntax directly and write queries in C# with LINQ. The Ignite LINQ provider supports all features of ANSI-99 SQL including
+distributed joins, groupings, aggregates, sorting, and more.
+
+== Installation
+
+* If you use the Ignite *binary distribution*: add a reference to `Apache.Ignite.Linq.dll`
+* If you use *NuGet*: `Install-Package Apache.Ignite.Linq`
+
+== Configuration
+
+SQL indexes need to be configured the same way as for regular SQL queries, see link:SQL/indexes[Defining Indexes section]
+for details.
+
+== Usage
+
+`Apache.Ignite.Linq.CacheLinqExtensions` class is an entry point for the LINQ provider.
+Obtain a queryable instance over an Ignite cache by calling the `AsCacheQueryable` method, and use LINQ on it:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+ICache<EmployeeKey, Employee> employeeCache = ignite.GetCache<EmployeeKey, Employee>(CacheName);
+
+IQueryable<ICacheEntry<EmployeeKey, Employee>> queryable = cache.AsCacheQueryable();
+
+Employee[] interns = queryable.Where(emp => emp.Value.IsIntern).ToArray();
+----
+--
+
+[CAUTION]
+====
+[discrete]
+You can use LINQ directly on the cache instance, without calling `AsCacheQueryable()`. However, this will result in LINQ
+to Objects query that fetches and processes entire cache data set locally, which is very inefficient.
+====
+
+== Introspection
+
+The Ignite LINQ provider uses `ICache.QueryFields` underneath. You can examine produced `SqlFieldsQuery` by casting
+`IQueryable` to `ICacheQueryable` at any point before materializing statements (`ToList`, `ToArray`, etc):
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+// Create query
+var query = ignite.GetCache<EmployeeKey, Employee>(CacheName).AsCacheQueryable().Where(emp => emp.Value.IsIntern);
+
+// Cast to ICacheQueryable
+var cacheQueryable = (ICacheQueryable) query;
+
+// Get resulting fields query
+SqlFieldsQuery fieldsQuery = cacheQueryable.GetFieldsQuery();
+
+// Examine generated SQL
+Console.WriteLine(fieldsQuery.Sql);
+
+// Output: select _T0._key, _T0._val from "persons".Person as _T0 where _T0.IsIntern
+----
+--
+
+== Projections
+
+Simple `Where` queries operate on `ICacheEntry` objects. You can select Key, Value, or any of the Key and Value fields
+separately. Multiple fields can be selected using anonymous types.
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var query = ignite.GetCache<EmployeeKey, Employee>(CacheName).AsCacheQueryable().Where(emp => emp.Value.IsIntern);
+
+IQueryable<EmployeeKey> keys = query.Select(emp => emp.Key);
+
+IQueryable<Employee> values = query.Select(emp => emp.Value);
+
+IQueryable<string> names = values.Select(emp => emp.Name);
+
+var custom = query.Select(emp => new {Id = emp.Key, Name = emp.Value.Name, Age = emp.Value.Age});
+----
+--
+
+== Compiled Queries
+
+The LINQ provider causes certain overhead caused by expression parsing and SQL generation. You may want to eliminate this
+overhead for frequently used queries.
+
+The `Apache.Ignite.Linq.CompiledQuery` class supports queries compilation. Call the `Compile` method to create a new delegate
+to represent the compiled query. All query parameters should be in the delegate parameters.
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var queryable = ignite.GetCache<EmployeeKey, Employee>(CacheName).AsCacheQueryable();
+
+// Regular query
+var persons = queryable.Where(emp => emp.Value.Age > 21);
+var result = persons.ToArray();
+
+// Corresponding compiled query
+var compiledQuery = CompiledQuery.Compile((int age) => queryable.Where(emp => emp.Value.Age > age));
+IQueryCursor<ICacheEntry<EmployeeKey, Employee>> cursor = compiledQuery(21);
+result = cursor.ToArray();
+----
+--
+
+Refer to the https://ptupitsyn.github.io/LINQ-vs-SQL-in-Ignite/[LINQ vs SQL blog post, window=_blank] for more details
+on the LINQ provider performance.
+
+== Joins
+
+The LINQ provider support JOINs that span several caches/tables and nodes.
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var persons = ignite.GetCache<int, Person>("personCache").AsCacheQueryable();
+var orgs = ignite.GetCache<int, Organization>("orgCache").AsCacheQueryable();
+
+// SQL join on Person and Organization to find persons working for Apache
+var qry = from person in persons from org in orgs
+          where person.Value.OrgId == org.Value.Id
+          && org.Value.Name == "Apache"
+          select person
+
+foreach (var cacheEntry in qry)
+    Console.WriteLine(cacheEntry.Value);
+
+// Same query with method syntax
+qry = persons.Join(orgs, person => person.Value.OrgId, org => org.Value.Id,
+(person, org) => new {person, org}).Where(p => p.org.Name == "Apache").Select(p => p.person);
+----
+--
+
+== Contains
+
+`ICollection.Contains` is supported, which is useful when we want to retrieve data by a set of ids, for example:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var persons = ignite.GetCache<int, Person>("personCache").AsCacheQueryable();
+var ids = new int[] {1, 20, 56};
+
+var personsByIds = persons.Where(p => ids.Contains(p.Value.Id));
+----
+--
+
+This query translates into the `... where Id IN (?, ?, ?)` command. However, keep in mind, that this form cannot be used
+in compiled queries because of variable argument number. Better alternative is to use `Join` on the `ids` collection:
+
+[tabs]
+--
+tab:C#[]
+[source,csharp]
+----
+var persons = ignite.GetCache<int, Person>("personCache").AsCacheQueryable();
+var ids = new int[] {1, 20, 56};
+
+var personsByIds = persons.Join(ids,
+                                person => person.Value.Id,
+                                id => id,
+                                (person, id) => person);
+----
+--
+
+This LINQ query translates to a temp table join:
+`select _T0._KEY, _T0._VAL from "person".Person as _T0 inner join table (F0 int = ?) _T1 on (_T1.F0 = _T0.ID)`,
+and has a single array parameter, so the plan can be cached properly, and compiled queries are also allowed.
+
+== Supported SQL Functions
+
+Below is a list of .NET functions and their SQL equivalents that are supported by the Ignite LINQ provider.
+
+[width="100%",cols="1,3",opts="header"]
+|===
+|`String.Length`| `LENGTH`
+|`String.ToLower`| `LOWER`
+|`String.ToUpper`| `UPPER`
+|`String.StartsWith("foo")`| `LIKE 'foo%'`
+|`String.EndsWith("foo")`| `LIKE '%foo'`
+|`String.Contains("foo")`| `LIKE '%foo%'`
+|`String.IndexOf("abc")`| `INSTR(MyField, 'abc') - 1`
+|`String.IndexOf("abc", 3)`| `INSTR(MyField, 'abc', 3) - 1`
+|`String.Substring("abc", 4)`| `SUBSTRING(MyField, 4 + 1)`
+|`String.Substring("abc", 4, 7)`| `SUBSTRING(MyField, 4 + 1, 7)`
+|`String.Trim()`| `TRIM`
+|`String.TrimStart()`| `LTRIM`
+|`String.TrimEnd()`| `RTRIM`
+|`String.Trim('x')`| `TRIM(MyField, 'x')`
+|`String.TrimStart('x')`| `LTRIM(MyField, 'x')`
+|`String.TrimEnd('x')`| `RTRIM(MyField, 'x')`
+|`String.Replace`| `REPLACE`
+|`String.PadLeft`| `LPAD`
+|`String.PadRight`| `RPAD`
+|`Regex.Replace`| `REGEXP_REPLACE`
+|`Regex.IsMatch`| `REGEXP_LIKE`
+|`Math.Abs`| `ABS`
+|`Math.Acos`| `ACOS`
+|`Math.Asin`| `ASIN`
+|`Math.Atan`| `ATAN`
+|`Math.Atan2`| `ATAN2`
+|`Math.Ceiling`| `CEILING`
+|`Math.Cos`| `COS`
+|`Math.Cosh`| `COSH`
+|`Math.Exp`| `EXP`
+|`Math.Floor`| `FLOOR`
+|`Math.Log`| `LOG`
+|`Math.Log10`| `LOG10`
+|`Math.Pow`| `POWER`
+|`Math.Round`| `ROUND`
+|`Math.Sign`| `SIGN`
+|`Math.Sin`| `SIN`
+|`Math.Sinh`| `SINH`
+|`Math.Sqrt`| `SQRT`
+|`Math.Tan`| `TAN`
+|`Math.Tanh`| `TANH`
+|`Math.Truncate`| `TRUNCATE`
+|`DateTime.Year`| `YEAR`
+|`DateTime.Month`| `MONTH`
+|`DateTime.Day`| `DAY_OF_MONTH`
+|`DateTime.DayOfYear`| `DAY_OF_YEAR`
+|`DateTime.DayOfWeek`| `DAY_OF_WEEK - 1`
+|`DateTime.Hour`| `HOUR`
+|`DateTime.Minute`| `MINUTE`
+|`DateTime.Second`| `SECOND`
+|===

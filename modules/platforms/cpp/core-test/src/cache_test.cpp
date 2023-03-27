@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 #include "ignite/test_utils.h"
+#include "ignite/binary_test_defs.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
@@ -101,6 +98,29 @@ struct CacheTestSuiteFixture
 #endif
     }
 
+    void PutGetStructWithEnumField(int32_t i32Field, ignite_test::core::binary::TestEnum::Type enumField,
+        const std::string& strField)
+    {
+        typedef ignite_test::core::binary::TypeWithEnumField TypeWithEnumField;
+
+        TypeWithEnumField val;
+        val.i32Field = i32Field;
+        val.enumField = enumField;
+        val.strField = strField;
+
+        cache::Cache<int, TypeWithEnumField> cache = grid0.GetOrCreateCache<int, TypeWithEnumField>("PutGetStructWithEnumField");
+
+        BOOST_TEST_CHECKPOINT("Putting value into the cache");
+        cache.Put(i32Field, val);
+
+        BOOST_TEST_CHECKPOINT("Getting value from the cache");
+        TypeWithEnumField res = cache.Get(i32Field);
+
+        BOOST_CHECK_EQUAL(val.i32Field, res.i32Field);
+        BOOST_CHECK_EQUAL(val.enumField, res.enumField);
+        BOOST_CHECK_EQUAL(val.strField, res.strField);
+    }
+
     /*
      * Destructor.
      */
@@ -110,6 +130,47 @@ struct CacheTestSuiteFixture
         grid1 = Ignite();
 
         Ignition::StopAll(true);
+    }
+};
+
+/*
+ * Test setup fixture.
+ */
+struct CacheNativePersistenceTestSuiteFixture
+{
+    /* Nodes started during the test. */
+    Ignite grid0;
+
+    /** Cache accessor. */
+    cache::Cache<int, int> Cache()
+    {
+        return grid0.GetCache<int, int>("partitioned");
+    }
+
+    /*
+     * Constructor.
+     */
+    CacheNativePersistenceTestSuiteFixture()
+    {
+        ignite_test::ClearLfs();
+
+#ifdef IGNITE_TESTS_32
+        grid0 = ignite_test::StartNode("cache-native-persistence-test-32.xml", "grid-0");
+#else
+        grid0 = ignite_test::StartNode("cache-native-persistence-test.xml", "grid-0");
+#endif
+    }
+
+    /*
+     * Destructor.
+     */
+    ~CacheNativePersistenceTestSuiteFixture()
+    {
+        grid0 = Ignite();
+
+        Ignition::StopAll(true);
+
+        ignite_test::ClearLfs();
     }
 };
 
@@ -207,7 +268,7 @@ BOOST_AUTO_TEST_CASE(TestPutAll)
 
     for (int i = 0; i < 100; i++)
         map[i] = i + 1;
-    
+
     cache::Cache<int, int> cache = Cache();
 
     cache.PutAll(map);
@@ -263,7 +324,7 @@ BOOST_AUTO_TEST_CASE(TestGet)
 
     BOOST_REQUIRE(1 == cache.Get(1));
     BOOST_REQUIRE(2 == cache.Get(2));
-    
+
     BOOST_REQUIRE(0 == cache.Get(3));
 }
 
@@ -272,7 +333,7 @@ BOOST_AUTO_TEST_CASE(TestGetAll)
     cache::Cache<int, int> cache = Cache();
 
     int keys[] = { 1, 2, 3, 4, 5 };
-    
+
     std::set<int> keySet (keys, keys + 5);
 
     for (int i = 0; i < static_cast<int>(keySet.size()); i++)
@@ -370,14 +431,14 @@ BOOST_AUTO_TEST_CASE(TestContainsKey)
     BOOST_REQUIRE(true == cache.ContainsKey(1));
 
     BOOST_REQUIRE(true == cache.Remove(1));
-    
+
     BOOST_REQUIRE(false == cache.ContainsKey(1));
 }
 
 BOOST_AUTO_TEST_CASE(TestContainsKeys)
 {
     cache::Cache<int, int> cache = Cache();
-    
+
     int keys[] = { 1, 2 };
 
     std::set<int> keySet(keys, keys + 2);
@@ -386,7 +447,7 @@ BOOST_AUTO_TEST_CASE(TestContainsKeys)
 
     cache.Put(1, 1);
     cache.Put(2, 2);
-    
+
     BOOST_REQUIRE(true == cache.ContainsKeys(keySet));
 
     cache.Remove(1);
@@ -693,6 +754,43 @@ BOOST_AUTO_TEST_CASE(TestGetBigString)
     cache.Put(5, longStr);
 
     BOOST_REQUIRE(longStr == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetStructWithEnumField)
+{
+    typedef ignite_test::core::binary::TestEnum TestEnum;
+
+    PutGetStructWithEnumField(0, TestEnum::TEST_ZERO, "");
+    PutGetStructWithEnumField(1, TestEnum::TEST_ZERO, "");
+    PutGetStructWithEnumField(0, TestEnum::TEST_NON_ZERO, "");
+    PutGetStructWithEnumField(0, TestEnum::TEST_ZERO, "Lorem ipsum");
+    PutGetStructWithEnumField(1, TestEnum::TEST_NON_ZERO, "Lorem ipsum");
+
+    PutGetStructWithEnumField(13, TestEnum::TEST_NEGATIVE_42, "hishib");
+    PutGetStructWithEnumField(1337, TestEnum::TEST_SOME_BIG, "Some test value");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_FIXTURE_TEST_SUITE(CacheTestSuiteNativePersistence, CacheNativePersistenceTestSuiteFixture);
+
+BOOST_AUTO_TEST_CASE(TestWal)
+{
+    cluster::IgniteCluster cluster = grid0.GetCluster();
+
+    cluster.SetActive(true);
+
+    cache::Cache<int, int> cache = Cache();
+
+    BOOST_REQUIRE(cluster.IsWalEnabled(cache.GetName()));
+    cluster.DisableWal(cache.GetName());
+    BOOST_REQUIRE(!cluster.IsWalEnabled(cache.GetName()));
+    cluster.EnableWal(cache.GetName());
+    BOOST_REQUIRE(cluster.IsWalEnabled(cache.GetName()));
+
+    BOOST_CHECK_THROW(cluster.IsWalEnabled("foo"), IgniteError);
+    BOOST_CHECK_THROW(cluster.DisableWal("foo"), IgniteError);
+    BOOST_CHECK_THROW(cluster.EnableWal("foo"), IgniteError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

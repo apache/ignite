@@ -32,7 +32,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class CacheConfig {
     /**
-     * Configure streaming cache.
+     * @return Streaming cache configuration.
      */
     public static CacheConfiguration<AffinityUuid, String> wordCache() {
         CacheConfiguration<AffinityUuid, String> cfg = new CacheConfiguration<>("words");

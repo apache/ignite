@@ -63,7 +63,6 @@ public class GridTcpRouterConfiguration {
     private int port = DFLT_TCP_PORT;
 
     /** Port range. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private int portRange = DFLT_PORT_RANGE;
 
     /** No delay. */

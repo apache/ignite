@@ -90,6 +90,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
+        public string Label
+        {
+            get { return _tx.Label; } 
+        }
+
+        /** <inheritDoc /> */
         public bool IsRollbackOnly
         {
             get { return _tx.IsRollbackOnly; }

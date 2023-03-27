@@ -21,15 +21,15 @@ import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -41,9 +41,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @return Node count.
      */
@@ -54,23 +51,35 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
      */
     protected abstract boolean indexingEnabled();
 
+    /** */
+    protected boolean client;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
+
+        if (client)
+            cfg.setClientMode(true);
 
         dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         if (isLargePage())
             dbCfg.setPageSize(16 * 1024);
-        else
-            dbCfg.setPageSize(1024);
+
+        dbCfg.setWalMode(WALMode.LOG_ONLY);
+
+        dbCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+        );
 
         configure(dbCfg);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -81,6 +90,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg.setBackups(1);
 
         CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
 
@@ -91,6 +101,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg2.setWriteSynchronizationMode(FULL_SYNC);
         ccfg2.setRebalanceMode(SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg2.setBackups(1);
 
         CacheConfiguration ccfg3 = new CacheConfiguration("large");
 
@@ -101,6 +112,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg3.setWriteSynchronizationMode(FULL_SYNC);
         ccfg3.setRebalanceMode(SYNC);
         ccfg3.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg3.setBackups(1);
 
         CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
 
@@ -108,6 +120,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg4.setWriteSynchronizationMode(FULL_SYNC);
         ccfg4.setRebalanceMode(SYNC);
         ccfg4.setAffinity(new RendezvousAffinityFunction(1, null));
+        ccfg4.setBackups(1);
 
         CacheConfiguration ccfg5 = new CacheConfiguration("atomic");
 
@@ -118,14 +131,11 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg5.setWriteSynchronizationMode(FULL_SYNC);
         ccfg5.setRebalanceMode(SYNC);
         ccfg5.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg5.setBackups(1);
 
-        cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
+        if (!client)
+            cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setMarshaller(null);
 
         configure(cfg);
@@ -141,23 +151,44 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param mCfg MemoryConfiguration.
+     * @param mCfg DataStorageConfiguration.
      */
-    protected void configure(MemoryConfiguration mCfg){
+    protected void configure(DataStorageConfiguration mCfg) {
         // No-op.
+    }
+
+    /**
+     * @return {@code True} if cache operations should be called from client node with near cache.
+     */
+    protected boolean withClientNearCache() {
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-
-//        long seed = System.currentTimeMillis();
-//
-//        info("Seed: " + seed + "L");
-//
-//        BPlusTree.rnd = new Random(seed);
+        cleanPersistenceDir();
 
         startGrids(gridCount());
+
+        if (withClientNearCache()) {
+            client = true;
+
+            startGrid(gridCount());
+
+            client = false;
+        }
+
+        assert gridCount() > 0;
+
+        final IgniteClusterEx cluster = grid(0).cluster();
+
+        if (log.isInfoEnabled())
+            log.info("BTL before activation: " + cluster.currentBaselineTopology());
+
+        cluster.state(ClusterState.ACTIVE);
+
+        if (log.isInfoEnabled())
+            log.info("BTL after activation: " + cluster.currentBaselineTopology());
 
         awaitPartitionMapExchange();
     }
@@ -168,7 +199,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -340,7 +371,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            final LargeDbValue that = (LargeDbValue) o;
+            final LargeDbValue that = (LargeDbValue)o;
 
             if (str1 != null ? !str1.equals(that.str1) : that.str1 != null) return false;
             if (str2 != null ? !str2.equals(that.str2) : that.str2 != null) return false;

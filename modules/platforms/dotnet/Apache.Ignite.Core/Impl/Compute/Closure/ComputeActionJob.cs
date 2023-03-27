@@ -21,7 +21,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
+    using static IgniteUtils;
 
     /// <summary>
     /// System job which wraps over <c>Action</c>.
@@ -55,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void Inject(Ignite grid)
+        public void Inject(IIgniteInternal grid)
         {
             ResourceProcessor.Inject(_action, grid);
         }
@@ -63,9 +65,9 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /** <inheritDoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
-            var writer0 = (BinaryWriter)writer.GetRawWriter();
+            var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_action));
+            writer0.WriteWithPeerDeployment(_action);
         }
 
         /// <summary>
@@ -74,7 +76,13 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <param name="reader">The reader.</param>
         public ComputeActionJob(IBinaryRawReader reader)
         {
-            _action = reader.ReadObject<IComputeAction>();
+            _action = (IComputeAction) reader.ReadObject<object>();
+        }
+
+        /** <inheritDoc /> */ 
+        public string GetName()
+        {
+            return GetComputeExecutableName(_action);
         }
     }
 }

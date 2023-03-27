@@ -17,13 +17,19 @@
 
 package org.apache.ignite.internal.util;
 
+import java.io.Serializable;
+import java.net.Inet6Address;
+import java.net.UnknownHostException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Represents address along with port range.
  */
-public class HostAndPortRange {
+public class HostAndPortRange implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Host. */
     private final String host;
 
@@ -49,50 +55,106 @@ public class HostAndPortRange {
 
         String host;
 
+        String portStr;
         int portFrom;
         int portTo;
 
-        final int colIdx = addrStr.indexOf(':');
+        if (F.isEmpty(addrStr))
+            throw createParseError(addrStr, errMsgPrefix, "Address is empty");
 
-        if (colIdx > 0) {
-            String portFromStr;
-            String portToStr;
+        if (addrStr.charAt(0) == '[') { // IPv6 with port(s)
+            int hostEndIdx = addrStr.indexOf(']');
+            
+            if (hostEndIdx == -1)
+                throw createParseError(addrStr, errMsgPrefix, "Failed to parse IPv6 address, missing ']'");
 
-            host = addrStr.substring(0, colIdx);
-
-            String portStr = addrStr.substring(colIdx + 1, addrStr.length());
-
-            if (F.isEmpty(portStr))
-                throw createParseError(addrStr, errMsgPrefix, "port range is not specified");
-
-            int portRangeIdx = portStr.indexOf("..");
-
-            if (portRangeIdx >= 0) {
-                // Port range is specified.
-                portFromStr = portStr.substring(0, portRangeIdx);
-                portToStr = portStr.substring(portRangeIdx + 2, portStr.length());
+            host = addrStr.substring(1, hostEndIdx);
+            
+            if (hostEndIdx == addrStr.length() - 1) { // no port specified, using default
+                portFrom = dfltPortFrom;
+                portTo = dfltPortTo;
             }
-            else {
-                // Single port is specified.
-                portFromStr = portStr;
-                portToStr = portStr;
+            else { // port specified
+                portStr = addrStr.substring(hostEndIdx + 2);
+
+                int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
+                portFrom = ports[0];
+                portTo = ports[1];
             }
-
-            portFrom = parsePort(portFromStr, addrStr, errMsgPrefix);
-            portTo = parsePort(portToStr, addrStr, errMsgPrefix);
-
-            if (portFrom > portTo)
-                throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
         }
-        else {
-            // Port is not specified, use defaults.
-            host = addrStr;
+        else { // IPv4 || IPv6 without port || empty host
+            final int colIdx = addrStr.lastIndexOf(':');
+            
+            if (colIdx > 0) {
+                if (addrStr.lastIndexOf(':', colIdx - 1) != -1) { // IPv6 without [] and port
+                    try {
+                        Inet6Address.getByName(addrStr);
+                        host = addrStr;
+                        portFrom = dfltPortFrom;
+                        portTo = dfltPortTo;
+                    }
+                    catch (UnknownHostException e) {
+                        throw createParseError(addrStr, errMsgPrefix, "IPv6 is incorrect", e);
+                    }
+                }
+                else {
+                    host = addrStr.substring(0, colIdx);
+                    portStr = addrStr.substring(colIdx + 1);
+                    int[] ports = verifyPortStr(addrStr, errMsgPrefix, portStr);
+                    portFrom = ports[0];
+                    portTo = ports[1];
+                }
+            }
+            else if (colIdx == 0)
+                throw createParseError(addrStr, errMsgPrefix, "Host name is empty");
+            else { // Port is not specified, use defaults.
+                host = addrStr;
 
-            portFrom = dfltPortFrom;
-            portTo = dfltPortTo;
+                portFrom = dfltPortFrom;
+                portTo = dfltPortTo;
+            }
         }
 
         return new HostAndPortRange(host, portFrom, portTo);
+    }
+
+    /**
+     * Verifies string containing single port or ports range.
+     *
+     * @param addrStr Address String.
+     * @param errMsgPrefix Error message prefix.
+     * @param portStr Port or port range string.
+     * @return Array of int[portFrom, portTo].
+     * @throws IgniteCheckedException If failed.
+     */
+    private static int[] verifyPortStr(String addrStr, String errMsgPrefix, String portStr)
+        throws IgniteCheckedException {
+        String portFromStr;
+        String portToStr;
+
+        if (F.isEmpty(portStr))
+            throw createParseError(addrStr, errMsgPrefix, "port range is not specified");
+
+        int portRangeIdx = portStr.indexOf("..");
+
+        if (portRangeIdx >= 0) {
+            // Port range is specified.
+            portFromStr = portStr.substring(0, portRangeIdx);
+            portToStr = portStr.substring(portRangeIdx + 2);
+        }
+        else {
+            // Single port is specified.
+            portFromStr = portStr;
+            portToStr = portStr;
+        }
+
+        int portFrom = parsePort(portFromStr, addrStr, errMsgPrefix);
+        int portTo = parsePort(portToStr, addrStr, errMsgPrefix);
+
+        if (portFrom > portTo)
+            throw createParseError(addrStr, errMsgPrefix, "start port cannot be less than end port");
+
+        return new int[] {portFrom, portTo};
     }
 
     /**
@@ -108,7 +170,7 @@ public class HostAndPortRange {
         try {
             int port = Integer.parseInt(portStr);
 
-            if (port < 0 || port > 65535)
+            if (port <= 0 || port > 65535)
                 throw createParseError(addrStr, errMsgPrefix, "port range contains invalid port " + portStr);
 
             return port;
@@ -128,6 +190,19 @@ public class HostAndPortRange {
      */
     private static IgniteCheckedException createParseError(String addrStr, String errMsgPrefix, String errMsg) {
         return new IgniteCheckedException(errMsgPrefix + " (" + errMsg + "): " + addrStr);
+    }
+
+    /**
+     * Create parse error with cause - nested exception.
+     *
+     * @param addrStr Address string.
+     * @param errMsgPrefix Error message prefix.
+     * @param errMsg Error message.
+     * @param cause Cause exception.
+     * @return Exception.
+     */
+    private static IgniteCheckedException createParseError(String addrStr, String errMsgPrefix, String errMsg, Throwable cause) {
+        return new IgniteCheckedException(errMsgPrefix + " (" + errMsg + "): " + addrStr, cause);
     }
 
     /**
