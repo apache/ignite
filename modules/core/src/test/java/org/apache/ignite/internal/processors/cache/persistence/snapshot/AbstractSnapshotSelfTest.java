@@ -606,7 +606,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpPath,
         long timeout
     ) throws IgniteCheckedException {
-        IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, null, false, onlyPrimary);
+        IgniteFutureImpl<Void> fut = snp(ig).createSnapshot(snpName, snpPath, false, onlyPrimary);
 
         if (timeout == 0)
             fut.get();
