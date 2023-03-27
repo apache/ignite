@@ -1777,12 +1777,14 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         }
         else if (executable instanceof PlatformSecurityAwareJob)
             ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_EXECUTE);
-        else if (executable instanceof PublicAccessJob)
-            authorizeAll(ctx.security(), ((PublicAccessJob)executable).requiredPermissions());
         else if (opts.isPublicRequest()) {
-            // We do not allow to execute internal tasks via public API for security reasons.
-            throw new SecurityException("Access to Ignite Internal tasks is restricted" +
-                " [task=" + task.getClass().getName() + ", job=" + job.getClass() + "]");
+            if (executable instanceof PublicAccessJob)
+                authorizeAll(ctx.security(), ((PublicAccessJob)executable).requiredPermissions());
+            else {
+                // We do not allow to execute internal tasks via public API for security reasons.
+                throw new SecurityException("Access to Ignite Internal tasks is restricted" +
+                        " [task=" + task.getClass().getName() + ", job=" + job.getClass() + "]");
+            }
         }
     }
 
