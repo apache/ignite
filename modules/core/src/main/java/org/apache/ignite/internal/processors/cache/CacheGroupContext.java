@@ -443,6 +443,9 @@ public class CacheGroupContext {
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
 
+        if (caches.isEmpty()) // Cache stopped.
+            return null;
+
         assert !sharedGroup() && caches.size() == 1 :
             "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
                 ", caches=" + caches;
