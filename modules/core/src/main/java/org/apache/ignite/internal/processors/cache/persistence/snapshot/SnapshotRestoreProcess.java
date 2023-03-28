@@ -258,9 +258,16 @@ public class SnapshotRestoreProcess {
      * @param snpPath Snapshot directory path.
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @param incIdx Index of incremental snapshot.
+     * @param check If {@code true} then check before restore.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFutureImpl<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames, int incIdx) {
+    public IgniteFutureImpl<Void> start(
+        String snpName,
+        @Nullable String snpPath,
+        @Nullable Collection<String> cacheGrpNames,
+        int incIdx,
+        boolean check
+    ) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -326,7 +333,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx, check).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 

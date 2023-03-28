@@ -37,7 +37,10 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
 
     /** Synchronous execution flag. */
     SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.arg(),
-        SnapshotCreateCommandOption.SYNC.description());
+        SnapshotCreateCommandOption.SYNC.description()),
+
+    /** If {@code true} then check snapshot before restore. */
+    CHECK("--check", null, "Check snapshot prior to restore.");
 
     /** Name. */
     private final String name;
