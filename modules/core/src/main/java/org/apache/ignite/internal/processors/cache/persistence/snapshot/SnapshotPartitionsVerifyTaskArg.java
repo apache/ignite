@@ -44,6 +44,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
+    /** If {@code true} perform full checks. */
+    private boolean fullCheck;
+
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
         // No-op.
@@ -53,15 +56,18 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
      * @param snpPath Snapshot directory path.
+     * @param fullCheck If {@code true} perform full checks.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
-        @Nullable String snpPath
+        @Nullable String snpPath,
+        boolean fullCheck
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
+        this.fullCheck = fullCheck;
     }
 
     /**
@@ -85,11 +91,17 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return snpPath;
     }
 
+    /** @return If {@code true} perform full checks. */
+    public boolean fullCheck() {
+        return fullCheck;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
         U.writeString(out, snpPath);
+        out.writeBoolean(fullCheck);
     }
 
     /** {@inheritDoc} */
@@ -97,6 +109,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
         snpPath = U.readString(in);
+        fullCheck = in.readBoolean();
     }
 
     /** {@inheritDoc} */

@@ -498,11 +498,19 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 CacheFilterEnum.USER,
                 true));
 
-        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
-            new SnapshotPartitionsVerifyTaskArg(new HashSet<>(), Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                    (String)ignite.configuration().getConsistentId()))), null))
-            .idleVerifyResult();
+        IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
+            new TestSnapshotPartitionsVerifyTask(),
+            new SnapshotPartitionsVerifyTaskArg(
+                new HashSet<>(),
+                Collections.singletonMap(ignite.cluster().localNode(),
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(
+                    snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
+                    (String)ignite.configuration().getConsistentId()
+                ))),
+                null,
+                true
+            )
+        ).idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
@@ -622,7 +630,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
 
-        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false, 0).get(TIMEOUT);
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, cachesToCheck, false, 0, true).get(TIMEOUT);
     }
 
     /**

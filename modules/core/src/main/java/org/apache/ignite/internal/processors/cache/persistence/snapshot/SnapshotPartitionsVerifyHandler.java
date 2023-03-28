@@ -146,6 +146,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
+        if (!opCtx.fullCheck()) {
+            log.info("Skip full snapshot check [snpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
         boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();

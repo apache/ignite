@@ -1172,7 +1172,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
-                    req.streamerWarning());
+                    req.streamerWarning(), true);
 
                 req.meta(meta);
 
@@ -1901,20 +1901,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return;
                 }
 
-                if (!check) {
-                    log.info("Full check of snapshot was skipped");
-
-                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, null));
-
-                    return;
-                }
-
                 Class<? extends AbstractSnapshotVerificationTask> cls =
                     includeCustomHandlers ? SnapshotHandlerRestoreTask.class : SnapshotPartitionsVerifyTask.class;
 
                 kctx0.task().execute(
                         cls,
-                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath),
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath, check),
                         options(new ArrayList<>(metas.keySet()))
                     ).listen(f1 -> {
                         if (f1.error() == null)

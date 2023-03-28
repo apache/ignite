@@ -41,6 +41,9 @@ public class SnapshotHandlerContext {
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
 
+    /** If {@code true} perform full checks.*/
+    private final boolean fullCheck;
+
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
@@ -48,14 +51,22 @@ public class SnapshotHandlerContext {
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
+     * @param fullCheck If {@code true} perform full checks.
      */
-    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode,
-        File snpDir, boolean streamerWrn) {
+    public SnapshotHandlerContext(
+        SnapshotMetadata metadata,
+        @Nullable Collection<String> grps,
+        ClusterNode locNode,
+        File snpDir,
+        boolean streamerWrn,
+        boolean fullCheck
+    ) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
+        this.fullCheck = fullCheck;
     }
 
     /**
@@ -92,5 +103,12 @@ public class SnapshotHandlerContext {
      */
     public boolean streamerWarning() {
         return streamerWrn;
+    }
+
+    /**
+     * @return If {@code true} perform full checks.
+     */
+    public boolean fullCheck() {
+        return fullCheck;
     }
 }
