@@ -65,7 +65,7 @@ link:https://cwiki.apache.org/confluence/display/IGNITE/Ignite+Persistent+Store+
 are not added into the snapshot as long as those are not required for the full snapshot restore procedure.
 * The `binary_meta` and `marshaller` directories store metadata and marshaller-specific information.
 * The `increments` directory stores incremental snapshots based on the full snapshot `backup23012020`, in this example
-there is a single increment `0000000000000001`. It contains `wal` directory that stores compressed WAL segments, `binary_meta` and `marshaller` directories.
+there is a single increment `0000000000000001`. It contains `wal` directory that stores the compressed WAL segments, `binary_meta` and `marshaller` directories.
 
 [NOTE]
 ====
@@ -80,13 +80,18 @@ The link:snapshots/snapshots#restoring-from-snapshot[restore procedure] explains
 
 == Incremental snapshots
 
-Low RPO (Recovery Point Object) value like a few minutes can be hardly achieved with full snapshots, since they require additional resources
-for creation and storing all partitions data. Instead, incremental snapshots can be used:
+The low RPO (Recovery Point Object), e.g. a few minutes, can hardly be achieved using full snapshots. They require additional resources
+to create and store all partitions data. Instead, you can use incremental snapshots:
 
-1. store data changes happened since previous full or incremental snapshot
-2. provide a lightweight creation process that can be run concurrently with runtime load.
+1. to store the data changes happened since previous full or incremental snapshot was created
+2. to provide a lightweight creation process and can be run concurrently with runtime load.
 
-Incremental snapshots consist of compressed WAL segments that are collected in background without pressure on cluster resources.
+[NOTE]
+====
+
+Incremental snapshots consist of compressed WAL segments, which are collected in the background without pressure on cluster resources.
+====
+
 There are some prerequisites for using incremental snapshots:
 
 * Incremental snapshots are based on existing full snapshot.
@@ -95,7 +100,7 @@ There are some prerequisites for using incremental snapshots:
 
 During incremental snapshot restoring procedure the full snapshot is restored first and after that all increments are restored sequentially.
 
-Please refer sections link:snapshots/snapshots#consistency-guarantees[Consistency Guarantees] and
+Please refer to the sections link:snapshots/snapshots#consistency-guarantees[Consistency Guarantees] and
 link:snapshots/snapshots#current-limitations[Current Limitations] below for more details about incremental snapshots.
 
 == Configuration
@@ -207,12 +212,12 @@ Both procedures are described below, however, it is preferable to use the restor
 
 === Manual Snapshot Restore Procedure
 
-The snapshot structure is similar to the layout of the Ignite Native Persistence, so for the manual snapshot restore you must
-do a snapshot restore only on the same cluster with the same node `consistentId` and on the same topology on which a snapshot
-was taken. It's possible to restore only full snapshot. If you need to restore a snapshot on a different cluster, or on a different
+The snapshot structure is similar to the layout of the Ignite Native Persistence. Therefore, to restore the manual snapshot, you must
+restore a snapshot only on the same cluster with the same node `consistentId` and on the same topology on which a snapshot
+was taken. Only the full snapshot can be restored. If you need to restore a snapshot on a different cluster, or on a different
 cluster topology, or restore incremental snapshots use the link:snapshots/snapshots#automatic-snapshot-restore-procedure[Automatic Snapshot Restore Procedure].
 
-In general, stop the cluster, then replace persistence data and other files with the data from the snapshot, and restart the nodes.
+In general, stop the cluster, then replace the persistence data and other files using the data from the snapshot, and restart the nodes.
 
 The detailed procedure looks as follows:
 
@@ -368,9 +373,9 @@ might require extra space on the Ignite Persistence storage media (up to the 1x 
 === Incremental snapshot consistency guarantees
 
 Incremental snapshots uses different non-blocking approach for achieving transactional consistency based on the Consistent Cut algorithm.
-It allows to start incremental snapshots concurrently with runtime load without affecting performance. But it doesn't guarantee consistency
+This allows you to start incremental snapshots concurrently with the runtime load without affecting performance. But it doesn't guarantee consistency
 for atomic caches. It's highly recommended to verify these caches after restoring with the `idle_verify`
-command. If it is needed it's possible to repair inconsistent partitions with the `consistency` command. Please, check the
+command. If necessary, it's possible to repair inconsistent partitions with the `consistency` command. Please, check the
 link:tools/control-script[Control Script] section for more information about these commands.
 
 == Current Limitations
@@ -397,6 +402,6 @@ Incremental snapshots can't be created in the following cases:
 * Caches are created, changed or destroyed after full snapshot was created.
 * After link:data-rebalancing[data has rebalanced] in the cluster.
 
-Ignite automatically monitors these events and prevents incremental snapshot creation. It's required to create a new
+Ignite automatically monitors these events and prevents the incremental snapshot creation. It's required to create a new
 full snapshot and after that creation of incremental snapshots becomes available again.
 
