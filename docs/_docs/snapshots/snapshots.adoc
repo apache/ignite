@@ -98,7 +98,7 @@ There are some prerequisites for using incremental snapshots:
 * link:persistence/native-persistence#wal-archive-compaction[WAL archive compaction] has to be enabled.
 * Incremental snapshots has to be created on the same media drive where WAL archives are stored.
 
-During incremental snapshot restoring procedure the full snapshot is restored first and after that all increments are restored sequentially.
+During incremental snapshot restore procedure the full snapshot is restored first and after that all increments are restored sequentially.
 
 Please refer to the sections link:snapshots/snapshots#consistency-guarantees[Consistency Guarantees] and
 link:snapshots/snapshots#current-limitations[Current Limitations] below for more details about incremental snapshots.
@@ -400,7 +400,7 @@ Incremental snapshots can't be created in the following cases:
 
 * Encrypted caches are presented in a cluster.
 * Caches are created, changed or destroyed after full snapshot was created.
-* After link:data-rebalancing[data has rebalanced] in the cluster.
+* After link:data-rebalancing[data has been rebalanced] in the cluster.
 
 Ignite automatically monitors these events and prevents the incremental snapshot creation. It's required to create a new
 full snapshot and after that creation of incremental snapshots becomes available again.
