@@ -29,6 +29,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.spi.metric.IntMetric;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_CHECK_SNAPSHOT_ON_RESTORE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
 /**
@@ -91,7 +92,13 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
         Set<String> grpNamesSet = F.isEmpty(grpNames) ? null :
             Arrays.stream(grpNames.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
-        IgniteFuture<Void> fut = mgr.restoreSnapshot(name, F.isEmpty(path) ? null : path, grpNamesSet, incIdx);
+        IgniteFuture<Void> fut = mgr.restoreSnapshot(
+            name,
+            F.isEmpty(path) ? null : path,
+            grpNamesSet,
+            incIdx,
+            DFLT_CHECK_SNAPSHOT_ON_RESTORE
+        );
 
         if (fut.isDone())
             fut.get();
