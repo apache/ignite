@@ -63,6 +63,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.PlatformSecurityAwareJob;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -112,7 +113,6 @@ import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CAN
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.isSystemType;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
@@ -1765,22 +1765,26 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
     /** */
     private void authorizeSystemTaskJob(ComputeJob job) {
-        if (!isSystemType(ctx, task.getClass()))
+        if (!ctx.security().isSystemType(task.getClass()))
             return;
 
         Object executable = unwrap(job);
 
-        if (!isSystemType(ctx, executable.getClass())) {
+        if (!ctx.security().isSystemType(executable.getClass())) {
             assert opts.isPublicRequest();
 
             ctx.security().authorize(executable.getClass().getName(), TASK_EXECUTE);
         }
-        else if (executable instanceof PublicAccessJob)
-            authorizeAll(ctx.security(), ((PublicAccessJob)executable).requiredPermissions());
+        else if (executable instanceof PlatformSecurityAwareJob)
+            ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_EXECUTE);
         else if (opts.isPublicRequest()) {
-            // We do not allow to execute internal tasks via public API for security reasons.
-            throw new SecurityException("Access to Ignite Internal tasks is restricted" +
-                " [task=" + task.getClass().getName() + ", job=" + job.getClass() + "]");
+            if (executable instanceof PublicAccessJob)
+                authorizeAll(ctx.security(), ((PublicAccessJob)executable).requiredPermissions());
+            else {
+                // We do not allow to execute internal tasks via public API for security reasons.
+                throw new SecurityException("Access to Ignite Internal tasks is restricted" +
+                        " [task=" + task.getClass().getName() + ", job=" + job.getClass() + "]");
+            }
         }
     }
 
@@ -1789,7 +1793,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         if (!ctx.security().enabled())
             return;
 
-        if (!isSystemType(ctx, task.getClass()))
+        if (!ctx.security().isSystemType(task.getClass()))
             ctx.security().authorize(task.getClass().getName(), TASK_CANCEL);
         else {
             boolean isClosedByInitiator = Objects.equals(
@@ -1799,8 +1803,10 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             for (GridJobResultImpl jobRes : jobRes.values()) {
                 Object executable = unwrap(jobRes.getJob());
 
-                if (!isSystemType(ctx, executable.getClass()))
+                if (!ctx.security().isSystemType(executable.getClass()))
                     ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
+                else if (executable instanceof PlatformSecurityAwareJob)
+                    ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_CANCEL);
                 else if (!isClosedByInitiator)
                     ctx.security().authorize(ADMIN_KILL);
             }

@@ -25,12 +25,10 @@ import java.lang.reflect.Proxy;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.AllPermission;
-import java.security.CodeSource;
 import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -38,8 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -86,12 +82,6 @@ public class SecurityUtils {
 
     /** Permissions that contain {@code AllPermission}. */
     public static final Permissions ALL_PERMISSIONS;
-
-    /** Code source for ignite-core module. */
-    private static final CodeSource CORE_CODE_SOURCE = SecurityUtils.class.getProtectionDomain().getCodeSource();
-
-    /** System types cache. */
-    private static final ConcurrentMap<Class<?>, Boolean> SYSTEM_TYPES = new ConcurrentHashMap<>();
 
     static {
         ALL_PERMISSIONS = new Permissions();
@@ -247,20 +237,7 @@ public class SecurityUtils {
         if (considerWrapperCls)
             target = unwrap(target);
 
-        return isSystemType(ctx, target.getClass());
-    }
-
-    /** @return Whether specified class is a system type. */
-    public static boolean isSystemType(GridKernalContext ctx, Class<?> cls) {
-        Boolean isSysType = SYSTEM_TYPES.get(cls);
-
-        if (isSysType == null) {
-            ProtectionDomain pd = doPrivileged(cls::getProtectionDomain);
-
-            SYSTEM_TYPES.put(cls, isSysType = (pd == null) || F.eq(CORE_CODE_SOURCE, pd.getCodeSource()));
-        }
-
-        return isSysType;
+        return ctx.security().isSystemType(target.getClass());
     }
 
     /** */

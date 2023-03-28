@@ -56,6 +56,9 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        if (cfg.isClientMode())
+            return cfg;
+
         cfg.getDataStorageConfiguration().setWalCompactionEnabled(true);
 
         return cfg;

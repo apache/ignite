@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.version;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,6 +47,9 @@ public class GridCacheVersionConflictContext<K, V> {
 
     /** TTL. */
     private long ttl;
+
+    /** Expire time. */
+    private long expireTime;
 
     /** Manual resolve flag. */
     private boolean manualResolve;
@@ -118,12 +120,13 @@ public class GridCacheVersionConflictContext<K, V> {
      * Force cache to use neither old, nor new, but some other value passed as argument. In this case old
      * value will be replaced with merge value and update will be considered as local.
      * <p>
-     * Also in case of merge you have to specify new TTL explicitly. For unlimited TTL use {@code 0}.
+     * Also in case of merge you have to specify new TTL and expire time explicitly. For unlimited TTL use {@code 0}.
      *
      * @param mergeVal Merge value or {@code null} to force remove.
      * @param ttl Time to live in milliseconds (must be non-negative).
+     * @param expireTime Expire time.
      */
-    public void merge(@Nullable V mergeVal, long ttl) {
+    public void merge(@Nullable V mergeVal, long ttl, long expireTime) {
         if (ttl < 0)
             throw new IllegalArgumentException("TTL must be non-negative: " + ttl);
 
@@ -131,6 +134,7 @@ public class GridCacheVersionConflictContext<K, V> {
 
         this.mergeVal = mergeVal;
         this.ttl = ttl;
+        this.expireTime = expireTime;
     }
 
     /**
@@ -186,7 +190,7 @@ public class GridCacheVersionConflictContext<K, V> {
      * @return Expire time.
      */
     public long expireTime() {
-        return isUseNew() ? newEntry.expireTime() : isUseOld() ? oldEntry.expireTime() : CU.toExpireTime(ttl);
+        return isUseNew() ? newEntry.expireTime() : isUseOld() ? oldEntry.expireTime() : expireTime;
     }
 
     /** {@inheritDoc} */

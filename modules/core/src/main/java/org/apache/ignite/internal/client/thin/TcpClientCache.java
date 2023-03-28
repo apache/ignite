@@ -57,7 +57,7 @@ import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -927,7 +927,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      *
      * @param drMap DR map.
      */
-    public void putAllConflict(Map<? extends K, ? extends T2<? extends V, GridCacheVersion>> drMap) throws ClientException {
+    public void putAllConflict(Map<? extends K, ? extends T3<? extends V, GridCacheVersion, Long>> drMap) throws ClientException {
         A.notNull(drMap, "drMap");
 
         ch.request(ClientOperation.CACHE_PUT_ALL_CONFLICT, req -> writePutAllConflict(drMap, req));
@@ -939,7 +939,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
      * @param drMap DR map.
      * @return Future.
      */
-    public IgniteClientFuture<Void> putAllConflictAsync(Map<? extends K, T2<? extends V, GridCacheVersion>> drMap)
+    public IgniteClientFuture<Void> putAllConflictAsync(Map<? extends K, T3<? extends V, GridCacheVersion, Long>> drMap)
         throws ClientException {
         A.notNull(drMap, "drMap");
 
@@ -1310,7 +1310,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** */
     private void writePutAllConflict(
-        Map<? extends K, ? extends T2<? extends V, GridCacheVersion>> map,
+        Map<? extends K, ? extends T3<? extends V, GridCacheVersion, Long>> map,
         PayloadOutputChannel req
     ) {
         checkDataReplicationSupported(req.clientChannel().protocolCtx());
@@ -1324,6 +1324,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                 serDes.writeObject(out, e.getKey());
                 serDes.writeObject(out, e.getValue().get1());
                 serDes.writeObject(out, e.getValue().get2());
+                out.writeLong(e.getValue().get3());
             });
     }
 

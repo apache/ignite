@@ -21,7 +21,9 @@
     <bean class="org.apache.ignite.configuration.ClientConfiguration" id="thin.client.cfg">
         <property name="addresses">
             <list>
-                <value>{{ config.addresses }}</value>
+                {% for address in config.addresses %}
+                    <value>{{ address }}</value>
+                {% endfor %}
             </list>
         </property>
 
@@ -36,6 +38,10 @@
         <property name="sslClientCertificateKeyStorePassword" value="{{ config.ssl_params.key_store_password }}"/>
         <property name="sslTrustCertificateKeyStorePath" value="{{ config.ssl_params.trust_store_path }}"/>
         <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
+        {% endif %}
+
+        {% if config.partition_awareness_enabled != None %}
+        <property name="partitionAwarenessEnabled" value="{{ config.partition_awareness_enabled }}"/>
         {% endif %}
     </bean>
 {% endmacro %}

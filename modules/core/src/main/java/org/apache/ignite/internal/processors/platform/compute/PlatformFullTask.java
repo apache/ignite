@@ -52,6 +52,9 @@ public final class PlatformFullTask extends PlatformAbstractTask {
     /** Cluster group. */
     private final ClusterGroup grp;
 
+    /** Platform task name. */
+    private final String taskName;
+
     /**
      * Constructor.
      *
@@ -59,12 +62,14 @@ public final class PlatformFullTask extends PlatformAbstractTask {
      * @param grp Cluster group.
      * @param taskPtr Pointer to the task in the native platform.
      * @param topVer Initial topology version.
+     * @param taskName Task name.
      */
-    public PlatformFullTask(PlatformContext ctx, ClusterGroup grp, long taskPtr, long topVer) {
+    public PlatformFullTask(PlatformContext ctx, ClusterGroup grp, long taskPtr, long topVer, String taskName) {
         super(ctx, taskPtr);
 
         this.grp = grp;
         this.topVer = topVer;
+        this.taskName = taskName;
     }
 
     /** {@inheritDoc} */
@@ -160,7 +165,7 @@ public final class PlatformFullTask extends PlatformAbstractTask {
 
                 Object nativeJob = reader.readBoolean() ? reader.readObjectDetached() : null;
 
-                PlatformJob job = ctx.createJob(this, ptr, nativeJob);
+                PlatformJob job = ctx.createJob(this, ptr, nativeJob, taskName);
 
                 UUID jobNodeId = reader.readUuid();
 

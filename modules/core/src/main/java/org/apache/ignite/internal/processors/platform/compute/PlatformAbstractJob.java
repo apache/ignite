@@ -50,6 +50,9 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     /** Job. */
     protected Object job;
 
+    /** Job name. */
+    protected String jobName;
+
     /**
      * {@link java.io.Externalizable} support.
      */
@@ -63,11 +66,13 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
      * @param task Parent task.
      * @param ptr Pointer.
      * @param job Job.
+     * @param jobName Job name.
      */
-    protected PlatformAbstractJob(PlatformAbstractTask task, long ptr, Object job) {
+    protected PlatformAbstractJob(PlatformAbstractTask task, long ptr, Object job, String jobName) {
         this.task = task;
         this.ptr = ptr;
         this.job = job;
+        this.jobName = jobName;
     }
 
     /** {@inheritDoc} */
@@ -152,5 +157,10 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     /** {@inheritDoc} */
     @Override public Object job() {
         return job;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return jobName;
     }
 }

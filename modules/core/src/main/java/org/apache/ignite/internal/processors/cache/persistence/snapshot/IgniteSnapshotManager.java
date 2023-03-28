@@ -895,6 +895,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
+        if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+            throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
+                "clusters are not allowed.");
+        }
+
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             F.node2id()));
@@ -1347,10 +1352,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
 
-        return prepFut.chain(r -> {
-            if (cctx.kernalContext().clientNode())
-                return null;
+        if (cctx.kernalContext().clientNode())
+            return (IgniteInternalFuture<SnapshotOperationResponse>)prepFut;
 
+        return prepFut.chain(r -> {
             try {
                 if (req.error() != null) {
                     snpReq.error(req.error());
@@ -2098,11 +2103,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!IgniteFeatures.allNodesSupports(cctx.discovery().aliveServerNodes(), PERSISTENCE_CACHE_SNAPSHOT))
                 throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
-            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
-                throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
-                    "clusters are not allowed.");
-            }
-
             if (!cctx.kernalContext().state().clusterState().state().active())
                 throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
@@ -2498,7 +2498,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(ctx, null, null, null,
             null, null, null, null, null, null,
             null, null, null, null, null,
-            null, null, null, null, null, null);
+            null, null, null, null, null, null, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
