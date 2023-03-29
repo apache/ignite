@@ -44,7 +44,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
-    /** If {@code true} check snapshot before restore. */
+    /** If {@code true} check snapshot integrity. */
     private boolean check;
 
     /** Default constructor. */
@@ -56,7 +56,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
      * @param snpPath Snapshot directory path.
-     * @param check If {@code true} check snapshot before restore.
+     * @param check If {@code true} check snapshot integrity.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
@@ -91,7 +91,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return snpPath;
     }
 
-    /** @return If {@code true} check snapshot before restore. */
+    /** @return If {@code true} check snapshot integrity. */
     public boolean check() {
         return check;
     }
