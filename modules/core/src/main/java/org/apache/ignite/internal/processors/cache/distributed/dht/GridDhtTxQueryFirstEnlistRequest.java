@@ -84,7 +84,9 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
      * @param keys Keys.
      * @param vals Values.
      */
-    GridDhtTxQueryFirstEnlistRequest(int cacheId,
+    GridDhtTxQueryFirstEnlistRequest(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         IgniteUuid dhtFutId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
@@ -97,9 +99,8 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         int batchId,
         List<KeyCacheObject> keys,
         List<Message> vals) {
-        super(cacheId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
+        super(cacheId, cacheDeploymentId, dhtFutId, lockVer, op, batchId, snapshot.operationCounter(), keys, vals);
 
-        this.cacheId = cacheId;
         this.topVer = topVer;
         this.crdVer = snapshot.coordinatorVersion();
         this.cntr = snapshot.counter();

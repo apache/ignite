@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -105,8 +106,9 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      * @param fields Fields query or not.
      * @param addDepInfo Deployment info flag.
      */
-    public GridCacheQueryResponse(int cacheId, long reqId, boolean finished, boolean fields, boolean addDepInfo) {
-        this.cacheId = cacheId;
+    public GridCacheQueryResponse(int cacheId, IgniteUuid cacheDeploymentId, long reqId, boolean finished, boolean fields, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId);
+
         this.reqId = reqId;
         this.finished = finished;
         this.fields = fields;
@@ -119,8 +121,9 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      * @param err Error.
      * @param addDepInfo Deployment info flag.
      */
-    public GridCacheQueryResponse(int cacheId, long reqId, Throwable err, boolean addDepInfo) {
-        this.cacheId = cacheId;
+    public GridCacheQueryResponse(int cacheId, IgniteUuid cacheDeploymentId, long reqId, Throwable err, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId);
+
         this.reqId = reqId;
         this.err = err;
         this.addDepInfo = addDepInfo;

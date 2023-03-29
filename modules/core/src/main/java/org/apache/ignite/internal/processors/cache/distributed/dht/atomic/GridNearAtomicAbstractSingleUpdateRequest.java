@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +60,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
      */
     protected GridNearAtomicAbstractSingleUpdateRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
@@ -69,6 +71,7 @@ public abstract class GridNearAtomicAbstractSingleUpdateRequest extends GridNear
         boolean addDepInfo
     ) {
         super(cacheId,
+            cacheDeploymentId,
             nodeId,
             futId,
             topVer,

@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -43,8 +44,8 @@ public class GridNearUnlockRequest extends GridDistributedUnlockRequest {
      * @param keyCnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
-        super(cacheId, keyCnt, addDepInfo);
+    public GridNearUnlockRequest(int cacheId, IgniteUuid cacheDeploymentId, int keyCnt, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId, keyCnt, addDepInfo);
     }
 
     /** {@inheritDoc} */

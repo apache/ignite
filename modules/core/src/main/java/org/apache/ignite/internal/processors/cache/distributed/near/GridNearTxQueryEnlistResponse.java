@@ -84,8 +84,16 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
      * @param lockVer Lock version.
      * @param err Error.
      */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, Throwable err) {
-        this.cacheId = cacheId;
+    public GridNearTxQueryEnlistResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        IgniteUuid futId,
+        int miniId,
+        GridCacheVersion lockVer,
+        Throwable err
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.futId = futId;
         this.miniId = miniId;
         this.lockVer = lockVer;
@@ -101,9 +109,18 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements
      * @param removeMapping Remove mapping flag.
      * @param newDhtNodes New DHT nodes involved into transaction.
      */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res,
-        boolean removeMapping, Set<UUID> newDhtNodes) {
-        this.cacheId = cacheId;
+    public GridNearTxQueryEnlistResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        IgniteUuid futId,
+        int miniId,
+        GridCacheVersion lockVer,
+        long res,
+        boolean removeMapping,
+        Set<UUID> newDhtNodes
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.futId = futId;
         this.miniId = miniId;
         this.lockVer = lockVer;

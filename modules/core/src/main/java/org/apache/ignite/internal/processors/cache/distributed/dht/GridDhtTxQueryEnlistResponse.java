@@ -60,9 +60,15 @@ public class GridDhtTxQueryEnlistResponse extends GridCacheIdMessage {
      * @param batchId Batch id.
      * @param err Error.
      */
-    public GridDhtTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int batchId,
-        Throwable err) {
-        this.cacheId = cacheId;
+    public GridDhtTxQueryEnlistResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        IgniteUuid futId,
+        int batchId,
+        Throwable err
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.futId = futId;
         this.batchId = batchId;
         this.err = err;

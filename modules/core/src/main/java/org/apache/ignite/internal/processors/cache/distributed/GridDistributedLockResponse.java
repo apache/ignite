@@ -74,16 +74,18 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */
-    public GridDistributedLockResponse(int cacheId,
+    public GridDistributedLockResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        boolean addDepInfo
+    ) {
+        super(cacheId, cacheDeploymentId, lockVer, cnt, addDepInfo);
 
         assert futId != null;
 
-        this.cacheId = cacheId;
         this.futId = futId;
 
         vals = new ArrayList<>(cnt);
@@ -96,16 +98,18 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param err Error.
      * @param addDepInfo Deployment info.
      */
-    public GridDistributedLockResponse(int cacheId,
+    public GridDistributedLockResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         Throwable err,
-        boolean addDepInfo) {
-        super(lockVer, 0, addDepInfo);
+        boolean addDepInfo
+    ) {
+        super(cacheId, cacheDeploymentId, lockVer, 0, addDepInfo);
 
         assert futId != null;
 
-        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
     }
@@ -118,17 +122,19 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param err Error.
      * @param addDepInfo Deployment info.
      */
-    public GridDistributedLockResponse(int cacheId,
+    public GridDistributedLockResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
         Throwable err,
-        boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
+        boolean addDepInfo
+    ) {
+        super(cacheId, cacheDeploymentId, lockVer, cnt, addDepInfo);
 
         assert futId != null;
 
-        this.cacheId = cacheId;
         this.futId = futId;
         this.err = err;
 

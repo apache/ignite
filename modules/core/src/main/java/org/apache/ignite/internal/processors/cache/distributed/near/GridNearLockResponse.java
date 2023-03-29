@@ -88,6 +88,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      */
     public GridNearLockResponse(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
         int miniId,
@@ -98,7 +99,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         boolean addDepInfo,
         boolean compatibleRemapVer
     ) {
-        super(cacheId, lockVer, futId, cnt, err, addDepInfo);
+        super(cacheId, cacheDeploymentId, lockVer, futId, cnt, err, addDepInfo);
 
         assert miniId != 0;
 

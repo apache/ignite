@@ -86,15 +86,19 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage implements G
      * @param keys Keys.
      * @param vals Values.
      */
-    GridDhtTxQueryEnlistRequest(int cacheId,
+    GridDhtTxQueryEnlistRequest(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         IgniteUuid dhtFutId,
         GridCacheVersion lockVer,
         EnlistOperation op,
         int batchId,
         int mvccOpCnt,
         List<KeyCacheObject> keys,
-        List<Message> vals) {
-        this.cacheId = cacheId;
+        List<Message> vals
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.dhtFutId = dhtFutId;
         this.lockVer = lockVer;
         this.op = op;

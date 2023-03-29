@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -72,8 +73,9 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
      * @param futId Future ID.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, int partId, long futId, boolean addDepInfo) {
-        this.cacheId = cacheId;
+    public GridDhtAtomicUpdateResponse(int cacheId, IgniteUuid cacheDeploymentId, int partId, long futId, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId);
+
         this.partId = partId;
         this.futId = futId;
         this.addDepInfo = addDepInfo;

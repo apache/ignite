@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -78,10 +79,11 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
      * @param topVer Topology version.
      * @param ttl TTL.
      */
-    public GridCacheTtlUpdateRequest(int cacheId, AffinityTopologyVersion topVer, long ttl) {
+    public GridCacheTtlUpdateRequest(int cacheId, IgniteUuid cacheDeploymentId, AffinityTopologyVersion topVer, long ttl) {
+        super(cacheId, cacheDeploymentId);
+
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
 
-        this.cacheId = cacheId;
         this.topVer = topVer;
         this.ttl = ttl;
     }

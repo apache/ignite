@@ -69,7 +69,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         IgniteUuid miniId,
         boolean success,
         boolean addDepInfo) {
-        super(txId, 0, addDepInfo);
+        super(0, null, txId, 0, addDepInfo);
 
         this.futId = futId;
         this.miniId = miniId;

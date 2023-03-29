@@ -77,9 +77,16 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
-        boolean addDepInfo) {
-        super(cacheId, lockVer, futId, cnt, addDepInfo);
+    public GridDhtLockResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        GridCacheVersion lockVer,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        int cnt,
+        boolean addDepInfo
+    ) {
+        super(cacheId, cacheDeploymentId, lockVer, futId, cnt, addDepInfo);
 
         assert miniId != null;
 
@@ -93,9 +100,16 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param err Error.
      * @param addDepInfo
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
-        Throwable err, boolean addDepInfo) {
-        super(cacheId, lockVer, futId, err, addDepInfo);
+    public GridDhtLockResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        GridCacheVersion lockVer,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        Throwable err,
+        boolean addDepInfo
+    ) {
+        super(cacheId, cacheDeploymentId, lockVer, futId, err, addDepInfo);
 
         assert miniId != null;
 

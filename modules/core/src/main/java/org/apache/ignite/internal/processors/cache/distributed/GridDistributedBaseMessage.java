@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -76,7 +77,9 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
      * @param cnt Count of keys references in list of candidates.
      * @param addDepInfo Deployment info flag.
      */
-    protected GridDistributedBaseMessage(int cnt, boolean addDepInfo) {
+    protected GridDistributedBaseMessage(int cacheId, IgniteUuid cacheDeploymentId, int cnt, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId);
+
         assert cnt >= 0;
 
         this.cnt = cnt;
@@ -88,8 +91,8 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
      * @param cnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    protected GridDistributedBaseMessage(GridCacheVersion ver, int cnt, boolean addDepInfo) {
-        this(cnt, addDepInfo);
+    protected GridDistributedBaseMessage(int cacheId, IgniteUuid cacheDeploymentId, GridCacheVersion ver, int cnt, boolean addDepInfo) {
+        this(cacheId, cacheDeploymentId, cnt, addDepInfo);
 
         assert ver != null;
 

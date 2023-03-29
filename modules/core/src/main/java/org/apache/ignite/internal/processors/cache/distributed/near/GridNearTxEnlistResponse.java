@@ -93,15 +93,19 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
      * @param dhtFutId Dht future id.
      * @param newDhtNodes New DHT nodes involved into transaction.
      */
-    public GridNearTxEnlistResponse(int cacheId,
+    public GridNearTxEnlistResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         IgniteUuid futId,
         int miniId,
         GridCacheVersion lockVer,
         GridCacheReturn res,
         GridCacheVersion dhtVer,
         IgniteUuid dhtFutId,
-        Set<UUID> newDhtNodes) {
-        this.cacheId = cacheId;
+        Set<UUID> newDhtNodes
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.futId = futId;
         this.miniId = miniId;
         this.lockVer = lockVer;
@@ -120,9 +124,16 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
      * @param lockVer Lock version.
      * @param err Error.
      */
-    public GridNearTxEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
-        Throwable err) {
-        this.cacheId = cacheId;
+    public GridNearTxEnlistResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        IgniteUuid futId,
+        int miniId,
+        GridCacheVersion lockVer,
+        Throwable err
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.futId = futId;
         this.miniId = miniId;
         this.lockVer = lockVer;

@@ -95,14 +95,16 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
      */
     public GridNearGetResponse(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion ver,
         boolean addDepInfo
     ) {
+        super(cacheId, cacheDeploymentId);
+
         assert futId != null;
 
-        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.ver = ver;

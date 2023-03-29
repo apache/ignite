@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -99,13 +100,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      * @param nodeLeft {@code True} if primary node failed.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId,
+    public GridNearAtomicUpdateResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         int partId,
         boolean nodeLeft,
-        boolean addDepInfo) {
-        this.cacheId = cacheId;
+        boolean addDepInfo
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.nodeId = nodeId;
         this.futId = futId;
         this.partId = partId;

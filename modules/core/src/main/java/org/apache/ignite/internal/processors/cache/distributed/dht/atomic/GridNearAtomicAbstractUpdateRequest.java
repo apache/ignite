@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -121,6 +122,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     protected GridNearAtomicAbstractUpdateRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
@@ -130,7 +132,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         byte flags,
         boolean addDepInfo
     ) {
-        this.cacheId = cacheId;
+        super(cacheId, cacheDeploymentId);
+
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;

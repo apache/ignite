@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -54,8 +55,8 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
      * @param dhtCnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDhtUnlockRequest(int cacheId, int dhtCnt, boolean addDepInfo) {
-        super(cacheId, dhtCnt, addDepInfo);
+    public GridDhtUnlockRequest(int cacheId, IgniteUuid cacheDeploymentId, int dhtCnt, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId, dhtCnt, addDepInfo);
     }
 
     /**

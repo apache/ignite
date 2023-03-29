@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -57,10 +58,8 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
-        super(keyCnt, addDepInfo);
-
-        this.cacheId = cacheId;
+    public GridDistributedUnlockRequest(int cacheId, IgniteUuid cacheDeploymentId, int keyCnt, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId, keyCnt, addDepInfo);
     }
 
     /**

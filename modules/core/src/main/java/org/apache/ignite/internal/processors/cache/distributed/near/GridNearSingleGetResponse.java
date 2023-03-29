@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -83,13 +84,15 @@ public class GridNearSingleGetResponse extends GridCacheIdMessage implements Gri
      */
     public GridNearSingleGetResponse(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         long futId,
         AffinityTopologyVersion topVer,
         @Nullable Message res,
         boolean invalidPartitions,
         boolean addDepInfo
     ) {
-        this.cacheId = cacheId;
+        super(cacheId, cacheDeploymentId);
+
         this.futId = futId;
         this.topVer = topVer;
         this.res = res;

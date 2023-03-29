@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -114,7 +115,9 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
      */
-    protected GridDhtAtomicAbstractUpdateRequest(int cacheId,
+    protected GridDhtAtomicAbstractUpdateRequest(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
@@ -126,9 +129,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         boolean skipStore,
         boolean readRepairRecovery
     ) {
+        super(cacheId, cacheDeploymentId);
+
         assert topVer.topologyVersion() > 0 : topVer;
 
-        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
         this.writeVer = writeVer;

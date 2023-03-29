@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -79,6 +80,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      */
     GridNearAtomicSingleUpdateRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
@@ -89,6 +91,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         boolean addDepInfo
     ) {
         super(cacheId,
+            cacheDeploymentId,
             nodeId,
             futId,
             topVer,

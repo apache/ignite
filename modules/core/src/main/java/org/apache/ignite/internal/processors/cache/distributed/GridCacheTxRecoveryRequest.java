@@ -73,9 +73,9 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
         boolean nearTxCheck,
         IgniteUuid futId,
         IgniteUuid miniId,
-        boolean addDepInfo
-    ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        boolean addDepInfo)
+    {
+        super(0, null, tx.xidVersion(), 0, addDepInfo);
 
         nearXidVer = tx.nearXidVersion();
         sys = tx.system();

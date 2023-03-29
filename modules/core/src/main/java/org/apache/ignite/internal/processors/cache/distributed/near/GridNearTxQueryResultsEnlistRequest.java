@@ -117,7 +117,9 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
      * @param rows Rows.
      * @param op Operation.
      */
-    GridNearTxQueryResultsEnlistRequest(int cacheId,
+    GridNearTxQueryResultsEnlistRequest(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
         long threadId,
         IgniteUuid futId,
         int miniId,
@@ -128,9 +130,11 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
         long timeout,
         long txTimeout, int taskNameHash,
         Collection<Object> rows,
-        EnlistOperation op) {
+        EnlistOperation op
+    ) {
+        super(cacheId, cacheDeploymentId);
+
         this.txTimeout = txTimeout;
-        this.cacheId = cacheId;
         this.threadId = threadId;
         this.futId = futId;
         this.miniId = miniId;

@@ -125,6 +125,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public GridDistributedLockRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         @Nullable GridCacheVersion nearXidVer,
         long threadId,
@@ -141,13 +142,12 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         boolean keepBinary,
         boolean addDepInfo
     ) {
-        super(lockVer, keyCnt, addDepInfo);
+        super(cacheId, cacheDeploymentId, lockVer, keyCnt, addDepInfo);
 
         assert keyCnt > 0;
         assert futId != null;
         assert !isInTx || isolation != null;
 
-        this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.nearXidVer = nearXidVer;
         this.threadId = threadId;

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -153,6 +154,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      */
     public GridDhtAtomicUpdateRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
@@ -167,6 +169,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         boolean readRepairRecovery
     ) {
         super(cacheId,
+            cacheDeploymentId,
             nodeId,
             futId,
             writeVer,

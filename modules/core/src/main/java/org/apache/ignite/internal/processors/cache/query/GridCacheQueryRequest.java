@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -167,8 +168,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param reqId Request (cache query) ID.
      * @param fut Cache query future, contains query info.
      */
-    public static GridCacheQueryRequest startQueryRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheDistributedQueryFuture<?, ?, ?> fut) {
+    public static GridCacheQueryRequest startQueryRequest(
+        GridCacheContext<?, ?> cctx,
+        long reqId,
+        GridCacheDistributedQueryFuture<?, ?, ?> fut
+    ) {
         GridCacheQueryBean bean = fut.query();
         GridCacheQueryAdapter<?> qry = bean.query();
 
@@ -177,6 +181,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
+            cctx.dynamicDeploymentId(),
             reqId,
             cctx.name(),
             qry.type(),
@@ -207,11 +212,16 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      *
      * @param reqId Request (cache query) ID.
      */
-    public static GridCacheQueryRequest pageRequest(GridCacheContext<?, ?> cctx, long reqId,
-        GridCacheQueryAdapter<?> qry, boolean fields) {
+    public static GridCacheQueryRequest pageRequest(
+        GridCacheContext<?, ?> cctx,
+        long reqId,
+        GridCacheQueryAdapter<?> qry,
+        boolean fields
+    ) {
 
         return new GridCacheQueryRequest(
             cctx.cacheId(),
+            cctx.dynamicDeploymentId(),
             reqId,
             cctx.name(),
             qry.pageSize(),
@@ -234,6 +244,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     public static GridCacheQueryRequest cancelRequest(GridCacheContext<?, ?> cctx, long reqId, boolean fieldsQry) {
         return new GridCacheQueryRequest(cctx.cacheId(),
+            cctx.dynamicDeploymentId(),
             reqId,
             fieldsQry,
             cctx.startTopologyVersion(),
@@ -251,12 +262,14 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     private GridCacheQueryRequest(
         int cacheId,
+        IgniteUuid deploymentId,
         long id,
         boolean fields,
         AffinityTopologyVersion topVer,
         boolean addDepInfo
     ) {
-        this.cacheId = cacheId;
+        super(cacheId, deploymentId);
+
         this.id = id;
         this.fields = fields;
         this.topVer = topVer;
@@ -283,6 +296,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     private GridCacheQueryRequest(
         int cacheId,
+        IgniteUuid deploymentId,
         long id,
         String cacheName,
         int pageSize,
@@ -295,7 +309,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         boolean addDepInfo,
         Boolean dataPageScanEnabled
     ) {
-        this.cacheId = cacheId;
+        super(cacheId, deploymentId);
+
         this.id = id;
         this.cacheName = cacheName;
         this.pageSize = pageSize;
@@ -337,6 +352,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     private GridCacheQueryRequest(
         int cacheId,
+        IgniteUuid deploymentId,
         long id,
         String cacheName,
         GridCacheQueryType type,
@@ -360,11 +376,12 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         boolean addDepInfo,
         Boolean dataPageScanEnabled
     ) {
+        super(cacheId, deploymentId);
+
         assert type != null || fields;
         assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);
         assert clsName != null || fields || type == SCAN || type == SET || type == SPI;
 
-        this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
         this.type = type;

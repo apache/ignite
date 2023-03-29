@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -68,6 +69,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      */
     GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         UUID nodeId,
         long futId,
         @NotNull AffinityTopologyVersion topVer,
@@ -80,6 +82,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     ) {
         super(
             cacheId,
+            cacheDeploymentId,
             nodeId,
             futId,
             topVer,

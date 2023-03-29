@@ -55,10 +55,11 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
      * @param updateReq Related update request.
      */
     GridNearAtomicCheckUpdateRequest(GridNearAtomicAbstractUpdateRequest updateReq) {
+        super(updateReq.cacheId(), updateReq.deploymentId());
+
         assert updateReq != null && updateReq.fullSync() : updateReq;
 
         this.updateReq = updateReq;
-        this.cacheId = updateReq.cacheId();
         this.partId = updateReq.partition();
         this.futId = updateReq.futureId();
 

@@ -83,11 +83,12 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param miniId Mini-future ID.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid cacheDeploymentId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+        super(cacheId, cacheDeploymentId);
+
         assert futId != null;
         assert miniId != null;
 
-        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.addDepInfo = addDepInfo;

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -55,8 +56,9 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
      * @param routineId Routine ID.
      * @param updateCntrs Update counters.
      */
-    CacheContinuousQueryBatchAck(int cacheId, UUID routineId, Map<Integer, Long> updateCntrs) {
-        this.cacheId = cacheId;
+    CacheContinuousQueryBatchAck(int cacheId, IgniteUuid deploymentId, UUID routineId, Map<Integer, Long> updateCntrs) {
+        super(cacheId, deploymentId);
+
         this.routineId = routineId;
         this.updateCntrs = updateCntrs;
     }

@@ -146,7 +146,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         int txSize,
         boolean addDepInfo
     ) {
-        super(xidVer, 0, addDepInfo);
+        super(0, null, xidVer, 0, addDepInfo);
 
         assert xidVer != null;
         assert syncMode != null;

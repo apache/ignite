@@ -75,17 +75,19 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
      */
     GridDhtForceKeysRequest(
         int cacheId,
+        IgniteUuid cacheDeploymentId,
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
         AffinityTopologyVersion topVer,
         boolean addDepInfo
     ) {
+        super(cacheId, cacheDeploymentId);
+
         assert futId != null;
         assert miniId != null;
         assert !F.isEmpty(keys);
 
-        this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
         this.keys = keys;

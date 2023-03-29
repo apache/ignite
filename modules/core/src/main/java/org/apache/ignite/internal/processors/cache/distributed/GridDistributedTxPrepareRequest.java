@@ -189,7 +189,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         boolean onePhaseCommit,
         boolean addDepInfo
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(0, null, tx.xidVersion(), 0, addDepInfo);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();
