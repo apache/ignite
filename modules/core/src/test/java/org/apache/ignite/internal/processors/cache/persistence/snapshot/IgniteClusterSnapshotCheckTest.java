@@ -365,7 +365,11 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
-        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
+        IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
+
+        assertEquals("Full check snapshot must be disabled", 0, res.exceptions().size());
+
+        res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, true).get().idleVerifyResult();
 
         StringBuilder b = new StringBuilder();
         res.print(b::append, true);

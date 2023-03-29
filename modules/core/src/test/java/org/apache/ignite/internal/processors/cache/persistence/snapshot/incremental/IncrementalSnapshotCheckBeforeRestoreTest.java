@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_FULL_CHECK_ON_RESTORE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.junit.Assume.assumeFalse;
 
@@ -96,7 +97,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         for (IgniteEx n: F.asList(grid(0), grid(GRID_CNT))) {
             for (int i = 0; i <= incSnpCnt; i++) {
-                SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, i, true)
+                SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, i, DFLT_FULL_CHECK_ON_RESTORE)
                     .get(getTestTimeout());
 
                 assertTrue(res.exceptions().isEmpty());
@@ -113,7 +114,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
                 log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, false).get(getTestTimeout()),
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                 IgniteCheckedException.class,
                 "No incremental snapshot found");
         }
@@ -121,7 +122,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         createIncrementalSnapshots(1);
 
         for (IgniteEx n : F.asList(grid(0), grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, true)
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE)
                     .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
@@ -142,7 +143,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
                 log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, true).get(getTestTimeout()),
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                 IgniteCheckedException.class,
                 "Failed to find snapshot metafile");
         }
@@ -157,7 +158,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         U.delete(snp(srv).incrementalSnapshotLocalDir(SNP, null, 1));
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, true)
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_FULL_CHECK_ON_RESTORE)
                     .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
@@ -168,7 +169,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
                 GridTestUtils.assertThrows(
                     log,
-                    () -> snp(n).checkSnapshot(SNP, null, null, false, inc, true).get(getTestTimeout()),
+                    () -> snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                     IgniteCheckedException.class,
                     "No incremental snapshot found");
             }
@@ -184,7 +185,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         deleteWalSegment(0);
 
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
-            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, true)
+            SnapshotPartitionsVerifyTaskResult res = snp(n).checkSnapshot(SNP, null, null, false, 0, DFLT_FULL_CHECK_ON_RESTORE)
                     .get(getTestTimeout());
 
             assertTrue(res.exceptions().isEmpty());
@@ -195,7 +196,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
                 GridTestUtils.assertThrows(
                     log,
-                    () -> snp(n).checkSnapshot(SNP, null, null, false, inc, true).get(getTestTimeout()),
+                    () -> snp(n).checkSnapshot(SNP, null, null, false, inc, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                     IgniteCheckedException.class,
                     "No WAL segments found for incremental snapshot");
             }
@@ -212,7 +213,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         GridTestUtils.assertThrows(
             log,
-            () -> snp(srv).checkSnapshot(SNP, null, null, false, 1, true).get(getTestTimeout()),
+            () -> snp(srv).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
             IgniteCheckedException.class,
             "Missed WAL segment");
     }
@@ -227,7 +228,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         GridTestUtils.assertThrows(
                 log,
-                () -> snp(srv).checkSnapshot(SNP, null, null, false, 1, true).get(getTestTimeout()),
+                () -> snp(srv).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                 IgniteCheckedException.class,
                 "Missed WAL segment");
     }
@@ -247,7 +248,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
 
         GridTestUtils.assertThrows(
             log,
-            () -> snp(srv).checkSnapshot(SNP, null, null, false, 1, true).get(getTestTimeout()),
+            () -> snp(srv).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
             IgniteCheckedException.class,
             "Missed WAL segments");
     }
@@ -277,7 +278,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
                 log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, true).get(getTestTimeout()),
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                 IgniteCheckedException.class,
                 "Incremental snapshot doesn't match full snapshot");
         }
@@ -308,7 +309,7 @@ public class IncrementalSnapshotCheckBeforeRestoreTest extends AbstractSnapshotS
         for (IgniteEx n : F.asList(srv, grid(GRID_CNT))) {
             GridTestUtils.assertThrows(
                 log,
-                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, true).get(getTestTimeout()),
+                () -> snp(n).checkSnapshot(SNP, null, null, false, 1, DFLT_FULL_CHECK_ON_RESTORE).get(getTestTimeout()),
                 IgniteCheckedException.class,
                 "Incremental snapshot meta has wrong index");
         }
