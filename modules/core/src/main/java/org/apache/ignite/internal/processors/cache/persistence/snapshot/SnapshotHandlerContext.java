@@ -41,8 +41,8 @@ public class SnapshotHandlerContext {
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
 
-    /** If {@code true} check CRC before restore. */
-    private final boolean checkCRC;
+    /** If {@code true} check snapshot before restore. */
+    private final boolean check;
 
     /**
      * @param metadata Snapshot metadata.
@@ -51,7 +51,7 @@ public class SnapshotHandlerContext {
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
-     * @param checkCRC If {@code true} check CRC before restore.
+     * @param check If {@code true} check snapshot before restore.
      */
     public SnapshotHandlerContext(
         SnapshotMetadata metadata,
@@ -59,14 +59,14 @@ public class SnapshotHandlerContext {
         ClusterNode locNode,
         File snpDir,
         boolean streamerWrn,
-        boolean checkCRC
+        boolean check
     ) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
-        this.checkCRC = checkCRC;
+        this.check = check;
     }
 
     /**
@@ -105,8 +105,8 @@ public class SnapshotHandlerContext {
         return streamerWrn;
     }
 
-    /** @return If {@code true} check CRC before restore. */
-    public boolean checkCRC() {
-        return checkCRC;
+    /** @return If {@code true} check snapshot before restore. */
+    public boolean check() {
+        return check;
     }
 }

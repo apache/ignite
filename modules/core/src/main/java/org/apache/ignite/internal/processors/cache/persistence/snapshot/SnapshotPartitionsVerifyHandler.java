@@ -146,8 +146,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
-        if (!opCtx.checkCRC()) {
-            log.info("Snapshot CRC check skiped [snpName=" + meta.snapshotName() + ']');
+        if (!opCtx.check()) {
+            log.info("Snapshot check skiped [snpName=" + meta.snapshotName() + ']');
 
             return Collections.emptyMap();
         }

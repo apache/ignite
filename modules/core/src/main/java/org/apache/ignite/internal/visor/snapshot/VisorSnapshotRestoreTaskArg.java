@@ -41,8 +41,8 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     /** Incremental snapshot index. */
     private int incIdx;
 
-    /** If {@code true} check CRC before restore. */
-    private boolean checkCRC;
+    /** If {@code true} check snapshot before restore. */
+    private boolean check;
 
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
@@ -56,7 +56,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
      * @param sync Synchronous execution flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
-     * @param checkCRC If {@code true} check CRC before restore.
+     * @param check If {@code true} check snapshot before restore.
      */
     public VisorSnapshotRestoreTaskArg(
         String snpName,
@@ -65,14 +65,14 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         boolean sync,
         VisorSnapshotRestoreTaskAction action,
         @Nullable Collection<String> grpNames,
-        boolean checkCRC
+        boolean check
     ) {
         super(snpName, snpPath, sync, false);
 
         this.action = action;
         this.grpNames = grpNames;
         this.incIdx = incIdx == null ? 0 : incIdx;
-        this.checkCRC = checkCRC;
+        this.check = check;
     }
 
     /** @return Cache group names. */
@@ -90,9 +90,9 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         return incIdx;
     }
 
-    /** @return If {@code true} check CRC before restore. */
-    public boolean checkCRC() {
-        return checkCRC;
+    /** @return If {@code true} check snapshot before restore. */
+    public boolean check() {
+        return check;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         U.writeEnum(out, action);
         U.writeCollection(out, grpNames);
         out.writeInt(incIdx);
-        out.writeBoolean(checkCRC);
+        out.writeBoolean(check);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +110,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
         grpNames = U.readCollection(in);
         incIdx = in.readInt();
-        checkCRC = in.readBoolean();
+        check = in.readBoolean();
     }
 
     /** {@inheritDoc} */

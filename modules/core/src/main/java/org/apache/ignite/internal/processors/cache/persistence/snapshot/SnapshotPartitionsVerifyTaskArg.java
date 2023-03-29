@@ -44,8 +44,8 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
-    /** If {@code true} check CRC before restore. */
-    private boolean checkCRC;
+    /** If {@code true} check snapshot before restore. */
+    private boolean check;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
@@ -56,18 +56,18 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
      * @param snpPath Snapshot directory path.
-     * @param checkCRC If {@code true} check CRC before restore.
+     * @param check If {@code true} check snapshot before restore.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         @Nullable String snpPath,
-        boolean checkCRC
+        boolean check
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
-        this.checkCRC = checkCRC;
+        this.check = check;
     }
 
     /**
@@ -91,9 +91,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return snpPath;
     }
 
-    /** @return If {@code true} check CRC before restore. */
-    public boolean checkCRC() {
-        return checkCRC;
+    /** @return If {@code true} check snapshot before restore. */
+    public boolean check() {
+        return check;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
         U.writeString(out, snpPath);
-        out.writeBoolean(checkCRC);
+        out.writeBoolean(check);
     }
 
     /** {@inheritDoc} */
@@ -109,7 +109,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
         snpPath = U.readString(in);
-        checkCRC = in.readBoolean();
+        check = in.readBoolean();
     }
 
     /** {@inheritDoc} */

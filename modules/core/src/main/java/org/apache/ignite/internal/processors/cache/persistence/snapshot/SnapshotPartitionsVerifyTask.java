@@ -57,9 +57,9 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         String path,
         String constId,
         Collection<String> groups,
-        boolean checkCRC
+        boolean check
     ) {
-        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups, checkCRC);
+        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups, check);
     }
 
     /** {@inheritDoc} */
@@ -92,28 +92,28 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
         private final Collection<String> rqGrps;
 
-        /** If {@code true} check CRC before restore. */
-        private final boolean checkCRC;
+        /** If {@code true} check snapshot before restore. */
+        private final boolean check;
 
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
-         * @param checkCRC If {@code true} check CRC before restore.
+         * @param check If {@code true} check snapshot before restore.
          */
         public VisorVerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
             Collection<String> rqGrps,
-            boolean checkCRC
+            boolean check
         ) {
             this.snpName = snpName;
             this.consId = consId;
             this.rqGrps = rqGrps;
             this.snpPath = snpPath;
-            this.checkCRC = checkCRC;
+            this.check = check;
         }
 
         /** {@inheritDoc} */
@@ -130,7 +130,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, checkCRC));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
@@ -149,12 +149,12 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
             return snpName.equals(job.snpName) && consId.equals(job.consId) &&
                 Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath) &&
-                Objects.equals(checkCRC, job.checkCRC);
+                Objects.equals(check, job.check);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, consId, rqGrps, snpPath, checkCRC);
+            return Objects.hash(snpName, consId, rqGrps, snpPath, check);
         }
     }
 }

@@ -367,7 +367,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
 
-        assertEquals("CRC check must be disabled", 0, res.exceptions().size());
+        assertEquals("Check must be disabled", 0, res.exceptions().size());
 
         res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, true).get().idleVerifyResult();
 

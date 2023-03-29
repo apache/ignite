@@ -72,7 +72,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
                 arg.snapshotPath(),
                 arg.groupNames(),
                 arg.incrementIndex(),
-                arg.checkCRC()
+                arg.check()
             );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
