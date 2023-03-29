@@ -988,4 +988,7 @@ The SNAPSHOT view exposes information about local snapshots.
 | CONSISTENT_ID | VARCHAR | Consistent ID of a node to which snapshot data relates.
 | BASELINE_NODES | VARCHAR | Baseline nodes affected by the snapshot.
 | CACHE_GROUPS | VARCHAR | Cache group names that were included in the snapshot.
+| SNAPSHOT_RECORD_SEGMENT | BIGINT | Index of WAL segment containing snapshot's WAL record.
+| INCREMENT_INDEX | INTEGER | Incremental snapshot index.
+| TYPE | VARCHAR | Type of snapshot - full or incremental.
 |===

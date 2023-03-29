@@ -160,8 +160,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
             case OP_EXEC_NATIVE: {
                 long taskPtr = reader.readLong();
                 long topVer = reader.readLong();
+                String taskName = reader.readString();
 
-                final PlatformFullTask task = new PlatformFullTask(platformCtx, platformGrp, taskPtr, topVer);
+                final PlatformFullTask task = new PlatformFullTask(platformCtx, platformGrp, taskPtr, topVer, taskName);
 
                 return executeNative0(task);
             }
@@ -186,8 +187,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 int part = reader.readInt();
                 Object func = reader.readObjectDetached();
                 long ptr = reader.readLong();
+                String funcName = reader.readString();
 
-                PlatformCallable callable = new PlatformCallable(func, ptr);
+                PlatformCallable callable = new PlatformCallable(func, ptr, funcName);
 
                 IgniteInternalFuture future = compute.affinityCallAsync(cacheNames, part, callable);
 
@@ -199,8 +201,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 Object key = reader.readObjectDetached();
                 Object func = reader.readObjectDetached();
                 long ptr = reader.readLong();
+                String callableName = reader.readString();
 
-                PlatformCallable callable = new PlatformCallable(func, ptr);
+                PlatformCallable callable = new PlatformCallable(func, ptr, callableName);
 
                 IgniteInternalFuture future = compute.affinityCallAsync(Collections.singletonList(cacheName), key, callable);
 
@@ -212,8 +215,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 int part = reader.readInt();
                 Object func = reader.readObjectDetached();
                 long ptr = reader.readLong();
+                String runnableName = reader.readString();
 
-                PlatformRunnable runnable = new PlatformRunnable(func, ptr);
+                PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
 
                 IgniteInternalFuture future = compute.affinityRunAsync(cacheNames, part, runnable);
 
@@ -225,8 +229,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 Object key = reader.readObjectDetached();
                 Object func = reader.readObjectDetached();
                 long ptr = reader.readLong();
+                String runnableName = reader.readString();
 
-                PlatformRunnable runnable = new PlatformRunnable(func, ptr);
+                PlatformRunnable runnable = new PlatformRunnable(func, ptr, runnableName);
 
                 IgniteInternalFuture future = compute.affinityRunAsync(Collections.singleton(cacheName), key, runnable);
 
@@ -319,7 +324,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @return Closure job.
      */
     private PlatformJob nextClosureJob(PlatformAbstractTask task, BinaryRawReaderEx reader) {
-        return platformCtx.createClosureJob(task, reader.readLong(), reader.readObjectDetached());
+        return platformCtx.createClosureJob(task, reader.readLong(), reader.readObjectDetached(), reader.readString());
     }
 
     /** {@inheritDoc} */

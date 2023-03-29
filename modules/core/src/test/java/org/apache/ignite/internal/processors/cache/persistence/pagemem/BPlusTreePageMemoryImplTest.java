@@ -99,7 +99,8 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             null,
             null,
             null,
-            new CacheDiagnosticManager()
+            new CacheDiagnosticManager(),
+            null
         );
 
         IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {

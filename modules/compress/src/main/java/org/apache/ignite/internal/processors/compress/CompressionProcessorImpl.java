@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -48,10 +49,11 @@ import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
  */
 public class CompressionProcessorImpl extends CompressionProcessor {
     /** Max page size. */
-    private final ThreadLocalByteBuffer compactBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE);
+    private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalDirectByteBuffer(MAX_PAGE_SIZE, NATIVE_BYTE_ORDER);
 
     /** A bit more than max page size, extra space is required by compressors. */
-    private final ThreadLocalByteBuffer compressBuf = new ThreadLocalByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE));
+    private final ThreadLocalDirectByteBuffer compressBuf =
+        new ThreadLocalDirectByteBuffer(maxCompressedBufferSize(MAX_PAGE_SIZE), NATIVE_BYTE_ORDER);
 
     /**
      * @param ctx Kernal context.
@@ -59,14 +61,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     @SuppressWarnings("WeakerAccess")
     public CompressionProcessorImpl(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * @param cap Capacity.
-     * @return Direct byte buffer.
-     */
-    static ByteBuffer allocateDirectBuffer(int cap) {
-        return ByteBuffer.allocateDirect(cap).order(NATIVE_BYTE_ORDER);
     }
 
     /** {@inheritDoc} */
@@ -455,32 +449,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          */
         static void decompress(ByteBuffer page, ByteBuffer dst) {
             decompressor.decompress(page, dst);
-        }
-    }
-
-    /**
-     */
-    static final class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
-        /** */
-        final int size;
-
-        /**
-         * @param size Size.
-         */
-        ThreadLocalByteBuffer(int size) {
-            this.size = size;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected ByteBuffer initialValue() {
-            return allocateDirectBuffer(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuffer get() {
-            ByteBuffer buf = super.get();
-            buf.clear();
-            return buf;
         }
     }
 }

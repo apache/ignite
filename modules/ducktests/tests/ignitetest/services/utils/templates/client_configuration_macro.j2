@@ -40,7 +40,7 @@
         <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
         {% endif %}
 
-        {% if config.partition_awareness_enabled %}
+        {% if config.partition_awareness_enabled != None %}
         <property name="partitionAwarenessEnabled" value="{{ config.partition_awareness_enabled }}"/>
         {% endif %}
     </bean>

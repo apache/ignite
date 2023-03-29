@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Resource;
+    using static IgniteUtils;
 
     /// <summary>
     /// System job which wraps over <c>Action</c>.
@@ -76,6 +77,12 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         public ComputeActionJob(IBinaryRawReader reader)
         {
             _action = (IComputeAction) reader.ReadObject<object>();
+        }
+
+        /** <inheritDoc /> */ 
+        public string GetName()
+        {
+            return GetComputeExecutableName(_action);
         }
     }
 }

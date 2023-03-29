@@ -78,9 +78,10 @@ public class PlatformFullJob extends PlatformAbstractJob {
      * @param task Parent task.
      * @param ptr Job pointer.
      * @param job Job.
+     * @param jobName Job name.
      */
-    public PlatformFullJob(PlatformContext ctx, PlatformAbstractTask task, long ptr, Object job) {
-        super(task, ptr, job);
+    public PlatformFullJob(PlatformContext ctx, PlatformAbstractTask task, long ptr, Object job, String jobName) {
+        super(task, ptr, job, jobName);
 
         this.ctx = ctx;
     }
@@ -196,11 +197,13 @@ public class PlatformFullJob extends PlatformAbstractJob {
         assert job != null;
 
         out.writeObject(job);
+        out.writeObject(jobName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         job = in.readObject();
+        jobName = (String)in.readObject();
     }
 
     /**
