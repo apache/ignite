@@ -413,7 +413,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
                     GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
@@ -450,7 +450,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsFullMessage.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     if (msg.exchangeId() == null) {
@@ -470,7 +470,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsSingleRequest.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
                     processSinglePartitionRequest(node, msg);

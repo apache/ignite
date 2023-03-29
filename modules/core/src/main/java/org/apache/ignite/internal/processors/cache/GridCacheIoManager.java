@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -116,6 +117,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** */
     private static final int MAX_STORED_PENDING_MESSAGES = 100;
+
+    public static final int COMMON_MESSAGE_HANDLER_ID = 0;
 
     /** Delay in milliseconds between retries. */
     private long retryDelay;
@@ -333,20 +336,25 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         try {
             int msgIdx = cacheMsg.lookupIndex();
+            IgniteUuid msgDeploymentId = cacheMsg.deploymentId();
 
             IgniteBiInClosure<UUID, GridCacheMessage> c = null;
 
             if (msgIdx >= 0) {
-                Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
+                Map<Integer, IndexedClassHandler> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-                IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
+                IndexedClassHandler cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
 
-                if (cacheClsHandlers != null)
-                    c = cacheClsHandlers[msgIdx];
+                if (cacheClsHandlers != null && (msgDeploymentId == null || Objects.equals(msgDeploymentId, cacheClsHandlers.deploymentId)))
+                    c = cacheClsHandlers.hndls[msgIdx];
             }
 
-            if (c == null)
-                c = msgHandlers.clsHandlers.get(new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
+            if (c == null) {
+                RegularClassHandler rHnd = msgHandlers.clsHandlers.get(new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
+
+                if (rHnd != null && (msgDeploymentId == null || (Objects.equals(msgDeploymentId, rHnd.deploymentId))))
+                    c = rHnd.hnd;
+            }
 
             if (c == null) {
                 if (processMissedHandler(nodeId, cacheMsg))
@@ -365,10 +373,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 msg0.append(nl()).append("Registered listeners:");
 
-                Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
+                Map<Integer, IndexedClassHandler> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-                for (Map.Entry<Integer, IgniteBiInClosure[]> e : idxClsHandlers0.entrySet())
-                    msg0.append(nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue()));
+                for (Map.Entry<Integer, IndexedClassHandler> e : idxClsHandlers0.entrySet())
+                    msg0.append(nl()).append(e.getKey()).append("=").append(Arrays.toString(e.getValue().hndls));
 
                 if (cctx.kernalContext().isStopping()) {
                     if (log.isDebugEnabled())
@@ -1419,12 +1427,30 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     public <Msg extends GridCacheMessage> void addCacheHandler(
         int hndId,
+        IgniteUuid deploymentId,
         Class<Msg> type,
         IgniteBiInClosure<UUID, ? super Msg> c
     ) {
         assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
 
-        addHandler(hndId, type, c, cacheHandlers);
+        addHandler(hndId, deploymentId, type, c, cacheHandlers);
+    }
+
+    /**
+     * Registers a new message handler for the given message {@code type}.
+     * This method is equivalent to {@link #addCacheHandler(int, IgniteUuid, Class, IgniteBiInClosure)} where is
+     * the handler id equals to {@link #COMMON_MESSAGE_HANDLER_ID} and deployment id is {@code null}.
+     *
+     * @param type Type of message.
+     * @param c Handler.
+     */
+    public <Msg extends GridCacheMessage> void addCacheHandler(
+        Class<Msg> type,
+        IgniteBiInClosure<UUID, ? super Msg> c
+    ) {
+        assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
+
+        addHandler(COMMON_MESSAGE_HANDLER_ID, null, type, c, cacheHandlers);
     }
 
     /**
@@ -1438,7 +1464,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         int hndId,
         Class<? extends GridCacheMessage> msgCls
     ) {
-        return cacheHandlers.clsHandlers.get(new ListenerKey(hndId, msgCls));
+        RegularClassHandler clsHnd = cacheHandlers.clsHandlers.get(new ListenerKey(hndId, msgCls));
+
+        return (clsHnd != null)? clsHnd.hnd : null;
     }
 
     /**
@@ -1453,7 +1481,28 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     ) {
         assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
 
-        addHandler(hndId, type, c, grpHandlers);
+        addHandler(hndId, null, type, c, grpHandlers);
+    }
+
+    /**
+     * Changes an old deployment identifier for the given message handler {@code hndId}.
+     *
+     * @param hndId Message handler identifier.
+     * @param deploymentId New deployment identifier.
+     */
+    public void remapCacheHandlersOnRecovery(int hndId, IgniteUuid deploymentId) {
+        // There is no need to remap delployment id for the grpHandlers, it is always null.
+        Map<Integer, IndexedClassHandler> idxClsHandlers0 = cacheHandlers.idxClsHandlers;
+        for (Map.Entry<Integer, IndexedClassHandler> e : idxClsHandlers0.entrySet()) {
+            if (e.getKey() == hndId)
+                e.getValue().deploymentId = deploymentId;
+        }
+
+        ConcurrentMap<ListenerKey, RegularClassHandler> clsHandlers0 = cacheHandlers.clsHandlers;
+        for (Map.Entry<ListenerKey, RegularClassHandler> e : clsHandlers0.entrySet()) {
+            if (e.getKey().hndId == hndId)
+                e.getValue().deploymentId = deploymentId;
+        }
     }
 
     /**
@@ -1464,6 +1513,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     private <Msg extends GridCacheMessage> void addHandler(
         int hndId,
+        IgniteUuid deploymentId,
         Class<Msg> type,
         IgniteBiInClosure<UUID, ? super Msg> c,
         MessageHandlers msgHandlers
@@ -1471,33 +1521,33 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         int msgIdx = messageIndex(type);
 
         if (msgIdx != -1) {
-            Map<Integer, IgniteBiInClosure[]> idxClsHandlers0 = msgHandlers.idxClsHandlers;
+            Map<Integer, IndexedClassHandler> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers0.compute(hndId, (key, clsHandlers) -> {
+            IndexedClassHandler cacheClsHandlers = idxClsHandlers0.compute(hndId, (key, clsHandlers) -> {
                 if (clsHandlers == null)
-                    clsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
+                    clsHandlers = new IndexedClassHandler(deploymentId);
 
-                if (clsHandlers[msgIdx] != null)
+                if (clsHandlers.hndls[msgIdx] != null || !Objects.equals(clsHandlers.deploymentId, deploymentId))
                     return null;
 
-                clsHandlers[msgIdx] = c;
+                clsHandlers.hndls[msgIdx] = c;
 
                 return clsHandlers;
             });
 
             if (cacheClsHandlers == null)
-                throw new IgniteException("Duplicate cache message ID found [hndId=" + hndId +
-                    ", type=" + type + ']');
+                throw new IgniteException("Duplicate cache message ID found [hndId=" + hndId + ", type=" + type + ']');
 
             return;
         }
         else {
             ListenerKey key = new ListenerKey(hndId, type);
+            RegularClassHandler regHnd = new RegularClassHandler(deploymentId, (IgniteBiInClosure<UUID, GridCacheMessage>)c);
 
-            if (msgHandlers.clsHandlers.putIfAbsent(key,
-                (IgniteBiInClosure<UUID, GridCacheMessage>)c) != null)
+            if (msgHandlers.clsHandlers.putIfAbsent(key, regHnd) != null) {
                 assert false : "Handler for class already registered [hndId=" + hndId + ", cls=" + type +
                     ", old=" + msgHandlers.clsHandlers.get(key) + ", new=" + c + ']';
+            }
         }
 
         IgniteLogger log0 = log;
@@ -1711,16 +1761,46 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         X.println(">>>   cacheGrpOrderedHandlersSize: " + grpHandlers.orderedHandlers.size());
     }
 
+    /** */
+    static class MessageHandler {
+        /** Deployment identifier. */
+        volatile IgniteUuid deploymentId;
+
+        MessageHandler(IgniteUuid deploymentId) {
+            this.deploymentId = deploymentId;
+        }
+    }
+
+    static class IndexedClassHandler extends MessageHandler {
+        /** Actual handlers. */
+        final IgniteBiInClosure[] hndls = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
+
+        IndexedClassHandler(IgniteUuid deploymentId) {
+            super(deploymentId);
+        }
+    }
+
+    /** */
+    static class RegularClassHandler extends MessageHandler {
+        /** Actual handler. */
+        IgniteBiInClosure<UUID, GridCacheMessage> hnd;
+
+        RegularClassHandler(IgniteUuid deploymentId, IgniteBiInClosure<UUID, GridCacheMessage> hnd) {
+            super(deploymentId);
+
+            this.hnd = hnd;
+        }
+    }
+
     /**
      *
      */
     static class MessageHandlers {
         /** Indexed class handlers. */
-        volatile Map<Integer, IgniteBiInClosure[]> idxClsHandlers = new ConcurrentHashMap<>();
+        volatile Map<Integer, IndexedClassHandler> idxClsHandlers = new ConcurrentHashMap<>();
 
         /** Handler registry. */
-        ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
-            clsHandlers = new ConcurrentHashMap<>();
+        ConcurrentMap<ListenerKey, RegularClassHandler> clsHandlers = new ConcurrentHashMap<>();
 
         /** Ordered handler registry. */
         ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =

@@ -104,11 +104,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
 
-        cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
-            @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
-                processQueryRequest(nodeId, req);
-            }
-        });
+        cctx.io().addCacheHandler(
+            cctx.cacheId(),
+            cctx.dynamicDeploymentId(),
+            GridCacheQueryRequest.class,
+            (CI2<UUID, GridCacheQueryRequest>) this::processQueryRequest);
 
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {

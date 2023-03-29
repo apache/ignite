@@ -144,122 +144,75 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearGetRequest.class, new CI2<UUID, GridNearGetRequest>() {
-            @Override public void apply(UUID nodeId, GridNearGetRequest req) {
-                processNearGetRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearGetRequest.class,
+            (CI2<UUID, GridNearGetRequest>) this::processNearGetRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearSingleGetRequest.class, new CI2<UUID, GridNearSingleGetRequest>() {
-            @Override public void apply(UUID nodeId, GridNearSingleGetRequest req) {
-                processNearSingleGetRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearSingleGetRequest.class,
+            (CI2<UUID, GridNearSingleGetRequest>) this::processNearSingleGetRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearLockRequest.class, new CI2<UUID, GridNearLockRequest>() {
-            @Override public void apply(UUID nodeId, GridNearLockRequest req) {
-                processNearLockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearLockRequest.class,
+            (CI2<UUID, GridNearLockRequest>) this::processNearLockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtLockRequest.class, new CI2<UUID, GridDhtLockRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtLockRequest req) {
-                processDhtLockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtLockRequest.class,
+            (CI2<UUID, GridDhtLockRequest>) this::processDhtLockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtLockResponse.class, new CI2<UUID, GridDhtLockResponse>() {
-            @Override public void apply(UUID nodeId, GridDhtLockResponse req) {
-                processDhtLockResponse(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtLockResponse.class,
+            (CI2<UUID, GridDhtLockResponse>) this::processDhtLockResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearUnlockRequest.class, new CI2<UUID, GridNearUnlockRequest>() {
-            @Override public void apply(UUID nodeId, GridNearUnlockRequest req) {
-                processNearUnlockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearUnlockRequest.class,
+            (CI2<UUID, GridNearUnlockRequest>) this::processNearUnlockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtUnlockRequest req) {
-                processDhtUnlockRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtUnlockRequest.class,
+            (CI2<UUID, GridDhtUnlockRequest>) this::processDhtUnlockRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistRequest.class, new CI2<UUID, GridNearTxQueryEnlistRequest>() {
-            @Override public void apply(UUID nodeId, GridNearTxQueryEnlistRequest req) {
-                processNearTxQueryEnlistRequest(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxQueryEnlistRequest.class,
+            (CI2<UUID, GridNearTxQueryEnlistRequest>) this::processNearTxQueryEnlistRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistResponse.class, new CI2<UUID, GridNearTxQueryEnlistResponse>() {
-            @Override public void apply(UUID nodeId, GridNearTxQueryEnlistResponse req) {
-                processNearTxQueryEnlistResponse(nodeId, req);
-            }
-        });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxQueryEnlistResponse.class,
+            (CI2<UUID, GridNearTxQueryEnlistResponse>) this::processNearTxQueryEnlistResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtForceKeysRequest.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtForceKeysRequest.class,
             new MessageHandler<GridDhtForceKeysRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysRequest msg) {
                     processForceKeysRequest(node, msg);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtForceKeysResponse.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtForceKeysResponse.class,
             new MessageHandler<GridDhtForceKeysResponse>() {
                 @Override public void onMessage(ClusterNode node, GridDhtForceKeysResponse msg) {
                     processForceKeyResponse(node, msg);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryResultsEnlistRequest.class,
-            new CI2<UUID, GridNearTxQueryResultsEnlistRequest>() {
-                @Override public void apply(UUID nodeId, GridNearTxQueryResultsEnlistRequest req) {
-                    processNearTxQueryResultsEnlistRequest(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxQueryResultsEnlistRequest.class,
+            (CI2<UUID, GridNearTxQueryResultsEnlistRequest>) this::processNearTxQueryResultsEnlistRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryResultsEnlistResponse.class,
-            new CI2<UUID, GridNearTxQueryResultsEnlistResponse>() {
-                @Override public void apply(UUID nodeId, GridNearTxQueryResultsEnlistResponse req) {
-                    processNearTxQueryResultsEnlistResponse(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxQueryResultsEnlistResponse.class,
+            (CI2<UUID, GridNearTxQueryResultsEnlistResponse>) this::processNearTxQueryResultsEnlistResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxEnlistRequest.class,
-            new CI2<UUID, GridNearTxEnlistRequest>() {
-                @Override public void apply(UUID nodeId, GridNearTxEnlistRequest req) {
-                    processNearTxEnlistRequest(nodeId, req);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxEnlistRequest.class,
+            (CI2<UUID, GridNearTxEnlistRequest>) this::processNearTxEnlistRequest);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxEnlistResponse.class,
-            new CI2<UUID, GridNearTxEnlistResponse>() {
-                @Override public void apply(UUID nodeId, GridNearTxEnlistResponse msg) {
-                    processNearTxEnlistResponse(nodeId, msg);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxEnlistResponse.class,
+            (CI2<UUID, GridNearTxEnlistResponse>) this::processNearTxEnlistResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtTxQueryEnlistRequest.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtTxQueryEnlistRequest.class,
             new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
                 @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistRequest msg) {
                     processDhtTxQueryEnlistRequest(nodeId, msg, false);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtTxQueryFirstEnlistRequest.class,
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtTxQueryFirstEnlistRequest.class,
             new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
                 @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistRequest msg) {
                     processDhtTxQueryEnlistRequest(nodeId, msg, true);
                 }
             });
 
-        ctx.io().addCacheHandler(ctx.cacheId(), GridDhtTxQueryEnlistResponse.class,
-            new CI2<UUID, GridDhtTxQueryEnlistResponse>() {
-                @Override public void apply(UUID nodeId, GridDhtTxQueryEnlistResponse msg) {
-                    processDhtTxQueryEnlistResponse(nodeId, msg);
-                }
-            });
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtTxQueryEnlistResponse.class,
+            (CI2<UUID, GridDhtTxQueryEnlistResponse>) this::processDhtTxQueryEnlistResponse);
     }
 
     /** {@inheritDoc} */
