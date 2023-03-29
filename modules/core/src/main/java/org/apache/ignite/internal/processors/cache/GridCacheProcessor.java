@@ -2783,6 +2783,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             cache.context().ttl().unregister();
                     }
 
+                    if (gctx != null)
+                        gctx.prepareToStop();
+
                     return null;
                 }
             );
