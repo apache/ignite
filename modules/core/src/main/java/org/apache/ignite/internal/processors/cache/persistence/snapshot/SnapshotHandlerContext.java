@@ -41,7 +41,7 @@ public class SnapshotHandlerContext {
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
 
-    /** If {@code true} perform full checks.*/
+    /** If {@code true} perform full checks. */
     private final boolean fullCheck;
 
     /**
