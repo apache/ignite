@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.TracingConfigurationCommand;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
@@ -94,7 +94,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
     protected IgniteEx ignite;
 
     /** */
-    private static CommandHandler hnd;
+    private static CLICommandFrontend hnd;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -102,7 +102,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
 
         ignite = startGrids(2);
 
-        hnd = new CommandHandler();
+        hnd = cliFactory.apply(createTestLogger());
     }
 
     /** {@inheritDoc} */

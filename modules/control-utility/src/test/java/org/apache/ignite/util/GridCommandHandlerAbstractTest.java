@@ -49,6 +49,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.IdleVerify;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -63,7 +64,6 @@ import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.join;
@@ -89,7 +89,7 @@ import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
  * {@link GridCommandHandlerClusterByClassAbstractTest}
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
-public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerUtilityAwareAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
 
@@ -349,7 +349,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(createTestLogger()), args);
+        return execute(cliFactory.apply(createTestLogger()), args);
     }
 
     /**
@@ -359,14 +359,14 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @param args Arguments.
      * @return Result of execution
      */
-    protected int execute(CommandHandler hnd, String... args) {
+    protected int execute(CLICommandFrontend hnd, String... args) {
         return execute(hnd, new ArrayList<>(asList(args)));
     }
 
     /**
      * Before command executed {@link #testOut} reset.
      */
-    protected int execute(CommandHandler hnd, List<String> args) {
+    protected int execute(CLICommandFrontend hnd, List<String> args) {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 

@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -82,7 +82,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         assertFalse(ignite.cluster().state().active());
 
-        final CommandHandler cmd = new CommandHandler();
+        final CLICommandFrontend cmd = cliFactory.apply(createTestLogger());
 
         List<String> params = new ArrayList<>();
 

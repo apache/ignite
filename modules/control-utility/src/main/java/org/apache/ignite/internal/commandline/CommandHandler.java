@@ -39,6 +39,7 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -70,7 +71,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 /**
  * Class that execute several commands passed via command line.
  */
-public class CommandHandler {
+public class CommandHandler implements CLICommandFrontend {
     /** */
     public static final String CMD_HELP = "--help";
 
@@ -120,7 +121,7 @@ public class CommandHandler {
     protected final String ses = U.id8(UUID.randomUUID());
 
     /** Console instance. Public access needs for tests. */
-    public GridConsole console = GridConsoleAdapter.getInstance();
+    private GridConsole console = GridConsoleAdapter.getInstance();
 
     /** */
     private Object lastOperationRes;
@@ -195,13 +196,8 @@ public class CommandHandler {
         this.cmds = Collections.unmodifiableMap(cmds);
     }
 
-    /**
-     * Parse and execute command.
-     *
-     * @param rawArgs Arguments to parse and execute.
-     * @return Exit code.
-     */
-    public int execute(List<String> rawArgs) {
+    /** {@inheritDoc} */
+    @Override public int execute(List<String> rawArgs) {
         LocalDateTime startTime = LocalDateTime.now();
 
         Thread.currentThread().setName("session=" + ses);
@@ -616,13 +612,14 @@ public class CommandHandler {
         return factory;
     }
 
-    /**
-     * Used for tests.
-     *
-     * @return Last operation result;
-     */
-    public <T> T getLastOperationResult() {
+    /** {@inheritDoc} */
+    @Override public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void console(GridConsole console) {
+        this.console = console;
     }
 
     /**

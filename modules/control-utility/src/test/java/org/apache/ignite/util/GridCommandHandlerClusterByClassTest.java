@@ -67,6 +67,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheClear;
 import org.apache.ignite.internal.commandline.cache.CacheDestroy;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -390,6 +391,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertNotContains(log, testOutStr, "Control.sh");
 
         checkHelp(testOutStr, "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output");
+    }
+
+    /** */
+    @Test
+    public void testHelpParity() throws Exception {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--help"));
+
+        String controlShOutStr = testOut.toString();
     }
 
     /**
@@ -1609,7 +1620,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @param validateClo Validate clo.
      * @param args Args.
      */
-    private void validate(CommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
+    private void validate(CLICommandFrontend h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo,
         String... args) {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
@@ -1937,7 +1948,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }));
 
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
-        CommandHandler cmd = new CommandHandler(new JavaLogger(log, false));
+        CLICommandFrontend cmd = cliFactory.apply(new JavaLogger(log, false));
 
         assertEquals(resCode, execute(cmd, BASELINE.text()));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);

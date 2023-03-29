@@ -30,7 +30,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.GridConsole;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 import org.apache.ignite.internal.commands.api.Parameter;
@@ -62,7 +64,7 @@ import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 /**
  *
  */
-public class CLICommandFrontend {
+public class CLICommandFrontendImpl implements CLICommandFrontend {
     /** Indent for help output. */
     public static final String INDENT = "  ";
 
@@ -88,8 +90,8 @@ public class CLICommandFrontend {
     private final CommandsRegistry registry = new CommandsRegistry();
 
     /** */
-    public CLICommandFrontend() {
-        logger = CommandHandler.setupJavaLogger(CLI_NAME, CLICommandFrontend.class);
+    public CLICommandFrontendImpl(IgniteLogger logger) {
+        this.logger = logger;
 
         commonArgsParser = new CLIArgumentParser(Arrays.asList(
             optionalArg(CMD_HOST, "HOST_OR_IP", String.class),
@@ -114,13 +116,15 @@ public class CLICommandFrontend {
 
     /** */
     public static void main(String[] args) {
-        CLICommandFrontend hnd = new CLICommandFrontend();
+        CLICommandFrontendImpl hnd = new CLICommandFrontendImpl(
+            CommandHandler.setupJavaLogger(CLI_NAME, CLICommandFrontendImpl.class)
+        );
 
         System.exit(hnd.execute(Arrays.stream(args).filter(String::isEmpty).collect(Collectors.toList())));
     }
 
-    /** */
-    private int execute(List<String> args) {
+    /** {@inheritDoc} */
+    @Override public int execute(List<String> args) {
         logCommonInfo();
 
         if (CommandHandler.isHelp(args)) {
@@ -320,5 +324,15 @@ public class CLICommandFrontend {
         );
 
         logger.info(bldr.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T getLastOperationResult() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void console(GridConsole console) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -137,7 +137,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -172,7 +172,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CommandHandler handler = new CommandHandler(createTestLogger());
+        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -219,7 +219,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
      * @param handler CommandHandler used to run command.
      * @param nodeIds Ids to check.
      */
-    private void checkResult(CommandHandler handler, UUID... nodeIds) {
+    private void checkResult(CLICommandFrontend handler, UUID... nodeIds) {
         String output = testOut.toString();
 
         Map<UUID, Set<IndexRebuildStatusInfoContainer>> cmdResult = handler.getLastOperationResult();

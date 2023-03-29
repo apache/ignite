@@ -28,14 +28,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.GridCommandHandlerUtilityAwareAbstractTest;
 import org.junit.Test;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.util.GridCommandHandlerAbstractTest.createTestLogger;
 
 /** */
-public abstract class BaselineEventsTest extends GridCommonAbstractTest {
+public abstract class BaselineEventsTest extends GridCommandHandlerUtilityAwareAbstractTest {
     /** */
     private int[] includedEvtTypes = EventType.EVTS_ALL;
 
@@ -101,8 +102,8 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         );
 
         assertEquals(
-            CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            EXIT_CODE_OK,
+            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         assertTrue(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
@@ -186,14 +187,14 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         );
 
         assertEquals(
-            CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            EXIT_CODE_OK,
+            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
 
         assertEquals(
-            CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
+            EXIT_CODE_OK,
+            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
         );
         assertFalse(autoAdjustEnabled.get());
 
@@ -226,8 +227,8 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         );
 
         assertEquals(
-            CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            EXIT_CODE_OK,
+            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(() -> autoAdjustTimeout.get() == 10L, 3_000));
 
@@ -262,8 +263,8 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         String consistentIds = grid(0).localNode().consistentId() + "," + grid(1).localNode().consistentId();
 
         assertEquals(
-            CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            EXIT_CODE_OK,
+            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         awaitPartitionMapExchange();
@@ -275,8 +276,10 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertEquals(
-            CommandHandler.EXIT_CODE_OK,
-            new CommandHandler().execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            EXIT_CODE_OK,
+            cliFactory.apply(createTestLogger()).execute(
+                Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes")
+            )
         );
 
         cluster.baselineAutoAdjustEnabled(false);
