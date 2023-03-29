@@ -1796,7 +1796,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
      *                              handlers, otherwise only system consistency check will be performed.
      * @param incIdx Incremental snapshot index.
-     * @param check If {@code true} check snapshot before restore.
+     * @param check If {@code true} check snapshot integrity.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */

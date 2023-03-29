@@ -40,7 +40,7 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
         SnapshotCreateCommandOption.SYNC.description()),
 
     /** Check snapshot before restore. */
-    CHECK("--check", null, "Check snapshot before restore(slow!).");
+    CHECK("--check", null, "Check snapshot data integrity before restore (slow!). Similar to the \"check\" command.");
 
     /** Name. */
     private final String name;

@@ -147,7 +147,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         if (!opCtx.check()) {
-            log.info("Snapshot check skiped [snpName=" + meta.snapshotName() + ']');
+            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
             return Collections.emptyMap();
         }
