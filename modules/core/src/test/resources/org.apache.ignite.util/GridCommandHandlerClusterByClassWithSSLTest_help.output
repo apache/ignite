@@ -163,11 +163,12 @@ This utility can do the following commands:
       --name name  - Snapshot name (deprecated).
 
   Check snapshot:
-    control.(sh|bat) --snapshot check snapshot_name [--src path]
+    control.(sh|bat) --snapshot check snapshot_name [--src path] [--increment incrementIndex]
 
     Parameters:
-      snapshot_name  - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
-      --src path     - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      snapshot_name               - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
+      --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      --increment incrementIndex  - Incremental snapshot index. The command will check incremental snapshots sequentially from 1 to the specified index.
 
   Restore snapshot:
     control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync]
