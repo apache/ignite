@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -97,6 +98,17 @@ public abstract class GridCacheMessage implements Message {
      * @return {@code True} if cache group message.
      */
     public abstract boolean cacheGroupMessage();
+
+    /**
+     * Returns deployment identifier to distinguish message handler for the same handler identifier but different cache generations.
+     * In general, this identifier is exactly the same as cache deployment identifier.
+     *
+     * @return Deployment identifier. The returned value can be {@code null}.
+     *
+     */
+    public IgniteUuid deploymentId() {
+        return null;
+    }
 
     /**
      * @return Error, if any.
