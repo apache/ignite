@@ -178,7 +178,7 @@ This utility can do the following commands:
       --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
       --increment incrementIndex  - Incremental snapshot index. The command will restore snapshot and after that all its increments sequentially from 1 to the specified index.
       --sync                      - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
-      --check                     - Check snapshot before restore(slow!).
+      --check                     - Check snapshot data integrity before restore (slow!). Similar to the "check" command.
 
   Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead):
     control.(sh|bat) --snapshot restore snapshot_name --status
