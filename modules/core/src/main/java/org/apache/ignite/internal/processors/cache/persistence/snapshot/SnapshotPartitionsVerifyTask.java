@@ -52,7 +52,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String name, String path, String constId, Collection<String> groups) {
+    @Override protected ComputeJob createJob(String name, String path, int incIdx, String constId, Collection<String> groups) {
         return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups);
     }
 

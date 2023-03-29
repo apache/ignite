@@ -52,6 +52,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
     @Override protected ComputeJob createJob(
         String name,
         @Nullable String path,
+        int incIdx,
         String constId,
         Collection<String> groups
     ) {

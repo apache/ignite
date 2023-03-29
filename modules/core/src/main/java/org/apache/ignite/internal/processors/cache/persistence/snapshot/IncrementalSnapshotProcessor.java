@@ -34,6 +34,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -50,6 +51,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotWalsDir;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
@@ -88,8 +90,12 @@ abstract class IncrementalSnapshotProcessor {
      * Process incremental snapshot data.
      *
      * @param dataEntryHnd Handle data entries.
+     * @param txHnd Handle transaction records.
      */
-    void process(@Nullable Consumer<DataEntry> dataEntryHnd) throws IgniteCheckedException, IOException {
+    void process(
+        @Nullable Consumer<DataEntry> dataEntryHnd,
+        @Nullable Consumer<TxRecord> txHnd
+    ) throws IgniteCheckedException, IOException {
         IncrementalSnapshotMetadata meta = cctx.snapshotMgr()
             .readIncrementalSnapshotMetadata(snpName, snpPath, incIdx);
 
@@ -120,8 +126,13 @@ abstract class IncrementalSnapshotProcessor {
         Set<WALRecord.RecordType> recTypes = new HashSet<>(F.asList(
             CLUSTER_SNAPSHOT,
             INCREMENTAL_SNAPSHOT_START_RECORD,
-            INCREMENTAL_SNAPSHOT_FINISH_RECORD,
-            DATA_RECORD_V2));
+            INCREMENTAL_SNAPSHOT_FINISH_RECORD));
+
+        if (dataEntryHnd != null)
+            recTypes.add(DATA_RECORD_V2);
+
+        if (txHnd != null)
+            recTypes.add(TX_RECORD);
 
         // Create a single WAL iterator for 2 steps: finding ClusterSnapshotRecord and applying incremental snapshots.
         // TODO: Fix it after resolving https://issues.apache.org/jira/browse/IGNITE-18718.
@@ -192,11 +203,18 @@ abstract class IncrementalSnapshotProcessor {
                         if (!cacheIds.contains(e.cacheId()) || !txVerFilter.apply(e.nearXidVersion()))
                             continue;
 
-                        if (dataEntryHnd != null)
-                            dataEntryHnd.accept(e);
+                        dataEntryHnd.accept(e);
 
                         applied.increment();
                     }
+                }
+                else if (rec.type() == TX_RECORD) {
+                    TxRecord tx = (TxRecord)rec;
+
+                    if (!txVerFilter.apply(tx.nearXidVersion()))
+                        continue;
+
+                    txHnd.accept(tx);
                 }
             }
 

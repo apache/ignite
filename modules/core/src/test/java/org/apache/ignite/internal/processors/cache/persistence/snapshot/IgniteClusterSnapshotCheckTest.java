@@ -501,7 +501,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
             new SnapshotPartitionsVerifyTaskArg(new HashSet<>(), Collections.singletonMap(ignite.cluster().localNode(),
                 Collections.singletonList(snp(ignite).readSnapshotMetadata(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME),
-                    (String)ignite.configuration().getConsistentId()))), null))
+                    (String)ignite.configuration().getConsistentId()))), null, 0))
             .idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);

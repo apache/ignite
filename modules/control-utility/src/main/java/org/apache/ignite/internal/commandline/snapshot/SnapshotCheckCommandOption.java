@@ -25,7 +25,11 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 public enum SnapshotCheckCommandOption implements CommandArg {
     /** Snapshot directory location. */
     SOURCE("--src", "path", "Path to the directory where the snapshot files are located. If not specified, " +
-        "the default configured snapshot directory will be used.");
+        "the default configured snapshot directory will be used."),
+
+    /** Incremental snapshot index. */
+    INCREMENT("--increment", "incrementIndex", "Incremental snapshot index. The command will check " +
+        "incremental snapshots sequentially from 1 to the specified index.");
 
     /** Name. */
     private final String name;

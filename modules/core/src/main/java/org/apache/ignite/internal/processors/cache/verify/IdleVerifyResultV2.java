@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
@@ -62,6 +63,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     @GridToStringInclude
     private Map<PartitionKeyV2, List<PartitionHashRecordV2>> lostPartitions = new HashMap<>();
 
+    /** Transaction hashes conflicts. */
+    @GridToStringInclude
+    private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+
     /** Exceptions. */
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
@@ -77,6 +82,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      */
     public IdleVerifyResultV2(Map<ClusterNode, Exception> exceptions) {
         this.exceptions = exceptions;
+    }
+
+    /**
+     * @param txHashConflicts Transaction hashes conflicts.
+     */
+    public IdleVerifyResultV2(List<List<TransactionsHashRecord>> txHashConflicts) {
+        this.txHashConflicts = txHashConflicts;
     }
 
     /**
@@ -128,7 +140,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V3;
+        return V4;
     }
 
     /** {@inheritDoc} */
@@ -138,6 +150,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         U.writeMap(out, movingPartitions);
         U.writeMap(out, exceptions);
         U.writeMap(out, lostPartitions);
+        U.writeCollection(out, txHashConflicts);
     }
 
     /** {@inheritDoc} */
@@ -152,6 +165,9 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         if (protoVer >= V3)
             lostPartitions = U.readMap(in);
+
+        if (protoVer >= V4)
+            txHashConflicts = (List)U.readCollection(in);
     }
 
     /**
@@ -186,7 +202,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @return {@code true} if any conflicts were discovered during the check.
      */
     public boolean hasConflicts() {
-        return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts());
+        return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts()) || !F.isEmpty(txHashConflicts);
     }
 
     /**
@@ -273,8 +289,11 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         int cntrConflictsSize = counterConflicts().size();
         int hashConflictsSize = hashConflicts().size();
 
-        printer.accept("The check procedure has failed, conflict partitions has been found: " +
-            "[counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize + "]" + nl());
+        printer.accept("The check procedure has failed, conflict partitions has been found: [" +
+            (txHashConflicts == null
+                ? "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
+                : "txHashConflicts=" + txHashConflicts.size()
+            ) + "]" + nl());
 
         Set<PartitionKeyV2> allConflicts = new HashSet<>();
 
@@ -302,6 +321,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 printer.accept("Partition instances: " + entry.getValue() + nl());
             }
+        }
+
+        if (!F.isEmpty(txHashConflicts)) {
+            printer.accept("Transactions hashes conflicts:" + nl());
+
+            for (List<TransactionsHashRecord> conf : txHashConflicts)
+                printer.accept("Conflict nodes: " + conf + nl());
         }
 
         printer.accept(nl());
@@ -339,12 +365,12 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
             Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
-            Objects.equals(exceptions, v2.exceptions);
+            Objects.equals(exceptions, v2.exceptions) && Objects.equals(txHashConflicts, v2.txHashConflicts);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions);
+        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions, txHashConflicts);
     }
 
     /** {@inheritDoc} */

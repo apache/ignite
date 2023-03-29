@@ -44,6 +44,9 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
+    /** Incremental snapshot index. */
+    private int incIdx;
+
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
         // No-op.
@@ -57,11 +60,13 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
-        @Nullable String snpPath
+        @Nullable String snpPath,
+        int incIdx
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
+        this.incIdx = incIdx;
     }
 
     /**
@@ -85,11 +90,19 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return snpPath;
     }
 
+    /**
+     * @return Incremental snapshot index.
+     */
+    public int incrementIndex() {
+        return incIdx;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
         U.writeString(out, snpPath);
+        out.writeInt(incIdx);
     }
 
     /** {@inheritDoc} */
@@ -97,6 +110,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
         snpPath = U.readString(in);
+        incIdx = in.readInt();
     }
 
     /** {@inheritDoc} */
