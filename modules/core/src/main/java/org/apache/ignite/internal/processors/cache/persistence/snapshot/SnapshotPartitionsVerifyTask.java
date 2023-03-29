@@ -57,9 +57,9 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         String path,
         String constId,
         Collection<String> groups,
-        boolean fullCheck
+        boolean checkCRC
     ) {
-        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups, fullCheck);
+        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups, checkCRC);
     }
 
     /** {@inheritDoc} */
@@ -93,27 +93,27 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         private final Collection<String> rqGrps;
 
         /** If {@code true} perform full checks. */
-        private final boolean fullCheck;
+        private final boolean checkCRC;
 
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
-         * @param fullCheck If {@code true} perform full checks.
+         * @param checkCRC If {@code true} perform full checks.
          */
         public VisorVerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
             Collection<String> rqGrps,
-            boolean fullCheck
+            boolean checkCRC
         ) {
             this.snpName = snpName;
             this.consId = consId;
             this.rqGrps = rqGrps;
             this.snpPath = snpPath;
-            this.fullCheck = fullCheck;
+            this.checkCRC = checkCRC;
         }
 
         /** {@inheritDoc} */
@@ -130,7 +130,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, fullCheck));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, checkCRC));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
@@ -149,12 +149,12 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
 
             return snpName.equals(job.snpName) && consId.equals(job.consId) &&
                 Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath) &&
-                Objects.equals(fullCheck, job.fullCheck);
+                Objects.equals(checkCRC, job.checkCRC);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, consId, rqGrps, snpPath, fullCheck);
+            return Objects.hash(snpName, consId, rqGrps, snpPath, checkCRC);
         }
     }
 }

@@ -39,8 +39,8 @@ public enum SnapshotRestoreCommandOption implements CommandArg {
     SYNC(SnapshotCreateCommandOption.SYNC.argName(), SnapshotCreateCommandOption.SYNC.arg(),
         SnapshotCreateCommandOption.SYNC.description()),
 
-    /** If {@code true} then check snapshot before restore. */
-    FULL_CHECK("--full-check", null, "Full check before restore(slow!), including CRC check.");
+    /** Check snapshot crc before restore. */
+    CHECK_CRC("--check-crc", null, "Check snapshot CRC before restore(slow!).");
 
     /** Name. */
     private final String name;

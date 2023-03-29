@@ -45,7 +45,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     private String snpPath;
 
     /** If {@code true} perform full checks. */
-    private boolean fullCheck;
+    private boolean checkCRC;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyTaskArg() {
@@ -56,18 +56,18 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
      * @param snpPath Snapshot directory path.
-     * @param fullCheck If {@code true} perform full checks.
+     * @param checkCRC If {@code true} perform full checks.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
         Map<ClusterNode, List<SnapshotMetadata>> clusterMetas,
         @Nullable String snpPath,
-        boolean fullCheck
+        boolean checkCRC
     ) {
         this.grpNames = grpNames;
         this.clusterMetas = clusterMetas;
         this.snpPath = snpPath;
-        this.fullCheck = fullCheck;
+        this.checkCRC = checkCRC;
     }
 
     /**
@@ -92,8 +92,8 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /** @return If {@code true} perform full checks. */
-    public boolean fullCheck() {
-        return fullCheck;
+    public boolean checkCRC() {
+        return checkCRC;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         U.writeCollection(out, grpNames);
         U.writeMap(out, clusterMetas);
         U.writeString(out, snpPath);
-        out.writeBoolean(fullCheck);
+        out.writeBoolean(checkCRC);
     }
 
     /** {@inheritDoc} */
@@ -109,7 +109,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         grpNames = U.readCollection(in);
         clusterMetas = U.readMap(in);
         snpPath = U.readString(in);
-        fullCheck = in.readBoolean();
+        checkCRC = in.readBoolean();
     }
 
     /** {@inheritDoc} */

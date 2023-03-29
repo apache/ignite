@@ -3304,7 +3304,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(
             log,
             testOut.toString(),
-            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --full-check."
+            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --check-crc."
         );
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "--sync"));
@@ -3317,7 +3317,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(
             log,
             testOut.toString(),
-            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --full-check."
+            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --check-crc."
         );
 
         autoConfirmation = true;
@@ -3385,7 +3385,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(),
-            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync, --full-check.");
+            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync, --check-crc.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));
@@ -3440,14 +3440,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        for (boolean fullCheck: new boolean[] {false, true}) {
+        for (boolean checkCRC: new boolean[] {false, true}) {
             assertNull(ig.cache(cacheName1));
             assertNull(ig.cache(cacheName2));
             assertNull(ig.cache(cacheName3));
 
             // Restore all public cache groups.
-            if (fullCheck)
-                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--full-check"));
+            if (checkCRC)
+                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--check-crc"));
             else
                 assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
 

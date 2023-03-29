@@ -42,7 +42,7 @@ public class SnapshotHandlerContext {
     private final boolean streamerWrn;
 
     /** If {@code true} perform full checks. */
-    private final boolean fullCheck;
+    private final boolean checkCRC;
 
     /**
      * @param metadata Snapshot metadata.
@@ -51,7 +51,7 @@ public class SnapshotHandlerContext {
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
      * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
-     * @param fullCheck If {@code true} perform full checks.
+     * @param checkCRC If {@code true} perform full checks.
      */
     public SnapshotHandlerContext(
         SnapshotMetadata metadata,
@@ -59,14 +59,14 @@ public class SnapshotHandlerContext {
         ClusterNode locNode,
         File snpDir,
         boolean streamerWrn,
-        boolean fullCheck
+        boolean checkCRC
     ) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
         this.streamerWrn = streamerWrn;
-        this.fullCheck = fullCheck;
+        this.checkCRC = checkCRC;
     }
 
     /**
@@ -108,7 +108,7 @@ public class SnapshotHandlerContext {
     /**
      * @return If {@code true} perform full checks.
      */
-    public boolean fullCheck() {
-        return fullCheck;
+    public boolean checkCRC() {
+        return checkCRC;
     }
 }

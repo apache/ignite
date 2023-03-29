@@ -87,7 +87,7 @@ public abstract class AbstractSnapshotVerificationTask extends
                         arg.snapshotPath(),
                         meta.consistentId(),
                         arg.cacheGroupNames(),
-                        arg.fullCheck()
+                        arg.checkCRC()
                     ),
                     e.getKey()
                 );
@@ -134,7 +134,7 @@ public abstract class AbstractSnapshotVerificationTask extends
      * @param path Snapshot directory path.
      * @param constId Snapshot metadata file name.
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
-     * @param fullCheck If {@code true} perform full checks.
+     * @param checkCRC If {@code true} check CRC before restore.
      * @return Compute job.
      */
     protected abstract ComputeJob createJob(
@@ -142,6 +142,6 @@ public abstract class AbstractSnapshotVerificationTask extends
         @Nullable String path,
         String constId,
         Collection<String> groups,
-        boolean fullCheck
+        boolean checkCRC
     );
 }
