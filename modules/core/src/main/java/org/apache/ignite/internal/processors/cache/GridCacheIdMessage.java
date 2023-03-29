@@ -77,7 +77,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -96,6 +96,12 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
+                if (!writer.writeIgniteUuid("cacheDepId", cacheDepId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
@@ -118,6 +124,14 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
+                cacheDepId = reader.readIgniteUuid("cacheDepId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 cacheId = reader.readInt("cacheId");
 
                 if (!reader.isLastRead())
