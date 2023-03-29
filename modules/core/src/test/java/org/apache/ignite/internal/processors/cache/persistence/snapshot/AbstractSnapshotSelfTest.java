@@ -620,8 +620,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected void checkSnapshot(String snpName, String snpPath) throws IgniteCheckedException {
         Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
 
-        Predicate<Ignite> filter = node -> !node.configuration().isClientMode()
-            && node.cluster().currentBaselineTopology().contains(node.cluster().localNode());
+        Predicate<Ignite> filter = node -> !node.configuration().isClientMode() &&
+            node.cluster().currentBaselineTopology()
+                .stream()
+                .anyMatch(n -> Objects.equals(n.consistentId(), node.cluster().localNode().consistentId()));
 
         for (Ignite node: G.allGrids()) {
             if (!filter.test(node))
@@ -689,11 +691,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 assertTrue(parts != -1);
                 assertTrue(affinityNodes > 0);
 
-                expPartCopiesInSnp = onlyPrimary
-                    ? 1
-                    : (backups == Integer.MAX_VALUE
-                        ? affinityNodes
-                        : Math.min(backups + 1, affinityNodes));
+                expPartCopiesInSnp = backups == Integer.MAX_VALUE
+                    ? affinityNodes
+                    : Math.min(backups + 1, affinityNodes);
             }
 
             Map<Integer, Integer> cacheParts = entry.getValue();
