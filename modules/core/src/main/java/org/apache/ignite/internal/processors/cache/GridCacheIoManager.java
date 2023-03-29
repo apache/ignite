@@ -103,6 +103,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
 /**
@@ -347,16 +348,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 IndexedClassHandler cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
 
                 if (cacheClsHandlers != null &&
-                    (cacheClsHandlers.startTopVer == null || !msgTopVer.before(cacheClsHandlers.startTopVer))) {
+                    (NONE.equals(msgTopVer) || !msgTopVer.before(cacheClsHandlers.startTopVer)))
                     c = cacheClsHandlers.hndls[msgIdx];
-                }
             }
 
             if (c == null) {
                 RegularClassHandler rHnd = msgHandlers.clsHandlers.get(
                         new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
 
-                if (rHnd != null && (rHnd.startTopVer == null || (!msgTopVer.before(rHnd.startTopVer))))
+                if (rHnd != null && (NONE.equals(msgTopVer) || !msgTopVer.before(rHnd.startTopVer)))
                     c = rHnd.hnd;
             }
 
@@ -1437,7 +1437,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     ) {
         assert !type.isAssignableFrom(GridCacheGroupIdMessage.class) : type;
 
-        addHandler(COMMON_MESSAGE_HANDLER_ID, null, type, c, cacheHandlers);
+        addHandler(COMMON_MESSAGE_HANDLER_ID, NONE, type, c, cacheHandlers);
     }
 
     /**
@@ -1468,7 +1468,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     ) {
         assert !type.isAssignableFrom(GridCacheIdMessage.class) : type;
 
-        addHandler(hndId, null, type, c, grpHandlers);
+        addHandler(hndId, NONE, type, c, grpHandlers);
     }
 
     /**
