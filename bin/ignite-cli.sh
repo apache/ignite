@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-export MAIN_CLASS="org.apache.ignite.internal.commands.impl.CLICommandFrontend"
+export MAIN_CLASS="org.apache.ignite.internal.commands.impl.CLICommandFrontendImpl"
 
 if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";

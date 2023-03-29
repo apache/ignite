@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -50,6 +52,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -68,6 +71,7 @@ import org.apache.ignite.internal.commandline.cache.CacheClear;
 import org.apache.ignite.internal.commandline.cache.CacheDestroy;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commands.api.CLICommandFrontend;
+import org.apache.ignite.internal.commands.impl.CLICommandFrontendImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -396,11 +400,27 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /** */
     @Test
     public void testHelpParity() throws Exception {
-        injectTestSystemOut();
+        Function<IgniteLogger, CLICommandFrontend> cliFactory0 = cliFactory;
 
-        assertEquals(EXIT_CODE_OK, execute("--help"));
+        try {
+            cliFactory = CommandHandler::new;
 
-        String controlShOutStr = testOut.toString();
+            assertEquals(EXIT_CODE_OK, execute("--help"));
+
+            String controlShOut = testOut.toString();
+            testOut = new ByteArrayOutputStream(16 * 1024);
+
+            cliFactory = CLICommandFrontendImpl::new;
+
+            assertEquals(EXIT_CODE_OK, execute("--help"));
+
+            String cliFrontendOut = testOut.toString();
+
+            assertEquals(controlShOut, cliFrontendOut);
+        }
+        finally {
+            cliFactory = cliFactory0;
+        }
     }
 
     /**

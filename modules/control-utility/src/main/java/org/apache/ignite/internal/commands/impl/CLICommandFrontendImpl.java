@@ -328,7 +328,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** {@inheritDoc} */
     @Override public <T> T getLastOperationResult() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /** {@inheritDoc} */
