@@ -638,6 +638,9 @@ public class CommandHandler {
     private String readLine(String prompt) {
         System.out.print(prompt);
 
+        if (!in.hasNextLine())
+            System.out.println("CommandHandler.readLine");
+
         return in.nextLine();
     }
 
