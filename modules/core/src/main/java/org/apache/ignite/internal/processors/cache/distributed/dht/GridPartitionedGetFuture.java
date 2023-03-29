@@ -686,6 +686,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         @Override protected GridNearGetRequest createGetRequest0(IgniteUuid rootFutId, IgniteUuid futId) {
             return new GridNearGetRequest(
                 cctx.cacheId(),
+                cctx.dynamicDeploymentId(),
                 rootFutId,
                 futId,
                 null,

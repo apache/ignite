@@ -1382,6 +1382,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     GridCacheContext<K, V> cctx = cacheContext(ctx);
 
                     CacheContinuousQueryBatchAck msg = new CacheContinuousQueryBatchAck(cctx.cacheId(),
+                        cctx.dynamicDeploymentId(),
                         routineId,
                         t.get1());
 

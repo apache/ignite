@@ -205,6 +205,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                 ctx.cacheId(),
+                ctx.dynamicDeploymentId(),
                 msg.futureId(),
                 msg.miniId(),
                 ctx.deploymentEnabled());
@@ -862,6 +863,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                         res = new GridNearSingleGetResponse(
                             ctx.cacheId(),
+                            ctx.dynamicDeploymentId(),
                             req.futureId(),
                             null,
                             res0,
@@ -877,6 +879,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                         res = new GridNearSingleGetResponse(
                             ctx.cacheId(),
+                            ctx.dynamicDeploymentId(),
                             req.futureId(),
                             topVer,
                             null,
@@ -892,6 +895,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     U.error(log, "Failed processing get request: " + req, e);
 
                     res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        ctx.dynamicDeploymentId(),
                         req.futureId(),
                         req.topologyVersion(),
                         null,
@@ -944,6 +948,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
                 GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
+                    ctx.dynamicDeploymentId(),
                     req.futureId(),
                     req.miniId(),
                     req.version(),
@@ -1034,6 +1039,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                                 if (req == null) {
                                     reqMap.put(node, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
+                                        ctx.dynamicDeploymentId(),
                                         topVer,
                                         expiryPlc.forAccess()));
                                 }
@@ -1050,6 +1056,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             if (req == null) {
                                 reqMap.put(primaryNode, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
+                                    ctx.dynamicDeploymentId(),
                                     topVer,
                                     expiryPlc.forAccess()));
                             }
@@ -1071,6 +1078,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                                 if (req == null) {
                                     reqMap.put(node, req = new GridCacheTtlUpdateRequest(ctx.cacheId(),
+                                        ctx.dynamicDeploymentId(),
                                         topVer,
                                         expiryPlc.forAccess()));
                                 }

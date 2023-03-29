@@ -78,11 +78,13 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
 
             assert future.tx.queryEnlisted() || future.cnt == 0;
 
-            return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId,
-                future.nearLockVer, future.cnt, future.tx.empty() && !future.tx.queryEnlisted(), future.newDhtNodes);
+            return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.cctx.dynamicDeploymentId(),
+                    future.nearFutId, future.nearMiniId, future.nearLockVer, future.cnt,
+                    future.tx.empty() && !future.tx.queryEnlisted(), future.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
-            return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.nearFutId, future.nearMiniId, future.nearLockVer, e);
+            return new GridNearTxQueryEnlistResponse(future.cctx.cacheId(), future.cctx.dynamicDeploymentId(),
+                    future.nearFutId, future.nearMiniId, future.nearLockVer, e);
         }
     }
 
@@ -103,12 +105,12 @@ public final class NearTxQueryEnlistResultHandler implements CI1<IgniteInternalF
                 id = fut.futId;
             }
 
-            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
-                fut.nearLockVer, fut.cnt, ver, id, fut.newDhtNodes);
+            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.cctx.dynamicDeploymentId(),
+                    fut.nearFutId, fut.nearMiniId, fut.nearLockVer, fut.cnt, ver, id, fut.newDhtNodes);
         }
         catch (IgniteCheckedException e) {
-            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.nearFutId, fut.nearMiniId,
-                fut.nearLockVer, e);
+            return new GridNearTxQueryResultsEnlistResponse(fut.cctx.cacheId(), fut.cctx.dynamicDeploymentId(),
+                    fut.nearFutId, fut.nearMiniId, fut.nearLockVer, e);
         }
     }
 

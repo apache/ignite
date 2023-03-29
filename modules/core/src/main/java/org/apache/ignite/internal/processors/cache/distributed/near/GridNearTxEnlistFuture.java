@@ -448,6 +448,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         assert batchFut != null;
 
         GridNearTxEnlistRequest req = new GridNearTxEnlistRequest(cctx.cacheId(),
+            cctx.dynamicDeploymentId(),
             threadId,
             futId,
             batchId,

@@ -1090,6 +1090,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                                     req = new GridNearLockRequest(
                                         cctx.cacheId(),
+                                        cctx.dynamicDeploymentId(),
                                         topVer,
                                         cctx.nodeId(),
                                         threadId,

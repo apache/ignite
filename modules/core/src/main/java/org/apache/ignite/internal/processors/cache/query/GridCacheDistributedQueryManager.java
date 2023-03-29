@@ -193,6 +193,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (!F.eq(req.cacheName(), cctx.name())) {
                     GridCacheQueryResponse res = new GridCacheQueryResponse(
                         cctx.cacheId(),
+                        cctx.dynamicDeploymentId(),
                         req.id(),
                         new IgniteCheckedException("Received request for incorrect cache [expected=" + cctx.name() +
                             ", actual=" + req.cacheName()),
@@ -217,8 +218,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     catch (Throwable e) {
                         U.error(log(), "Failed to run query.", e);
 
-                        sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause(),
-                            cctx.deploymentEnabled()), 0);
+                        sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), cctx.dynamicDeploymentId(),
+                                req.id(), e.getCause(), cctx.deploymentEnabled()), 0);
 
                         if (e instanceof Error)
                             throw (Error)e;
@@ -427,7 +428,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 fut.onPage(null, null, null, e, true);
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e, cctx.deploymentEnabled()),
+                    new GridCacheQueryResponse(
+                            cctx.cacheId(),
+                            cctx.dynamicDeploymentId(),
+                            qryInfo.requestId(),
+                            e,
+                            cctx.deploymentEnabled()),
                     qryInfo.query().timeout());
 
             return true;
@@ -436,8 +442,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (loc)
             fut.onPage(null, null, data, null, finished);
         else {
-            GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                finished, /*fields*/false, cctx.deploymentEnabled());
+            GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), cctx.dynamicDeploymentId(),
+                    qryInfo.requestId(), finished, /*fields*/false, cctx.deploymentEnabled());
 
             if (qryInfo.query().type() == INDEX)
                 res.idxQryMetadata((IndexQueryResultMeta)idxQryMetadata);
@@ -468,7 +474,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e, cctx.deploymentEnabled()),
+                    new GridCacheQueryResponse(
+                        cctx.cacheId(),
+                        cctx.dynamicDeploymentId(),
+                        qryInfo.requestId(),
+                        e,
+                        cctx.deploymentEnabled()),
                     qryInfo.query().timeout());
 
             return true;
@@ -480,8 +491,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onFieldsPage(null, metadata, data, null, finished);
         }
         else {
-            GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                finished, qryInfo.reducer() == null, cctx.deploymentEnabled());
+            GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), cctx.dynamicDeploymentId(),
+                    qryInfo.requestId(), finished, qryInfo.reducer() == null, cctx.deploymentEnabled());
 
             res.metadata(metadata);
             res.data(entities != null ? entities : data);

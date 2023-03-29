@@ -527,6 +527,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void onForceKeysError(UUID nodeId, GridDhtLockRequest req, IgniteCheckedException e) {
         GridDhtLockResponse res = new GridDhtLockResponse(ctx.cacheId(),
+            ctx.dynamicDeploymentId(),
             req.version(),
             req.futureId(),
             req.miniId(),
@@ -565,8 +566,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean cancelled = false;
 
         try {
-            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
-                ctx.deploymentEnabled());
+            res = new GridDhtLockResponse(ctx.cacheId(), ctx.dynamicDeploymentId(), req.version(), req.futureId(),
+                    req.miniId(), cnt, ctx.deploymentEnabled());
 
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
@@ -592,8 +593,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             U.error(log, err, e);
 
-            res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
+            res = new GridDhtLockResponse(ctx.cacheId(), ctx.dynamicDeploymentId(), req.version(), req.futureId(),
+                    req.miniId(), new IgniteTxRollbackCheckedException(err, e), ctx.deploymentEnabled());
 
             fail = true;
         }
@@ -603,6 +604,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             U.error(log, err, e);
 
             res = new GridDhtLockResponse(ctx.cacheId(),
+                ctx.dynamicDeploymentId(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -733,6 +735,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(req.cacheId(),
+                req.deploymentId(),
                 req.futureId(),
                 req.miniId(),
                 req.version(),
@@ -1354,6 +1357,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         GridNearLockResponse res = new GridNearLockResponse(
             ctx.cacheId(),
+            ctx.dynamicDeploymentId(),
             req.version(),
             req.futureId(),
             req.miniId(),
@@ -1407,6 +1411,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             // Send reply back to originating near node.
             GridNearLockResponse res = new GridNearLockResponse(ctx.cacheId(),
+                ctx.dynamicDeploymentId(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -1518,6 +1523,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 U.toShortString(nearNode) + ", req=" + req + ']', e);
 
             return new GridNearLockResponse(ctx.cacheId(),
+                ctx.dynamicDeploymentId(),
                 req.version(),
                 req.futureId(),
                 req.miniId(),
@@ -1875,8 +1881,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             List<KeyCacheObject> keyBytes = entry.getValue();
 
-            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                ctx.deploymentEnabled());
+            GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), ctx.dynamicDeploymentId(),
+                    keyBytes.size(), ctx.deploymentEnabled());
 
             req.version(dhtVer);
 
@@ -1910,8 +1916,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             if (!dhtMap.containsKey(n)) {
                 List<KeyCacheObject> keyBytes = entry.getValue();
 
-                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), keyBytes.size(),
-                    ctx.deploymentEnabled());
+                GridDhtUnlockRequest req = new GridDhtUnlockRequest(ctx.cacheId(), ctx.dynamicDeploymentId(),
+                        keyBytes.size(), ctx.deploymentEnabled());
 
                 req.version(dhtVer);
 
@@ -1983,6 +1989,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
         catch (Throwable e) {
             GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
+                ctx.dynamicDeploymentId(),
                 req.futureId(),
                 req.miniId(),
                 req.version(),
@@ -2047,6 +2054,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
+                req.deploymentId(),
                 req.futureId(),
                 req.miniId(),
                 req.version(),
@@ -2315,6 +2323,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.dhtFutureId(), req.batchId());
 
             GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(req.cacheId(),
+                req.deploymentId(),
                 req.dhtFutureId(),
                 req.batchId(),
                 null);
@@ -2329,6 +2338,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
         catch (Throwable e) {
             GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(ctx.cacheId(),
+                ctx.dynamicDeploymentId(),
                 req.dhtFutureId(),
                 req.batchId(),
                 e);

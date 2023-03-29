@@ -353,6 +353,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
             GridCacheMessage req = new GridNearSingleGetRequest(
                 cctx.cacheId(),
+                cctx.dynamicDeploymentId(),
                 futId.localId(),
                 key,
                 readThrough,

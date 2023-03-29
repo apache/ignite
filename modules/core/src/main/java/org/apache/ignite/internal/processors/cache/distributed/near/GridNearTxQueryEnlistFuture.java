@@ -196,6 +196,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
                     GridNearTxQueryEnlistRequest req = new GridNearTxQueryEnlistRequest(
                         cctx.cacheId(),
+                        cctx.dynamicDeploymentId(),
                         threadId,
                         futId,
                         ++idx, // The common tx logic expects non-zero mini-future ids (negative local and positive non-local).

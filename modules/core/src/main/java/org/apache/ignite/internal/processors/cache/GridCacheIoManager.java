@@ -414,6 +414,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     nearEvicted.add(req.nearKey(i));
 
                 GridDhtAtomicUpdateResponse dhtRes = new GridDhtAtomicUpdateResponse(req.cacheId(),
+                    req.deploymentId(),
                     req.partition(),
                     req.futureId(),
                     false);
@@ -751,6 +752,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtLockResponse res = new GridDhtLockResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -784,6 +786,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.partition(),
                     req.futureId(),
                     false);
@@ -812,6 +815,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
@@ -830,6 +834,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.futureId(),
                     req.miniId(),
                     false
@@ -847,6 +852,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearGetResponse res = new GridNearGetResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.futureId(),
                     req.miniId(),
                     req.version(),
@@ -883,6 +889,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearLockResponse res = new GridNearLockResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.version(),
                     req.futureId(),
                     req.miniId(),
@@ -926,6 +933,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridCacheQueryResponse res = new GridCacheQueryResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.id(),
                     req.classError(),
                     cctx.deploymentEnabled());
@@ -960,6 +968,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearSingleGetResponse res = new GridNearSingleGetResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.futureId(),
                     req.topologyVersion(),
                     null,
@@ -998,6 +1007,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
@@ -1016,6 +1026,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
@@ -1034,6 +1045,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     nodeId,
                     req.futureId(),
                     req.partition(),
@@ -1052,6 +1064,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.futureId(),
                     req.miniId(),
                     req.version(),
@@ -1067,6 +1080,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearTxQueryEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.futureId(),
                     req.miniId(),
                     req.version(),
@@ -1083,6 +1097,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.dhtFutureId(),
                     req.batchId(),
                     req.classError());
@@ -1097,6 +1112,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.futureId(),
                     req.miniId(),
                     req.version(),
@@ -1112,6 +1128,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
                     req.cacheId(),
+                    req.deploymentId(),
                     req.partition(),
                     req.futureId(),
                     false);

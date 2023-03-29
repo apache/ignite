@@ -843,6 +843,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         if (firstReqSent.add(node)) {
             // If this is a first request to this node, send full info.
             req = new GridDhtTxQueryFirstEnlistRequest(cctx.cacheId(),
+                cctx.dynamicDeploymentId(),
                 futId,
                 tx.topologyVersionSnapshot(),
                 lockVer,
@@ -860,6 +861,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         else {
             // Send only keys, values, LockVersion and batchId if this is not a first request to this backup.
             req = new GridDhtTxQueryEnlistRequest(cctx.cacheId(),
+                cctx.dynamicDeploymentId(),
                 futId,
                 lockVer,
                 it.operation(),
