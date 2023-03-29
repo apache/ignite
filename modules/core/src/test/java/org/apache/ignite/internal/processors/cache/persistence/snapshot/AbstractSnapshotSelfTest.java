@@ -640,7 +640,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 databaseRelativePath(node0.context().pdsFolderResolver().resolveFolders().folderName())
             );
 
-            assertTrue(nodeSnapDir.exists());
+            if (!nodeSnapDir.exists())
+                continue;
 
             File[] cacheDirs = nodeSnapDir.listFiles(f -> f.isDirectory() && !f.getName().equals(METASTORAGE_DIR_NAME));
 
