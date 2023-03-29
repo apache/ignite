@@ -60,7 +60,7 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
             client.compute().execute(VisorCdcFlushCachesTask.class.getName(),
                 new VisorTaskArgument<>(nodeIds, arg, false));
 
-            String res = "Caches successfully flushed.";
+            String res = "CDC flush caches finished.";
 
             log.info(res);
 

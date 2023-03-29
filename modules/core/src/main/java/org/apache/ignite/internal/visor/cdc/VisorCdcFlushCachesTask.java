@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cdc;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -106,15 +107,20 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                 caches.add(cache);
             }
 
+            log.info("CDC flush caches started [caches=" + String.join(", ", arg.caches()) + ']');
+
             wal = ignite.context().cache().context().wal(true);
 
             try {
-                for (IgniteInternalCache<?, ?> cache : caches)
-                    flushCache(cache);
+                Iterator<IgniteInternalCache<?, ?>> iter = caches.iterator();
+
+                while (iter.hasNext() && !isCancelled())
+                    flushCache(iter.next());
 
                 wal.flush(null, true);
 
-                log.info("Flush caches job finished successful [caches=" + arg.caches() + ']');
+                log.info("CDC flush caches " + (isCancelled() ? "cancelled" : "finished") +
+                    " [caches=" + String.join(", ", arg.caches()) + ']');
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -132,7 +138,10 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
             GridIterator<CacheDataRow> localRows = cctx.offheap()
                 .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null, null);
 
-            for (CacheDataRow row : localRows) {
+            Iterator<CacheDataRow> iter = localRows.iterator();
+
+            while (iter.hasNext() && !isCancelled()) {
+                CacheDataRow row = iter.next();
                 KeyCacheObject key = row.key();
 
                 CdcDataRecord rec = new CdcDataRecord(new DataEntry(
@@ -151,7 +160,7 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                 wal.log(rec);
             }
 
-            log.info("Cache flushed [name=" + cache.name() + ']');
+            log.info("CDC flush cache " + (isCancelled() ? "cancelled" : "finished") + " [name=" + cache.name() + ']');
         }
     }
 }
