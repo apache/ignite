@@ -228,43 +228,43 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         }
 
         switch (writer.state()) {
-            case 4:
+            case 5:
                 if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 10:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 11:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -286,7 +286,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 5:
                 entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -294,7 +294,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -302,7 +302,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -310,7 +310,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -318,7 +318,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -326,7 +326,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -334,7 +334,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
                 reader.incrementState();
 
-            case 10:
+            case 11:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -354,7 +354,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

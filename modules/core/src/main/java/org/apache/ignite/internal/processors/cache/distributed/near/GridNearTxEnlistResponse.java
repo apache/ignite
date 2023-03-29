@@ -190,7 +190,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */
@@ -208,49 +208,49 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
         }
 
         switch (writer.state()) {
-            case 4:
+            case 5:
                 if (!writer.writeIgniteUuid("dhtFutId", dhtFutId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeMessage("lockVer", lockVer))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 10:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 11:
                 if (!writer.writeCollection("newDhtNodes", newDhtNodes, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 12:
                 if (!writer.writeMessage("res", res))
                     return false;
 
@@ -272,7 +272,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 5:
                 dhtFutId = reader.readIgniteUuid("dhtFutId");
 
                 if (!reader.isLastRead())
@@ -280,7 +280,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
@@ -288,7 +288,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -296,7 +296,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -304,7 +304,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 lockVer = reader.readMessage("lockVer");
 
                 if (!reader.isLastRead())
@@ -312,7 +312,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -320,7 +320,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 10:
+            case 11:
                 newDhtNodes = reader.readCollection("newDhtNodes", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
@@ -328,7 +328,7 @@ public class GridNearTxEnlistResponse extends GridCacheIdMessage implements Exce
 
                 reader.incrementState();
 
-            case 11:
+            case 12:
                 res = reader.readMessage("res");
 
                 if (!reader.isLastRead())

@@ -166,25 +166,25 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         }
 
         switch (writer.state()) {
-            case 4:
+            case 5:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
@@ -206,7 +206,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 5:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -214,7 +214,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -222,7 +222,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -230,7 +230,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -250,7 +250,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

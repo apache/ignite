@@ -403,43 +403,43 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         }
 
         switch (writer.state()) {
-            case 4:
+            case 5:
                 if (!writer.writeMessage("errs", errs))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeCollection("mapping", mapping, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeMessage("nearUpdates", nearUpdates))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 10:
                 if (!writer.writeAffinityTopologyVersion("remapTopVer", remapTopVer))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 11:
                 if (!writer.writeMessage("ret", ret))
                     return false;
 
@@ -461,7 +461,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
             return false;
 
         switch (reader.state()) {
-            case 4:
+            case 5:
                 errs = reader.readMessage("errs");
 
                 if (!reader.isLastRead())
@@ -469,7 +469,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -477,7 +477,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 mapping = reader.readCollection("mapping", MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
@@ -485,7 +485,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 nearUpdates = reader.readMessage("nearUpdates");
 
                 if (!reader.isLastRead())
@@ -493,7 +493,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
@@ -501,7 +501,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
                 reader.incrementState();
 
-            case 9:
+            case 10:
                 remapTopVer = reader.readAffinityTopologyVersion("remapTopVer");
 
                 if (!reader.isLastRead())
@@ -509,7 +509,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
                 reader.incrementState();
 
-            case 10:
+            case 11:
                 ret = reader.readMessage("ret");
 
                 if (!reader.isLastRead())
@@ -529,7 +529,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */
