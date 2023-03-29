@@ -17,6 +17,9 @@
 
 package org.apache.ignite.util;
 
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -44,10 +47,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
