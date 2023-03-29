@@ -625,9 +625,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .stream()
                 .anyMatch(n -> Objects.equals(n.consistentId(), node.cluster().localNode().consistentId()));
 
+        int nodesCnt = 0;
+
         for (Ignite node: G.allGrids()) {
             if (!filter.test(node))
                 continue;
+
+            nodesCnt++;
 
             IgniteEx node0 = (IgniteEx)node;
 
@@ -660,6 +664,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+
+        assertTrue(nodesCnt > 0);
 
         for (Map.Entry<String, Map<Integer, Integer>> entry : cachesParts.entrySet()) {
             String cache = entry.getKey();
