@@ -92,7 +92,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
         private final Collection<String> rqGrps;
 
-        /** If {@code true} perform full checks. */
+        /** If {@code true} check CRC before restore. */
         private final boolean checkCRC;
 
         /**
@@ -100,7 +100,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
          * @param consId Consistent snapshot metadata file name.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
-         * @param checkCRC If {@code true} perform full checks.
+         * @param checkCRC If {@code true} check CRC before restore.
          */
         public VisorVerifySnapshotPartitionsJob(
             String snpName,

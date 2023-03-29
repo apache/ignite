@@ -1796,7 +1796,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
      *                              handlers, otherwise only system consistency check will be performed.
      * @param incIdx Incremental snapshot index.
-     * @param checkCRC If {@code true} then perform full snapshot check.
+     * @param checkCRC If {@code true} check CRC before restore.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
@@ -2300,7 +2300,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @param grpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @param incIdx Index of incremental snapshot.
-     * @param checkCRC If {@code true} then check before restore.
+     * @param checkCRC If {@code true} check CRC before restore.
      * @return Future which will be completed when restore operation finished.
      */
     public IgniteFutureImpl<Void> restoreSnapshot(

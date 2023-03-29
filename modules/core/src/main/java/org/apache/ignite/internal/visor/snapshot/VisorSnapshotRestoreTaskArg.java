@@ -41,7 +41,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     /** Incremental snapshot index. */
     private int incIdx;
 
-    /** If {@code true} then check snapshot before restore. */
+    /** If {@code true} check CRC before restore. */
     private boolean checkCRC;
 
     /** Default constructor. */
@@ -56,7 +56,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
      * @param sync Synchronous execution flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
-     * @param checkCRC If {@code true} then skip check before restore.
+     * @param checkCRC If {@code true} check CRC before restore.
      */
     public VisorSnapshotRestoreTaskArg(
         String snpName,
@@ -90,7 +90,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         return incIdx;
     }
 
-    /** @return If {@code true} then skip check before restore. */
+    /** @return If {@code true} check CRC before restore. */
     public boolean checkCRC() {
         return checkCRC;
     }

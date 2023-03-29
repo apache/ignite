@@ -44,7 +44,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     /** Snapshot directory path. */
     private String snpPath;
 
-    /** If {@code true} perform full checks. */
+    /** If {@code true} check CRC before restore. */
     private boolean checkCRC;
 
     /** Default constructor. */
@@ -56,7 +56,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
      * @param grpNames Cache group names to be verified.
      * @param clusterMetas The map of distribution of snapshot metadata pieces across the cluster.
      * @param snpPath Snapshot directory path.
-     * @param checkCRC If {@code true} perform full checks.
+     * @param checkCRC If {@code true} check CRC before restore.
      */
     public SnapshotPartitionsVerifyTaskArg(
         Collection<String> grpNames,
@@ -91,7 +91,7 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
         return snpPath;
     }
 
-    /** @return If {@code true} perform full checks. */
+    /** @return If {@code true} check CRC before restore. */
     public boolean checkCRC() {
         return checkCRC;
     }

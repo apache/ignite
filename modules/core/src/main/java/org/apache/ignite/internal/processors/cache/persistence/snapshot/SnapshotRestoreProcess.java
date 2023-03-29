@@ -258,7 +258,7 @@ public class SnapshotRestoreProcess {
      * @param snpPath Snapshot directory path.
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @param incIdx Index of incremental snapshot.
-     * @param checkCRC If {@code true} then check before restore.
+     * @param checkCRC If {@code true} check CRC before restore.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
     public IgniteFutureImpl<Void> start(

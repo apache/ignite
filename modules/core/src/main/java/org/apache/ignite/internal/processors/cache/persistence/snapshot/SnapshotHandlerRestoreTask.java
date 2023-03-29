@@ -123,7 +123,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /** If {@code true} perform full checks. */
+        /** If {@code true} check CRC before restore. */
         private final boolean checkCRC;
 
         /**
@@ -131,7 +131,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
          * @param snpPath Snapshot directory path.
          * @param consistentId String representation of the consistent node ID.
          * @param grps Cache group names.
-         * @param checkCRC If {@code true} perform full checks.
+         * @param checkCRC If {@code true} check CRC before restore.
          */
         public SnapshotHandlerRestoreJob(
             String snpName,
