@@ -3301,7 +3301,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync.");
+        assertContains(
+            log,
+            testOut.toString(),
+            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --full-check."
+        );
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "--sync"));
         assertContains(log, testOut.toString(), "Invalid argument: --sync. Action \"--status\" does not support specified option.");
@@ -3310,7 +3314,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --start.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync.");
+        assertContains(
+            log,
+            testOut.toString(),
+            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --full-check."
+        );
 
         autoConfirmation = true;
 
@@ -3377,7 +3385,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(),
-            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync.");
+            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync, --full-check.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));

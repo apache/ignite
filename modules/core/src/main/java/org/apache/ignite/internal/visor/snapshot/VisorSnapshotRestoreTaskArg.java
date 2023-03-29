@@ -42,7 +42,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     private int incIdx;
 
     /** If {@code true} then check snapshot before restore. */
-    private boolean check;
+    private boolean fullCheck;
 
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
@@ -56,7 +56,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
      * @param sync Synchronous execution flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
-     * @param check If {@code true} then skip check before restore.
+     * @param fullCheck If {@code true} then skip check before restore.
      */
     public VisorSnapshotRestoreTaskArg(
         String snpName,
@@ -65,14 +65,14 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         boolean sync,
         VisorSnapshotRestoreTaskAction action,
         @Nullable Collection<String> grpNames,
-        boolean check
+        boolean fullCheck
     ) {
         super(snpName, snpPath, sync, false);
 
         this.action = action;
         this.grpNames = grpNames;
         this.incIdx = incIdx == null ? 0 : incIdx;
-        this.check = check;
+        this.fullCheck = fullCheck;
     }
 
     /** @return Cache group names. */
@@ -91,8 +91,8 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     }
 
     /** @return If {@code true} then skip check before restore. */
-    public boolean check() {
-        return check;
+    public boolean fullCheck() {
+        return fullCheck;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         U.writeEnum(out, action);
         U.writeCollection(out, grpNames);
         out.writeInt(incIdx);
-        out.writeBoolean(check);
+        out.writeBoolean(fullCheck);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +110,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
         grpNames = U.readCollection(in);
         incIdx = in.readInt();
-        check = in.readBoolean();
+        fullCheck = in.readBoolean();
     }
 
     /** {@inheritDoc} */
