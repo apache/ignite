@@ -705,10 +705,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             Map<Integer, Integer> cacheParts = entry.getValue();
 
-            for (int i = 0; i < parts; i++) {
-                assertTrue("[cache=" + cache + ", part=" + i + ']', cacheParts.containsKey(i));
+            for (int i = 0; i < parts; i++)
                 assertEquals("[cache=" + cache + ", part=" + i + ']', expPartCopiesInSnp, cacheParts.get(i));
-            }
         }
     }
 
