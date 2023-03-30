@@ -119,6 +119,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** */
     private static final int MAX_STORED_PENDING_MESSAGES = 100;
 
+    /** Common message handler identifier that does not correspond to any particular cache. */
     public static final int COMMON_MESSAGE_HANDLER_ID = 0;
 
     /** Delay in milliseconds between retries. */
@@ -1750,19 +1751,30 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    static class MessageHandler {
+    abstract static class MessageHandler {
         /** Start topology version. */
         volatile AffinityTopologyVersion startTopVer;
 
+        /**
+         * Creates a new message handler descriptor.
+         *
+         * @param startTopVer Start affinity topology version.
+         */
         MessageHandler(AffinityTopologyVersion startTopVer) {
             this.startTopVer = startTopVer;
         }
     }
 
+    /** */
     static class IndexedClassHandler extends MessageHandler {
         /** Actual handlers. */
         final IgniteBiInClosure[] hndls = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
+        /**
+         * Creates a new message handler descriptor.
+         *
+         * @param startTopVer Start affinity topology version.
+         */
         IndexedClassHandler(AffinityTopologyVersion startTopVer) {
             super(startTopVer);
         }
@@ -1773,6 +1785,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         /** Actual handler. */
         IgniteBiInClosure<UUID, GridCacheMessage> hnd;
 
+        /**
+         * Creates a new message handler descriptor.
+         *
+         * @param startTopVer Start affinity topology version.
+         */
         RegularClassHandler(AffinityTopologyVersion startTopVer, IgniteBiInClosure<UUID, GridCacheMessage> hnd) {
             super(startTopVer);
 

@@ -93,13 +93,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             ctx.cacheId(),
             ctx.startTopologyVersion(),
             GridNearGetResponse.class,
-            (CI2<UUID, GridNearGetResponse>) this::processGetResponse);
+            (CI2<UUID, GridNearGetResponse>)this::processGetResponse);
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.startTopologyVersion(),
             GridNearLockResponse.class,
-            (CI2<UUID, GridNearLockResponse>) this::processLockResponse);
+            (CI2<UUID, GridNearLockResponse>)this::processLockResponse);
     }
 
     /**

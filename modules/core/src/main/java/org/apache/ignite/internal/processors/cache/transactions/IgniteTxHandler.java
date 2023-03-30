@@ -275,13 +275,13 @@ public class IgniteTxHandler {
         });
 
         ctx.io().addCacheHandler(GridCacheTxRecoveryRequest.class,
-            (CI2<UUID, GridCacheTxRecoveryRequest>) this::processCheckPreparedTxRequest);
+            (CI2<UUID, GridCacheTxRecoveryRequest>)this::processCheckPreparedTxRequest);
 
         ctx.io().addCacheHandler(GridCacheTxRecoveryResponse.class,
-            (CI2<UUID, GridCacheTxRecoveryResponse>) this::processCheckPreparedTxResponse);
+            (CI2<UUID, GridCacheTxRecoveryResponse>)this::processCheckPreparedTxResponse);
 
         ctx.io().addCacheHandler(IncrementalSnapshotAwareMessage.class,
-            (CI2<UUID, IncrementalSnapshotAwareMessage>) this::processIncrementalSnapshotAwareMessage);
+            (CI2<UUID, IncrementalSnapshotAwareMessage>)this::processIncrementalSnapshotAwareMessage);
     }
 
     /** */
