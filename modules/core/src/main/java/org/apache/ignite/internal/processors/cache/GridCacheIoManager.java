@@ -118,6 +118,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** */
     private static final int MAX_STORED_PENDING_MESSAGES = 100;
 
+    /** Common message handler identifier that does not correspond to any particular cache. */
     public static final int COMMON_MESSAGE_HANDLER_ID = 0;
 
     /** Delay in milliseconds between retries. */
@@ -1466,7 +1467,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     ) {
         RegularClassHandler clsHnd = cacheHandlers.clsHandlers.get(new ListenerKey(hndId, msgCls));
 
-        return (clsHnd != null)? clsHnd.hnd : null;
+        return (clsHnd != null) ? clsHnd.hnd : null;
     }
 
     /**
@@ -1762,19 +1763,30 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    static class MessageHandler {
+    abstract static class MessageHandler {
         /** Deployment identifier. */
         volatile IgniteUuid deploymentId;
 
+        /**
+         * Creates a new message handler descriptor.
+         *
+         * @param deploymentId Deploymen identifier.
+         */
         MessageHandler(IgniteUuid deploymentId) {
             this.deploymentId = deploymentId;
         }
     }
 
+    /** */
     static class IndexedClassHandler extends MessageHandler {
         /** Actual handlers. */
         final IgniteBiInClosure[] hndls = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
+        /**
+         * Creates a new message handler descriptor.
+         *
+         * @param deploymentId Deploymen identifier.
+         */
         IndexedClassHandler(IgniteUuid deploymentId) {
             super(deploymentId);
         }
@@ -1785,6 +1797,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         /** Actual handler. */
         IgniteBiInClosure<UUID, GridCacheMessage> hnd;
 
+        /**
+         * Creates a new message handler descriptor.
+         *
+         * @param deploymentId Deploymen identifier.
+         */
         RegularClassHandler(IgniteUuid deploymentId, IgniteBiInClosure<UUID, GridCacheMessage> hnd) {
             super(deploymentId);
 

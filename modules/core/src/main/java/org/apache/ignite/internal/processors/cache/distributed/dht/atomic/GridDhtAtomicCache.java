@@ -253,13 +253,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.cacheId(),
             ctx.dynamicDeploymentId(),
             GridNearGetRequest.class,
-            (CI2<UUID, GridNearGetRequest>) this::processNearGetRequest);
+            (CI2<UUID, GridNearGetRequest>)this::processNearGetRequest);
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.dynamicDeploymentId(),
             GridNearSingleGetRequest.class,
-            (CI2<UUID, GridNearSingleGetRequest>) this::processNearSingleGetRequest);
+            (CI2<UUID, GridNearSingleGetRequest>)this::processNearSingleGetRequest);
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
@@ -416,31 +416,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.cacheId(),
                 ctx.dynamicDeploymentId(),
                 GridNearGetResponse.class,
-                new CI2<UUID, GridNearGetResponse>() {
-                    @Override public void apply(
-                        UUID nodeId,
-                        GridNearGetResponse res
-                    ) {
-                        processNearGetResponse(
-                            nodeId,
-                            res);
-                    }
-                });
+                (CI2<UUID, GridNearGetResponse>)this::processNearGetResponse);
 
             ctx.io().addCacheHandler(
                 ctx.cacheId(),
                 ctx.dynamicDeploymentId(),
                 GridNearSingleGetResponse.class,
-                new CI2<UUID, GridNearSingleGetResponse>() {
-                    @Override public void apply(
-                        UUID nodeId,
-                        GridNearSingleGetResponse res
-                    ) {
-                        processNearSingleGetResponse(
-                            nodeId,
-                            res);
-                    }
-                });
+                (CI2<UUID, GridNearSingleGetResponse>)this::processNearSingleGetResponse);
         }
     }
 

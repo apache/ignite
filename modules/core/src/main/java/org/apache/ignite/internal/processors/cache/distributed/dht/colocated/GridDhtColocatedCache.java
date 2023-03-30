@@ -127,19 +127,19 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             ctx.cacheId(),
             ctx.dynamicDeploymentId(),
             GridNearGetResponse.class,
-            (CI2<UUID, GridNearGetResponse>) this::processNearGetResponse);
+            (CI2<UUID, GridNearGetResponse>)this::processNearGetResponse);
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.dynamicDeploymentId(),
             GridNearSingleGetResponse.class,
-            (CI2<UUID, GridNearSingleGetResponse>) this::processNearSingleGetResponse);
+            (CI2<UUID, GridNearSingleGetResponse>)this::processNearSingleGetResponse);
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
             ctx.dynamicDeploymentId(),
             GridNearLockResponse.class,
-            (CI2<UUID, GridNearLockResponse>) this::processNearLockResponse);
+            (CI2<UUID, GridNearLockResponse>)this::processNearLockResponse);
     }
 
     /**

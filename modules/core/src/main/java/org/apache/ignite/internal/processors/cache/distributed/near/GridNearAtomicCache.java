@@ -111,7 +111,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             ctx.cacheId(),
             ctx.dynamicDeploymentId(),
             GridNearGetResponse.class,
-            (CI2<UUID, GridNearGetResponse>) this::processGetResponse);
+            (CI2<UUID, GridNearGetResponse>)this::processGetResponse);
     }
 
     /**

@@ -106,7 +106,14 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      * @param fields Fields query or not.
      * @param addDepInfo Deployment info flag.
      */
-    public GridCacheQueryResponse(int cacheId, IgniteUuid cacheDeploymentId, long reqId, boolean finished, boolean fields, boolean addDepInfo) {
+    public GridCacheQueryResponse(
+        int cacheId,
+        IgniteUuid cacheDeploymentId,
+        long reqId,
+        boolean finished,
+        boolean fields,
+        boolean addDepInfo
+    ) {
         super(cacheId, cacheDeploymentId);
 
         this.reqId = reqId;

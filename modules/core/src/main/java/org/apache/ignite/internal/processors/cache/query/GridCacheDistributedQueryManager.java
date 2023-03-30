@@ -108,7 +108,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             cctx.cacheId(),
             cctx.dynamicDeploymentId(),
             GridCacheQueryRequest.class,
-            (CI2<UUID, GridCacheQueryRequest>) this::processQueryRequest);
+            (CI2<UUID, GridCacheQueryRequest>)this::processQueryRequest);
 
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
