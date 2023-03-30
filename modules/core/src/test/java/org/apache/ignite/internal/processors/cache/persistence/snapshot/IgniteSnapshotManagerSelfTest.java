@@ -468,7 +468,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
 
-        ignite = grid(ignite.affinity(ccfg.getName()).mapPartitionToNode(0));
+        int part = 0;
+
+        ignite = grid(ignite.affinity(ccfg.getName()).mapPartitionToNode(part));
 
         forceCheckpoint();
 
@@ -479,7 +481,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0,
+            part,
             ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();

@@ -650,7 +650,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                     ? cacheDir.getName().substring(CACHE_GRP_DIR_PREFIX.length())
                     : cacheDir.getName().substring(CACHE_DIR_PREFIX.length());
 
-                Map<Integer, Integer> cacheParts = cachesParts.compute(name, (k, v) -> v == null ? new HashMap<>() : v);
+                Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
 
                 File[] parts = cacheDir.listFiles(f ->
                     f.getName().startsWith(PART_FILE_PREFIX)
