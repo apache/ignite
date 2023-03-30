@@ -62,10 +62,6 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureDetectionTimeout(600_000);
-        cfg.setClientFailureDetectionTimeout(600_000);
-        cfg.setMetricsLogFrequency(15_000);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
@@ -316,8 +312,8 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(CACHE_NAME);
 
         cfg.setBackups(1)
-                .setReadFromBackup(false)
-                .setAtomicityMode(mode);
+            .setReadFromBackup(false)
+            .setAtomicityMode(mode);
 
         return ignite.getOrCreateCache(cfg);
     }
