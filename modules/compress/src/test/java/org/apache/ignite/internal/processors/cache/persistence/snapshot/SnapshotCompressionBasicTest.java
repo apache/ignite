@@ -23,11 +23,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -106,10 +108,15 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         COMPRESSED_CACHES.add("cache3");
     }
 
-    /** */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Collection<Boolean> encryptionParams() {
-        return Collections.singletonList(false);
+    /** Parameters. */
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static Collection<Object[]> params() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean onlyPrimary: new boolean[] {true, false})
+            res.add(new Object[] { false, onlyPrimary});
+
+        return res;
     }
 
     /** {@inheritDoc} */
