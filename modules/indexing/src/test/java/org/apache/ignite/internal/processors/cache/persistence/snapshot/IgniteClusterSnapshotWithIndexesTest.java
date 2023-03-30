@@ -88,6 +88,11 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
 
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
+        if (onlyPrimary)
+            awaitPartitionMapExchange();
+
         assertTrue(snp.cache(indexedCcfg.getName()).indexReadyFuture().isDone());
         assertTrue(snp.cache(tblName).indexReadyFuture().isDone());
 
