@@ -77,4 +77,4 @@ CP="${CP}${SEP}${IGNITE_HOME_TMP}/bin/include/sqlline/*"
 # the Ignite provides --historyfile argument to SQLLine usage
 SQLLINE_HISTORY="~/.sqlline/ignite_history"
 
-"$JAVA" ${JVM_OPTS} -cp ${CP} sqlline.SqlLine --historyFile=${SQLLINE_HISTORY} $@
+"$JAVA" ${JVM_OPTS} -cp ${CP} sqlline.SqlLine --historyFile=${SQLLINE_HISTORY} "$@"
