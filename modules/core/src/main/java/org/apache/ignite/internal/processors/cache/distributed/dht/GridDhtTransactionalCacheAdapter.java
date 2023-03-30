@@ -195,7 +195,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             (CI2<UUID, GridNearTxEnlistRequest>)this::processNearTxEnlistRequest);
 
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridNearTxEnlistResponse.class,
-            (CI2<UUID, GridNearTxEnlistResponse>) this::processNearTxEnlistResponse);
+            (CI2<UUID, GridNearTxEnlistResponse>)this::processNearTxEnlistResponse);
 
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.dynamicDeploymentId(), GridDhtTxQueryEnlistRequest.class,
             new CI2<UUID, GridDhtTxQueryEnlistRequest>() {
