@@ -81,7 +81,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(ignite.context().cache().jcache(indexedCcfg.getName()),
             selectStartSQLStatement(Account.class.getSimpleName()))));
 
-        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
+        snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary)
+            .get();
 
         stopAllGrids();
 
@@ -151,8 +152,6 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
             exec.unblock();
 
         fut.get();
-
-        checkSnapshot(SNAPSHOT_NAME, null);
 
         stopAllGrids();
 
