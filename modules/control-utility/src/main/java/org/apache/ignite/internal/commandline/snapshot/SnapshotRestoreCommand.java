@@ -31,6 +31,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.CHECK;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.GROUPS;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.INCREMENT;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SOURCE;
@@ -90,6 +91,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         Integer incIdx = null;
         Set<String> grpNames = null;
         boolean sync = false;
+        boolean check = false;
 
         if (restoreAction != null)
             argIter.nextArg(null);
@@ -147,9 +149,15 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
                 sync = true;
             }
+            else if (option == CHECK) {
+                if (check)
+                    throw new IllegalArgumentException(CHECK.argName() + " arg specified twice.");
+
+                check = true;
+            }
         }
 
-        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, incIdx, sync, restoreAction, grpNames);
+        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, incIdx, sync, restoreAction, grpNames, check);
     }
 
     /** {@inheritDoc} */
@@ -161,12 +169,14 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         startParams.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
         startParams.put(INCREMENT.argName() + " " + INCREMENT.arg(), INCREMENT.description());
         startParams.put(SYNC.argName(), SYNC.description());
+        startParams.put(CHECK.argName(), CHECK.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG,
             optional(INCREMENT.argName(), INCREMENT.arg()),
             optional(GROUPS.argName(), GROUPS.arg()),
             optional(SOURCE.argName(), SOURCE.arg()),
-            optional(SYNC.argName()));
+            optional(SYNC.argName()),
+            optional(CHECK.argName()));
         usage(log, "Snapshot restore operation status (Command deprecated. Use '" + SNAPSHOT + ' '
             + SnapshotSubcommands.STATUS + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
         usage(log, "Cancel snapshot restore operation (Command deprecated. Use '" + SNAPSHOT + ' '

@@ -120,7 +120,14 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
     }
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String name, @Nullable String path, int incIdx, String constId, Collection<String> groups) {
+    @Override protected ComputeJob createJob(
+        String name,
+        @Nullable String path,
+        int incIdx,
+        String constId,
+        Collection<String> groups,
+        boolean check
+    ) {
         return new VerifyIncrementalSnapshotJob(name, path, incIdx, constId);
     }
 
