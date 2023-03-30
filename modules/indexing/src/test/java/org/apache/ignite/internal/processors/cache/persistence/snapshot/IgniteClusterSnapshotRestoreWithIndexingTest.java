@@ -76,6 +76,8 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
         if (onlyPrimary)
             awaitPartitionMapExchange();
 
