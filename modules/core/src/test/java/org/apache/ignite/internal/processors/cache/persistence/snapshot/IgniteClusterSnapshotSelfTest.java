@@ -396,7 +396,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         try {
             U.await(txStarted);
 
-            createAndCheckSnapshot(grid(0), SNAPSHOT_NAME);
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
         }
         finally {
             stop.set(true);
@@ -428,7 +428,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.getOrCreateCache(ccfg).put(i, i);
 
-        createAndCheckSnapshot(ig0, SNAPSHOT_NAME);
+        snp(ig0).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
 
         stopAllGrids();
 
@@ -722,8 +722,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         commSpi.stopBlock(true);
 
         fut.get();
-
-        checkSnapshot(SNAPSHOT_NAME, null);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 

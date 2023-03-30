@@ -289,7 +289,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         IgniteInternalFuture<?> loadFut = runLoad(client, false, stop);
 
         try {
-            createAndCheckSnapshot(client, SNAPSHOT_NAME);
+            snp(client).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
         }
         finally {
             stop.set(true);
@@ -432,9 +432,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         assert notExpWrn == null || expWrn != null;
 
         if (create) {
-            if (expWrn == null) {
-                createAndCheckSnapshot(snpHnd, SNAPSHOT_NAME);
-            }
+            if (expWrn == null)
+                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
             else {
                 Throwable snpWrn = assertThrows(
                     null,

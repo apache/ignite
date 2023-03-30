@@ -318,7 +318,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         addCache(encryptedFirst);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
 
         awaitPartitionMapExchange();
 
