@@ -1454,7 +1454,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     ) {
         RegularClassHandler clsHnd = cacheHandlers.clsHandlers.get(new ListenerKey(hndId, msgCls));
 
-        return (clsHnd != null)? clsHnd.hnd : null;
+        return (clsHnd != null) ? clsHnd.hnd : null;
     }
 
     /**
