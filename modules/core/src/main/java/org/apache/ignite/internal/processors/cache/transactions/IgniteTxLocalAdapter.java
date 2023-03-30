@@ -1495,6 +1495,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             boolean hasDrTtl = drTtl >= 0;
 
             txEntry = new IgniteTxEntry(entry.context(),
+                entry.context().dynamicDeploymentId(),
                 this,
                 op,
                 val,

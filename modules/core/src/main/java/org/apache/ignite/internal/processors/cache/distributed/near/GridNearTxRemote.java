@@ -401,6 +401,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                 }
                 else {
                     IgniteTxEntry txEntry = new IgniteTxEntry(cacheCtx,
+                        cacheCtx.dynamicDeploymentId(),
                         this,
                         op,
                         val,

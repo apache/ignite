@@ -24,8 +24,14 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,13 +40,16 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -98,9 +107,9 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testAtomicPutAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                ATOMIC,
-                GridNearAtomicAbstractUpdateRequest.class,
-                (cache, keys) -> cache.put(keys.get(0), 42));
+            ATOMIC,
+            GridNearAtomicAbstractUpdateRequest.class,
+            (cache, keys) -> cache.put(keys.get(0), 42));
     }
 
     /**
@@ -109,9 +118,9 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testAtomicGetAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                ATOMIC,
-                GridNearSingleGetRequest.class,
-                (cache, keys) -> cache.get(keys.get(0)));
+            ATOMIC,
+            GridNearSingleGetRequest.class,
+            (cache, keys) -> cache.get(keys.get(0)));
     }
 
     /**
@@ -120,15 +129,15 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testAtomicPutAllAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                ATOMIC,
-                GridNearAtomicFullUpdateRequest.class,
-                (cache, keys) -> {
-                    Map<Integer, Integer> vals = new TreeMap<>();
-                    vals.put(keys.get(0), 24);
-                    vals.put(keys.get(1), 42);
+            ATOMIC,
+            GridNearAtomicFullUpdateRequest.class,
+            (cache, keys) -> {
+                Map<Integer, Integer> vals = new TreeMap<>();
+                vals.put(keys.get(0), 24);
+                vals.put(keys.get(1), 42);
 
-                    cache.putAll(vals);
-                });
+                cache.putAll(vals);
+            });
     }
 
     /**
@@ -137,15 +146,40 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testAtomicGetAllAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                ATOMIC,
-                GridNearGetRequest.class,
-                (cache, keys) -> {
-                    Set<Integer> vals = new TreeSet<>();
-                    vals.add(keys.get(0));
-                    vals.add(keys.get(1));
+            ATOMIC,
+            GridNearGetRequest.class,
+            (cache, keys) -> {
+                Set<Integer> vals = new TreeSet<>();
+                vals.add(keys.get(0));
+                vals.add(keys.get(1));
 
-                    cache.getAll(vals);
+                cache.getAll(vals);
+            });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testImplicitInvokeAndCacheRecreate() throws Exception {
+        testCacheOperationAndCacheRecreate(
+            ATOMIC,
+            GridNearAtomicAbstractUpdateRequest.class,
+            (cache, keys) -> {
+                cache.invoke(keys.get(0), new CacheEntryProcessor<Integer, Integer, Integer>() {
+                    @Override public Integer process(
+                        MutableEntry<Integer, Integer> entry,
+                        Object... arguments
+                    ) throws EntryProcessorException {
+                        if (entry.exists())
+                            return entry.getValue();
+
+                        entry.setValue(123);
+
+                        return entry.getValue();
+                    }
                 });
+            });
     }
 
     /**
@@ -154,9 +188,9 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testImplicitOptimisticTxPutAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                TRANSACTIONAL,
-                GridNearTxPrepareRequest.class,
-                (cache, keys) -> cache.put(keys.get(0), 42));
+            TRANSACTIONAL,
+            GridNearTxPrepareRequest.class,
+            (cache, keys) -> cache.put(keys.get(0), 42));
     }
 
     /**
@@ -165,9 +199,9 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testImplicitOptimisticTxGetAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                TRANSACTIONAL,
-                GridNearSingleGetRequest.class,
-                (cache, keys) -> cache.get(keys.get(0)));
+            TRANSACTIONAL,
+            GridNearSingleGetRequest.class,
+            (cache, keys) -> cache.get(keys.get(0)));
     }
 
     /**
@@ -176,15 +210,40 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testImplicitOptimisticTxPutAllAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                TRANSACTIONAL,
-                GridNearTxPrepareRequest.class,
-                (cache, keys) -> {
-                    Map<Integer, Integer> vals = new TreeMap<>();
-                    vals.put(keys.get(0), 24);
-                    vals.put(keys.get(1), 42);
+            TRANSACTIONAL,
+            GridNearTxPrepareRequest.class,
+            (cache, keys) -> {
+                Map<Integer, Integer> vals = new TreeMap<>();
+                vals.put(keys.get(0), 24);
+                vals.put(keys.get(1), 42);
 
-                    cache.putAll(vals);
+                cache.putAll(vals);
+            });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testImplicitTxInvokeAndCacheRecreate() throws Exception {
+        testCacheOperationAndCacheRecreate(
+            TRANSACTIONAL,
+            GridNearTxPrepareRequest.class,
+            (cache, keys) -> {
+                cache.invoke(keys.get(0), new CacheEntryProcessor<Integer, Integer, Integer>() {
+                    @Override public Integer process(
+                        MutableEntry<Integer, Integer> entry,
+                        Object... arguments
+                    ) throws EntryProcessorException {
+                        if (entry.exists())
+                            return entry.getValue();
+
+                        entry.setValue(123);
+
+                        return entry.getValue();
+                    }
                 });
+            });
     }
 
     /**
@@ -193,15 +252,15 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testPessimisticTxPutAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                TRANSACTIONAL,
-                GridNearLockRequest.class,
-                (cache, keys) -> {
-                    try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                        cache.put(keys.get(0), 42);
+            TRANSACTIONAL,
+            GridNearLockRequest.class,
+            (cache, keys) -> {
+                try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+                    cache.put(keys.get(0), 42);
 
-                        tx.commit();
-                    }
-                });
+                    tx.commit();
+                }
+            });
     }
 
     /**
@@ -210,19 +269,19 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testPessimisticTxPutAllAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                TRANSACTIONAL,
-                GridNearLockRequest.class,
-                (cache, keys) -> {
-                    try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                        Map<Integer, Integer> vals = new TreeMap<>();
-                        vals.put(keys.get(0), 24);
-                        vals.put(keys.get(1), 42);
+            TRANSACTIONAL,
+            GridNearLockRequest.class,
+            (cache, keys) -> {
+                try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+                    Map<Integer, Integer> vals = new TreeMap<>();
+                    vals.put(keys.get(0), 24);
+                    vals.put(keys.get(1), 42);
 
-                        cache.putAll(vals);
+                    cache.putAll(vals);
 
-                        tx.commit();
-                    }
-                });
+                    tx.commit();
+                }
+            });
     }
 
     /**
@@ -231,15 +290,37 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
     @Test
     public void testPessimisticTxGetAndCacheRecreate() throws Exception {
         testCacheOperationAndCacheRecreate(
-                TRANSACTIONAL,
-                GridNearLockRequest.class,
-                (cache, keys) -> {
-                    try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
-                        cache.get(keys.get(0));
+            TRANSACTIONAL,
+            GridNearLockRequest.class,
+            (cache, keys) -> {
+                try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+                    cache.get(keys.get(0));
 
-                        tx.commit();
+                    tx.commit();
+                }
+            });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAtomicScanAndCacheRecreate() throws Exception {
+        testCacheOperationAndCacheRecreate(
+            ATOMIC,
+            GridCacheQueryRequest.class,
+            (cache, keys) -> {
+                ScanQuery<Integer, Integer> scanQuery = new ScanQuery<>();
+                scanQuery.setPageSize(1);
+
+                try (QueryCursor qry = cache.query(scanQuery)) {
+                    for (Object o : qry.getAll()) {
+                        IgniteBiTuple<Integer, Integer> tuple = (IgniteBiTuple<Integer, Integer>)o;
+
+                        throw new RuntimeException("Succesfully read unexpected value [k=" + tuple.getKey() + ", v=" + tuple.getValue());
                     }
-                });
+                }
+            });
     }
 
     /**
@@ -250,16 +331,20 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testCacheOperationAndCacheRecreate(
-            CacheAtomicityMode mode,
-            Class<? extends GridCacheIdMessage> clazz,
-            IgniteBiInClosure<IgniteCache<Integer, Integer>, List<Integer>> cacheOp
+        CacheAtomicityMode mode,
+        Class<? extends GridCacheIdMessage> clazz,
+        IgniteBiInClosure<IgniteCache<Integer, Integer>, List<Integer>> cacheOp
     ) throws Exception {
         IgniteEx g0 = grid(0);
         IgniteEx client = grid(1);
 
+        // Initial loading.
         IgniteCache<Integer, Integer> clientCache = createCache(client, mode);
+        for (int i = 0; i < 100; i++)
+            clientCache.put(i, i);
 
         TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(g0);
 
         // Block cache operation.
         clientSpi.blockMessages((node, msg) -> {
@@ -269,6 +354,14 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
                 if (msg0.cacheId() == 0 || msg0.cacheId() == CU.cacheId(CACHE_NAME))
                     return true;
             }
+
+            return false;
+        });
+
+        // Block notifying the client node about upcoming changes.
+        crdSpi.blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionsFullMessage)
+                return true;
 
             return false;
         });
@@ -288,6 +381,10 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
         // Create a new cache with the same name.
         IgniteCache newCache = createCache(g0, mode);
 
+        // Upload new values.
+        for (int i = 0; i < 100; i++)
+            newCache.put(i, i + 1_000);
+
         // Unblock cache operation.
         clientSpi.stopBlock();
 
@@ -298,6 +395,9 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue("Unexpected exception [err=" + e + ']', X.hasCause(e, CacheException.class));
+        }
+        finally {
+            crdSpi.stopBlock();
         }
     }
 
@@ -313,7 +413,8 @@ public class IgniteCacheRecreateTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1)
             .setReadFromBackup(false)
-            .setAtomicityMode(mode);
+            .setAtomicityMode(mode)
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ignite.getOrCreateCache(cfg);
     }
