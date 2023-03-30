@@ -148,6 +148,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
+        if (!opCtx.check()) {
+            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+
+            return Collections.emptyMap();
+        }
+
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));

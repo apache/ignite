@@ -41,6 +41,9 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     /** Incremental snapshot index. */
     private int incIdx;
 
+    /** If {@code true} check snapshot before restore. */
+    private boolean check;
+
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
         // No-op.
@@ -53,6 +56,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
      * @param sync Synchronous execution flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
+     * @param check If {@code true} check snapshot before restore.
      */
     public VisorSnapshotRestoreTaskArg(
         String snpName,
@@ -60,13 +64,15 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         @Nullable Integer incIdx,
         boolean sync,
         VisorSnapshotRestoreTaskAction action,
-        @Nullable Collection<String> grpNames
+        @Nullable Collection<String> grpNames,
+        boolean check
     ) {
         super(snpName, snpPath, sync, false, false);
 
         this.action = action;
         this.grpNames = grpNames;
         this.incIdx = incIdx == null ? 0 : incIdx;
+        this.check = check;
     }
 
     /** @return Cache group names. */
@@ -84,12 +90,18 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         return incIdx;
     }
 
+    /** @return If {@code true} check snapshot before restore. */
+    public boolean check() {
+        return check;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
         U.writeEnum(out, action);
         U.writeCollection(out, grpNames);
         out.writeInt(incIdx);
+        out.writeBoolean(check);
     }
 
     /** {@inheritDoc} */
@@ -98,6 +110,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
         grpNames = U.readCollection(in);
         incIdx = in.readInt();
+        check = in.readBoolean();
     }
 
     /** {@inheritDoc} */
