@@ -329,7 +329,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         G.allGrids().forEach(i -> failCompressionProcessor(i, SNAPSHOT_WITHOUT_HOLES));
 
         for (String snpName : Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
-            ignite.snapshot().createSnapshot(snpName).get(TIMEOUT);
+            snp(ignite).createSnapshot(snpName, null, false, onlyPrimary).get(TIMEOUT);
 
             IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(snpName, null)
                 .get().idleVerifyResult();
