@@ -16,6 +16,7 @@
 name: Check code style and abandoned tests.
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - master
@@ -31,6 +32,8 @@ jobs:
     name: Check java code on JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup java
         uses: actions/setup-java@v3
@@ -61,6 +64,41 @@ jobs:
         run : |
           mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
+      - name: Setup Sonar Opts
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            SONAR_OPTS="-Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}"
+          else
+            SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
+          fi
+          echo "SONAR_OPTS:     ${SONAR_OPTS}"
+          echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
+
+      - name: Sonar Analyze Upload
+        if: ${{ matrix.java == '8' }}
+        run: >
+          ./mvnw sonar:sonar -P sonar,all-java 
+          ${{ env.SONAR_OPTS }}
+          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.organization=apache
+          -Dsonar.projectName="Apache Ignite"
+          -Dsonar.login=${SONARCLOUD_TOKEN} -B -V
+        env:
+          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+
+  sonarcloud:
+    needs: check-java
+    if: ${{ github.event_name == "pull_request" }}
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      # See https://github.com/SonarSource/sonarcloud-github-action
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
