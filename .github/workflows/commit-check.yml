@@ -59,6 +59,13 @@ jobs:
         run: |
           ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
       - name: Setup Sonar Opts
         shell: bash
         run: |
@@ -80,6 +87,7 @@ jobs:
           -Dsonar.projectName="Apache Ignite"
           -Dsonar.login=${SONARCLOUD_TOKEN} -B -V
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
       - name: Run abandoned tests checks.
