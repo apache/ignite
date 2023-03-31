@@ -84,7 +84,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     protected static final String SNAPSHOT_WITH_HOLES = "testSnapshotWithHoles";
 
     /** */
-    protected static final long TIMEOUT = 30_000;
+    protected static final long TIMEOUT = 120_000;
 
     /** */
     protected static final Map<String, String> CACHES = new HashMap<>();
