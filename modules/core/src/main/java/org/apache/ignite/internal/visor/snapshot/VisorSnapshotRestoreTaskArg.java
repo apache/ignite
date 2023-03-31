@@ -67,7 +67,7 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         @Nullable Collection<String> grpNames,
         boolean check
     ) {
-        super(snpName, snpPath, sync, false);
+        super(snpName, snpPath, sync, false, false);
 
         this.action = action;
         this.grpNames = grpNames;

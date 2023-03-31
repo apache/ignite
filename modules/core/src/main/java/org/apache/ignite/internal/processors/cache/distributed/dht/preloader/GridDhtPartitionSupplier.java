@@ -520,6 +520,10 @@ public class GridDhtPartitionSupplier {
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + ']', t1);
             }
 
+            // There can be errors in case of concurrent caches stop. Do not trigger failure handler in these cases.
+            if (!grp.hasCaches())
+                return;
+
             // If fallback to full rebalance is possible then let's try to switch to it
             // instead of triggering failure handler.
             if (!fallbackToFullRebalance) {

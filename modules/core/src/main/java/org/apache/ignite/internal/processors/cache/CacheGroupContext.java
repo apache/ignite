@@ -201,6 +201,9 @@ public class CacheGroupContext {
     /** Disk page compression method. */
     private final CompressionHandler compressHandler;
 
+    /** Cache is prepared to stop. */
+    private volatile boolean preparedToStop;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -442,6 +445,9 @@ public class CacheGroupContext {
      */
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
+
+        if (caches.isEmpty()) // Cache stopped.
+            return null;
 
         assert !sharedGroup() && caches.size() == 1 :
             "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
@@ -1355,6 +1361,18 @@ public class CacheGroupContext {
     /** */
     public CompressionHandler compressionHandler() {
         return compressHandler;
+    }
+
+    /** Prepare cache to stop (prohibit any futher updates). */
+    public void prepareToStop() {
+        preparedToStop = true;
+
+        offheap().prepareToStop();
+    }
+
+    /** */
+    public boolean isPreparedToStop() {
+        return preparedToStop;
     }
 
     /**

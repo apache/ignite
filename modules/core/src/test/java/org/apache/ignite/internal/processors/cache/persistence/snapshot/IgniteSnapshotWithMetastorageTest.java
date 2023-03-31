@@ -66,7 +66,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         ignite.context().distributedMetastorage().write("key", "value");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stopAllGrids();
 
@@ -118,7 +118,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                 }
             });
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         stop.set(true);
         updFut.get();
@@ -183,7 +183,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                 }
             });
 
-        IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<?> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         GridTestUtils.assertThrowsAnyCause(log, fut::get, IgniteCheckedException.class, "Test exception");
 

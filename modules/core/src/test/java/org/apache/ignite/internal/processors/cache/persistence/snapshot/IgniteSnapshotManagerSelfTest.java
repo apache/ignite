@@ -381,7 +381,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         Map<Integer, Value> iterated = new HashMap<>();
 
@@ -425,7 +425,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(2,
             dfltCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 1)), keys);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        ignite = grid(ignite.affinity(dfltCacheCfg.getName()).mapPartitionToNode(0));
+
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
@@ -466,16 +468,20 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
 
+        int part = 0;
+
+        ignite = grid(ignite.affinity(ccfg.getName()).mapPartitionToNode(part));
+
         forceCheckpoint();
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
         int rows = 0;
 
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0,
+            part,
             ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
@@ -540,7 +546,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         beforeCpEnter.await(testTimeout, TimeUnit.MILLISECONDS);
 
-        IgniteFuture<Void> snpFut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> snpFut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         // Wait until the snapshot task checkpoint listener is registered.
         assertTrue(GridTestUtils.waitForCondition(lsnr::check, testTimeout));
@@ -550,6 +556,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         // Make sure the snapshot has been taken.
         snpFut.get(testTimeout);
+
+        checkSnapshot(SNAPSHOT_NAME, null);
     }
 
     /** @throws Exception If fails. */
@@ -559,7 +567,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
 
         ThreadMXBean tMb = ManagementFactory.getThreadMXBean();
 
