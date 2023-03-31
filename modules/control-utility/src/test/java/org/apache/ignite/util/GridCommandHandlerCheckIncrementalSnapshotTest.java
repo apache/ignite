@@ -56,7 +56,9 @@ import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /** */
 @RunWith(Parameterized.class)
@@ -335,6 +337,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         assertContains(log, testOut.toString(), "partialCommitsSize=1");
     }
 
+    /** */
     @Test
     public void atomicCachesAreSkippedDuringTheCheck() throws Exception {
         String atomicSnp = "testAtomicSnapshot";
@@ -384,18 +387,21 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
     /** */
     private void load(Consumer<IgniteUuid> txIdHnd) {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
         for (int txNum = 0; txNum < 1_000; txNum++) {
             try (Transaction tx = grid(0).transactions().txStart()) {
                 if (txIdHnd != null)
                     txIdHnd.accept(tx.xid());
 
-                for (int primNode = 0; primNode < txPrimNodesCnt; primNode++)
+                for (int primNode = 0; primNode < txPrimNodesCnt; primNode++) {
                     grid(0).cache(CACHE).put(
-                        primaryKeys(grid(primNode).cache(CACHE), 1, ThreadLocalRandom.current().nextInt(1_000)).get(0),
+                        primaryKeys(grid(primNode).cache(CACHE), 1, rnd.nextInt(1_000)).get(0),
                         0);
+                }
 
                 grid(0).cache(CACHE).get(
-                    primaryKeys(grid(ThreadLocalRandom.current().nextInt(nodesCnt)).cache(CACHE), 1, ThreadLocalRandom.current().nextInt(1_000)).get(0));
+                    primaryKeys(grid(rnd.nextInt(nodesCnt)).cache(CACHE), 1, rnd.nextInt(1_000)).get(0));
 
                 tx.commit();
             }
