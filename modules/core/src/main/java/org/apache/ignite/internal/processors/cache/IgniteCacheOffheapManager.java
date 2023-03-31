@@ -73,7 +73,7 @@ public interface IgniteCacheOffheapManager {
     public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException;
 
     /**
-     *
+     * Callback on node stop.
      */
     public void onKernalStop();
 
@@ -84,7 +84,12 @@ public interface IgniteCacheOffheapManager {
     public void stopCache(int cacheId, boolean destroy);
 
     /**
-     *
+     * Prepare cache group to stop (due to cache destroy or cluster deactivate).
+     */
+    public void prepareToStop();
+
+    /**
+     * Stop cache group (due to cache destroy or cluster deactivate).
      */
     public void stop();
 

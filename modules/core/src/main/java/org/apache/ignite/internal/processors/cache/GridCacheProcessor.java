@@ -2791,6 +2791,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             );
 
+            grpsToStop.forEach(g -> g.get1().prepareToStop());
+
             if (!exchActions.cacheStopRequests().isEmpty())
                 removeOffheapListenerAfterCheckpoint(grpsToStop);
 
