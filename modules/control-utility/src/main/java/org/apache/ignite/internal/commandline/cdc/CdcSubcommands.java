@@ -28,7 +28,7 @@ public enum CdcSubcommands {
     DELETE_LOST_SEGMENT_LINKS(new DeleteLostSegmentLinksCommand()),
 
     /** Sub-command to flush caches. */
-    SYNC_CACHES(new FlushCachesCommand());
+    FLUSH_CACHES(new FlushCachesCommand());
 
     /** Sub-command. */
     private final AbstractCommand<?> cmd;
