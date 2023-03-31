@@ -59,11 +59,6 @@ jobs:
         run: |
           ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
-      - name: Run abandoned tests checks.
-        if: ${{ matrix.java == '8' }}
-        run : |
-          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
-
       - name: Setup Sonar Opts
         shell: bash
         run: |
@@ -86,6 +81,11 @@ jobs:
           -Dsonar.login=${SONARCLOUD_TOKEN} -B -V
         env:
           SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+
+      - name: Run abandoned tests checks.
+        if: ${{ matrix.java == '8' }}
+        run : |
+          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
   sonarcloud:
     needs: check-java
