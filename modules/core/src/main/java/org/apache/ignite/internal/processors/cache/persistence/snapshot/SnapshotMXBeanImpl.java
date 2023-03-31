@@ -52,7 +52,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public void createSnapshot(String snpName, String snpPath) {
-        IgniteFuture<Void> fut = mgr.createSnapshot(snpName, F.isEmpty(snpPath) ? null : snpPath, false);
+        IgniteFuture<Void> fut = mgr.createSnapshot(snpName, F.isEmpty(snpPath) ? null : snpPath, false, false);
 
         if (fut.isDone())
             fut.get();
@@ -60,7 +60,12 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public void createIncrementalSnapshot(String fullSnapshot, String fullSnapshotPath) {
-        IgniteFuture<Void> fut = mgr.createSnapshot(fullSnapshot, F.isEmpty(fullSnapshotPath) ? null : fullSnapshotPath, true);
+        IgniteFuture<Void> fut = mgr.createSnapshot(
+            fullSnapshot,
+            F.isEmpty(fullSnapshotPath) ? null : fullSnapshotPath,
+            true,
+            false
+        );
 
         if (fut.isDone())
             fut.get();

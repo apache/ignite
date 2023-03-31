@@ -82,7 +82,7 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
             }
         }
 
-        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync, incremental);
+        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync, incremental, false);
     }
 
     /** {@inheritDoc} */

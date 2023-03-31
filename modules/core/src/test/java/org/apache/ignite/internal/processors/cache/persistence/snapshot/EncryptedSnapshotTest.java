@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -53,9 +55,12 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     private static final String CACHE2 = "cache2";
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption is enabled.")
-    public static Iterable<Boolean> enableEncryption() {
-        return Collections.singletonList(true);
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    public static List<Object[]> disableEncryption() {
+        return Arrays.asList(
+            new Object[]{true, false},
+            new Object[]{true, true}
+        );
     }
 
     /** {@inheritDoc} */
@@ -122,7 +127,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testSnapshotRestoringFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        snp(ig).createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME);
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -185,7 +190,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testValidatingSnapshotFailsWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME);
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -260,7 +265,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     public void testStartFromSnapshotFailedWithOtherMasterKey() throws Exception {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME);
 
         ig.destroyCache(dfltCacheCfg.getName());
 
@@ -313,7 +318,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         addCache(encryptedFirst);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
 
         awaitPartitionMapExchange();
 
@@ -339,7 +344,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
                 grid(g).context().encryption().reencryptionFuture(CU.cacheId(dfltCacheCfg.getName())).get();
         }
 
-        ig.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(ig, SNAPSHOT_NAME, null, TIMEOUT);
 
         ig.cache(dfltCacheCfg.getName()).destroy();
 
@@ -374,7 +379,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteFuture<Void> fut;
 
         if (restore) {
-            grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
             grid(1).cache(dfltCacheCfg.getName()).destroy();
 
@@ -387,7 +392,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         else {
             spi0.block((msg) -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
 
-            fut = grid(1).snapshot().createSnapshot(SNAPSHOT_NAME);
+            fut = snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
         }
 
         spi0.waitBlocked(TIMEOUT);
@@ -417,7 +422,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         startGrid(G.allGrids().size());
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
         grid(2).destroyCache(dfltCacheCfg.getName());
 
@@ -440,7 +445,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
             expectedError);
 
         GridTestUtils.assertThrowsAnyCause(log,
-            () -> grid(2).snapshot().createSnapshot(SNAPSHOT_NAME + "_v2").get(TIMEOUT), IgniteCheckedException.class,
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME + "_v2", null, false, onlyPrimary).get(TIMEOUT), IgniteCheckedException.class,
             expectedError);
 
         discoSpi.unblock();
@@ -482,7 +487,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         CacheConfiguration<?, ?> ccfg = addCache(false);
 
-        grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        createAndCheckSnapshot(grid(1), SNAPSHOT_NAME, null, TIMEOUT);
 
         grid(1).cache(DEFAULT_CACHE_NAME).destroy();
         grid(1).cache(CACHE2).destroy();
