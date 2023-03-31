@@ -44,7 +44,7 @@ jobs:
         with:
           path: |
             ~/.m2/repository
-            !~/.m2/repository/**/*ignite*
+            !~/.m2/repository/org/apache/ignite
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
@@ -91,7 +91,7 @@ jobs:
         with:
           path: |
             ~/.m2/repository
-            !~/.m2/repository/**/*ignite*
+            !~/.m2/repository/org/apache/ignite
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
@@ -124,7 +124,7 @@ jobs:
 
       - name: Sonar Analyze Upload
         run: >
-          ./mvnw install sonar:sonar -P sonar,all-java,lgpl,examples
+          ./mvnw install sonar:sonar -P sonar,all-java,lgpl,examples,skip-docs -DskipTests
           ${{ env.SONAR_OPTS }}
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=apache
