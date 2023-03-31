@@ -96,20 +96,11 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Cache SonarQube packages
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-
-      - name: Set MAVEN_OPTS for Java 11
-        run: |
-          echo MAVEN_OPTS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
 
       - name: Setup Sonar Opts
         shell: bash
@@ -121,6 +112,9 @@ jobs:
           fi
           echo "SONAR_OPTS:     ${SONAR_OPTS}"
           echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
+
+      - name: Install Libnuma
+        run: sudo apt-get update && sudo apt-get install libnuma-dev
 
       - name: Sonar Analyze Upload
         run: >
