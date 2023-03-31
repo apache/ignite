@@ -39,6 +39,15 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
 
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/**/*ignite*
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
       - name: Install prerequisites
         run: |
           sudo apt-get update && sudo apt-get install libnuma-dev
@@ -76,6 +85,15 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 11
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/**/*ignite*
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
 
       - name: Cache SonarQube packages
         uses: actions/cache@v1
