@@ -81,8 +81,16 @@ public abstract class AbstractSnapshotVerificationTask extends
                 if (meta == null)
                     continue;
 
-                jobs.put(createJob(meta.snapshotName(), arg.snapshotPath(), meta.consistentId(), arg.cacheGroupNames()),
-                    e.getKey());
+                jobs.put(
+                    createJob(
+                        meta.snapshotName(),
+                        arg.snapshotPath(),
+                        meta.consistentId(),
+                        arg.cacheGroupNames(),
+                        arg.check()
+                    ),
+                    e.getKey()
+                );
 
                 if (allMetas.isEmpty())
                     break;
@@ -126,7 +134,14 @@ public abstract class AbstractSnapshotVerificationTask extends
      * @param path Snapshot directory path.
      * @param constId Snapshot metadata file name.
      * @param groups Cache groups to be restored from the snapshot. May be empty if all cache groups are being restored.
+     * @param check If {@code true} check snapshot before restore.
      * @return Compute job.
      */
-    protected abstract ComputeJob createJob(String name, @Nullable String path, String constId, Collection<String> groups);
+    protected abstract ComputeJob createJob(
+        String name,
+        @Nullable String path,
+        String constId,
+        Collection<String> groups,
+        boolean check
+    );
 }

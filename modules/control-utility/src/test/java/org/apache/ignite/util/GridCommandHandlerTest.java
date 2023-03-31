@@ -3301,7 +3301,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync.");
+        assertContains(
+            log,
+            testOut.toString(),
+            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --check."
+        );
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "--sync"));
         assertContains(log, testOut.toString(), "Invalid argument: --sync. Action \"--status\" does not support specified option.");
@@ -3310,7 +3314,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Invalid argument: --start.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync.");
+        assertContains(
+            log,
+            testOut.toString(),
+            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --check."
+        );
 
         autoConfirmation = true;
 
@@ -3351,7 +3359,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig.cluster().state(ACTIVE);
 
         injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
+        injectTestSystemIn(CONFIRM_MSG, CONFIRM_MSG);
 
         createCacheAndPreload(ig, cacheName1, keysCnt, 32, null);
         createCacheAndPreload(ig, cacheName2, keysCnt, 32, null);
@@ -3377,7 +3385,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(),
-            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync.");
+            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync, --check.");
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));
@@ -3432,32 +3440,44 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        assertNull(ig.cache(cacheName1));
-        assertNull(ig.cache(cacheName2));
-        assertNull(ig.cache(cacheName3));
+        for (boolean check: new boolean[] {false, true}) {
+            assertNull(ig.cache(cacheName1));
+            assertNull(ig.cache(cacheName2));
+            assertNull(ig.cache(cacheName3));
 
-        // Restore all public cache groups.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
-        String out = testOut.toString();
-        assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
-        assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
+            // Restore all public cache groups.
+            if (check)
+                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--check"));
+            else
+                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
 
-        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
-        waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
-        waitForCondition(() -> ig.cache(cacheName3) != null, getTestTimeout());
+            String out = testOut.toString();
+            assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
+            assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
 
-        cache1 = ig.cache(cacheName1);
-        cache2 = ig.cache(cacheName2);
-        cache3 = ig.cache(cacheName3);
+            waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+            waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
+            waitForCondition(() -> ig.cache(cacheName3) != null, getTestTimeout());
 
-        assertNotNull(cache1);
-        assertNotNull(cache2);
-        assertNotNull(cache3);
+            cache1 = ig.cache(cacheName1);
+            cache2 = ig.cache(cacheName2);
+            cache3 = ig.cache(cacheName3);
 
-        for (int i = 0; i < keysCnt; i++) {
-            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
-            assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
-            assertEquals(cacheName3, Integer.valueOf(i), cache2.get(i));
+            assertNotNull(cache1);
+            assertNotNull(cache2);
+            assertNotNull(cache3);
+
+            for (int i = 0; i < keysCnt; i++) {
+                assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
+                assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
+                assertEquals(cacheName3, Integer.valueOf(i), cache2.get(i));
+            }
+
+            cache1.destroy();
+            cache2.destroy();
+            cache3.destroy();
+
+            awaitPartitionMapExchange();
         }
     }
 

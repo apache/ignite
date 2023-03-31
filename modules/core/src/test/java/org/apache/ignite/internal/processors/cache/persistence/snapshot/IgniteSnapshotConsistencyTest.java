@@ -64,6 +64,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.SNAPSHOT_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /** Tests the consistency of taken snapshots across multiple nodes. */
@@ -92,16 +93,22 @@ public class IgniteSnapshotConsistencyTest extends GridCommonAbstractTest {
     public TransactionConcurrency txConcurrency;
 
     /** */
-    @Parameterized.Parameters(name = "isClient={0}, atomicity={1}, backups={2}, txConcurrency={3}")
+    @Parameterized.Parameter(4)
+    public boolean onlyPrimary;
+
+    /** */
+    @Parameterized.Parameters(name = "isClient={0}, atomicity={1}, backups={2}, txConcurrency={3}, onlyPrimayr={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
         for (boolean isClient : Arrays.asList(true, false)) {
             for (int backups = 1; backups <= 2; ++backups) {
-                res.add(new Object[] {isClient, ATOMIC, backups, null});
+                for (boolean onlyPrimary : Arrays.asList(true, false)) {
+                    res.add(new Object[]{isClient, ATOMIC, backups, null, onlyPrimary});
 
-                for (TransactionConcurrency txConcurrency : TransactionConcurrency.values())
-                    res.add(new Object[] {isClient, TRANSACTIONAL, backups, txConcurrency});
+                    for (TransactionConcurrency txConcurrency : TransactionConcurrency.values())
+                        res.add(new Object[]{isClient, TRANSACTIONAL, backups, txConcurrency, onlyPrimary});
+                }
             }
         }
 
@@ -186,7 +193,7 @@ public class IgniteSnapshotConsistencyTest extends GridCommonAbstractTest {
             .topologyVersion()
             .nextMinorVersion();
 
-        IgniteFuture<Void> snpFut = crd.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> snpFut = snp(crd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         waitForReadyTopology(grid(primaryIdx).cachex(DEFAULT_CACHE_NAME).context().topology(), snpTopVer);
 

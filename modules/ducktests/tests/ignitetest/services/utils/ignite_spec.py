@@ -131,16 +131,14 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: config that service will use to start on a node
         """
-        if self.service.config.service_type == IgniteServiceType.NONE:
-            return []
-
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
         if self.service.config.service_type == IgniteServiceType.NODE:
             config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
                                      IgniteClientConfigTemplate() if self.service.config.client_mode
                                      else IgniteServerConfigTemplate()))
-        else:
+
+        if self.service.config.service_type == IgniteServiceType.THIN_CLIENT:
             config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
 
         return config_templates

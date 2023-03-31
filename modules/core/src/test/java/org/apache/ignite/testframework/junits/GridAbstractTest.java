@@ -1785,16 +1785,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param node Node.
      * @return Ignite instance with given local node.
      */
-    protected final Ignite grid(ClusterNode node) {
+    protected final IgniteEx grid(ClusterNode node) {
         if (!isMultiJvm())
-            return G.ignite(node.id());
+            return (IgniteEx)G.ignite(node.id());
         else {
             try {
-                return IgniteProcessProxy.ignite(node.id());
+                return (IgniteEx)IgniteProcessProxy.ignite(node.id());
             }
             catch (Exception ignore) {
                 // A hack if it is local grid.
-                return G.ignite(node.id());
+                return (IgniteEx)G.ignite(node.id());
             }
         }
     }

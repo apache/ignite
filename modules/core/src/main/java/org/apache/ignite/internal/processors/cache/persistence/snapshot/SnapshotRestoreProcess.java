@@ -258,9 +258,16 @@ public class SnapshotRestoreProcess {
      * @param snpPath Snapshot directory path.
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @param incIdx Index of incremental snapshot.
+     * @param check If {@code true} check snapshot before restore.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFutureImpl<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames, int incIdx) {
+    public IgniteFutureImpl<Void> start(
+        String snpName,
+        @Nullable String snpPath,
+        @Nullable Collection<String> cacheGrpNames,
+        int incIdx,
+        boolean check
+    ) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -326,7 +333,7 @@ public class SnapshotRestoreProcess {
 
         snpMgr.recordSnapshotEvent(snpName, msg, EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED);
 
-        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx).listen(f -> {
+        snpMgr.checkSnapshot(snpName, snpPath, cacheGrpNames, true, incIdx, check).listen(f -> {
             if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
 
@@ -351,6 +358,21 @@ public class SnapshotRestoreProcess {
             Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
                 cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
+            Optional<SnapshotMetadata> firstMeta = metas.values().iterator().next()
+                .stream()
+                .findFirst();
+
+            if (!firstMeta.isPresent()) {
+                finishProcess(
+                    fut0.rqId,
+                    new IllegalArgumentException(OP_REJECT_MSG + "No snapshot metadata read")
+                );
+
+                return;
+            }
+
+            boolean onlyPrimary = firstMeta.get().onlyPrimary();
+
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
                 dataNodes.add(entry.getKey().id());
 
@@ -361,6 +383,15 @@ public class SnapshotRestoreProcess {
                         snpBltNodes = new HashSet<>(meta.baselineNodes());
 
                     reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+
+                    if (onlyPrimary != meta.onlyPrimary()) {
+                        finishProcess(
+                            fut0.rqId,
+                            new IllegalArgumentException(OP_REJECT_MSG + "Only primary value different on nodes")
+                        );
+
+                        return;
+                    }
                 }
             }
 
@@ -388,7 +419,8 @@ public class SnapshotRestoreProcess {
                 cacheGrpNames,
                 new HashSet<>(bltNodes),
                 false,
-                incIdx
+                incIdx,
+                onlyPrimary
             );
 
             prepareRestoreProc.start(req.requestId(), req);
@@ -1096,8 +1128,14 @@ public class SnapshotRestoreProcess {
                             m.getValue(),
                             opCtx0.stopChecker,
                             (snpFile, t) -> {
-                                if (opCtx0.stopChecker.getAsBoolean())
-                                    throw new IgniteInterruptedException("Snapshot remote operation request cancelled.");
+                                if (opCtx0.stopChecker.getAsBoolean()) {
+                                    completeListExceptionally(
+                                        rmtAwaitParts,
+                                        new IgniteInterruptedException("Snapshot remote operation request cancelled.")
+                                    );
+
+                                    return;
+                                }
 
                                 if (t != null) {
                                     opCtx0.errHnd.accept(t);

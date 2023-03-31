@@ -81,12 +81,17 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(ignite.context().cache().jcache(indexedCcfg.getName()),
             selectStartSQLStatement(Account.class.getSimpleName()))));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+        snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary)
             .get();
 
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
+
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
+        if (onlyPrimary)
+            awaitPartitionMapExchange();
 
         assertTrue(snp.cache(indexedCcfg.getName()).indexReadyFuture().isDone());
         assertTrue(snp.cache(tblName).indexReadyFuture().isDone());
@@ -141,7 +146,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         // Blocking configuration local snapshot sender.
         List<BlockingExecutor> execs = setBlockingSnapshotExecutor(G.allGrids());
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> fut = snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         List<String> idxNames = Arrays.asList("SNP_IDX_1", "SNP_IDX_2");
 
