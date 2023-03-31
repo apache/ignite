@@ -30,13 +30,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -53,8 +56,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /** */
 @RunWith(Parameterized.class)
@@ -68,21 +70,29 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     /** */
     private volatile IgniteBiPredicate<Object, TxRecord> skipTxRec;
 
+    /** */
+    private volatile IgniteBiPredicate<Object, DataRecord> skipDataRec;
+
     /** Count of server nodes to start. */
     @Parameterized.Parameter
     public int nodesCnt;
 
     /** Count of primary nodes participated in a transaction. */
     @Parameterized.Parameter(1)
-    public int primNodesCnt;
+    public int txPrimNodesCnt;
+
+    /** Count of primary nodes participated in a transaction. */
+    @Parameterized.Parameter(2)
+    public int backupsCnt;
 
     /** */
-    @Parameterized.Parameters(name = "nodesCnt={0}, primNodesCnt={1}")
+    @Parameterized.Parameters(name = "nodesCnt={0}, primNodesCnt={1}, backupsCnt={2}")
     public static List<Object[]> params() {
         return F.asList(
-            new Object[]{2, 1},
-            new Object[]{2, 2},
-            new Object[]{3, 1});
+            new Object[]{2, 1, 1},
+            new Object[]{2, 2, 1},
+            new Object[]{3, 1, 1},
+            new Object[]{3, 1, 2});
     }
 
 
@@ -101,7 +111,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1));
+            .setBackups(backupsCnt));
 
         return cfg;
     }
@@ -177,6 +187,39 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     }
 
     /** */
+    @Test
+    public void testSecondSnapshotCorrupted() {
+        load(null);
+
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+        load(xid -> {
+            if (skipTxRec == null) {
+                skipTxRec = (consId, rec) ->
+                    grid(0).localNode().consistentId().equals(consId) && xid.equals(rec.nearXidVersion().asIgniteUuid());
+            }
+        });
+
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+        load(null);
+
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+
+        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "2"));
+        assertContains(log, testOut.toString(), "The check procedure has failed");
+
+        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "3"));
+        assertContains(log, testOut.toString(), "The check procedure has failed");
+    }
+
+    /** */
     @Test public void testSingleTransactionMissed() {
         load(xid -> {
             if (skipTxRec == null) {
@@ -192,6 +235,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
+        assertContains(log, testOut.toString(), "partialCommitsSize=1");
     }
 
     /** Remove all transactions from single node. */
@@ -244,16 +288,114 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     }
 
     /** */
+    @Test public void testDataRecordMissed() {
+        load(xid -> {
+            if (skipDataRec == null) {
+                skipDataRec = (consId, rec) ->
+                    grid(0).localNode().consistentId().equals(consId)
+                        && xid.equals(rec.writeEntries().get(0).nearXidVersion().asIgniteUuid());
+            }
+        });
+
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertContains(log, testOut.toString(), "The check procedure has failed");
+        assertNotContains(log, testOut.toString(), "hashConflicts=0");
+    }
+
+    /** */
+    @Test public void testDataAndTransactionMissed() {
+        load(xid -> {
+            if (skipDataRec == null) {
+                skipDataRec = (consId, rec) ->
+                    grid(0).localNode().consistentId().equals(consId)
+                        && xid.equals(rec.writeEntries().get(0).nearXidVersion().asIgniteUuid());
+
+                return;
+            }
+
+            if (skipTxRec == null) {
+                skipTxRec = (consId, rec) ->
+                    grid(0).localNode().consistentId().equals(consId) && xid.equals(rec.nearXidVersion().asIgniteUuid());
+            }
+        });
+
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertContains(log, testOut.toString(), "The check procedure has failed");
+        assertContains(log, testOut.toString(), "hashConflicts=" + txPrimNodesCnt);
+        assertContains(log, testOut.toString(), "partialCommitsSize=1");
+    }
+
+    @Test
+    public void atomicCachesAreSkippedDuringTheCheck() throws Exception {
+        String atomicSnp = "testAtomicSnapshot";
+        String atomicCache = "testAtomicCache";
+
+        grid(0).createCache(new CacheConfiguration<>()
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setName(atomicCache)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(backupsCnt));
+
+        grid(0).snapshot().createSnapshot(atomicSnp).get();
+
+        load(null);
+
+        TestRecordingCommunicationSpi.spi(grid(0)).blockMessages((n, msg) -> msg instanceof GridDhtAtomicSingleUpdateRequest);
+
+        int key = primaryKey(grid(0).cache(atomicCache));
+
+        grid(0).cache(atomicCache).put(key, 0);
+
+        TestRecordingCommunicationSpi.spi(grid(0)).waitForBlocked();
+
+        grid(0).snapshot().createIncrementalSnapshot(atomicSnp).get(getTestTimeout());
+
+        TestRecordingCommunicationSpi.spi(grid(0)).stopBlock();
+
+        grid(0).destroyCaches(F.asList(CACHE, atomicCache));
+
+        awaitPartitionMapExchange();
+
+        grid(0).snapshot().restoreSnapshot(atomicSnp, null, 1).get();
+
+        IdleVerifyResultV2 idleVerRes = idleVerify(grid(0), CACHE, atomicCache);
+
+        idleVerRes.print(System.out::println, true);
+
+        // Atomic cache has conflict.
+        assertTrue(idleVerRes.hasConflicts());
+
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", atomicSnp, "--increment", "1"));
+        assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
+    }
+
+    /** */
     private void load(Consumer<IgniteUuid> txIdHnd) {
         for (int txNum = 0; txNum < 1_000; txNum++) {
             try (Transaction tx = grid(0).transactions().txStart()) {
                 if (txIdHnd != null)
                     txIdHnd.accept(tx.xid());
 
-                for (int primNode = 0; primNode < primNodesCnt; primNode++)
+                for (int primNode = 0; primNode < txPrimNodesCnt; primNode++)
                     grid(0).cache(CACHE).put(
                         primaryKeys(grid(primNode).cache(CACHE), 1, ThreadLocalRandom.current().nextInt(1_000)).get(0),
                         0);
+
+                grid(0).cache(CACHE).get(
+                    primaryKeys(grid(ThreadLocalRandom.current().nextInt(nodesCnt)).cache(CACHE), 1, ThreadLocalRandom.current().nextInt(1_000)).get(0));
 
                 tx.commit();
             }
@@ -287,6 +429,10 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
             if (skipTxRec != null && record.type() == WALRecord.RecordType.TX_RECORD
                 && skipTxRec.apply(cctx.localNode().consistentId(), (TxRecord)record))
+                return null;
+
+            if (skipDataRec != null && record.type() == WALRecord.RecordType.DATA_RECORD_V2
+                && skipDataRec.apply(cctx.localNode().consistentId(), (DataRecord)record))
                 return null;
 
             return super.log(record);

@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,23 +37,31 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 
 /** */
 @GridInternal
@@ -73,6 +82,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         Map<Object, Map<Object, TransactionsHashRecord>> nodeTxHashMap = new HashMap<>();
 
         List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
+        Map<ClusterNode, Collection<GridCacheVersion>> partialCommits = new HashMap<>();
 
         Map<ClusterNode, Exception> errors = new HashMap<>();
 
@@ -83,14 +94,26 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                 continue;
             }
 
-            Map<Object, TransactionsHashRecord> txHashRes = nodeRes.getData();
+            IncrementalSnapshotVerificationTaskResult res = nodeRes.getData();
+
+            if (!F.isEmpty(res.exceptions())) {
+                errors.put(nodeRes.getNode(), F.first(res.exceptions()));
+
+                continue;
+            }
+
+            if (!F.isEmpty(res.partialCommittedTxs()))
+                partialCommits.put(nodeRes.getNode(), res.partialCommittedTxs());
+
+            for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry: res.partHashRes().entrySet())
+                partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
 
             if (log.isInfoEnabled())
-                log.info("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", txHashRes=" + txHashRes + ']');
+                log.info("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", taskRes=" + res + ']');
 
-            nodeTxHashMap.put(nodeRes.getNode().consistentId(), txHashRes);
+            nodeTxHashMap.put(nodeRes.getNode().consistentId(), res.txHashRes());
 
-            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = txHashRes.entrySet().iterator();
+            Iterator<Map.Entry<Object, TransactionsHashRecord>> resIt = res.txHashRes().entrySet().iterator();
 
             while (resIt.hasNext()) {
                 Map.Entry<Object, TransactionsHashRecord> nodeTxHash = resIt.next();
@@ -116,7 +139,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
         return new SnapshotPartitionsVerifyTaskResult(
             metas,
-            errors.isEmpty() ? new IdleVerifyResultV2(txHashConflicts) : new IdleVerifyResultV2(errors));
+            errors.isEmpty() ? new IdleVerifyResultV2(partHashes, txHashConflicts, partialCommits) : new IdleVerifyResultV2(errors));
     }
 
     /** {@inheritDoc} */
@@ -177,7 +200,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         /**
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
-        @Override public Map<Object, TransactionsHashRecord> execute() throws IgniteException {
+        @Override public IncrementalSnapshotVerificationTaskResult execute() throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
@@ -185,14 +208,16 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                 }
 
                 if (incIdx <= 0)
-                    return Collections.emptyMap();
+                    return new IncrementalSnapshotVerificationTaskResult();
 
                 BaselineTopology blt = ignite.context().state().clusterState().baselineTopology();
 
                 checkBaseline(blt);
 
+                Map<Integer, StoredCacheData> txCaches = readTxCachesData();
+
                 IncrementalSnapshotProcessor proc = new IncrementalSnapshotProcessor(
-                    ignite.context().cache().context(), snpName, snpPath, incIdx, null
+                    ignite.context().cache().context(), snpName, snpPath, incIdx, txCaches.keySet()
                 ) {
                     @Override void totalWalSegments(int segCnt) {
                         // No-op.
@@ -207,13 +232,15 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                     }
                 };
 
-                Object locConsistentId = ignite.context().config().getConsistentId();
-                short locShortId = blt.consistentIdMapping().get(locConsistentId);
+                short locShortId = blt.consistentIdMapping().get(consId);
 
-                Set<Short> allShortIds = blt.compactIdMapping().keySet();
-
-                Map<GridCacheVersion, Set<Short>> txs = new HashMap<>();
+                Set<GridCacheVersion> activeDhtTxs = new HashSet<>();
+                Map<GridCacheVersion, Set<Short>> txPrimPartNodes = new HashMap<>();
                 Map<Short, Integer> nodesTxHash = new HashMap<>();
+
+                Set<GridCacheVersion> partialCommittedTxs = new HashSet<>();
+                Map<PartitionKeyV2, PartitionHashHolder> partMap = new HashMap<>();
+                List<Exception> exceptions = new ArrayList<>();
 
                 BiConsumer<GridCacheVersion, Set<Short>> calcTransactionHash = (xid, partNodes) -> {
                     for (short shortId: partNodes) {
@@ -222,23 +249,59 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                     }
                 };
 
-                proc.process(null, txRec -> {
-                    if (txRec.state() == TransactionState.PREPARED) {
-                        Set<Short> partNodes = new HashSet<>();
+                proc.process(dataEntry -> {
+                    if (dataEntry.op() == GridCacheOperation.READ)
+                        return;
 
-                        for (Map.Entry<Short, Collection<Short>> partNode: txRec.participatingNodes().entrySet()) {
-                            partNodes.add(partNode.getKey());
-                            partNodes.addAll(partNode.getValue());
+                    if (!activeDhtTxs.contains(dataEntry.writeVersion()))
+                        partialCommittedTxs.add(dataEntry.nearXidVersion());
+
+                    StoredCacheData cacheData = txCaches.get(dataEntry.cacheId());
+
+                    int grpId = CU.cacheGroupId(cacheData.config().getName(), cacheData.config().getGroupName());
+
+                    PartitionKeyV2 partKey = new PartitionKeyV2(grpId, dataEntry.partitionId(), CU.cacheOrGroupName(cacheData.config()));
+
+                    partMap.compute(partKey, (k, v) -> {
+                        try {
+                            int valHash = dataEntry.key().hashCode() + Arrays.hashCode(dataEntry.value().valueBytes(null));
+                            int verHash = dataEntry.writeVersion().hashCode();
+
+                            if (v == null)
+                                v = new PartitionHashHolder();
+
+                            v.increment(valHash, verHash);
+
+                            return v;
                         }
+                        catch (IgniteCheckedException ex) {
+                            exceptions.add(ex);
 
-                        if (partNodes.contains(ALL_NODES))
-                            partNodes = allShortIds;
+                            return null;
+                        }
+                    });
+                }, txRec -> {
+                    if (txRec.state() == TransactionState.PREPARED) {
+                        // Collect only primary nodes. For some cases backup nodes is included into TxRecord#participationNodes()
+                        // but actually doesn't even start transaction, for example, if the node participates only as a backup
+                        // of reading only keys.
+                        Set<Short> primPartNodes = txRec.participatingNodes().keySet();
 
-                        if (partNodes.contains(locShortId))
-                            txs.put(txRec.nearXidVersion(), partNodes);
+                        if (primPartNodes.contains(locShortId)) {
+                            txPrimPartNodes.put(txRec.nearXidVersion(), primPartNodes);
+                            activeDhtTxs.add(txRec.writeVersion());
+                        }
+                        else {
+                            for (Collection<Short> backups: txRec.participatingNodes().values()) {
+                                if (backups.contains(ALL_NODES) || backups.contains(locShortId))
+                                    activeDhtTxs.add(txRec.writeVersion());
+                            }
+                        }
                     }
                     else if (txRec.state() == TransactionState.COMMITTED) {
-                        Set<Short> partNodes = txs.remove(txRec.nearXidVersion());
+                        activeDhtTxs.remove(txRec.writeVersion());
+
+                        Set<Short> partNodes = txPrimPartNodes.remove(txRec.nearXidVersion());
 
                         // Legal cases:
                         // 1. This node is a transaction near node, but not primary or backup node.
@@ -249,19 +312,27 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
                         calcTransactionHash.accept(txRec.nearXidVersion(), partNodes);
                     }
-                    else if (txRec.state() == TransactionState.ROLLED_BACK)
-                        txs.remove(txRec.nearXidVersion());
+                    else if (txRec.state() == TransactionState.ROLLED_BACK) {
+                        activeDhtTxs.remove(txRec.writeVersion());
+                        txPrimPartNodes.remove(txRec.nearXidVersion());
+                    }
                 });
 
                 // All active transactions that didn't log COMMITTED or ROLL_BACK records are considered committed.
                 // It is possible as incremental snapshot started after transaction left IgniteTxManager#activeTransactions() collection,
                 // but completed before the final TxRecord was written.
-                for (Map.Entry<GridCacheVersion, Set<Short>> tx: txs.entrySet())
+                for (Map.Entry<GridCacheVersion, Set<Short>> tx: txPrimPartNodes.entrySet())
                     calcTransactionHash.accept(tx.getKey(), tx.getValue());
 
-                return nodesTxHash.entrySet().stream()
-                    .map(e -> new TransactionsHashRecord(locConsistentId, blt.compactIdMapping().get(e.getKey()), e.getValue()))
+                Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
+                    .map(e -> new TransactionsHashRecord(consId, blt.compactIdMapping().get(e.getKey()), e.getValue()))
                     .collect(Collectors.toMap(TransactionsHashRecord::remoteConsistentId, Function.identity()));
+
+                Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes = partMap.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> new PartitionHashRecordV2(
+                        e.getKey(), false, consId, e.getValue().hash, e.getValue().verHash, null, 0, null)));
+
+                return new IncrementalSnapshotVerificationTaskResult(txHashRes, partHashRes, partialCommittedTxs, exceptions);
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
@@ -287,6 +358,32 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             }
         }
 
+        /** @return Collection of snapshotted transactional caches, key is a cache ID. */
+        private Map<Integer, StoredCacheData> readTxCachesData() throws IgniteCheckedException, IOException {
+            File snpDir = ignite.context().cache().context().snapshotMgr().snapshotLocalDir(snpName, snpPath);
+
+            String folderName = ignite.context().pdsFolderResolver().resolveFolders().folderName();
+
+            File snpDbDir = new File(snpDir, databaseRelativePath(folderName));
+
+            Map<Integer, StoredCacheData> cacheData = new HashMap<>();
+
+            File[] caches = snpDbDir.listFiles();
+
+            for (File cache: caches) {
+                File[] cfgs = cache.listFiles(p -> Files.isRegularFile(p.toPath()) && p.getName().endsWith(CACHE_DATA_FILENAME));
+
+                for (File cfg: cfgs) {
+                    StoredCacheData data = ignite.context().cache().configManager().readCacheData(cfg);
+
+                    if (data.config().getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+                        cacheData.put(data.cacheId(), data);
+                }
+            }
+
+            return cacheData;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
@@ -304,6 +401,21 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(snpName, incIdx, snpPath, consId);
+        }
+    }
+
+    /** Holder for parition hashes. */
+    private static class PartitionHashHolder {
+        /** */
+        private int hash;
+
+        /** */
+        private int verHash;
+
+        /** */
+        public void increment(int hash, int verHash) {
+            this.hash += hash;
+            this.verHash += verHash;
         }
     }
 }

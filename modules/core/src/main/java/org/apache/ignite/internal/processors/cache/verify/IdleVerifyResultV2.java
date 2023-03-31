@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -67,6 +69,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     @GridToStringInclude
     private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
+    /** Partial committed transactions. */
+    @GridToStringInclude
+    private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partialCommitTxs;
+
     /** Exceptions. */
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
@@ -87,8 +93,15 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * @param txHashConflicts Transaction hashes conflicts.
      */
-    public IdleVerifyResultV2(List<List<TransactionsHashRecord>> txHashConflicts) {
+    public IdleVerifyResultV2(
+        Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
+        List<List<TransactionsHashRecord>> txHashConflicts,
+        Map<ClusterNode, Collection<GridCacheVersion>> partialCommitTxs
+    ) {
+        this(clusterHashes, null);
+
         this.txHashConflicts = txHashConflicts;
+        this.partialCommitTxs = partialCommitTxs;
     }
 
     /**
@@ -126,7 +139,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                     updateCntr = record.updateCounter();
                 }
                 else {
-                    if (!record.updateCounter().equals(updateCntr))
+                    if (!Objects.equals(record.updateCounter(), updateCntr))
                         cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
                     if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash)
@@ -151,6 +164,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         U.writeMap(out, exceptions);
         U.writeMap(out, lostPartitions);
         U.writeCollection(out, txHashConflicts);
+        U.writeMap(out, partialCommitTxs);
     }
 
     /** {@inheritDoc} */
@@ -166,8 +180,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         if (protoVer >= V3)
             lostPartitions = U.readMap(in);
 
-        if (protoVer >= V4)
+        if (protoVer >= V4) {
             txHashConflicts = (List)U.readCollection(in);
+            partialCommitTxs = U.readMap(in);
+        }
     }
 
     /**
@@ -202,7 +218,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      * @return {@code true} if any conflicts were discovered during the check.
      */
     public boolean hasConflicts() {
-        return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts()) || !F.isEmpty(txHashConflicts);
+        return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts())
+            || !F.isEmpty(txHashConflicts) || !F.isEmpty(partialCommitTxs);
     }
 
     /**
@@ -290,10 +307,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         int hashConflictsSize = hashConflicts().size();
 
         printer.accept("The check procedure has failed, conflict partitions has been found: [" +
-            (txHashConflicts == null
-                ? "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
-                : "txHashConflicts=" + txHashConflicts.size()
-            ) + "]" + nl());
+            "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
+            + (txHashConflicts == null ? "" : ", txHashConflicts=" + txHashConflicts.size())
+            + (partialCommitTxs == null ? "" : ", partialCommitsSize=" + partialCommitTxs.size())
+            + "]" + nl());
 
         Set<PartitionKeyV2> allConflicts = new HashSet<>();
 
@@ -328,6 +345,16 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
             for (List<TransactionsHashRecord> conf : txHashConflicts)
                 printer.accept("Conflict nodes: " + conf + nl());
+        }
+
+        if (!F.isEmpty(partialCommitTxs)) {
+            printer.accept("Partial committed transactions:" + nl());
+
+            for (Map.Entry<ClusterNode, Collection<GridCacheVersion>> entry : partialCommitTxs.entrySet()) {
+                printer.accept("Node: " + entry.getKey() + nl());
+
+                printer.accept("Transactions: " + entry.getValue() + nl());
+            }
         }
 
         printer.accept(nl());
