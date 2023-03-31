@@ -71,6 +71,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -191,6 +192,9 @@ public class CacheGroupContext {
 
     /** Topology validators. */
     private final Collection<TopologyValidator> topValidators;
+
+    /** Cache is prepared to stop. */
+    private volatile boolean preparedToStop;
 
     /**
      * @param ctx Context.
@@ -1330,6 +1334,18 @@ public class CacheGroupContext {
      */
     public IgniteWriteAheadLogManager wal() {
         return ctx.wal(cdcEnabled());
+    }
+
+    /** Prepare cache to stop (prohibit any futher updates). */
+    public void prepareToStop() {
+        preparedToStop = true;
+
+        offheap().prepareToStop();
+    }
+
+    /** */
+    public boolean isPreparedToStop() {
+        return preparedToStop;
     }
 
     /**
