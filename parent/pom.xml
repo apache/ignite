@@ -503,7 +503,7 @@
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
-                    <version>3.7.0.1746</version>
+                    <version>${maven.sonar.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
