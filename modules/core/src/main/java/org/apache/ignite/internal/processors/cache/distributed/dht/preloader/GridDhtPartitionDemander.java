@@ -567,26 +567,15 @@ public class GridDhtPartitionDemander {
 
             fut.receivedBytes.addAndGet(supplyMsg.messageSize());
 
-            if (grp.sharedGroup()) {
-                for (GridCacheContext cctx : grp.caches()) {
-                    if (cctx.statisticsEnabled()) {
-                        long keysCnt = supplyMsg.keysForCache(cctx.cacheId());
-
-                        if (keysCnt != -1)
-                            cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
-
-                        // Can not be calculated per cache.
-                        cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
-                    }
-                }
-            }
-            else {
-                GridCacheContext cctx = grp.singleCacheContext();
-
+            for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
-                    if (supplyMsg.estimatedKeysCount() != -1)
-                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supplyMsg.estimatedKeysCount());
+                    long keysCnt = grp.sharedGroup() ? supplyMsg.keysForCache(cctx.cacheId()) :
+                        supplyMsg.estimatedKeysCount();
 
+                    if (keysCnt != -1)
+                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
+
+                    // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
                 }
             }
