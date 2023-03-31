@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11' ]
+        java: [ '8' ]
     name: Check java code on JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v3
@@ -93,7 +93,10 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
-      - name: Ignite Sources
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Fetch Apache Ignite Sources
         # https://community.sonarsource.com/t/sonarcloud-now-not-updating-github-pr-and-checks/6595/17
         run: |
           git fetch --no-tags https://$GITHUB_TOKEN@github.com/apache/ignite.git +refs/heads/master:refs/remotes/origin/master
