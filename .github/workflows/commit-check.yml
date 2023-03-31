@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8' ]
+        java: [ '8', '11' ]
     name: Check java code on JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v3
@@ -73,7 +73,7 @@ jobs:
       - name: Sonar Analyze Upload
         if: ${{ matrix.java == '11' }}
         run: >
-          ./mvnw sonar:sonar -P sonar,all-java 
+          ./mvnw sonar:sonar -P sonar,all-java,lgpl,examples
           ${{ env.SONAR_OPTS }}
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=apache
@@ -86,28 +86,6 @@ jobs:
         if: ${{ matrix.java == '8' }}
         run : |
           ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
-
-  sonarcloud:
-    needs: check-java
-    if: ${{ github.event_name == "pull_request" }}
-    name: SonarCloud
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Fetch Apache Ignite Sources
-        # https://community.sonarsource.com/t/sonarcloud-now-not-updating-github-pr-and-checks/6595/17
-        run: |
-          git fetch --no-tags https://$GITHUB_TOKEN@github.com/apache/ignite.git +refs/heads/master:refs/remotes/origin/master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # See https://github.com/SonarSource/sonarcloud-github-action
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
