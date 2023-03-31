@@ -38,6 +38,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
+          cache: 'maven'
 
       - name: Cache Maven packages
         uses: actions/cache@v3
@@ -85,22 +86,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 11
-
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.m2/repository
-            !~/.m2/repository/org/apache/ignite
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Cache SonarQube packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+          cache: 'maven'
 
       - name: Setup Sonar Opts
         shell: bash
