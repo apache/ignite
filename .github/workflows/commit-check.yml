@@ -40,15 +40,6 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: 'maven'
 
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.m2/repository
-            !~/.m2/repository/org/apache/ignite
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
       - name: Install prerequisites
         run: |
           sudo apt-get update && sudo apt-get install libnuma-dev
