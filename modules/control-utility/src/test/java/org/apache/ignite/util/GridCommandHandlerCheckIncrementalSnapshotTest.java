@@ -52,7 +52,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -68,6 +67,9 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
     /** */
     private static final String SNP = "testSnapshot";
+
+    /** */
+    private CommandHandler cmd;
 
     /** */
     private volatile IgniteBiPredicate<Object, TxRecord> skipTxRec;
@@ -127,6 +129,10 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         ig.cluster().state(ACTIVE);
 
         ig.snapshot().createSnapshot(SNP).get(getTestTimeout());
+
+        injectTestSystemOut();
+
+        cmd = new CommandHandler();
     }
 
     /** */
@@ -134,25 +140,20 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     public void testWrongCommandParams() {
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        CommandHandler h = new CommandHandler();
-
         // Missed increment index.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "check", SNP, "--increment"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment"));
         assertContains(log, testOut.toString(), "Expected incremental snapshot index");
 
         // Wrong params.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "check", SNP, "--increment", "wrong"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment", "wrong"));
         assertContains(log, testOut.toString(), "Invalid value for incremental snapshot index");
 
         // Missed increment index.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "check", SNP, "--increment", "1", "--increment", "2"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(cmd, "--snapshot", "check", SNP, "--increment", "1", "--increment", "2"));
         assertContains(log, testOut.toString(), "increment arg specified twice");
 
         // Non existent increment.
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "check", SNP, "--increment", "2"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd, "--snapshot", "check", SNP, "--increment", "2"));
     }
 
     /** */
@@ -160,17 +161,12 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     public void testSuccessfullCheckEmptySnapshots() {
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        CommandHandler h = new CommandHandler();
-
         // Succesfull check.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
 
         // Specify full increment index value.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", SNP, "--increment", "0000000000000001"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "0000000000000001"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 
@@ -181,10 +177,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 
@@ -208,16 +201,13 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
 
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "2"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "2"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
 
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "3"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "3"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
     }
 
@@ -232,10 +222,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
         assertContains(log, testOut.toString(), "partialCommitsSize=1");
     }
@@ -248,10 +235,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
         assertContains(log, testOut.toString(), "txHashConflicts=" + (nodesCnt - 1));
     }
@@ -282,10 +266,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 
@@ -301,10 +282,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
         assertNotContains(log, testOut.toString(), "hashConflicts=0");
     }
@@ -328,10 +306,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", SNP, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
         assertContains(log, testOut.toString(), "hashConflicts=" + txPrimNodesCnt);
         assertContains(log, testOut.toString(), "partialCommitsSize=1");
@@ -378,10 +353,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         // Atomic cache has conflict.
         assertTrue(idleVerRes.hasConflicts());
 
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute(new CommandHandler(), "--snapshot", "check", atomicSnp, "--increment", "1"));
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", atomicSnp, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
     }
 

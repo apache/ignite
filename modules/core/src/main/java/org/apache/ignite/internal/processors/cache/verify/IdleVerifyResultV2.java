@@ -392,12 +392,13 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
             Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
-            Objects.equals(exceptions, v2.exceptions) && Objects.equals(txHashConflicts, v2.txHashConflicts);
+            Objects.equals(exceptions, v2.exceptions) && Objects.equals(txHashConflicts, v2.txHashConflicts) &&
+            Objects.equals(partialCommitTxs, v2.partialCommitTxs);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions, txHashConflicts);
+        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions, txHashConflicts, partialCommitTxs);
     }
 
     /** {@inheritDoc} */

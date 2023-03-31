@@ -108,8 +108,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry: res.partHashRes().entrySet())
                 partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
 
-            if (log.isInfoEnabled())
-                log.info("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", taskRes=" + res + ']');
+            if (log.isDebugEnabled())
+                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getNode() + ", taskRes=" + res + ']');
 
             nodeTxHashMap.put(nodeRes.getNode().consistentId(), res.txHashRes());
 
