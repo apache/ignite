@@ -76,7 +76,7 @@ jobs:
           echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
 
       - name: Sonar Analyze Upload
-        if: ${{ matrix.java == '8' }}
+        if: ${{ matrix.java == '11' }}
         run: >
           ./mvnw sonar:sonar -P sonar,all-java 
           ${{ env.SONAR_OPTS }}
@@ -93,6 +93,12 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch Cassandra Sources
+        # https://community.sonarsource.com/t/sonarcloud-now-not-updating-github-pr-and-checks/6595/17
+        run: |
+          git fetch --no-tags https://$GITHUB_TOKEN@github.com/apache/ignite.git +refs/heads/master:refs/remotes/origin/master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # See https://github.com/SonarSource/sonarcloud-github-action
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
