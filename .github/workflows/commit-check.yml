@@ -93,7 +93,7 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch Cassandra Sources
+      - name: Ignite Sources
         # https://community.sonarsource.com/t/sonarcloud-now-not-updating-github-pr-and-checks/6595/17
         run: |
           git fetch --no-tags https://$GITHUB_TOKEN@github.com/apache/ignite.git +refs/heads/master:refs/remotes/origin/master
