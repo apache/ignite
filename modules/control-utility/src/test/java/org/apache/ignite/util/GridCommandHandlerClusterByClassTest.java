@@ -403,12 +403,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         Function<IgniteLogger, CLICommandFrontend> cliFactory0 = cliFactory;
 
         try {
+            injectTestSystemOut();
+
             cliFactory = CommandHandler::new;
 
             assertEquals(EXIT_CODE_OK, execute("--help"));
 
             String controlShOut = testOut.toString();
+
             testOut = new ByteArrayOutputStream(16 * 1024);
+            injectTestSystemOut();
 
             cliFactory = CLICommandFrontendImpl::new;
 
