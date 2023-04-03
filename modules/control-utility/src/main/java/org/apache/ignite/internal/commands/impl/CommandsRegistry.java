@@ -23,7 +23,10 @@ import java.util.Map;
 import org.apache.ignite.internal.commands.ActivateCommand;
 import org.apache.ignite.internal.commands.BaselineCommand;
 import org.apache.ignite.internal.commands.DeactivateCommand;
+import org.apache.ignite.internal.commands.DiagnosticCommand;
+import org.apache.ignite.internal.commands.EncryptionCommand;
 import org.apache.ignite.internal.commands.MetricCommand;
+import org.apache.ignite.internal.commands.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.commands.SetStateCommand;
 import org.apache.ignite.internal.commands.ShutdownPolicyCommand;
 import org.apache.ignite.internal.commands.StateCommand;
@@ -45,10 +48,13 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new StateCommand());
         register(new SetStateCommand());
         register(new BaselineCommand());
+        register(new WalCommand());
+        register(new DiagnosticCommand());
+        register(new EncryptionCommand());
         register(new SystemViewCommand());
         register(new MetricCommand());
         register(new ShutdownPolicyCommand());
-        register(new WalCommand());
+        register(new PerformanceStatisticsCommand());
     }
 
     /** */

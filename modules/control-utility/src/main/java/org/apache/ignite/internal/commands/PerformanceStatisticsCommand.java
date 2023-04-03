@@ -17,39 +17,32 @@
 
 package org.apache.ignite.internal.commands;
 
-import lombok.Data;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-@Data
-public class BaselineAutoAdjustCommand implements Command {
-    /** */
-    @PositionalParameter(optional = true)
-    private Enabled enabled;
+public class PerformanceStatisticsCommand implements CommandWithSubs {
+    /** {@inheritDoc} */
+    @Override public Collection<Command> subcommands() {
+        return Arrays.asList(
+            new PerformanceStatisticsStartCommand(),
+            new PerformanceStatisticsStopCommand(),
+            new PerformanceStatisticsRotateCommand(),
+            new PerformanceStatisticsStatusCommand()
+        );
+    }
 
-    /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+    /** {@inheritDoc} */
+    @Override public boolean canBeExecuted() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+        return null;
     }
 }

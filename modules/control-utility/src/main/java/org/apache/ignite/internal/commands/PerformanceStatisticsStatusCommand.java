@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.api;
+package org.apache.ignite.internal.commands;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.ignite.internal.commands.api.Command;
 
 /**
  *
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface SubCommand {
-    /** */
-    public char nameSeparator() default '-';
+public class PerformanceStatisticsStatusCommand implements Command {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Get status of collecting performance statistics in the cluster";
+    }
 }

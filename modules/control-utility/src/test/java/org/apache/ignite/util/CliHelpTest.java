@@ -47,7 +47,7 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
 
             cliFactory = CommandHandler::new;
 
-            assertEquals(EXIT_CODE_OK, execute("--help", "--enable-experimental"));
+            assertEquals(EXIT_CODE_OK, execute("--help"));
 
             String controlShOut = testOut.toString();
 
@@ -80,6 +80,8 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
             .build()
             .generateDiffRows(original, revised);
 
+        int lines = 0;
+
         if (!diff.isEmpty()) {
             System.setOut(sysOut);
             System.setIn(sysIn);
@@ -87,8 +89,10 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
             Consumer<String> printer = System.out::println;
 
             for (DiffRow row : diff) {
-                if (row.getOldLine().startsWith(TIME_PREFIX))
+                if (row.getOldLine().startsWith(TIME_PREFIX) || row.getTag() == DiffRow.Tag.EQUAL)
                     continue;
+
+                lines++;
 
                 if (row.getTag() == DiffRow.Tag.CHANGE) {
                     printer.accept("- " + row.getOldLine());
@@ -101,7 +105,7 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
             }
         }
 
-        assertTrue("Diff must be empty [size=" + diff.size() + ']', diff.isEmpty());
+        assertTrue("Diff must be empty [lines=" + lines + ']', diff.isEmpty());
     }
 
     /** */

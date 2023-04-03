@@ -17,39 +17,36 @@
 
 package org.apache.ignite.internal.commands;
 
-import lombok.Data;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-@Data
-public class BaselineAutoAdjustCommand implements Command {
-    /** */
-    @PositionalParameter(optional = true)
-    private Enabled enabled;
-
-    /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+public class EncryptionCommand implements CommandWithSubs {
+    /** {@inheritDoc} */
+    @Override public Collection<Command> subcommands() {
+        return Arrays.asList(
+            new EncryptionGetMasterKeyNameCommand(),
+            new EncryptionChangeMasterKeyCommand(),
+            new EncryptionChangeCacheKeyCommand(),
+            new EncryptionCacheKeyIdsCommand(),
+            new EncryptionReencryptionStatusCommand(),
+            new EncryptionSuspendReencryptionCommand(),
+            new EncryptionResumeReencryptionCommand(),
+            new EncryptionReencryptionRateLimitCommand()
+        );
+    }
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline autoadjustment settings";
+        return null;
     }
 
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+    /** {@inheritDoc} */
+    @Override public boolean canBeExecuted() {
+        return false;
     }
 }

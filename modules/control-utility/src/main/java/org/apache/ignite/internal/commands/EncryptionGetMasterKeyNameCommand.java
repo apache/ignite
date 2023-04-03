@@ -17,39 +17,14 @@
 
 package org.apache.ignite.internal.commands;
 
-import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class BaselineAutoAdjustCommand implements Command {
-    /** */
-    @PositionalParameter(optional = true)
-    private Enabled enabled;
-
-    /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
-
+public class EncryptionGetMasterKeyNameCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+        return "Print the current master key name";
     }
 }
