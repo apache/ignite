@@ -39,7 +39,7 @@ public class SystemViewCommand implements Command {
 
     /** */
     @Parameter(
-        description = "ID of the node to get the system view from (deprecated. Use nodeids instead). " +
+        description = "ID of the node to get the system view from (deprecated. Use --node-ids instead). " +
             "If not set, random node will be chosen",
         optional = true
     )
@@ -49,7 +49,8 @@ public class SystemViewCommand implements Command {
     @Parameter(
         description = "Comma-separated list of nodes IDs to get the system view from. " +
         "If not set, random node will be chosen",
-        optional = true
+        optional = true,
+        javaStyleExample = true
     )
     private Collection<UUID> nodeIds;
 

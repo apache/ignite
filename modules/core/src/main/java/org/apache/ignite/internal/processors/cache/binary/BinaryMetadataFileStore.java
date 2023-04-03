@@ -331,14 +331,14 @@ class BinaryMetadataFileStore {
     /**
      * Try looking for legacy directory with binary metadata and move it to new directory
      */
-    private void fixLegacyFolder(String consistendId) throws IgniteCheckedException {
+    private void fixLegacyFolder(String consistentId) throws IgniteCheckedException {
         if (ctx.config().getWorkDirectory() == null)
             return;
 
         File legacyDir = new File(new File(
             ctx.config().getWorkDirectory(),
             "binary_meta"
-        ), consistendId);
+        ), consistentId);
 
         File legacyTmpDir = new File(legacyDir.toString() + TMP_SUFFIX);
 

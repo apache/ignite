@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.api;
 
-import java.util.List;
-import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/** */
-@Data
-public class BaselineAddCommand implements Command {
+/**
+ *
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface SubCommand {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private List<Object> consistentIDs;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return "Add nodes into baseline topology";
-    }
+    public char nameSeparator() default '-';
 }

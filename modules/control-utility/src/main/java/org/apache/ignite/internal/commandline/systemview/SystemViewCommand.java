@@ -262,13 +262,15 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
             " (e.g. SQL_TABLES and sql.tables will be handled similarly).");
         params.put(NODE_ID + " node_id", "ID of the node to get the system view from (deprecated. Use " + NODE_IDS + " instead). " +
             "If not set, random node will be chosen.");
-        params.put(NODE_IDS + " nodeId1,nodeId2,..",
+        params.put(NODE_IDS + " nodeId1" + optional(",nodeId2,....,nodeIdN"),
             "Comma-separated list of nodes IDs to get the system view from. If not set, random node will be chosen.");
         params.put(ALL_NODES.argName(),
             "Get the system view from all nodes. If not set, random node will be chosen.");
 
         usage(log, "Print system view content:", SYSTEM_VIEW, params, "system_view_name",
-            or(optional(NODE_ID, "node_id"), optional(NODE_IDS, "nodeId1,nodeId2,.."), optional(ALL_NODES)));
+            or(optional(NODE_ID, "node_id"),
+                optional(NODE_IDS, "nodeId1" + optional(",nodeId2,....,nodeIdN")),
+                optional(ALL_NODES)));
     }
 
     /** {@inheritDoc} */

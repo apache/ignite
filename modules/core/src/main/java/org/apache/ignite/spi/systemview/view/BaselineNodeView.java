@@ -41,7 +41,7 @@ public class BaselineNodeView {
     }
 
     /**
-     * @return Node consistend id.
+     * @return Node consistent id.
      */
     @Order
     public String consistentId() {

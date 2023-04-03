@@ -17,25 +17,30 @@
 
 package org.apache.ignite.internal.commands;
 
-import java.util.List;
-import lombok.Data;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
-/** */
-@Data
-public class BaselineAddCommand implements Command {
-    /** */
-    @PositionalParameter(javaStyleExample = true)
-    private List<Object> consistentIDs;
+/**
+ *
+ */
+public class WalCommand implements CommandWithSubs {
+    /** {@inheritDoc} */
+    @Override public Collection<Command> subcommands() {
+        return Arrays.asList(
+            new WalPrintCommand(),
+            new WalDeleteCommand()
+        );
+    }
 
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+    /** {@inheritDoc} */
+    @Override public boolean canBeExecuted() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Add nodes into baseline topology";
+        return null;
     }
 }

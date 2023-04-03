@@ -28,6 +28,7 @@ import org.apache.ignite.internal.commands.SetStateCommand;
 import org.apache.ignite.internal.commands.ShutdownPolicyCommand;
 import org.apache.ignite.internal.commands.StateCommand;
 import org.apache.ignite.internal.commands.SystemViewCommand;
+import org.apache.ignite.internal.commands.WalCommand;
 import org.apache.ignite.internal.commands.api.Command;
 
 /**
@@ -47,6 +48,7 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new SystemViewCommand());
         register(new MetricCommand());
         register(new ShutdownPolicyCommand());
+        register(new WalCommand());
     }
 
     /** */

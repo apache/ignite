@@ -20,22 +20,24 @@ package org.apache.ignite.internal.commands;
 import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/** */
+/**
+ *
+ */
 @Data
-public class BaselineAddCommand implements Command {
+public class WalPrintCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true)
+    @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Add nodes into baseline topology";
+        return "Print absolute paths of unused archived wal segments on each node";
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return true;
     }
 }

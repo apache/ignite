@@ -47,7 +47,7 @@ public class ClusterNodeView {
     }
 
     /**
-     * @return Node consistend id.
+     * @return Node consistent id.
      * @see ClusterNode#consistentId()
      */
     @Order(1)

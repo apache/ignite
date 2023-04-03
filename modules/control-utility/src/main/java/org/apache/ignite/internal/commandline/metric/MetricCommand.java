@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.commandline.metric;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
@@ -158,14 +158,13 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
-        Map<String, String> params = new TreeMap<>();
+        Map<String, String> params = new LinkedHashMap<>();
 
-        params.put("node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
         params.put("name", "Name of the metric which value should be printed." +
             " If name of the metric registry is specified, value of all its metrics will be printed.");
+        params.put(NODE_ID + " node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
 
-        usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
-            "name");
+        usage(log, "Print metric value:", METRIC, params, "name", optional(NODE_ID, "node_id"));
 
         params.remove("node_id");
         params.put("name", "Name of the metric which value should be configured.");

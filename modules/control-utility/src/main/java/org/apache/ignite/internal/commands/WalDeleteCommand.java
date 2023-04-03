@@ -23,11 +23,13 @@ import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/** */
+/**
+ *
+ */
 @Data
-public class BaselineAddCommand implements Command {
+public class WalDeleteCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true)
+    @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;
 
     /** */
@@ -36,6 +38,11 @@ public class BaselineAddCommand implements Command {
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Add nodes into baseline topology";
+        return "Delete unused archived wal segments on each node";
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return true;
     }
 }

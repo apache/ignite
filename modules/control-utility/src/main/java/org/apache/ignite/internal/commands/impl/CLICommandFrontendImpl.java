@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.TIME_PREFIX;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_HOST;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_KEYSTORE;
@@ -59,6 +60,8 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_TRUSTST
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 
 /**
@@ -79,6 +82,15 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** */
     public static final String FULL_CLI_NAME = CLI_NAME + ".(sh|bat)";
+
+    /** */
+    public static final List<String> ASCII_LOGO = Arrays.asList(
+        "   __________  ________________  _______   ____",
+        "  /  _/ ___/ |/ /  _/_  __/ __/ / ___/ /  /  _/",
+        " _/ // (_ /    // /  / / / _/  / /__/ /___/ /  ",
+        "/___/\\___/_/|_/___/ /_/ /___/  \\___/____/___/",
+        ""
+    );
 
     /** */
     private final IgniteLogger logger;
@@ -151,15 +163,13 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** */
     private void logCommonInfo() {
-        logger.info("   __________  ________________  _______   ____");
-        logger.info("  /  _/ ___/ |/ /  _/_  __/ __/ / ___/ /  /  _/");
-        logger.info(" _/ // (_ /    // /  / / / _/  / /__/ /___/ /  ");
-        logger.info("/___/\\___/_/|_/___/ /_/ /___/  \\___/____/___/  ");
-        logger.info("");
+        for (String str : ASCII_LOGO)
+            logger.info(str);
+
         logger.info("Control utility [ver. " + ACK_VER_STR + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
-        logger.info("Time: " + LocalDateTime.now().format(U.CLI_FORMAT));
+        logger.info(TIME_PREFIX + LocalDateTime.now().format(U.CLI_FORMAT));
     }
 
     /** */
@@ -178,12 +188,17 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 AtomicInteger maxParamLen = new AtomicInteger();
 
                 Consumer<Field> fldCalc = fld -> maxParamLen.set(
-                    Math.max(maxParamLen.get(), CommandUtils.commandName(fld.getName()).length() + CommandUtils.examples(fld).length() + 3)
+                    Math.max(
+                        maxParamLen.get(),
+                        CommandUtils.commandName(fld.getName()).length() + CommandUtils.examples(fld).length() + 3
+                    )
                 );
 
                 CommandUtils.forEachField(
                     cmd.getClass(),
-                    fld -> maxParamLen.set(Math.max(maxParamLen.get(), CommandUtils.parameterName(fld.getName()).length())),
+                    fld -> maxParamLen.set(
+                        Math.max(maxParamLen.get(), CommandUtils.parameterName(fld.getName()).length())
+                    ),
                     fldCalc,
                     (optional, flds) -> flds.forEach(fldCalc)
                 );
@@ -245,6 +260,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** */
     private void printExample(Command cmd, List<CommandWithSubs> parents) {
+        if (cmd.experimental())
+            logger.info(INDENT + "[EXPERIMENTAL]");
         logger.info(INDENT + cmd.description() + ":");
 
         StringBuilder bldr =
@@ -259,11 +276,17 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             if (prefixInclude.get())
                 bldr.append(PREFIX);
 
-            String cmdName = commandName(cmd0.getClass()).replaceFirst(parentPrefix.toString(), "");
+            String cmdName = commandName(cmd0.getClass());
+
+            if (parentPrefix.length() > 0) {
+                cmdName = cmdName
+                    .replaceFirst(parentPrefix.toString(), "")
+                    .replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
+            }
 
             bldr.append(cmdName);
 
-            parentPrefix.append(cmdName).append(CommandUtils.CMD_WORDS_DELIM);
+            parentPrefix.append(cmdName).append(CMD_WORDS_DELIM);
 
             if (cmd0 instanceof CommandWithSubs)
                 prefixInclude.set(!((CommandWithSubs)cmd0).positionalSubsName());
@@ -284,7 +307,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             if (!desc.withoutPrefix())
                 bldr.append(PREFIX);
 
-            bldr.append(CommandUtils.parameterName(fld.getName()));
+            bldr.append(CommandUtils.commandName(fld.getName()));
 
             String examples = desc.example().isEmpty() ? CommandUtils.examples(fld) : desc.example();
 
@@ -297,19 +320,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
         CommandUtils.forEachField(
             cmd.getClass(),
-            fld -> {
-                PositionalParameter desc = fld.getAnnotation(PositionalParameter.class);
-
-                bldr.append(' ');
-
-                if (desc.optional())
-                    bldr.append('[');
-
-                bldr.append(CommandUtils.examples(fld));
-
-                if (desc.optional())
-                    bldr.append(']');
-            },
+            fld -> bldr.append(' ').append(CommandUtils.examples(fld)),
             fld -> paramPrinter.accept(true, fld),
             (optional, flds) -> {
                 bldr.append(' ');

@@ -105,6 +105,9 @@ public class CommandHandler implements CLICommandFrontend {
     /** */
     private final Scanner in = new Scanner(System.in);
 
+    /** */
+    public static final String TIME_PREFIX = "Time: ";
+
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
 

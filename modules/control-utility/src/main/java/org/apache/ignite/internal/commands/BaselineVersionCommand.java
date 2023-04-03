@@ -28,7 +28,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
 @Data
 public class BaselineVersionCommand implements Command {
     /** */
-    @PositionalParameter
+    @PositionalParameter(javaStyleExample = true)
     private long topologyVersion;
 
     /** */

@@ -21,11 +21,13 @@ import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.SubCommand;
 
 /**
  *
  */
 @Data
+@SubCommand(nameSeparator = '_')
 public class BaselineAutoAdjustCommand implements Command {
     /** */
     @PositionalParameter(optional = true)

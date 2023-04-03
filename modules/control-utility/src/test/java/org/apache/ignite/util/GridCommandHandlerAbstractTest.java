@@ -100,7 +100,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerU
     protected static PrintStream sysOut;
 
     /** System in. */
-    private static InputStream sysIn;
+    protected static InputStream sysIn;
 
     /**
      * Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test.
@@ -165,6 +165,11 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerU
         return persistent;
     }
 
+    /** */
+    protected boolean showTestOutput() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -195,13 +200,16 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerU
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        log.info("Test output for " + currentTestMethod());
-        log.info("----------------------------------------");
+        if (showTestOutput()) {
+            log.info("Test output for " + currentTestMethod());
+            log.info("----------------------------------------");
+        }
 
         System.setOut(sysOut);
         System.setIn(sysIn);
 
-        log.info(testOut.toString());
+        if (showTestOutput())
+            log.info(testOut.toString());
 
         testOut.reset();
 

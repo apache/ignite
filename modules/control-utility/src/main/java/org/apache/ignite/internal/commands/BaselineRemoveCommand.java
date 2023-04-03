@@ -28,7 +28,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
 public class BaselineRemoveCommand implements Command {
     /** */
     @PositionalParameter(javaStyleExample = true)
-    private List<Object> consistendIDs;
+    private List<Object> consistentIDs;
 
     /** */
     @Parameter(optional = true)
