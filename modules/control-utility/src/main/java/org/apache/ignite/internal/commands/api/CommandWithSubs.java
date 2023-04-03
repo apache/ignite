@@ -35,4 +35,9 @@ public interface CommandWithSubs extends Command {
     public default boolean canBeExecuted() {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override default String description() {
+        return null;
+    }
 }

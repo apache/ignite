@@ -56,9 +56,10 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new KillCommand());
         register(new SnapshotCommand());
         register(new ChangeTagCommand());
+        register(new MetaCommand());
+        register(new ShutdownPolicyCommand());
         register(new SystemViewCommand());
         register(new MetricCommand());
-        register(new ShutdownPolicyCommand());
         register(new PerformanceStatisticsCommand());
     }
 

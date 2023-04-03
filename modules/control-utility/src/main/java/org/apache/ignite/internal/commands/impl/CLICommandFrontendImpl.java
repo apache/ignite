@@ -190,7 +190,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 Consumer<Field> fldCalc = fld -> maxParamLen.set(
                     Math.max(
                         maxParamLen.get(),
-                        CommandUtils.commandName(fld.getName()).length() + CommandUtils.examples(fld).length() + 3
+                        CommandUtils.parameterName(fld).length() + CommandUtils.examples(fld).length() + 3
                     )
                 );
 
@@ -212,7 +212,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     logger.info(
                         DOUBLE_INDENT + INDENT +
                         U.extendToLen(prefix +
-                        CommandUtils.commandName(fld.getName()) + " " + example, maxParamLen.get()) +
+                        CommandUtils.parameterName(fld) + " " + example, maxParamLen.get()) +
                         "  - " + desc.description() + "."
                     );
                 };
@@ -307,7 +307,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             if (!desc.withoutPrefix())
                 bldr.append(PREFIX);
 
-            bldr.append(CommandUtils.commandName(fld.getName()));
+            bldr.append(CommandUtils.parameterName(fld));
 
             String examples = desc.example().isEmpty() ? CommandUtils.examples(fld) : desc.example();
 

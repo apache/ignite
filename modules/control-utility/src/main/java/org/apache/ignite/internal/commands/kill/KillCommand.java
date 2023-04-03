@@ -39,14 +39,4 @@ public class KillCommand implements CommandWithSubs {
             new KillSnapshotCommand()
         );
     }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return false;
-    }
 }

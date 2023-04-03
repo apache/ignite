@@ -42,4 +42,10 @@ public @interface Parameter {
 
     /** */
     public boolean javaStyleExample() default false;
+
+    /** */
+    public boolean javaStyleName() default false;
+
+    /** */
+    public boolean brackets() default false;
 }

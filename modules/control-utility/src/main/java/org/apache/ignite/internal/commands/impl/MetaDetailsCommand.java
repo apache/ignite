@@ -15,22 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.wal;
+package org.apache.ignite.internal.commands.impl;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import lombok.Data;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
+import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
-public class WalCommand implements CommandWithSubs {
+@Data
+public class MetaDetailsCommand implements ExperimentalCommand {
+    /** */
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    private long typeId;
+
+    /** */
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    private String typeName;
+
     /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new WalPrintCommand(),
-            new WalDeleteCommand()
-        );
+    @Override public String description() {
+        return "Print detailed info about specified binary type " +
+            "(the type must be specified by type name or by type identifier)";
     }
 }

@@ -32,18 +32,8 @@ public class SnapshotCommand implements CommandWithSubs {
             new SnapshotCreateCommand(),
             new SnapshotCancelCommand(),
             new SnapshotCheckCommand(),
-            new SnapshotStatusCommand(),
-            new SnapshotRestoreCommand()
+            new SnapshotRestoreCommand(),
+            new SnapshotStatusCommand()
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return null;
     }
 }

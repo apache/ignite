@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commands.wal;
 
 import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class WalDeleteCommand implements Command {
+public class WalDeleteCommand implements ExperimentalCommand {
     /** */
     @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;
@@ -39,10 +39,5 @@ public class WalDeleteCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Delete unused archived wal segments on each node";
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean experimental() {
-        return true;
     }
 }

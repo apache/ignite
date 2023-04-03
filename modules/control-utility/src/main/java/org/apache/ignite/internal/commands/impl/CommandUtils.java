@@ -109,9 +109,21 @@ public class CommandUtils {
     }
 
     /** */
+    public static String parameterName(Field fld) {
+        Parameter desc = fld.getAnnotation(Parameter.class);
+
+        return desc == null || !desc.javaStyleName()
+            ? commandName(fld.getName())
+            : fld.getName();
+    }
+
+    /** */
     public static String examples(Field fld) {
         if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
             return "";
+
+        boolean optional = (fld.isAnnotationPresent(PositionalParameter.class)
+            && fld.getAnnotation(PositionalParameter.class).optional());
 
         if (Enum.class.isAssignableFrom(fld.getType())) {
             Object[] vals = fld.getType().getEnumConstants();
@@ -125,7 +137,7 @@ public class CommandUtils {
                 bldr.append(((Enum<?>)vals[i]).name());
             }
 
-            return bldr.toString();
+            return toOptional(bldr.toString(), optional);
         }
 
         boolean javaStyleExample = (fld.isAnnotationPresent(Parameter.class)
@@ -133,8 +145,7 @@ public class CommandUtils {
             || (fld.isAnnotationPresent(PositionalParameter.class)
                     && fld.getAnnotation(PositionalParameter.class).javaStyleExample());
 
-        boolean optional = (fld.isAnnotationPresent(PositionalParameter.class)
-            && fld.getAnnotation(PositionalParameter.class).optional());
+        boolean brackets = (fld.isAnnotationPresent(Parameter.class) && fld.getAnnotation(Parameter.class).brackets());
 
         String name = javaStyleExample ? fld.getName() : parameterName(fld.getName());
 
@@ -150,10 +161,18 @@ public class CommandUtils {
 
             String example = name + "1[," + name + "2,....," + name + "N]";
 
-            return (optional ? "[" : "") + example + (optional ? "]" : "");
+            return toOptional(example, optional);
         }
 
-        return (optional ? "[" : "") + name + (optional ? "]" : "");
+        if (brackets)
+            name = '<' + name + '>';
+
+        return toOptional(name, optional);
+    }
+
+    /** */
+    private static String toOptional(String str, boolean optional) {
+        return (optional ? "[" : "") + str + (optional ? "]" : "");
     }
 
     /**

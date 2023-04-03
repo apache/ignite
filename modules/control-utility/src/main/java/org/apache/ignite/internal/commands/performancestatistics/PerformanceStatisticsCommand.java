@@ -35,14 +35,4 @@ public class PerformanceStatisticsCommand implements CommandWithSubs {
             new PerformanceStatisticsStatusCommand()
         );
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return null;
-    }
 }

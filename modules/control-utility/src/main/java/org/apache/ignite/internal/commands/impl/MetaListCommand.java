@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.wal;
+package org.apache.ignite.internal.commands.impl;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 
 /**
  *
  */
-public class WalCommand implements CommandWithSubs {
+public class MetaListCommand implements ExperimentalCommand {
     /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new WalPrintCommand(),
-            new WalDeleteCommand()
-        );
+    @Override public String description() {
+        return "Print list of binary metadata types";
     }
 }

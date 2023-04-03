@@ -19,14 +19,14 @@ package org.apache.ignite.internal.commands.wal;
 
 import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class WalPrintCommand implements Command {
+public class WalPrintCommand implements ExperimentalCommand {
     /** */
     @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;
@@ -34,10 +34,5 @@ public class WalPrintCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print absolute paths of unused archived wal segments on each node";
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean experimental() {
-        return true;
     }
 }
