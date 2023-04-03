@@ -213,7 +213,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                         DOUBLE_INDENT + INDENT +
                         U.extendToLen(prefix +
                         CommandUtils.commandName(fld.getName()) + " " + example, maxParamLen.get()) +
-                        " - " + desc.description() + "."
+                        "  - " + desc.description() + "."
                     );
                 };
 

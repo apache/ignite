@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum SnapshotRestoreCommandOption implements CommandArg {
     /** Cache group names. */
-    GROUPS("--groups", "group1,...groupN", "Cache group names."),
+    GROUPS("--groups", "group1[,group2,....,groupN]", "Cache group names."),
 
     /** Snapshot directory location. */
     SOURCE(SnapshotCheckCommandOption.SOURCE.argName(), SnapshotCheckCommandOption.SOURCE.arg(),

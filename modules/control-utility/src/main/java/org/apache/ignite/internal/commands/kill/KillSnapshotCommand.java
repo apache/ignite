@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.kill;
 
-import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
@@ -26,17 +25,13 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class KillContinuousCommand implements Command {
+public class KillSnapshotCommand implements Command {
     /** */
-    @PositionalParameter(description = "Originating node id")
-    private UUID originNodeId;
-
-    /** */
-    @PositionalParameter(description = "Routine identifier")
-    private UUID routineId;
+    @PositionalParameter(description = "Snapshot name")
+    private String snapshotName;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill continuous query by routine id";
+        return "Kill running snapshot by snapshot name";
     }
 }

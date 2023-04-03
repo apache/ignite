@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.kill;
 
+import java.util.UUID;
+import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class PerformanceStatisticsStopCommand implements Command {
+@Data
+public class KillContinuousCommand implements Command {
+    /** */
+    @PositionalParameter(description = "Originating node id")
+    private UUID originNodeId;
+
+    /** */
+    @PositionalParameter(description = "Routine identifier")
+    private UUID routineId;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Stop collecting performance statistics in the cluster";
+        return "Kill continuous query by routine id";
     }
 }

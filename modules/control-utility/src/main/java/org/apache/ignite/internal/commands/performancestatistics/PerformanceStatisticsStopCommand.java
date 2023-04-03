@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.performancestatistics;
 
-import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class KillTransactionCommand implements Command {
-    /** */
-    @PositionalParameter(description = "Transaction identifier")
-    private String xid;
-
+public class PerformanceStatisticsStopCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill transaction by xid";
+        return "Stop collecting performance statistics in the cluster";
     }
 }

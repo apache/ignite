@@ -24,16 +24,17 @@ import org.apache.ignite.internal.commands.ActivateCommand;
 import org.apache.ignite.internal.commands.BaselineCommand;
 import org.apache.ignite.internal.commands.DeactivateCommand;
 import org.apache.ignite.internal.commands.DiagnosticCommand;
-import org.apache.ignite.internal.commands.EncryptionCommand;
-import org.apache.ignite.internal.commands.KillCommand;
 import org.apache.ignite.internal.commands.MetricCommand;
-import org.apache.ignite.internal.commands.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.commands.SetStateCommand;
 import org.apache.ignite.internal.commands.ShutdownPolicyCommand;
 import org.apache.ignite.internal.commands.StateCommand;
 import org.apache.ignite.internal.commands.SystemViewCommand;
-import org.apache.ignite.internal.commands.WalCommand;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.encryption.EncryptionCommand;
+import org.apache.ignite.internal.commands.kill.KillCommand;
+import org.apache.ignite.internal.commands.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.commands.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.commands.wal.WalCommand;
 
 /**
  *
@@ -53,6 +54,8 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new DiagnosticCommand());
         register(new EncryptionCommand());
         register(new KillCommand());
+        register(new SnapshotCommand());
+        register(new ChangeTagCommand());
         register(new SystemViewCommand());
         register(new MetricCommand());
         register(new ShutdownPolicyCommand());

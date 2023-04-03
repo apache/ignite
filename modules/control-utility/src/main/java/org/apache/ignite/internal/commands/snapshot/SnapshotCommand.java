@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.snapshot;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,14 +25,15 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 /**
  *
  */
-public class PerformanceStatisticsCommand implements CommandWithSubs {
+public class SnapshotCommand implements CommandWithSubs {
     /** {@inheritDoc} */
     @Override public Collection<Command> subcommands() {
         return Arrays.asList(
-            new PerformanceStatisticsStartCommand(),
-            new PerformanceStatisticsStopCommand(),
-            new PerformanceStatisticsRotateCommand(),
-            new PerformanceStatisticsStatusCommand()
+            new SnapshotCreateCommand(),
+            new SnapshotCancelCommand(),
+            new SnapshotCheckCommand(),
+            new SnapshotStatusCommand(),
+            new SnapshotRestoreCommand()
         );
     }
 

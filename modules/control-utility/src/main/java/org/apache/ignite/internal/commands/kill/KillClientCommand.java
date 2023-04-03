@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.kill;
 
+import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class EncryptionReencryptionRateLimitCommand implements Command {
+public class KillClientCommand implements Command {
     /** */
-    @PositionalParameter(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
-    private Integer newLimit;
+    @PositionalParameter(description = "Connection identifier or ALL")
+    private String connectionId;
+
+    /** */
+    @Parameter(description = "Node id to drop connection from", optional = true)
+    private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "View/change re-encryption rate limit";
+        return "Kill client connection by id";
     }
 }

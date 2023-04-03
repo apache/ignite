@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.encryption;
 
+import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class EncryptionGetMasterKeyNameCommand implements Command {
+@Data
+public class EncryptionChangeMasterKeyCommand implements Command {
+    /** */
+    @PositionalParameter(javaStyleExample = true)
+    private String newMasterKeyName;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Print the current master key name";
+        return "Change the master key";
     }
 }

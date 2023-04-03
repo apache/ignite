@@ -15,38 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.snapshot;
 
-import java.util.Arrays;
-import java.util.Collection;
+import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import org.apache.ignite.internal.commands.api.OneOf;
+import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
-public class EncryptionCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new EncryptionGetMasterKeyNameCommand(),
-            new EncryptionChangeMasterKeyCommand(),
-            new EncryptionChangeCacheKeyCommand(),
-            new EncryptionCacheKeyIdsCommand(),
-            new EncryptionReencryptionStatusCommand(),
-            new EncryptionSuspendReencryptionCommand(),
-            new EncryptionResumeReencryptionCommand(),
-            new EncryptionReencryptionRateLimitCommand()
-        );
-    }
+@Data
+@OneOf({"id", "name"})
+public class SnapshotCancelCommand implements Command {
+    /** */
+    @Parameter(description = "Snapshot operation request ID")
+    private String id;
+
+    /** */
+    @Parameter(description = "Snapshot name (deprecated)")
+    private String name;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return false;
+        return "Cancel running snapshot operation";
     }
 }

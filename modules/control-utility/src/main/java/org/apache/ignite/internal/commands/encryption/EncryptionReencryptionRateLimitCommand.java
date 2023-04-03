@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.encryption;
 
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
@@ -25,13 +25,13 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class EncryptionCacheKeyIdsCommand implements Command {
+public class EncryptionReencryptionRateLimitCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String cacheGroupName;
+    @PositionalParameter(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
+    private Integer newLimit;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "View encryption key identifiers of the cache group";
+        return "View/change re-encryption rate limit";
     }
 }

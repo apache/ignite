@@ -15,23 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.wal;
 
-import lombok.Data;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-@Data
-public class EncryptionChangeCacheKeyCommand implements Command {
-    /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String cacheGroupName;
+public class WalCommand implements CommandWithSubs {
+    /** {@inheritDoc} */
+    @Override public Collection<Command> subcommands() {
+        return Arrays.asList(
+            new WalPrintCommand(),
+            new WalDeleteCommand()
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canBeExecuted() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Change the encryption key of the cache group";
+        return null;
     }
 }

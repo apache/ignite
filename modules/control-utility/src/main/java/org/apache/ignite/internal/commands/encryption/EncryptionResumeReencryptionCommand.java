@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.encryption;
 
-import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
@@ -26,21 +25,13 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class KillScanCommand implements Command {
+public class EncryptionResumeReencryptionCommand implements Command {
     /** */
-    @PositionalParameter(description = "Originating node id")
-    private UUID originNodeId;
-
-    /** */
-    @PositionalParameter(index = 1, description = "Cache name")
-    private String cacheName;
-
-    /** */
-    @PositionalParameter(index = 2, description = "Query identifier")
-    private long queryId;
+    @PositionalParameter(javaStyleExample = true)
+    private String cacheGroupName;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill scan query by node id, cache name and query id";
+        return "Resume re-encryption of the cache group";
     }
 }

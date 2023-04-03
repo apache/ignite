@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.performancestatistics;
 
-import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class EncryptionSuspendReencryptionCommand implements Command {
-    /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String cacheGroupName;
-
+public class PerformanceStatisticsRotateCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Suspend re-encryption of the cache group";
+        return "Rotate collecting performance statistics in the cluster";
     }
 }

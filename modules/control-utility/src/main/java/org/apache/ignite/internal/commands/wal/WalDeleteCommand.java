@@ -15,23 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.wal;
 
+import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class KillSnapshotCommand implements Command {
+public class WalDeleteCommand implements Command {
     /** */
-    @PositionalParameter(description = "Snapshot name")
-    private String snapshotName;
+    @PositionalParameter(javaStyleExample = true, optional = true)
+    private List<Object> consistentIDs;
+
+    /** */
+    @Parameter(optional = true)
+    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill running snapshot by snapshot name";
+        return "Delete unused archived wal segments on each node";
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return true;
     }
 }

@@ -15,23 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.snapshot;
 
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class EncryptionChangeMasterKeyCommand implements Command {
+public class SnapshotCheckCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String newMasterKeyName;
+    @PositionalParameter(description = "Snapshot name. " +
+        "In case incremental snapshot (--incremental) full snapshot name must be provided")
+    private String snapshotName;
+
+    /** */
+    @Parameter(example = "path", optional = true,
+        description = "Path to the directory where the snapshot files are located. " +
+            "If not specified, the default configured snapshot directory will be used")
+    private String src;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Change the master key";
+        return "Check snapshot";
     }
 }

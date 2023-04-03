@@ -15,29 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.kill;
 
-import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
  */
 @Data
-public class WalPrintCommand implements Command {
+public class KillComputeCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true, optional = true)
-    private List<Object> consistentIDs;
+    @PositionalParameter(description = "Session identifier")
+    private IgniteUuid sessionId;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Print absolute paths of unused archived wal segments on each node";
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean experimental() {
-        return true;
+        return "Kill compute task by session id";
     }
 }

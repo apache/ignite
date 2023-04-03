@@ -15,23 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.encryption;
 
-import lombok.Data;
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-@Data
-public class KillSqlCommand implements Command {
-    /** */
-    @PositionalParameter(description = "Query identifier")
-    private String queryId;
+public class EncryptionCommand implements CommandWithSubs {
+    /** {@inheritDoc} */
+    @Override public Collection<Command> subcommands() {
+        return Arrays.asList(
+            new EncryptionGetMasterKeyNameCommand(),
+            new EncryptionChangeMasterKeyCommand(),
+            new EncryptionChangeCacheKeyCommand(),
+            new EncryptionCacheKeyIdsCommand(),
+            new EncryptionReencryptionStatusCommand(),
+            new EncryptionSuspendReencryptionCommand(),
+            new EncryptionResumeReencryptionCommand(),
+            new EncryptionReencryptionRateLimitCommand()
+        );
+    }
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill sql query by query id";
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canBeExecuted() {
+        return false;
     }
 }

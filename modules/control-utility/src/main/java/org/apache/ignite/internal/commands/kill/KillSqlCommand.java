@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.kill;
 
+import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class PerformanceStatisticsStatusCommand implements Command {
+@Data
+public class KillSqlCommand implements Command {
+    /** */
+    @PositionalParameter(description = "Query identifier")
+    private String queryId;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Get status of collecting performance statistics in the cluster";
+        return "Kill sql query by query id";
     }
 }

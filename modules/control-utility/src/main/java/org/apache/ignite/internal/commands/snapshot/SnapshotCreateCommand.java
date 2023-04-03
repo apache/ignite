@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.snapshot;
 
-import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.Parameter;
@@ -27,17 +26,31 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class KillClientCommand implements Command {
+public class SnapshotCreateCommand implements Command {
     /** */
-    @PositionalParameter(description = "Connection identifier or ALL")
-    private String connectionId;
+    @PositionalParameter(description = "Snapshot name. " +
+        "In case incremental snapshot (--incremental) full snapshot name must be provided")
+    private String snapshotName;
 
     /** */
-    @Parameter(description = "Node id to drop connection from", optional = true)
-    private UUID nodeId;
+    @Parameter(example = "path", optional = true,
+        description = "Path to the directory where the snapshot will be saved. " +
+        "If not specified, the default configured snapshot directory will be used")
+    private String dest;
+
+    /** */
+    @Parameter(optional = true, description = "Run the operation synchronously, " +
+        "the command will wait for the entire operation to complete. " +
+        "Otherwise, it will be performed in the background, and the command will immediately return control")
+    private boolean sync;
+
+    /** */
+    @Parameter(optional = true, description = "Create an incremental snapshot for previously created full snapshot. " +
+        "Full snapshot must be accessible via --dest and snapshot_name")
+    private boolean incremental;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill client connection by id";
+        return "Create cluster snapshot";
     }
 }

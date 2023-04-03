@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.encryption;
 
+import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class PerformanceStatisticsStartCommand implements Command {
+@Data
+public class EncryptionChangeCacheKeyCommand implements Command {
+    /** */
+    @PositionalParameter(javaStyleExample = true)
+    private String cacheGroupName;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Start collecting performance statistics in the cluster";
+        return "Change the encryption key of the cache group";
     }
 }

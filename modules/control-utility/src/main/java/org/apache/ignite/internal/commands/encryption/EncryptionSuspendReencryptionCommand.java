@@ -15,38 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.encryption;
 
-import java.util.Arrays;
-import java.util.Collection;
+import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class KillCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new KillComputeCommand(),
-            new KillServiceCommand(),
-            new KillTransactionCommand(),
-            new KillSqlCommand(),
-            new KillScanCommand(),
-            new KillContinuousCommand(),
-            new KillClientCommand(),
-            new KillSnapshotCommand()
-        );
-    }
+@Data
+public class EncryptionSuspendReencryptionCommand implements Command {
+    /** */
+    @PositionalParameter(javaStyleExample = true)
+    private String cacheGroupName;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return false;
+        return "Suspend re-encryption of the cache group";
     }
 }

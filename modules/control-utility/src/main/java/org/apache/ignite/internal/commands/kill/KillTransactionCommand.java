@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.kill;
 
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
@@ -25,13 +25,13 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class EncryptionResumeReencryptionCommand implements Command {
+public class KillTransactionCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String cacheGroupName;
+    @PositionalParameter(description = "Transaction identifier")
+    private String xid;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Resume re-encryption of the cache group";
+        return "Kill transaction by xid";
     }
 }

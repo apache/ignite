@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.performancestatistics;
 
-import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class EncryptionReencryptionStatusCommand implements Command {
-    /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String cacheGroupName;
-
+public class PerformanceStatisticsStatusCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Display re-encryption status of the cache group";
+        return "Get status of collecting performance statistics in the cluster";
     }
 }

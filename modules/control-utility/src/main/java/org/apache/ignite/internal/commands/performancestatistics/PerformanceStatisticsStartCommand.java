@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.performancestatistics;
 
-import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class KillServiceCommand implements Command {
-    /** */
-    @PositionalParameter(description = "Service name")
-    private String name;
-
+public class PerformanceStatisticsStartCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill service by name";
+        return "Start collecting performance statistics in the cluster";
     }
 }
