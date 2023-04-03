@@ -25,6 +25,7 @@ import org.apache.ignite.internal.commands.BaselineCommand;
 import org.apache.ignite.internal.commands.DeactivateCommand;
 import org.apache.ignite.internal.commands.DiagnosticCommand;
 import org.apache.ignite.internal.commands.EncryptionCommand;
+import org.apache.ignite.internal.commands.KillCommand;
 import org.apache.ignite.internal.commands.MetricCommand;
 import org.apache.ignite.internal.commands.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.commands.SetStateCommand;
@@ -51,6 +52,7 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new WalCommand());
         register(new DiagnosticCommand());
         register(new EncryptionCommand());
+        register(new KillCommand());
         register(new SystemViewCommand());
         register(new MetricCommand());
         register(new ShutdownPolicyCommand());

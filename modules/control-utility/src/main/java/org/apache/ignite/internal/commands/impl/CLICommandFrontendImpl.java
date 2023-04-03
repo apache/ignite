@@ -224,7 +224,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
                         logger.info(
                             DOUBLE_INDENT + INDENT +
-                                U.extendToLen(CommandUtils.parameterName(fld.getName()), maxParamLen.get()) + " - " +
+                                U.extendToLen(CommandUtils.parameterName(fld.getName()), maxParamLen.get()) + "  - " +
                                 desc.description() + "."
                         );
                     },

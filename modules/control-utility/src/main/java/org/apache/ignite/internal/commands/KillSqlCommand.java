@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import lombok.Data;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
- * Compute MXBean interface.
+ *
  */
-public interface ComputeMXBean {
-    /**
-     * Kills compute task by the session identifier.
-     *
-     * @param sesId Session id.
-     * @see ComputeTaskView#sessionId()
-     * @see ComputeJobView#sessionId()
-     */
-    @MXBeanDescription("Kills compute task by the session identifier.")
-    public void cancel(
-        @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
-    );
+@Data
+public class KillSqlCommand implements Command {
+    /** */
+    @PositionalParameter(description = "Query identifier")
+    private String queryId;
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Kill sql query by query id";
+    }
 }

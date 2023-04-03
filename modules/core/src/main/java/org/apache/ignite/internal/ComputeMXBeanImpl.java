@@ -52,7 +52,7 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     }
 
     /**
-     * Kills compute task by the session idenitifier.
+     * Kills compute task by the session identifier.
      *
      * @param sesId Session id.
      */

@@ -15,24 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import java.util.UUID;
+import lombok.Data;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
- * Compute MXBean interface.
+ *
  */
-public interface ComputeMXBean {
-    /**
-     * Kills compute task by the session identifier.
-     *
-     * @param sesId Session id.
-     * @see ComputeTaskView#sessionId()
-     * @see ComputeJobView#sessionId()
-     */
-    @MXBeanDescription("Kills compute task by the session identifier.")
-    public void cancel(
-        @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
-    );
+@Data
+public class KillClientCommand implements Command {
+    /** */
+    @PositionalParameter(description = "Connection identifier or ALL")
+    private String connectionId;
+
+    /** */
+    @Parameter(description = "Node id to drop connection from", optional = true)
+    private UUID nodeId;
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Kill client connection by id";
+    }
 }
