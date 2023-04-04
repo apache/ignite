@@ -20,13 +20,14 @@ package org.apache.ignite.internal.commands.wal;
 import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.ConfirmableCommand;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class WalDeleteCommand extends ConfirmableCommand {
+public class WalDeleteCommand extends ConfirmableCommand implements ExperimentalCommand {
     /** */
     @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;

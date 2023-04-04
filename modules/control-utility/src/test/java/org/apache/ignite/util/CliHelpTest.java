@@ -106,7 +106,7 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
             }
         }
 
-        assertTrue("Diff must be empty [lines=" + lines + ']', diff.isEmpty());
+        assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
     }
 
     /** */
