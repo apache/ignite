@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commands.impl;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import org.apache.ignite.internal.commands.api.EnumDescription;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,8 +63,11 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.valueExample;
 
 /**
  *
@@ -73,9 +78,6 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** Double indent for help output. */
     public static final String DOUBLE_INDENT = INDENT + INDENT;
-
-    /** */
-    public static final String PREFIX = "--";
 
     /** */
     public static final String CLI_NAME = "control";
@@ -137,13 +139,16 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** {@inheritDoc} */
     @Override public int execute(List<String> args) {
+        LocalDateTime startTime = LocalDateTime.now();
+
         logCommonInfo();
 
-        if (CommandHandler.isHelp(args)) {
+        if (CommandHandler.isHelp(args))
             printUsage();
 
-            return EXIT_CODE_OK;
-        }
+        LocalDateTime endTime = LocalDateTime.now();
+
+        CommandHandler.printExecutionTime(logger, endTime, Duration.between(startTime, endTime));
 
         return EXIT_CODE_OK;
     }
@@ -190,49 +195,33 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 AtomicInteger maxParamLen = new AtomicInteger();
 
                 Consumer<Field> fldCalc = fld -> maxParamLen.set(
-                    Math.max(
-                        maxParamLen.get(),
-                        CommandUtils.parameterName(fld).length() + CommandUtils.examples(fld).length() + 3
-                    )
+                    Math.max(maxParamLen.get(), parameterExample(fld, false).length())
                 );
 
                 CommandUtils.forEachField(
                     cmd.getClass(),
-                    fld -> maxParamLen.set(
-                        Math.max(maxParamLen.get(), CommandUtils.parameterName(fld.getName()).length())
-                    ),
+                    fld -> maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length())),
                     fldCalc,
                     (optional, flds) -> flds.forEach(fldCalc)
                 );
 
                 Consumer<Field> fldPrinter = fld -> {
                     Parameter desc = fld.getAnnotation(Parameter.class);
+                    PositionalParameter posDesc = fld.getAnnotation(PositionalParameter.class);
 
-                    if (desc.excludeFromDescription())
+                    if (desc != null && desc.excludeFromDescription())
                         return;
-
-                    String prefix = desc.withoutPrefix() ? "" : PREFIX;
-                    String example = CommandUtils.examples(fld);
 
                     logger.info(
                         DOUBLE_INDENT + INDENT +
-                        U.extendToLen(prefix +
-                        CommandUtils.parameterName(fld) + " " + example, maxParamLen.get()) +
-                        "  - " + desc.description() + "."
+                        U.extendToLen(parameterExample(fld, false), maxParamLen.get()) +
+                        "  - " + (desc != null ? desc.description() : posDesc.description()) + "."
                     );
                 };
 
                 CommandUtils.forEachField(
                     cmd.getClass(),
-                    fld -> {
-                        PositionalParameter desc = fld.getAnnotation(PositionalParameter.class);
-
-                        logger.info(
-                            DOUBLE_INDENT + INDENT +
-                                U.extendToLen(CommandUtils.parameterName(fld.getName()), maxParamLen.get()) + "  - " +
-                                desc.description() + "."
-                        );
-                    },
+                    fldPrinter,
                     fldPrinter,
                     (optional, flds) -> flds.forEach(fldPrinter)
                 );
@@ -254,18 +243,24 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
         CommandUtils.forEachField(
             cmd.getClass(),
-            fld -> res.compareAndSet(false, !fld.getAnnotation(PositionalParameter.class).description().isEmpty()),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(PositionalParameter.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
             fld -> res.compareAndSet(
                 false,
-                !fld.getAnnotation(Parameter.class).description().isEmpty()
+                (!fld.getAnnotation(Parameter.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class))
                     && !fld.getAnnotation(Parameter.class).excludeFromDescription()
+
             ),
             (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(
                 false,
                 !(fld.isAnnotationPresent(Parameter.class)
                     ? fld.getAnnotation(Parameter.class).description()
                     : fld.getAnnotation(PositionalParameter.class).description()
-                ).isEmpty()
+                ).isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
             ))
         );
 
@@ -288,7 +283,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             bldr.append(' ');
 
             if (prefixInclude.get())
-                bldr.append(PREFIX);
+                bldr.append(PARAMETER_PREFIX);
 
             String cmdName = commandName(cmd0.getClass());
 
@@ -310,42 +305,15 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         namePrinter.accept(cmd);
 
         BiConsumer<Boolean, Field> paramPrinter = (spaceReq, fld) -> {
-            Parameter desc = fld.getAnnotation(Parameter.class);
-            PositionalParameter posDesc = fld.getAnnotation(PositionalParameter.class);
-
-            assert desc != null || posDesc != null;
-
-            boolean optional = (desc != null && desc.optional()) || (posDesc != null && posDesc.optional());
-            boolean withoutPrefix = desc == null || desc.withoutPrefix();
-
             if (spaceReq)
                 bldr.append(' ');
 
-            if (optional)
-                bldr.append('[');
-
-            if (!withoutPrefix)
-                bldr.append(PREFIX);
-
-            if (desc != null)
-                bldr.append(CommandUtils.parameterName(fld));
-
-            String examples = CommandUtils.examples(fld);
-
-            if (!examples.isEmpty()) {
-                if (desc != null)
-                    bldr.append(' ');
-
-                bldr.append(examples);
-            }
-
-            if (optional)
-                bldr.append(']');
+            bldr.append(parameterExample(fld, true));
         };
 
         CommandUtils.forEachField(
             cmd.getClass(),
-            fld -> bldr.append(' ').append(CommandUtils.examples(fld)),
+            fld -> bldr.append(' ').append(valueExample(fld)),
             fld -> paramPrinter.accept(true, fld),
             (optional, flds) -> {
                 bldr.append(' ');

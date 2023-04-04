@@ -88,7 +88,7 @@ public class CommandsRegistry implements Iterable<Command> {
         if (!name.endsWith(CommandUtils.CMD_NAME_POSTFIX))
             throw new IllegalArgumentException("Command class name must ends with 'Command'");
 
-        commands.put(CommandUtils.commandName(name.substring(0, name.length() - CommandUtils.CMD_NAME_POSTFIX.length())), cmd);
+        commands.put(CommandUtils.commandName(cmd.getClass()), cmd);
     }
 
     /** {@inheritDoc} */

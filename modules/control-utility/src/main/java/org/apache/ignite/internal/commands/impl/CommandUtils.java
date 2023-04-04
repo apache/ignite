@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.OneOf;
 import org.apache.ignite.internal.commands.api.Parameter;
@@ -38,6 +39,9 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
 public class CommandUtils {
     /** */
     public static final String CMD_NAME_POSTFIX = "Command";
+
+    /** */
+    public static final String PARAMETER_PREFIX = "--";
 
     /** */
     public static final char CMD_WORDS_DELIM = '-';
@@ -65,78 +69,49 @@ public class CommandUtils {
         return commandName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()));
     }
 
-    /**
-     * For example:
-     * "MyCommand" -> "my_command"
-     * "nodeIDs" -> "node_ids"
-     * "myLongName" -> "my_long_name
-     *
-     * @return Positional parameter name.
-     */
-    public static String parameterName(String name) {
-        return formattedName(name, PARAM_WORDS_DELIM);
-    }
+    /** */
+    public static String parameterExample(Field fld, boolean appendOptional) {
+        if (fld.isAnnotationPresent(PositionalParameter.class)) {
+            PositionalParameter posParam = fld.getAnnotation(PositionalParameter.class);
 
-    /**
-     * @param name Field, command name.
-     * @param delim Words delimeter.
-     * @return Formatted name.
-     */
-    public static String formattedName(String name, char delim) {
-        StringBuilder bld = new StringBuilder();
-
-        bld.append(Character.toLowerCase(name.charAt(0)));
-
-        int i = 1;
-        while (i < name.length()) {
-            if (Character.isLowerCase(name.charAt(i))) {
-                bld.append(name.charAt(i));
-
-                i++;
-            }
-            else {
-                bld.append(delim);
-
-                while (i < name.length() && Character.isUpperCase(name.charAt(i))) {
-                    bld.append(Character.toLowerCase(name.charAt(i)));
-
-                    i++;
-                }
-            }
+            return asOptional(
+                posParam.example().isEmpty()
+                    ? name(fld, PARAM_WORDS_DELIM, Parameter::javaStyleName)
+                    : posParam.example(),
+                appendOptional && posParam.optional()
+            );
         }
 
-        return bld.toString();
+        Parameter param = fld.getAnnotation(Parameter.class);
+
+        String example = valueExample(fld);
+
+        return asOptional(
+            (param.withoutPrefix() ? "" : PARAMETER_PREFIX)
+                + name(fld, CMD_WORDS_DELIM, Parameter::javaStyleName)
+                + (example.isEmpty() ? "" : (" " + example)),
+            appendOptional && param.optional()
+        );
     }
 
     /** */
-    public static String parameterName(Field fld) {
-        Parameter desc = fld.getAnnotation(Parameter.class);
-
-        return desc == null || !desc.javaStyleName()
-            ? commandName(fld.getName())
-            : fld.getName();
-    }
-
-    /** */
-    public static String examples(Field fld) {
+    public static String valueExample(Field fld) {
         if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
             return "";
 
-        if (fld.isAnnotationPresent(PositionalParameter.class)) {
-            String example = fld.getAnnotation(PositionalParameter.class).example();
+        PositionalParameter posParam = fld.getAnnotation(PositionalParameter.class);
+        Parameter param = fld.getAnnotation(Parameter.class);
+
+        if (posParam != null) {
+            String example = posParam.example();
 
             if (!example.isEmpty())
                 return example;
         }
-        else {
-            String example = fld.getAnnotation(Parameter.class).example();
+        else if (!param.example().isEmpty())
+            return param.example();
 
-            if (!example.isEmpty())
-                return example;
-        }
-
-        boolean optional = (fld.isAnnotationPresent(PositionalParameter.class)
-            && fld.getAnnotation(PositionalParameter.class).optional());
+        boolean optional = posParam != null && posParam.optional();
 
         if (Enum.class.isAssignableFrom(fld.getType())) {
             Object[] vals = fld.getType().getEnumConstants();
@@ -150,17 +125,12 @@ public class CommandUtils {
                 bldr.append(((Enum<?>)vals[i]).name());
             }
 
-            return toOptional(bldr.toString(), optional);
+            return asOptional(bldr.toString(), optional);
         }
 
-        boolean javaStyleExample = (fld.isAnnotationPresent(Parameter.class)
-                    && fld.getAnnotation(Parameter.class).javaStyleExample())
-            || (fld.isAnnotationPresent(PositionalParameter.class)
-                    && fld.getAnnotation(PositionalParameter.class).javaStyleExample());
+        boolean brackets = param != null && param.brackets();
 
-        boolean brackets = (fld.isAnnotationPresent(Parameter.class) && fld.getAnnotation(Parameter.class).brackets());
-
-        String name = javaStyleExample ? fld.getName() : parameterName(fld.getName());
+        String name = name(fld, PARAM_WORDS_DELIM, Parameter::javaStyleExample);
 
         if (fld.getType().isArray() || Collection.class.isAssignableFrom(fld.getType())) {
             if (name.endsWith("s"))
@@ -174,18 +144,13 @@ public class CommandUtils {
 
             String example = name + "1[," + name + "2,....," + name + "N]";
 
-            return toOptional(example, optional);
+            return asOptional(example, optional);
         }
 
         if (brackets)
             name = '<' + name + '>';
 
-        return toOptional(name, optional);
-    }
-
-    /** */
-    private static String toOptional(String str, boolean optional) {
-        return (optional ? "[" : "") + str + (optional ? "]" : "");
+        return asOptional(name, optional);
     }
 
     /**
@@ -233,5 +198,54 @@ public class CommandUtils {
             else
                 break;
         }
+    }
+
+    /** */
+    private static String name(Field fld, char delim, Predicate<Parameter> javaStyle) {
+        if (fld.isAnnotationPresent(PositionalParameter.class)) {
+            PositionalParameter posParam = fld.getAnnotation(PositionalParameter.class);
+
+            return posParam.javaStyleExample() ? fld.getName() : formattedName(fld.getName(), delim);
+        }
+
+        return javaStyle.test(fld.getAnnotation(Parameter.class))
+            ? fld.getName()
+            : formattedName(fld.getName(), delim);
+    }
+
+    /** */
+    private static String asOptional(String str, boolean optional) {
+        return (optional ? "[" : "") + str + (optional ? "]" : "");
+    }
+
+    /**
+     * @param name Field, command name.
+     * @param delim Words delimeter.
+     * @return Formatted name.
+     */
+    private static String formattedName(String name, char delim) {
+        StringBuilder bld = new StringBuilder();
+
+        bld.append(Character.toLowerCase(name.charAt(0)));
+
+        int i = 1;
+        while (i < name.length()) {
+            if (Character.isLowerCase(name.charAt(i))) {
+                bld.append(name.charAt(i));
+
+                i++;
+            }
+            else {
+                bld.append(delim);
+
+                while (i < name.length() && Character.isUpperCase(name.charAt(i))) {
+                    bld.append(Character.toLowerCase(name.charAt(i)));
+
+                    i++;
+                }
+            }
+        }
+
+        return bld.toString();
     }
 }

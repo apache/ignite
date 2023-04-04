@@ -73,7 +73,8 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
         List<String> original = stringToList(controlSh);
         List<String> revised = stringToList(igniteCli);
 
-        revised = revised.subList(ASCII_LOGO.size(), revised.size()); //Removing logo and time string.
+        original = original.subList(0, original.size() - 2); // Removing time info.
+        revised = revised.subList(ASCII_LOGO.size(), revised.size() - 2); //Removing logo and time info.
 
         List<DiffRow> diff = DiffRowGenerator.create()
             .ignoreWhiteSpaces(true)

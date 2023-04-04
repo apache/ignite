@@ -359,8 +359,7 @@ public class CommandHandler implements CLICommandFrontend {
             if (nonNull(err))
                 logger.info("Error stack trace:" + System.lineSeparator() + X.getFullStackTrace(err));
 
-            logger.info("Control utility has completed execution at: " + endTime.format(U.CLI_FORMAT));
-            logger.info("Execution time: " + diff.toMillis() + " ms");
+            printExecutionTime(logger, endTime, diff);
 
             if (logger instanceof IgniteLoggerEx)
                 ((IgniteLoggerEx)logger).flush();
@@ -768,5 +767,11 @@ public class CommandHandler implements CLICommandFrontend {
         logger.info(DOUBLE_INDENT + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
         logger.info(DOUBLE_INDENT + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
         logger.info(DOUBLE_INDENT + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
+    }
+
+    /** */
+    public static void printExecutionTime(IgniteLogger logger, LocalDateTime endTime, Duration diff) {
+        logger.info("Control utility has completed execution at: " + endTime.format(U.CLI_FORMAT));
+        logger.info("Execution time: " + diff.toMillis() + " ms");
     }
 }
