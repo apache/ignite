@@ -1938,7 +1938,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }));
 
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
-        CLICommandFrontend cmd = cliFactory.apply(new JavaLogger(log, false));
+        CLICommandFrontend cmd = cli.apply(new JavaLogger(log, false));
 
         assertEquals(resCode, execute(cmd, BASELINE.text()));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);

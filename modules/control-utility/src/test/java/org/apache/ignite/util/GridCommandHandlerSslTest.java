@@ -82,7 +82,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         assertFalse(ignite.cluster().state().active());
 
-        final CLICommandFrontend cmd = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend cmd = cli.apply(createTestLogger());
 
         List<String> params = new ArrayList<>();
 

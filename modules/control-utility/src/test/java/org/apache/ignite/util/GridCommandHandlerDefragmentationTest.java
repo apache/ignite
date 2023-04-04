@@ -466,6 +466,6 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             }
         }));
 
-        return cliFactory.apply(new JavaLogger(log, false));
+        return cli.apply(new JavaLogger(log, false));
     }
 }

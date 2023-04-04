@@ -137,7 +137,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);
@@ -172,7 +172,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
         injectTestSystemOut();
         idxRebuildsStartedNum.set(0);
 
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         stopGrid(GRIDS_NUM - 1);
         stopGrid(GRIDS_NUM - 2);

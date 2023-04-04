@@ -103,7 +103,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerUtilityAwareA
 
         assertEquals(
             EXIT_CODE_OK,
-            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            cli.apply(createTestLogger()).execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         assertTrue(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
@@ -188,13 +188,13 @@ public abstract class BaselineEventsTest extends GridCommandHandlerUtilityAwareA
 
         assertEquals(
             EXIT_CODE_OK,
-            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            cli.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(autoAdjustEnabled::get, 3_000));
 
         assertEquals(
             EXIT_CODE_OK,
-            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
+            cli.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "disable", "--yes"))
         );
         assertFalse(autoAdjustEnabled.get());
 
@@ -228,7 +228,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerUtilityAwareA
 
         assertEquals(
             EXIT_CODE_OK,
-            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
+            cli.apply(createTestLogger()).execute(Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes"))
         );
         assertTrue(GridTestUtils.waitForCondition(() -> autoAdjustTimeout.get() == 10L, 3_000));
 
@@ -264,7 +264,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerUtilityAwareA
 
         assertEquals(
             EXIT_CODE_OK,
-            cliFactory.apply(createTestLogger()).execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
+            cli.apply(createTestLogger()).execute(Arrays.asList("--baseline", "set", consistentIds, "--yes"))
         );
 
         awaitPartitionMapExchange();
@@ -277,7 +277,7 @@ public abstract class BaselineEventsTest extends GridCommandHandlerUtilityAwareA
 
         assertEquals(
             EXIT_CODE_OK,
-            cliFactory.apply(createTestLogger()).execute(
+            cli.apply(createTestLogger()).execute(
                 Arrays.asList("--baseline", "auto_adjust", "enable", "timeout", "10", "--yes")
             )
         );

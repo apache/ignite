@@ -80,7 +80,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--index-name", idxName));
 
@@ -128,7 +128,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list",
             "--node-id", grid(0).localNode().id().toString(),
@@ -151,7 +151,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         injectTestSystemOut();
 
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         try {
             ignite.createCache(tmpCacheName);
@@ -210,7 +210,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkGroup(String grpRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--group-name", grpRegEx));
 
@@ -257,7 +257,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** */
     private void checkCacheNameFilter(String cacheRegEx, Predicate<String> predicate, int expectedResNum) {
-        final CLICommandFrontend handler = cliFactory.apply(createTestLogger());
+        final CLICommandFrontend handler = cli.apply(createTestLogger());
 
         assertEquals(EXIT_CODE_OK, execute(handler, "--cache", "indexes_list", "--cache-name", cacheRegEx));
 

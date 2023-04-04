@@ -102,7 +102,7 @@ public class GridCommandHandlerTracingConfigurationTest extends GridCommandHandl
 
         ignite = startGrids(2);
 
-        hnd = cliFactory.apply(createTestLogger());
+        hnd = cli.apply(createTestLogger());
     }
 
     /** {@inheritDoc} */

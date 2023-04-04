@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.commands.impl.CLICommandFrontendImpl.AS
 /**
  *
  */
-public class CliHelpTest extends GridCommandHandlerAbstractTest {
+public class CommandUtilsHelpParityTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testHelpParity() {
@@ -55,12 +55,12 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private void doTest(boolean experimentalEnabled) {
-        Function<IgniteLogger, CLICommandFrontend> cliFactory0 = cliFactory;
+        Function<IgniteLogger, CLICommandFrontend> cliFactory0 = cli;
 
         try {
             injectTestSystemOut();
 
-            cliFactory = CommandHandler::new;
+            cli = CommandHandler::new;
 
             assertEquals(EXIT_CODE_OK, execute("--help"));
 
@@ -70,7 +70,7 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
 
             injectTestSystemOut();
 
-            cliFactory = CLICommandFrontendImpl::new;
+            cli = CLICommandFrontendImpl::new;
 
             assertEquals(EXIT_CODE_OK, execute("--help"));
 
@@ -88,7 +88,7 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
             diff(controlShOut, cliFrontendOut);
         }
         finally {
-            cliFactory = cliFactory0;
+            cli = cliFactory0;
         }
     }
 

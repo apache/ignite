@@ -123,7 +123,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerUti
 
         crd.cluster().state(ACTIVE);
 
-        CLICommandFrontend cmd = cliFactory.apply(createTestLogger());
+        CLICommandFrontend cmd = cli.apply(createTestLogger());
 
         AtomicInteger keyStorePwdCnt = new AtomicInteger();
         AtomicInteger trustStorePwdCnt = new AtomicInteger();
@@ -177,7 +177,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerUti
 
         injectTestSystemOut();
 
-        CLICommandFrontend hnd = cliFactory.apply(createTestLogger());
+        CLICommandFrontend hnd = cli.apply(createTestLogger());
 
         int exitCode = hnd.execute(Arrays.asList(
             "--state",

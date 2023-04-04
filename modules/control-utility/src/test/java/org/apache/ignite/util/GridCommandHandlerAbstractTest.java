@@ -357,7 +357,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerU
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(cliFactory.apply(createTestLogger()), args);
+        return execute(cli.apply(createTestLogger()), args);
     }
 
     /**
