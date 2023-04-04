@@ -40,6 +40,9 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
  * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
  */
 public interface Command<T> {
+    /** */
+    public String EXPERIMENTAL_LABEL = "[EXPERIMENTAL]";
+
     /**
      * Method to create thin client for communication with cluster.
      *
@@ -147,7 +150,7 @@ public interface Command<T> {
         logger.info("");
 
         if (experimental())
-            logger.info(INDENT + "[EXPERIMENTAL]");
+            logger.info(INDENT + EXPERIMENTAL_LABEL);
 
         logger.info(INDENT + desc);
         logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));

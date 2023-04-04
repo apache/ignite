@@ -28,7 +28,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.commands.impl.CLICommandFrontendImpl;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.commandline.Command.EXPERIMENTAL_LABEL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.TIME_PREFIX;
 import static org.apache.ignite.internal.commands.impl.CLICommandFrontendImpl.ASCII_LOGO;
@@ -40,6 +43,18 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testHelpParity() {
+        doTest(true);
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testHelpParityWithoutExperimental() {
+        doTest(false);
+    }
+
+    /** */
+    private void doTest(boolean experimentalEnabled) {
         Function<IgniteLogger, CLICommandFrontend> cliFactory0 = cliFactory;
 
         try {
@@ -60,6 +75,15 @@ public class CliHelpTest extends GridCommandHandlerAbstractTest {
             assertEquals(EXIT_CODE_OK, execute("--help"));
 
             String cliFrontendOut = testOut.toString();
+
+            if (experimentalEnabled) {
+                assertTrue(controlShOut.contains(EXPERIMENTAL_LABEL));
+                assertTrue(cliFrontendOut.contains(EXPERIMENTAL_LABEL));
+            }
+            else {
+                assertFalse(controlShOut.contains(EXPERIMENTAL_LABEL));
+                assertFalse(cliFrontendOut, cliFrontendOut.contains(EXPERIMENTAL_LABEL));
+            }
 
             diff(controlShOut, cliFrontendOut);
         }

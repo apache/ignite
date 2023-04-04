@@ -42,9 +42,19 @@ public class CLIArgumentParser {
     private final Map<String, Object> parsedArgs = new HashMap<>();
 
     /** */
+    private final boolean failOnUnknown;
+
+    /** */
     public CLIArgumentParser(List<CLIArgument<?>> argConfiguration) {
+        this(argConfiguration, true);
+    }
+
+    /** */
+    public CLIArgumentParser(List<CLIArgument<?>> argConfiguration, boolean failOnUnknown) {
         for (CLIArgument<?> cliArgument : argConfiguration)
             this.argConfiguration.put(cliArgument.name(), cliArgument);
+
+        this.failOnUnknown = failOnUnknown;
     }
 
     /**
@@ -62,8 +72,12 @@ public class CLIArgumentParser {
 
             CLIArgument<?> cliArg = argConfiguration.get(arg);
 
-            if (cliArg == null)
-                throw new IgniteException("Unexpected argument: " + arg);
+            if (cliArg == null) {
+                if (failOnUnknown)
+                    throw new IgniteException("Unexpected argument: " + arg);
+
+                continue;
+            }
 
             if (cliArg.type().equals(Boolean.class))
                 parsedArgs.put(cliArg.name(), true);

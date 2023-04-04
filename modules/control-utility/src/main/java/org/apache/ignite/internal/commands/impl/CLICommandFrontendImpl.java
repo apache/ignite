@@ -30,6 +30,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.GridConsole;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
@@ -40,8 +41,10 @@ import org.apache.ignite.internal.commands.api.EnumDescription;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.commandline.Command.EXPERIMENTAL_LABEL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.TIME_PREFIX;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
@@ -105,6 +108,9 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     private final CommandsRegistry registry = new CommandsRegistry();
 
     /** */
+    private boolean experimentalEnabled;
+
+    /** */
     public CLICommandFrontendImpl(IgniteLogger logger) {
         this.logger = logger;
 
@@ -125,8 +131,13 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             optionalArg(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE", String.class),
             optionalArg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class),
             optionalArg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", String.class),
-            optionalArg(CMD_ENABLE_EXPERIMENTAL, "", Boolean.class)
-        ));
+            optionalArg(
+                CMD_ENABLE_EXPERIMENTAL,
+                "",
+                Boolean.class,
+                () -> IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND)
+            )
+        ), false);
     }
 
     /** */
@@ -140,6 +151,10 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** {@inheritDoc} */
     @Override public int execute(List<String> args) {
+        commonArgsParser.parse(args.iterator());
+
+        experimentalEnabled = commonArgsParser.get(CMD_ENABLE_EXPERIMENTAL);
+
         LocalDateTime startTime = LocalDateTime.now();
 
         logCommonInfo();
@@ -164,7 +179,12 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         logger.info("");
         logger.info("This utility can do the following commands:");
 
-        registry.iterator().forEachRemaining(cmd -> usage(cmd, Collections.emptyList()));
+        registry.iterator().forEachRemaining(cmd -> {
+            if (cmd.experimental() && !experimentalEnabled)
+                return;
+
+            usage(cmd, Collections.emptyList());
+        });
 
         CommandHandler.printCommonInfo(logger);
     }
@@ -245,7 +265,12 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
             parents0.add((CommandWithSubs)cmd);
 
-            ((CommandWithSubs)cmd).subcommands().forEach(cmd0 -> usage(cmd0, parents0));
+            ((CommandWithSubs)cmd).subcommands().forEach(cmd0 -> {
+                if (cmd0.experimental() && !experimentalEnabled)
+                    return;
+
+                usage(cmd0, parents0);
+            });
         }
     }
 
@@ -282,7 +307,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     /** */
     private void printExample(Command cmd, List<CommandWithSubs> parents) {
         if (cmd.experimental())
-            logger.info(INDENT + "[EXPERIMENTAL]");
+            logger.info(INDENT + EXPERIMENTAL_LABEL);
         logger.info(INDENT + cmd.description() + ":");
 
         StringBuilder bldr =
