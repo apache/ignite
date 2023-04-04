@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.commands.kill;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class KillCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new KillComputeCommand(),
-            new KillServiceCommand(),
-            new KillTransactionCommand(),
-            new KillSqlCommand(),
-            new KillScanCommand(),
-            new KillContinuousCommand(),
-            new KillClientCommand(),
-            new KillSnapshotCommand()
-        );
+public class KillCommand extends CommandWithSubs {
+    /** */
+    public KillCommand() {
+        register(new KillComputeCommand());
+        register(new KillServiceCommand());
+        register(new KillTransactionCommand());
+        register(new KillSqlCommand());
+        register(new KillScanCommand());
+        register(new KillContinuousCommand());
+        register(new KillClientCommand());
+        register(new KillSnapshotCommand());
     }
 }

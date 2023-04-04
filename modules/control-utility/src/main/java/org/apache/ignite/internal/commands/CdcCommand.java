@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.commands;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class CdcCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new CdcDeleteLostSegmentLinksCommand()
-        );
+public class CdcCommand extends CommandWithSubs {
+    /** */
+    public CdcCommand() {
+        register(new CdcDeleteLostSegmentLinksCommand());
     }
 }

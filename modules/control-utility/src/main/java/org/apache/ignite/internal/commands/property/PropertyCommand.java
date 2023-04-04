@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.commands.property;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class PropertyCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new PropertyHelpCommand(),
-            new PropertyListCommand(),
-            new PropertyGetCommand(),
-            new PropertySetCommand()
-        );
+public class PropertyCommand extends CommandWithSubs {
+    /** */
+    public PropertyCommand() {
+        register(new PropertyHelpCommand());
+        register(new PropertyListCommand());
+        register(new PropertyGetCommand());
+        register(new PropertySetCommand());
     }
 }

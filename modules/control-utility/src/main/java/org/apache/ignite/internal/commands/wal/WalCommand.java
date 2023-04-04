@@ -17,20 +17,15 @@
 
 package org.apache.ignite.internal.commands.wal;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class WalCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new WalPrintCommand(),
-            new WalDeleteCommand()
-        );
+public class WalCommand extends CommandWithSubs {
+    /** */
+    public WalCommand() {
+        register(new WalPrintCommand());
+        register(new WalDeleteCommand());
     }
 }

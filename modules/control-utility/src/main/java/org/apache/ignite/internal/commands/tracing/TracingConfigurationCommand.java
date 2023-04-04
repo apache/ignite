@@ -17,25 +17,20 @@
 
 package org.apache.ignite.internal.commands.tracing;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 
 /**
  *
  */
-public class TracingConfigurationCommand implements CommandWithSubs, ExperimentalCommand {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new TracingConfigurationGetAllCommand(),
-            new TracingConfigurationGetCommand(),
-            new TracingConfigurationResetAllCommand(),
-            new TracingConfigurationResetCommand(),
-            new TracingConfigurationSetCommand()
-        );
+public class TracingConfigurationCommand extends CommandWithSubs implements ExperimentalCommand {
+    /** */
+    public TracingConfigurationCommand() {
+        register(new TracingConfigurationGetAllCommand());
+        register(new TracingConfigurationGetCommand());
+        register(new TracingConfigurationResetAllCommand());
+        register(new TracingConfigurationResetCommand());
+        register(new TracingConfigurationSetCommand());
     }
 
     /** {@inheritDoc} */

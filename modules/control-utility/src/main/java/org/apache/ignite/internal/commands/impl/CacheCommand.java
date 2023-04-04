@@ -17,19 +17,14 @@
 
 package org.apache.ignite.internal.commands.impl;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class CacheCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new CacheHelpCommand()
-        );
+public class CacheCommand extends CommandWithSubs {
+    /** */
+    public CacheCommand() {
+        register(new CacheHelpCommand());
     }
 }

@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.commands.performancestatistics;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class PerformanceStatisticsCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new PerformanceStatisticsStartCommand(),
-            new PerformanceStatisticsStopCommand(),
-            new PerformanceStatisticsRotateCommand(),
-            new PerformanceStatisticsStatusCommand()
-        );
+public class PerformanceStatisticsCommand extends CommandWithSubs {
+    /** */
+    public PerformanceStatisticsCommand() {
+        register(new PerformanceStatisticsStartCommand());
+        register(new PerformanceStatisticsStopCommand());
+        register(new PerformanceStatisticsRotateCommand());
+        register(new PerformanceStatisticsStatusCommand());
     }
 }

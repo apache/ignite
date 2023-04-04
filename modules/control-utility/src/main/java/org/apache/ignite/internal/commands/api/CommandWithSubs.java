@@ -18,26 +18,46 @@
 package org.apache.ignite.internal.commands.api;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.apache.ignite.internal.commands.impl.CommandUtils;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 
 /**
  *
  */
-public interface CommandWithSubs extends Command {
+public abstract class CommandWithSubs implements Command {
     /** */
-    public Collection<Command> subcommands();
+    private final Map<String, Command> commands = new LinkedHashMap<>();
 
     /** */
-    public default boolean positionalSubsName() {
+    public Collection<Command> subcommands() {
+        return commands.values();
+    }
+
+    /** */
+    public void register(Command cmd) {
+        String name = cmd.getClass().getSimpleName();
+
+        if (!name.endsWith(CommandUtils.CMD_NAME_POSTFIX))
+            throw new IllegalArgumentException("Command class name must ends with 'Command'");
+
+        commands.put(commandName(cmd.getClass(), CMD_WORDS_DELIM), cmd);
+    }
+
+    /** */
+    public boolean positionalSubsName() {
         return true;
     }
 
     /** */
-    public default boolean canBeExecuted() {
+    public boolean canBeExecuted() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override default String description() {
+    @Override public String description() {
         return null;
     }
 }

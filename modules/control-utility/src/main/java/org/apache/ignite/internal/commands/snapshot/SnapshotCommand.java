@@ -17,23 +17,18 @@
 
 package org.apache.ignite.internal.commands.snapshot;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class SnapshotCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new SnapshotCreateCommand(),
-            new SnapshotCancelCommand(),
-            new SnapshotCheckCommand(),
-            new SnapshotRestoreCommand(),
-            new SnapshotStatusCommand()
-        );
+public class SnapshotCommand extends CommandWithSubs {
+    /** */
+    public SnapshotCommand() {
+        register(new SnapshotCreateCommand());
+        register(new SnapshotCancelCommand());
+        register(new SnapshotCheckCommand());
+        register(new SnapshotRestoreCommand());
+        register(new SnapshotStatusCommand());
     }
 }

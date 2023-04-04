@@ -17,21 +17,16 @@
 
 package org.apache.ignite.internal.commands.persistence;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class PersistenceCleanCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new PersistenceCleanCorruptedCommand(),
-            new PersistenceCleanAllCommand(),
-            new PersistenceCleanCachesCommand()
-        );
+public class PersistenceCleanCommand extends CommandWithSubs {
+    /** */
+    public PersistenceCleanCommand() {
+        register(new PersistenceCleanCorruptedCommand());
+        register(new PersistenceCleanAllCommand());
+        register(new PersistenceCleanCachesCommand());
     }
 }

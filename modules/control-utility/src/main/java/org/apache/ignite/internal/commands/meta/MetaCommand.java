@@ -17,23 +17,18 @@
 
 package org.apache.ignite.internal.commands.meta;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class MetaCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new MetaHelpCommand(),
-            new MetaListCommand(),
-            new MetaDetailsCommand(),
-            new MetaRemoveCommand(),
-            new MetaUpdateCommand()
-        );
+public class MetaCommand extends CommandWithSubs {
+    /** */
+    public MetaCommand() {
+        register(new MetaHelpCommand());
+        register(new MetaListCommand());
+        register(new MetaDetailsCommand());
+        register(new MetaRemoveCommand());
+        register(new MetaUpdateCommand());
     }
 }

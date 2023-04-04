@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.commands;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
@@ -30,7 +27,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class MetricCommand implements CommandWithSubs {
+public class MetricCommand extends CommandWithSubs {
     /** Metric name. */
     @PositionalParameter(description = "Name of the metric which value should be printed. " +
         "If name of the metric registry is specified, value of all its metrics will be printed")
@@ -43,12 +40,10 @@ public class MetricCommand implements CommandWithSubs {
     )
     private UUID nodeId;
 
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new MetricConfigureHistogramCommand(),
-            new MetricConfigureHitrateCommand()
-        );
+    /** */
+    public MetricCommand() {
+        register(new MetricConfigureHistogramCommand());
+        register(new MetricConfigureHitrateCommand());
     }
 
     /** {@inheritDoc} */

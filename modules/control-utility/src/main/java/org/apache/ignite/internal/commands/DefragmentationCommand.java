@@ -17,20 +17,15 @@
 
 package org.apache.ignite.internal.commands;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class DefragmentationCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new DefragmentationScheduleCommand(),
-            new DefragmentationCancelCommand()
-        );
+public class DefragmentationCommand extends CommandWithSubs {
+    /** */
+    public DefragmentationCommand() {
+        register(new DefragmentationScheduleCommand());
+        register(new DefragmentationCancelCommand());
     }
 }

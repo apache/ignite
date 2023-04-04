@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.commands.encryption;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class EncryptionCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new EncryptionGetMasterKeyNameCommand(),
-            new EncryptionChangeMasterKeyCommand(),
-            new EncryptionChangeCacheKeyCommand(),
-            new EncryptionCacheKeyIdsCommand(),
-            new EncryptionReencryptionStatusCommand(),
-            new EncryptionSuspendReencryptionCommand(),
-            new EncryptionResumeReencryptionCommand(),
-            new EncryptionReencryptionRateLimitCommand()
-        );
+public class EncryptionCommand extends CommandWithSubs {
+    /** */
+    public EncryptionCommand() {
+        register(new EncryptionGetMasterKeyNameCommand());
+        register(new EncryptionChangeMasterKeyCommand());
+        register(new EncryptionChangeCacheKeyCommand());
+        register(new EncryptionCacheKeyIdsCommand());
+        register(new EncryptionReencryptionStatusCommand());
+        register(new EncryptionSuspendReencryptionCommand());
+        register(new EncryptionResumeReencryptionCommand());
+        register(new EncryptionReencryptionRateLimitCommand());
     }
 }

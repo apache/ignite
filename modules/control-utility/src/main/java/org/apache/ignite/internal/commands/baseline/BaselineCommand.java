@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.commands.baseline;
 
-import java.util.Arrays;
-import java.util.Collection;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 import org.apache.ignite.internal.commands.api.Parameter;
 
@@ -28,7 +25,7 @@ import org.apache.ignite.internal.commands.api.Parameter;
  *
  */
 @Data
-public class BaselineCommand implements CommandWithSubs {
+public class BaselineCommand extends CommandWithSubs {
     /** */
     @Parameter(optional = true, description = "Show the full list of node ips")
     private Boolean verbose;
@@ -43,14 +40,12 @@ public class BaselineCommand implements CommandWithSubs {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new BaselineAddCommand(),
-            new BaselineRemoveCommand(),
-            new BaselineSetCommand(),
-            new BaselineVersionCommand(),
-            new BaselineAutoAdjustCommand()
-        );
+    /** */
+    public BaselineCommand() {
+        register(new BaselineAddCommand());
+        register(new BaselineRemoveCommand());
+        register(new BaselineSetCommand());
+        register(new BaselineVersionCommand());
+        register(new BaselineAutoAdjustCommand());
     }
 }

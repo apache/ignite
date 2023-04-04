@@ -111,6 +111,9 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     private boolean experimentalEnabled;
 
     /** */
+    private boolean verbose;
+
+    /** */
     public CLICommandFrontendImpl(IgniteLogger logger) {
         this.logger = logger;
 
@@ -154,6 +157,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         commonArgsParser.parse(args.iterator());
 
         experimentalEnabled = commonArgsParser.get(CMD_ENABLE_EXPERIMENTAL);
+        verbose = commonArgsParser.get(CMD_VERBOSE);
 
         LocalDateTime startTime = LocalDateTime.now();
 
@@ -162,11 +166,37 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         if (CommandHandler.isHelp(args))
             printUsage();
 
+        parseCommand(args);
+
         LocalDateTime endTime = LocalDateTime.now();
 
         CommandHandler.printExecutionTime(logger, endTime, Duration.between(startTime, endTime));
 
         return EXIT_CODE_OK;
+    }
+
+    /** */
+    private void parseCommand(List<String> args) {
+        Command cmd = null;
+
+        int i = 0;
+
+        while (i < args.size()) {
+            String arg = args.get(i);
+
+            i++;
+
+            if (!arg.startsWith(PARAMETER_PREFIX))
+                continue;
+
+            cmd = registry.command(arg);
+
+            if (!(cmd instanceof CommandWithSubs))
+                break;
+        }
+
+        //Parse arguments.
+
     }
 
     /** */

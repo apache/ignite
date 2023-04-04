@@ -17,21 +17,16 @@
 
 package org.apache.ignite.internal.commands;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-public class ConsistencyCommand implements CommandWithSubs {
-    /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new ConsistencyRepairCommand(),
-            new ConsistencyStatusCommand(),
-            new ConsistencyFinalizeCommand()
-        );
+public class ConsistencyCommand extends CommandWithSubs {
+    /** */
+    public ConsistencyCommand() {
+        register(new ConsistencyRepairCommand());
+        register(new ConsistencyStatusCommand());
+        register(new ConsistencyFinalizeCommand());
     }
 }

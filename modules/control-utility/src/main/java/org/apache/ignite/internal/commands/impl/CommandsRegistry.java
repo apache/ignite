@@ -94,6 +94,11 @@ public class CommandsRegistry implements Iterable<Command> {
         commands.put(commandName(cmd.getClass(), CMD_WORDS_DELIM), cmd);
     }
 
+    /** */
+    public Command command(String name) {
+        return commands.get(name);
+    }
+
     /** {@inheritDoc} */
     @Override public Iterator<Command> iterator() {
         return commands.values().iterator();
