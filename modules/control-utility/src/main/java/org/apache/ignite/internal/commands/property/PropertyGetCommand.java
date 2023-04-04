@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands.property;
 
-import org.apache.ignite.internal.commands.api.ExperimentalCommand;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
-public class MetaListCommand implements ExperimentalCommand {
+public class PropertyGetCommand implements Command {
+    /** */
+    @Parameter(example = "<property_name>")
+    private String name;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Print list of binary metadata types";
+        return "Get the property value";
     }
 }

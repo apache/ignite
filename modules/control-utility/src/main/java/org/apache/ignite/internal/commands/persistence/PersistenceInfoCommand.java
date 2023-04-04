@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands.persistence;
 
-import lombok.Data;
-import org.apache.ignite.internal.commands.api.ExperimentalCommand;
-import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.Command;
 
 /**
  *
  */
-@Data
-public class MetaDetailsCommand implements ExperimentalCommand {
-    /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
-    private long typeId;
-
-    /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
-    private String typeName;
-
+public class PersistenceInfoCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Print detailed info about specified binary type " +
-            "(the type must be specified by type name or by type identifier)";
+        return "The same information is printed when info subcommand is passed";
     }
 }

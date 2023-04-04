@@ -87,7 +87,8 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
         list.add(optional(TxCommandArg.TX_DURATION, "SECONDS"));
         list.add(optional(TxCommandArg.TX_SIZE, "SIZE"));
         list.add(optional(TxCommandArg.TX_LABEL, "PATTERN_REGEX"));
-        list.add(optional(or(TxCommandArg.TX_SERVERS, TxCommandArg.TX_CLIENTS)));
+        list.add(optional(TxCommandArg.TX_SERVERS));
+        list.add(optional(TxCommandArg.TX_CLIENTS));
         list.add(optional(TxCommandArg.TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
         list.add(optional(TxCommandArg.TX_LIMIT, "NUMBER"));
         list.add(optional(TxCommandArg.TX_ORDER, or(VisorTxSortOrder.values())));

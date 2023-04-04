@@ -15,27 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.meta;
 
-import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/** */
+/**
+ *
+ */
 @Data
-public class BaselineAddCommand implements Command {
+public class MetaDetailsCommand implements ExperimentalCommand {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private List<Object> consistentIDs;
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    private long typeId;
 
     /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    private String typeName;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Add nodes into baseline topology";
+        return "Print detailed info about specified binary type " +
+            "(the type must be specified by type name or by type identifier)";
     }
 }

@@ -15,34 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands.baseline;
 
+import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.ExperimentalCommand;
+import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/**
- *
- */
+/** */
 @Data
-public class MetaRemoveCommand implements ExperimentalCommand {
+public class BaselineRemoveCommand implements Command {
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
-    private long typeId;
+    @PositionalParameter(javaStyleExample = true)
+    private List<Object> consistentIDs;
 
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
-    private String typeName;
-
-    /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, example = "<fileName>")
-    private String out;
+    @Parameter(optional = true)
+    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Remove the metadata of the specified type " +
-            "(the type must be specified by type name or by type identifier) " +
-            "from cluster and saves the removed metadata to the specified file.\n" +
-            "If the file name isn't specified the output file name is: '<typeId>.bin'";
+        return "Remove nodes from baseline topology";
     }
 }

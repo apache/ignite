@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands.meta;
 
-import java.util.Arrays;
-import java.util.Collection;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import lombok.Data;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
+import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
-public class MetaCommand implements CommandWithSubs {
+@Data
+public class MetaUpdateCommand implements ExperimentalCommand {
+    /** */
+    @Parameter(javaStyleExample = true, javaStyleName = true, example = "<fileName>")
+    private String in;
+
     /** {@inheritDoc} */
-    @Override public Collection<Command> subcommands() {
-        return Arrays.asList(
-            new MetaHelpCommand(),
-            new MetaListCommand(),
-            new MetaDetailsCommand(),
-            new MetaRemoveCommand(),
-            new MetaUpdateCommand()
-        );
+    @Override public String description() {
+        return "Update cluster metadata from specified file (file name is required)";
     }
 }

@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.persistence;
 
-import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class BaselineVersionCommand implements Command {
-    /** */
-    @PositionalParameter(javaStyleExample = true)
-    private long topologyVersion;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
-
+public class PersistenceCleanAllCommand implements Command {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline topology based on version";
+        return "Clean directories of all caches";
     }
 }

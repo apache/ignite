@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.ExperimentalCommand;
-import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.OneOf;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
  */
-public class MetaUpdateCommand implements ExperimentalCommand {
+@OneOf({"gridCacheVer", "uuid"})
+public class TxInfoCommand implements Command {
     /** */
-    @Parameter(javaStyleExample = true, javaStyleName = true, example = "<fileName>")
-    private String in;
+    @PositionalParameter(
+        example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>")
+    private GridCacheVersion gridCacheVer;
+
+    /** */
+    @PositionalParameter(
+        example = "<TX identifier as UUID (can be retrieved via --tx command)>")
+    private IgniteUuid uuid;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Update cluster metadata from specified file (file name is required)";
+        return "Print detailed information (topology and key lock ownership) about specific transaction";
     }
 }

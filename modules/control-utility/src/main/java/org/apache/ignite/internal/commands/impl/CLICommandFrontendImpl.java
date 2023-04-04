@@ -207,7 +207,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     Parameter desc = fld.getAnnotation(Parameter.class);
 
                     String prefix = desc.withoutPrefix() ? "" : PREFIX;
-                    String example = desc.example().isEmpty() ? CommandUtils.examples(fld) : desc.example();
+                    String example = CommandUtils.examples(fld);
 
                     logger.info(
                         DOUBLE_INDENT + INDENT +
@@ -252,7 +252,13 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             fld -> res.compareAndSet(false, !fld.getAnnotation(PositionalParameter.class).description().isEmpty()),
             fld -> res.compareAndSet(false, !fld.getAnnotation(Parameter.class).description().isEmpty()),
             (spaceReq, flds) ->
-                flds.forEach(fld -> res.compareAndSet(false, !fld.getAnnotation(Parameter.class).description().isEmpty()))
+                flds.forEach(fld -> res.compareAndSet(
+                    false,
+                    !(fld.isAnnotationPresent(Parameter.class)
+                        ? fld.getAnnotation(Parameter.class).description()
+                        : fld.getAnnotation(PositionalParameter.class).description()
+                    ).isEmpty()
+                ))
         );
 
         return res.get();
@@ -297,24 +303,35 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
         BiConsumer<Boolean, Field> paramPrinter = (spaceReq, fld) -> {
             Parameter desc = fld.getAnnotation(Parameter.class);
+            PositionalParameter posDesc = fld.getAnnotation(PositionalParameter.class);
+
+            assert desc != null || posDesc != null;
+
+            boolean optional = (desc != null && desc.optional()) || (posDesc != null && posDesc.optional());
+            boolean withoutPrefix = desc == null || desc.withoutPrefix();
 
             if (spaceReq)
                 bldr.append(' ');
 
-            if (desc.optional())
+            if (optional)
                 bldr.append('[');
 
-            if (!desc.withoutPrefix())
+            if (!withoutPrefix)
                 bldr.append(PREFIX);
 
-            bldr.append(CommandUtils.parameterName(fld));
+            if (desc != null)
+                bldr.append(CommandUtils.parameterName(fld));
 
-            String examples = desc.example().isEmpty() ? CommandUtils.examples(fld) : desc.example();
+            String examples = CommandUtils.examples(fld);
 
-            if (!examples.isEmpty())
-                bldr.append(' ').append(examples);
+            if (!examples.isEmpty()) {
+                if (desc != null)
+                    bldr.append(' ');
 
-            if (desc.optional())
+                bldr.append(examples);
+            }
+
+            if (optional)
                 bldr.append(']');
         };
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.baseline;
 
 import java.util.Arrays;
 import java.util.Collection;

@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands.persistence;
 
-import org.apache.ignite.internal.commands.api.ExperimentalCommand;
+import java.util.List;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class MetaHelpCommand implements ExperimentalCommand {
+public class PersistenceCleanCachesCommand implements Command {
+    /** */
+    @PositionalParameter(example = "cache1,cache2,cache3")
+    private List<String> caches;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Print metadata command help";
+        return "Clean directories of only given caches";
     }
 }

@@ -21,21 +21,18 @@ import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/** */
+/**
+ *
+ */
 @Data
-public class BaselineRemoveCommand implements Command {
+public class DefragmentationScheduleCommand implements Command {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private List<Object> consistentIDs;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+    @Parameter(example = "consistentId0,consistentId1")
+    private List<String> nodes;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Remove nodes from baseline topology";
+        return "Schedule PDS defragmentation on given nodes for all caches";
     }
 }

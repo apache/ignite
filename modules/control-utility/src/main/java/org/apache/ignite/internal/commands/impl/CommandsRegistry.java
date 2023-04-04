@@ -21,18 +21,26 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.commands.ActivateCommand;
-import org.apache.ignite.internal.commands.BaselineCommand;
+import org.apache.ignite.internal.commands.ChangeTagCommand;
+import org.apache.ignite.internal.commands.ConsistencyCommand;
 import org.apache.ignite.internal.commands.DeactivateCommand;
+import org.apache.ignite.internal.commands.DefragmentationCommand;
 import org.apache.ignite.internal.commands.DiagnosticCommand;
 import org.apache.ignite.internal.commands.MetricCommand;
 import org.apache.ignite.internal.commands.SetStateCommand;
 import org.apache.ignite.internal.commands.ShutdownPolicyCommand;
 import org.apache.ignite.internal.commands.StateCommand;
 import org.apache.ignite.internal.commands.SystemViewCommand;
+import org.apache.ignite.internal.commands.TxCommand;
+import org.apache.ignite.internal.commands.WarmUpCommand;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.baseline.BaselineCommand;
 import org.apache.ignite.internal.commands.encryption.EncryptionCommand;
 import org.apache.ignite.internal.commands.kill.KillCommand;
+import org.apache.ignite.internal.commands.meta.MetaCommand;
 import org.apache.ignite.internal.commands.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.commands.persistence.PersistenceCommand;
+import org.apache.ignite.internal.commands.property.PropertyCommand;
 import org.apache.ignite.internal.commands.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.commands.wal.WalCommand;
 
@@ -50,6 +58,7 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new StateCommand());
         register(new SetStateCommand());
         register(new BaselineCommand());
+        register(new TxCommand());
         register(new WalCommand());
         register(new DiagnosticCommand());
         register(new EncryptionCommand());
@@ -58,9 +67,14 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new ChangeTagCommand());
         register(new MetaCommand());
         register(new ShutdownPolicyCommand());
+        register(new WarmUpCommand());
+        register(new PropertyCommand());
         register(new SystemViewCommand());
         register(new MetricCommand());
+        register(new PersistenceCommand());
+        register(new DefragmentationCommand());
         register(new PerformanceStatisticsCommand());
+        register(new ConsistencyCommand());
     }
 
     /** */

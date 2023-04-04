@@ -122,6 +122,19 @@ public class CommandUtils {
         if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
             return "";
 
+        if (fld.isAnnotationPresent(PositionalParameter.class)) {
+            String example = fld.getAnnotation(PositionalParameter.class).example();
+
+            if (!example.isEmpty())
+                return example;
+        }
+        else {
+            String example = fld.getAnnotation(Parameter.class).example();
+
+            if (!example.isEmpty())
+                return example;
+        }
+
         boolean optional = (fld.isAnnotationPresent(PositionalParameter.class)
             && fld.getAnnotation(PositionalParameter.class).optional());
 

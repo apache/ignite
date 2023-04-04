@@ -17,25 +17,25 @@
 
 package org.apache.ignite.internal.commands;
 
-import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/** */
+/**
+ *
+ */
 @Data
-public class BaselineSetCommand implements Command {
+public class ConsistencyRepairCommand implements ExperimentalCommand {
     /** */
-    @PositionalParameter(javaStyleExample = true)
-    private List<Object> consistentIDs;
+    @PositionalParameter(description = "Cache to be checked/repaired")
+    private String cacheName;
 
     /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+    @PositionalParameter(index = 1, description = "Cache's partition to be checked/repaired")
+    private long partition;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline topology";
+        return "Check/Repair cache consistency using Read Repair approach";
     }
 }

@@ -15,28 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.impl;
+package org.apache.ignite.internal.commands.meta;
 
-import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 
 /**
  *
  */
-@Data
-public class ChangeTagCommand implements Command {
-    /** */
-    @PositionalParameter(javaStyleExample = true)
-    private String newTagValue;
-
-    /** */
-    @Parameter(optional = true)
-    private boolean yes;
-
+public class MetaHelpCommand implements ExperimentalCommand {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Change cluster tag to new value";
+        return "Print metadata command help";
     }
 }

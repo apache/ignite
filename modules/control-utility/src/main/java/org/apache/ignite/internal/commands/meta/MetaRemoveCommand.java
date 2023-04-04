@@ -15,41 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commands.meta;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class BaselineAutoAdjustCommand implements Command {
+public class MetaRemoveCommand implements ExperimentalCommand {
     /** */
-    @PositionalParameter
-    private Enabled enabled;
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    private long typeId;
 
     /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    private String typeName;
 
     /** */
-    @Parameter(optional = true)
-    private Boolean yes;
+    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, example = "<fileName>")
+    private String out;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+        return "Remove the metadata of the specified type " +
+            "(the type must be specified by type name or by type identifier) " +
+            "from cluster and saves the removed metadata to the specified file.\n" +
+            "If the file name isn't specified the output file name is: '<typeId>.bin'";
     }
 }
