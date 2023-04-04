@@ -25,10 +25,10 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class MetaCommand extends CommandWithSubs {
     /** */
     public MetaCommand() {
-        register(new MetaHelpCommand());
-        register(new MetaListCommand());
-        register(new MetaDetailsCommand());
-        register(new MetaRemoveCommand());
-        register(new MetaUpdateCommand());
+        register(MetaHelpCommand::new);
+        register(MetaListCommand::new);
+        register(MetaDetailsCommand::new);
+        register(MetaRemoveCommand::new);
+        register(MetaUpdateCommand::new);
     }
 }

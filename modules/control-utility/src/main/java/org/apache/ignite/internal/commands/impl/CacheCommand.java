@@ -25,6 +25,6 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class CacheCommand extends CommandWithSubs {
     /** */
     public CacheCommand() {
-        register(new CacheHelpCommand());
+        register(CacheHelpCommand::new);
     }
 }

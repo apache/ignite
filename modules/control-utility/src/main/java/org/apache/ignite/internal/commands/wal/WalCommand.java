@@ -25,7 +25,7 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class WalCommand extends CommandWithSubs {
     /** */
     public WalCommand() {
-        register(new WalPrintCommand());
-        register(new WalDeleteCommand());
+        register(WalPrintCommand::new);
+        register(WalDeleteCommand::new);
     }
 }

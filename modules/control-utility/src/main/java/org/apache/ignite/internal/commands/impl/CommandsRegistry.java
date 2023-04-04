@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.commands.impl;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.apache.ignite.internal.commands.ActivateCommand;
 import org.apache.ignite.internal.commands.CdcCommand;
 import org.apache.ignite.internal.commands.ChangeTagCommand;
@@ -34,7 +31,7 @@ import org.apache.ignite.internal.commands.StateCommand;
 import org.apache.ignite.internal.commands.SystemViewCommand;
 import org.apache.ignite.internal.commands.TxCommand;
 import org.apache.ignite.internal.commands.WarmUpCommand;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 import org.apache.ignite.internal.commands.baseline.BaselineCommand;
 import org.apache.ignite.internal.commands.encryption.EncryptionCommand;
 import org.apache.ignite.internal.commands.kill.KillCommand;
@@ -45,62 +42,37 @@ import org.apache.ignite.internal.commands.property.PropertyCommand;
 import org.apache.ignite.internal.commands.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.commands.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.commands.wal.WalCommand;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 
 /**
  *
  */
-public class CommandsRegistry implements Iterable<Command> {
-    /** */
-    private final Map<String, Command> commands = new LinkedHashMap<>();
-
+public class CommandsRegistry extends CommandWithSubs {
     /** */
     public CommandsRegistry() {
-        register(new ActivateCommand());
-        register(new DeactivateCommand());
-        register(new StateCommand());
-        register(new SetStateCommand());
-        register(new BaselineCommand());
-        register(new TxCommand());
-        register(new CacheCommand());
-        register(new WalCommand());
-        register(new DiagnosticCommand());
-        register(new EncryptionCommand());
-        register(new KillCommand());
-        register(new SnapshotCommand());
-        register(new ChangeTagCommand());
-        register(new MetaCommand());
-        register(new ShutdownPolicyCommand());
-        register(new TracingConfigurationCommand());
-        register(new WarmUpCommand());
-        register(new PropertyCommand());
-        register(new SystemViewCommand());
-        register(new MetricCommand());
-        register(new PersistenceCommand());
-        register(new DefragmentationCommand());
-        register(new PerformanceStatisticsCommand());
-        register(new ConsistencyCommand());
-        register(new CdcCommand());
-    }
-
-    /** */
-    public void register(Command cmd) {
-        String name = cmd.getClass().getSimpleName();
-
-        if (!name.endsWith(CommandUtils.CMD_NAME_POSTFIX))
-            throw new IllegalArgumentException("Command class name must ends with 'Command'");
-
-        commands.put(commandName(cmd.getClass(), CMD_WORDS_DELIM), cmd);
-    }
-
-    /** */
-    public Command command(String name) {
-        return commands.get(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Command> iterator() {
-        return commands.values().iterator();
+        register(ActivateCommand::new);
+        register(DeactivateCommand::new);
+        register(StateCommand::new);
+        register(SetStateCommand::new);
+        register(BaselineCommand::new);
+        register(TxCommand::new);
+        register(CacheCommand::new);
+        register(WalCommand::new);
+        register(DiagnosticCommand::new);
+        register(EncryptionCommand::new);
+        register(KillCommand::new);
+        register(SnapshotCommand::new);
+        register(ChangeTagCommand::new);
+        register(MetaCommand::new);
+        register(ShutdownPolicyCommand::new);
+        register(TracingConfigurationCommand::new);
+        register(WarmUpCommand::new);
+        register(PropertyCommand::new);
+        register(SystemViewCommand::new);
+        register(MetricCommand::new);
+        register(PersistenceCommand::new);
+        register(DefragmentationCommand::new);
+        register(PerformanceStatisticsCommand::new);
+        register(ConsistencyCommand::new);
+        register(CdcCommand::new);
     }
 }

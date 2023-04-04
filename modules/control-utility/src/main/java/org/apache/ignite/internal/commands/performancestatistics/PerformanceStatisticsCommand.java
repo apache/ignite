@@ -25,9 +25,9 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class PerformanceStatisticsCommand extends CommandWithSubs {
     /** */
     public PerformanceStatisticsCommand() {
-        register(new PerformanceStatisticsStartCommand());
-        register(new PerformanceStatisticsStopCommand());
-        register(new PerformanceStatisticsRotateCommand());
-        register(new PerformanceStatisticsStatusCommand());
+        register(PerformanceStatisticsStartCommand::new);
+        register(PerformanceStatisticsStopCommand::new);
+        register(PerformanceStatisticsRotateCommand::new);
+        register(PerformanceStatisticsStatusCommand::new);
     }
 }

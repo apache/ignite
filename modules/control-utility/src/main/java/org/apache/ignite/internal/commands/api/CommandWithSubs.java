@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commands.api;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.ignite.internal.commands.impl.CommandUtils;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
@@ -27,23 +28,29 @@ import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 /**
  *
  */
-public abstract class CommandWithSubs implements Command {
+public class CommandWithSubs implements Command {
     /** */
-    private final Map<String, Command> commands = new LinkedHashMap<>();
+    private final Map<String, Supplier<Command>> commands = new LinkedHashMap<>();
 
     /** */
-    public Collection<Command> subcommands() {
+    public Collection<Supplier<Command>> subcommands() {
         return commands.values();
     }
 
     /** */
-    public void register(Command cmd) {
-        String name = cmd.getClass().getSimpleName();
+    public void register(Supplier<Command> cmd) {
+        Command cmdInstance = cmd.get();
+        String name = cmdInstance.getClass().getSimpleName();
 
         if (!name.endsWith(CommandUtils.CMD_NAME_POSTFIX))
             throw new IllegalArgumentException("Command class name must ends with 'Command'");
 
-        commands.put(commandName(cmd.getClass(), CMD_WORDS_DELIM), cmd);
+        commands.put(commandName(cmdInstance.getClass(), CMD_WORDS_DELIM), cmd);
+    }
+
+    /** */
+    public Command command(String name) {
+        return commands.get(name).get();
     }
 
     /** */

@@ -25,13 +25,13 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class KillCommand extends CommandWithSubs {
     /** */
     public KillCommand() {
-        register(new KillComputeCommand());
-        register(new KillServiceCommand());
-        register(new KillTransactionCommand());
-        register(new KillSqlCommand());
-        register(new KillScanCommand());
-        register(new KillContinuousCommand());
-        register(new KillClientCommand());
-        register(new KillSnapshotCommand());
+        register(KillComputeCommand::new);
+        register(KillServiceCommand::new);
+        register(KillTransactionCommand::new);
+        register(KillSqlCommand::new);
+        register(KillScanCommand::new);
+        register(KillContinuousCommand::new);
+        register(KillClientCommand::new);
+        register(KillSnapshotCommand::new);
     }
 }

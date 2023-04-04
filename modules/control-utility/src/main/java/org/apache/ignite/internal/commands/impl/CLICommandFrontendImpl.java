@@ -105,7 +105,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     private final CLIArgumentParser commonArgsParser;
 
     /** */
-    private final CommandsRegistry registry = new CommandsRegistry();
+    private final CommandWithSubs registry = new CommandsRegistry();
 
     /** */
     private boolean experimentalEnabled;
@@ -165,8 +165,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
         if (CommandHandler.isHelp(args))
             printUsage();
-
-        parseCommand(args);
+        else
+            parseCommand(args);
 
         LocalDateTime endTime = LocalDateTime.now();
 
@@ -186,17 +186,31 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
             i++;
 
-            if (!arg.startsWith(PARAMETER_PREFIX))
+            if (cmd == null && !arg.startsWith(PARAMETER_PREFIX))
                 continue;
 
-            cmd = registry.command(arg);
+            Command cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
+
+            if (cmd0 == null) {
+                if (cmd instanceof CommandWithSubs) {
+                    if (!((CommandWithSubs)cmd).canBeExecuted())
+                        throw new IllegalArgumentException("Unknown argument " + arg);
+
+                    i--;
+
+                    break;
+                }
+
+                continue;
+            }
+
+            cmd = cmd0;
 
             if (!(cmd instanceof CommandWithSubs))
                 break;
         }
 
-        //Parse arguments.
-
+        logger.info(cmd.getClass().getName());
     }
 
     /** */
@@ -209,7 +223,9 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         logger.info("");
         logger.info("This utility can do the following commands:");
 
-        registry.iterator().forEachRemaining(cmd -> {
+        registry.subcommands().forEach(cmdSupplier -> {
+            Command cmd = cmdSupplier.get();
+
             if (cmd.experimental() && !experimentalEnabled)
                 return;
 
@@ -295,7 +311,9 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
             parents0.add((CommandWithSubs)cmd);
 
-            ((CommandWithSubs)cmd).subcommands().forEach(cmd0 -> {
+            ((CommandWithSubs)cmd).subcommands().forEach(cmdSupplier -> {
+                Command cmd0 = cmdSupplier.get();
+
                 if (cmd0.experimental() && !experimentalEnabled)
                     return;
 

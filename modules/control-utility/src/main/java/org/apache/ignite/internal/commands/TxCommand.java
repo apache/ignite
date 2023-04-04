@@ -78,7 +78,7 @@ public class TxCommand extends CommandWithSubs {
 
     /** */
     public TxCommand() {
-        register(new TxInfoCommand());
+        register(TxInfoCommand::new);
     }
 
     /** {@inheritDoc} */

@@ -42,10 +42,10 @@ public class BaselineCommand extends CommandWithSubs {
 
     /** */
     public BaselineCommand() {
-        register(new BaselineAddCommand());
-        register(new BaselineRemoveCommand());
-        register(new BaselineSetCommand());
-        register(new BaselineVersionCommand());
-        register(new BaselineAutoAdjustCommand());
+        register(BaselineAddCommand::new);
+        register(BaselineRemoveCommand::new);
+        register(BaselineSetCommand::new);
+        register(BaselineVersionCommand::new);
+        register(BaselineAutoAdjustCommand::new);
     }
 }

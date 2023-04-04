@@ -25,8 +25,8 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class PersistenceCleanCommand extends CommandWithSubs {
     /** */
     public PersistenceCleanCommand() {
-        register(new PersistenceCleanCorruptedCommand());
-        register(new PersistenceCleanAllCommand());
-        register(new PersistenceCleanCachesCommand());
+        register(PersistenceCleanCorruptedCommand::new);
+        register(PersistenceCleanAllCommand::new);
+        register(PersistenceCleanCachesCommand::new);
     }
 }

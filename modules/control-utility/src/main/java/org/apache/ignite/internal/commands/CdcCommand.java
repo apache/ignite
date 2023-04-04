@@ -25,6 +25,6 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class CdcCommand extends CommandWithSubs {
     /** */
     public CdcCommand() {
-        register(new CdcDeleteLostSegmentLinksCommand());
+        register(CdcDeleteLostSegmentLinksCommand::new);
     }
 }

@@ -25,8 +25,8 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class ConsistencyCommand extends CommandWithSubs {
     /** */
     public ConsistencyCommand() {
-        register(new ConsistencyRepairCommand());
-        register(new ConsistencyStatusCommand());
-        register(new ConsistencyFinalizeCommand());
+        register(ConsistencyRepairCommand::new);
+        register(ConsistencyStatusCommand::new);
+        register(ConsistencyFinalizeCommand::new);
     }
 }

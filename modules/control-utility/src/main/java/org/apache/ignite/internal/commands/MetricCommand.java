@@ -42,8 +42,8 @@ public class MetricCommand extends CommandWithSubs {
 
     /** */
     public MetricCommand() {
-        register(new MetricConfigureHistogramCommand());
-        register(new MetricConfigureHitrateCommand());
+        register(MetricConfigureHistogramCommand::new);
+        register(MetricConfigureHitrateCommand::new);
     }
 
     /** {@inheritDoc} */

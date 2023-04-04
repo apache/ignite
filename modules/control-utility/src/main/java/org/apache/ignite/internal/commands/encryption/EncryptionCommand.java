@@ -25,13 +25,13 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class EncryptionCommand extends CommandWithSubs {
     /** */
     public EncryptionCommand() {
-        register(new EncryptionGetMasterKeyNameCommand());
-        register(new EncryptionChangeMasterKeyCommand());
-        register(new EncryptionChangeCacheKeyCommand());
-        register(new EncryptionCacheKeyIdsCommand());
-        register(new EncryptionReencryptionStatusCommand());
-        register(new EncryptionSuspendReencryptionCommand());
-        register(new EncryptionResumeReencryptionCommand());
-        register(new EncryptionReencryptionRateLimitCommand());
+        register(EncryptionGetMasterKeyNameCommand::new);
+        register(EncryptionChangeMasterKeyCommand::new);
+        register(EncryptionChangeCacheKeyCommand::new);
+        register(EncryptionCacheKeyIdsCommand::new);
+        register(EncryptionReencryptionStatusCommand::new);
+        register(EncryptionSuspendReencryptionCommand::new);
+        register(EncryptionResumeReencryptionCommand::new);
+        register(EncryptionReencryptionRateLimitCommand::new);
     }
 }

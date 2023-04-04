@@ -25,9 +25,9 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class PropertyCommand extends CommandWithSubs {
     /** */
     public PropertyCommand() {
-        register(new PropertyHelpCommand());
-        register(new PropertyListCommand());
-        register(new PropertyGetCommand());
-        register(new PropertySetCommand());
+        register(PropertyHelpCommand::new);
+        register(PropertyListCommand::new);
+        register(PropertyGetCommand::new);
+        register(PropertySetCommand::new);
     }
 }

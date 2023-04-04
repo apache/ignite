@@ -25,10 +25,10 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class SnapshotCommand extends CommandWithSubs {
     /** */
     public SnapshotCommand() {
-        register(new SnapshotCreateCommand());
-        register(new SnapshotCancelCommand());
-        register(new SnapshotCheckCommand());
-        register(new SnapshotRestoreCommand());
-        register(new SnapshotStatusCommand());
+        register(SnapshotCreateCommand::new);
+        register(SnapshotCancelCommand::new);
+        register(SnapshotCheckCommand::new);
+        register(SnapshotRestoreCommand::new);
+        register(SnapshotStatusCommand::new);
     }
 }

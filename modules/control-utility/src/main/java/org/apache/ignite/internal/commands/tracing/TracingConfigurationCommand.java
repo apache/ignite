@@ -26,11 +26,11 @@ import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 public class TracingConfigurationCommand extends CommandWithSubs implements ExperimentalCommand {
     /** */
     public TracingConfigurationCommand() {
-        register(new TracingConfigurationGetAllCommand());
-        register(new TracingConfigurationGetCommand());
-        register(new TracingConfigurationResetAllCommand());
-        register(new TracingConfigurationResetCommand());
-        register(new TracingConfigurationSetCommand());
+        register(TracingConfigurationGetAllCommand::new);
+        register(TracingConfigurationGetCommand::new);
+        register(TracingConfigurationResetAllCommand::new);
+        register(TracingConfigurationResetCommand::new);
+        register(TracingConfigurationSetCommand::new);
     }
 
     /** {@inheritDoc} */

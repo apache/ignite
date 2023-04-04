@@ -25,8 +25,8 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class PersistenceBackupCommand extends CommandWithSubs {
     /** */
     public PersistenceBackupCommand() {
-        register(new PersistenceBackupCorruptedCommand());
-        register(new PersistenceBackupAllCommand());
-        register(new PersistenceBackupCachesCommand());
+        register(PersistenceBackupCorruptedCommand::new);
+        register(PersistenceBackupAllCommand::new);
+        register(PersistenceBackupCachesCommand::new);
     }
 }

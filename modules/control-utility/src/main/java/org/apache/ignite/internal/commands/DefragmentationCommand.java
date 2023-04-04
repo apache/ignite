@@ -25,7 +25,7 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 public class DefragmentationCommand extends CommandWithSubs {
     /** */
     public DefragmentationCommand() {
-        register(new DefragmentationScheduleCommand());
-        register(new DefragmentationCancelCommand());
+        register(DefragmentationScheduleCommand::new);
+        register(DefragmentationCancelCommand::new);
     }
 }
