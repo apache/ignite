@@ -63,6 +63,7 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new SetStateCommand());
         register(new BaselineCommand());
         register(new TxCommand());
+        register(new CacheCommand());
         register(new WalCommand());
         register(new DiagnosticCommand());
         register(new EncryptionCommand());
