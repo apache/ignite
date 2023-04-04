@@ -15,37 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.baseline;
+package org.apache.ignite.internal.commands;
 
-import lombok.Data;
+import java.util.UUID;
 import org.apache.ignite.internal.commands.api.ConfirmableCommand;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-@Data
-public class BaselineAutoAdjustCommand extends ConfirmableCommand {
+public class CdcDeleteLostSegmentLinksCommand extends ConfirmableCommand implements ExperimentalCommand {
     /** */
-    @PositionalParameter
-    private Enabled enabled;
-
-    /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
+    @Parameter(optional = true, description = "ID of the node to delete lost segment links from. " +
+        "If not set, the command will affect all server nodes")
+    private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+        return "Delete lost segment CDC links";
     }
 }

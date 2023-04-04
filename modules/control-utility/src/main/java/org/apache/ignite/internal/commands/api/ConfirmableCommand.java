@@ -15,37 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.baseline;
-
-import lombok.Data;
-import org.apache.ignite.internal.commands.api.ConfirmableCommand;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+package org.apache.ignite.internal.commands.api;
 
 /**
  *
  */
-@Data
-public class BaselineAutoAdjustCommand extends ConfirmableCommand {
+public abstract class ConfirmableCommand implements Command {
     /** */
-    @PositionalParameter
-    private Enabled enabled;
-
-    /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
-    }
+    @Parameter(optional = true, excludeFromDescription = true)
+    private boolean yes;
 }

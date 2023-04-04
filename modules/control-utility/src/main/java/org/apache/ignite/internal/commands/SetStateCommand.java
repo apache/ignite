@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commands;
 
 import lombok.Data;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.ConfirmableCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class SetStateCommand implements Command {
+public class SetStateCommand extends ConfirmableCommand {
     /** */
     @PositionalParameter()
     private ClusterState state;
@@ -35,10 +35,6 @@ public class SetStateCommand implements Command {
     /** */
     @Parameter(optional = true)
     private Boolean force;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {

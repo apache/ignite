@@ -18,22 +18,17 @@
 package org.apache.ignite.internal.commands.baseline;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.ConfirmableCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class BaselineVersionCommand implements Command {
+public class BaselineVersionCommand extends ConfirmableCommand {
     /** */
     @PositionalParameter(javaStyleExample = true)
     private long topologyVersion;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {

@@ -15,37 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.baseline;
+package org.apache.ignite.internal.commands;
 
-import lombok.Data;
-import org.apache.ignite.internal.commands.api.ConfirmableCommand;
-import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import java.util.Arrays;
+import java.util.Collection;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.CommandWithSubs;
 
 /**
  *
  */
-@Data
-public class BaselineAutoAdjustCommand extends ConfirmableCommand {
-    /** */
-    @PositionalParameter
-    private Enabled enabled;
-
-    /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
-
+public class CdcCommand implements CommandWithSubs {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+    @Override public Collection<Command> subcommands() {
+        return Arrays.asList(
+            new CdcDeleteLostSegmentLinksCommand()
+        );
     }
 }

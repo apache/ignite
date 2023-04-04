@@ -159,6 +159,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         logger.info("This utility can do the following commands:");
 
         registry.iterator().forEachRemaining(cmd -> usage(cmd, Collections.emptyList()));
+
+        CommandHandler.printCommonInfo(logger);
     }
 
     /** */
@@ -206,6 +208,9 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 Consumer<Field> fldPrinter = fld -> {
                     Parameter desc = fld.getAnnotation(Parameter.class);
 
+                    if (desc.excludeFromDescription())
+                        return;
+
                     String prefix = desc.withoutPrefix() ? "" : PREFIX;
                     String example = CommandUtils.examples(fld);
 
@@ -250,15 +255,18 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         CommandUtils.forEachField(
             cmd.getClass(),
             fld -> res.compareAndSet(false, !fld.getAnnotation(PositionalParameter.class).description().isEmpty()),
-            fld -> res.compareAndSet(false, !fld.getAnnotation(Parameter.class).description().isEmpty()),
-            (spaceReq, flds) ->
-                flds.forEach(fld -> res.compareAndSet(
-                    false,
-                    !(fld.isAnnotationPresent(Parameter.class)
-                        ? fld.getAnnotation(Parameter.class).description()
-                        : fld.getAnnotation(PositionalParameter.class).description()
-                    ).isEmpty()
-                ))
+            fld -> res.compareAndSet(
+                false,
+                !fld.getAnnotation(Parameter.class).description().isEmpty()
+                    && !fld.getAnnotation(Parameter.class).excludeFromDescription()
+            ),
+            (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(
+                false,
+                !(fld.isAnnotationPresent(Parameter.class)
+                    ? fld.getAnnotation(Parameter.class).description()
+                    : fld.getAnnotation(PositionalParameter.class).description()
+                ).isEmpty()
+            ))
         );
 
         return res.get();

@@ -37,7 +37,6 @@ import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfig
 import org.apache.ignite.spi.tracing.Scope;
 
 import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
-import static org.apache.ignite.internal.commandline.CommandLogger.grouped;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -75,7 +74,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
                 TracingConfigurationCommandArg.LABEL.argName() + ": ",
             TRACING_CONFIGURATION,
             TracingConfigurationSubcommand.GET.text(),
-            grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
+            optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
         usage(
@@ -84,7 +83,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
                 TracingConfigurationCommandArg.SCOPE.argName() +
                 " is specified, then remove all label specific configuration for the given scope and reset given scope" +
                 " specific configuration to the default, if " + TracingConfigurationCommandArg.SCOPE.argName() +
-                " is skipped then reset all tracing configurations to the default. Print tracing configuration.",
+                " is skipped then reset all tracing configurations to the default. Print tracing configuration:",
             TRACING_CONFIGURATION,
             RESET_ALL.text(),
             optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())));
@@ -96,10 +95,10 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
                 TracingConfigurationCommandArg.LABEL.argName() + " are specified then remove given configuration," +
                 " if only " + TracingConfigurationCommandArg.SCOPE.argName() +
                 " is specified then reset given configuration to the default." +
-                " Print reseted configuration.",
+                " Print reseted configuration:",
             TRACING_CONFIGURATION,
             TracingConfigurationSubcommand.RESET.text(),
-            grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
+            optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()));
 
         usage(
@@ -108,10 +107,10 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
                 TracingConfigurationCommandArg.SCOPE.argName() + " and " +
                 TracingConfigurationCommandArg.LABEL.argName() + " are specified then add or override label" +
                 " specific configuration, if only " + TracingConfigurationCommandArg.SCOPE.argName() +
-                " is specified, then override scope specific configuration. Print applied configuration.",
+                " is specified, then override scope specific configuration. Print applied configuration:",
             TRACING_CONFIGURATION,
             TracingConfigurationSubcommand.SET.text(),
-            grouped(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values()),
+            optional(TracingConfigurationCommandArg.SCOPE.argName(), join("|", Scope.values())),
             optional(TracingConfigurationCommandArg.LABEL.argName()),
             optional(TracingConfigurationCommandArg.SAMPLING_RATE.argName(),
                 "Decimal value between 0 and 1, " +
@@ -119,7 +118,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
                 "More or less reflects the probability of sampling specific trace."),
             optional(TracingConfigurationCommandArg.INCLUDED_SCOPES.argName(),
                 "Set of scopes with comma as separator ",
-                join("|", Scope.values()))));
+                join("|", Scope.values())));
     }
 
     /**

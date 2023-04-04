@@ -19,20 +19,15 @@ package org.apache.ignite.internal.commands.baseline;
 
 import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.ConfirmableCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /** */
 @Data
-public class BaselineAddCommand implements Command {
+public class BaselineAddCommand extends ConfirmableCommand {
     /** */
     @PositionalParameter(javaStyleExample = true)
     private List<Object> consistentIDs;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {

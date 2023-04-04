@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.commands.ActivateCommand;
+import org.apache.ignite.internal.commands.CdcCommand;
 import org.apache.ignite.internal.commands.ChangeTagCommand;
 import org.apache.ignite.internal.commands.ConsistencyCommand;
 import org.apache.ignite.internal.commands.DeactivateCommand;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.commands.performancestatistics.PerformanceStat
 import org.apache.ignite.internal.commands.persistence.PersistenceCommand;
 import org.apache.ignite.internal.commands.property.PropertyCommand;
 import org.apache.ignite.internal.commands.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.commands.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.commands.wal.WalCommand;
 
 /**
@@ -67,6 +69,7 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new ChangeTagCommand());
         register(new MetaCommand());
         register(new ShutdownPolicyCommand());
+        register(new TracingConfigurationCommand());
         register(new WarmUpCommand());
         register(new PropertyCommand());
         register(new SystemViewCommand());
@@ -75,6 +78,7 @@ public class CommandsRegistry implements Iterable<Command> {
         register(new DefragmentationCommand());
         register(new PerformanceStatisticsCommand());
         register(new ConsistencyCommand());
+        register(new CdcCommand());
     }
 
     /** */

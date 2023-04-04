@@ -154,7 +154,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new LinkedHashMap<>();
 
-        params.put("cache-name", "Cache to be checked/repaired.");
+        params.put("cache_name", "Cache to be checked/repaired.");
         params.put("partition", "Cache's partition to be checked/repaired.");
 
         usage(
@@ -163,7 +163,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             CONSISTENCY,
             params,
             REPAIR.toString(),
-            "cache-name",
+            "cache_name",
             "partition");
 
         usage(

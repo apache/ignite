@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.commands.api.Command;
 import org.apache.ignite.internal.commands.api.CommandWithSubs;
+import org.apache.ignite.internal.commands.api.ConfirmableCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 
@@ -30,7 +31,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
  *
  */
 @Data
-public class TxCommand implements CommandWithSubs {
+public class TxCommand extends ConfirmableCommand implements CommandWithSubs {
     /** */
     @Parameter(example = "XID", optional = true)
     private String xid;
@@ -74,10 +75,6 @@ public class TxCommand implements CommandWithSubs {
     /** */
     @Parameter(optional = true)
     private boolean info;
-
-    /** */
-    @Parameter(optional = true)
-    private boolean yes;
 
     /** {@inheritDoc} */
     @Override public Collection<Command> subcommands() {

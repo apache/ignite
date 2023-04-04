@@ -18,22 +18,17 @@
 package org.apache.ignite.internal.commands;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
-import org.apache.ignite.internal.commands.api.Parameter;
+import org.apache.ignite.internal.commands.api.ConfirmableCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class ChangeTagCommand implements Command {
+public class ChangeTagCommand extends ConfirmableCommand {
     /** */
     @PositionalParameter(javaStyleExample = true)
     private String newTagValue;
-
-    /** */
-    @Parameter(optional = true)
-    private boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {

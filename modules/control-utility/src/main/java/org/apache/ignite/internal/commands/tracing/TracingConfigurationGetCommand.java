@@ -15,37 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.baseline;
+package org.apache.ignite.internal.commands.tracing;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.ConfirmableCommand;
+import org.apache.ignite.internal.commands.api.ExperimentalCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
-import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.spi.tracing.Scope;
 
 /**
  *
  */
 @Data
-public class BaselineAutoAdjustCommand extends ConfirmableCommand {
+public class TracingConfigurationGetCommand implements ExperimentalCommand {
     /** */
-    @PositionalParameter
-    private Enabled enabled;
+    @Parameter(optional = true)
+    private Scope scope;
 
     /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
-    private long timeout;
+    @Parameter(optional = true)
+    private boolean label;
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Set baseline autoadjustment settings";
-    }
-
-    /** */
-    public enum Enabled {
-        /** */
-        disable,
-
-        /** */
-        enable
+        return "Print specific tracing configuration based on specified --scope and --label";
     }
 }

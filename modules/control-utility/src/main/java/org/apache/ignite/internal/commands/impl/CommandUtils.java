@@ -200,31 +200,38 @@ public class CommandUtils {
         Consumer<Field> namedCnsmr,
         BiConsumer<Boolean, List<Field>> oneOfCnsmr
     ) {
-        Field[] flds = clazz.getDeclaredFields();
+        while (true) {
+            Field[] flds = clazz.getDeclaredFields();
 
-        List<Field> posParams = new ArrayList<>();
-        List<Field> namedParams = new ArrayList<>();
+            List<Field> posParams = new ArrayList<>();
+            List<Field> namedParams = new ArrayList<>();
 
-        OneOf oneOf = clazz.getAnnotation(OneOf.class);
+            OneOf oneOf = clazz.getAnnotation(OneOf.class);
 
-        Set<String> oneOfNames = oneOf != null
-            ? new HashSet<>(Arrays.asList(oneOf.value()))
-            : Collections.emptySet();
+            Set<String> oneOfNames = oneOf != null
+                ? new HashSet<>(Arrays.asList(oneOf.value()))
+                : Collections.emptySet();
 
-        List<Field> oneOfFlds = new ArrayList<>();
+            List<Field> oneOfFlds = new ArrayList<>();
 
-        for (Field fld : flds) {
-            if (oneOfNames.contains(fld.getName()))
-                oneOfFlds.add(fld);
-            else if (fld.isAnnotationPresent(PositionalParameter.class))
-                posParams.add(fld);
-            else if (fld.isAnnotationPresent(Parameter.class))
-                namedParams.add(fld);
+            for (Field fld : flds) {
+                if (oneOfNames.contains(fld.getName()))
+                    oneOfFlds.add(fld);
+                else if (fld.isAnnotationPresent(PositionalParameter.class))
+                    posParams.add(fld);
+                else if (fld.isAnnotationPresent(Parameter.class))
+                    namedParams.add(fld);
+            }
+
+            posParams.forEach(posCnsmr);
+            namedParams.forEach(namedCnsmr);
+            if (oneOf != null)
+                oneOfCnsmr.accept(oneOf.optional(), oneOfFlds);
+
+            if (Command.class.isAssignableFrom(clazz.getSuperclass()))
+                clazz = (Class<? extends Command>)clazz.getSuperclass();
+            else
+                break;
         }
-
-        posParams.forEach(posCnsmr);
-        namedParams.forEach(namedCnsmr);
-        if (oneOf != null)
-            oneOfCnsmr.accept(oneOf.optional(), oneOfFlds);
     }
 }

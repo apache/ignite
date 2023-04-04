@@ -121,8 +121,8 @@ public class CdcCommand extends AbstractCommand<String> {
     @Override public void printUsage(IgniteLogger logger) {
         Map<String, String> params = new LinkedHashMap<>();
 
-        params.put("node_id", "ID of the node to delete lost segment links from. If not set, the command will affect " +
-            "all server nodes.");
+        params.put(NODE_ID + " node_id", "ID of the node to delete lost segment links from. " +
+            "If not set, the command will affect all server nodes.");
 
         usage(logger, "Delete lost segment CDC links:", CDC, params, DELETE_LOST_SEGMENT_LINKS,
             optional(NODE_ID, "node_id"), optional(CMD_AUTO_CONFIRMATION));

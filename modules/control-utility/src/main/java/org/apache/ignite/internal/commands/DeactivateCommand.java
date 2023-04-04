@@ -18,21 +18,17 @@
 package org.apache.ignite.internal.commands;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.ConfirmableCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
 @Data
-public class DeactivateCommand implements Command {
+public class DeactivateCommand extends ConfirmableCommand {
     /** */
     @Parameter(optional = true)
     private Boolean force;
-
-    /** */
-    @Parameter(optional = true)
-    private Boolean yes;
 
     /** {@inheritDoc} */
     @Override public String description() {
