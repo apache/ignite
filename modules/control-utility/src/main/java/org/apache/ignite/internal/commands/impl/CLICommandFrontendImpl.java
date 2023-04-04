@@ -66,6 +66,7 @@ import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DE
 import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.forEachField;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.valueExample;
 
@@ -194,37 +195,48 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
                 AtomicInteger maxParamLen = new AtomicInteger();
 
-                Consumer<Field> fldCalc = fld -> maxParamLen.set(
-                    Math.max(maxParamLen.get(), parameterExample(fld, false).length())
-                );
+                Consumer<Field> lenCalc = fld -> {
+                    maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length()));
 
-                CommandUtils.forEachField(
-                    cmd.getClass(),
-                    fld -> maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length())),
-                    fldCalc,
-                    (optional, flds) -> flds.forEach(fldCalc)
-                );
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
-                Consumer<Field> fldPrinter = fld -> {
-                    Parameter desc = fld.getAnnotation(Parameter.class);
-                    PositionalParameter posDesc = fld.getAnnotation(PositionalParameter.class);
-
-                    if (desc != null && desc.excludeFromDescription())
-                        return;
-
-                    logger.info(
-                        DOUBLE_INDENT + INDENT +
-                        U.extendToLen(parameterExample(fld, false), maxParamLen.get()) +
-                        "  - " + (desc != null ? desc.description() : posDesc.description()) + "."
-                    );
+                        for (String name : enumDesc.names())
+                            maxParamLen.set(Math.max(maxParamLen.get(), name.length()));
+                    }
                 };
 
-                CommandUtils.forEachField(
-                    cmd.getClass(),
-                    fldPrinter,
-                    fldPrinter,
-                    (optional, flds) -> flds.forEach(fldPrinter)
-                );
+                forEachField(cmd.getClass(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
+
+                Consumer<Field> printer = fld -> {
+                    BiConsumer<String, String> logParam = (name, description) -> logger.info(
+                        DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
+                    );
+
+                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
+                        Parameter desc = fld.getAnnotation(Parameter.class);
+                        PositionalParameter posDesc = fld.getAnnotation(PositionalParameter.class);
+
+                        if (desc != null && desc.excludeFromDescription())
+                            return;
+
+                        logParam.accept(
+                            parameterExample(fld, false),
+                            (desc != null ? desc.description() : posDesc.description())
+                        );
+                    }
+                    else {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                        String[] names = enumDesc.names();
+                        String[] descriptions = enumDesc.descriptions();
+
+                        for (int i = 0; i < names.length; i++)
+                            logParam.accept(names[i], descriptions[i]);
+                    }
+                };
+
+                forEachField(cmd.getClass(), printer, printer, (optional, flds) -> flds.forEach(printer));
             }
         }
 
@@ -241,7 +253,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     private boolean hasDescribedParameters(Command cmd) {
         AtomicBoolean res = new AtomicBoolean();
 
-        CommandUtils.forEachField(
+        forEachField(
             cmd.getClass(),
             fld -> res.compareAndSet(false,
                 !fld.getAnnotation(PositionalParameter.class).description().isEmpty() ||
@@ -312,7 +324,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             bldr.append(parameterExample(fld, true));
         };
 
-        CommandUtils.forEachField(
+        forEachField(
             cmd.getClass(),
             fld -> bldr.append(' ').append(valueExample(fld)),
             fld -> paramPrinter.accept(true, fld),

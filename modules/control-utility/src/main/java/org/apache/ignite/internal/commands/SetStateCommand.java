@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commands;
 import lombok.Data;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commands.api.ConfirmableCommand;
+import org.apache.ignite.internal.commands.api.EnumDescription;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
@@ -30,10 +31,22 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
 public class SetStateCommand extends ConfirmableCommand {
     /** */
     @PositionalParameter()
+    @EnumDescription(
+        names = {
+            "ACTIVE",
+            "INACTIVE",
+            "ACTIVE_READ_ONLY"
+        },
+        descriptions = {
+            "Activate cluster. Cache updates are allowed",
+            "Deactivate cluster",
+            "Activate cluster. Cache updates are denied"
+        }
+    )
     private ClusterState state;
 
     /** */
-    @Parameter(optional = true)
+    @Parameter(optional = true, excludeFromDescription = true)
     private Boolean force;
 
     /** {@inheritDoc} */
