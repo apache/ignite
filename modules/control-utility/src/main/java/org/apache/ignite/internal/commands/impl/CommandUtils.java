@@ -49,24 +49,11 @@ public class CommandUtils {
     /** */
     public static final char PARAM_WORDS_DELIM = '_';
 
-    /**
-     * Turn java style name to command name.
-     * For example:
-     * "MyCommand" -> "My-command"
-     * "nodeIDs" -> "node-ids"
-     * "myLongName" -> "my-long-name
-     *
-     * @return Command name.
-     */
-    public static String commandName(String name) {
-        return formattedName(name, CMD_WORDS_DELIM);
-    }
-
     /** */
-    public static String commandName(Class<? extends Command> cls) {
+    public static String commandName(Class<? extends Command> cls, char delim) {
         String name = cls.getSimpleName();
 
-        return commandName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()));
+        return formattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
     }
 
     /** */
@@ -223,7 +210,7 @@ public class CommandUtils {
      * @param delim Words delimeter.
      * @return Formatted name.
      */
-    private static String formattedName(String name, char delim) {
+    public static String formattedName(String name, char delim) {
         StringBuilder bld = new StringBuilder();
 
         bld.append(Character.toLowerCase(name.charAt(0)));

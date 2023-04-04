@@ -31,8 +31,12 @@ public class DefragmentationScheduleCommand implements Command {
     @Parameter(example = "consistentId0,consistentId1")
     private List<String> nodes;
 
+    /** */
+    @Parameter(example = "cache1,cache2,cache3", optional = true)
+    private List<String> caches;
+
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Schedule PDS defragmentation on given nodes for all caches";
+        return "Schedule PDS defragmentation";
     }
 }

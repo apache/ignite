@@ -45,6 +45,8 @@ import org.apache.ignite.internal.commands.property.PropertyCommand;
 import org.apache.ignite.internal.commands.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.commands.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.commands.wal.WalCommand;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 
 /**
  *
@@ -88,7 +90,7 @@ public class CommandsRegistry implements Iterable<Command> {
         if (!name.endsWith(CommandUtils.CMD_NAME_POSTFIX))
             throw new IllegalArgumentException("Command class name must ends with 'Command'");
 
-        commands.put(CommandUtils.commandName(cmd.getClass()), cmd);
+        commands.put(commandName(cmd.getClass(), CMD_WORDS_DELIM), cmd);
     }
 
     /** {@inheritDoc} */

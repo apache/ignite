@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.junit.Test;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.formattedName;
-import static org.junit.Assert.assertEquals;
+import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.PositionalParameter;
 
-/** */
-public class CommandUtilsSelfTest {
+/**
+ *
+ */
+public class MetricConfigureHitrateCommand implements Command {
     /** */
-    @Test
-    public void testToCommand() {
-        assertEquals("my-command", formattedName("myCommand", CMD_WORDS_DELIM));
-        assertEquals("node-ids", formattedName("nodeIDs", CMD_WORDS_DELIM));
-        assertEquals("node-id", formattedName("nodeID", CMD_WORDS_DELIM));
-        assertEquals("system-view", formattedName("SystemView", CMD_WORDS_DELIM));
+    @PositionalParameter(description = "Name of the metric which value should be configured")
+    private String name;
+
+    /** */
+    @PositionalParameter(javaStyleExample = true, description = "Rate time interval of hitrate")
+    private long newRateTimeInterval;
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Configure hitrate metric";
     }
 }

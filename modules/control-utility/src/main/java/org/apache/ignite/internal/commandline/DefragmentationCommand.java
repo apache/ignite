@@ -36,6 +36,7 @@ import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEFRAGMENTATION;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands.CANCEL;
 import static org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands.SCHEDULE;
 
@@ -190,22 +191,12 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
 
         usage(
             log,
-            "Schedule PDS defragmentation on given nodes for all caches:",
-            DEFRAGMENTATION,
-            SCHEDULE.text(),
-            NODES_ARG,
-            consistentIds
-        );
-
-        usage(
-            log,
-            "Schedule PDS defragmentation on given nodes but only for given caches:",
+            "Schedule PDS defragmentation:",
             DEFRAGMENTATION,
             SCHEDULE.text(),
             NODES_ARG,
             consistentIds,
-            CACHES_ARG,
-            cacheNames
+            optional(CACHES_ARG, cacheNames)
         );
 
         usage(

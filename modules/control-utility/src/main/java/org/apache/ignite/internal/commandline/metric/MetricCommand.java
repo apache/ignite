@@ -37,9 +37,7 @@ import org.apache.ignite.internal.visor.metric.VisorMetricTaskArg;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
-import static org.apache.ignite.internal.commandline.CommandLogger.grouped;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
@@ -166,18 +164,27 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
         usage(log, "Print metric value:", METRIC, params, "name", optional(NODE_ID, "node_id"));
 
-        params.remove("node_id");
+        params.remove(NODE_ID + " node_id");
         params.put("name", "Name of the metric which value should be configured.");
         params.put("newBounds", "Comma-separated list of longs to configure histogram.");
+
+        usage(
+            log,
+            "Configure histogram metric:", METRIC,
+            params,
+            CONFIGURE_HISTOGRAM.argName(), "name", "newBounds"
+        );
+
+        params.remove("newBounds");
         params.put("newRateTimeInterval", "Rate time interval of hitrate.");
 
         usage(
             log,
-            "Configure metric:", METRIC,
+            "Configure hitrate metric:", METRIC,
             params,
-            or(grouped(CONFIGURE_HISTOGRAM, "name", "newBounds"),
-                grouped(CONFIGURE_HITRATE, "name", "newRateTimeInterval"))
+            CONFIGURE_HITRATE.argName(), "name", "newRateTimeInterval"
         );
+
     }
 
     /** {@inheritDoc} */

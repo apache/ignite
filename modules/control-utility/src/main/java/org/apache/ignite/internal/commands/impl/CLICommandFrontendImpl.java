@@ -285,12 +285,13 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             if (prefixInclude.get())
                 bldr.append(PARAMETER_PREFIX);
 
-            String cmdName = commandName(cmd0.getClass());
+            String cmdName = commandName(cmd0.getClass(), CMD_WORDS_DELIM);
 
             if (parentPrefix.length() > 0) {
-                cmdName = cmdName
-                    .replaceFirst(parentPrefix.toString(), "")
-                    .replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
+                cmdName = cmdName.replaceFirst(parentPrefix.toString(), "");
+
+                if (!prefixInclude.get())
+                    cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
             }
 
             bldr.append(cmdName);
