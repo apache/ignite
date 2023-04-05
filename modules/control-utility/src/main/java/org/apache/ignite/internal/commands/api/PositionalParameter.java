@@ -29,9 +29,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface PositionalParameter {
     /** */
-    public int index() default 0;
-
-    /** */
     public boolean optional() default false;
 
     /** */

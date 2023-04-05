@@ -26,13 +26,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.GridConsole;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commands.api.CLICommandFrontend;
 import org.apache.ignite.internal.commands.api.Command;
@@ -40,7 +43,9 @@ import org.apache.ignite.internal.commands.api.CommandWithSubs;
 import org.apache.ignite.internal.commands.api.EnumDescription;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -69,9 +74,12 @@ import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DE
 import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.forEachField;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.hasDescribedParameters;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.isArgumentName;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.parameterName;
 import static org.apache.ignite.internal.commands.impl.CommandUtils.valueExample;
+import static org.apache.ignite.internal.commands.impl.CommandUtils.visitCommandParams;
 
 /**
  *
@@ -117,30 +125,34 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     public CLICommandFrontendImpl(IgniteLogger logger) {
         this.logger = logger;
 
-        commonArgsParser = new CLIArgumentParser(Arrays.asList(
-            optionalArg(CMD_HOST, "HOST_OR_IP", String.class),
-            optionalArg(CMD_PORT, "PORT", String.class),
-            optionalArg(CMD_USER, "USER", String.class),
-            optionalArg(CMD_PASSWORD, "PASSWORD", String.class),
-            optionalArg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class),
-            optionalArg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class),
-            optionalArg(CMD_VERBOSE, "", Boolean.class),
-            optionalArg(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", String.class),
-            optionalArg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String.class),
-            optionalArg(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM", String.class),
-            optionalArg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class),
-            optionalArg(CMD_KEYSTORE, "KEYSTORE_PATH", String.class),
-            optionalArg(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD", String.class),
-            optionalArg(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE", String.class),
-            optionalArg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class),
-            optionalArg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", String.class),
-            optionalArg(
-                CMD_ENABLE_EXPERIMENTAL,
-                "",
-                Boolean.class,
-                () -> IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND)
-            )
-        ), false);
+        commonArgsParser = new CLIArgumentParser(
+            Collections.emptyList(),
+            Arrays.asList(
+                optionalArg(CMD_HOST, "HOST_OR_IP", String.class),
+                optionalArg(CMD_PORT, "PORT", String.class),
+                optionalArg(CMD_USER, "USER", String.class),
+                optionalArg(CMD_PASSWORD, "PASSWORD", String.class),
+                optionalArg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class),
+                optionalArg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class),
+                optionalArg(CMD_VERBOSE, "", Boolean.class),
+                optionalArg(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", String.class),
+                optionalArg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String.class),
+                optionalArg(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM", String.class),
+                optionalArg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class),
+                optionalArg(CMD_KEYSTORE, "KEYSTORE_PATH", String.class),
+                optionalArg(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD", String.class),
+                optionalArg(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE", String.class),
+                optionalArg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class),
+                optionalArg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", String.class),
+                optionalArg(
+                    CMD_ENABLE_EXPERIMENTAL,
+                    "",
+                    Boolean.class,
+                    () -> IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND)
+                )
+            ),
+            false
+        );
     }
 
     /** */
@@ -177,26 +189,24 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** */
     private void parseCommand(List<String> args) {
-        Command cmd = null;
+        AtomicReference<Command> cmd = new AtomicReference<>();
 
-        int i = 0;
+        AtomicInteger i = new AtomicInteger();
 
-        while (i < args.size()) {
-            String arg = args.get(i);
+        while (i.get() < args.size()) {
+            String arg = args.get(i.getAndIncrement());
 
-            i++;
-
-            if (cmd == null && !arg.startsWith(PARAMETER_PREFIX))
+            if (cmd.get() == null && !isArgumentName(arg))
                 continue;
 
             Command cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
 
             if (cmd0 == null) {
-                if (cmd instanceof CommandWithSubs) {
-                    if (!((CommandWithSubs)cmd).canBeExecuted())
+                if (cmd.get() instanceof CommandWithSubs) {
+                    if (!((CommandWithSubs)cmd.get()).canBeExecuted())
                         throw new IllegalArgumentException("Unknown argument " + arg);
 
-                    i--;
+                    i.decrementAndGet();
 
                     break;
                 }
@@ -204,11 +214,75 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 continue;
             }
 
-            cmd = cmd0;
+            cmd.set(cmd0);
 
-            if (!(cmd instanceof CommandWithSubs))
+            if (!(cmd.get() instanceof CommandWithSubs))
                 break;
         }
+
+        if (cmd.get() == null)
+            throw new IllegalArgumentException("Unknown command");
+
+        List<CLIArgument<?>> namedArgs = new ArrayList<>();
+        List<CLIArgument<?>> positionalArgs = new ArrayList<>();
+        List<IgniteBiTuple<Boolean, List<CLIArgument<?>>>> oneOfArgs = new ArrayList<>();
+
+        BiFunction<Field, Boolean, CLIArgument<?>> toArg = (fld, optional) -> new CLIArgument<>(
+            parameterName(fld),
+            null,
+            optional,
+            fld.getType(),
+            null
+        );
+
+        visitCommandParams(
+            cmd.get().getClass(),
+            fld -> positionalArgs.add(new CLIArgument<>(
+                fld.getName(),
+                null,
+                fld.getAnnotation(PositionalParameter.class).optional(),
+                fld.getType(),
+                null
+            )),
+            fld -> namedArgs.add(toArg.apply(fld, fld.getAnnotation(Parameter.class).optional())),
+            (optionals, flds) -> {
+                List<CLIArgument<?>> oneOfArg = flds.stream().map(
+                    fld -> toArg.apply(fld, fld.getAnnotation(Parameter.class).optional())
+                ).collect(Collectors.toList());
+
+                oneOfArgs.add(F.t(optionals, oneOfArg));
+
+                flds.forEach(fld -> namedArgs.add(toArg.apply(fld, true)));
+            }
+        );
+
+        CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs, true);
+
+        parser.parse(args.listIterator(i.get()));
+
+        AtomicInteger position = new AtomicInteger();
+
+        BiConsumer<Field, Object> fldSetter = (fld, val) -> {
+            if (val == null)
+                return;
+
+            try {
+                fld.set(cmd.get(), val);
+            }
+            catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        // TODO: check OneOf invariant here.
+        // TODO: support OneOf for PositionalArgument.
+        visitCommandParams(
+            cmd.get().getClass(),
+            fld -> fldSetter.accept(fld, parser.get(position.getAndIncrement())),
+            fld -> fldSetter.accept(fld, parser.get(parameterName(fld))),
+            (optionals, flds) ->
+                flds.forEach(fld -> fldSetter.accept(fld, parser.get(parameterName(fld))))
+        );
 
         logger.info(cmd.getClass().getName());
     }
@@ -272,7 +346,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     }
                 };
 
-                forEachField(cmd.getClass(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
+                visitCommandParams(cmd.getClass(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
 
                 Consumer<Field> printer = fld -> {
                     BiConsumer<String, String> logParam = (name, description) -> logger.info(
@@ -302,7 +376,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     }
                 };
 
-                forEachField(cmd.getClass(), printer, printer, (optional, flds) -> flds.forEach(printer));
+                visitCommandParams(cmd.getClass(), printer, printer, (optional, flds) -> flds.forEach(printer));
             }
         }
 
@@ -320,36 +394,6 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 usage(cmd0, parents0);
             });
         }
-    }
-
-    /** */
-    private boolean hasDescribedParameters(Command cmd) {
-        AtomicBoolean res = new AtomicBoolean();
-
-        forEachField(
-            cmd.getClass(),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(PositionalParameter.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            fld -> res.compareAndSet(
-                false,
-                (!fld.getAnnotation(Parameter.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class))
-                    && !fld.getAnnotation(Parameter.class).excludeFromDescription()
-
-            ),
-            (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(
-                false,
-                !(fld.isAnnotationPresent(Parameter.class)
-                    ? fld.getAnnotation(Parameter.class).description()
-                    : fld.getAnnotation(PositionalParameter.class).description()
-                ).isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ))
-        );
-
-        return res.get();
     }
 
     /** */
@@ -397,7 +441,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             bldr.append(parameterExample(fld, true));
         };
 
-        forEachField(
+        visitCommandParams(
             cmd.getClass(),
             fld -> bldr.append(' ').append(valueExample(fld)),
             fld -> paramPrinter.accept(true, fld),

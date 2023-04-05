@@ -25,10 +25,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.EnumDescription;
 import org.apache.ignite.internal.commands.api.OneOf;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
@@ -74,9 +76,7 @@ public class CommandUtils {
         String example = valueExample(fld);
 
         return asOptional(
-            (param.withoutPrefix() ? "" : PARAMETER_PREFIX)
-                + name(fld, CMD_WORDS_DELIM, Parameter::javaStyleName)
-                + (example.isEmpty() ? "" : (" " + example)),
+            parameterName(fld) + (example.isEmpty() ? "" : (" " + example)),
             appendOptional && param.optional()
         );
     }
@@ -141,50 +141,49 @@ public class CommandUtils {
     }
 
     /**
-     * Iterates each field of the {@code clazz} and call consume {@code c} for it.
-     *
-     * @param posCnsmr Positional parameter fields consumer.
-     * @param namedCnsmr Named parameter fields consumer.
+     * Iterates and visits each command parameter.
      */
-    public static void forEachField(
+    public static void visitCommandParams(
         Class<? extends Command> clazz,
-        Consumer<Field> posCnsmr,
-        Consumer<Field> namedCnsmr,
-        BiConsumer<Boolean, List<Field>> oneOfCnsmr
+        Consumer<Field> positionalParamVisitor,
+        Consumer<Field> namedParamVisitor,
+        BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
     ) {
+        List<Field> positionalParams = new ArrayList<>();
+        List<Field> namedParams = new ArrayList<>();
+
+        OneOf oneOf = clazz.getAnnotation(OneOf.class);
+
+        Set<String> oneOfNames = oneOf != null
+            ? new HashSet<>(Arrays.asList(oneOf.value()))
+            : Collections.emptySet();
+
+        List<Field> oneOfFlds = new ArrayList<>();
+
         while (true) {
             Field[] flds = clazz.getDeclaredFields();
-
-            List<Field> posParams = new ArrayList<>();
-            List<Field> namedParams = new ArrayList<>();
-
-            OneOf oneOf = clazz.getAnnotation(OneOf.class);
-
-            Set<String> oneOfNames = oneOf != null
-                ? new HashSet<>(Arrays.asList(oneOf.value()))
-                : Collections.emptySet();
-
-            List<Field> oneOfFlds = new ArrayList<>();
 
             for (Field fld : flds) {
                 if (oneOfNames.contains(fld.getName()))
                     oneOfFlds.add(fld);
                 else if (fld.isAnnotationPresent(PositionalParameter.class))
-                    posParams.add(fld);
+                    positionalParams.add(fld);
                 else if (fld.isAnnotationPresent(Parameter.class))
                     namedParams.add(fld);
             }
-
-            posParams.forEach(posCnsmr);
-            namedParams.forEach(namedCnsmr);
-            if (oneOf != null)
-                oneOfCnsmr.accept(oneOf.optional(), oneOfFlds);
 
             if (Command.class.isAssignableFrom(clazz.getSuperclass()))
                 clazz = (Class<? extends Command>)clazz.getSuperclass();
             else
                 break;
         }
+
+        positionalParams.forEach(positionalParamVisitor);
+
+        namedParams.forEach(namedParamVisitor);
+
+        if (oneOf != null)
+            oneOfNamedParamVisitor.accept(oneOf.optional(), oneOfFlds);
     }
 
     /** */
@@ -216,6 +215,7 @@ public class CommandUtils {
         bld.append(Character.toLowerCase(name.charAt(0)));
 
         int i = 1;
+
         while (i < name.length()) {
             if (Character.isLowerCase(name.charAt(i))) {
                 bld.append(name.charAt(i));
@@ -234,5 +234,46 @@ public class CommandUtils {
         }
 
         return bld.toString();
+    }
+
+    /** */
+    public static boolean hasDescribedParameters(Command cmd) {
+        AtomicBoolean res = new AtomicBoolean();
+
+        visitCommandParams(
+            cmd.getClass(),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(PositionalParameter.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            fld -> res.compareAndSet(
+                false,
+                (!fld.getAnnotation(Parameter.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class))
+                    && !fld.getAnnotation(Parameter.class).excludeFromDescription()
+
+            ),
+            (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(
+                false,
+                !(fld.isAnnotationPresent(Parameter.class)
+                    ? fld.getAnnotation(Parameter.class).description()
+                    : fld.getAnnotation(PositionalParameter.class).description()
+                ).isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ))
+        );
+
+        return res.get();
+    }
+
+    /** */
+    public static String parameterName(Field fld) {
+        return (fld.getAnnotation(Parameter.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
+            + name(fld, CMD_WORDS_DELIM, Parameter::javaStyleName);
+    }
+
+    /** */
+    public static boolean isArgumentName(String arg) {
+        return arg.startsWith(PARAMETER_PREFIX);
     }
 }

@@ -31,7 +31,7 @@ public class ConsistencyRepairCommand implements ExperimentalCommand {
     private String cacheName;
 
     /** */
-    @PositionalParameter(index = 1, description = "Cache's partition to be checked/repaired")
+    @PositionalParameter(description = "Cache's partition to be checked/repaired")
     private long partition;
 
     /** {@inheritDoc} */

@@ -32,11 +32,11 @@ public class KillScanCommand implements Command {
     private UUID originNodeId;
 
     /** */
-    @PositionalParameter(index = 1, description = "Cache name")
+    @PositionalParameter(description = "Cache name")
     private String cacheName;
 
     /** */
-    @PositionalParameter(index = 2, description = "Query identifier")
+    @PositionalParameter(description = "Query identifier")
     private long queryId;
 
     /** {@inheritDoc} */
