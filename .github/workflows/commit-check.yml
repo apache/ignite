@@ -13,10 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Check code style, Run abandoned tests, Sonar Analisys
+name: Check code style and abandoned tests.
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
   push:
     branches:
       - master
@@ -42,7 +41,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
-          cache: 'maven'
 
       - name: Install prerequisites
         run: |
@@ -60,54 +58,13 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+          mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
         if: ${{ matrix.java == '8' }}
         run : |
-          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+          mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
-  sonarcloud:
-    needs: check-java
-    runs-on: ubuntu-latest
-    name: Sonar Analisys
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Setup java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: 11
-          cache: 'maven'
-
-      - name: Setup Sonar Opts
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            SONAR_OPTS="-Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} -Dsonar.pullrequest.github.repository=apache/ignite -Dsonar.pullrequest.provider=GitHub -Dsonar.pullrequest.github.summary_comment=true"
-          else
-            SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
-          fi
-          echo "SONAR_OPTS:     ${SONAR_OPTS}"
-          echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
-      - name: Install Libnuma
-        run: sudo apt-get update && sudo apt-get install libnuma-dev
-
-      - name: Sonar Analyze Upload
-        run: >
-          ./mvnw clean install sonar:sonar -P sonar,all-java,lgpl,examples,skip-docs -DskipTests
-          ${{ env.SONAR_OPTS }}
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.organization=apache
-          -Dsonar.projectName="Apache Ignite"
-          -Dsonar.projectKey=apache_ignite
-          -B -V
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
