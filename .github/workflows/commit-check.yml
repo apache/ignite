@@ -43,6 +43,13 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
 
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
       - name: Install prerequisites
         run: |
           sudo apt-get update && sudo apt-get install libnuma-dev
@@ -67,6 +74,7 @@ jobs:
           mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
   sonarcloud:
+    name: Sonar Analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -114,7 +122,7 @@ jobs:
 
       - name: Sonar Analyze Upload
         run: >
-          ./mvnw sonar:sonar -P sonar,all-java,lgpl,examples,skip-docs
+          ./mvnw sonar:sonar -T 1C -P sonar,all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=apache
