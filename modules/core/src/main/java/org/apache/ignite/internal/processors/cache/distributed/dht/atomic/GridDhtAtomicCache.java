@@ -240,6 +240,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         };
     }
 
+    /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
