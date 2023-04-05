@@ -28,7 +28,6 @@ concurrency:
 
 jobs:
   sonarcloud:
-    needs: check-java
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
