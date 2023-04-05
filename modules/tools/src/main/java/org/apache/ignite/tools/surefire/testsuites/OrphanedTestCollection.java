@@ -21,7 +21,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -94,30 +93,14 @@ public class OrphanedTestCollection {
 
     /**
      * Structure of Ignite modules is flat but there are some exceptions. Unfortunately it's impossible to
-     * get access to root directory of repository so use this hack to find it.
+     * get access to exactly the same directory of repository so use this hack to find it.
      */
     private static Path initPath() {
-        Path curPath = Paths.get("").toAbsolutePath();
+        Path curPath =
+            Paths.get(OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-        while (!curPath.equals(curPath.getRoot())) {
-            if (curPath.resolve("modules").toFile().exists()) {
-                Path targetPath = curPath.resolve("target");
+        Path toolsTargetPath = curPath.getParent();
 
-                if (!targetPath.toFile().exists()) {
-                    try {
-                        Files.createDirectory(targetPath);
-                    }
-                    catch (IOException e) {
-                        throw new RuntimeException("Failed to create target directory.", e);
-                    }
-                }
-
-                return curPath.resolve("target").resolve("orphaned_tests.txt");
-            }
-
-            curPath = curPath.getParent();
-        }
-
-        throw new IllegalStateException("Can't find repository root directory.");
+        return toolsTargetPath.resolve("orphaned_tests.txt");
     }
 }
