@@ -17,50 +17,43 @@
 
 package org.apache.ignite.internal.commandline.cdc;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.cdc.VisorCdcFlushCachesTask;
-import org.apache.ignite.internal.visor.cdc.VisorCdcFlushCachesTaskArg;
+import org.apache.ignite.internal.visor.cdc.VisorCdcCacheDataResendTask;
+import org.apache.ignite.internal.visor.cdc.VisorCdcCacheDataResendTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.CDC;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
 /**
- * The command to flush caches. Iterates over caches and writes data entries to the WAL to get captured by CDC.
+ * The command to forcefully resend all cache data to CDC.
+ * Iterates over given caches and writes data entries to the WAL to get captured by CDC.
  */
-public class FlushCachesCommand extends AbstractCommand<Object> {
-    /** Command to flush caches. */
-    public static final String FLUSH_CACHES = "flush_caches";
+public class ResendCommand extends AbstractCommand<Object> {
+    /** Command name. */
+    public static final String RESEND = "resend";
 
     /** */
     public static final String CACHES = "--caches";
 
     /** */
-    private VisorCdcFlushCachesTaskArg arg;
+    private VisorCdcCacheDataResendTaskArg arg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Collection<UUID> nodeIds = client.compute().nodes(node -> !node.isClient()).stream()
-                .map(GridClientNode::nodeId).collect(Collectors.toSet());
+            executeTaskByNameOnNode(client, VisorCdcCacheDataResendTask.class.getName(), arg, null, clientCfg);
 
-            client.compute().execute(VisorCdcFlushCachesTask.class.getName(),
-                new VisorTaskArgument<>(nodeIds, arg, false));
-
-            String res = "CDC flush caches finished.";
+            String res = "Successfully resent all cache data to CDC.";
 
             log.info(res);
 
@@ -92,18 +85,18 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
         if (F.isEmpty(caches))
             throw new IllegalArgumentException("At least one cache name should be specified.");
 
-        arg = new VisorCdcFlushCachesTaskArg(caches);
+        arg = new VisorCdcCacheDataResendTaskArg(caches);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
         Map<String, String> params = new LinkedHashMap<>();
 
-        params.put(CACHES + " cache1,...,cacheN", "specifies a comma-separated list of cache names to be flushed.");
+        params.put(CACHES + " cache1,...,cacheN", "specifies a comma-separated list of cache names.");
 
-        usage(logger,
-            "Flush cache data entries. Iterates over caches and writes data entries to the WAL to get captured by CDC:",
-            CDC, params, FLUSH_CACHES, CACHES, "cache1,...,cacheN");
+        usage(logger, "Forcefully resend all cache data to CDC. Iterates over caches and writes data entries to " +
+                "the WAL to get captured by CDC:",
+            CDC, params, RESEND, CACHES, "cache1,...,cacheN");
     }
 
     /** {@inheritDoc} */
@@ -113,7 +106,7 @@ public class FlushCachesCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return FLUSH_CACHES;
+        return RESEND;
     }
 
     /** {@inheritDoc} */

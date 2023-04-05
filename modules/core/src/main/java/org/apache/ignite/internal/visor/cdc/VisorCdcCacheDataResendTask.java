@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.visor.cdc;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -30,36 +34,59 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * CDC flush caches task. Iterates over caches and writes data records to the WAL to get captured by CDC.
+ * Task to forcefully resend all cache data to CDC.
+ * Iterates over caches and writes data records to the WAL to get captured by CDC.
  */
 @GridInternal
-public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCachesTaskArg, Void, Void> {
+public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCacheDataResendTaskArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Topology version when task was started. */
+    private AffinityTopologyVersion topVer;
+
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCdcFlushCachesTaskArg, Void> job(VisorCdcFlushCachesTaskArg arg) {
-        return new VisorCdcFlushCachesJob(arg, false);
+    @Override protected VisorJob<VisorCdcCacheDataResendTaskArg, Void> job(VisorCdcCacheDataResendTaskArg arg) {
+        return new VisorCdcCacheDataResendJob(arg, topVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorCdcCacheDataResendTaskArg> arg) {
+        // Check there is no rebalance.
+        GridDhtPartitionsExchangeFuture fut = ignite.context().cache().context().exchange().lastFinishedFuture();
+
+        if (!fut.rebalanced()) {
+            throw new IgniteException("CDC cache data resend cancelled. Rebalance sheduled " +
+                "[topVer=" + fut.topologyVersion() + ']');
+        }
+
+        // Cancel resend if affinity will change.
+        topVer = ignite.context().cache().context().exchange().lastAffinityChangedTopologyVersion(fut.topologyVersion());
+
+        return F.nodeIds(ignite.cluster().forServers().nodes());
     }
 
     /** {@inheritDoc} */
     @Override protected @Nullable Void reduce0(List<ComputeJobResult> results) throws IgniteException {
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                throw new IgniteException("Failed to flush cache on the node. The command is cancelled. " +
-                    "[nodeId=" + res.getNode().id() + ']', res.getException());
+                throw new IgniteException("CDC cache data resend cancelled. Failed to resend cache data " +
+                    "on the node [nodeId=" + res.getNode().id() + ']', res.getException());
             }
         }
 
@@ -67,7 +94,7 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
     }
 
     /** */
-    private static class VisorCdcFlushCachesJob extends VisorJob<VisorCdcFlushCachesTaskArg, Void> {
+    private static class VisorCdcCacheDataResendJob extends VisorJob<VisorCdcCacheDataResendTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -78,16 +105,21 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
         /** */
         private IgniteWriteAheadLogManager wal;
 
+        /** Topology version when task was started. */
+        private final AffinityTopologyVersion topVer;
+
         /**
-         * @param arg   Job argument.
-         * @param debug Flag indicating whether debug information should be printed into node log.
+         * @param arg Job argument.
+         * @param topVer Topology version when task was started.
          */
-        protected VisorCdcFlushCachesJob(VisorCdcFlushCachesTaskArg arg, boolean debug) {
-            super(arg, debug);
+        protected VisorCdcCacheDataResendJob(VisorCdcCacheDataResendTaskArg arg, AffinityTopologyVersion topVer) {
+            super(arg, false);
+
+            this.topVer = topVer;
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorCdcFlushCachesTaskArg arg) throws IgniteException {
+        @Override protected Void run(VisorCdcCacheDataResendTaskArg arg) throws IgniteException {
             if (F.isEmpty(arg.caches()))
                 throw new IllegalArgumentException("Caches are not specified.");
 
@@ -107,7 +139,8 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                 caches.add(cache);
             }
 
-            log.info("CDC flush caches started [caches=" + String.join(", ", arg.caches()) + ']');
+            if (log.isInfoEnabled())
+                log.info("CDC cache data resend started [caches=" + String.join(", ", arg.caches()) + ']');
 
             wal = ignite.context().cache().context().wal(true);
 
@@ -115,12 +148,14 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                 Iterator<IgniteInternalCache<?, ?>> iter = caches.iterator();
 
                 while (iter.hasNext() && !isCancelled())
-                    flushCache(iter.next());
+                    resendCacheData(iter.next());
 
                 wal.flush(null, true);
 
-                log.info("CDC flush caches " + (isCancelled() ? "cancelled" : "finished") +
-                    " [caches=" + String.join(", ", arg.caches()) + ']');
+                if (log.isInfoEnabled()) {
+                    log.info("CDC cache data resend " + (isCancelled() ? "cancelled" : "finished") +
+                        " [caches=" + String.join(", ", arg.caches()) + ']');
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -129,20 +164,42 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
             return null;
         }
 
-        /**
-         * @param cache Cache to flush.
-         */
-        private void flushCache(IgniteInternalCache<?, ?> cache) throws IgniteCheckedException {
+        /** @param cache Cache. */
+        private void resendCacheData(IgniteInternalCache<?, ?> cache) throws IgniteCheckedException {
+            if (log.isInfoEnabled())
+                log.info("CDC cache data resend started [cacheName=" + cache.name() + ']');
+
             GridCacheContext<?, ?> cctx = cache.context();
+            GridCachePartitionExchangeManager<Object, Object> exchange = ignite.context().cache().context().exchange();
 
             GridIterator<CacheDataRow> localRows = cctx.offheap()
                 .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null, null);
 
-            Iterator<CacheDataRow> iter = localRows.iterator();
+            long cnt = 0;
+            Set<Integer> parts = new TreeSet<>();
+            GridDhtPartitionsExchangeFuture lastFut = null;
 
-            while (iter.hasNext() && !isCancelled()) {
-                CacheDataRow row = iter.next();
+            for (CacheDataRow row : localRows) {
+                if (isCancelled())
+                    break;
+
+                GridDhtPartitionsExchangeFuture fut = exchange.lastFinishedFuture();
+
+                if (lastFut != fut) {
+                    AffinityTopologyVersion lastChanged = exchange.lastAffinityChangedTopologyVersion(fut.topologyVersion());
+
+                    if (!topVer.equals(lastChanged)) {
+                        throw new IgniteException("CDC cache data resend cancelled. Topology changed during resend " +
+                            "[startTopVer=" + topVer + ", currentTopVer=" + fut.topologyVersion() + ']');
+                    }
+
+                    lastFut = fut;
+                }
+
                 KeyCacheObject key = row.key();
+
+                if (log.isTraceEnabled())
+                    log.trace("Resend key: " + key);
 
                 CdcDataRecord rec = new CdcDataRecord(new DataEntry(
                     cctx.cacheId(),
@@ -158,9 +215,17 @@ public class VisorCdcFlushCachesTask extends VisorMultiNodeTask<VisorCdcFlushCac
                 );
 
                 wal.log(rec);
+
+                parts.add(key.partition());
+
+                if ((++cnt % 1_000 == 0) && log.isDebugEnabled())
+                    log.debug("Resend entries count: " + cnt);
             }
 
-            log.info("CDC flush cache " + (isCancelled() ? "cancelled" : "finished") + " [name=" + cache.name() + ']');
+            if (log.isInfoEnabled()) {
+                log.info("CDC cache data resend " + (isCancelled() ? "cancelled" : "finished") +
+                    " [cacheName=" + cache.name() + (!isCancelled() ? ", parts=" + parts : "") + ']');
+            }
         }
     }
 }

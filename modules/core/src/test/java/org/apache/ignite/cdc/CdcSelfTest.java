@@ -39,7 +39,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -67,8 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
-import org.apache.ignite.internal.visor.cdc.VisorCdcFlushCachesTask;
-import org.apache.ignite.internal.visor.cdc.VisorCdcFlushCachesTaskArg;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -891,71 +888,6 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertFalse(f.isDone());
 
         f.cancel();
-    }
-
-    /** */
-    @Test
-    public void testFlushCaches() throws Exception {
-        IgniteEx ign = startGrids(2);
-
-        ign.cluster().state(ACTIVE);
-
-        IgniteCache<Integer, User> cache = ign.cache(TX_CACHE_NAME);
-
-        addData(cache, 0, KEYS_CNT);
-
-        UserCdcConsumer cnsmr0 = new UserCdcConsumer();
-        UserCdcConsumer cnsmr1 = new UserCdcConsumer();
-
-        IgniteInternalFuture<?> fut0 = runAsync(createCdc(cnsmr0, getConfiguration(grid(0).name())));
-        IgniteInternalFuture<?> fut1 = runAsync(createCdc(cnsmr1, getConfiguration(grid(1).name())));
-
-        waitForSize(KEYS_CNT, TX_CACHE_NAME, UPDATE, cnsmr0, cnsmr1);
-
-        cnsmr0.clear();
-        cnsmr1.clear();
-
-        ign.compute().execute(VisorCdcFlushCachesTask.class,
-            new VisorTaskArgument<>(F.nodeIds(ign.cluster().forServers().nodes()),
-                new VisorCdcFlushCachesTaskArg(Collections.singleton(TX_CACHE_NAME)), false));
-
-        waitForSize(grid(0).cache(TX_CACHE_NAME).localSize(CachePeekMode.PRIMARY), TX_CACHE_NAME, UPDATE, cnsmr0);
-        waitForSize(grid(1).cache(TX_CACHE_NAME).localSize(CachePeekMode.PRIMARY), TX_CACHE_NAME, UPDATE, cnsmr1);
-
-        fut0.cancel();
-        fut1.cancel();
-    }
-
-    /** */
-    @Test
-    public void testFlushCachesRestoreFromWal() throws Exception {
-        assumeTrue(persistenceEnabled);
-
-        IgniteEx ign = startGrid(0);
-
-        ign.cluster().state(ACTIVE);
-
-        enableCheckpoints(ign, false);
-
-        addData(ign.cache(TX_CACHE_NAME), 0, KEYS_CNT);
-
-        ign.compute().execute(VisorCdcFlushCachesTask.class,
-            new VisorTaskArgument<>(F.nodeIds(ign.cluster().forServers().nodes()),
-                new VisorCdcFlushCachesTaskArg(Collections.singleton(TX_CACHE_NAME)), false));
-
-        UserCdcConsumer cnsmr = new UserCdcConsumer();
-
-        IgniteInternalFuture<?> fut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
-
-        waitForSize(2 * KEYS_CNT, TX_CACHE_NAME, UPDATE, cnsmr);
-
-        stopAllGrids();
-
-        ign = startGrid(0);
-
-        assertEquals(KEYS_CNT, ign.cache(TX_CACHE_NAME).size());
-
-        fut.cancel();
     }
 
     /** */

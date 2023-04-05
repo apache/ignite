@@ -25,7 +25,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class VisorCdcFlushCachesTaskArg extends IgniteDataTransferObject {
+public class VisorCdcCacheDataResendTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,12 +33,12 @@ public class VisorCdcFlushCachesTaskArg extends IgniteDataTransferObject {
     private Set<String> caches;
 
     /** */
-    public VisorCdcFlushCachesTaskArg() {
+    public VisorCdcCacheDataResendTaskArg() {
         // No-op.
     }
 
     /** */
-    public VisorCdcFlushCachesTaskArg(Set<String> caches) {
+    public VisorCdcCacheDataResendTaskArg(Set<String> caches) {
         this.caches = caches;
     }
 
