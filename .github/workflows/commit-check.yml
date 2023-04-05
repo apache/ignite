@@ -22,6 +22,9 @@ on:
       - master
       - 'ignite-[0-9].[0-9]+.[0-9]+*'
 
+env:
+  MAVEN_OPTS: -Xms2g
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -50,12 +53,13 @@ jobs:
       - name: Set MAVEN_OPTS
         if: ${{ matrix.java == '11' }}
         run: |
-          echo MAVEN_OPTS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+          echo MAVEN_OPTS="${MAVEN_OPTS}
+          --illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
           --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
           --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
           --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
+          -Djdk.tls.client.protocols=TLSv1.2" >> $GITHUB_ENV
 
       - name: Run codestyle and licenses checks
         run: |

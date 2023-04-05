@@ -430,9 +430,6 @@
                     <plugin>
                         <groupId>org.sonarsource.scanner.maven</groupId>
                         <artifactId>sonar-maven-plugin</artifactId>
-                        <configuration>
-                            <argLine>-Xmx4096m</argLine>
-                        </configuration>
                     </plugin>
                 </plugins>
             </build>
