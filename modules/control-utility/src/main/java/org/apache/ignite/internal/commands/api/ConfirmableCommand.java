@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commands.api;
 /**
  *
  */
-public abstract class ConfirmableCommand implements Command {
+public abstract class ConfirmableCommand extends BaseCommand {
     /** */
     @Parameter(optional = true, excludeFromDescription = true)
     private boolean yes;

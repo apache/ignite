@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.performancestatistics;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PerformanceStatisticsStopCommand implements Command {
+public class PerformanceStatisticsStopCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Stop collecting performance statistics in the cluster";

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class StateCommand implements Command {
+public class StateCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print current cluster state";

@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.commands.impl.CommandUtils.commandName;
 /**
  *
  */
-public class CommandWithSubs implements Command {
+public class CommandWithSubs extends BaseCommand {
     /** */
     private final Map<String, Supplier<Command>> commands = new LinkedHashMap<>();
 

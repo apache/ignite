@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.snapshot;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class SnapshotStatusCommand implements Command {
+public class SnapshotStatusCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get the status of the current snapshot operation";

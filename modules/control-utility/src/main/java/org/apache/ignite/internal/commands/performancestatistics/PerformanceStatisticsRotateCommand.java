@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.performancestatistics;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PerformanceStatisticsRotateCommand implements Command {
+public class PerformanceStatisticsRotateCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Rotate collecting performance statistics in the cluster";

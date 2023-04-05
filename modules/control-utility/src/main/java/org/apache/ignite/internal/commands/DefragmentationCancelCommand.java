@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class DefragmentationCancelCommand implements Command {
+public class DefragmentationCancelCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cancel scheduled or active PDS defragmentation on underlying node";

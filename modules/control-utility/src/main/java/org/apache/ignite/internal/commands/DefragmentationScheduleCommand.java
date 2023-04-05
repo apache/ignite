@@ -19,14 +19,14 @@ package org.apache.ignite.internal.commands;
 
 import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
 @Data
-public class DefragmentationScheduleCommand implements Command {
+public class DefragmentationScheduleCommand extends BaseCommand {
     /** */
     @Parameter(example = "consistentId0,consistentId1")
     private List<String> nodes;

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.commands.property;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
-public class PropertyGetCommand implements Command {
+public class PropertyGetCommand extends BaseCommand {
     /** */
     @Parameter(example = "<property_name>")
     private String name;

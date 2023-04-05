@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.commands.encryption;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class EncryptionReencryptionRateLimitCommand implements Command {
+public class EncryptionReencryptionRateLimitCommand extends BaseCommand {
     /** */
     @PositionalParameter(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
     private Integer newLimit;

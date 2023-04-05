@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 
 /**
  *
  */
-public class WarmUpCommand implements Command {
+public class WarmUpCommand extends BaseCommand {
     /** */
     @Parameter
     private boolean stop;

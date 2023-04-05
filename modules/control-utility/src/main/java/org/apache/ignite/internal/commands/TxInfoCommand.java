@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.OneOf;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
  *
  */
 @OneOf({"gridCacheVer", "uuid"})
-public class TxInfoCommand implements Command {
+public class TxInfoCommand extends BaseCommand {
     /** */
     @PositionalParameter(
         example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>")

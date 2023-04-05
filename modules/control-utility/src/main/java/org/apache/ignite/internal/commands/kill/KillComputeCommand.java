@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commands.kill;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteUuid;
  *
  */
 @Data
-public class KillComputeCommand implements Command {
+public class KillComputeCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Session identifier")
     private IgniteUuid sessionId;

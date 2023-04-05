@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands.property;
+package org.apache.ignite.internal.commands.api;
 
-import org.apache.ignite.internal.commands.api.BaseCommand;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PropertyHelpCommand extends BaseCommand {
+public abstract class BaseCommand implements Command {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Print property command help";
+    @Override public String toString() {
+        return S.toString(((Class)getClass()), this);
     }
 }

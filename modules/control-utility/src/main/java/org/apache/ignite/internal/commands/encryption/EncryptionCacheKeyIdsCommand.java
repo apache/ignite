@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.commands.encryption;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class EncryptionCacheKeyIdsCommand implements Command {
+public class EncryptionCacheKeyIdsCommand extends BaseCommand {
     /** */
     @PositionalParameter(javaStyleExample = true)
     private String cacheGroupName;

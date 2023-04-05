@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.persistence;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PersistenceInfoCommand implements Command {
+public class PersistenceInfoCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "The same information is printed when info subcommand is passed";

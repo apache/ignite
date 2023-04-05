@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commands.snapshot;
 
 import java.util.List;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class SnapshotRestoreCommand implements Command {
+public class SnapshotRestoreCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")

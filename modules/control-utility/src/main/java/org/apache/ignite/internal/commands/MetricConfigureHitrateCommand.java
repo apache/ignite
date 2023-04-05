@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class MetricConfigureHitrateCommand implements Command {
+public class MetricConfigureHitrateCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Name of the metric which value should be configured")
     private String name;

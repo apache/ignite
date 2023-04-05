@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.impl;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class CacheHelpCommand implements Command {
+public class CacheHelpCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View caches information in a cluster. For more details type";

@@ -19,14 +19,14 @@ package org.apache.ignite.internal.commands.kill;
 
 import java.util.UUID;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class KillScanCommand implements Command {
+public class KillScanCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Originating node id")
     private UUID originNodeId;

@@ -267,6 +267,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 return;
 
             try {
+                // TODO: use setters here.
+                fld.setAccessible(true);
                 fld.set(cmd.get(), val);
             }
             catch (IllegalAccessException e) {
@@ -284,7 +286,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 flds.forEach(fld -> fldSetter.accept(fld, parser.get(parameterName(fld))))
         );
 
-        logger.info(cmd.getClass().getName());
+        logger.info(cmd.get().toString());
     }
 
     /** */

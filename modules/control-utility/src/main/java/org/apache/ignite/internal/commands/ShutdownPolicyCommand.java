@@ -19,14 +19,14 @@ package org.apache.ignite.internal.commands;
 
 import lombok.Data;
 import org.apache.ignite.ShutdownPolicy;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class ShutdownPolicyCommand implements Command {
+public class ShutdownPolicyCommand extends BaseCommand {
     /** */
     @PositionalParameter(optional = true)
     private ShutdownPolicy shutdownPolicy;

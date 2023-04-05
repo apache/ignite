@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commands.kill;
 
 import java.util.UUID;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  *
  */
 @Data
-public class KillClientCommand implements Command {
+public class KillClientCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Connection identifier or ALL")
     private String connectionId;

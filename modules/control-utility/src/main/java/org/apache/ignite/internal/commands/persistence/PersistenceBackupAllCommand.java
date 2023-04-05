@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.persistence;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PersistenceBackupAllCommand implements Command {
+public class PersistenceBackupAllCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Backup data files of all caches";

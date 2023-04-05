@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.commands.kill;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class KillSqlCommand implements Command {
+public class KillSqlCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Query identifier")
     private String queryId;

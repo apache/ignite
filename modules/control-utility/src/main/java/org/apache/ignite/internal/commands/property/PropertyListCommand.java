@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.property;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PropertyListCommand implements Command {
+public class PropertyListCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of available properties";

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class DiagnosticCommand implements Command {
+public class DiagnosticCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View diagnostic information in a cluster. For more details type";

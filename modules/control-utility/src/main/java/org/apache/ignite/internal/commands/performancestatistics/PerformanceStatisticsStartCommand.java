@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.performancestatistics;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PerformanceStatisticsStartCommand implements Command {
+public class PerformanceStatisticsStartCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Start collecting performance statistics in the cluster";

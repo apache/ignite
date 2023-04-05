@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commands;
 import java.util.Collection;
 import java.util.UUID;
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.OneOf;
 import org.apache.ignite.internal.commands.api.Parameter;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
@@ -30,7 +30,7 @@ import org.apache.ignite.internal.commands.api.PositionalParameter;
  */
 @Data
 @OneOf({"nodeIds", "nodeId", "allNodes"})
-public class SystemViewCommand implements Command {
+public class SystemViewCommand extends BaseCommand {
     /** System view name. */
     @PositionalParameter(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +

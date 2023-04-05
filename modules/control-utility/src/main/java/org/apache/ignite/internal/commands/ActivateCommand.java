@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class ActivateCommand implements Command {
+public class ActivateCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Activate cluster (deprecated. Use --set-state instead)";

@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.commands.kill;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
 @Data
-public class KillTransactionCommand implements Command {
+public class KillTransactionCommand extends BaseCommand {
     /** */
     @PositionalParameter(description = "Transaction identifier")
     private String xid;

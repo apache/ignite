@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commands.snapshot;
 
 import lombok.Data;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.OneOf;
 import org.apache.ignite.internal.commands.api.Parameter;
 
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.commands.api.Parameter;
  */
 @Data
 @OneOf({"id", "name"})
-public class SnapshotCancelCommand implements Command {
+public class SnapshotCancelCommand extends BaseCommand {
     /** */
     @Parameter(description = "Snapshot operation request ID")
     private String id;

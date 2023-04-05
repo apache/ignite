@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.commands.persistence;
 
 import java.util.List;
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 import org.apache.ignite.internal.commands.api.PositionalParameter;
 
 /**
  *
  */
-public class PersistenceBackupCachesCommand implements Command {
+public class PersistenceBackupCachesCommand extends BaseCommand {
     /** */
     @PositionalParameter(example = "cache1,cache2,cache3")
     private List<String> caches;

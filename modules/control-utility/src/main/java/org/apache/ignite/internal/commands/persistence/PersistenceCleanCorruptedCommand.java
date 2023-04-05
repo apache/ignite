@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.persistence;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class PersistenceCleanCorruptedCommand implements Command {
+public class PersistenceCleanCorruptedCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Clean directories of caches with corrupted data files";

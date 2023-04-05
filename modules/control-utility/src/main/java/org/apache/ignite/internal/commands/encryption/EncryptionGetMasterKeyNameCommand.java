@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.commands.encryption;
 
-import org.apache.ignite.internal.commands.api.Command;
+import org.apache.ignite.internal.commands.api.BaseCommand;
 
 /**
  *
  */
-public class EncryptionGetMasterKeyNameCommand implements Command {
+public class EncryptionGetMasterKeyNameCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print the current master key name";
