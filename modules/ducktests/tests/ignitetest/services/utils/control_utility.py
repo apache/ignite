@@ -236,7 +236,7 @@ class ControlUtility:
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
-            res = self.__run(f"--snapshot status")
+            res = self.__run("--snapshot status")
 
             if "Create snapshot operation is in progress" in res:
                 continue
@@ -260,7 +260,7 @@ class ControlUtility:
         """
         Destroy all caches.
         """
-        res = self.__run(f"--cache destroy --destroy-all-caches --yes")
+        res = self.__run("--cache destroy --destroy-all-caches --yes")
 
         assert "Command [CACHE] finished with code: 0" in res
 
@@ -281,7 +281,7 @@ class ControlUtility:
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
         while datetime.now() < delta_time:
-            res = self.__run(f"--snapshot status")
+            res = self.__run("--snapshot status")
 
             if "Restore snapshot operation is in progress" in res:
                 continue
