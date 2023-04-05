@@ -20,7 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * The record to flush existing data entries to the CDC application.
+ * The record to forcefully resend cache data to the CDC application.
  */
 public class CdcDataRecord extends DataRecord {
     /** */
