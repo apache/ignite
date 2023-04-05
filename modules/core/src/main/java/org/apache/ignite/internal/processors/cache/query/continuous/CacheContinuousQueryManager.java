@@ -157,12 +157,17 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        assert !cctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + cctx.name() + ']';
+    @Override protected void start0() throws IgniteCheckedException {
+        super.start0();
 
         // Append cache name to the topic.
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        assert !cctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + cctx.name() + ']';
 
         if (cctx.affinityNode()) {
             cctx.io().addCacheHandler(
