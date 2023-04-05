@@ -50,9 +50,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int entrySize = jsonNode.get("entrySize").asInt();
         int from = jsonNode.get("from").asInt();
         int to = jsonNode.get("to").asInt();
-        boolean transactional = jsonNode.get("transactional").asBoolean();
 
         int idxCnt = jsonNode.has("indexCount") ? jsonNode.get("indexCount").asInt() : 0;
+        boolean transactional = jsonNode.has("transactional") && jsonNode.get("transactional").asBoolean();
 
         for (int i = 1; i <= cacheCnt; i++) {
             CacheConfiguration<Integer, BinaryObject> ccfg = new CacheConfiguration<Integer, BinaryObject>(cache(i))

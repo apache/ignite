@@ -34,9 +34,9 @@ from ignitetest.utils import cluster
 
 class IncrementalSnapshotTest(IgniteTest):
     """
-    Test Snapshot.
+    Test base snapshot for incremental snapshots.
     """
-    SNAPSHOT_NAME = "test_snapshot"
+    SNAPSHOT_NAME = "test_base_snapshot"
 
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
