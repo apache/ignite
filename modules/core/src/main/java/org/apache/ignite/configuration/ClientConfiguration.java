@@ -587,6 +587,7 @@ public final class ClientConfiguration implements Serializable {
      * <p>
      * When {@code false}, client only connects to the addresses provided in {@link #setAddresses(String...)} and
      * {@link #setAddressesFinder(ClientAddressFinder)}.
+     * @return A value indicating whether cluster discovery should be enabled.
      */
     public boolean isClusterDiscoveryEnabled() {
         return clusterDiscoveryEnabled;
@@ -599,6 +600,8 @@ public final class ClientConfiguration implements Serializable {
      * <p>
      * When {@code false}, client only connects to the addresses provided in {@link #setAddresses(String...)} and
      * {@link #setAddressesFinder(ClientAddressFinder)}.
+     * @param clusterDiscoveryEnabled Value indicating whether cluster discovery should be enabled.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setClusterDiscoveryEnabled(boolean clusterDiscoveryEnabled) {
         this.clusterDiscoveryEnabled = clusterDiscoveryEnabled;
