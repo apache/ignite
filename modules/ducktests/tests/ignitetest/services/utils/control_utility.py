@@ -220,6 +220,96 @@ class ControlUtility:
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
                            f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
 
+    def incremental_snapshot_create(self, snapshot_name: str, exp_increment: int, timeout_sec: int = 60):
+        """
+        Create snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param exp_increment: Expected increment index.
+        :param timeout_sec: Timeout to await snapshot to complete.
+        """
+        node = self._cluster.nodes[0]
+
+        res = self.__run(f"--snapshot create {snapshot_name} --incremental", node)
+
+        assert "Command [SNAPSHOT] finished with code: 0" in res
+
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            res = self.__run(f"--snapshot status")
+
+            if "Create snapshot operation is in progress" in res:
+                continue
+
+            if "There is no create or restore snapshot operation in progress" in res:
+                metric_bean = JmxClient(node).find_mbean('.*name=incremental')
+
+                if exp_increment != int(next(metric_bean.incrementIndex, "")):
+                    continue
+
+                assert next(metric_bean.error) == ''
+
+                return
+
+            raise Exception("Unexpected status for \"snapshot status\" command: " + res)
+
+        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
+                           f'snapshot_name={snapshot_name}, increment={exp_increment} in {timeout_sec} seconds.')
+
+    def destroy_all_caches(self):
+        """
+        Destroy all caches.
+        """
+        res = self.__run(f"--cache destroy --destroy-all-caches --yes")
+
+        assert "Command [CACHE] finished with code: 0" in res
+
+    def incremental_snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 60):
+        """
+        Create snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param increment: Increment index.
+        :param timeout_sec: Timeout to await snapshot to complete.
+        :return: Time for restoring incremental snapshot, and amount of restored entries.
+        """
+        node = self._cluster.nodes[0]
+
+        res = self.__run(f"--snapshot restore {snapshot_name} --increment {increment} --yes", node)
+
+        assert "Command [SNAPSHOT] finished with code: 0" in res
+
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        while datetime.now() < delta_time:
+            res = self.__run(f"--snapshot status")
+
+            if "Restore snapshot operation is in progress" in res:
+                continue
+
+            if "There is no create or restore snapshot operation in progress" in res:
+                metric_bean = JmxClient(node).find_mbean('.*name=\"snapshot-restore\"')
+
+                if increment != int(next(metric_bean.incrementIndex, "")):
+                    continue
+
+                assert next(metric_bean.error) == ''
+
+                start_time = int(next(metric_bean.startTime))
+                end_time = int(next(metric_bean.endTime))
+                entries = next(metric_bean.processedWalEntries)
+                segments = next(metric_bean.processedWalSegments)
+
+                return {
+                    "restoreTimeSec": (end_time - start_time) / 1000,
+                    "restoreEntries": entries,
+                    "segments": segments
+                }
+
+            raise Exception("Unexpected status for \"snapshot status\" command: " + res)
+
+        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
+                           f'snapshot_name={snapshot_name}, incIdx={increment} in {timeout_sec} seconds.')
+
     def start_performance_statistics(self):
         """
         Start performance statistics collecting in the cluster.

@@ -35,6 +35,7 @@ class DataGenerationParams(NamedTuple):
     entry_size: int = 50_000
     preloaders: int = 1
     index_count: int = 0
+    transactional: bool = False
 
     @property
     def data_region_max_size(self):
@@ -52,14 +53,14 @@ class DataGenerationParams(NamedTuple):
         return int(self.entry_count / self.preloaders)
 
 
-def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
+def load_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
     :param config: Ignite configuration.
     :param data_gen_params: Data generation parameters.
     :param timeout: Timeout in seconds for application finished.
-    :return: Time taken for data preloading.
+    :return: Load applications.
     """
     assert data_gen_params.preloaders > 0
     assert data_gen_params.cache_count > 0
@@ -79,10 +80,11 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
                 "entrySize": data_gen_params.entry_size,
                 "from": _from,
                 "to": _to,
-                "indexCount": data_gen_params.index_count
+                "indexCount": data_gen_params.index_count,
+                "transactional": data_gen_params.transactional
             },
             shutdown_timeout_sec=timeout)
-        app.start_async()
+        app.start()
 
         apps.append(app)
 
@@ -95,6 +97,21 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
         start_app(start, end)
 
     start_app(end, data_gen_params.entry_count)
+
+    return apps
+
+
+def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
+    """
+    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches and awaits the load finished.
+    :param context: Test context.
+    :param config: Ignite configuration.
+    :param data_gen_params: Data generation parameters.
+    :param timeout: Timeout in seconds for application finished.
+    :return: Time taken for data preloading.
+    """
+
+    apps = load_data(context, config, data_gen_params, timeout)
 
     for app in apps:
         app.await_stopped()
