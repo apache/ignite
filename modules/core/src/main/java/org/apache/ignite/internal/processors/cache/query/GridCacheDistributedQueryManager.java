@@ -99,7 +99,15 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     };
 
     /** Event listener. */
-    private GridLocalEventListener lsnr;
+    private GridLocalEventListener lsnr = new GridLocalEventListener() {
+        /** {@inheritDoc} */
+        @Override public void onEvent(Event evt) {
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+            for (GridCacheDistributedQueryFuture fut : futs.values())
+                fut.onNodeLeft(discoEvt.eventNode().id());
+        }
+    };
 
     /** {@inheritDoc} */
     @Override public void onKernalStart0() throws IgniteCheckedException {
@@ -112,15 +120,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             cctx.startTopologyVersion(),
             GridCacheQueryRequest.class,
             (CI2<UUID, GridCacheQueryRequest>)this::processQueryRequest);
-
-        lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                for (GridCacheDistributedQueryFuture fut : futs.values())
-                    fut.onNodeLeft(discoEvt.eventNode().id());
-            }
-        };
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
