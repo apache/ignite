@@ -425,6 +425,9 @@
         </profile>
         <profile>
             <id>sonar</id>
+            <properties>
+                <sonar.exclusions>**/calcite/**/generated/**/*</sonar.exclusions>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
