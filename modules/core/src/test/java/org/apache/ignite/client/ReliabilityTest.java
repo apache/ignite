@@ -111,7 +111,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                  .setReconnectThrottlingRetries(0) // Disable throttling.
                  // Disable endpoints discovery, since in this test it reduces attempts count and sometimes one extra
                  // attempt is required to complete operation without failure.
-                 .setAddressesFinder(new StaticAddressFinder(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
+                 .setClusterDiscoveryEnabled(false)
+                 .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE]))
              )
         ) {
             final Random rnd = new Random();
@@ -218,10 +219,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testSingleServerDuplicatedFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
-                 .setAddressesFinder(new StaticAddressFinder(
-                     F.first(cluster.clientAddresses()),
-                     F.first(cluster.clientAddresses())
-                 )))
+                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
@@ -244,10 +243,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ClientRetryReadPolicy())
-                 .setAddressesFinder(new StaticAddressFinder(
-                     F.first(cluster.clientAddresses()),
-                     F.first(cluster.clientAddresses())
-                 )))
+                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
@@ -272,10 +269,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ExceptionRetryPolicy())
-                 .setAddressesFinder(new StaticAddressFinder(
-                     F.first(cluster.clientAddresses()),
-                     F.first(cluster.clientAddresses())
-                 )))
+                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
             dropAllThinClientConnections(Ignition.allGrids().get(0));
@@ -303,10 +298,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryLimit(1)
-                 .setAddressesFinder(new StaticAddressFinder(
-                     F.first(cluster.clientAddresses()),
-                     F.first(cluster.clientAddresses())
-                 )))
+                 .setAddresses(F.first(cluster.clientAddresses()), F.first(cluster.clientAddresses()))
+                 .setClusterDiscoveryEnabled(false))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
