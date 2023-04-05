@@ -2080,8 +2080,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dht.context().finishRecovery(cacheStartVer, updatedDescriptor);
         }
 
-        cacheContext.io().remapCacheHandlersOnRecovery(cacheContext.cacheId(), cacheStartVer);
-
         if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 

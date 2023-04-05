@@ -54,6 +54,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
@@ -101,8 +102,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private GridLocalEventListener lsnr;
 
     /** {@inheritDoc} */
-    @Override public void start0() throws IgniteCheckedException {
-        super.start0();
+    @Override public void onKernalStart0() throws IgniteCheckedException {
+        super.onKernalStart0();
+
+        assert !cctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + cctx.name() + ']';
 
         cctx.io().addCacheHandler(
             cctx.cacheId(),

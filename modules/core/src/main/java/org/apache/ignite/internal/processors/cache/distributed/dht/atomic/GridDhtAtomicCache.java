@@ -240,14 +240,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         };
     }
 
-    /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
 
-        assert metrics != null : "Cache metrics instance isn't initialized.";
-
-        if (ctx.dht().near() != null)
-            metrics.delegate(ctx.dht().near().metrics0());
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
@@ -424,6 +420,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 GridNearSingleGetResponse.class,
                 (CI2<UUID, GridNearSingleGetResponse>)this::processNearSingleGetResponse);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        assert metrics != null : "Cache metrics instance isn't initialized.";
+
+        if (ctx.dht().near() != null)
+            metrics.delegate(ctx.dht().near().metrics0());
     }
 
     /**

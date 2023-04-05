@@ -1473,27 +1473,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Changes an old deployment identifier for the given message handler {@code hndId}.
-     *
-     * @param hndId Message handler identifier.
-     * @param startTopVer start topology version.
-     */
-    public void remapCacheHandlersOnRecovery(int hndId, AffinityTopologyVersion startTopVer) {
-        // There is no need to remap delployment id for the grpHandlers, it is always null.
-        Map<Integer, IndexedClassHandler> idxClsHandlers0 = cacheHandlers.idxClsHandlers;
-        for (Map.Entry<Integer, IndexedClassHandler> e : idxClsHandlers0.entrySet()) {
-            if (e.getKey() == hndId)
-                e.getValue().startTopVer = startTopVer;
-        }
-
-        ConcurrentMap<ListenerKey, RegularClassHandler> clsHandlers0 = cacheHandlers.clsHandlers;
-        for (Map.Entry<ListenerKey, RegularClassHandler> e : clsHandlers0.entrySet()) {
-            if (e.getKey().hndId == hndId)
-                e.getValue().startTopVer = startTopVer;
-        }
-    }
-
-    /**
      * @param hndId Message handler ID.
      * @param type Type of message.
      * @param c Handler.
@@ -1753,7 +1732,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** */
     abstract static class MessageHandler {
         /** Start topology version. */
-        volatile AffinityTopologyVersion startTopVer;
+        final AffinityTopologyVersion startTopVer;
 
         /**
          * Creates a new message handler descriptor.

@@ -120,8 +120,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        super.start();
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
 
         ctx.io().addCacheHandler(
             ctx.cacheId(),
@@ -140,6 +142,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             ctx.startTopologyVersion(),
             GridNearLockResponse.class,
             (CI2<UUID, GridNearLockResponse>)this::processNearLockResponse);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
     }
 
     /**
