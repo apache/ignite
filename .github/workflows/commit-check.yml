@@ -125,6 +125,7 @@ jobs:
           -Dsonar.organization=apache
           -Dsonar.projectName="Apache Ignite"
           -Dsonar.projectKey=apache_ignite
+          -Dsonar.login=${{ evn.SONAR_TOKEN }}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
