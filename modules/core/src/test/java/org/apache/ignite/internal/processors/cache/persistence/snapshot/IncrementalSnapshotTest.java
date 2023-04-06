@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -29,15 +29,25 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -304,7 +314,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         assertNotNull(cacheData);
 
-        cacheData.queryEntities(Collections.singletonList(new QueryEntity(String.class, Account.class)));
+        cacheData.queryEntities(singletonList(new QueryEntity(String.class, Account.class)));
 
         locCfgMgr.writeCacheData(cacheData, ccfgFile);
 
@@ -372,6 +382,54 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             walCompactionEnabled = true;
         }
 
+    }
+
+    /** @throws Exception if failed. */
+    @Test
+    public void testStagesFail() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        DistributedProcess.DistributedProcessType[] stages = new DistributedProcess.DistributedProcessType[] {
+            RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+            RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
+            RESTORE_CACHE_GROUP_SNAPSHOT_START,
+            RESTORE_INCREMENTAL_SNAPSHOT_START
+        };
+
+        IgniteEx srv = startGridsWithCache(
+            2,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        createAndCheckSnapshot(srv, SNAPSHOT_NAME, null, TIMEOUT);
+        srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        AtomicReference<DistributedProcess.DistributedProcessType> failStage = new AtomicReference<>();
+
+        TestRecordingCommunicationSpi.spi(grid(1)).blockMessages((node, msg) -> {
+            if (msg instanceof SingleNodeMessage) {
+                SingleNodeMessage<?> singleMsg = (SingleNodeMessage<?>)msg;
+
+                if (failStage.get().ordinal() == singleMsg.type())
+                    GridTestUtils.setFieldValue(singleMsg, "err", new IgniteException("Test exception."));
+            }
+
+            return false;
+        });
+
+        for (DistributedProcess.DistributedProcessType stage : stages) {
+            srv.destroyCache(DEFAULT_CACHE_NAME);
+
+            awaitPartitionMapExchange();
+
+            failStage.set(stage);
+
+            assertThrows(log,
+                () -> srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, singleton(DEFAULT_CACHE_NAME), 1).get(),
+                IgniteException.class, "Test exception.");
+        }
     }
 
     /** */
