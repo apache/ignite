@@ -30,6 +30,9 @@
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
+    <properties>
+        <sonar.exclusions>**/calcite/**/generated/**/*</sonar.exclusions>
+    </properties>
     <!-- NOTE: This parent-internal module is used as a parent maven project for the current Ignite sources only.
         It will never be released and should be used for all internal maven submodules. -->
 
@@ -421,20 +424,6 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
-            </build>
-        </profile>
-        <profile>
-            <id>sonar</id>
-            <properties>
-                <sonar.exclusions>**/calcite/**/generated/**/*</sonar.exclusions>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonarsource.scanner.maven</groupId>
-                        <artifactId>sonar-maven-plugin</artifactId>
-                    </plugin>
-                </plugins>
             </build>
         </profile>
     </profiles>

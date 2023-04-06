@@ -119,7 +119,7 @@ jobs:
 
       - name: Sonar Analyze Upload
         run: >
-          ./mvnw sonar:sonar -P sonar,all-java,lgpl,examples,skip-docs
+          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
           -Dsonar.projectKey=apache_ignite
           -B -V

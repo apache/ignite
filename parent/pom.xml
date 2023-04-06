@@ -152,7 +152,6 @@
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
-        <maven.sonar.plugin.version>3.9.1.2184</maven.sonar.plugin.version>
         <sonar.organization>apache</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
@@ -501,11 +500,6 @@
                             </goals>
                         </execution>
                     </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonarsource.scanner.maven</groupId>
-                    <artifactId>sonar-maven-plugin</artifactId>
-                    <version>${maven.sonar.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
