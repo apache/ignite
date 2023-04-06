@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Task to forcefully resend all cache data to CDC.
- * Iterates over caches and writes data records to the WAL to get captured by CDC.
+ * Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC.
  */
 @GridInternal
 public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCacheDataResendTaskArg, Void, Void> {
@@ -105,8 +105,14 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
         /** */
         private IgniteWriteAheadLogManager wal;
 
+        /** */
+        private GridCachePartitionExchangeManager<Object, Object> exchange;
+
         /** Topology version when task was started. */
         private final AffinityTopologyVersion topVer;
+
+        /** */
+        private GridDhtPartitionsExchangeFuture lastFut;
 
         /**
          * @param arg Job argument.
@@ -136,6 +142,9 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
                         ", dataRegionName=" + cache.context().dataRegion().config().getName() + ']');
                 }
 
+                if (cache.context().mvccEnabled())
+                    throw new UnsupportedOperationException("The TRANSACTIONAL_SNAPSHOT mode is not supported.");
+
                 caches.add(cache);
             }
 
@@ -143,6 +152,7 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
                 log.info("CDC cache data resend started [caches=" + String.join(", ", arg.caches()) + ']');
 
             wal = ignite.context().cache().context().wal(true);
+            exchange = ignite.context().cache().context().exchange();
 
             try {
                 Iterator<IgniteInternalCache<?, ?>> iter = caches.iterator();
@@ -170,31 +180,18 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
                 log.info("CDC cache data resend started [cacheName=" + cache.name() + ']');
 
             GridCacheContext<?, ?> cctx = cache.context();
-            GridCachePartitionExchangeManager<Object, Object> exchange = ignite.context().cache().context().exchange();
 
             GridIterator<CacheDataRow> localRows = cctx.offheap()
                 .cacheIterator(cctx.cacheId(), true, false, AffinityTopologyVersion.NONE, null, null);
 
             long cnt = 0;
             Set<Integer> parts = new TreeSet<>();
-            GridDhtPartitionsExchangeFuture lastFut = null;
 
             for (CacheDataRow row : localRows) {
                 if (isCancelled())
                     break;
 
-                GridDhtPartitionsExchangeFuture fut = exchange.lastFinishedFuture();
-
-                if (lastFut != fut) {
-                    AffinityTopologyVersion lastChanged = exchange.lastAffinityChangedTopologyVersion(fut.topologyVersion());
-
-                    if (!topVer.equals(lastChanged)) {
-                        throw new IgniteException("CDC cache data resend cancelled. Topology changed during resend " +
-                            "[startTopVer=" + topVer + ", currentTopVer=" + fut.topologyVersion() + ']');
-                    }
-
-                    lastFut = fut;
-                }
+                ensureTopologyNotChanged();
 
                 KeyCacheObject key = row.key();
 
@@ -223,8 +220,28 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
             }
 
             if (log.isInfoEnabled()) {
-                log.info("CDC cache data resend " + (isCancelled() ? "cancelled" : "finished") +
-                    " [cacheName=" + cache.name() + (!isCancelled() ? ", parts=" + parts : "") + ']');
+                if (isCancelled())
+                    log.info("CDC cache data resend cancelled.");
+                else {
+                    log.info("CDC cache data resend finished [cacheName=" + cache.name() +
+                        ", entriesCnt=" + cnt +  ", parts=" + parts + ']');
+                }
+            }
+        }
+
+        /** */
+        private void ensureTopologyNotChanged() {
+            GridDhtPartitionsExchangeFuture fut = exchange.lastFinishedFuture();
+
+            if (lastFut != fut) {
+                AffinityTopologyVersion lastChanged = exchange.lastAffinityChangedTopologyVersion(fut.topologyVersion());
+
+                if (!topVer.equals(lastChanged)) {
+                    throw new IgniteException("CDC cache data resend cancelled. Topology changed during resend " +
+                        "[startTopVer=" + topVer + ", currentTopVer=" + fut.topologyVersion() + ']');
+                }
+
+                lastFut = fut;
             }
         }
     }

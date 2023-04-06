@@ -42,6 +42,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.cdc.CdcSubcommands;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -122,7 +123,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
                 return (T)new FileWriteAheadLogManager(((IgniteEx)ctx.grid()).context()) {
                     @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
-                        if (onLogLsnr != null)
+                        if (rec instanceof CdcDataRecord && onLogLsnr != null)
                             onLogLsnr.accept(rec);
 
                         return super.log(rec);

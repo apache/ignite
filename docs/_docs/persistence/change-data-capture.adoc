@@ -174,12 +174,8 @@ The application will start from the `0000000000000010.wal` segment after being e
 == Forcefully resend all cache data to CDC
 
 When the CDC has been forcefully disabled for a while, cache changes will be skipped.
-In this case it is necessary to resend data from existing caches. For example, this is important for the following cases:
-
-- pre-synchronizing replication;
-- handling missed segments.
-
-WARNING: There are no guarantees of handling concurrent updates.
+In this case it is necessary to resend data from existing caches.
+For example, this is important if you need to ensure consistency of cache data before a replication restart.
 
 NOTE: The command will be canceled if cluster was not rebalanced or topology changed (node left/joined, baseline changed).
 
@@ -187,11 +183,13 @@ To forcefully resend all cache data to CDC you can run the following link:tools/
 
 [source,shell]
 ----
-# Forcefully resend all cache data to CDC. Iterates over caches and writes data entries to the WAL to get captured by CDC:
+# Forcefully resend all cache data to CDC. Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC:
 control.sh|bat --cdc resend --caches cache1,...,cacheN
 ----
 
-The command will iterate over caches and writes data entries to the WAL to get captured by the CDC application.
+The command will iterate over caches and writes primary copies of data entries to the WAL to get captured by the CDC application.
+
+NOTE: There are no guarantees of notifying the CDC consumer on concurrent cache updates: use the `CdcEvent#version` to resolve version.
 
 == cdc-ext
 
