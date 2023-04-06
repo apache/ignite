@@ -117,7 +117,15 @@ jobs:
           echo "SONAR_OPTS:     ${SONAR_OPTS}"
           echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
 
+      - name: Check secret access
+        shell: bash
+        run: |
+          echo "IS_SONAR_TOKEN_EXIST=$IS_SONAR_TOKEN_EXIST" >> $GITHUB_ENV
+        env:
+          IS_SONAR_TOKEN_EXIST: ${{ secrets.SONAR_TOKEN != '' }}
+
       - name: Sonar Analyze Upload
+        if: ${{ env.IS_SONAR_TOKEN_EXIST == 'true' }}
         run: >
           mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
           -P all-java,lgpl,examples,skip-docs
@@ -127,7 +135,7 @@ jobs:
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
