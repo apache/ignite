@@ -70,8 +70,24 @@ jobs:
         run : |
           mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
+  sonar-pre-check:
+    name: Sonar Secret Fast Check
+    runs-on: ubuntu-latest
+    outputs:
+      HAVE_SONAR_TOKEN: ${{ steps.check-a-secret.outputs.HAVE_SONAR_TOKEN }}
+    steps:
+      - id: check-a-secret
+      - name: Export Sonar Env Check
+        run: |
+          echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_OUTPUT
+          echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_STEP_SUMMARY
+        env:
+          HAVE_SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN != '' }}
+
   sonarcloud:
     name: Sonar Analysis
+    needs: sonar-pre-check
+    if: needs.sonar-pre-check.outputs.HAVE_SONAR_TOKEN == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -117,25 +133,17 @@ jobs:
           echo "SONAR_OPTS:     ${SONAR_OPTS}"
           echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
 
-      - name: Check secret access
-        shell: bash
-        run: |
-          echo "IS_SONAR_TOKEN_EXIST=$IS_SONAR_TOKEN_EXIST" >> $GITHUB_ENV
-        env:
-          IS_SONAR_TOKEN_EXIST: ${{ secrets.SONAR_TOKEN != '' }}
-
       - name: Sonar Analyze Upload
-        if: ${{ env.IS_SONAR_TOKEN_EXIST == 'true' }}
         run: >
           mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
           -P all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=${SONAR_TOKEN}
+          -Dsonar.login=${SONARCLOUD_TOKEN}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
