@@ -137,6 +137,25 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
     /** */
     @Test
+    public void testDifferentBaselineTopology() throws Exception {
+        grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+        String consId = (String)grid(1).configuration().getConsistentId();
+
+        stopGrid(1);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "remove", consId));
+
+        startGrid(1);
+
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
+        assertContains(log, testOut.toString(), "Topologies of snapshot and current cluster are different");
+    }
+
+    /** */
+    @Test
     public void testWrongCommandParams() {
         grid(0).snapshot().createIncrementalSnapshot(SNP).get(getTestTimeout());
 

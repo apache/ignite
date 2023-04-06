@@ -37,7 +37,7 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     /** Transaction hashes collection. */
     private Map<Object, TransactionsHashRecord> txHashRes;
 
-    /** Partition hashes collection. */
+    /** Partition hashes collection. It is calculated on data entries included into only incremental part of snapshot. */
     private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes;
 
     /** Partial committed transactions' collection. */

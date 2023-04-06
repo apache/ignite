@@ -43,7 +43,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -65,6 +67,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
@@ -220,6 +223,38 @@ public class GridLocalConfigManager {
             throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
                 conf.getAbsolutePath() + "]", e);
         }
+    }
+
+    /**
+     * @param dbDir Root directory for all cache datas.
+     * @param marshaller Marshaller.
+     * @param cfg Ignite configuration.
+     * @return Collection of cache data files and actual cache data.
+     */
+    public static Map<File, StoredCacheData> readCachesData(
+        File dbDir,
+        @Nullable Marshaller marshaller,
+        @Nullable IgniteConfiguration cfg
+    ) {
+        File[] caches = dbDir.listFiles();
+
+        if (caches == null)
+            return Collections.emptyMap();
+
+        return Arrays.stream(caches)
+            .filter(f -> f.isDirectory() &&
+                (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
+                !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
+            .filter(File::exists)
+            .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
+            .collect(Collectors.toMap(f -> f, f -> {
+                try {
+                    return readCacheData(f, marshaller, cfg);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }));
     }
 
     /**
