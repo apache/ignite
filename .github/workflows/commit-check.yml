@@ -121,7 +121,6 @@ jobs:
         run: >
           ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
-          -Dsonar.projectKey=apache_ignite
           -Dsonar.login=${{ secrets.SONARCLOUD_TOKEN }}
           -B -V
         env:
