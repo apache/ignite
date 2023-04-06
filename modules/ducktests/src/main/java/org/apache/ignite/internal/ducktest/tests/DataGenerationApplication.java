@@ -92,6 +92,9 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
                 for (int c = 1; c <= cacheCnt; c++)
                     runTx(cache(c), i, entryBuilder);
+
+                if ((i * cacheCnt) % 5_000 == 0)
+                    log.info("Run " + (i * cacheCnt) + " transactions.");
             }
         }
         else {
