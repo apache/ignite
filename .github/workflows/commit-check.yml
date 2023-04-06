@@ -125,11 +125,11 @@ jobs:
           -Dsonar.organization=apache
           -Dsonar.projectName="Apache Ignite"
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=$SONAR_TOKEN
+          -Dsonar.login=$SONARCLOUD_TOKEN
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
