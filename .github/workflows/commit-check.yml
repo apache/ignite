@@ -122,7 +122,7 @@ jobs:
           ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.projectNmae="Apache Ignite"
+          -Dsonar.login=${{ secrets.SONARCLOUD_TOKEN }}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
