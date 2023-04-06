@@ -123,9 +123,8 @@ jobs:
           ${{ env.SONAR_OPTS }}
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.organization=apache
-          -Dsonar.projectName="Apache Ignite"
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=$SONARCLOUD_TOKEN
+          -Dsonar.login=${SONARCLOUD_TOKEN}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
