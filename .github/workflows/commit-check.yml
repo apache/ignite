@@ -121,10 +121,7 @@ jobs:
         run: >
           ./mvnw sonar:sonar -P sonar,all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
-          -Dsonar.host.url=https://sonarcloud.io
-          -Dsonar.organization=apache
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=${SONAR_TOKEN}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
