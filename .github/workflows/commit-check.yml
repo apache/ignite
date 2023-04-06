@@ -77,7 +77,7 @@ jobs:
       HAVE_SONAR_TOKEN: ${{ steps.check-a-secret.outputs.HAVE_SONAR_TOKEN }}
     steps:
       - id: check-a-secret
-      - name: Export Sonar Env Check
+        name: Export Sonar Env Check
         run: |
           echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_OUTPUT
           echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_STEP_SUMMARY
