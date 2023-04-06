@@ -264,7 +264,7 @@ class ControlUtility:
 
         assert "Command [CACHE] finished with code: 0" in res
 
-    def incremental_snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 60):
+    def incremental_snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 3600):
         """
         Create snapshot.
         :param snapshot_name: Name of Snapshot.
