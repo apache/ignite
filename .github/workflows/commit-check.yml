@@ -122,20 +122,20 @@ jobs:
         run: |
           echo "IS_SONAR_TOKEN_EXIST=$IS_SONAR_TOKEN_EXIST" >> $GITHUB_ENV
         env:
-          IS_SONAR_TOKEN_EXIST: ${{ secrets.SONARCLOUD_TOKEN != '' }}
+          IS_SONAR_TOKEN_EXIST: ${{ secrets.SONAR_TOKEN != '' }}
 
       - name: Sonar Analyze Upload
-        if: ${{ env.IS_SONAR_TOKEN_EXIST == 'true' }}
+        if: ${{ env.SONAR_TOKEN == 'true' }}
         run: >
           mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
           -P all-java,lgpl,examples,skip-docs
           ${{ env.SONAR_OPTS }}
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=${SONARCLOUD_TOKEN}
+          -Dsonar.login=${SONAR_TOKEN}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
