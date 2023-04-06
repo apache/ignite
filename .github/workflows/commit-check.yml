@@ -102,10 +102,6 @@ jobs:
       - name: Install Libnuma
         run: sudo apt-get update && sudo apt-get install libnuma-dev
 
-      - name: Build Ignite
-        run: |
-          ./mvnw install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
-
       - name: Setup Sonar Opts
         shell: bash
         run: |
@@ -119,13 +115,14 @@ jobs:
 
       - name: Sonar Analyze Upload
         run: >
-          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -P all-java,lgpl,examples,skip-docs
+          ./mvnw verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
+          -P all-java,lgpl,examples,skip-docs -DskipTests
           ${{ env.SONAR_OPTS }}
+          -Dsonar.projectKey=apache_ignite
           -Dsonar.login=${{ secrets.SONARCLOUD_TOKEN }}
           -B -V
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-          SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   check-dotnet:
     name: Сheck .NET code
