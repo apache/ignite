@@ -83,6 +83,11 @@ jobs:
           echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_STEP_SUMMARY
         env:
           HAVE_SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN != '' }}
+      - name: Do we have token?
+        if: steps.check-a-secret.outputs.HAVE_SONAR_TOKEN == 'false'
+        run: |
+          echo "No SonarCloud token, skipping SonarCloud analysis"
+          exit 1
 
   sonarcloud:
     name: Sonar Analysis
