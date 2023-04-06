@@ -52,8 +52,14 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ComputeJob createJob(String name, String path, String constId, Collection<String> groups) {
-        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups);
+    @Override protected ComputeJob createJob(
+        String name,
+        String path,
+        String constId,
+        Collection<String> groups,
+        boolean check
+    ) {
+        return new VisorVerifySnapshotPartitionsJob(name, path, constId, groups, check);
     }
 
     /** {@inheritDoc} */
@@ -86,22 +92,28 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
         /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
         private final Collection<String> rqGrps;
 
+        /** If {@code true} check snapshot before restore. */
+        private final boolean check;
+
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
          * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          * @param snpPath Snapshot directory path.
+         * @param check If {@code true} check snapshot before restore.
          */
         public VisorVerifySnapshotPartitionsJob(
             String snpName,
             @Nullable String snpPath,
             String consId,
-            Collection<String> rqGrps
+            Collection<String> rqGrps,
+            boolean check
         ) {
             this.snpName = snpName;
             this.consId = consId;
             this.rqGrps = rqGrps;
             this.snpPath = snpPath;
+            this.check = check;
         }
 
         /** {@inheritDoc} */
@@ -118,7 +130,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
                 SnapshotMetadata meta = cctx.snapshotMgr().readSnapshotMetadata(snpDir, consId);
 
                 return new SnapshotPartitionsVerifyHandler(cctx)
-                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false));
+                    .invoke(new SnapshotHandlerContext(meta, rqGrps, ignite.localNode(), snpDir, false, check));
             }
             catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
@@ -136,12 +148,13 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
             VisorVerifySnapshotPartitionsJob job = (VisorVerifySnapshotPartitionsJob)o;
 
             return snpName.equals(job.snpName) && consId.equals(job.consId) &&
-                Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath);
+                Objects.equals(rqGrps, job.rqGrps) && Objects.equals(snpPath, job.snpPath) &&
+                Objects.equals(check, job.check);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, consId, rqGrps, snpPath);
+            return Objects.hash(snpName, consId, rqGrps, snpPath, check);
         }
     }
 }

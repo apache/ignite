@@ -35,6 +35,9 @@ public class VisorSnapshotCreateTaskArg extends VisorSnapshotCheckTaskArg {
     /** Incremental snapshot flag. */
     private boolean inc;
 
+    /** Only primary flag. */
+    private boolean onlyPrimary;
+
     /** Default constructor. */
     public VisorSnapshotCreateTaskArg() {
         // No-op.
@@ -46,11 +49,12 @@ public class VisorSnapshotCreateTaskArg extends VisorSnapshotCheckTaskArg {
      * @param sync Synchronous execution flag.
      * @param inc Incremental snapshot flag.
      */
-    public VisorSnapshotCreateTaskArg(String snpName, String snpPath, boolean sync, boolean inc) {
+    public VisorSnapshotCreateTaskArg(String snpName, String snpPath, boolean sync, boolean inc, boolean onlyPrimary) {
         super(snpName, snpPath);
 
         this.sync = sync;
         this.inc = inc;
+        this.onlyPrimary = onlyPrimary;
     }
 
     /** @return Synchronous execution flag. */
@@ -63,12 +67,18 @@ public class VisorSnapshotCreateTaskArg extends VisorSnapshotCheckTaskArg {
         return inc;
     }
 
+    /** @return Only primary flag. */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
 
         out.writeBoolean(sync);
         out.writeBoolean(inc);
+        out.writeBoolean(onlyPrimary);
     }
 
     /** {@inheritDoc} */
@@ -77,6 +87,7 @@ public class VisorSnapshotCreateTaskArg extends VisorSnapshotCheckTaskArg {
 
         sync = in.readBoolean();
         inc = in.readBoolean();
+        onlyPrimary = in.readBoolean();
     }
 
     /** {@inheritDoc} */

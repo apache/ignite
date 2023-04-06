@@ -55,7 +55,8 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
             IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
                 arg.snapshotName(),
                 arg.snapshotPath(),
-                arg.incremental()
+                arg.incremental(),
+                arg.onlyPrimary()
             );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
