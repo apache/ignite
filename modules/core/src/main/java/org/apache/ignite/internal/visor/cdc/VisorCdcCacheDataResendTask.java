@@ -224,7 +224,7 @@ public class VisorCdcCacheDataResendTask extends VisorMultiNodeTask<VisorCdcCach
                     log.info("CDC cache data resend cancelled.");
                 else {
                     log.info("CDC cache data resend finished [cacheName=" + cache.name() +
-                        ", entriesCnt=" + cnt +  ", parts=" + parts + ']');
+                        ", entriesCnt=" + cnt + ", parts=" + parts + ']');
                 }
             }
         }
