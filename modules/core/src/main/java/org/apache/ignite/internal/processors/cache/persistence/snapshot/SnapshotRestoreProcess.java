@@ -865,6 +865,8 @@ public class SnapshotRestoreProcess {
         if (failure != null) {
             opCtx0.errHnd.accept(failure);
 
+            finishProcess(reqId, failure);
+
             return;
         }
 
