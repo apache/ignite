@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -95,9 +96,14 @@ public class OrphanedTestCollection {
      * Path to the common orphaned_tests.txt file.
      */
     private static Path orphanedTestsFilePath() {
-        return Paths
-            .get(OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().getPath())
-            .getParent()
-            .resolve("orphaned_tests.txt");
+        try {
+            return Paths
+                .get(OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+                .getParent()
+                .resolve("orphaned_tests.txt");
+        }
+        catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
