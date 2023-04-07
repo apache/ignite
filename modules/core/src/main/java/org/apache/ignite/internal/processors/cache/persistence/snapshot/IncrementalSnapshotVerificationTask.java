@@ -380,8 +380,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure finished " +
                         "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId +
-                        ", processedTxCnt=" + procTxCnt.sum() + ", processedDataEntries=" + procEntriesCnt.sum() +
-                        ", processedWalSegments=" + procSegCnt.get() + ']');
+                        ", txCnt=" + procTxCnt.sum() + ", dataEntries=" + procEntriesCnt.sum() +
+                        ", walSegments=" + procSegCnt.get() + ']');
                 }
 
                 return new IncrementalSnapshotVerificationTaskResult(
