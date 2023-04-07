@@ -1395,10 +1395,10 @@ public class SnapshotRestoreProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<Boolean> incrementalSnapshotRestore(UUID reqId) {
-        if (ctx.clientNode() || !CU.baselineNode(ctx.discovery().localNode(), ctx.state().clusterState()))
-            return new GridFinishedFuture<>();
-
         SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (ctx.clientNode() || opCtx0 == null || !opCtx0.nodes().contains(ctx.localNodeId()))
+            return new GridFinishedFuture<>();
 
         if (log.isInfoEnabled()) {
             log.info("Starting incremental snapshot restore operation " +
