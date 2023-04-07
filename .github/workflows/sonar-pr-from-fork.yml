@@ -15,9 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: Sonar Quality Check
+name: Sonar Quality Pull Request Check
 
-on: pull_request_target
+on: [pull_request_target]
 
 permissions:
   contents: read
