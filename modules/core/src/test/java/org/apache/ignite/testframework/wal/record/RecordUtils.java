@@ -112,6 +112,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_RECYCLE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REMOVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT;
@@ -191,6 +192,7 @@ public class RecordUtils {
         put(PAGE_RECORD, RecordUtils::buildPageSnapshot);
         put(DATA_RECORD, RecordUtils::buildDataRecord);
         put(DATA_RECORD_V2, RecordUtils::buildDataRecord);
+        put(CDC_DATA_RECORD, RecordUtils::buildDataRecord);
         put(CHECKPOINT_RECORD, RecordUtils::buildCheckpointRecord);
         put(HEADER_RECORD, buildUpsupportedWalRecord(HEADER_RECORD));
         put(INIT_NEW_PAGE_RECORD, RecordUtils::buildInitNewPageRecord);
