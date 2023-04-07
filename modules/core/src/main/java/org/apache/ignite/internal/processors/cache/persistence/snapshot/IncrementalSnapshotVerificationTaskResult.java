@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
@@ -37,11 +38,14 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     /** Transaction hashes collection. */
     private Map<Object, TransactionsHashRecord> txHashRes;
 
-    /** Partition hashes collection. It is calculated on data entries included into only incremental part of snapshot. */
+    /**
+     * Partition hashes collection. Value is a hash of data entries {@link DataEntry} from WAL segments included
+     * into the incremental snapshot.
+     */
     private Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes;
 
-    /** Partial committed transactions' collection. */
-    private Collection<GridCacheVersion> partialCommittedTxs;
+    /** Partially committed transactions' collection. */
+    private Collection<GridCacheVersion> partiallyCommittedTxs;
 
     /** Occurred exceptions. */
     private Collection<Exception> exceptions;
@@ -55,12 +59,12 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     IncrementalSnapshotVerificationTaskResult(
         Map<Object, TransactionsHashRecord> txHashRes,
         Map<PartitionKeyV2, PartitionHashRecordV2> partHashRes,
-        Collection<GridCacheVersion> partialCommittedTxs,
+        Collection<GridCacheVersion> partiallyCommittedTxs,
         Collection<Exception> exceptions
     ) {
         this.txHashRes = txHashRes;
         this.partHashRes = partHashRes;
-        this.partialCommittedTxs = partialCommittedTxs;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
         this.exceptions = exceptions;
     }
 
@@ -75,8 +79,8 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     }
 
     /** */
-    public Collection<GridCacheVersion> partialCommittedTxs() {
-        return partialCommittedTxs;
+    public Collection<GridCacheVersion> partiallyCommittedTxs() {
+        return partiallyCommittedTxs;
     }
 
     /** */
@@ -88,7 +92,7 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, txHashRes);
         U.writeMap(out, partHashRes);
-        U.writeCollection(out, partialCommittedTxs);
+        U.writeCollection(out, partiallyCommittedTxs);
         U.writeCollection(out, exceptions);
     }
 
@@ -96,7 +100,7 @@ class IncrementalSnapshotVerificationTaskResult extends IgniteDataTransferObject
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         txHashRes = U.readMap(in);
         partHashRes = U.readMap(in);
-        partialCommittedTxs = U.readCollection(in);
+        partiallyCommittedTxs = U.readCollection(in);
         exceptions = U.readCollection(in);
     }
 }

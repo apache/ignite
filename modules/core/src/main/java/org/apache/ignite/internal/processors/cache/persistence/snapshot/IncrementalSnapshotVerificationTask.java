@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -83,7 +84,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
         List<List<TransactionsHashRecord>> txHashConflicts = new ArrayList<>();
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> partHashes = new HashMap<>();
-        Map<ClusterNode, Collection<GridCacheVersion>> partialCommits = new HashMap<>();
+        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs = new HashMap<>();
 
         Map<ClusterNode, Exception> errors = new HashMap<>();
 
@@ -102,8 +103,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                 continue;
             }
 
-            if (!F.isEmpty(res.partialCommittedTxs()))
-                partialCommits.put(nodeRes.getNode(), res.partialCommittedTxs());
+            if (!F.isEmpty(res.partiallyCommittedTxs()))
+                partiallyCommittedTxs.put(nodeRes.getNode(), res.partiallyCommittedTxs());
 
             for (Map.Entry<PartitionKeyV2, PartitionHashRecordV2> entry: res.partHashRes().entrySet())
                 partHashes.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
@@ -139,7 +140,9 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
         return new SnapshotPartitionsVerifyTaskResult(
             metas,
-            errors.isEmpty() ? new IdleVerifyResultV2(partHashes, txHashConflicts, partialCommits) : new IdleVerifyResultV2(errors));
+            errors.isEmpty() ?
+                new IdleVerifyResultV2(partHashes, txHashConflicts, partiallyCommittedTxs)
+                : new IdleVerifyResultV2(errors));
     }
 
     /** {@inheritDoc} */
@@ -179,6 +182,9 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         /** Consistent ID. */
         private final String consId;
 
+        /** */
+        private LongAdder procEntriesCnt;
+
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
@@ -216,6 +222,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
 
                 Map<Integer, StoredCacheData> txCaches = readTxCachesData();
 
+                AtomicLong procSegCnt = new AtomicLong();
+
                 IncrementalSnapshotProcessor proc = new IncrementalSnapshotProcessor(
                     ignite.context().cache().context(), snpName, snpPath, incIdx, txCaches.keySet()
                 ) {
@@ -224,28 +232,31 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                     }
 
                     @Override void processedWalSegments(int segCnt) {
-                        // No-op.
+                        procSegCnt.set(segCnt);
                     }
 
                     @Override void initWalEntries(LongAdder entriesCnt) {
-                        // No-op.
+                        procEntriesCnt = entriesCnt;
                     }
                 };
 
-                short locShortId = blt.consistentIdMapping().get(consId);
+                short locNodeId = blt.consistentIdMapping().get(consId);
 
                 Set<GridCacheVersion> activeDhtTxs = new HashSet<>();
-                Map<GridCacheVersion, Set<Short>> txPrimPartNodes = new HashMap<>();
-                Map<Short, PartitionHashHolder> nodesTxHash = new HashMap<>();
+                Map<GridCacheVersion, Set<Short>> txPrimParticipatingNodes = new HashMap<>();
+                Map<Short, HashHolder> nodesTxHash = new HashMap<>();
 
-                Set<GridCacheVersion> partialCommittedTxs = new HashSet<>();
-                Map<PartitionKeyV2, PartitionHashHolder> partMap = new HashMap<>();
+                Set<GridCacheVersion> partiallyCommittedTxs = new HashSet<>();
+                // Hashes in this map calculated based on WAL records only, not part-X.bin data.
+                Map<PartitionKeyV2, HashHolder> partMap = new HashMap<>();
                 List<Exception> exceptions = new ArrayList<>();
 
-                BiConsumer<GridCacheVersion, Set<Short>> calcTransactionHash = (xid, partNodes) -> {
-                    for (short shortId: partNodes) {
-                        if (shortId != locShortId) {
-                            PartitionHashHolder hash = nodesTxHash.computeIfAbsent(shortId, (k) -> new PartitionHashHolder());
+                Function<Short, HashHolder> hashHolderBuilder = (k) -> new HashHolder();
+
+                BiConsumer<GridCacheVersion, Set<Short>> calcTxHash = (xid, participatingNodes) -> {
+                    for (short nodeId: participatingNodes) {
+                        if (nodeId != locNodeId) {
+                            HashHolder hash = nodesTxHash.computeIfAbsent(nodeId, hashHolderBuilder);
 
                             hash.increment(xid.hashCode(), 0);
                         }
@@ -259,15 +270,17 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         cacheData -> CU.cacheGroupId(cacheData.config().getName(), cacheData.config().getGroupName())
                     ));
 
+                LongAdder procTxCnt = new LongAdder();
+
                 proc.process(dataEntry -> {
-                    if (dataEntry.op() == GridCacheOperation.READ)
+                    if (dataEntry.op() == GridCacheOperation.READ || !exceptions.isEmpty())
                         return;
 
                     if (log.isTraceEnabled())
                         log.trace("Checking data entry [entry=" + dataEntry + ']');
 
                     if (!activeDhtTxs.contains(dataEntry.writeVersion()))
-                        partialCommittedTxs.add(dataEntry.nearXidVersion());
+                        partiallyCommittedTxs.add(dataEntry.nearXidVersion());
 
                     StoredCacheData cacheData = txCaches.get(dataEntry.cacheId());
 
@@ -276,7 +289,7 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         dataEntry.partitionId(),
                         CU.cacheOrGroupName(cacheData.config()));
 
-                    PartitionHashHolder hash = partMap.computeIfAbsent(partKey, (k) -> new PartitionHashHolder());
+                    HashHolder hash = partMap.computeIfAbsent(partKey, (k) -> new HashHolder());
 
                     try {
                         int valHash = dataEntry.key().hashCode() + Arrays.hashCode(dataEntry.value().valueBytes(null));
@@ -288,6 +301,9 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         exceptions.add(ex);
                     }
                 }, txRec -> {
+                    if (!exceptions.isEmpty())
+                        return;
+
                     if (log.isDebugEnabled())
                         log.debug("Checking tx record [txRec=" + txRec + ']');
 
@@ -295,15 +311,15 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                         // Collect only primary nodes. For some cases backup nodes is included into TxRecord#participationNodes()
                         // but actually doesn't even start transaction, for example, if the node participates only as a backup
                         // of reading only keys.
-                        Set<Short> primPartNodes = txRec.participatingNodes().keySet();
+                        Set<Short> primParticipatingNodes = txRec.participatingNodes().keySet();
 
-                        if (primPartNodes.contains(locShortId)) {
-                            txPrimPartNodes.put(txRec.nearXidVersion(), primPartNodes);
+                        if (primParticipatingNodes.contains(locNodeId)) {
+                            txPrimParticipatingNodes.put(txRec.nearXidVersion(), primParticipatingNodes);
                             activeDhtTxs.add(txRec.writeVersion());
                         }
                         else {
                             for (Collection<Short> backups: txRec.participatingNodes().values()) {
-                                if (backups.contains(ALL_NODES) || backups.contains(locShortId))
+                                if (backups.contains(ALL_NODES) || backups.contains(locNodeId))
                                     activeDhtTxs.add(txRec.writeVersion());
                             }
                         }
@@ -311,28 +327,30 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                     else if (txRec.state() == TransactionState.COMMITTED) {
                         activeDhtTxs.remove(txRec.writeVersion());
 
-                        Set<Short> partNodes = txPrimPartNodes.remove(txRec.nearXidVersion());
+                        Set<Short> participatingNodes = txPrimParticipatingNodes.remove(txRec.nearXidVersion());
 
                         // Legal cases:
                         // 1. This node is a transaction near node, but not primary or backup node.
                         // 2. This node participated in the transaction multiple times (e.g., primary for one key and backup for other key).
                         // 3. A transaction is included into previous incremental snapshot.
-                        if (partNodes == null)
+                        if (participatingNodes == null)
                             return;
 
-                        calcTransactionHash.accept(txRec.nearXidVersion(), partNodes);
+                        procTxCnt.increment();
+
+                        calcTxHash.accept(txRec.nearXidVersion(), participatingNodes);
                     }
                     else if (txRec.state() == TransactionState.ROLLED_BACK) {
                         activeDhtTxs.remove(txRec.writeVersion());
-                        txPrimPartNodes.remove(txRec.nearXidVersion());
+                        txPrimParticipatingNodes.remove(txRec.nearXidVersion());
                     }
                 });
 
                 // All active transactions that didn't log COMMITTED or ROLL_BACK records are considered committed.
                 // It is possible as incremental snapshot started after transaction left IgniteTxManager#activeTransactions() collection,
                 // but completed before the final TxRecord was written.
-                for (Map.Entry<GridCacheVersion, Set<Short>> tx: txPrimPartNodes.entrySet())
-                    calcTransactionHash.accept(tx.getKey(), tx.getValue());
+                for (Map.Entry<GridCacheVersion, Set<Short>> tx: txPrimParticipatingNodes.entrySet())
+                    calcTxHash.accept(tx.getKey(), tx.getValue());
 
                 Map<Object, TransactionsHashRecord> txHashRes = nodesTxHash.entrySet().stream()
                     .map(e -> new TransactionsHashRecord(
@@ -359,10 +377,17 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                             null)
                     ));
 
+                if (log.isInfoEnabled()) {
+                    log.info("Verify incremental snapshot procedure finished " +
+                        "[snpName=" + snpName + ", incrementIndex=" + incIdx + ", consId=" + consId +
+                        ", processedTxCnt=" + procTxCnt.sum() + ", processedDataEntries=" + procEntriesCnt.sum() +
+                        ", processedWalSegments=" + procSegCnt.get() + ']');
+                }
+
                 return new IncrementalSnapshotVerificationTaskResult(
                     txHashRes,
                     partHashRes,
-                    partialCommittedTxs,
+                    partiallyCommittedTxs,
                     exceptions);
             }
             catch (IgniteCheckedException | IOException e) {
@@ -418,8 +443,8 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
         }
     }
 
-    /** Holder for parition hashes. */
-    private static class PartitionHashHolder {
+    /** Holder for calculated hashes. */
+    private static class HashHolder {
         /** */
         private int hash;
 
