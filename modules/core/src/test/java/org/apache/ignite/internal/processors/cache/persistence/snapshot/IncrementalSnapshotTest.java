@@ -46,7 +46,6 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -392,7 +391,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         DistributedProcess.DistributedProcessType[] stages = new DistributedProcess.DistributedProcessType[] {
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
             RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
-            RESTORE_CACHE_GROUP_SNAPSHOT_START,
             RESTORE_INCREMENTAL_SNAPSHOT_START
         };
 
@@ -419,11 +417,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             return false;
         });
 
+        srv.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
         for (DistributedProcess.DistributedProcessType stage : stages) {
-            srv.destroyCache(DEFAULT_CACHE_NAME);
-
-            awaitPartitionMapExchange();
-
             failStage.set(stage);
 
             assertThrows(log,
