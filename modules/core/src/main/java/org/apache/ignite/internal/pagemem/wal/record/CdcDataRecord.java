@@ -15,14 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nodestart;
+package org.apache.ignite.internal.pagemem.wal.record;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Implementation of {@link IgniteSshHelper}.
+ * The record to forcefully resend cache data to the CDC application.
  */
-public class IgniteSshHelperImpl implements IgniteSshHelper {
+public class CdcDataRecord extends DataRecord {
+    /** */
+    public CdcDataRecord(DataEntry writeEntry) {
+        super(writeEntry);
+    }
+
     /** {@inheritDoc} */
-    @Override public StartNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {
-        return new StartNodeCallableImpl(spec, timeout);
+    @Override public RecordType type() {
+        return RecordType.CDC_DATA_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CdcDataRecord.class, this, "super", super.toString());
     }
 }

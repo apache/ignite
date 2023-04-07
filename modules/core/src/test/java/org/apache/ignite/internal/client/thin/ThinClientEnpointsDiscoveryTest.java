@@ -61,6 +61,21 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
 
     /** */
     @Test
+    public void testEndpointsDiscoveryDisabled() throws Exception {
+        startGrids(2);
+
+        // Set only subset of nodes to connect, but wait for init of all nodes channels (other nodes should be discovered).
+        initClient(getClientConfiguration(0).setClusterDiscoveryEnabled(false), 0);
+
+        Thread.sleep(300);
+
+        assertNull(channels[1]);
+        assertNull(channels[2]);
+        assertNull(channels[3]);
+    }
+
+    /** */
+    @Test
     public void testDiscoveryAfterAllNodesFailed() throws Exception {
         startGrids(2);
 
