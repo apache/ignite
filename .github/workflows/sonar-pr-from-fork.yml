@@ -1,0 +1,87 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+name: Sonar Quality Check
+
+on: pull_request_target
+
+permissions:
+  contents: read
+
+env:
+  MAVEN_OPTS: -Xms2g
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonarcloud:
+    if: github.repository == 'apache/ignite'
+    name: Sonar Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "refs/pull/${{ github.event.number }}/merge"
+          fetch-depth: 0
+
+      - name: Set up JDK11
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'maven'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2
+
+      - name: Install Libnuma
+        run: sudo apt-get update && sudo apt-get install libnuma-dev
+
+      - name: Build with Maven
+        run: |
+          ./mvnw clean install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
+
+      - name: Sonar Analyze Upload
+        run: >
+          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
+          -P all-java,lgpl,examples,skip-docs
+          -Dsonar.pullrequest.branch=${{ github.head_ref }}
+          -Dsonar.pullrequest.base=${{ github.base_ref }}
+          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+          -Dsonar.pullrequest.github.repository=apache/ignite
+          -Dsonar.pullrequest.provider=GitHub 
+          -Dsonar.pullrequest.github.summary_comment=true
+          -Dsonar.projectKey=apache_ignite
+          -Dsonar.login=${SONARCLOUD_TOKEN}
+          -B -V
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}

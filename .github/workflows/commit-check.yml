@@ -15,7 +15,7 @@
 
 name: Check Code Style, Abandoned Tests, Sonar Analysis
 on:
-  pull_request_target:
+  pull_request:
     types: [ opened, synchronize, reopened ]
   push:
     branches:
@@ -53,46 +53,26 @@ jobs:
       - name: Set MAVEN_OPTS
         if: ${{ matrix.java == '11' }}
         run: |
-          echo MAVEN_OPTS="${MAVEN_OPTS}
-          --illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+          echo MAVEN_OPTS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
           --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
           --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
           --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-          -Djdk.tls.client.protocols=TLSv1.2" >> $GITHUB_ENV
+          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
 
       - name: Run codestyle and licenses checks
         run: |
-          mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
         if: ${{ matrix.java == '8' }}
         run : |
-          mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
-
-  sonar-pre-check:
-    name: Sonar Secret Fast Check
-    runs-on: ubuntu-latest
-    outputs:
-      HAVE_SONAR_TOKEN: ${{ steps.check-a-secret.outputs.HAVE_SONAR_TOKEN }}
-    steps:
-      - id: check-a-secret
-        name: Export Sonar Env Check
-        run: |
-          echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_OUTPUT
-          echo "HAVE_SONAR_TOKEN=$HAVE_SONAR_TOKEN" >> $GITHUB_STEP_SUMMARY
-        env:
-          HAVE_SONAR_TOKEN: ${{ secrets.SONARCLOUD_TOKEN != '' }}
-      - name: Do we have token?
-        if: steps.check-a-secret.outputs.HAVE_SONAR_TOKEN == 'false'
-        run: |
-          echo "No SonarCloud token, skipping SonarCloud analysis"
-          exit 1
+          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
   sonarcloud:
     name: Sonar Analysis
-    needs: sonar-pre-check
-    if: needs.sonar-pre-check.outputs.HAVE_SONAR_TOKEN == 'true'
+    needs: check-java
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -125,29 +105,18 @@ jobs:
 
       - name: Build Ignite
         run: |
-          mvn install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
-
-      - name: Setup Sonar Opts
-        shell: bash
-        run: |
-          if [ "${{ event_name }}" == "pull_request_target" ]; then
-            SONAR_OPTS="-Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} -Dsonar.pullrequest.github.repository=apache/ignite -Dsonar.pullrequest.provider=GitHub -Dsonar.pullrequest.github.summary_comment=true"
-          else
-            SONAR_OPTS="-Dsonar.branch.name=${{ github.ref_name }}"
-          fi
-          echo "SONAR_OPTS:     ${SONAR_OPTS}"
-          echo "SONAR_OPTS=${SONAR_OPTS}" >> $GITHUB_ENV
+          ./mvnw install -P all-java,lgpl,examples,skip-docs -DskipTests -B -V          
 
       - name: Sonar Analyze Upload
         run: >
-          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
+          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
           -P all-java,lgpl,examples,skip-docs
-          ${{ env.SONAR_OPTS }}
+          -Dsonar.branch.name=${{ github.ref_name }}
           -Dsonar.projectKey=apache_ignite
           -Dsonar.login=${SONARCLOUD_TOKEN}
           -B -V
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
 
   check-dotnet:
