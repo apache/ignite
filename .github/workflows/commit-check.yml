@@ -72,7 +72,7 @@ jobs:
   sonarcloud-pr-analysis:
     name: Sonar Pull Request Analysis
     needs: check-java
-    if: ${{ github.event_name == 'pull-request' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
