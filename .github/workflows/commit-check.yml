@@ -70,7 +70,7 @@ jobs:
           ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
   sonarcloud:
-    name: Sonar Analysis
+    name: Sonar Quality Branch Analysis
     needs: check-java
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
