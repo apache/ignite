@@ -64,6 +64,9 @@ public class ClientDiscoveryContext {
     @Nullable private final ClientAddressFinder addrFinder;
 
     /** */
+    private final boolean enabled;
+
+    /** */
     private volatile TopologyInfo topInfo;
 
     /** Cache addresses returned by {@link ClientAddressFinder}. */
@@ -77,6 +80,7 @@ public class ClientDiscoveryContext {
         log = NullLogger.whenNull(clientCfg.getLogger());
         addresses = clientCfg.getAddresses();
         addrFinder = clientCfg.getAddressesFinder();
+        enabled = clientCfg.isClusterDiscoveryEnabled();
         reset();
     }
 
@@ -94,8 +98,8 @@ public class ClientDiscoveryContext {
      * @return {@code True} if updated.
      */
     boolean refresh(ClientChannel ch) {
-        if (addrFinder != null)
-            return false; // Used custom address finder.
+        if (addrFinder != null || !enabled)
+            return false; // Disabled or custom finder is used.
 
         if (!ch.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.CLUSTER_GROUP_GET_NODES_ENDPOINTS))
             return false;

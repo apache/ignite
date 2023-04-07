@@ -119,8 +119,8 @@ import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
-import static org.apache.ignite.internal.commandline.cdc.CdcCommand.DELETE_LOST_SEGMENT_LINKS;
-import static org.apache.ignite.internal.commandline.cdc.CdcCommand.NODE_ID;
+import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.NODE_ID;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;

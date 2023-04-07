@@ -153,6 +153,29 @@ public class IgnitePdsCheckpointMapSnapshotTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that node can start successfully if checkpoint map snapshot is corrupted.
+     */
+    @Test
+    public void testCorruptedCpMap() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        File cpDir = dbMgr(grid).checkpointManager.checkpointDirectory();
+
+        File cpSnapshotMap = new File(cpDir, CheckpointMarkersStorage.EARLIEST_CP_SNAPSHOT_FILE);
+
+        if (cpSnapshotMap.exists())
+            cpSnapshotMap.delete();
+
+        cpSnapshotMap.createNewFile();
+
+        stopGrid(0);
+
+        grid = startGrid(0);
+
+        grid.cluster().state(ClusterState.ACTIVE);
+    }
+
+    /**
      * Tests node restart after a series of checkpoints. Node should use a checkpoint map snapshot if it is present.
      *
      * @param removeSnapshot Whether to remove a snapshot of a checkpoint map.

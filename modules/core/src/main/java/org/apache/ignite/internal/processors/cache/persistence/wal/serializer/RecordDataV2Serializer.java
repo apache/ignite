@@ -91,6 +91,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
                 return 18 + cacheStatesSize + (walPtr == null ? 0 : 16);
 
             case MVCC_DATA_RECORD:
+            case CDC_DATA_RECORD:
                 return 4/*entry count*/ + 8/*timestamp*/ + dataSize((DataRecord)rec);
 
             case DATA_RECORD_V2:
@@ -162,6 +163,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case DATA_RECORD:
             case DATA_RECORD_V2:
+            case CDC_DATA_RECORD:
                 int entryCnt = in.readInt();
                 long timeStamp = in.readLong();
 
@@ -272,6 +274,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case MVCC_DATA_RECORD:
             case DATA_RECORD_V2:
+            case CDC_DATA_RECORD:
                 DataRecord dataRec = (DataRecord)rec;
 
                 int entryCnt = dataRec.entryCount();
