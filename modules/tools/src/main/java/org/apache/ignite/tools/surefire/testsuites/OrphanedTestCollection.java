@@ -95,10 +95,14 @@ public class OrphanedTestCollection {
      * Path to the common orphaned_tests.txt file.
      */
     private static Path orphanedTestsFilePath() {
-        return Paths.get(Paths
+        System.out.println("XXXX1 "+ OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation());
+        System.out.println("XXXX2 "+ OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+        System.out.println("XXXX3 "+ Paths
+            .get(OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().getPath()));
+
+        return Paths
             .get(OrphanedTestCollection.class.getProtectionDomain().getCodeSource().getLocation().getPath())
             .getParent()
-            .resolve("orphaned_tests.txt")
-            .toUri());
+            .resolve("orphaned_tests.txt");
     }
 }
