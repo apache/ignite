@@ -478,6 +478,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         init(metaPageId, initNew);
     }
 
+    /** {@inheritDoc} */
+    @Override public int getPageFreeSpace(int bucket) {
+        return bucket << shift;
+    }
+
     /**
      * Calculates free space tracked by this FreeListImpl instance.
      *
