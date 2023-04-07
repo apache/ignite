@@ -243,7 +243,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
 
         assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
-        assertContains(log, testOut.toString(), "partialCommitsSize=1");
+        assertContains(log, testOut.toString(), "partiallyCommittedSize=1");
     }
 
     /** Remove all transactions from single node. */
@@ -328,7 +328,7 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
         assertEquals(EXIT_CODE_OK, execute(cmd, "--snapshot", "check", SNP, "--increment", "1"));
         assertContains(log, testOut.toString(), "The check procedure has failed");
         assertContains(log, testOut.toString(), "hashConflicts=" + txPrimNodesCnt);
-        assertContains(log, testOut.toString(), "partialCommitsSize=1");
+        assertContains(log, testOut.toString(), "partiallyCommittedSize=1");
     }
 
     /** */

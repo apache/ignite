@@ -71,7 +71,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** Partial committed transactions. */
     @GridToStringInclude
-    private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partialCommitTxs;
+    private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
     @GridToStringInclude
@@ -96,12 +96,12 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     public IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
         List<List<TransactionsHashRecord>> txHashConflicts,
-        Map<ClusterNode, Collection<GridCacheVersion>> partialCommitTxs
+        Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs
     ) {
         this(clusterHashes, null);
 
         this.txHashConflicts = txHashConflicts;
-        this.partialCommitTxs = partialCommitTxs;
+        this.partiallyCommittedTxs = partiallyCommittedTxs;
     }
 
     /**
@@ -164,7 +164,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         U.writeMap(out, exceptions);
         U.writeMap(out, lostPartitions);
         U.writeCollection(out, txHashConflicts);
-        U.writeMap(out, partialCommitTxs);
+        U.writeMap(out, partiallyCommittedTxs);
     }
 
     /** {@inheritDoc} */
@@ -182,7 +182,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
         if (protoVer >= V4) {
             txHashConflicts = (List)U.readCollection(in);
-            partialCommitTxs = U.readMap(in);
+            partiallyCommittedTxs = U.readMap(in);
         }
     }
 
@@ -219,7 +219,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
      */
     public boolean hasConflicts() {
         return !F.isEmpty(hashConflicts()) || !F.isEmpty(counterConflicts())
-            || !F.isEmpty(txHashConflicts) || !F.isEmpty(partialCommitTxs);
+            || !F.isEmpty(txHashConflicts) || !F.isEmpty(partiallyCommittedTxs);
     }
 
     /**
@@ -309,7 +309,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         printer.accept("The check procedure has failed, conflict partitions has been found: [" +
             "counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize
             + (txHashConflicts == null ? "" : ", txHashConflicts=" + txHashConflicts.size())
-            + (partialCommitTxs == null ? "" : ", partialCommitsSize=" + partialCommitTxs.size())
+            + (partiallyCommittedTxs == null ? "" : ", partiallyCommittedSize=" + partiallyCommittedTxs.size())
             + "]" + nl());
 
         Set<PartitionKeyV2> allConflicts = new HashSet<>();
@@ -347,10 +347,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                 printer.accept("Conflict nodes: " + conf + nl());
         }
 
-        if (!F.isEmpty(partialCommitTxs)) {
-            printer.accept("Partial committed transactions:" + nl());
+        if (!F.isEmpty(partiallyCommittedTxs)) {
+            printer.accept("Partially committed transactions:" + nl());
 
-            for (Map.Entry<ClusterNode, Collection<GridCacheVersion>> entry : partialCommitTxs.entrySet()) {
+            for (Map.Entry<ClusterNode, Collection<GridCacheVersion>> entry : partiallyCommittedTxs.entrySet()) {
                 printer.accept("Node: " + entry.getKey() + nl());
 
                 printer.accept("Transactions: " + entry.getValue() + nl());
@@ -393,12 +393,19 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
             Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
             Objects.equals(exceptions, v2.exceptions) && Objects.equals(txHashConflicts, v2.txHashConflicts) &&
-            Objects.equals(partialCommitTxs, v2.partialCommitTxs);
+            Objects.equals(partiallyCommittedTxs, v2.partiallyCommittedTxs);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions, txHashConflicts, partialCommitTxs);
+        return Objects.hash(
+            cntrConflicts,
+            hashConflicts,
+            movingPartitions,
+            lostPartitions,
+            exceptions,
+            txHashConflicts,
+            partiallyCommittedTxs);
     }
 
     /** {@inheritDoc} */
