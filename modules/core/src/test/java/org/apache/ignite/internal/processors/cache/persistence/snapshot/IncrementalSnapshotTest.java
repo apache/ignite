@@ -404,6 +404,10 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         createAndCheckSnapshot(srv, SNAPSHOT_NAME, null, TIMEOUT);
         srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
+        srv.destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
         AtomicReference<DistributedProcess.DistributedProcessType> failStage = new AtomicReference<>();
 
         TestRecordingCommunicationSpi.spi(grid(1)).blockMessages((node, msg) -> {
@@ -416,10 +420,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
             return false;
         });
-
-        srv.destroyCache(DEFAULT_CACHE_NAME);
-
-        awaitPartitionMapExchange();
 
         for (DistributedProcess.DistributedProcessType stage : stages) {
             failStage.set(stage);
