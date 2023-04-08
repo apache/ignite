@@ -680,6 +680,19 @@ a primary partition and a corresponding backup partitions and prints a report if
 Differences may be the result of inconsistencies in some data on the cluster from which the snapshot was taken. It is
 recommended to perform the `idle_verify` procedure on the cluster if this case occurs.
 
+The checking incremental snapshot command verifies data in WAL segments only. It checks that every transaction included into
+snapshot is fully committed on every participated node. It also calculates hashes of these transactions and committed data
+changes and compares it between nodes.
+
+[WARNING]
+====
+[discrete]
+=== The Incremental Snapshot Check verifies transactional caches only
+Please note, incremental snapshots doesn't guarantee consistency of atomic caches. It is highly recommended verifying these
+caches after restoring with the `idle_verify` command. If it is needed it's possible to repair inconsistent partitions with
+the `--consistency` command.
+====
+
 This procedure does not require the cluster to be in the `idle` state.
 
 [tabs]
@@ -689,6 +702,10 @@ tab:Shell[]
 ----
 # Checks that partitions of all snapshot caches have the correct checksums and primary/backup ones actually contain the same data.
 control.(sh|bat) --snapshot check snapshot_name
+
+# Checks the transactional data included into incremental snapshots. Incremental snapshots with indices from 1 to 3 are checked.
+control.(sh|bat) --snapshot check snapshot_name --increment 3
+
 ----
 --
 

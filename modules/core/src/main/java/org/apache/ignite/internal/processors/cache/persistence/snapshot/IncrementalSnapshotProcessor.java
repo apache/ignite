@@ -93,7 +93,7 @@ abstract class IncrementalSnapshotProcessor {
      * @param txHnd Handle transaction records.
      */
     void process(
-        @Nullable Consumer<DataEntry> dataEntryHnd,
+        Consumer<DataEntry> dataEntryHnd,
         @Nullable Consumer<TxRecord> txHnd
     ) throws IgniteCheckedException, IOException {
         IncrementalSnapshotMetadata meta = cctx.snapshotMgr()
@@ -126,10 +126,8 @@ abstract class IncrementalSnapshotProcessor {
         Set<WALRecord.RecordType> recTypes = new HashSet<>(F.asList(
             CLUSTER_SNAPSHOT,
             INCREMENTAL_SNAPSHOT_START_RECORD,
-            INCREMENTAL_SNAPSHOT_FINISH_RECORD));
-
-        if (dataEntryHnd != null)
-            recTypes.add(DATA_RECORD_V2);
+            INCREMENTAL_SNAPSHOT_FINISH_RECORD,
+            DATA_RECORD_V2));
 
         if (txHnd != null)
             recTypes.add(TX_RECORD);

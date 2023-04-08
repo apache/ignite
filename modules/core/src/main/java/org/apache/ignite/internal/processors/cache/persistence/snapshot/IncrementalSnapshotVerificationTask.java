@@ -292,7 +292,11 @@ public class IncrementalSnapshotVerificationTask extends AbstractSnapshotVerific
                     HashHolder hash = partMap.computeIfAbsent(partKey, (k) -> new HashHolder());
 
                     try {
-                        int valHash = dataEntry.key().hashCode() + Arrays.hashCode(dataEntry.value().valueBytes(null));
+                        int valHash = dataEntry.key().hashCode();
+
+                        if (dataEntry.value() != null)
+                            valHash += Arrays.hashCode(dataEntry.value().valueBytes(null));
+
                         int verHash = dataEntry.writeVersion().hashCode();
 
                         hash.increment(valHash, verHash);

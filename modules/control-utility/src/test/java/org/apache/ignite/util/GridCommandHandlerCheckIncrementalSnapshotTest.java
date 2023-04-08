@@ -386,17 +386,22 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
                     txIdHnd.accept(tx.xid());
 
                 for (int primNode = 0; primNode < txPrimNodesCnt; primNode++) {
-                    grid(0).cache(CACHE).put(
-                        primaryKeys(grid(primNode).cache(CACHE), 1, rnd.nextInt(1_000)).get(0),
-                        0);
+                    grid(0).cache(CACHE).put(primaryKey(grid(primNode)), 0);
+
+                    grid(0).cache(CACHE).remove(primaryKey(grid(primNode)), 0);
                 }
 
-                grid(0).cache(CACHE).get(
-                    primaryKeys(grid(rnd.nextInt(nodesCnt)).cache(CACHE), 1, rnd.nextInt(1_000)).get(0));
+                // Let read operation run from any node.
+                grid(0).cache(CACHE).get(primaryKey(grid(rnd.nextInt(nodesCnt))));
 
                 tx.commit();
             }
         }
+    }
+
+    /** @return Key which primary partition is located on the specified node. */
+    private int primaryKey(IgniteEx primNode) {
+        return primaryKeys(primNode.cache(CACHE), 1, ThreadLocalRandom.current().nextInt(1_000)).get(0);
     }
 
     /** */
