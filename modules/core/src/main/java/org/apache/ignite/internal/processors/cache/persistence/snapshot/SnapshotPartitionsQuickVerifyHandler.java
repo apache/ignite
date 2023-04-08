@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -83,7 +84,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
             if (other == null)
                 return;
 
-            if (val.size() != other.size() || !val.updateCounter().equals(other.updateCounter()))
+            if (val.size() != other.size() || !Objects.equals(val.updateCounter(), other.updateCounter()))
                 wrnGrps.add(part.groupId());
         }));
 

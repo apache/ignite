@@ -1479,7 +1479,7 @@ public class SnapshotRestoreProcess {
                     exec.onError(err);
                 }
             }, cacheCtx.groupId(), e.partitionId());
-        });
+        }, null);
 
         exec.awaitApplyComplete();
 

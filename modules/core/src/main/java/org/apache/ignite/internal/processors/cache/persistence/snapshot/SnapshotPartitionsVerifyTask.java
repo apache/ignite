@@ -55,6 +55,7 @@ public class SnapshotPartitionsVerifyTask extends AbstractSnapshotVerificationTa
     @Override protected ComputeJob createJob(
         String name,
         String path,
+        int incIdx,
         String constId,
         Collection<String> groups,
         boolean check
