@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import lombok.Data;
-import org.apache.ignite.internal.management.api.BaseCommand;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
@@ -30,7 +34,7 @@ import org.apache.ignite.internal.management.api.PositionalParameter;
  */
 @Data
 @OneOf({"nodeIds", "nodeId", "allNodes"})
-public class SystemViewCommand extends BaseCommand {
+public class SystemViewCommand extends IgniteDataTransferObject implements Command {
     /** System view name. */
     @PositionalParameter(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
@@ -59,10 +63,19 @@ public class SystemViewCommand extends BaseCommand {
         description = "Get the system view from all nodes. If not set, random node will be chosen",
         optional = true
     )
-    private Boolean allNodes;
+    private boolean allNodes;
 
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print system view content";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+
     }
 }
