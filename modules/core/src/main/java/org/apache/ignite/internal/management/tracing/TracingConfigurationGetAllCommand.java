@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.management.tracing;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
 /**
@@ -33,5 +37,19 @@ public class TracingConfigurationGetAllCommand extends BaseCommand implements Ex
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print tracing configuration";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeEnum(out, scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        scope = U.readEnum(in, Scope.class);
     }
 }

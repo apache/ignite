@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -45,5 +49,23 @@ public class MetaRemoveCommand extends BaseCommand implements ExperimentalComman
             "(the type must be specified by type name or by type identifier) " +
             "from cluster and saves the removed metadata to the specified file.\n" +
             "If the file name isn't specified the output file name is: '<typeId>.bin'";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeLong(typeId);
+        U.writeString(out, typeName);
+        U.writeString(out, this.out);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        typeId = in.readLong();
+        typeName = U.readString(in);
+        out = U.readString(in);
     }
 }

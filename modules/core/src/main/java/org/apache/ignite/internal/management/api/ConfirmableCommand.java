@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.management.api;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 /**
  *
  */
@@ -24,4 +28,18 @@ public abstract class ConfirmableCommand extends BaseCommand {
     /** */
     @Parameter(optional = true, excludeFromDescription = true)
     private boolean yes;
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeBoolean(yes);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        yes = in.readBoolean();
+    }
 }

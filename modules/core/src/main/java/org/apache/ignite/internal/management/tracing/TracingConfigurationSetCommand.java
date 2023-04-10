@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.tracing;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Set;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
 /**
@@ -38,7 +42,7 @@ public class TracingConfigurationSetCommand extends BaseCommand implements Exper
     /** */
     @Parameter(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
         "More or less reflects the probability of sampling specific trace.")
-    private Double samplingRate;
+    private double samplingRate;
 
     /** */
     @Parameter(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
@@ -50,5 +54,25 @@ public class TracingConfigurationSetCommand extends BaseCommand implements Exper
             "If both --scope and --label are specified then add or override label specific configuration, " +
             "if only --scope is specified, then override scope specific configuration. " +
             "Print applied configuration";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeEnum(out, scope);
+        out.writeBoolean(label);
+        out.writeDouble(samplingRate);
+        U.writeCollection(out, includedScopes);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        scope = U.readEnum(in, Scope.class);
+        label = in.readBoolean();
+        samplingRate = in.readDouble();
+        includedScopes = U.readSet(in);
     }
 }

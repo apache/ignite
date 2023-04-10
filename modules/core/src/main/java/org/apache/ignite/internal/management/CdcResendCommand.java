@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -34,5 +38,19 @@ public class CdcResendCommand extends BaseCommand implements ExperimentalCommand
     @Override public String description() {
         return "Forcefully resend all cache data to CDC. " +
             "Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeCollection(out, caches);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        caches = U.readList(in);
     }
 }

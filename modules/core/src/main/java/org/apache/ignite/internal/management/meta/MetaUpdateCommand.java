@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -34,5 +38,19 @@ public class MetaUpdateCommand extends BaseCommand implements ExperimentalComman
     /** {@inheritDoc} */
     @Override public String description() {
         return "Update cluster metadata from specified file (file name is required)";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, in);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        this.in = U.readString(in);
     }
 }

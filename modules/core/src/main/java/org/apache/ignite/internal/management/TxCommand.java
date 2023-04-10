@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 
 /**
- *
+ * TODO: here I use primitives with default values. Original command uses wrapper type - Integer, etc.
  */
 @Data
 public class TxCommand extends CommandWithSubs {
@@ -34,11 +38,11 @@ public class TxCommand extends CommandWithSubs {
 
     /** */
     @Parameter(example = "SECONDS", optional = true)
-    private Long minDuration;
+    private long minDuration = -1;
 
     /** */
     @Parameter(example = "SIZE", optional = true)
-    private Integer minSize;
+    private int minSize = -1;
 
     /** */
     @Parameter(example = "PATTERN_REGEX", optional = true)
@@ -58,7 +62,7 @@ public class TxCommand extends CommandWithSubs {
 
     /** */
     @Parameter(optional = true, example = "NUMBER")
-    private Integer limit;
+    private int limit = -1;
 
     /** */
     @Parameter(optional = true)
@@ -94,5 +98,41 @@ public class TxCommand extends CommandWithSubs {
     /** {@inheritDoc} */
     @Override public boolean positionalSubsName() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, xid);
+        out.writeLong(minDuration);
+        out.writeInt(minSize);
+        U.writeString(out, label);
+        out.writeBoolean(servers);
+        out.writeBoolean(clients);
+        U.writeCollection(out, nodes);
+        out.writeInt(limit);
+        U.writeEnum(out, order);
+        out.writeBoolean(kill);
+        out.writeBoolean(info);
+        out.writeBoolean(yes);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        xid = U.readString(in);
+        minDuration = in.readLong();
+        minSize = in.readInt();
+        label = U.readString(in);
+        servers = in.readBoolean();
+        clients = in.readBoolean();
+        nodes = U.readList(in);
+        limit = in.readInt();
+        order = U.readEnum(in, VisorTxSortOrder.class);
+        kill = in.readBoolean();
+        info = in.readBoolean();
+        yes = in.readBoolean();
     }
 }

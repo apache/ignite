@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.management.property;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -35,5 +39,21 @@ public class PropertySetCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set the property value";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, name);
+        U.writeString(out, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        name = U.readString(in);
+        val = U.readString(in);
     }
 }

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @Data
@@ -32,5 +36,19 @@ public class BaselineAddCommand extends ConfirmableCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Add nodes into baseline topology";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeCollection(out, consistentIDs);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        consistentIDs = U.readList(in);
     }
 }

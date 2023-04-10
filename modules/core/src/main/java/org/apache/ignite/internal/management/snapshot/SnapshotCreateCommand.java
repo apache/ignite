@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -52,5 +56,25 @@ public class SnapshotCreateCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Create cluster snapshot";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, snapshotName);
+        U.writeString(out, dest);
+        out.writeBoolean(sync);
+        out.writeBoolean(incremental);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        snapshotName = U.readString(in);
+        dest = U.readString(in);
+        sync = in.readBoolean();
+        incremental = in.readBoolean();
     }
 }

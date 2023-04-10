@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.Parameter;
@@ -28,7 +31,7 @@ import org.apache.ignite.internal.management.api.Parameter;
 public class BaselineCommand extends CommandWithSubs {
     /** */
     @Parameter(optional = true, description = "Show the full list of node ips")
-    private Boolean verbose;
+    private boolean verbose;
 
     /** {@inheritDoc} */
     @Override public String description() {
@@ -47,5 +50,19 @@ public class BaselineCommand extends CommandWithSubs {
         register(BaselineSetCommand::new);
         register(BaselineVersionCommand::new);
         register(BaselineAutoAdjustCommand::new);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeBoolean(verbose);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        verbose = in.readBoolean();
     }
 }

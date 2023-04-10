@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -47,10 +51,26 @@ public class SetStateCommand extends ConfirmableCommand {
 
     /** */
     @Parameter(optional = true, excludeFromDescription = true)
-    private Boolean force;
+    private boolean force;
 
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change cluster state";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeEnum(out, state);
+        out.writeBoolean(force);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        state = U.readEnum(in, ClusterState.class);
+        force = in.readBoolean();
     }
 }

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -47,5 +51,21 @@ public class BaselineAutoAdjustCommand extends ConfirmableCommand {
 
         /** */
         enable
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeEnum(out, enabled);
+        out.writeLong(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        enabled = U.readEnum(in, Enabled.class);
+        timeout = in.readLong();
     }
 }

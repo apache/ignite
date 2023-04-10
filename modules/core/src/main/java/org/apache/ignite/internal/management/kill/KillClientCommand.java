@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -39,5 +43,21 @@ public class KillClientCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill client connection by id";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, connectionId);
+        U.writeUuid(out, nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        connectionId = U.readString(in);
+        nodeId = U.readUuid(in);
     }
 }

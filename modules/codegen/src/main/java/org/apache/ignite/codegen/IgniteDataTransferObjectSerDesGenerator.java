@@ -20,6 +20,8 @@ package org.apache.ignite.codegen;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,12 +38,67 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.CdcDeleteLostSegmentLinksCommand;
+import org.apache.ignite.internal.management.CdcResendCommand;
+import org.apache.ignite.internal.management.ChangeTagCommand;
+import org.apache.ignite.internal.management.ConsistencyRepairCommand;
+import org.apache.ignite.internal.management.DeactivateCommand;
+import org.apache.ignite.internal.management.DefragmentationScheduleCommand;
+import org.apache.ignite.internal.management.MetricCommand;
+import org.apache.ignite.internal.management.MetricConfigureHistogramCommand;
+import org.apache.ignite.internal.management.MetricConfigureHitrateCommand;
+import org.apache.ignite.internal.management.SetStateCommand;
+import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.TxCommand;
+import org.apache.ignite.internal.management.TxInfoCommand;
+import org.apache.ignite.internal.management.WarmUpCommand;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ConfirmableCommand;
+import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
+import org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommand;
+import org.apache.ignite.internal.management.baseline.BaselineCommand;
+import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
+import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.baseline.BaselineVersionCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheKeyIdsCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionChangeCacheKeyCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionChangeMasterKeyCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionReencryptionRateLimitCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionReencryptionStatusCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionResumeReencryptionCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionSuspendReencryptionCommand;
+import org.apache.ignite.internal.management.kill.KillClientCommand;
+import org.apache.ignite.internal.management.kill.KillComputeCommand;
+import org.apache.ignite.internal.management.kill.KillContinuousCommand;
+import org.apache.ignite.internal.management.kill.KillScanCommand;
+import org.apache.ignite.internal.management.kill.KillServiceCommand;
+import org.apache.ignite.internal.management.kill.KillSnapshotCommand;
+import org.apache.ignite.internal.management.kill.KillSqlCommand;
+import org.apache.ignite.internal.management.kill.KillTransactionCommand;
+import org.apache.ignite.internal.management.meta.MetaDetailsCommand;
+import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
+import org.apache.ignite.internal.management.meta.MetaUpdateCommand;
+import org.apache.ignite.internal.management.persistence.PersistenceBackupCachesCommand;
+import org.apache.ignite.internal.management.persistence.PersistenceCleanCachesCommand;
+import org.apache.ignite.internal.management.property.PropertyGetCommand;
+import org.apache.ignite.internal.management.property.PropertySetCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotCancelCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotCheckCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotCreateCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationGetAllCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationGetCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationResetAllCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationResetCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationSetCommand;
+import org.apache.ignite.internal.management.wal.WalDeleteCommand;
+import org.apache.ignite.internal.management.wal.WalPrintCommand;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
@@ -70,30 +127,134 @@ public class IgniteDataTransferObjectSerDesGenerator {
     private final Set<String> staticImports = new TreeSet<>();
 
     /** */
-    private static final Map<Class<?>, IgniteBiTuple<Function<String, String>, Function<String, String>>> TYPE_GENS
+    private static final Map<Class<?>, GridTuple3<Function<String, String>, Function<String, String>, Boolean>> TYPE_GENS
         = new HashMap<>();
 
     static {
-        //TODO: handle primitive collections.
+        TYPE_GENS.put(byte.class, F.t(
+            fld -> "out.writeByte(" + fld + ");",
+            fld -> fld + " = in.readByte();",
+            false
+        ));
 
-        TYPE_GENS.put(String.class, F.t(
-            fld -> "U.writeString(out, " + fld + ");",
-            fld -> fld + " = U.readString(in);"
+        TYPE_GENS.put(byte[].class, F.t(
+            fld -> "U.writeByteArray(out, " + fld + ");",
+            fld -> fld + " = U.readByteArray(in);",
+            true
+        ));
+
+        TYPE_GENS.put(short.class, F.t(
+            fld -> "out.writeShort(" + fld + ");",
+            fld -> fld + " = in.readShort();",
+            false
+        ));
+
+        TYPE_GENS.put(short[].class, F.t(
+            fld -> "U.writeShortArray(out, " + fld + ");",
+            fld -> fld + " = U.readShortArray(in);",
+            true
+        ));
+
+        TYPE_GENS.put(int.class, F.t(
+            fld -> "out.writeInt(" + fld + ");",
+            fld -> fld + " = in.readInt();",
+            false
+        ));
+
+        TYPE_GENS.put(int[].class, F.t(
+            fld -> "U.writeIntArray(out, " + fld + ");",
+            fld -> fld + " = U.readIntArray(in);",
+            true
+        ));
+
+        TYPE_GENS.put(long.class, F.t(
+            fld -> "out.writeLong(" + fld + ");",
+            fld -> fld + " = in.readLong();",
+            false
+        ));
+
+        TYPE_GENS.put(long[].class, F.t(
+            fld -> "U.writeLongArray(out, " + fld + ");",
+            fld -> fld + " = U.readLongArray(in);",
+            true
+        ));
+
+        TYPE_GENS.put(float.class, F.t(
+            fld -> "out.writeFloat(" + fld + ");",
+            fld -> fld + " = in.readFloat();",
+            false
+        ));
+
+        TYPE_GENS.put(float[].class, F.t(
+            fld -> "U.writeFloatArray(out, " + fld + ");",
+            fld -> fld + " = U.readFloatArray(in);",
+            true
+        ));
+
+        TYPE_GENS.put(double.class, F.t(
+            fld -> "out.writeDouble(" + fld + ");",
+            fld -> fld + " = in.readDouble();",
+            false
+        ));
+
+        TYPE_GENS.put(double[].class, F.t(
+            fld -> "U.writeDoubleArray(out, " + fld + ");",
+            fld -> fld + " = U.readDoubleArray(in);",
+            true
         ));
 
         TYPE_GENS.put(boolean.class, F.t(
             fld -> "out.writeBoolean(" + fld + ");",
-            fld -> fld + " = in.readBoolean();"
+            fld -> fld + " = in.readBoolean();",
+            false
+        ));
+
+        TYPE_GENS.put(boolean[].class, F.t(
+            fld -> "U.writeBooleanArray(out, " + fld + ");",
+            fld -> fld + " = U.readBooleanArray(in);",
+            true
+        ));
+
+        TYPE_GENS.put(String.class, F.t(
+            fld -> "U.writeString(out, " + fld + ");",
+            fld -> fld + " = U.readString(in);",
+            true
         ));
 
         TYPE_GENS.put(UUID.class, F.t(
             fld -> "U.writeUuid(out, " + fld + ");",
-            fld -> fld + " = U.readUuid(in);"
+            fld -> fld + " = U.readUuid(in);",
+            true
+        ));
+
+        TYPE_GENS.put(IgniteUuid.class, F.t(
+            fld -> "U.writeIgniteUuid(out, " + fld + ");",
+            fld -> fld + " = U.readIgniteUuid(in);",
+            true
         ));
 
         TYPE_GENS.put(Collection.class, F.t(
             fld -> "U.writeCollection(out, " + fld + ");",
-            fld -> fld + " = U.readCollection(in);"
+            fld -> fld + " = U.readCollection(in);",
+            true
+        ));
+
+        TYPE_GENS.put(List.class, F.t(
+            fld -> "U.writeCollection(out, " + fld + ");",
+            fld -> fld + " = U.readList(in);",
+            true
+        ));
+
+        TYPE_GENS.put(Set.class, F.t(
+            fld -> "U.writeCollection(out, " + fld + ");",
+            fld -> fld + " = U.readSet(in);",
+            true
+        ));
+
+        TYPE_GENS.put(GridCacheVersion.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (GridCacheVersion)in.readObject();",
+            false
         ));
     }
 
@@ -104,8 +265,61 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) throws Exception {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
-        gen.generateAndWrite(SystemViewCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ConfirmableCommand.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CdcDeleteLostSegmentLinksCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CdcResendCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ChangeTagCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ConsistencyRepairCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(DeactivateCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(DefragmentationScheduleCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricConfigureHistogramCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricConfigureHitrateCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SetStateCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ShutdownPolicyCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SystemViewCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TxCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TxInfoCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(WarmUpCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(WalDeleteCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(WalPrintCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TracingConfigurationGetAllCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TracingConfigurationGetCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TracingConfigurationResetAllCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TracingConfigurationResetCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(TracingConfigurationSetCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SnapshotCancelCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SnapshotCheckCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SnapshotCreateCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SnapshotRestoreCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PropertyGetCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PropertySetCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PersistenceBackupCachesCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PersistenceCleanCachesCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetaDetailsCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetaRemoveCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetaUpdateCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillClientCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillComputeCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillContinuousCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillScanCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillServiceCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillSnapshotCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillSqlCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(KillTransactionCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionCacheKeyIdsCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionChangeCacheKeyCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionChangeMasterKeyCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionReencryptionRateLimitCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionReencryptionStatusCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionResumeReencryptionCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(EncryptionSuspendReencryptionCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineAddCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineAutoAdjustCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineRemoveCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineSetCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineVersionCommand.class, DFLT_SRC_DIR);
     }
 
     /** */
@@ -145,6 +359,9 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
         i++;
 
+        if (methodsStart == Integer.MAX_VALUE) // If methods not exists add them to the end.
+            methodsStart = src.size() - 1;
+
         for (; i < methodsStart; i++)
             code.add(src.get(i));
 
@@ -176,7 +393,9 @@ public class IgniteDataTransferObjectSerDesGenerator {
         read.add(TAB + "@Override protected void readExternalData(byte protoVer, ObjectInput in) " +
             "throws IOException, ClassNotFoundException {");
 
-        imports.add(U.class.getName() + ';');
+        imports.add(IOException.class.getName() + ';');
+        imports.add(ObjectOutput.class.getName() + ';');
+        imports.add(ObjectInput.class.getName() + ';');
 
         if (cls.getSuperclass() != IgniteDataTransferObject.class || cls.getSuperclass() != BaseCommand.class) {
             write.add(TAB + TAB + "super.writeExternalData(out);");
@@ -199,11 +418,28 @@ public class IgniteDataTransferObjectSerDesGenerator {
                 if (isStatic(mod) || isTransient(mod))
                     continue;
 
-                if (!TYPE_GENS.containsKey(fld.getType()))
-                    throw new IllegalArgumentException(fld.getType() + " not supported");
+                String name = fld.getName();
 
-                write.add(TAB + TAB + TYPE_GENS.get(fld.getType()).get1().apply(fld.getName()));
-                read.add(TAB + TAB + TYPE_GENS.get(fld.getType()).get2().apply(fld.getName()));
+                if (Enum.class.isAssignableFrom(fld.getType())) {
+                    imports.add(U.class.getName() + ';');
+
+                    write.add(TAB + TAB + "U.writeEnum(out, " + (name.equals("out") ? "this.out." : "") + name + ");");
+                    read.add(TAB + TAB + (name.equals("in") ? "this." : "") + name +
+                        " = U.readEnum(in, " + fld.getType().getSimpleName() + ".class);");
+                }
+                else {
+                    GridTuple3<Function<String, String>, Function<String, String>, Boolean> gen
+                        = TYPE_GENS.get(fld.getType());
+
+                    if (gen == null)
+                        throw new IllegalArgumentException(fld.getType() + " not supported");
+
+                    if (gen.get3())
+                        imports.add(U.class.getName() + ';');
+
+                    write.add(TAB + TAB + gen.get1().apply((name.equals("out") ? "this." : "") + name));
+                    read.add(TAB + TAB + gen.get2().apply((name.equals("in") ? "this." : "") + name));
+                }
             }
         }
 
@@ -254,7 +490,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         }
 
         if (start == -1 || finish == -1)
-            throw new IllegalStateException("Method bounds not found");
+            return src;
 
         methodsStart = start;
 

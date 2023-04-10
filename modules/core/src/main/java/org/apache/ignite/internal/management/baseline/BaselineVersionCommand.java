@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
@@ -33,5 +36,19 @@ public class BaselineVersionCommand extends ConfirmableCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set baseline topology based on version";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeLong(topologyVersion);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        topologyVersion = in.readLong();
     }
 }

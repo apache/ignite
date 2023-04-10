@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -34,5 +38,19 @@ public class KillComputeCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill compute task by session id";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeIgniteUuid(out, sessionId);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        sessionId = U.readIgniteUuid(in);
     }
 }

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.management.persistence;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -32,5 +36,19 @@ public class PersistenceBackupCachesCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Backup data files of only given caches";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeCollection(out, caches);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        caches = U.readList(in);
     }
 }

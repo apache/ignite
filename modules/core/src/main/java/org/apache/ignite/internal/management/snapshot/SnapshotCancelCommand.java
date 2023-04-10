@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -39,5 +43,21 @@ public class SnapshotCancelCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cancel running snapshot operation";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, id);
+        U.writeString(out, name);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        id = U.readString(in);
+        name = U.readString(in);
     }
 }

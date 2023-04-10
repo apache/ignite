@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 
@@ -31,5 +34,19 @@ public class WarmUpCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Stop warm-up";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeBoolean(stop);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        stop = in.readBoolean();
     }
 }

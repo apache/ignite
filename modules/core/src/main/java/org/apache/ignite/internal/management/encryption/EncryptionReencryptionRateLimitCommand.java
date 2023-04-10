@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.encryption;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
@@ -28,10 +31,24 @@ import org.apache.ignite.internal.management.api.PositionalParameter;
 public class EncryptionReencryptionRateLimitCommand extends BaseCommand {
     /** */
     @PositionalParameter(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
-    private Integer newLimit;
+    private int newLimit;
 
     /** {@inheritDoc} */
     @Override public String description() {
         return "View/change re-encryption rate limit";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeInt(newLimit);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        newLimit = in.readInt();
     }
 }

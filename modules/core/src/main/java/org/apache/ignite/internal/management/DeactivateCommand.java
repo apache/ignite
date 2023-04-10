@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.Parameter;
@@ -28,10 +31,24 @@ import org.apache.ignite.internal.management.api.Parameter;
 public class DeactivateCommand extends ConfirmableCommand {
     /** */
     @Parameter(optional = true)
-    private Boolean force;
+    private boolean force;
 
     /** {@inheritDoc} */
     @Override public String description() {
         return "Deactivate cluster (deprecated. Use --set-state instead)";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        out.writeBoolean(force);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        force = in.readBoolean();
     }
 }

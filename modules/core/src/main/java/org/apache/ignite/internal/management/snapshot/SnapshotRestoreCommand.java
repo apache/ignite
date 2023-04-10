@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -46,7 +50,7 @@ public class SnapshotRestoreCommand extends BaseCommand {
     /** */
     @Parameter(optional = true, example = "incrementIndex", description = "Incremental snapshot index. " +
         "The command will restore snapshot and after that all its increments sequentially from 1 to the specified index")
-    private Integer increment;
+    private int increment;
 
     /** */
     @Parameter(optional = true, description = "Run the operation synchronously, " +
@@ -62,5 +66,29 @@ public class SnapshotRestoreCommand extends BaseCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Restore snapshot";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, snapshotName);
+        U.writeCollection(out, groups);
+        U.writeString(out, src);
+        out.writeInt(increment);
+        out.writeBoolean(sync);
+        out.writeBoolean(check);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        snapshotName = U.readString(in);
+        groups = U.readList(in);
+        src = U.readString(in);
+        increment = in.readInt();
+        sync = in.readBoolean();
+        check = in.readBoolean();
     }
 }
