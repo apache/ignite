@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.wal;
 
 import java.util.List;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
 
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.management.api.PositionalParameter;
  *
  */
 @Data
-public class WalPrintCommand implements ExperimentalCommand {
+public class WalPrintCommand extends BaseCommand implements ExperimentalCommand {
     /** */
     @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;

@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 
 /**
  *
  */
-public class ConsistencyStatusCommand implements ExperimentalCommand {
+public class ConsistencyStatusCommand extends BaseCommand implements ExperimentalCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cache consistency check/repair operations status";

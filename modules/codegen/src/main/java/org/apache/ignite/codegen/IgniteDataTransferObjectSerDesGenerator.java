@@ -26,15 +26,22 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.CdcDeleteLostSegmentLinksCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
@@ -57,10 +64,38 @@ public class IgniteDataTransferObjectSerDesGenerator {
     private int methodsStart = Integer.MAX_VALUE;
 
     /** */
-    Set<String> imports = new TreeSet<>();
+    private final Set<String> imports = new TreeSet<>();
 
     /** */
-    Set<String> staticImports = new TreeSet<>();
+    private final Set<String> staticImports = new TreeSet<>();
+
+    /** */
+    private static final Map<Class<?>, IgniteBiTuple<Function<String, String>, Function<String, String>>> TYPE_GENS
+        = new HashMap<>();
+
+    static {
+        //TODO: handle primitive collections.
+
+        TYPE_GENS.put(String.class, F.t(
+            fld -> "U.writeString(out, " + fld + ");",
+            fld -> fld + " = U.readString(in);"
+        ));
+
+        TYPE_GENS.put(boolean.class, F.t(
+            fld -> "out.writeBoolean(" + fld + ");",
+            fld -> fld + " = in.readBoolean();"
+        ));
+
+        TYPE_GENS.put(UUID.class, F.t(
+            fld -> "U.writeUuid(out, " + fld + ");",
+            fld -> fld + " = U.readUuid(in);"
+        ));
+
+        TYPE_GENS.put(Collection.class, F.t(
+            fld -> "U.writeCollection(out, " + fld + ");",
+            fld -> fld + " = U.readCollection(in);"
+        ));
+    }
 
     /**
      * @param args Command line arguments.
@@ -70,10 +105,13 @@ public class IgniteDataTransferObjectSerDesGenerator {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
         gen.generateAndWrite(SystemViewCommand.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CdcDeleteLostSegmentLinksCommand.class, DFLT_SRC_DIR);
     }
 
     /** */
     private void generateAndWrite(Class<? extends Command> cls, String srcDir) throws IOException {
+        clear();
+
         File file = new File(srcDir, cls.getName().replace('.', File.separatorChar) + ".java");
 
         if (!file.exists() || !file.isFile())
@@ -89,28 +127,28 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
         // Outputs all before imports.
         for (; i < src.size(); i++) {
-            if (src.get(i).startsWith(IMPORT_TOKEN)) {
-                while (src.get(i).startsWith(IMPORT_TOKEN))
-                    i++;
-
-                break;
-            }
-
             code.add(src.get(i));
+
+            if (src.get(i).startsWith("package"))
+                break;
         }
+
+        code.add("");
+
+        i++;
 
         for (String imp : imports)
-            code.add("import " + imp + ';');
+            code.add("import " + imp);
 
         for (String imp : staticImports)
-            code.add("import static " + imp + ';');
+            code.add("import static " + imp);
 
-        for (; i < methodsStart; i++) {
+        i++;
+
+        for (; i < methodsStart; i++)
             code.add(src.get(i));
 
-            i++;
-        }
-
+        code.add("");
         code.addAll(readWriteMethods.get(0));
         code.add("");
         code.addAll(readWriteMethods.get(1));
@@ -138,42 +176,35 @@ public class IgniteDataTransferObjectSerDesGenerator {
         read.add(TAB + "@Override protected void readExternalData(byte protoVer, ObjectInput in) " +
             "throws IOException, ClassNotFoundException {");
 
-        imports.add(U.class.getName());
+        imports.add(U.class.getName() + ';');
 
-        if (cls.getSuperclass() != IgniteDataTransferObject.class) {
-            write.add("super.writeExternalData(out);");
+        if (cls.getSuperclass() != IgniteDataTransferObject.class || cls.getSuperclass() != BaseCommand.class) {
+            write.add(TAB + TAB + "super.writeExternalData(out);");
             write.add("");
 
-            read.add("super.readExternalData(protoVer, in);");
+            read.add(TAB + TAB + "super.readExternalData(protoVer, in);");
             read.add("");
         }
 
-        for (Field fld : cls.getDeclaredFields()) {
-            int mod = fld.getModifiers();
+        Field[] flds = cls.getDeclaredFields();
 
-            if (isStatic(mod) || isTransient(mod))
-                continue;
+        if (flds.length == 0) {
+            write.add(TAB + TAB + "// No-op.");
+            read.add(TAB + TAB + "// No-op.");
+        }
+        else {
+            for (Field fld : flds) {
+                int mod = fld.getModifiers();
 
-            //TODO: handle primitive collections.
+                if (isStatic(mod) || isTransient(mod))
+                    continue;
 
-            if (fld.getType() == String.class) {
-                write.add(TAB + TAB + "U.writeString(out, " + fld.getName() + ");");
-                read.add(TAB + TAB + fld.getName() + " = U.readString(in);");
+                if (!TYPE_GENS.containsKey(fld.getType()))
+                    throw new IllegalArgumentException(fld.getType() + " not supported");
+
+                write.add(TAB + TAB + TYPE_GENS.get(fld.getType()).get1().apply(fld.getName()));
+                read.add(TAB + TAB + TYPE_GENS.get(fld.getType()).get2().apply(fld.getName()));
             }
-            else if (fld.getType() == boolean.class) {
-                write.add(TAB + TAB + "out.writeBoolean(" + fld.getName() + ");");
-                read.add(TAB + TAB + fld.getName() + " = in.readBoolean(in);");
-            }
-            else if (fld.getType() == UUID.class) {
-                write.add(TAB + TAB + "U.writeUuid(out, " + fld.getName() + ");");
-                read.add(TAB + TAB + fld.getName() + " = U.readUuid(in);");
-            }
-            else if (fld.getType() == Collection.class) {
-                write.add(TAB + TAB + "U.writeCollection(out, " + fld.getName() + ");");
-                read.add(TAB + TAB + fld.getName() + " = U.readCollection(in);");
-            }
-            else
-                throw new IllegalArgumentException(fld.getType() + " not supported");
         }
 
         write.add(TAB + "}");
@@ -225,7 +256,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         if (start == -1 || finish == -1)
             throw new IllegalStateException("Method bounds not found");
 
-        methodsStart = Math.min(start, methodsStart);
+        methodsStart = start;
 
         List<String> res = new ArrayList<>(src.subList(0, start));
 
@@ -258,5 +289,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
         }
 
         return cnt;
+    }
+
+    /** */
+    private void clear() {
+        methodsStart = Integer.MAX_VALUE;
+        imports.clear();
+        staticImports.clear();
     }
 }

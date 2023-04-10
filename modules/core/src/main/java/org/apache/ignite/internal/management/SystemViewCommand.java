@@ -23,18 +23,18 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import lombok.Data;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 @Data
 @OneOf({"nodeIds", "nodeId", "allNodes"})
-public class SystemViewCommand extends IgniteDataTransferObject implements Command {
+public class SystemViewCommand extends BaseCommand {
     /** System view name. */
     @PositionalParameter(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
@@ -72,10 +72,21 @@ public class SystemViewCommand extends IgniteDataTransferObject implements Comma
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeString(out, systemViewName);
+        U.writeUuid(out, nodeId);
+        U.writeCollection(out, nodeIds);
+        out.writeBoolean(allNodes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
 
+        systemViewName = U.readString(in);
+        nodeId = U.readUuid(in);
+        nodeIds = U.readCollection(in);
+        allNodes = in.readBoolean();
     }
 }

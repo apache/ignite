@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.tracing;
 
 import java.util.Set;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.spi.tracing.Scope;
@@ -25,7 +26,7 @@ import org.apache.ignite.spi.tracing.Scope;
 /**
  *
  */
-public class TracingConfigurationSetCommand implements ExperimentalCommand {
+public class TracingConfigurationSetCommand extends BaseCommand implements ExperimentalCommand {
     /** */
     @Parameter(optional = true)
     private Scope scope;

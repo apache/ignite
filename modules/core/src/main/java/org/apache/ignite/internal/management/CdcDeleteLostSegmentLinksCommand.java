@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -34,5 +38,19 @@ public class CdcDeleteLostSegmentLinksCommand extends ConfirmableCommand impleme
     /** {@inheritDoc} */
     @Override public String description() {
         return "Delete lost segment CDC links";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+        U.writeUuid(out, nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
+        nodeId = U.readUuid(in);
     }
 }

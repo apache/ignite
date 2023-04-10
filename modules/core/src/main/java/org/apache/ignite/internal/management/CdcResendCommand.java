@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.management;
 
 import java.util.List;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 
 /**
  *
  */
-public class CdcResendCommand implements ExperimentalCommand {
+public class CdcResendCommand extends BaseCommand implements ExperimentalCommand {
     /** */
     @Parameter(description = "specifies a comma-separated list of cache names")
     private List<String> caches;

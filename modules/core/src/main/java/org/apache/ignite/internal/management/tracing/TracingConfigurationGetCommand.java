@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.tracing;
 
 import lombok.Data;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.spi.tracing.Scope;
@@ -26,7 +27,7 @@ import org.apache.ignite.spi.tracing.Scope;
  *
  */
 @Data
-public class TracingConfigurationGetCommand implements ExperimentalCommand {
+public class TracingConfigurationGetCommand extends BaseCommand implements ExperimentalCommand {
     /** */
     @Parameter(optional = true)
     private Scope scope;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.meta;
 
 import lombok.Data;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.Parameter;
 
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.management.api.Parameter;
  *
  */
 @Data
-public class MetaRemoveCommand implements ExperimentalCommand {
+public class MetaRemoveCommand extends BaseCommand implements ExperimentalCommand {
     /** */
     @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
     private long typeId;

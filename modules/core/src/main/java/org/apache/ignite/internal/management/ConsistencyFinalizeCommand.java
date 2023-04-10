@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 
 /**
  *
  */
-public class ConsistencyFinalizeCommand implements ExperimentalCommand {
+public class ConsistencyFinalizeCommand extends BaseCommand implements ExperimentalCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Finalize partitions update counters";

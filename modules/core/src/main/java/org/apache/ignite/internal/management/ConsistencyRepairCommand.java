@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import lombok.Data;
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.PositionalParameter;
 
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.management.api.PositionalParameter;
  *
  */
 @Data
-public class ConsistencyRepairCommand implements ExperimentalCommand {
+public class ConsistencyRepairCommand extends BaseCommand implements ExperimentalCommand {
     /** */
     @PositionalParameter(description = "Cache to be checked/repaired")
     private String cacheName;

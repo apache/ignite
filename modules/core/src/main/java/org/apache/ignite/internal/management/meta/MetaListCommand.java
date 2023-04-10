@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 
 /**
  *
  */
-public class MetaListCommand implements ExperimentalCommand {
+public class MetaListCommand extends BaseCommand implements ExperimentalCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of binary metadata types";

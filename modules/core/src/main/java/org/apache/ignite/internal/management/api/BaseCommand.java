@@ -17,14 +17,28 @@
 
 package org.apache.ignite.internal.management.api;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public abstract class BaseCommand implements Command {
+public abstract class BaseCommand extends IgniteDataTransferObject implements Command {
     /** */
     public static final String CMD_NAME_POSTFIX = "Command";
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
