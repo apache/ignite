@@ -205,12 +205,7 @@ class DiscoveryTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=failure_detection_timeout,
-            caches=[CacheConfiguration(
-                name='test-cache',
-                backups=1,
-                atomicity_mode='TRANSACTIONAL' if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC'
-            )]
+            failure_detection_timeout=failure_detection_timeout
         )
 
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
@@ -230,11 +225,14 @@ class DiscoveryTest(IgniteTest):
             tran_nodes = [servers.node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
-            params = {"cacheName": "test-cache",
+            params = {
                       "range": self.DATA_AMOUNT,
                       "warmUpRange": self.WARMUP_DATA_AMOUNT,
                       "targetNodes": tran_nodes,
-                      "transactional": bool(tran_nodes)}
+                      "transactional": bool(tran_nodes),
+                      "cacheCount": 1,
+                      "backups": 1
+            }
 
             start_load_app(self.test_context, load_config, params, modules)
 

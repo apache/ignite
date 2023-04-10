@@ -84,7 +84,7 @@ def load_data(context, config, data_gen_params: DataGenerationParams, timeout=36
                 "transactional": data_gen_params.transactional
             },
             shutdown_timeout_sec=timeout)
-        app.start()
+        app.start_async()
 
         apps.append(app)
 

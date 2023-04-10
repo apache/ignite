@@ -83,6 +83,11 @@ class IncrementalSnapshotTest(IgniteTest):
                 preloaders=loaders_count,
                 transactional=True))
 
+        # TODO: preload should fix it.
+        # Await all caches are created.
+        for app in apps:
+            app.await_started()
+
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         for i in range(1, inc_count + 1):
@@ -96,7 +101,7 @@ class IncrementalSnapshotTest(IgniteTest):
         inc_snp_restore_stat = {}
 
         for i in range(1, inc_count + 1):
-            control_utility.destroy_all_caches()
+            control_utility.destroy_caches(destroy_all=True)
 
             inc_snp_restore_stat[i] = control_utility.incremental_snapshot_restore(self.SNAPSHOT_NAME, i)
 

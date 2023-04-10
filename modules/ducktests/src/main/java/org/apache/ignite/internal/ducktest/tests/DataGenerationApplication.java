@@ -54,6 +54,26 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         int idxCnt = jsonNode.has("indexCount") ? jsonNode.get("indexCount").asInt() : 0;
         boolean transactional = jsonNode.has("transactional") && jsonNode.get("transactional").asBoolean();
 
+        createCaches(cacheCnt, transactional, backups, idxCnt);
+
+        markInitialized();
+
+        Function<Integer, BinaryObject> entryBuilder = key -> entry(ignite.binary().builder(VAL_TYPE), key, entrySize, idxCnt);
+
+        generateCacheData(cacheCnt, entryBuilder, entrySize, from, to);
+
+        markFinished();
+    }
+
+    /**
+     * Create test caches.
+     *
+     * @param cacheCnt Caches count.
+     * @param transactional Create transactional caches or atomic.
+     * @param backups Backups count.
+     * @param idxCnt Indexes count.
+     */
+    protected void createCaches(int cacheCnt, boolean transactional, int backups, int idxCnt) {
         for (int i = 1; i <= cacheCnt; i++) {
             CacheConfiguration<Integer, BinaryObject> ccfg = new CacheConfiguration<Integer, BinaryObject>(cache(i))
                 .setAtomicityMode(transactional ? CacheAtomicityMode.TRANSACTIONAL : CacheAtomicityMode.ATOMIC)
@@ -80,65 +100,42 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
             ignite.getOrCreateCache(ccfg);
         }
-
-        markInitialized();
-
-        Function<Integer, BinaryObject> entryBuilder = key -> entry(ignite.binary().builder(VAL_TYPE), key, entrySize, idxCnt);
-
-        if (transactional) {
-            for (int i = 0; i < Integer.MAX_VALUE; i++) {
-                if (terminated())
-                    break;
-
-                for (int c = 1; c <= cacheCnt; c++)
-                    runTx(cache(c), i, entryBuilder);
-
-                if ((i * cacheCnt) % 5_000 == 0)
-                    log.info("Run " + (i * cacheCnt) + " transactions.");
-            }
-        }
-        else {
-            for (int c = 1; c <= cacheCnt; c++)
-                generateCacheData(cache(c), entryBuilder, entrySize, from, to);
-        }
-
-        markFinished();
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param cacheCnt Cache count.
      * @param entrySize Entry size.
      * @param from From key.
      * @param to To key.
      */
-    private void generateCacheData(String cacheName, Function<Integer, BinaryObject> entryBld, int entrySize, int from, int to) {
+    protected void generateCacheData(int cacheCnt, Function<Integer, BinaryObject> entryBld, int entrySize, int from, int to) {
         int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
         int logEach = (to - from) / 10;
 
-        byte[] data = new byte[entrySize];
+        for (int c = 1; c <= cacheCnt; c++) {
+            String cacheName = cache(c);
 
-        ThreadLocalRandom.current().nextBytes(data);
+            try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
+                for (int i = from; i < to; i++) {
+                    stmr.addData(i, entryBld.apply(i));
 
-        try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
-            for (int i = from; i < to; i++) {
-                stmr.addData(i, entryBld.apply(i));
+                    if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
+                        log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);
 
-                if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
-                    log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);
-
-                if (i % flushEach == 0)
-                    stmr.flush();
+                    if (i % flushEach == 0)
+                        stmr.flush();
+                }
             }
-        }
 
-        log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
+            log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
+        }
     }
 
     /**
      * @param cacheIdx Cache index.
      * @return Cache name.
      */
-    private String cache(int cacheIdx) {
+    protected String cache(int cacheIdx) {
         return "test-cache-" + cacheIdx;
     }
 

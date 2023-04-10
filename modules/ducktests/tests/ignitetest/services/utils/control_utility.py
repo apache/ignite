@@ -190,46 +190,19 @@ class ControlUtility:
         assert ('Command [CONSISTENCY] finished with code: 0' in data), data
         return data
 
-    def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
+    def snapshot_create(self, snapshot_name: str, incremental: bool, timeout_sec: int = 60):
         """
         Create snapshot.
         :param snapshot_name: Name of Snapshot.
-        :param timeout_sec: Timeout to await snapshot to complete.
-        """
-        res = self.__run(f"--snapshot create {snapshot_name}")
-
-        assert "Command [SNAPSHOT] finished with code: 0" in res
-
-        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
-
-        while datetime.now() < delta_time:
-            for node in self._cluster.nodes:
-                mbean = JmxClient(node).find_mbean('.*name=snapshot.*', negative_pattern='group=views')
-
-                if snapshot_name != next(mbean.LastSnapshotName, ""):
-                    continue
-
-                start_time = int(next(mbean.LastSnapshotStartTime))
-                end_time = int(next(mbean.LastSnapshotEndTime))
-                err_msg = next(mbean.LastSnapshotErrorMessage)
-
-                if (start_time < end_time) and (err_msg == ''):
-                    assert snapshot_name == next(mbean.LastSnapshotName)
-                    return
-
-        raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
-                           f'snapshot_name={snapshot_name} in {timeout_sec} seconds.')
-
-    def incremental_snapshot_create(self, snapshot_name: str, exp_increment: int, timeout_sec: int = 60):
-        """
-        Create snapshot.
-        :param snapshot_name: Name of Snapshot.
-        :param exp_increment: Expected increment index.
+        :param incremental: Whether to create full or incremental snapshot.
         :param timeout_sec: Timeout to await snapshot to complete.
         """
         node = self._cluster.nodes[0]
 
-        res = self.__run(f"--snapshot create {snapshot_name} --incremental", node)
+        if incremental:
+            res = self.__run(f"--snapshot create {snapshot_name} --incremental", node)
+        else:
+            res = self.__run(f"--snapshot create {snapshot_name}", node)
 
         assert "Command [SNAPSHOT] finished with code: 0" in res
 
@@ -242,29 +215,26 @@ class ControlUtility:
                 continue
 
             if "There is no create or restore snapshot operation in progress" in res:
-                metric_bean = JmxClient(node).find_mbean('.*name=incremental')
-
-                if exp_increment != int(next(metric_bean.incrementIndex, "")):
-                    continue
-
-                assert next(metric_bean.error) == ''
-
                 return
 
             raise Exception("Unexpected status for \"snapshot status\" command: " + res)
 
         raise TimeoutError(f'Failed to wait for the snapshot operation to complete: '
-                           f'snapshot_name={snapshot_name}, increment={exp_increment} in {timeout_sec} seconds.')
+                           f'snapshot_name={snapshot_name}, incremental={incremental} in {timeout_sec} seconds.')
 
-    def destroy_all_caches(self):
+    def destroy_caches(self, destroy_all: bool = False):
         """
         Destroy all caches.
+        :param destroy_all: Destroy all existing caches.
         """
-        res = self.__run("--cache destroy --destroy-all-caches --yes")
+        if destroy_all:
+            res = self.__run("--cache destroy --destroy-all-caches --yes")
+        else:
+            assert False
 
         assert "Command [CACHE] finished with code: 0" in res
 
-    def incremental_snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 3600):
+    def snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 3600):
         """
         Create snapshot.
         :param snapshot_name: Name of Snapshot.
@@ -274,7 +244,10 @@ class ControlUtility:
         """
         node = self._cluster.nodes[0]
 
-        res = self.__run(f"--snapshot restore {snapshot_name} --increment {increment} --yes", node)
+        if increment > 0:
+            res = self.__run(f"--snapshot restore {snapshot_name} --increment {increment} --yes", node)
+        else:
+            assert False
 
         assert "Command [SNAPSHOT] finished with code: 0" in res
 

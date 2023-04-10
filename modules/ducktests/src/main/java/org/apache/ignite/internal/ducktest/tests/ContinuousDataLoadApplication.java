@@ -37,12 +37,9 @@ import org.apache.logging.log4j.Logger;
 /**
  * Keeps data load until stopped.
  */
-public class ContinuousDataLoadApplication extends IgniteAwareApplication {
+public class ContinuousDataLoadApplication extends DataGenerationApplication {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(ContinuousDataLoadApplication.class);
-
-    /** */
-    private IgniteCache<Integer, Integer> cache;
 
     /** Node set to exclusively put data on if required. */
     private List<ClusterNode> nodesToLoad = Collections.emptyList();
@@ -113,8 +110,8 @@ public class ContinuousDataLoadApplication extends IgniteAwareApplication {
     /**
      * Prepares run settings based on {@code cfg}.
      */
-    private void init(Config cfg) {
-        cache = ignite.getOrCreateCache(cfg.cacheName);
+    @Override protected void createCaches(int cacheCnt, boolean transactional, int backups, int idxCnt) {
+        super.createCaches(cacheCnt, transactional, backups, idxCnt);
 
         if (cfg.targetNodes != null && !cfg.targetNodes.isEmpty()) {
             nodesToLoad = ignite.cluster().nodes().stream().filter(n -> cfg.targetNodes.contains(n.id().toString()))
