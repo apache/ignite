@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class KillScanCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Originating node id")
     private UUID originNodeId;
 

@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class KillSqlCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Query identifier")
     private String queryId;
 

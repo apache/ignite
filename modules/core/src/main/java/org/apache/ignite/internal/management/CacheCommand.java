@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class CacheCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public CacheCommand() {
         register(CacheHelpCommand::new);
     }

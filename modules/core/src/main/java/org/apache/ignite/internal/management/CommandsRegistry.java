@@ -34,6 +34,9 @@ import org.apache.ignite.internal.management.wal.WalCommand;
  */
 public class CommandsRegistry extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public CommandsRegistry() {
         register(ActivateCommand::new);
         register(DeactivateCommand::new);

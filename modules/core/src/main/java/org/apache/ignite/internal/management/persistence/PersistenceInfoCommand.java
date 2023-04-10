@@ -23,6 +23,9 @@ import org.apache.ignite.internal.management.api.BaseCommand;
  *
  */
 public class PersistenceInfoCommand extends BaseCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "The same information is printed when info subcommand is passed";

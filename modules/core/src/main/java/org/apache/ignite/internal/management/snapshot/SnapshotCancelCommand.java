@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @OneOf({"id", "name"})
 public class SnapshotCancelCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(description = "Snapshot operation request ID")
     private String id;
 

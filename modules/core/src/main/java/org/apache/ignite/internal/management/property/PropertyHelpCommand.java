@@ -23,6 +23,9 @@ import org.apache.ignite.internal.management.api.BaseCommand;
  *
  */
 public class PropertyHelpCommand extends BaseCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print property command help";

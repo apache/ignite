@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class PerformanceStatisticsCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public PerformanceStatisticsCommand() {
         register(PerformanceStatisticsStartCommand::new);
         register(PerformanceStatisticsStopCommand::new);

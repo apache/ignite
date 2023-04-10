@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class KillTransactionCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Transaction identifier")
     private String xid;
 

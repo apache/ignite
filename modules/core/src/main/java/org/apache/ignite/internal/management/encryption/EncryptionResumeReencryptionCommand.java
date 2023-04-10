@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class EncryptionResumeReencryptionCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(javaStyleExample = true)
     private String cacheGroupName;
 

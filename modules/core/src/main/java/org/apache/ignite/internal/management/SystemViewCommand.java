@@ -35,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 @OneOf({"nodeIds", "nodeId", "allNodes"})
 public class SystemViewCommand extends BaseCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** System view name. */
     @PositionalParameter(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +

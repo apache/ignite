@@ -32,6 +32,9 @@ import org.apache.ignite.lang.IgniteUuid;
 @Data
 public class KillComputeCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Session identifier")
     private IgniteUuid sessionId;
 

@@ -34,6 +34,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class SetStateCommand extends ConfirmableCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter()
     @EnumDescription(
         names = {

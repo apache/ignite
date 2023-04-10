@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class KillSnapshotCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Snapshot name")
     private String snapshotName;
 

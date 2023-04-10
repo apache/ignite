@@ -23,6 +23,9 @@ import org.apache.ignite.internal.management.api.BaseCommand;
  *
  */
 public class PerformanceStatisticsStatusCommand extends BaseCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get status of collecting performance statistics in the cluster";

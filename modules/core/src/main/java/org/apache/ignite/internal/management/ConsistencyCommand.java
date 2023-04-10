@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class ConsistencyCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public ConsistencyCommand() {
         register(ConsistencyRepairCommand::new);
         register(ConsistencyStatusCommand::new);

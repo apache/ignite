@@ -25,6 +25,9 @@ import org.apache.ignite.internal.management.api.ExperimentalCommand;
  */
 public class TracingConfigurationCommand extends CommandWithSubs implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public TracingConfigurationCommand() {
         register(TracingConfigurationGetAllCommand::new);
         register(TracingConfigurationGetCommand::new);

@@ -30,6 +30,9 @@ import org.apache.ignite.internal.management.api.Parameter;
 @Data
 public class DeactivateCommand extends ConfirmableCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(optional = true)
     private boolean force;
 

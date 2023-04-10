@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class BaselineAutoAdjustCommand extends ConfirmableCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter
     private Enabled enabled;
 

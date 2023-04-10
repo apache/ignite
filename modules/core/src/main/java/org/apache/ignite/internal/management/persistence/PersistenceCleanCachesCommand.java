@@ -30,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class PersistenceCleanCachesCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(example = "cache1,cache2,cache3")
     private List<String> caches;
 

@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class CdcResendCommand extends BaseCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(description = "specifies a comma-separated list of cache names")
     private List<String> caches;
 

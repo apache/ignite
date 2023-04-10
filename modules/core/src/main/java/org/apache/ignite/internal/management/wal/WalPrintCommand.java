@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class WalPrintCommand extends BaseCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;
 

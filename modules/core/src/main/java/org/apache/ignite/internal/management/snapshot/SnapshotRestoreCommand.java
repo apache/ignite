@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class SnapshotRestoreCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")
     private String snapshotName;

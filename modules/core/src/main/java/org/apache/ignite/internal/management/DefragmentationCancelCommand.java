@@ -23,6 +23,9 @@ import org.apache.ignite.internal.management.api.BaseCommand;
  *
  */
 public class DefragmentationCancelCommand extends BaseCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cancel scheduled or active PDS defragmentation on underlying node";

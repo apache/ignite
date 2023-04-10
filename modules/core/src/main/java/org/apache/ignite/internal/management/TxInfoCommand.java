@@ -33,6 +33,9 @@ import org.apache.ignite.lang.IgniteUuid;
 @OneOf({"gridCacheVer", "uuid"})
 public class TxInfoCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(
         example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>")
     private GridCacheVersion gridCacheVer;

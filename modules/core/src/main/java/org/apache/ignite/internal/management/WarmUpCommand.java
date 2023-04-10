@@ -28,6 +28,9 @@ import org.apache.ignite.internal.management.api.Parameter;
  */
 public class WarmUpCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter
     private boolean stop;
 

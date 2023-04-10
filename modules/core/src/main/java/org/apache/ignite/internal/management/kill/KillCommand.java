@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class KillCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public KillCommand() {
         register(KillComputeCommand::new);
         register(KillServiceCommand::new);

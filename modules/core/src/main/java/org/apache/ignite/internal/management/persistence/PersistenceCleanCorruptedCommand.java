@@ -23,6 +23,9 @@ import org.apache.ignite.internal.management.api.BaseCommand;
  *
  */
 public class PersistenceCleanCorruptedCommand extends BaseCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Clean directories of caches with corrupted data files";

@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class CdcCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public CdcCommand() {
         register(CdcDeleteLostSegmentLinksCommand::new);
         register(CdcResendCommand::new);

@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class DefragmentationCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public DefragmentationCommand() {
         register(DefragmentationScheduleCommand::new);
         register(DefragmentationCancelCommand::new);

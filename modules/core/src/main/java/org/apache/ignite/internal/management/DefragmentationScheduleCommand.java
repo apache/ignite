@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class DefragmentationScheduleCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(example = "consistentId0,consistentId1")
     private List<String> nodes;
 

@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class KillClientCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Connection identifier or ALL")
     private String connectionId;
 

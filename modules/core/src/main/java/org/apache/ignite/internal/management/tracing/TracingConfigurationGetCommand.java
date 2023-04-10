@@ -33,6 +33,9 @@ import org.apache.ignite.spi.tracing.Scope;
 @Data
 public class TracingConfigurationGetCommand extends BaseCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(optional = true)
     private Scope scope;
 

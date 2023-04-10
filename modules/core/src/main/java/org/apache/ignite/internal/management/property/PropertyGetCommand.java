@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class PropertyGetCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(example = "<property_name>")
     private String name;
 

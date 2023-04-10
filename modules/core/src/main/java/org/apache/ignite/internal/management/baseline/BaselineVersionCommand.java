@@ -30,6 +30,9 @@ import org.apache.ignite.internal.management.api.PositionalParameter;
 @Data
 public class BaselineVersionCommand extends ConfirmableCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(javaStyleExample = true)
     private long topologyVersion;
 

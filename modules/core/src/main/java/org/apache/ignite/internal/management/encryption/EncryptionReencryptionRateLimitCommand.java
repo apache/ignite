@@ -30,6 +30,9 @@ import org.apache.ignite.internal.management.api.PositionalParameter;
 @Data
 public class EncryptionReencryptionRateLimitCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
     private int newLimit;
 

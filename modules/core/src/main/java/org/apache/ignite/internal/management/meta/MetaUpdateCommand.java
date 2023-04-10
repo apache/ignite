@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class MetaUpdateCommand extends BaseCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(javaStyleExample = true, javaStyleName = true, example = "<fileName>")
     private String in;
 

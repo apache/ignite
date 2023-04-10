@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class WalDeleteCommand extends ConfirmableCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(javaStyleExample = true, optional = true)
     private List<Object> consistentIDs;
 

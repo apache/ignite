@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class PersistenceBackupCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public PersistenceBackupCommand() {
         register(PersistenceBackupCorruptedCommand::new);
         register(PersistenceBackupAllCommand::new);

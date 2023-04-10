@@ -31,6 +31,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class CdcDeleteLostSegmentLinksCommand extends ConfirmableCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(optional = true, description = "ID of the node to delete lost segment links from. " +
         "If not set, the command will affect all server nodes")
     private UUID nodeId;

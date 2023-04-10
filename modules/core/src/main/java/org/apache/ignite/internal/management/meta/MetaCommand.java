@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class MetaCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public MetaCommand() {
         register(MetaHelpCommand::new);
         register(MetaListCommand::new);

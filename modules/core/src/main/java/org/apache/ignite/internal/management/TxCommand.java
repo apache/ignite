@@ -33,6 +33,9 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 @Data
 public class TxCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(example = "XID", optional = true)
     private String xid;
 

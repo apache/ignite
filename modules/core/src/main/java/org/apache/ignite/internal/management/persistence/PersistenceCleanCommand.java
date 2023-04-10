@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class PersistenceCleanCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public PersistenceCleanCommand() {
         register(PersistenceCleanCorruptedCommand::new);
         register(PersistenceCleanAllCommand::new);

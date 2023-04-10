@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class PropertyCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public PropertyCommand() {
         register(PropertyHelpCommand::new);
         register(PropertyListCommand::new);

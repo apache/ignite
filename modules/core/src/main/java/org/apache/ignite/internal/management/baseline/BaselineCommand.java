@@ -30,6 +30,9 @@ import org.apache.ignite.internal.management.api.Parameter;
 @Data
 public class BaselineCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(optional = true, description = "Show the full list of node ips")
     private boolean verbose;
 

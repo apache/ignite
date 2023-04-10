@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @Data
 public class MetaRemoveCommand extends BaseCommand implements ExperimentalCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
     private long typeId;
 

@@ -32,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 @Data
 public class MetricCommand extends CommandWithSubs {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** Metric name. */
     @PositionalParameter(description = "Name of the metric which value should be printed. " +
         "If name of the metric registry is specified, value of all its metrics will be printed")

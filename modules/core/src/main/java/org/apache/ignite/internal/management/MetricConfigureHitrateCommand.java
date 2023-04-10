@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class MetricConfigureHitrateCommand extends BaseCommand {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @PositionalParameter(description = "Name of the metric which value should be configured")
     private String name;
 

@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 public class SnapshotCommand extends CommandWithSubs {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     public SnapshotCommand() {
         register(SnapshotCreateCommand::new);
         register(SnapshotCancelCommand::new);

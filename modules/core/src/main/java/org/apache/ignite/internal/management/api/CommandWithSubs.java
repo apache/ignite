@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 /**
  *
  */
-public class CommandWithSubs extends BaseCommand {
+public abstract class CommandWithSubs extends BaseCommand {
     /** */
     private final Map<String, Supplier<Command>> commands = new LinkedHashMap<>();
 

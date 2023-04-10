@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.ExperimentalCommand;
  *
  */
 public class ConsistencyFinalizeCommand extends BaseCommand implements ExperimentalCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Finalize partitions update counters";

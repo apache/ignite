@@ -24,6 +24,9 @@ import org.apache.ignite.internal.management.api.ExperimentalCommand;
  *
  */
 public class MetaListCommand extends BaseCommand implements ExperimentalCommand {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of binary metadata types";
