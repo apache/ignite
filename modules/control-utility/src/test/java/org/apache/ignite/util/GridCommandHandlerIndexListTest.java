@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commands.api.CLICommandFrontend;
+import org.apache.ignite.internal.commands.CLICommandFrontend;
 import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
 import org.junit.Test;
 

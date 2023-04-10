@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.commands;
 
 import org.junit.Test;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.commands.impl.CommandUtils.formattedName;
+import static org.apache.ignite.internal.commands.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.commands.CommandUtils.formattedName;
 import static org.junit.Assert.assertEquals;
 
 /** */

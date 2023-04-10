@@ -92,10 +92,10 @@ public class ResendCommand extends AbstractCommand<Object> {
     @Override public void printUsage(IgniteLogger logger) {
         Map<String, String> params = new LinkedHashMap<>();
 
-        params.put(CACHES + " cache1,...,cacheN", "specifies a comma-separated list of cache names.");
+        params.put(CACHES + " cache1[,cache2,....,cacheN]", "specifies a comma-separated list of cache names.");
 
         usage(logger, "Forcefully resend all cache data to CDC. Iterates over caches and writes primary copies " +
-            "of data entries to the WAL to get captured by CDC:", CDC, params, RESEND, CACHES, "cache1,...,cacheN");
+            "of data entries to the WAL to get captured by CDC:", CDC, params, RESEND, CACHES, "cache1[,cache2,....,cacheN]");
     }
 
     /** {@inheritDoc} */
