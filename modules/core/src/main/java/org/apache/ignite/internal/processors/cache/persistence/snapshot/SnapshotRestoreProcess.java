@@ -865,6 +865,8 @@ public class SnapshotRestoreProcess {
         if (failure != null) {
             opCtx0.errHnd.accept(failure);
 
+            finishProcess(reqId, failure);
+
             return;
         }
 
@@ -1112,14 +1114,14 @@ public class SnapshotRestoreProcess {
 
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
+                    snpAff.forEach((nodeId, nodePartitions) -> {
                         log.info("Trying to request partitions from remote nodes " +
                             "[reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName +
-                            ", consistentId=" + locNode.consistentId() +
-                            ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                                e -> partitionsMapToString(e.getValue()))) + ']');
-                    }
+                            ", nodeId=" + nodeId +
+                            ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
+                            ", map=" + partitionsMapToString(nodePartitions) + "]");
+                    });
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -1398,10 +1400,10 @@ public class SnapshotRestoreProcess {
      * @return Result future.
      */
     private IgniteInternalFuture<Boolean> incrementalSnapshotRestore(UUID reqId) {
-        if (ctx.clientNode())
-            return new GridFinishedFuture<>();
-
         SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (ctx.clientNode() || opCtx0 == null || !opCtx0.nodes().contains(ctx.localNodeId()))
+            return new GridFinishedFuture<>();
 
         if (log.isInfoEnabled()) {
             log.info("Starting incremental snapshot restore operation " +
@@ -1480,7 +1482,7 @@ public class SnapshotRestoreProcess {
                     exec.onError(err);
                 }
             }, cacheCtx.groupId(), e.partitionId());
-        });
+        }, null);
 
         exec.awaitApplyComplete();
 

@@ -104,6 +104,12 @@ Arguments: --cache help --yes
       --cache-names  - Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
       --group-names  - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
 
+  --cache scan cacheName [--limit N]
+    Show cache content.
+
+    Parameters:
+      --limit  - limit count of entries to scan (1000 by default)
+
 Command [CACHE] finished with code: 0
 Control utility has completed execution at: <!any!>
 Execution time: <!any!>

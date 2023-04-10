@@ -163,11 +163,12 @@ This utility can do the following commands:
       --name name  - Snapshot name (deprecated).
 
   Check snapshot:
-    control.(sh|bat) --snapshot check snapshot_name [--src path]
+    control.(sh|bat) --snapshot check snapshot_name [--src path] [--increment incrementIndex]
 
     Parameters:
-      snapshot_name  - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
-      --src path     - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      snapshot_name               - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
+      --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      --increment incrementIndex  - Incremental snapshot index. The command will check incremental snapshots sequentially from 1 to the specified index.
 
   Restore snapshot:
     control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync] [--check]
@@ -351,7 +352,14 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --cdc delete_lost_segment_links [--node-id node_id] [--yes]
 
     Parameters:
-      node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+      --node-id node_id  - ID of the node to delete lost segment links from. If not set, the command will affect all server nodes.
+
+  [EXPERIMENTAL]
+  Forcefully resend all cache data to CDC. Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC:
+    control.(sh|bat) --cdc resend --caches cache1,...,cacheN
+
+    Parameters:
+      --caches cache1,...,cacheN  - specifies a comma-separated list of cache names.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

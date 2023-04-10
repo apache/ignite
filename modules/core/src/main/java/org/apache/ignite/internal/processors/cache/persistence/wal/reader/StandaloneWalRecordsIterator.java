@@ -360,6 +360,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         if (processor != null && (rec.type() == RecordType.DATA_RECORD
             || rec.type() == RecordType.DATA_RECORD_V2
+            || rec.type() == RecordType.CDC_DATA_RECORD
             || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
