@@ -24,6 +24,7 @@ import org.apache.ignite.internal.commands.CommandUtilsSelfTest;
 import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.util.CommandUtilsHelpParityTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
+import org.apache.ignite.util.GridCommandHandlerCheckIncrementalSnapshotTest;
 import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
@@ -66,6 +67,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerCheckIndexesInlineSizeTest.class,
     GridCommandHandlerInterruptCommandTest.class,
     GridCommandHandlerMetadataTest.class,
+    GridCommandHandlerCheckIncrementalSnapshotTest.class,
 
     KillCommandsControlShTest.class,
 

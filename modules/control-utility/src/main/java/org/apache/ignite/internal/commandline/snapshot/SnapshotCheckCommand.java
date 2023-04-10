@@ -29,6 +29,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCheckCommandOption.INCREMENT;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCheckCommandOption.SOURCE;
 
 /**
@@ -44,6 +45,7 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
         String snpPath = null;
+        Integer incIdx = null;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
@@ -65,9 +67,20 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
 
                 snpPath = argIter.nextArg(errMsg);
             }
+            else if (option == INCREMENT) {
+                if (incIdx != null)
+                    throw new IllegalArgumentException(INCREMENT.argName() + " arg specified twice.");
+
+                String errMsg = "incremental snapshot index.";
+
+                if (CommandArgIterator.isCommandOrOption(argIter.peekNextArg()))
+                    throw new IllegalArgumentException("Expected " + errMsg);
+
+                incIdx = argIter.nextIntArg(errMsg);
+            }
         }
 
-        cmdArg = new VisorSnapshotCheckTaskArg(snpName, snpPath);
+        cmdArg = new VisorSnapshotCheckTaskArg(snpName, snpPath, incIdx == null ? 0 : incIdx);
     }
 
     /** {@inheritDoc} */
@@ -75,9 +88,10 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
         Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
         params.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
+        params.put(INCREMENT.argName() + " " + INCREMENT.arg(), INCREMENT.description());
 
         usage(log, "Check snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
-            optional(SOURCE.argName(), SOURCE.arg()));
+            optional(SOURCE.argName(), SOURCE.arg()), optional(INCREMENT.argName(), INCREMENT.arg()));
     }
 
     /** {@inheritDoc} */
