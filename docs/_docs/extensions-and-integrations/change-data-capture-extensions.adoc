@@ -113,6 +113,14 @@ image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
 |===
 
+`kafkaRequestTimeout` property sets how much `IgniteToKafkaCdcStreamer` will wait for `KafkaProducer` to finish request.
+
+NOTE: _Too low value_ of this timeout can lead to frequent failures of `IgniteToKafkaCdcStreamer`
+because of possible delays in network or on Kafka broker.
+Also, proper `KafkaProducer` configuration should be provided, including link:https://kafka.apache.org/documentation/#producerconfigs_request.timeout.ms[request.timeout.ms].
+For more details you should refer to a link:https://kafka.apache.org/documentation/#configuration[configuration]
+section of the official Kafka documentation.
+
 === IgniteToKafkaCdcStreamer Metrics
 
 |===
@@ -174,6 +182,16 @@ Kafka to Ignite configuration file should contain the following beans that will 
 | `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
 | `threadCount` | Count of threads to proceed consumers. Each thread poll records from dedicated partitions in round-robin manner. | 16
 |===
+
+`kafkaRequestTimeout` property sets timeouts for a following `KafkaConsumer` operations:
+
+- Poll from event and metadata topics.
+- Offsets commit.
+- Closing of a consumer.
+- Offsets request (during metadata updates).
+- Metadata topic partitions request (during metadata updater start).
+
+NOTE: _Too low value_ of `kafkaRequestTimeout` can lead to frequent failures of `kafka-to-ignite.sh` because of possible delays in network or on Kafka broker. Also, proper `KafkaConsumer` configuration should be provided, including link:https://kafka.apache.org/documentation/#consumerconfigs_request.timeout.ms[request.timeout.ms]. For more details you should refer to a link:https://kafka.apache.org/documentation/#configuration[configuration] section of the official Kafka documentation.
 
 ==== Logging
 
