@@ -1112,11 +1112,14 @@ public class SnapshotRestoreProcess {
 
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    log.info("Trying to request partitions from remote nodes " +
-                        "[reqId=" + reqId +
-                        ", snapshot=" + opCtx0.snpName +
-                        ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> partitionsMapToString(e.getValue()))) + ']');
+                    for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
+                        log.info("Trying to request partitions from remote nodes " +
+                            "[reqId=" + reqId +
+                            ", snapshot=" + opCtx0.snpName +
+                            ", consistentId=" + locNode.consistentId() +
+                            ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                                e -> partitionsMapToString(e.getValue()))) + ']');
+                    }
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
