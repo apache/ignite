@@ -39,6 +39,8 @@ public class ClientCacheClearKeyRequest extends ClientCacheKeyRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).clear(key());
 
+        calcAffinityKeyMetrics(ctx);
+
         return super.process(ctx);
     }
 }

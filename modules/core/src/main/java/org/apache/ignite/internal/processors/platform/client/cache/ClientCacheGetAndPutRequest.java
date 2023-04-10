@@ -40,6 +40,8 @@ public class ClientCacheGetAndPutRequest extends ClientCacheKeyValueRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         Object res = cache(ctx).getAndPut(key(), val());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientObjectResponse(requestId(), res);
     }
 }

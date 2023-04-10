@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Cache request involving key.
@@ -45,5 +47,22 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
      */
     public Object key() {
         return key;
+    }
+
+    /** Calculation of awarenes metrics. */
+    protected void calcAffinityKeyMetrics(ClientConnectionContext ctx) {
+        String cacheName = cacheDescriptor(ctx).cacheName();
+
+        try {
+            if (F.first(ctx.kernalContext().affinity().mapKeyToPrimaryAndBackups(cacheName, key, null)).isLocal())
+                ctx.kernalContext().sqlListener().onAffinityKeyHit();
+            else
+                ctx.kernalContext().sqlListener().onAffinityKeyMiss();
+        }
+        catch (Exception e) {
+            // An exception occurs when there is a frequent topology change.
+            // Getting affinity for too old topology version that is already out of history (try to increase
+            // IGNITE_AFFINITY_HISTORY_SIZE system property)"
+        }
     }
 }

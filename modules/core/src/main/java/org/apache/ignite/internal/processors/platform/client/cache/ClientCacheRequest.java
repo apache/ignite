@@ -169,4 +169,27 @@ public class ClientCacheRequest extends ClientRequest {
     protected int cacheId() {
         return cacheId;
     }
+
+    /**
+     * Is affinity part
+     *
+     * @return true if is affinity part.
+     */
+    protected boolean isAffinityPart(ClientConnectionContext ctx, String cacheName, Integer part) {
+        boolean affinity = false;
+
+        if (part != null) {
+            try {
+                if (ctx.kernalContext().affinity().mapPartitionToNode(cacheName, part, null).isLocal())
+                    affinity = true;
+            }
+            catch (Exception e) {
+                // An exception occurs when there is a frequent topology change.
+                // Getting affinity for too old topology version that is already out of history (try to increase
+                // IGNITE_AFFINITY_HISTORY_SIZE system property)"
+            }
+        }
+
+        return affinity;
+    }
 }

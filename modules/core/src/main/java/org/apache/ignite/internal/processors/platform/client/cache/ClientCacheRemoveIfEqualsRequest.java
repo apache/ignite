@@ -40,6 +40,8 @@ public class ClientCacheRemoveIfEqualsRequest extends ClientCacheKeyValueRequest
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         boolean res = cache(ctx).remove(key(), val());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientBooleanResponse(requestId(), res);
     }
 }

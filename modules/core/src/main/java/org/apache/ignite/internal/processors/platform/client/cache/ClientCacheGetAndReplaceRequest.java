@@ -40,6 +40,8 @@ public class ClientCacheGetAndReplaceRequest extends ClientCacheKeyValueRequest 
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         Object res = cache(ctx).getAndReplace(key(), val());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientObjectResponse(requestId(), res);
     }
 }

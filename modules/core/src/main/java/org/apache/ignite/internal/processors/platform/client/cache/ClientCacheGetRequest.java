@@ -40,6 +40,8 @@ public class ClientCacheGetRequest extends ClientCacheKeyRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         Object val = cache(ctx).get(key());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientObjectResponse(requestId(), val);
     }
 }

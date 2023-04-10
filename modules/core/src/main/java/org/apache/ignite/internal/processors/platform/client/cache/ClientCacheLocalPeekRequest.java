@@ -42,6 +42,8 @@ public class ClientCacheLocalPeekRequest extends ClientCacheKeyRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         Object val = cache(ctx).localPeek(key(), CachePeekMode.ALL);
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientObjectResponse(requestId(), val);
     }
 }

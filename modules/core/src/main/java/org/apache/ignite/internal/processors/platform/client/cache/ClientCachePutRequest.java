@@ -39,6 +39,8 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         cache(ctx).put(key(), val());
 
+        calcAffinityKeyMetrics(ctx);
+
         return super.process(ctx);
     }
 }

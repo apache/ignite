@@ -45,6 +45,8 @@ public class ClientCacheReplaceIfEqualsRequest extends ClientCacheKeyValueReques
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         boolean res = cache(ctx).replace(key(), val(), newVal);
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientBooleanResponse(requestId(), res);
     }
 }

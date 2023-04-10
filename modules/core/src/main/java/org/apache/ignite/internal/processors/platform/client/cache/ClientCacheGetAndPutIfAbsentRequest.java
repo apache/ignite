@@ -40,6 +40,8 @@ public class ClientCacheGetAndPutIfAbsentRequest extends ClientCacheKeyValueRequ
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         Object res = cache(ctx).getAndPutIfAbsent(key(), val());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientObjectResponse(requestId(), res);
     }
 }

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionVie
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -90,6 +91,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = true;
 
+    /** Affinity key hit metric name */
+    public static final String AFFINITY_KEY_HIT = "AffinityKeyHit";
+
+    /** Affinity key miss metric name */
+    public static final String AFFINITY_KEY_MISS = "AffinityKeyMiss";
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -102,11 +109,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Thin client distributed configuration. */
     private DistributedThinClientConfiguration distrThinCfg;
 
+    /** Affinity key hit. */
+    private final LongAdderMetric affinityKeyHit;
+
+    /** Affinity key miss. */
+    private final LongAdderMetric affinityKeyMiss;
+
     /**
      * @param ctx Kernal context.
      */
     public ClientListenerProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
+        affinityKeyHit = mreg.longAdderMetric(AFFINITY_KEY_HIT, "AffinityKeyHit count.");
+        affinityKeyMiss = mreg.longAdderMetric(AFFINITY_KEY_MISS, "AffinityKeyMiss count.");
     }
 
     /** {@inheritDoc} */
@@ -581,6 +598,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /** Update affinity key hit. */
+    public void onAffinityKeyHit() {
+        affinityKeyHit.increment();
+    }
+
+    /** Update affinity key miss. */
+    public void onAffinityKeyMiss() {
+        affinityKeyMiss.increment();
     }
 
     /**

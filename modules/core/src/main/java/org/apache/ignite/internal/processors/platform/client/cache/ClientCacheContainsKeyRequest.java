@@ -40,6 +40,8 @@ public class ClientCacheContainsKeyRequest extends ClientCacheKeyRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         boolean val = cache(ctx).containsKey(key());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientBooleanResponse(requestId(), val);
     }
 }

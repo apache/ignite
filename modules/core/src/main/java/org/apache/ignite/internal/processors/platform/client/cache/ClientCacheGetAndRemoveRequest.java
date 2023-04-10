@@ -40,6 +40,8 @@ public class ClientCacheGetAndRemoveRequest extends ClientCacheKeyRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         Object val = cache(ctx).getAndRemove(key());
 
+        calcAffinityKeyMetrics(ctx);
+
         return new ClientObjectResponse(requestId(), val);
     }
 }
