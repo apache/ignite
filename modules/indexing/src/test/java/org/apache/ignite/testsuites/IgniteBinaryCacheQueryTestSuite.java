@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerBasic
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerCoordinatorBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFIlterBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexServerNodeFilterCoordinatorBasicSelfTest;
+import org.apache.ignite.internal.processors.cache.index.ErroneousQueryEntityConfigurationTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsClientBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerBasicSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicColumnsServerCoordinatorBasicSelfTest;
@@ -198,6 +199,7 @@ import org.junit.runners.Suite;
     SqlResultSetMetaSelfTest.class,
 
     BasicIndexTest.class,
+    ErroneousQueryEntityConfigurationTest.class,
     ArrayIndexTest.class,
     BasicIndexMultinodeTest.class,
     IndexMetricsTest.class,
