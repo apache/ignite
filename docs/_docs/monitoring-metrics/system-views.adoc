@@ -696,6 +696,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 === DATA_REGION_PAGE_LISTS
@@ -708,6 +709,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 == PARTITION_STATES

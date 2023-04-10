@@ -13,13 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Check code style and abandoned tests.
+name: Code Style, Abandoned Tests
 on:
   pull_request:
   push:
     branches:
       - master
       - 'ignite-[0-9].[0-9]+.[0-9]+*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check-java:
@@ -54,13 +58,12 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
         if: ${{ matrix.java == '8' }}
         run : |
-          mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
-
+          ./mvnw test -Pcheck-test-suites,all-java,all-scala,scala -B -V
 
   check-dotnet:
     name: Сheck .NET code

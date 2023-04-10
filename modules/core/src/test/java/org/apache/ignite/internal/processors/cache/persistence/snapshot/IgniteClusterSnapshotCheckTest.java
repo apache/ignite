@@ -515,6 +515,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     (String)ignite.configuration().getConsistentId()
                 ))),
                 null,
+                0,
                 true
             )
         ).idleVerifyResult();

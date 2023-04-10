@@ -161,6 +161,24 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
     /** */
     @Test
+    public void testRecoveryWithNotBaselineNode() throws Exception {
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        startGrid(nodes() + 1);
+
+        Map<Integer, Integer> expSnpData = new HashMap<>();
+
+        loadAndCreateSnapshot(true, (incSnp) -> loadData(CACHE, expSnpData, 1_000));
+
+        grid(0).destroyCache(CACHE);
+
+        grid(0).snapshot().restoreSnapshot(SNP, Collections.singleton(CACHE), 1).get(getTestTimeout());
+
+        checkData(expSnpData, CACHE);
+    }
+
+    /** */
+    @Test
     public void testRecoveryOnClusterSnapshotOnly() throws Exception {
         Map<Integer, Integer> expSnpData = new HashMap<>();
 

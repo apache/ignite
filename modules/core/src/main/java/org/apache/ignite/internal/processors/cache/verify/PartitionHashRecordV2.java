@@ -95,8 +95,6 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
-
-        assert updateCntr != null;
     }
 
     /**
@@ -212,7 +210,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
 
         PartitionHashRecordV2 v2 = (PartitionHashRecordV2)o;
 
-        return partHash == v2.partHash && partVerHash == v2.partVerHash && updateCntr.equals(v2.updateCntr) &&
+        return partHash == v2.partHash && partVerHash == v2.partVerHash && Objects.equals(updateCntr, v2.updateCntr) &&
             size == v2.size && partKey.equals(v2.partKey) && consistentId.equals(v2.consistentId) &&
             partitionState == v2.partitionState;
     }
