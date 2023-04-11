@@ -112,7 +112,12 @@ public enum CacheSubcommands {
     /**
      * Index rebuild via the maintenance mode.
      */
-    INDEX_REBUILD("schedule_indexes_rebuild", IndexRebuildCommandArg.class, new CacheScheduleIndexesRebuild());
+    INDEX_REBUILD("schedule_indexes_rebuild", IndexRebuildCommandArg.class, new CacheScheduleIndexesRebuild()),
+
+    /**
+     * Scan cache entries.
+     */
+    SCAN("scan", IndexRebuildCommandArg.class, new CacheScan());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

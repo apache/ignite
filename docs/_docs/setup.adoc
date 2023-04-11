@@ -226,8 +226,6 @@ Refer to the link:machine-learning/ml[Machine Learning] documentation for detail
 
 |ignite-slf4j | Support for link:logging#using-slf4j[SLF4J logging framework].
 
-|ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
-
 |ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
 
 |ignite-urideploy | Ignite URI Deploy module provides capabilities to deploy tasks from different sources such as File System, HTTP, or even Email.
@@ -266,6 +264,8 @@ The following extensions are available:
 |ignite-spring-data_2.0-ext | Ignite Spring Data 2.0 provides an integration with Spring Data 2.0 framework.
 
 |ignite-spring-data_2.2-ext | Ignite Spring Data 2.2 provides an integration with Spring Data 2.2 framework.
+
+|ignite-ssh | The Ignite SSH module provides capabilities to start Ignite nodes on remote machines via SSH.
 
 |link:extensions-and-integrations/zookeeper-ip-finder-ext[ignite-zookeeper-ip-finder-ext] | TCP Discovery IP Finder that uses a ZooKeeper directory to locate other Ignite nodes to connect to.
 |=======================================================================

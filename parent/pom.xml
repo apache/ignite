@@ -155,6 +155,9 @@
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
+        <sonar.organization>apache</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.exclusions>**/generated/**/*</sonar.exclusions>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -597,7 +600,7 @@
                 <executions>
                     <execution>
                         <id>copy-libs</id>
-                        <phase>test-compile</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
