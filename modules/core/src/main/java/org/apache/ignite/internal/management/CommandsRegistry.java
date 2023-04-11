@@ -17,17 +17,10 @@
 
 package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.baseline.BaselineCommand;
-import org.apache.ignite.internal.management.encryption.EncryptionCommand;
-import org.apache.ignite.internal.management.kill.KillCommand;
-import org.apache.ignite.internal.management.meta.MetaCommand;
-import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
-import org.apache.ignite.internal.management.persistence.PersistenceCommand;
-import org.apache.ignite.internal.management.property.PropertyCommand;
-import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
-import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
-import org.apache.ignite.internal.management.wal.WalCommand;
 
 /**
  *
@@ -38,30 +31,19 @@ public class CommandsRegistry extends CommandWithSubs {
 
     /** */
     public CommandsRegistry() {
-        register(ActivateCommand::new);
-        register(DeactivateCommand::new);
-        register(StateCommand::new);
-        register(SetStateCommand::new);
-        register(BaselineCommand::new);
-        register(TxCommand::new);
-        register(CacheCommand::new);
-        register(WalCommand::new);
-        register(DiagnosticCommand::new);
-        register(EncryptionCommand::new);
-        register(KillCommand::new);
-        register(SnapshotCommand::new);
-        register(ChangeTagCommand::new);
-        register(MetaCommand::new);
-        register(ShutdownPolicyCommand::new);
-        register(TracingConfigurationCommand::new);
-        register(WarmUpCommand::new);
-        register(PropertyCommand::new);
         register(SystemViewCommand::new);
         register(MetricCommand::new);
-        register(PersistenceCommand::new);
-        register(DefragmentationCommand::new);
-        register(PerformanceStatisticsCommand::new);
-        register(ConsistencyCommand::new);
-        register(CdcCommand::new);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
     }
 }
