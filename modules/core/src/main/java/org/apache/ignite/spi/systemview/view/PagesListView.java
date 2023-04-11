@@ -80,4 +80,12 @@ public class PagesListView {
     public int cachedPagesCount() {
         return pagesList.cachedPagesCount(bucket);
     }
+
+    /**
+     * @return Free space for each page in this bucket.
+     */
+    @Order(7)
+    public int pageFreeSpace() {
+        return pagesList.getPageFreeSpace(bucket);
+    }
 }

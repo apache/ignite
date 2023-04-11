@@ -23,9 +23,6 @@ on:
       - master
       - 'ignite-[0-9].[0-9]+.[0-9]+*'
 
-env:
-  MAVEN_OPTS: -Xms2g
-
 jobs:
   sonarcloud:
     name: Sonar Analysis
@@ -73,5 +70,8 @@ jobs:
           -Dsonar.login=${SONARCLOUD_TOKEN}
           -B -V
         env:
+          MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+          SONAR_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
+          JAVA_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
