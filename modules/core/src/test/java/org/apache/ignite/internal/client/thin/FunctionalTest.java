@@ -73,6 +73,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
@@ -90,6 +91,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL1;
 import static org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum.VAL2;
@@ -108,6 +110,12 @@ import static org.junit.Assert.assertArrayEquals;
  * Thin client functional tests.
  */
 public class FunctionalTest extends AbstractBinaryArraysTest {
+    /** Generates values for the {@link #useBinaryArrays} parameter. */
+    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
+    public static Iterable<Object[]> useBinaryArrays() {
+        return Arrays.asList(new Object[][] {{false}});
+    }
+
     /** Per test timeout */
     @SuppressWarnings("deprecation")
     @Rule
@@ -663,50 +671,132 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
         testPessimisticTxLocking(SERIALIZABLE);
     }
 
+    /** */
+    @Test
+    public void test0() throws Exception {
+        int grids = 4;
+
+        int putCnt = 10;
+
+//        TransactionIsolation isolation = SERIALIZABLE;
+
+        try {
+            Ignite ig0 = startGridsMultiThreaded(grids);
+
+            long txTimeout = ig0.configuration().getTransactionConfiguration().getDefaultTxTimeout();
+
+            IgniteCache cache0 = ig0.createCache(new CacheConfiguration<>("cache")
+                .setBackups(Math.min(2, grids - 1))
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            );
+
+            for (int i = 0; i < putCnt; ++i)
+                cache0.put(i, i);
+
+            CountDownLatch latch0 = new CountDownLatch(1);
+
+            runAsync(() -> {
+                tx(0, putCnt, latch0);
+            });
+
+            runAsync(() -> {
+                tx(1, putCnt, latch0);
+            });
+
+            runAsync(() -> {
+                tx(2, putCnt, latch0);
+            });
+
+            U.sleep(txTimeout * 2);
+
+            for (int i = 0; i < putCnt; ++i)
+                assertEquals(i, cache0.get(i));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    private void tx(int grid, int cnt, CountDownLatch latch) {
+        Ignite ig = grid(grid);
+
+        IgniteCache cache = ig.cache("cache");
+
+        List<Integer> keys = IntStream.range(0, cnt).boxed().collect(Collectors.toList());
+
+        Collections.shuffle(keys);
+
+        try(Transaction tx0 = ig.transactions().txStart()) {
+            for (int i = 0; i < keys.size(); ++i)
+                cache.put(keys.get(0), grid * 100 + keys.get(0));
+
+            try {
+                latch.await();
+
+                tx0.commit();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     /**
      * Test pessimistic tx holds the lock.
      */
     private void testPessimisticTxLocking(TransactionIsolation isolation) throws Exception {
-        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
-             IgniteClient client = Ignition.startClient(getClientConfiguration())
-        ) {
-            ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
+        int timeot = 500;
+
+        try (Ignite ignite0 = Ignition.start(Config.getServerConfiguration())) {
+            try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+                 IgniteClient client = Ignition.startClient(getClientConfiguration())
+            ) {
+//                IgniteCache cache = ignite.createCache(new CacheConfiguration<>("cache")
+//                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+//                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+//                );
+
+                ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
                     .setName("cache")
                     .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            );
-            cache.put(0, "value0");
+                );
+                cache.put(0, "value0");
 
-            IgniteInternalFuture<?> fut;
+                IgniteInternalFuture<?> fut;
 
-            try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
+                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, isolation)) {
+                    assertEquals("value0", cache.get(0));
+
+                    CyclicBarrier barrier = new CyclicBarrier(2);
+
+                    fut = GridTestUtils.runAsync(() -> {
+                        try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, timeot)) {
+                            cache.put(0, "value2");
+                            tx2.commit();
+                        }
+                        finally {
+                            try {
+                                barrier.await(timeot * 4, TimeUnit.MILLISECONDS);
+                            }
+                            catch (Throwable ignore) {
+                                // No-op.
+                            }
+                        }
+                    });
+
+                    barrier.await(timeot * 4, TimeUnit.MILLISECONDS);
+
+                    tx.commit();
+                }
+
                 assertEquals("value0", cache.get(0));
 
-                CyclicBarrier barrier = new CyclicBarrier(2);
-
-                fut = GridTestUtils.runAsync(() -> {
-                    try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
-                        cache.put(0, "value2");
-                        tx2.commit();
-                    }
-                    finally {
-                        try {
-                            barrier.await(2000, TimeUnit.MILLISECONDS);
-                        }
-                        catch (Throwable ignore) {
-                            // No-op.
-                        }
-                    }
-                });
-
-                barrier.await(2000, TimeUnit.MILLISECONDS);
-
-                tx.commit();
-            }
-
-            assertEquals("value0", cache.get(0));
-
-            assertThrowsAnyCause(null, fut::get, ClientException.class,
+                assertThrowsAnyCause(null, fut::get, ClientException.class,
                     "Failed to acquire lock within provided timeout");
+            }
         }
     }
 
@@ -719,8 +809,8 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
-                    .setName("cache")
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             );
             cache.put(0, "value0");
 
@@ -1484,5 +1574,18 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             .setAddresses(Config.SERVER)
             .setSendBufferSize(0)
             .setReceiveBufferSize(0);
+    }
+
+    /** */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setTransactionConfiguration(new TransactionConfiguration()
+            .setDefaultTxConcurrency(PESSIMISTIC)
+            .setDefaultTxIsolation(SERIALIZABLE)
+            .setDefaultTxTimeout(3000)
+        );
+
+        return cfg;
     }
 }

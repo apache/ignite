@@ -1398,6 +1398,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert mappedVer != null;
         assert tx == null || tx.xidVersion().equals(mappedVer);
 
+        log.error("Lock reply on node with order " + ctx.kernalContext().cluster().get().localNode().order());
+
         try {
             // All subsequent lock requests must use actual topology version to avoid mapping on invalid primaries.
             AffinityTopologyVersion clienRemapVer = req.firstClientRequest() &&
