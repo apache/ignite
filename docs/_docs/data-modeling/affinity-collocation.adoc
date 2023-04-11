@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS Person (
   city_id int,
   name varchar,
   company_id varchar,
-  PRIMARY KEY (id, city_id)
+  PRIMARY KEY (id, company_id)
 ) WITH "template=partitioned,backups=1,affinity_key=company_id";
 
 CREATE TABLE IF NOT EXISTS Company (

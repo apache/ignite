@@ -59,6 +59,12 @@ tab:pom.xml[]
     <artifactId>spring-data-commons</artifactId>
     <version>${spring.data.version}</version>
 </dependency>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-tx</artifactId>
+    <version>${spring.version}</version>
+</dependency>
 ----
 --
 
