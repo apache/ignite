@@ -84,6 +84,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 
 /**
  *
@@ -276,6 +277,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_KILL);
+
             ctx.task().execute(IgniteKillTask.class, false, options().withProjection(nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -291,6 +294,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_KILL);
+
             ctx.task().execute(IgniteKillTask.class, false, options().withProjection(forNodeIds(ids).nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -306,6 +311,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_KILL);
+
             ctx.task().execute(IgniteKillTask.class, true, options().withProjection(nodes())).get();
         }
         catch (IgniteCheckedException e) {
@@ -321,6 +328,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
+            ctx.security().authorize(ADMIN_KILL);
+
             ctx.task().execute(IgniteKillTask.class, true, options().withProjection(forNodeIds(ids).nodes())).get();
         }
         catch (IgniteCheckedException e) {
