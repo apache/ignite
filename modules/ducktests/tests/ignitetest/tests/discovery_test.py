@@ -225,14 +225,13 @@ class DiscoveryTest(IgniteTest):
             tran_nodes = [servers.node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
-            params = {
+            params = {"cacheCount": 1,
+                      "backups": 1,
+                      "entrySize": 4,
                       "range": self.DATA_AMOUNT,
                       "warmUpRange": self.WARMUP_DATA_AMOUNT,
                       "targetNodes": tran_nodes,
-                      "transactional": bool(tran_nodes),
-                      "cacheCount": 1,
-                      "backups": 1
-            }
+                      "transactional": bool(tran_nodes)}
 
             start_load_app(self.test_context, load_config, params, modules)
 
@@ -340,14 +339,17 @@ def start_load_app(test_context, ignite_config, params, modules=None):
     """
     Start loader application.
     """
-    IgniteApplicationService(
+    app = IgniteApplicationService(
         test_context,
         config=ignite_config,
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
-        params=params).start()
+        params=params)
+
+    app.start()
+    app.await_event("Warm up finished.", 60, from_the_beginning=True)
 
 
 def choose_node_to_kill(servers, nodes_to_kill, sequential):
