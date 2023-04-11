@@ -205,12 +205,7 @@ class DiscoveryTest(IgniteTest):
         ignite_config = IgniteConfiguration(
             version=test_config.version,
             discovery_spi=discovery_spi,
-            failure_detection_timeout=failure_detection_timeout,
-            caches=[CacheConfiguration(
-                name='test-cache',
-                backups=1,
-                atomicity_mode='TRANSACTIONAL' if test_config.load_type == ClusterLoad.TRANSACTIONAL else 'ATOMIC'
-            )]
+            failure_detection_timeout=failure_detection_timeout
         )
 
         # Start Ignite nodes in count less than max_nodes_in_use. One node is erequired for the loader. Some nodes might
@@ -230,7 +225,9 @@ class DiscoveryTest(IgniteTest):
             tran_nodes = [servers.node_id(n) for n in failed_nodes] \
                 if test_config.load_type == ClusterLoad.TRANSACTIONAL else None
 
-            params = {"cacheName": "test-cache",
+            params = {"cacheCount": 1,
+                      "backups": 1,
+                      "entrySize": 4,
                       "range": self.DATA_AMOUNT,
                       "warmUpRange": self.WARMUP_DATA_AMOUNT,
                       "targetNodes": tran_nodes,
@@ -342,14 +339,17 @@ def start_load_app(test_context, ignite_config, params, modules=None):
     """
     Start loader application.
     """
-    IgniteApplicationService(
+    app = IgniteApplicationService(
         test_context,
         config=ignite_config,
         java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],
-        params=params).start()
+        params=params)
+
+    app.start()
+    app.await_event("Warm up finished.", 60, from_the_beginning=True)
 
 
 def choose_node_to_kill(servers, nodes_to_kill, sequential):

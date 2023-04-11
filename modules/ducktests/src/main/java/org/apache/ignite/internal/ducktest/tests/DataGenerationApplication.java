@@ -17,116 +17,72 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Application generates cache data by specified parameters.
+ * Application generates cache data with data streamer by specified parameters.
  */
-public class DataGenerationApplication extends IgniteAwareApplication {
+public class DataGenerationApplication extends AbstractDataLoadApplication {
     /** Max streamer data size. */
     private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
 
-    /** */
-    public static final String VAL_TYPE = "org.apache.ignite.ducktest.DataBinary";
+    /** Application config. */
+    private DataGenerationConfig dataGenCfg;
 
     /** {@inheritDoc} */
-    @Override protected void run(JsonNode jsonNode) throws Exception {
-        int backups = jsonNode.get("backups").asInt();
-        int cacheCnt = jsonNode.get("cacheCount").asInt();
-        int entrySize = jsonNode.get("entrySize").asInt();
-        int from = jsonNode.get("from").asInt();
-        int to = jsonNode.get("to").asInt();
+    @Override protected void parseConfig(JsonNode jsonNode) {
+        super.parseConfig(jsonNode);
 
-        int idxCnt = 0;
+        dataGenCfg = parseConfig(jsonNode, DataGenerationConfig.class);
+    }
 
-        if (jsonNode.has("indexCount"))
-            idxCnt = jsonNode.get("indexCount").asInt();
-
-        markInitialized();
-
-        for (int i = 1; i <= cacheCnt; i++) {
-            CacheConfiguration<Integer, BinaryObject> ccfg = new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
-                .setBackups(backups);
-
-            if (idxCnt > 0) {
-                QueryEntity qe = new QueryEntity();
-                List<QueryIndex> qi = new ArrayList<>(idxCnt);
-
-                qe.setKeyType(Integer.class.getName());
-                qe.setValueType(VAL_TYPE);
-
-                for (int j = 0; j < idxCnt; j++) {
-                    String field = "bytes" + j;
-
-                    qe.addQueryField(field, byte[].class.getName(), null);
-                    qi.add(new QueryIndex(field));
-                }
-
-                qe.setIndexes(qi);
-
-                ccfg.setQueryEntities(Collections.singleton(qe));
-
-            }
-
-            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(ccfg);
-
-            generateCacheData(cache.getName(), entrySize, from, to, idxCnt);
-        }
-
-        markFinished();
+    /** {@inheritDoc} */
+    @Override protected void loadData() {
+        for (int i = 1; i <= dataGenCfg.cacheCount; i++)
+            generateCacheData(cacheName(i));
     }
 
     /**
      * @param cacheName Cache name.
-     * @param entrySize Entry size.
-     * @param from From key.
-     * @param to To key.
      */
-    private void generateCacheData(String cacheName, int entrySize, int from, int to, int idxCnt) {
-        int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
-        int logEach = (to - from) / 10;
-
-        BinaryObjectBuilder builder = ignite.binary().builder(VAL_TYPE);
-
-        byte[] data = new byte[entrySize];
-
-        ThreadLocalRandom.current().nextBytes(data);
+    private void generateCacheData(String cacheName) {
+        int flushEach = MAX_STREAMER_DATA_SIZE / dataGenCfg.entrySize + (MAX_STREAMER_DATA_SIZE % dataGenCfg.entrySize == 0 ? 0 : 1);
+        int logEach = (dataGenCfg.to - dataGenCfg.from) / 10;
 
         try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
-            for (int i = from; i < to; i++) {
-                builder.setField("key", i);
-                builder.setField("data", data);
+            for (int i = dataGenCfg.from; i < dataGenCfg.to; i++) {
+                stmr.addData(i, cacheEntryValue(i));
 
-                for (int j = 0; j < idxCnt; j++) {
-                    byte[] indexedBytes = new byte[100];
-
-                    ThreadLocalRandom.current().nextBytes(indexedBytes);
-
-                    builder.setField("bytes" + j, indexedBytes);
-                }
-
-                stmr.addData(i, builder.build());
-
-                if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
-                    log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);
+                if ((i - dataGenCfg.from + 1) % logEach == 0 && log.isDebugEnabled())
+                    log.debug("Streamed " + (i - dataGenCfg.from + 1) + " entries into " + cacheName);
 
                 if (i % flushEach == 0)
                     stmr.flush();
             }
         }
 
-        log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
+        log.info(cacheName + " data generated [" +
+            "entryCnt=" + (dataGenCfg.from - dataGenCfg.to) +
+            ", from=" + dataGenCfg.from +
+            ", to=" + dataGenCfg.to + "]");
+    }
+
+    /** Describes specific params for this generator. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class DataGenerationConfig {
+        /** Start key to generate data. */
+        private int from;
+
+        /** Finish key to generate data. */
+        private int to;
+
+        /** Count of caches to fill with the data. */
+        private int cacheCount;
+
+        /** Test caches entry size. */
+        private int entrySize;
     }
 }
