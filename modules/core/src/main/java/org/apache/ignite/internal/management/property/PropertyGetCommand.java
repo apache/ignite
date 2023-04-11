@@ -20,8 +20,8 @@ package org.apache.ignite.internal.management.property;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -32,7 +32,7 @@ public class PropertyGetCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(example = "<property_name>")
+    @Argument(example = "<property_name>")
     private String name;
 
     /** {@inheritDoc} */

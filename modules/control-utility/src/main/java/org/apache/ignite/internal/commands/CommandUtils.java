@@ -29,11 +29,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.OneOf;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
@@ -58,18 +58,18 @@ public class CommandUtils {
 
     /** */
     public static String parameterExample(Field fld, boolean appendOptional) {
-        if (fld.isAnnotationPresent(PositionalParameter.class)) {
-            PositionalParameter posParam = fld.getAnnotation(PositionalParameter.class);
+        if (fld.isAnnotationPresent(PositionalArgument.class)) {
+            PositionalArgument posParam = fld.getAnnotation(PositionalArgument.class);
 
             return asOptional(
                 posParam.example().isEmpty()
-                    ? name(fld, PARAM_WORDS_DELIM, Parameter::javaStyleName)
+                    ? name(fld, PARAM_WORDS_DELIM, Argument::javaStyleName)
                     : posParam.example(),
                 appendOptional && posParam.optional()
             );
         }
 
-        Parameter param = fld.getAnnotation(Parameter.class);
+        Argument param = fld.getAnnotation(Argument.class);
 
         String example = valueExample(fld);
 
@@ -84,8 +84,8 @@ public class CommandUtils {
         if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
             return "";
 
-        PositionalParameter posParam = fld.getAnnotation(PositionalParameter.class);
-        Parameter param = fld.getAnnotation(Parameter.class);
+        PositionalArgument posParam = fld.getAnnotation(PositionalArgument.class);
+        Argument param = fld.getAnnotation(Argument.class);
 
         if (posParam != null) {
             String example = posParam.example();
@@ -115,7 +115,7 @@ public class CommandUtils {
 
         boolean brackets = param != null && param.brackets();
 
-        String name = name(fld, PARAM_WORDS_DELIM, Parameter::javaStyleExample);
+        String name = name(fld, PARAM_WORDS_DELIM, Argument::javaStyleExample);
 
         if (fld.getType().isArray() || Collection.class.isAssignableFrom(fld.getType())) {
             if (name.endsWith("s"))
@@ -164,9 +164,9 @@ public class CommandUtils {
             for (Field fld : flds) {
                 if (oneOfNames.contains(fld.getName()))
                     oneOfFlds.add(fld);
-                else if (fld.isAnnotationPresent(PositionalParameter.class))
+                else if (fld.isAnnotationPresent(PositionalArgument.class))
                     positionalParams.add(fld);
-                else if (fld.isAnnotationPresent(Parameter.class))
+                else if (fld.isAnnotationPresent(Argument.class))
                     namedParams.add(fld);
             }
 
@@ -185,14 +185,14 @@ public class CommandUtils {
     }
 
     /** */
-    private static String name(Field fld, char delim, Predicate<Parameter> javaStyle) {
-        if (fld.isAnnotationPresent(PositionalParameter.class)) {
-            PositionalParameter posParam = fld.getAnnotation(PositionalParameter.class);
+    private static String name(Field fld, char delim, Predicate<Argument> javaStyle) {
+        if (fld.isAnnotationPresent(PositionalArgument.class)) {
+            PositionalArgument posParam = fld.getAnnotation(PositionalArgument.class);
 
             return posParam.javaStyleExample() ? fld.getName() : formattedName(fld.getName(), delim);
         }
 
-        return javaStyle.test(fld.getAnnotation(Parameter.class))
+        return javaStyle.test(fld.getAnnotation(Argument.class))
             ? fld.getName()
             : formattedName(fld.getName(), delim);
     }
@@ -241,21 +241,21 @@ public class CommandUtils {
         visitCommandParams(
             cmd.getClass(),
             fld -> res.compareAndSet(false,
-                !fld.getAnnotation(PositionalParameter.class).description().isEmpty() ||
+                !fld.getAnnotation(PositionalArgument.class).description().isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class)
             ),
             fld -> res.compareAndSet(
                 false,
-                (!fld.getAnnotation(Parameter.class).description().isEmpty() ||
+                (!fld.getAnnotation(Argument.class).description().isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class))
-                    && !fld.getAnnotation(Parameter.class).excludeFromDescription()
+                    && !fld.getAnnotation(Argument.class).excludeFromDescription()
 
             ),
             (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(
                 false,
-                !(fld.isAnnotationPresent(Parameter.class)
-                    ? fld.getAnnotation(Parameter.class).description()
-                    : fld.getAnnotation(PositionalParameter.class).description()
+                !(fld.isAnnotationPresent(Argument.class)
+                    ? fld.getAnnotation(Argument.class).description()
+                    : fld.getAnnotation(PositionalArgument.class).description()
                 ).isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class)
             ))
@@ -266,8 +266,8 @@ public class CommandUtils {
 
     /** */
     public static String parameterName(Field fld) {
-        return (fld.getAnnotation(Parameter.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
-            + name(fld, CMD_WORDS_DELIM, Parameter::javaStyleName);
+        return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
+            + name(fld, CMD_WORDS_DELIM, Argument::javaStyleName);
     }
 
     /** */

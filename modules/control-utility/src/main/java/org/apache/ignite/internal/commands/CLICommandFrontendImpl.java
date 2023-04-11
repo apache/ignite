@@ -38,11 +38,11 @@ import org.apache.ignite.internal.commandline.GridConsole;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.management.CommandsRegistry;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -240,14 +240,14 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
-                fld.getAnnotation(PositionalParameter.class).optional(),
+                fld.getAnnotation(PositionalArgument.class).optional(),
                 fld.getType(),
                 null
             )),
-            fld -> namedArgs.add(toArg.apply(fld, fld.getAnnotation(Parameter.class).optional())),
+            fld -> namedArgs.add(toArg.apply(fld, fld.getAnnotation(Argument.class).optional())),
             (optionals, flds) -> {
                 List<CLIArgument<?>> oneOfArg = flds.stream().map(
-                    fld -> toArg.apply(fld, fld.getAnnotation(Parameter.class).optional())
+                    fld -> toArg.apply(fld, fld.getAnnotation(Argument.class).optional())
                 ).collect(Collectors.toList());
 
                 oneOfArgs.add(F.t(optionals, oneOfArg));
@@ -356,8 +356,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     );
 
                     if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                        Parameter desc = fld.getAnnotation(Parameter.class);
-                        PositionalParameter posDesc = fld.getAnnotation(PositionalParameter.class);
+                        Argument desc = fld.getAnnotation(Argument.class);
+                        PositionalArgument posDesc = fld.getAnnotation(PositionalArgument.class);
 
                         if (desc != null && desc.excludeFromDescription())
                             return;

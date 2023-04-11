@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,15 +35,15 @@ public class KillScanCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Originating node id")
+    @PositionalArgument(description = "Originating node id")
     private UUID originNodeId;
 
     /** */
-    @PositionalParameter(description = "Cache name")
+    @PositionalArgument(description = "Cache name")
     private String cacheName;
 
     /** */
-    @PositionalParameter(description = "Query identifier")
+    @PositionalArgument(description = "Query identifier")
     private long queryId;
 
     /** {@inheritDoc} */

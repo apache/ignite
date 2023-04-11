@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,11 +35,11 @@ public class ConsistencyRepairCommand extends BaseCommand implements Experimenta
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Cache to be checked/repaired")
+    @PositionalArgument(description = "Cache to be checked/repaired")
     private String cacheName;
 
     /** */
-    @PositionalParameter(description = "Cache's partition to be checked/repaired")
+    @PositionalArgument(description = "Cache's partition to be checked/repaired")
     private long partition;
 
     /** {@inheritDoc} */

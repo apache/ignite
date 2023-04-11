@@ -20,9 +20,9 @@ package org.apache.ignite.internal.management.tracing;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
@@ -34,7 +34,7 @@ public class TracingConfigurationGetAllCommand extends BaseCommand implements Ex
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private Scope scope;
 
     /** {@inheritDoc} */

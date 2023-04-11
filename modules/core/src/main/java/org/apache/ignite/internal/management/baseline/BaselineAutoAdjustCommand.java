@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,11 +35,11 @@ public class BaselineAutoAdjustCommand extends ConfirmableCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter
+    @PositionalArgument
     private Enabled enabled;
 
     /** */
-    @Parameter(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
+    @Argument(optional = true, withoutPrefix = true, example = "<timeoutMillis>")
     private long timeout;
 
     /** {@inheritDoc} */

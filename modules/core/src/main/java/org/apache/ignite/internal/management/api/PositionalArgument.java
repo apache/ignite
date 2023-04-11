@@ -27,7 +27,10 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Parameter {
+public @interface PositionalArgument {
+    /** */
+    public boolean optional() default false;
+
     /** */
     public String description() default "";
 
@@ -35,20 +38,5 @@ public @interface Parameter {
     public String example() default "";
 
     /** */
-    public boolean optional() default false;
-
-    /** */
-    public boolean withoutPrefix() default false;
-
-    /** */
     public boolean javaStyleExample() default false;
-
-    /** */
-    public boolean javaStyleName() default false;
-
-    /** */
-    public boolean brackets() default false;
-
-    /** */
-    public boolean excludeFromDescription() default false;
 }

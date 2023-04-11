@@ -26,7 +26,7 @@ import java.io.ObjectOutput;
  */
 public abstract class ConfirmableCommand extends BaseCommand {
     /** */
-    @Parameter(optional = true, excludeFromDescription = true)
+    @Argument(optional = true, excludeFromDescription = true)
     private boolean yes;
 
     /** {@inheritDoc} */

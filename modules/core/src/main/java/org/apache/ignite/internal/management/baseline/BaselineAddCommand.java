@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
@@ -33,7 +33,7 @@ public class BaselineAddCommand extends ConfirmableCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(javaStyleExample = true)
+    @PositionalArgument(javaStyleExample = true)
     private List<Object> consistentIDs;
 
     /** {@inheritDoc} */

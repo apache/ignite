@@ -20,8 +20,8 @@ package org.apache.ignite.internal.management;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 
 /**
  *
@@ -31,7 +31,7 @@ public class WarmUpCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter
+    @Argument
     private boolean stop;
 
     /** {@inheritDoc} */

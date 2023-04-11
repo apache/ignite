@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,15 +35,15 @@ public class MetaRemoveCommand extends BaseCommand implements ExperimentalComman
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    @Argument(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
     private long typeId;
 
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    @Argument(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
     private String typeName;
 
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, example = "<fileName>")
+    @Argument(optional = true, javaStyleExample = true, javaStyleName = true, example = "<fileName>")
     private String out;
 
     /** {@inheritDoc} */

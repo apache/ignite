@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,7 +34,7 @@ public class KillTransactionCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Transaction identifier")
+    @PositionalArgument(description = "Transaction identifier")
     private String xid;
 
     /** {@inheritDoc} */

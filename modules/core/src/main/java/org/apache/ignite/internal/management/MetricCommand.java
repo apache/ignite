@@ -22,9 +22,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -36,12 +36,12 @@ public class MetricCommand extends CommandWithSubs {
     private static final long serialVersionUID = 0;
 
     /** Metric name. */
-    @PositionalParameter(description = "Name of the metric which value should be printed. " +
+    @PositionalArgument(description = "Name of the metric which value should be printed. " +
         "If name of the metric registry is specified, value of all its metrics will be printed")
     private String name;
 
     /** */
-    @Parameter(
+    @Argument(
         description = "ID of the node to get the metric values from. If not set, random node will be chosen",
         optional = true
     )

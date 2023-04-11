@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -32,11 +32,11 @@ public class MetricConfigureHitrateCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Name of the metric which value should be configured")
+    @PositionalArgument(description = "Name of the metric which value should be configured")
     private String name;
 
     /** */
-    @PositionalParameter(javaStyleExample = true, description = "Rate time interval of hitrate")
+    @PositionalArgument(javaStyleExample = true, description = "Rate time interval of hitrate")
     private long newRateTimeInterval;
 
     /** {@inheritDoc} */

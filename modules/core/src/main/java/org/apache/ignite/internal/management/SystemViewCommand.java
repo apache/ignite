@@ -23,10 +23,10 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.OneOf;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -39,13 +39,13 @@ public class SystemViewCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** System view name. */
-    @PositionalParameter(description = "Name of the system view which content should be printed." +
+    @PositionalArgument(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
         " (e.g. SQL_TABLES and sql.tables will be handled similarly)")
     private String systemViewName;
 
     /** */
-    @Parameter(
+    @Argument(
         description = "ID of the node to get the system view from (deprecated. Use --node-ids instead). " +
             "If not set, random node will be chosen",
         optional = true
@@ -53,7 +53,7 @@ public class SystemViewCommand extends BaseCommand {
     private UUID nodeId;
 
     /** ID of the nodes to get the system view content from. */
-    @Parameter(
+    @Argument(
         description = "Comma-separated list of nodes IDs to get the system view from. " +
         "If not set, random node will be chosen",
         optional = true,
@@ -62,7 +62,7 @@ public class SystemViewCommand extends BaseCommand {
     private Collection<UUID> nodeIds;
 
     /** Flag to get the system view from all nodes. */
-    @Parameter(
+    @Argument(
         description = "Get the system view from all nodes. If not set, random node will be chosen",
         optional = true
     )

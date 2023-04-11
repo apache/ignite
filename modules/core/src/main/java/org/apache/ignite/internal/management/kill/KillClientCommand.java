@@ -22,9 +22,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -36,11 +36,11 @@ public class KillClientCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Connection identifier or ALL")
+    @PositionalArgument(description = "Connection identifier or ALL")
     private String connectionId;
 
     /** */
-    @Parameter(description = "Node id to drop connection from", optional = true)
+    @Argument(description = "Node id to drop connection from", optional = true)
     private UUID nodeId;
 
     /** {@inheritDoc} */

@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.api.Parameter;
 
 /**
  *
@@ -33,7 +33,7 @@ public class BaselineCommand extends CommandWithSubs {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true, description = "Show the full list of node ips")
+    @Argument(optional = true, description = "Show the full list of node ips")
     private boolean verbose;
 
     /** {@inheritDoc} */

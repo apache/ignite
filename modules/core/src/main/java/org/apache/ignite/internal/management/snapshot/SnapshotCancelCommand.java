@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.OneOf;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -36,11 +36,11 @@ public class SnapshotCancelCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(description = "Snapshot operation request ID")
+    @Argument(description = "Snapshot operation request ID")
     private String id;
 
     /** */
-    @Parameter(description = "Snapshot name (deprecated)")
+    @Argument(description = "Snapshot name (deprecated)")
     private String name;
 
     /** {@inheritDoc} */

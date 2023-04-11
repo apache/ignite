@@ -22,8 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,11 +35,11 @@ public class DefragmentationScheduleCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(example = "consistentId0,consistentId1")
+    @Argument(example = "consistentId0,consistentId1")
     private List<String> nodes;
 
     /** */
-    @Parameter(example = "cache1,cache2,cache3", optional = true)
+    @Argument(example = "cache1,cache2,cache3", optional = true)
     private List<String> caches;
 
     /** {@inheritDoc} */

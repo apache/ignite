@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
@@ -35,20 +35,20 @@ public class TracingConfigurationSetCommand extends BaseCommand implements Exper
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private Scope scope;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean label;
 
     /** */
-    @Parameter(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
+    @Argument(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
         "More or less reflects the probability of sampling specific trace.")
     private double samplingRate;
 
     /** */
-    @Parameter(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
+    @Argument(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
     private Set<Scope> includedScopes;
 
     /** {@inheritDoc} */

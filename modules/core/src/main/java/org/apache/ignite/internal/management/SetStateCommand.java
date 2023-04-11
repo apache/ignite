@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -37,7 +37,7 @@ public class SetStateCommand extends ConfirmableCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter()
+    @PositionalArgument()
     @EnumDescription(
         names = {
             "ACTIVE",
@@ -53,7 +53,7 @@ public class SetStateCommand extends ConfirmableCommand {
     private ClusterState state;
 
     /** */
-    @Parameter(optional = true, excludeFromDescription = true)
+    @Argument(optional = true, excludeFromDescription = true)
     private boolean force;
 
     /** {@inheritDoc} */

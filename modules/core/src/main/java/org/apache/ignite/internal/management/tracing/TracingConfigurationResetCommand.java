@@ -20,9 +20,9 @@ package org.apache.ignite.internal.management.tracing;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
@@ -34,11 +34,11 @@ public class TracingConfigurationResetCommand extends BaseCommand implements Exp
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private Scope scope;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean label;
 
     /** {@inheritDoc} */

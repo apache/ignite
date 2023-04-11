@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ConfirmableCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 
 /**
  *
@@ -33,7 +33,7 @@ public class DeactivateCommand extends ConfirmableCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean force;
 
     /** {@inheritDoc} */

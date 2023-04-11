@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,11 +35,11 @@ public class MetaDetailsCommand extends BaseCommand implements ExperimentalComma
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    @Argument(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
     private long typeId;
 
     /** */
-    @Parameter(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
+    @Argument(optional = true, javaStyleExample = true, javaStyleName = true, brackets = true)
     private String typeName;
 
     /** {@inheritDoc} */

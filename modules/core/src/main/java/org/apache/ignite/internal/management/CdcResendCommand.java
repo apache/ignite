@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,7 +34,7 @@ public class CdcResendCommand extends BaseCommand implements ExperimentalCommand
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(description = "specifies a comma-separated list of cache names")
+    @Argument(description = "specifies a comma-separated list of cache names")
     private List<String> caches;
 
     /** {@inheritDoc} */

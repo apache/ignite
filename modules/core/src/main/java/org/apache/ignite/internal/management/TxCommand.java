@@ -22,8 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.api.Parameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 
@@ -36,51 +36,51 @@ public class TxCommand extends CommandWithSubs {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Parameter(example = "XID", optional = true)
+    @Argument(example = "XID", optional = true)
     private String xid;
 
     /** */
-    @Parameter(example = "SECONDS", optional = true)
+    @Argument(example = "SECONDS", optional = true)
     private long minDuration = -1;
 
     /** */
-    @Parameter(example = "SIZE", optional = true)
+    @Argument(example = "SIZE", optional = true)
     private int minSize = -1;
 
     /** */
-    @Parameter(example = "PATTERN_REGEX", optional = true)
+    @Argument(example = "PATTERN_REGEX", optional = true)
     private String label;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean servers;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean clients;
 
     /** */
-    @Parameter(optional = true, example = "consistentId1[,consistentId2,....,consistentIdN]")
+    @Argument(optional = true, example = "consistentId1[,consistentId2,....,consistentIdN]")
     private List<String> nodes;
 
     /** */
-    @Parameter(optional = true, example = "NUMBER")
+    @Argument(optional = true, example = "NUMBER")
     private int limit = -1;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private VisorTxSortOrder order;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean kill;
 
     /** */
-    @Parameter(optional = true)
+    @Argument(optional = true)
     private boolean info;
 
     /** */
-    @Parameter(optional = true, excludeFromDescription = true)
+    @Argument(optional = true, excludeFromDescription = true)
     private boolean yes;
 
     /** */

@@ -22,9 +22,9 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -36,33 +36,33 @@ public class SnapshotRestoreCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Snapshot name. " +
+    @PositionalArgument(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")
     private String snapshotName;
 
     /** */
-    @Parameter(optional = true, description = "Cache group names")
+    @Argument(optional = true, description = "Cache group names")
     private List<String> groups;
 
     /** */
-    @Parameter(example = "path", optional = true,
+    @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
     private String src;
 
     /** */
-    @Parameter(optional = true, example = "incrementIndex", description = "Incremental snapshot index. " +
+    @Argument(optional = true, example = "incrementIndex", description = "Incremental snapshot index. " +
         "The command will restore snapshot and after that all its increments sequentially from 1 to the specified index")
     private int increment;
 
     /** */
-    @Parameter(optional = true, description = "Run the operation synchronously, " +
+    @Argument(optional = true, description = "Run the operation synchronously, " +
         "the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control")
     private boolean sync;
 
     /** */
-    @Parameter(optional = true,
+    @Argument(optional = true,
         description = "Check snapshot data integrity before restore (slow!). Similar to the \"check\" command")
     private boolean check;
 

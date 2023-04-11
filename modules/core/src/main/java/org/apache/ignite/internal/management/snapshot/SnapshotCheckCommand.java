@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Parameter;
-import org.apache.ignite.internal.management.api.PositionalParameter;
+import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -35,18 +35,18 @@ public class SnapshotCheckCommand extends BaseCommand {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalParameter(description = "Snapshot name. " +
+    @PositionalArgument(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")
     private String snapshotName;
 
     /** */
-    @Parameter(example = "path", optional = true,
+    @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
     private String src;
 
     /** */
-    @Parameter(example = "incrementIndex", optional = true,
+    @Argument(example = "incrementIndex", optional = true,
         description = "Incremental snapshot index. " +
             "The command will check incremental snapshots sequentially from 1 to the specified index")
     private int increment;
