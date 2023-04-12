@@ -558,6 +558,11 @@ public class IgniteTxHandler {
                     }
 
                     if (retry) {
+                        if (U.TEST) {
+                            log.error("TEST | retry prepare near transaction request on " + ctx.localNodeId() + " / " +
+                                ctx.localNode().order() + ". Node 'to': " + nearNode.id() + " / " + nearNode.order());
+                        }
+
                         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
                             req.partition(),
                             req.version(),
@@ -597,6 +602,11 @@ public class IgniteTxHandler {
                     }
 
                     assert topFut.isDone();
+                }
+
+                if (U.TEST) {
+                    log.error("TEST | prepare near from " + ctx.localNodeId() + " / " +
+                        ctx.localNode().order() + " to " + nearNode.id() + " / " + nearNode.order());
                 }
 
                 tx = new GridDhtTxLocal(
@@ -871,6 +881,11 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
+        if (U.TEST) {
+            log.error("TEST | process prepare response on " + ctx.localNodeId() + " / " +
+                ctx.localNode().order() + " from " + nodeId);
+        }
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_RESP, MTC.span()))) {
             GridDhtTxPrepareFuture fut =
@@ -1240,6 +1255,11 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processDhtTxPrepareRequest(final UUID nodeId, final GridDhtTxPrepareRequest req) {
+        if (U.TEST) {
+            log.error("TEST | process prepare request on " +
+                ctx.localNode().id() + " / " + ctx.localNode().order() + " from " + nodeId);
+        }
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_REQ, MTC.span()))) {
             if (txPrepareMsgLog.isDebugEnabled()) {

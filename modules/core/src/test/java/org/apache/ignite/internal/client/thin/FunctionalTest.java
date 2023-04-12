@@ -674,45 +674,59 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
     /** */
     @Test
     public void test0() throws Exception {
-        int grids = 4;
+        U.TEST = false;
 
-        int putCnt = 10;
+        int grids = 3;
 
-//        TransactionIsolation isolation = SERIALIZABLE;
+        int putCnt = 100;
 
         try {
             Ignite ig0 = startGridsMultiThreaded(grids);
 
+            IgniteEx client = startClientGrid();
+
             long txTimeout = ig0.configuration().getTransactionConfiguration().getDefaultTxTimeout();
 
-            IgniteCache cache0 = ig0.createCache(new CacheConfiguration<>("cache")
-                .setBackups(Math.min(2, grids - 1))
+            ig0.createCache(new CacheConfiguration<>("cache")
+                .setBackups(Math.min(grids - 1, 2))
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             );
 
-            for (int i = 0; i < putCnt; ++i)
-                cache0.put(i, i);
+            IgniteCache cache = client.cache("cache");
 
-            CountDownLatch latch0 = new CountDownLatch(1);
+            try (Transaction tx = client.transactions().txStart()){
+                for (int i = 0; i < 1000; ++i)
+                    cache.put(i, i);
+
+                tx.commit();
+            }
+
+            U.sleep(3000);
+
+            U.TEST = true;
+
+            log.error("TEST | begin test");
+
+            CountDownLatch latch0 = new CountDownLatch(0);
 
             runAsync(() -> {
-                tx(0, putCnt, latch0);
+                tx(putCnt, latch0, client);
             });
 
-            runAsync(() -> {
-                tx(1, putCnt, latch0);
-            });
-
-            runAsync(() -> {
-                tx(2, putCnt, latch0);
-            });
+//            runAsync(() -> {
+//                tx(putCnt, latch0, grid(1));
+//            });
+//
+//            runAsync(() -> {
+//                tx(putCnt, latch0, grid(2));
+//            });
 
             U.sleep(txTimeout * 2);
 
             for (int i = 0; i < putCnt; ++i)
-                assertEquals(i, cache0.get(i));
+                assertEquals(i, cache.get(i));
         }
         finally {
             stopAllGrids();
@@ -720,26 +734,24 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    private void tx(int grid, int cnt, CountDownLatch latch) {
-        Ignite ig = grid(grid);
-
-        IgniteCache cache = ig.cache("cache");
-
+    private void tx(int cnt, CountDownLatch latch, IgniteEx putter) {
         List<Integer> keys = IntStream.range(0, cnt).boxed().collect(Collectors.toList());
 
         Collections.shuffle(keys);
 
-        try(Transaction tx0 = ig.transactions().txStart()) {
+        try(Transaction tx0 = putter.transactions().txStart()) {
+            IgniteCache cache = putter.cache("cache");
+
             for (int i = 0; i < keys.size(); ++i)
-                cache.put(keys.get(0), grid * 100 + keys.get(0));
+                cache.put(keys.get(0), (putter.context().cluster().get().localNode().order() - 1) * 100 + keys.get(0));
 
             try {
                 latch.await();
 
                 tx0.commit();
             }
-            catch (InterruptedException e) {
-                e.printStackTrace();
+            catch (Exception e) {
+                log.error("Unable to commit tx.", e);
             }
         }
     }
@@ -1582,7 +1594,7 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
 
         cfg.setTransactionConfiguration(new TransactionConfiguration()
             .setDefaultTxConcurrency(PESSIMISTIC)
-            .setDefaultTxIsolation(SERIALIZABLE)
+            .setDefaultTxIsolation(READ_COMMITTED)
             .setDefaultTxTimeout(3000)
         );
 
