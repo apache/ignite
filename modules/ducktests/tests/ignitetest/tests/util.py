@@ -35,6 +35,7 @@ class DataGenerationParams(NamedTuple):
     entry_size: int = 50_000
     preloaders: int = 1
     index_count: int = 0
+    # TODO: fill cluster with data in main snapshot.
     transactional: bool = False
 
     @property
@@ -53,14 +54,14 @@ class DataGenerationParams(NamedTuple):
         return int(self.entry_count / self.preloaders)
 
 
-def load_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
+def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
     """
-    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
+    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches and awaits the load finished.
     :param context: Test context.
     :param config: Ignite configuration.
     :param data_gen_params: Data generation parameters.
     :param timeout: Timeout in seconds for application finished.
-    :return: Load applications.
+    :return: Time taken for data preloading.
     """
     assert data_gen_params.preloaders > 0
     assert data_gen_params.cache_count > 0
@@ -97,21 +98,6 @@ def load_data(context, config, data_gen_params: DataGenerationParams, timeout=36
         start_app(start, end)
 
     start_app(end, data_gen_params.entry_count)
-
-    return apps
-
-
-def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
-    """
-    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches and awaits the load finished.
-    :param context: Test context.
-    :param config: Ignite configuration.
-    :param data_gen_params: Data generation parameters.
-    :param timeout: Timeout in seconds for application finished.
-    :return: Time taken for data preloading.
-    """
-
-    apps = load_data(context, config, data_gen_params, timeout)
 
     for app in apps:
         app.await_stopped()

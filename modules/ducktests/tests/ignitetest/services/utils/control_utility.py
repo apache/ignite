@@ -190,11 +190,11 @@ class ControlUtility:
         assert ('Command [CONSISTENCY] finished with code: 0' in data), data
         return data
 
-    def snapshot_create(self, snapshot_name: str, incremental: bool, timeout_sec: int = 60):
+    def snapshot_create(self, snapshot_name: str, incremental: bool = False, timeout_sec: int = 60):
         """
         Create snapshot.
         :param snapshot_name: Name of Snapshot.
-        :param incremental: Whether to create full or incremental snapshot.
+        :param incremental: If False then create full snapshot, otherwise create incremental snapshot.
         :param timeout_sec: Timeout to await snapshot to complete.
         """
         node = self._cluster.nodes[0]
@@ -233,6 +233,21 @@ class ControlUtility:
             assert False
 
         assert "Command [CACHE] finished with code: 0" in res
+
+    def snapshot_check(self, snapshot_name: str, increment: int) -> int:
+        """
+        Check snapshot.
+        :param snapshot_name: Name of Snapshot.
+        :param increment: Increment index.
+        :return: Seconds spent on the check.
+        """
+        start_check = datetime.now()
+
+        res = self.__run(f"--snapshot check {snapshot_name} --increment {increment}")
+
+        assert "The check procedure has finished, no conflicts have been found." in res
+
+        return (datetime.now() - start_check).seconds
 
     def snapshot_restore(self, snapshot_name: str, increment: int, timeout_sec: int = 3600):
         """

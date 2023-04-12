@@ -20,6 +20,7 @@ package org.apache.ignite.internal.ducktest.tests;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -67,18 +68,22 @@ public class ContinuousDataLoadApplication extends AbstractDataLoadApplication {
 
         int loaded = 0;
 
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
         while (active()) {
             try (Transaction tx = cfg.transactional ? ignite.transactions().txStart() : null) {
                 for (int i = 0; i < cfg.range && active(); ++i) {
-                    if (skipDataKey(i))
+                    int key = rnd.nextInt();
+
+                    if (skipDataKey(key))
                         continue;
 
-                    cache.put(i, cacheEntryValue(i));
+                    cache.put(key, cacheEntryValue(key));
 
                     ++loaded;
 
                     if (notifyTime + TimeUnit.MILLISECONDS.toNanos(1500) < System.nanoTime()) {
-                        log.debug("Put " + loaded + " entries into " + cache.getName());
+                        log.info("Put " + loaded + " entries into " + cache.getName());
 
                         notifyTime = System.nanoTime();
                     }

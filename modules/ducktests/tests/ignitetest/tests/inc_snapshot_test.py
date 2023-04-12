@@ -21,11 +21,11 @@ import time
 from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.util import DataGenerationParams, load_data
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -40,15 +40,19 @@ class IncrementalSnapshotTest(IgniteTest):
 
     @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(backups=[2], inc_create_period_sec=[60], inc_count=[5], loaders_count=[4])
-    def incremental_snapshot_test(self, ignite_version, backups, inc_create_period_sec, inc_count, loaders_count):
+    @defaults(backups=[2], inc_create_period_sec=[15], inc_count=[4], loaders_count=[4],
+              entry_size=[1024], preload_count=[10_000])
+    def incremental_snapshot_test(self, ignite_version, backups, inc_create_period_sec, inc_count, loaders_count,
+                                  entry_size, preload_count):
         """
         Incremental snapshot test - run incremental snapshots concurrently with transactional load.
         :param ignite_version: Ignite version.
         :param backups: Number of cache backups.
         :param inc_create_period_sec: Period between creating incremental snapshots.
         :param inc_count: Incremental snapshots count.
-        :param loaders_count: Transactional loaders count.
+        :param loaders_count: Data loaders count.
+        :param entry_size: Cache entry value size.
+        :param preload_count: Count of preloaded entries in full snapshot.
         :return: Incremental snapshots restoring statistics.
         """
         version = IgniteVersion(ignite_version)
@@ -70,42 +74,55 @@ class IncrementalSnapshotTest(IgniteTest):
         control_utility = ControlUtility(nodes)
         control_utility.activate()
 
-        # Concurrently start transactional load and create incremental snapshots.
-        apps = load_data(
-            self.test_context,
-            nodes.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
-            DataGenerationParams(
-                backups=backups,
-                cache_count=1,
-                entry_count=1_000_000_000,
-                entry_size=100,
-                index_count=1,
-                preloaders=loaders_count,
-                transactional=True))
+        loaders = []
 
-        # TODO: preload should fix it.
-        # Await all caches are created.
-        for app in apps:
-            app.await_started()
+        for _ in range(loaders_count):
+            app = IgniteApplicationService(
+                self.test_context,
+                nodes.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
+                java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
+                params={
+                    "cacheCount": 1,
+                    "backups": backups,
+                    "transactional": True,
+                    "indexCount": 1,
+                    "entrySize": entry_size,
+                    "range": 1,
+                    "warmUpRange": preload_count / loaders_count
+                })
+
+            app.start_async()
+            loaders.append(app)
+
+        for app in loaders:
+            app.await_event("Warm up finished.", 3600, True)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         for i in range(1, inc_count + 1):
-            control_utility.incremental_snapshot_create(self.SNAPSHOT_NAME, i)
+            control_utility.snapshot_create(self.SNAPSHOT_NAME, incremental=True)
 
             time.sleep(inc_create_period_sec)
 
-        for app in apps:
+        for app in loaders:
             app.stop()
 
-        inc_snp_restore_stat = {}
+        result = []
 
         for i in range(1, inc_count + 1):
             control_utility.destroy_caches(destroy_all=True)
 
-            inc_snp_restore_stat[i] = control_utility.incremental_snapshot_restore(self.SNAPSHOT_NAME, i)
+            check_time = control_utility.snapshot_check(self.SNAPSHOT_NAME, i)
+
+            restore_stat = control_utility.snapshot_restore(self.SNAPSHOT_NAME, i)
+
+            result.append({
+                "increment": i,
+                "checkTimeSec": check_time,
+                "restoreStat": restore_stat
+            })
 
             control_utility.validate_indexes()
             control_utility.idle_verify()
 
-        return inc_snp_restore_stat
+        return result

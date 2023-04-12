@@ -29,7 +29,6 @@ from ignitetest.services.ignite import IgniteAwareService, IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.utils.time_utils import epoch_mills

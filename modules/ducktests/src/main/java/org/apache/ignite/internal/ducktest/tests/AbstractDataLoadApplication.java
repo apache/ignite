@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.ducktest.tests;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -29,11 +34,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /** Basic appliction for creating test caches and loading test data. */
 public abstract class AbstractDataLoadApplication extends IgniteAwareApplication {
@@ -126,9 +126,9 @@ public abstract class AbstractDataLoadApplication extends IgniteAwareApplication
     private void createCaches() {
         for (int i = 1; i <= cfg.cacheCount; i++) {
             CacheConfiguration<Integer, BinaryObject> ccfg = new CacheConfiguration<Integer, BinaryObject>()
-                    .setName(cacheName(i))
-                    .setAtomicityMode(cfg.transactional ? CacheAtomicityMode.TRANSACTIONAL : CacheAtomicityMode.ATOMIC)
-                    .setBackups(cfg.backups);
+                .setName(cacheName(i))
+                .setAtomicityMode(cfg.transactional ? CacheAtomicityMode.TRANSACTIONAL : CacheAtomicityMode.ATOMIC)
+                .setBackups(cfg.backups);
 
             if (cfg.indexCount > 0) {
                 QueryEntity qe = new QueryEntity();

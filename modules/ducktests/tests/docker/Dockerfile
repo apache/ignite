@@ -49,13 +49,13 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN for v in "2.7.6" "2.8.0" "2.8.1" "2.9.0" "2.9.1" "2.10.0" "2.11.0" "2.11.1" "2.12.0" "2.13.0" "2.14.0"; \
-    do cd /opt; \
-    curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
-    unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
-    done
-
-RUN rm /opt/apache-ignite-*-bin.zip
+# RUN for v in "2.7.6" "2.8.0" "2.8.1" "2.9.0" "2.9.1" "2.10.0" "2.11.0" "2.11.1" "2.12.0" "2.13.0" "2.14.0"; \
+#     do cd /opt; \
+#     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
+#     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
+#     done
+#
+# RUN rm /opt/apache-ignite-*-bin.zip
 
 #Install zookeeper.
 ARG ZOOKEEPER_VERSION="3.5.8"
