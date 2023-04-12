@@ -89,15 +89,15 @@ public class ClusterNodeKillPermissionTest extends AbstractSecurityTest {
 
     /** */
     @Test
-    public void testKillNodesAuthorization() throws Exception {
+    public void testKillNodeAuthorization() throws Exception {
         for (Operation operation : Operation.values()) {
-            doStopNodeTest("kill-allowed", operation, true);
-            doStopNodeTest("kill-forbidden", operation, false);
+            doKillNodeTest("kill-allowed", operation, true);
+            doKillNodeTest("kill-forbidden", operation, false);
         }
     }
 
     /** */
-    private void doStopNodeTest(String login, Operation op, boolean isSuccessExpected) throws Exception {
+    private void doKillNodeTest(String login, Operation op, boolean isSuccessExpected) throws Exception {
         prepareCluster(login);
 
         try {
