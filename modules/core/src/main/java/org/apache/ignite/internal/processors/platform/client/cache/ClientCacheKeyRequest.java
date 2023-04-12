@@ -49,7 +49,7 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
         return key;
     }
 
-    /** Calculation of awarenes metrics. */
+    /** Calculation of affinity key metrics. */
     protected void calcAffinityKeyMetrics(ClientConnectionContext ctx) {
         String cacheName = cacheDescriptor(ctx).cacheName();
 

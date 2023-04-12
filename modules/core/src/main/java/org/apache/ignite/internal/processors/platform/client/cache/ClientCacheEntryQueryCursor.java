@@ -32,9 +32,10 @@ class ClientCacheEntryQueryCursor extends ClientCacheQueryCursor<Cache.Entry> {
      * @param cursor   Cursor.
      * @param pageSize Page size.
      * @param ctx      Context.
+     * @param affinity Affinity.
      */
-    ClientCacheEntryQueryCursor(QueryCursor<Cache.Entry> cursor, int pageSize, ClientConnectionContext ctx, boolean awareness) {
-        super(cursor, pageSize, ctx, awareness);
+    ClientCacheEntryQueryCursor(QueryCursor<Cache.Entry> cursor, int pageSize, ClientConnectionContext ctx, boolean affinity) {
+        super(cursor, pageSize, ctx, affinity);
     }
 
     /** {@inheritDoc} */
