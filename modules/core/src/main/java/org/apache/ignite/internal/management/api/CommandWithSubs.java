@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
@@ -29,27 +28,38 @@ import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POS
  */
 public abstract class CommandWithSubs {
     /** */
-    private final Map<String, Supplier<? extends Command<? extends IgniteDataTransferObject>>> commands = new LinkedHashMap<>();
+    private final Map<String, Supplier<? extends Command<?, ?, ?>>> commands = new LinkedHashMap<>();
 
     /** */
-    public Collection<Supplier<? extends Command<? extends IgniteDataTransferObject>>> subcommands() {
+    public Collection<Supplier<? extends Command<?, ?, ?>>> subcommands() {
         return commands.values();
     }
 
     /** */
-    public void register(Supplier<? extends Command<? extends IgniteDataTransferObject>> cmd) {
-        Command<?> cmdInstance = cmd.get();
+    public void register(Supplier<? extends Command<?, ?, ?>> cmd) {
+        Command<?, ?, ?> cmdInstance = cmd.get();
+
         String name = cmdInstance.getClass().getSimpleName();
 
         if (!name.endsWith(CMD_NAME_POSTFIX))
             throw new IllegalArgumentException("Command class name must ends with 'Command'");
 
-        commands.put(cmdInstance.getClass().getSimpleName(), cmd);
+        name = name.substring(0, name.length() - CMD_NAME_POSTFIX.length());
+
+        if (commands.containsKey(name))
+            throw new IllegalArgumentException("Command already registered");
+
+        commands.put(name, cmd);
     }
 
     /** */
-    public Command<?> command(String name) {
-        return commands.get(name).get();
+    public Command<?, ?, ?> command(String name) {
+        Supplier<? extends Command<?, ?, ?>> supplier = commands.get(name);
+
+        if (supplier == null)
+            return null;
+
+        return supplier.get();
     }
 
     /** */

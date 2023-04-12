@@ -22,21 +22,30 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.GridConsole;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
@@ -46,13 +55,20 @@ import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ssl.SslContextFactory;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
+import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
 import static org.apache.ignite.internal.commandline.Command.EXPERIMENTAL_LABEL;
+import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.TIME_PREFIX;
+import static org.apache.ignite.internal.commandline.CommandHandler.argumentsToString;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_HOST;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_KEYSTORE;
@@ -70,17 +86,22 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_TRUSTST
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_TRUSTSTORE_TYPE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
+import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
+import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.commands.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.commands.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commands.CommandUtils.commandName;
+import static org.apache.ignite.internal.commands.CommandUtils.fromFormattedName;
 import static org.apache.ignite.internal.commands.CommandUtils.hasDescribedParameters;
 import static org.apache.ignite.internal.commands.CommandUtils.isArgumentName;
 import static org.apache.ignite.internal.commands.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.commands.CommandUtils.parameterName;
 import static org.apache.ignite.internal.commands.CommandUtils.valueExample;
 import static org.apache.ignite.internal.commands.CommandUtils.visitCommandParams;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
  *
@@ -130,21 +151,26 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         commonArgsParser = new CLIArgumentParser(
             Collections.emptyList(),
             Arrays.asList(
-                optionalArg(CMD_HOST, "HOST_OR_IP", String.class),
-                optionalArg(CMD_PORT, "PORT", String.class),
+                optionalArg(CMD_HOST, "HOST_OR_IP", String.class, () -> DFLT_HOST),
+                optionalArg(CMD_PORT, "PORT", String.class, () -> DFLT_PORT),
                 optionalArg(CMD_USER, "USER", String.class),
                 optionalArg(CMD_PASSWORD, "PASSWORD", String.class),
-                optionalArg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class),
-                optionalArg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class),
+                optionalArg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class, () -> DFLT_PING_INTERVAL),
+                optionalArg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class, () -> DFLT_PING_TIMEOUT),
                 optionalArg(CMD_VERBOSE, "", Boolean.class),
-                optionalArg(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", String.class),
+                optionalArg(
+                    CMD_SSL_PROTOCOL,
+                    "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]",
+                    String.class,
+                    () -> SslContextFactory.DFLT_SSL_PROTOCOL
+                ),
                 optionalArg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String.class),
-                optionalArg(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM", String.class),
-                optionalArg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class),
+                optionalArg(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM", String.class, () -> DFLT_KEY_ALGORITHM),
+                optionalArg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class, () -> DFLT_STORE_TYPE),
                 optionalArg(CMD_KEYSTORE, "KEYSTORE_PATH", String.class),
                 optionalArg(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD", String.class),
                 optionalArg(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE", String.class),
-                optionalArg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class),
+                optionalArg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class, () -> DFLT_STORE_TYPE),
                 optionalArg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", String.class),
                 optionalArg(
                     CMD_ENABLE_EXPERIMENTAL,
@@ -168,45 +194,51 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** {@inheritDoc} */
     @Override public int execute(List<String> args) {
-        commonArgsParser.parse(args.iterator());
+        try {
+            commonArgsParser.parse(args.iterator());
 
-        experimentalEnabled = commonArgsParser.get(CMD_ENABLE_EXPERIMENTAL);
-        verbose = commonArgsParser.get(CMD_VERBOSE);
+            experimentalEnabled = commonArgsParser.get(CMD_ENABLE_EXPERIMENTAL);
+            verbose = commonArgsParser.get(CMD_VERBOSE);
 
-        LocalDateTime startTime = LocalDateTime.now();
+            LocalDateTime startTime = LocalDateTime.now();
 
-        logCommonInfo();
+            logCommonInfo();
 
-        if (CommandHandler.isHelp(args))
-            printUsage();
-        else
-            parseCommand(args);
+            if (CommandHandler.isHelp(args))
+                printUsage();
+            else
+                parseCommand(args);
 
-        LocalDateTime endTime = LocalDateTime.now();
+            LocalDateTime endTime = LocalDateTime.now();
 
-        CommandHandler.printExecutionTime(logger, endTime, Duration.between(startTime, endTime));
+            CommandHandler.printExecutionTime(logger, endTime, Duration.between(startTime, endTime));
 
-        return EXIT_CODE_OK;
+            return EXIT_CODE_OK;
+        }
+        catch (Exception e) {
+            return EXIT_CODE_UNEXPECTED_ERROR;
+        }
     }
 
     /** */
-    private void parseCommand(List<String> args) {
-        AtomicReference<Command<?, ?, ?>> cmd = new AtomicReference<>();
+    private void parseCommand(List<String> args) throws Exception {
+        Command<?, ?, ?> cmd = null;
 
         AtomicInteger i = new AtomicInteger();
 
         while (i.get() < args.size()) {
             String arg = args.get(i.getAndIncrement());
 
-            if (cmd.get() == null && !isArgumentName(arg))
+            if (cmd == null && !isArgumentName(arg))
                 continue;
 
-            Command<?, ?, ?> cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
+            Command<?, ?, ?> cmd0 = registry.command(
+                fromFormattedName(arg.substring(PARAMETER_PREFIX.length()), CMD_WORDS_DELIM)
+            );
 
             if (cmd0 == null) {
-                Object instance = cmd.get();
-                if (instance instanceof CommandWithSubs) {
-                    if (!(instance instanceof Command))
+                if (cmd instanceof CommandWithSubs) {
+                    if (!(cmd instanceof Command))
                         throw new IllegalArgumentException("Unknown argument " + arg);
 
                     i.decrementAndGet();
@@ -217,13 +249,13 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                 continue;
             }
 
-            cmd.set(cmd0);
+            cmd = cmd0;
 
-            if (!(cmd.get() instanceof CommandWithSubs))
+            if (!(cmd instanceof CommandWithSubs))
                 break;
         }
 
-        if (cmd.get() == null)
+        if (cmd == null)
             throw new IllegalArgumentException("Unknown command");
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
@@ -239,7 +271,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         );
 
         visitCommandParams(
-            cmd.get().args(),
+            cmd.args(),
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
@@ -265,6 +297,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
         AtomicInteger position = new AtomicInteger();
 
+        IgniteDataTransferObject arg = cmd.args().newInstance();
+
         BiConsumer<Field, Object> fldSetter = (fld, val) -> {
             if (val == null)
                 return;
@@ -272,24 +306,56 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             try {
                 // TODO: use setters here.
                 fld.setAccessible(true);
-                fld.set(cmd.get(), val);
+                fld.set(arg, val);
             }
             catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         };
 
-        // TODO: check OneOf invariant here.
-        // TODO: support OneOf for PositionalArgument.
         visitCommandParams(
-            cmd.get().args(),
+            cmd.args(),
             fld -> fldSetter.accept(fld, parser.get(position.getAndIncrement())),
             fld -> fldSetter.accept(fld, parser.get(parameterName(fld))),
             (optionals, flds) ->
                 flds.forEach(fld -> fldSetter.accept(fld, parser.get(parameterName(fld))))
         );
 
-        logger.info(cmd.get().toString());
+        Object res = execute((Command)cmd, arg, args);
+
+        cmd.printResult(arg, res, logger);
+
+        logger.info(
+            "Command [" + commandName(cmd.getClass(), CMD_WORDS_DELIM).toUpperCase() + "] " +
+                "finished with code: " + EXIT_CODE_OK
+        );
+    }
+
+    /** */
+    private <A extends IgniteDataTransferObject> Object execute(Command<A, ?, ?> cmd, A arg, List<String> rawArgs) throws Exception {
+        try (GridClient client = startClient(clientConfiguration())) {
+            GridClientCompute compute = client.compute();
+
+            Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
+                .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
+
+            Collection<UUID> nodeIds = cmd.filterById(clusterNodes.keySet(), arg);
+
+            Collection<GridClientNode> connectable = F.viewReadOnly(
+                nodeIds,
+                clusterNodes::get,
+                id -> clusterNodes.get(id).connectable()
+            );
+
+            if (!F.isEmpty(connectable))
+                compute = compute.projection(connectable);
+
+            logger.info("Command [" + commandName(cmd.getClass(), CMD_WORDS_DELIM).toUpperCase() + "] started");
+            logger.info("Arguments: " + argumentsToString(rawArgs));
+            logger.info(DELIM);
+
+            return compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+        }
     }
 
     /** */
@@ -474,5 +540,43 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     /** {@inheritDoc} */
     @Override public void console(GridConsole console) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Method to create thin client for communication with cluster.
+     *
+     * @param clientCfg Thin client configuration.
+     * @return Grid thin client instance which is already connected to cluster.
+     * @throws Exception If error occur.
+     */
+    public static GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
+        GridClient client = GridClientFactory.start(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
+
+        return client;
+    }
+
+    /** */
+    public GridClientConfiguration clientConfiguration() {
+        GridClientConfiguration clientCfg = new GridClientConfiguration();
+
+        clientCfg.setPingInterval(commonArgsParser.get(CMD_PING_INTERVAL));
+        clientCfg.setPingTimeout(commonArgsParser.get(CMD_PING_TIMEOUT));
+        clientCfg.setServers(Collections.singletonList(commonArgsParser.get(CMD_HOST) + ":" + commonArgsParser.get(CMD_PORT)));
+
+        return clientCfg;
     }
 }

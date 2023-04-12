@@ -213,34 +213,54 @@ public class CommandUtils {
      * @return Formatted name.
      */
     public static String formattedName(String name, char delim) {
-        StringBuilder bld = new StringBuilder();
+        StringBuilder formatted = new StringBuilder();
 
-        bld.append(Character.toLowerCase(name.charAt(0)));
+        formatted.append(Character.toLowerCase(name.charAt(0)));
 
         int i = 1;
 
         while (i < name.length()) {
             if (Character.isLowerCase(name.charAt(i))) {
-                bld.append(name.charAt(i));
+                formatted.append(name.charAt(i));
 
                 i++;
             }
             else {
-                bld.append(delim);
-
-                while (i < name.length() && Character.isUpperCase(name.charAt(i))) {
-                    bld.append(Character.toLowerCase(name.charAt(i)));
-
-                    i++;
-                }
+                formatted.append(delim);
+                formatted.append(Character.toLowerCase(name.charAt(i)));
+                i++;
             }
         }
 
-        return bld.toString();
+        return formatted.toString();
     }
 
     /** */
-    public static boolean hasDescribedParameters(Command<?> cmd) {
+    public static String fromFormattedName(String formatted, char delim) {
+        StringBuilder name = new StringBuilder();
+
+        name.append(Character.toUpperCase(formatted.charAt(0)));
+
+        int i = 1;
+
+        while (i < formatted.length()) {
+            if (formatted.charAt(i) != delim) {
+                name.append(formatted.charAt(i));
+
+                i++;
+            }
+            else {
+                i++;
+                name.append(Character.toUpperCase(formatted.charAt(i)));
+                i++;
+            }
+        }
+
+        return name.toString();
+    }
+
+    /** */
+    public static boolean hasDescribedParameters(Command<?, ?, ?> cmd) {
         AtomicBoolean res = new AtomicBoolean();
 
         visitCommandParams(

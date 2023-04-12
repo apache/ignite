@@ -79,7 +79,7 @@ public class CommandHandler implements CLICommandFrontend {
     public static final String CONFIRM_MSG = "y";
 
     /** */
-    static final String DELIM = "--------------------------------------------------------------------------------";
+    public static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -440,7 +440,7 @@ public class CommandHandler implements CLICommandFrontend {
      * @param arg To check.
      * @return True if provided argument is among sensitive one and not should be displayed.
      */
-    protected boolean isSensitiveArgument(String arg) {
+    public static boolean isSensitiveArgument(String arg) {
         return CommonArgParser.isSensitiveArgument(arg);
     }
 
@@ -450,7 +450,7 @@ public class CommandHandler implements CLICommandFrontend {
      * @param rawArgs Arguments which user has provided.
      * @return String which could be shown in console and pritned to log.
      */
-    private String argumentsToString(List<String> rawArgs) {
+    public static String argumentsToString(List<String> rawArgs) {
         boolean hide = false;
 
         SB sb = new SB();

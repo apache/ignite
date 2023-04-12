@@ -26,6 +26,5 @@ public class CommandsRegistry extends CommandWithSubs {
     /** */
     public CommandsRegistry() {
         register(SystemViewCommand::new);
-        register(MetricCommand::new);
     }
 }

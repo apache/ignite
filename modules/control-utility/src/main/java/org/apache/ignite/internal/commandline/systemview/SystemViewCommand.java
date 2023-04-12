@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType;
-import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskArg;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskResult;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
@@ -59,7 +58,7 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Represents command for {@link SystemView} content printing. */
-public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
+public class SystemViewCommand extends AbstractCommand<org.apache.ignite.internal.management.SystemViewCommandArg> {
     /** Column separator. */
     public static final String COLUMN_SEPARATOR = "    ";
 
@@ -67,7 +66,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      * Argument for the system view content obtainig task.
      * @see VisorSystemViewTask
      */
-    private VisorSystemViewTaskArg taskArg;
+    private org.apache.ignite.internal.management.SystemViewCommandArg taskArg;
 
     /** ID of the nodes to get the system view content from. */
     private Collection<UUID> nodeIds;
@@ -107,18 +106,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                     new VisorTaskArgument<>(nodeIds, taskArg, false));
             }
 
-            if (res != null) {
-                res.rows().forEach((nodeId, rows) -> {
-                    log.info("Results from node with ID: " + nodeId);
-                    log.info("---");
-
-                    printTable(res.attributes(), res.types(), rows, log);
-
-                    log.info("---" + U.nl());
-                });
-            }
-            else
-                log.info("No system view with specified name was found [name=" + taskArg.systemViewName() + "]");
+            printResults(log, taskArg, res);
 
             return res;
         }
@@ -128,6 +116,26 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
 
             throw e;
         }
+    }
+
+    /** */
+    public static void printResults(
+        IgniteLogger log,
+        org.apache.ignite.internal.management.SystemViewCommandArg taskArg,
+        VisorSystemViewTaskResult res
+    ) {
+        if (res != null) {
+            res.rows().forEach((nodeId, rows) -> {
+                log.info("Results from node with ID: " + nodeId);
+                log.info("---");
+
+                printTable(res.attributes(), res.types(), rows, log);
+
+                log.info("---" + U.nl());
+            });
+        }
+        else
+            log.info("No system view with specified name was found [name=" + taskArg.getSystemViewName() + "]");
     }
 
     /**
@@ -245,11 +253,13 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                 "The name of the system view for which its content should be printed is expected.");
         }
 
-        taskArg = new VisorSystemViewTaskArg(sysViewName);
+        taskArg = new org.apache.ignite.internal.management.SystemViewCommandArg();
+
+        taskArg.setSystemViewName(sysViewName);
     }
 
     /** {@inheritDoc} */
-    @Override public VisorSystemViewTaskArg arg() {
+    @Override public org.apache.ignite.internal.management.SystemViewCommandArg arg() {
         return taskArg;
     }
 

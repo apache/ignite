@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.management.api;
 
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  *
  */
-public abstract class BaseCommand<A extends IgniteDataTransferObject> implements Command<A> {
+public abstract class BaseCommand<A extends IgniteDataTransferObject, R, T
+    extends ComputeTask<VisorTaskArgument<A>, R>> implements Command<A, R, T> {
     /** */
     public static final String CMD_NAME_POSTFIX = "Command";
 

@@ -38,9 +38,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.MetricCommandArg;
-import org.apache.ignite.internal.management.MetricConfigureHistogramCommandArg;
-import org.apache.ignite.internal.management.MetricConfigureHitrateCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommandArg;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -213,11 +210,11 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) throws Exception {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
+        gen.generateAndWrite(SystemViewCommandArg.class, DFLT_SRC_DIR);
+/*
         gen.generateAndWrite(MetricCommandArg.class, DFLT_SRC_DIR);
         gen.generateAndWrite(MetricConfigureHistogramCommandArg.class, DFLT_SRC_DIR);
         gen.generateAndWrite(MetricConfigureHitrateCommandArg.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SystemViewCommandArg.class, DFLT_SRC_DIR);
-/*
         gen.generateAndWrite(CdcDeleteLostSegmentLinksCommand.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CdcResendCommand.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ChangeTagCommand.class, DFLT_SRC_DIR);

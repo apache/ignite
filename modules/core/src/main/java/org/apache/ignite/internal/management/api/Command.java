@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.api;
 
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -33,6 +36,9 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
 
     /** @return Task class. */
     public Class<T> task();
+
+    /** */
+    public void printResult(IgniteDataTransferObject arg, Object res, IgniteLogger log);
 
     /**
      * Return {@code true} if the command is experimental or {@code false}
@@ -54,5 +60,10 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
      */
     default boolean confirmable() {
         return false;
+    }
+
+    /** */
+    default Collection<UUID> filterById(Collection<UUID> nodes, A arg) {
+        return nodes;
     }
 }
