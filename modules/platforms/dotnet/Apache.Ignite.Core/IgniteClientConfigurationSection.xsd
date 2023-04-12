@@ -335,6 +335,11 @@
                     <xs:documentation>Enables affinity-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="enableClusterDiscovery" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Enables cluster discovery: client will maintain an actual list of all server nodes and connect to all of them.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="userName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Username to be used to connect to secured cluster.</xs:documentation>
