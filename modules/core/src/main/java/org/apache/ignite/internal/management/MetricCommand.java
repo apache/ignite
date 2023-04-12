@@ -17,36 +17,13 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.UUID;
-import lombok.Data;
-import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.api.PositionalArgument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-@Data
-public class MetricCommand extends CommandWithSubs {
-    /** */
-    private static final long serialVersionUID = 0;
-
-    /** Metric name. */
-    @PositionalArgument(description = "Name of the metric which value should be printed. " +
-        "If name of the metric registry is specified, value of all its metrics will be printed")
-    private String name;
-
-    /** */
-    @Argument(
-        description = "ID of the node to get the metric values from. If not set, random node will be chosen",
-        optional = true
-    )
-    private UUID nodeId;
-
+public class MetricCommand extends CommandWithSubs implements Command<MetricCommandArg> {
     /** */
     public MetricCommand() {
         register(MetricConfigureHistogramCommand::new);
@@ -59,28 +36,7 @@ public class MetricCommand extends CommandWithSubs {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean positionalSubsName() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeString(out, name);
-        U.writeUuid(out, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        name = U.readString(in);
-        nodeId = U.readUuid(in);
+    @Override public Class<MetricCommandArg> args() {
+        return MetricCommandArg.class;
     }
 }

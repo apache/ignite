@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.management.api;
 
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+
 /**
  *
  */
-public interface Command {
+public interface Command<A extends IgniteDataTransferObject> {
     /** Command description. */
     public String description();
+
+    /** @return Empty arguments. */
+    public Class<A> args();
 
     /**
      * Return {@code true} if the command is experimental or {@code false}
@@ -32,6 +37,17 @@ public interface Command {
      *      otherwise.
      */
     default boolean experimental() {
+        return false;
+    }
+
+    /**
+     * Return {@code true} if the command is experimental or {@code false}
+     * otherwise.
+     *
+     * @return {@code true} if the command is experimental or {@code false}
+     *      otherwise.
+     */
+    default boolean confirmable() {
         return false;
     }
 }

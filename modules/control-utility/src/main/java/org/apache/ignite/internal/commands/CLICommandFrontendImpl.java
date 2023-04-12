@@ -39,6 +39,7 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.management.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.EnumDescription;
@@ -122,6 +123,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     private boolean verbose;
 
     /** */
+    @SuppressWarnings("deprecation")
     public CLICommandFrontendImpl(IgniteLogger logger) {
         this.logger = logger;
 
@@ -189,7 +191,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** */
     private void parseCommand(List<String> args) {
-        AtomicReference<Command> cmd = new AtomicReference<>();
+        AtomicReference<Command<?>> cmd = new AtomicReference<>();
 
         AtomicInteger i = new AtomicInteger();
 
@@ -199,11 +201,12 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             if (cmd.get() == null && !isArgumentName(arg))
                 continue;
 
-            Command cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
+            Command<?> cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
 
             if (cmd0 == null) {
-                if (cmd.get() instanceof CommandWithSubs) {
-                    if (!((CommandWithSubs)cmd.get()).canBeExecuted())
+                Object instance = cmd.get();
+                if (instance instanceof CommandWithSubs) {
+                    if (!(instance instanceof Command))
                         throw new IllegalArgumentException("Unknown argument " + arg);
 
                     i.decrementAndGet();
@@ -236,7 +239,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         );
 
         visitCommandParams(
-            cmd.get().getClass(),
+            cmd.get().args(),
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
@@ -279,7 +282,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         // TODO: check OneOf invariant here.
         // TODO: support OneOf for PositionalArgument.
         visitCommandParams(
-            cmd.get().getClass(),
+            cmd.get().args(),
             fld -> fldSetter.accept(fld, parser.get(position.getAndIncrement())),
             fld -> fldSetter.accept(fld, parser.get(parameterName(fld))),
             (optionals, flds) ->
@@ -300,7 +303,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         logger.info("This utility can do the following commands:");
 
         registry.subcommands().forEach(cmdSupplier -> {
-            Command cmd = cmdSupplier.get();
+            Command<?> cmd = cmdSupplier.get();
 
             if (cmd.experimental() && !experimentalEnabled)
                 return;
@@ -323,8 +326,8 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     }
 
     /** */
-    private void usage(Command cmd, List<CommandWithSubs> parents) {
-        boolean skip = (cmd instanceof CommandWithSubs) && !((CommandWithSubs)cmd).canBeExecuted();
+    private void usage(Command<?> cmd, List<CommandWithSubs> parents) {
+        boolean skip = (cmd instanceof CommandWithSubs) && !(cmd instanceof Command);
 
         if (!skip) {
             logger.info("");
@@ -348,7 +351,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     }
                 };
 
-                visitCommandParams(cmd.getClass(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
+                visitCommandParams(cmd.args(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
 
                 Consumer<Field> printer = fld -> {
                     BiConsumer<String, String> logParam = (name, description) -> logger.info(
@@ -378,7 +381,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
                     }
                 };
 
-                visitCommandParams(cmd.getClass(), printer, printer, (optional, flds) -> flds.forEach(printer));
+                visitCommandParams(cmd.args(), printer, printer, (optional, flds) -> flds.forEach(printer));
             }
         }
 
@@ -388,7 +391,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             parents0.add((CommandWithSubs)cmd);
 
             ((CommandWithSubs)cmd).subcommands().forEach(cmdSupplier -> {
-                Command cmd0 = cmdSupplier.get();
+                Command<?> cmd0 = cmdSupplier.get();
 
                 if (cmd0.experimental() && !experimentalEnabled)
                     return;
@@ -399,9 +402,10 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     }
 
     /** */
-    private void printExample(Command cmd, List<CommandWithSubs> parents) {
+    private void printExample(Command<?> cmd, List<CommandWithSubs> parents) {
         if (cmd.experimental())
             logger.info(INDENT + EXPERIMENTAL_LABEL);
+
         logger.info(INDENT + cmd.description() + ":");
 
         StringBuilder bldr =
@@ -410,7 +414,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         AtomicBoolean prefixInclude = new AtomicBoolean(true);
         StringBuilder parentPrefix = new StringBuilder();
 
-        Consumer<Command> namePrinter = cmd0 -> {
+        Consumer<Object> namePrinter = cmd0 -> {
             bldr.append(' ');
 
             if (prefixInclude.get())
@@ -430,7 +434,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             parentPrefix.append(cmdName).append(CMD_WORDS_DELIM);
 
             if (cmd0 instanceof CommandWithSubs)
-                prefixInclude.set(!((CommandWithSubs)cmd0).positionalSubsName());
+                prefixInclude.set(!(cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)));
         };
 
         parents.forEach(namePrinter);
@@ -444,7 +448,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         };
 
         visitCommandParams(
-            cmd.getClass(),
+            cmd.args(),
             fld -> bldr.append(' ').append(valueExample(fld)),
             fld -> paramPrinter.accept(true, fld),
             (optional, flds) -> {

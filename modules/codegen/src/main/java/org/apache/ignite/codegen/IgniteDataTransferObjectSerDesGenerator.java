@@ -38,14 +38,10 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistry;
-import org.apache.ignite.internal.management.MetricCommand;
-import org.apache.ignite.internal.management.MetricConfigureHistogramCommand;
-import org.apache.ignite.internal.management.MetricConfigureHitrateCommand;
-import org.apache.ignite.internal.management.SystemViewCommand;
-import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.ConfirmableCommand;
+import org.apache.ignite.internal.management.MetricCommandArg;
+import org.apache.ignite.internal.management.MetricConfigureHistogramCommandArg;
+import org.apache.ignite.internal.management.MetricConfigureHitrateCommandArg;
+import org.apache.ignite.internal.management.SystemViewCommandArg;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -217,12 +213,10 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) throws Exception {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
-        gen.generateAndWrite(ConfirmableCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetricCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetricConfigureHistogramCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetricConfigureHitrateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SystemViewCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(CommandsRegistry.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricCommandArg.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricConfigureHistogramCommandArg.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(MetricConfigureHitrateCommandArg.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SystemViewCommandArg.class, DFLT_SRC_DIR);
 /*
         gen.generateAndWrite(CdcDeleteLostSegmentLinksCommand.class, DFLT_SRC_DIR);
         gen.generateAndWrite(CdcResendCommand.class, DFLT_SRC_DIR);
@@ -315,7 +309,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
     }
 
     /** */
-    private void generateAndWrite(Class<? extends Command> cls, String srcDir) throws IOException {
+    private void generateAndWrite(Class<? extends IgniteDataTransferObject> cls, String srcDir) throws IOException {
         clear();
 
         File file = new File(srcDir, cls.getName().replace('.', File.separatorChar) + ".java");
@@ -407,7 +401,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
     }
 
     /** */
-    private List<List<String>> generateMethods(Class<? extends Command> cls) {
+    private List<List<String>> generateMethods(Class<? extends IgniteDataTransferObject> cls) {
         Field[] flds = cls.getDeclaredFields();
 
         if (flds.length == 0)
@@ -427,7 +421,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         imports.add(ObjectOutput.class.getName() + ';');
         imports.add(ObjectInput.class.getName() + ';');
 
-        if (cls.getSuperclass() != IgniteDataTransferObject.class || cls.getSuperclass() != BaseCommand.class) {
+        if (cls.getSuperclass() != IgniteDataTransferObject.class) {
             write.add(TAB + TAB + "super.writeExternalData(out);");
             write.add("");
 

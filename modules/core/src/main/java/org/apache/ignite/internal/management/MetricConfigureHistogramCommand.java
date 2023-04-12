@@ -17,50 +17,19 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.management.api.PositionalArgument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class MetricConfigureHistogramCommand extends BaseCommand {
-    /** */
-    private static final long serialVersionUID = 0;
-
-    /** */
-    @PositionalArgument(description = "Name of the metric which value should be configured")
-    private String name;
-
-    /** */
-    @PositionalArgument(
-        javaStyleExample = true,
-        example = "newBounds",
-        description = "Comma-separated list of longs to configure histogram"
-    )
-    private long[] newBounds;
-
+public class MetricConfigureHistogramCommand extends BaseCommand<MetricConfigureHistogramCommandArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Configure histogram metric";
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeString(out, name);
-        U.writeLongArray(out, newBounds);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        name = U.readString(in);
-        newBounds = U.readLongArray(in);
+    @Override public Class<MetricConfigureHistogramCommandArg> args() {
+        return MetricConfigureHistogramCommandArg.class;
     }
 }

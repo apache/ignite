@@ -15,31 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.management;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
+import lombok.Data;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public abstract class ConfirmableCommand extends BaseCommand {
+@Data
+public class MetricCommandArg extends IgniteDataTransferObject {
     /** */
-    @Argument(optional = true, excludeFromDescription = true)
-    private boolean yes;
+    private static final long serialVersionUID = 0;
+
+    /** Metric name. */
+    @PositionalArgument(description = "Name of the metric which value should be printed. " +
+        "If name of the metric registry is specified, value of all its metrics will be printed")
+    private String name;
+
+    /** */
+    @Argument(
+        description = "ID of the node to get the metric values from. If not set, random node will be chosen",
+        optional = true
+    )
+    private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        out.writeBoolean(yes);
+        U.writeString(out, name);
+        U.writeUuid(out, nodeId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        yes = in.readBoolean();
+        name = U.readString(in);
+        nodeId = U.readUuid(in);
     }
 }

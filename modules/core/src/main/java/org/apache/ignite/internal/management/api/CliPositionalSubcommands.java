@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.internal.management.api.CommandWithSubs;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  *
  */
-public class CommandsRegistry extends CommandWithSubs {
-    /** */
-    public CommandsRegistry() {
-        register(SystemViewCommand::new);
-        register(MetricCommand::new);
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface CliPositionalSubcommands {
+    // No-op.
 }

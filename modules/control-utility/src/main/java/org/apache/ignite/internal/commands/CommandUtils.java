@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.EnumDescription;
@@ -50,8 +51,10 @@ public class CommandUtils {
     public static final char PARAM_WORDS_DELIM = '_';
 
     /** */
-    public static String commandName(Class<? extends Command> cls, char delim) {
+    public static String commandName(Class<?> cls, char delim) {
         String name = cls.getSimpleName();
+
+        assert name.endsWith(CMD_NAME_POSTFIX);
 
         return formattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
     }
@@ -141,8 +144,8 @@ public class CommandUtils {
     /**
      * Iterates and visits each command parameter.
      */
-    public static void visitCommandParams(
-        Class<? extends Command> clazz,
+    public static <C extends IgniteDataTransferObject> void visitCommandParams(
+        Class<C> clazz,
         Consumer<Field> positionalParamVisitor,
         Consumer<Field> namedParamVisitor,
         BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
@@ -158,8 +161,10 @@ public class CommandUtils {
 
         List<Field> oneOfFlds = new ArrayList<>();
 
-        while (true) {
-            Field[] flds = clazz.getDeclaredFields();
+        Class<? extends IgniteDataTransferObject> clazz0 = clazz;
+
+        while (clazz0 != IgniteDataTransferObject.class) {
+            Field[] flds = clazz0.getDeclaredFields();
 
             for (Field fld : flds) {
                 if (oneOfNames.contains(fld.getName()))
@@ -170,8 +175,8 @@ public class CommandUtils {
                     namedParams.add(fld);
             }
 
-            if (Command.class.isAssignableFrom(clazz.getSuperclass()))
-                clazz = (Class<? extends Command>)clazz.getSuperclass();
+            if (IgniteDataTransferObject.class.isAssignableFrom(clazz0.getSuperclass()))
+                clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
             else
                 break;
         }
@@ -235,11 +240,11 @@ public class CommandUtils {
     }
 
     /** */
-    public static boolean hasDescribedParameters(Command cmd) {
+    public static boolean hasDescribedParameters(Command<?> cmd) {
         AtomicBoolean res = new AtomicBoolean();
 
         visitCommandParams(
-            cmd.getClass(),
+            cmd.args(),
             fld -> res.compareAndSet(false,
                 !fld.getAnnotation(PositionalArgument.class).description().isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class)

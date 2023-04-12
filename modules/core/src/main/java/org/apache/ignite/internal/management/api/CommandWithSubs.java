@@ -21,22 +21,24 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
  *
  */
-public abstract class CommandWithSubs extends BaseCommand {
+public abstract class CommandWithSubs {
     /** */
-    private final Map<String, Supplier<Command>> commands = new LinkedHashMap<>();
+    private final Map<String, Supplier<? extends Command<? extends IgniteDataTransferObject>>> commands = new LinkedHashMap<>();
 
     /** */
-    public Collection<Supplier<Command>> subcommands() {
+    public Collection<Supplier<? extends Command<? extends IgniteDataTransferObject>>> subcommands() {
         return commands.values();
     }
 
     /** */
-    public void register(Supplier<Command> cmd) {
-        Command cmdInstance = cmd.get();
+    public void register(Supplier<? extends Command<? extends IgniteDataTransferObject>> cmd) {
+        Command<?> cmdInstance = cmd.get();
         String name = cmdInstance.getClass().getSimpleName();
 
         if (!name.endsWith(CMD_NAME_POSTFIX))
@@ -46,27 +48,12 @@ public abstract class CommandWithSubs extends BaseCommand {
     }
 
     /** */
-    public void register(String name, Supplier<Command> cmd) {
-
-    }
-
-    /** */
-    public Command command(String name) {
+    public Command<?> command(String name) {
         return commands.get(name).get();
     }
 
     /** */
     public boolean positionalSubsName() {
         return true;
-    }
-
-    /** */
-    public boolean canBeExecuted() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return null;
     }
 }
