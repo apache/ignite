@@ -17,17 +17,22 @@
 
 package org.apache.ignite.internal.management.api;
 
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  *
  */
-public interface Command<A extends IgniteDataTransferObject> {
+public interface Command<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> {
     /** Command description. */
     public String description();
 
-    /** @return Empty arguments. */
+    /** @return Empty arguments class. */
     public Class<A> args();
+
+    /** @return Task class. */
+    public Class<T> task();
 
     /**
      * Return {@code true} if the command is experimental or {@code false}

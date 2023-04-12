@@ -191,7 +191,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
 
     /** */
     private void parseCommand(List<String> args) {
-        AtomicReference<Command<?>> cmd = new AtomicReference<>();
+        AtomicReference<Command<?, ?, ?>> cmd = new AtomicReference<>();
 
         AtomicInteger i = new AtomicInteger();
 
@@ -201,7 +201,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             if (cmd.get() == null && !isArgumentName(arg))
                 continue;
 
-            Command<?> cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
+            Command<?, ?, ?> cmd0 = registry.command(arg.substring(PARAMETER_PREFIX.length()));
 
             if (cmd0 == null) {
                 Object instance = cmd.get();
@@ -303,7 +303,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
         logger.info("This utility can do the following commands:");
 
         registry.subcommands().forEach(cmdSupplier -> {
-            Command<?> cmd = cmdSupplier.get();
+            Command<?, ?, ?> cmd = cmdSupplier.get();
 
             if (cmd.experimental() && !experimentalEnabled)
                 return;
@@ -326,7 +326,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     }
 
     /** */
-    private void usage(Command<?> cmd, List<CommandWithSubs> parents) {
+    private void usage(Command<?, ?, ?> cmd, List<CommandWithSubs> parents) {
         boolean skip = (cmd instanceof CommandWithSubs) && !(cmd instanceof Command);
 
         if (!skip) {
@@ -391,7 +391,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
             parents0.add((CommandWithSubs)cmd);
 
             ((CommandWithSubs)cmd).subcommands().forEach(cmdSupplier -> {
-                Command<?> cmd0 = cmdSupplier.get();
+                Command<?, ?, ?> cmd0 = cmdSupplier.get();
 
                 if (cmd0.experimental() && !experimentalEnabled)
                     return;
@@ -402,7 +402,7 @@ public class CLICommandFrontendImpl implements CLICommandFrontend {
     }
 
     /** */
-    private void printExample(Command<?> cmd, List<CommandWithSubs> parents) {
+    private void printExample(Command<?, ?, ?> cmd, List<CommandWithSubs> parents) {
         if (cmd.experimental())
             logger.info(INDENT + EXPERIMENTAL_LABEL);
 

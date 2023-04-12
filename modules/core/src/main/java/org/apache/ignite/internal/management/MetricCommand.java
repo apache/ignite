@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.management;
 
+import java.util.Map;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 
 /**
  *
  */
-public class MetricCommand extends CommandWithSubs implements Command<MetricCommandArg> {
+public class MetricCommand extends CommandWithSubs implements Command<MetricCommandArg, Map<String, Object>, VisorMetricTask> {
     /** */
     public MetricCommand() {
         register(MetricConfigureHistogramCommand::new);
@@ -38,5 +40,10 @@ public class MetricCommand extends CommandWithSubs implements Command<MetricComm
     /** {@inheritDoc} */
     @Override public Class<MetricCommandArg> args() {
         return MetricCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<VisorMetricTask> task() {
+        return VisorMetricTask.class;
     }
 }
