@@ -17,33 +17,61 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * The test starts an implicit transaction during the cache is stopping.
  * The transaction has to be completed, and the cache is stopped.
  */
 public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
+    /** */
+    private static final String GROUP = "test-group";
+
+    /** Node failure occurs. */
+    private final AtomicBoolean failure = new AtomicBoolean();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
+            .setFailureHandler(new AbstractFailureHandler() {
+                @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                    failure.set(true);
+
+                    return true;
+                }
+            })
             .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
+                .setGroupName(GROUP)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         return cfg;
@@ -99,5 +127,63 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(runTxFut::isDone, 10_000));
 
         assertNull(client.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testTxPrepareOnCacheDestroy() throws Exception {
+        final IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
+
+        crd.cluster().state(ClusterState.ACTIVE);
+
+        // Cache group with multiple caches are important here, in this case cache removals are not so rapid.
+        Collection<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            crd.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME + "_" + i)
+                .setGroupName(GROUP)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+        }
+
+        crd.createCaches(ccfgs);
+
+        IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+        // Preload data.
+        List<Integer> pkeys = primaryKeys(cache, 100);
+
+        try (final IgniteDataStreamer<Object, Object> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (Integer key : pkeys)
+                streamer.addData(key, key);
+        }
+
+        // Start async operations and concurrently destroy the cache.
+        List<IgniteFuture<Boolean>> asyncRmFuts = new ArrayList<>(pkeys.size());
+
+        IgniteInternalFuture<Object> loadFut = runAsync(() -> {
+            for (Integer key : pkeys)
+                asyncRmFuts.add(cache.removeAsync(key));
+        });
+
+        grid(1).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        try {
+            loadFut.get();
+        }
+        catch (Exception e) {
+            if (!X.hasCause(e, "cache is stopped", IllegalStateException.class))
+                throw new AssertionError(e);
+        }
+
+        try {
+            asyncRmFuts.forEach(f -> f.get(getTestTimeout()));
+        }
+        catch (CacheException e) {
+            // No-op.
+        }
+
+        assertFalse(GridTestUtils.waitForCondition(failure::get, 5_000));
     }
 }
