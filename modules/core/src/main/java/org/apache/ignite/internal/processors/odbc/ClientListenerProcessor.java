@@ -110,10 +110,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     private DistributedThinClientConfiguration distrThinCfg;
 
     /** Affinity key hit. */
-    private final LongAdderMetric affinityKeyHit;
+    private LongAdderMetric affinityKeyHit;
 
     /** Affinity key miss. */
-    private final LongAdderMetric affinityKeyMiss;
+    private LongAdderMetric affinityKeyMiss;
 
     /**
      * @param ctx Kernal context.
@@ -121,9 +121,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     public ClientListenerProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
-        affinityKeyHit = mreg.longAdderMetric(AFFINITY_KEY_HIT, "AffinityKeyHit count.");
-        affinityKeyMiss = mreg.longAdderMetric(AFFINITY_KEY_MISS, "AffinityKeyMiss count.");
     }
 
     /** {@inheritDoc} */
@@ -232,6 +229,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** @param mreg Metric registry. */
     private void registerClientMetrics(MetricRegistry mreg) {
+        affinityKeyHit = mreg.longAdderMetric(AFFINITY_KEY_HIT, "AffinityKeyHit count.");
+
+        affinityKeyMiss = mreg.longAdderMetric(AFFINITY_KEY_MISS, "AffinityKeyMiss count.");
+
         for (int i = 0; i < CLI_TYPES.length; i++) {
             byte cliType = CLI_TYPES[i];
 
