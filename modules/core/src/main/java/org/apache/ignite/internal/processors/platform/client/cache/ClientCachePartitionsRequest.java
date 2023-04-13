@@ -83,7 +83,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         if (!ctx.kernalContext().state().publicApiActiveState(true))
-            return new ClientResponse(requestId(), "Can not perform cache operation because the cluster is inactive.");
+            return new ClientResponse(requestId(), "Cannot perform cache operation because the cluster is inactive.");
 
         Map<ClientCachePartitionAwarenessGroup, ClientCachePartitionAwarenessGroup> grps = new HashMap<>(cacheIds.length);
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();

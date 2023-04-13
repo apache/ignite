@@ -85,7 +85,7 @@ import org.junit.runners.Suite;
     IgniteClientConnectionEventListenerTest.class,
     IgniteClientRequestEventListenerTest.class,
     ThinClientEnpointsDiscoveryTest.class,
-    InactiveClusterCacheRequestTest.class
+    InactiveClusterCacheRequestTest.class,
 })
 public class ClientTestSuite {
     // No-op.

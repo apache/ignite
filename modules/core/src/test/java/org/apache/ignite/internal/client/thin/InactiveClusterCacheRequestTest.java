@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
@@ -30,7 +29,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,7 +59,7 @@ public class InactiveClusterCacheRequestTest extends AbstractThinClientTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
-        cfg.setCacheConfiguration(new CacheConfiguration("default"));
+        cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         return cfg;
     }
@@ -69,22 +67,22 @@ public class InactiveClusterCacheRequestTest extends AbstractThinClientTest {
     /** */
     @Test
     public void testCacheOperationReturnErrorOnInactiveCluster() throws Exception {
-        IgniteEx ign = startGrids(2);
+        startGrids(2);
 
-        ign.cluster().state(ClusterState.ACTIVE);
-
-        ClientConfiguration ccfg = getClientConfiguration(G.allGrids().toArray(new Ignite[]{}))
+        ClientConfiguration ccfg = getClientConfiguration(grid(0), grid(1))
             .setPartitionAwarenessEnabled(partitionAwarenessEnabled);
 
         stopAllGrids();
 
-        startGrid(0);
+        IgniteEx ign = startGrid(0);
 
-        IgniteClient cln = Ignition.startClient(ccfg);
+        assertTrue(ign.cluster().state() == ClusterState.INACTIVE);
 
-        GridTestUtils.assertThrows(log,
-            () -> cln.cache("default").get(0),
-            ClientException.class,
-            "cluster is inactive");
+        try (IgniteClient cln = Ignition.startClient(ccfg)) {
+            GridTestUtils.assertThrows(log,
+                () -> cln.cache(DEFAULT_CACHE_NAME).get(0),
+                ClientException.class,
+                "cluster is inactive");
+        }
     }
 }
