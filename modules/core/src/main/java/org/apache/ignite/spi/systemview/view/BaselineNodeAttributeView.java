@@ -47,7 +47,7 @@ public class BaselineNodeAttributeView {
     }
 
     /**
-     * @return Node consistent id.
+     * @return Node consistend id.
      */
     @Order
     @Filtrable

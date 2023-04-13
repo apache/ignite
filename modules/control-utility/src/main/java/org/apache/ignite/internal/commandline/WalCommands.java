@@ -67,9 +67,9 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
-            WAL_PRINT, "[consistentId1[,consistentId2,....,consistentIdN]]");
+            WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
         usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
-            "[consistentId1[,consistentId2,....,consistentIdN]]", optional(CMD_AUTO_CONFIRMATION));
+            "[consistentId1,consistentId2,....,consistentIdN]", optional(CMD_AUTO_CONFIRMATION));
     }
 
     /**

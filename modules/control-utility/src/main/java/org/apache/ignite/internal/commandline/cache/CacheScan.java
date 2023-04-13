@@ -27,13 +27,12 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTaskResult;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
-
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
 

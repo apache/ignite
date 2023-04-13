@@ -213,4 +213,9 @@ public class CommandArgIterator {
     public static boolean isCommandOrOption(String raw) {
         return raw != null && raw.contains("--");
     }
+
+    /** */
+    public Iterator<String> raw() {
+        return argsIt;
+    }
 }

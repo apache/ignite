@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
-import org.apache.ignite.internal.commands.CLICommandFrontend;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -71,15 +71,15 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 /**
  * Class that execute several commands passed via command line.
  */
-public class CommandHandler implements CLICommandFrontend {
+public class CommandHandler {
     /** */
-    public static final String CMD_HELP = "--help";
+    static final String CMD_HELP = "--help";
 
     /** */
     public static final String CONFIRM_MSG = "y";
 
     /** */
-    public static final String DELIM = "--------------------------------------------------------------------------------";
+    static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -105,9 +105,6 @@ public class CommandHandler implements CLICommandFrontend {
     /** */
     private final Scanner in = new Scanner(System.in);
 
-    /** */
-    public static final String TIME_PREFIX = "Time: ";
-
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
 
@@ -124,10 +121,13 @@ public class CommandHandler implements CLICommandFrontend {
     protected final String ses = U.id8(UUID.randomUUID());
 
     /** Console instance. Public access needs for tests. */
-    private GridConsole console = GridConsoleAdapter.getInstance();
+    public GridConsole console = GridConsoleAdapter.getInstance();
 
     /** */
     private Object lastOperationRes;
+
+    /** Date format. */
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /**
      * @param args Arguments to parse and apply.
@@ -199,8 +199,13 @@ public class CommandHandler implements CLICommandFrontend {
         this.cmds = Collections.unmodifiableMap(cmds);
     }
 
-    /** {@inheritDoc} */
-    @Override public int execute(List<String> rawArgs) {
+    /**
+     * Parse and execute command.
+     *
+     * @param rawArgs Arguments to parse and execute.
+     * @return Exit code.
+     */
+    public int execute(List<String> rawArgs) {
         LocalDateTime startTime = LocalDateTime.now();
 
         Thread.currentThread().setName("session=" + ses);
@@ -208,7 +213,7 @@ public class CommandHandler implements CLICommandFrontend {
         logger.info("Control utility [ver. " + ACK_VER_STR + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
-        logger.info("Time: " + startTime.format(U.CLI_FORMAT));
+        logger.info("Time: " + startTime.format(formatter));
 
         String commandName = "";
 
@@ -359,7 +364,8 @@ public class CommandHandler implements CLICommandFrontend {
             if (nonNull(err))
                 logger.info("Error stack trace:" + System.lineSeparator() + X.getFullStackTrace(err));
 
-            printExecutionTime(logger, endTime, diff);
+            logger.info("Control utility has completed execution at: " + endTime.format(formatter));
+            logger.info("Execution time: " + diff.toMillis() + " ms");
 
             if (logger instanceof IgniteLoggerEx)
                 ((IgniteLoggerEx)logger).flush();
@@ -367,7 +373,7 @@ public class CommandHandler implements CLICommandFrontend {
     }
 
     /** @return {@code True} if arguments means "print help" command. */
-    public static boolean isHelp(List<String> rawArgs) {
+    private boolean isHelp(List<String> rawArgs) {
         if (F.isEmpty(rawArgs))
             return true;
 
@@ -440,7 +446,7 @@ public class CommandHandler implements CLICommandFrontend {
      * @param arg To check.
      * @return True if provided argument is among sensitive one and not should be displayed.
      */
-    public static boolean isSensitiveArgument(String arg) {
+    protected boolean isSensitiveArgument(String arg) {
         return CommonArgParser.isSensitiveArgument(arg);
     }
 
@@ -450,7 +456,7 @@ public class CommandHandler implements CLICommandFrontend {
      * @param rawArgs Arguments which user has provided.
      * @return String which could be shown in console and pritned to log.
      */
-    public static String argumentsToString(List<String> rawArgs) {
+    private String argumentsToString(List<String> rawArgs) {
         boolean hide = false;
 
         SB sb = new SB();
@@ -614,14 +620,13 @@ public class CommandHandler implements CLICommandFrontend {
         return factory;
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> T getLastOperationResult() {
+    /**
+     * Used for tests.
+     *
+     * @return Last operation result;
+     */
+    public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void console(GridConsole console) {
-        this.console = console;
     }
 
     /**
@@ -739,11 +744,6 @@ public class CommandHandler implements CLICommandFrontend {
                 c.printUsage(logger);
         });
 
-        printCommonInfo(logger);
-    }
-
-    /** */
-    public static void printCommonInfo(IgniteLogger logger) {
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");
         logger.info("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
@@ -767,11 +767,5 @@ public class CommandHandler implements CLICommandFrontend {
         logger.info(DOUBLE_INDENT + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
         logger.info(DOUBLE_INDENT + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
         logger.info(DOUBLE_INDENT + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
-    }
-
-    /** */
-    public static void printExecutionTime(IgniteLogger logger, LocalDateTime endTime, Duration diff) {
-        logger.info("Control utility has completed execution at: " + endTime.format(U.CLI_FORMAT));
-        logger.info("Execution time: " + diff.toMillis() + " ms");
     }
 }

@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.commandline.CommandList.METRIC;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
+import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;

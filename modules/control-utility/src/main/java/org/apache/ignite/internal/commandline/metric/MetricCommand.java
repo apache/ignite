@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.commandline.metric;
 
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
@@ -31,18 +31,20 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 import org.apache.ignite.internal.visor.metric.VisorMetricTaskArg;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandList.METRIC;
+import static org.apache.ignite.internal.commandline.CommandLogger.grouped;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
-import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.printTable;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Represents command for metric values printing. */
@@ -76,7 +78,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
                     .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
                     .collect(Collectors.toList());
 
-                printTable(asList("metric", "value"), asList(STRING, STRING), data, log);
+                SystemViewCommand.printTable(asList("metric", "value"), asList(STRING, STRING), data, log);
             }
             else if (arg().bounds() == null && arg().rateTimeInterval() < 0)
                 log.info("No metric with specified name was found [name=" + taskArg.name() + "]");
@@ -156,35 +158,27 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, String> params = new TreeMap<>();
 
+        params.put("node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
         params.put("name", "Name of the metric which value should be printed." +
             " If name of the metric registry is specified, value of all its metrics will be printed.");
-        params.put(NODE_ID + " node_id", "ID of the node to get the metric values from. If not set, random node will be chosen.");
 
-        usage(log, "Print metric value:", METRIC, params, "name", optional(NODE_ID, "node_id"));
+        usage(log, "Print metric value:", METRIC, params, optional(NODE_ID, "node_id"),
+            "name");
 
-        params.remove(NODE_ID + " node_id");
+        params.remove("node_id");
         params.put("name", "Name of the metric which value should be configured.");
         params.put("newBounds", "Comma-separated list of longs to configure histogram.");
-
-        usage(
-            log,
-            "Configure histogram metric:", METRIC,
-            params,
-            CONFIGURE_HISTOGRAM.argName(), "name", "newBounds"
-        );
-
-        params.remove("newBounds");
         params.put("newRateTimeInterval", "Rate time interval of hitrate.");
 
         usage(
             log,
-            "Configure hitrate metric:", METRIC,
+            "Configure metric:", METRIC,
             params,
-            CONFIGURE_HITRATE.argName(), "name", "newRateTimeInterval"
+            or(grouped(CONFIGURE_HISTOGRAM, "name", "newBounds"),
+                grouped(CONFIGURE_HITRATE, "name", "newRateTimeInterval"))
         );
-
     }
 
     /** {@inheritDoc} */

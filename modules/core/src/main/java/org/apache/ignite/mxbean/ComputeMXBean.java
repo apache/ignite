@@ -25,13 +25,13 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
  */
 public interface ComputeMXBean {
     /**
-     * Kills compute task by the session identifier.
+     * Kills compute task by the session idenitifier.
      *
      * @param sesId Session id.
      * @see ComputeTaskView#sessionId()
      * @see ComputeJobView#sessionId()
      */
-    @MXBeanDescription("Kills compute task by the session identifier.")
+    @MXBeanDescription("Kills compute task by the session idenitifier.")
     public void cancel(
         @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
     );

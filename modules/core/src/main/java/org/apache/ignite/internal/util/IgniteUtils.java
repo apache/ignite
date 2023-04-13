@@ -550,9 +550,6 @@ public abstract class IgniteUtils {
     private static final DateTimeFormatter THREAD_DUMP_FMT =
         DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss z").withZone(ZoneId.systemDefault());
 
-    /** Date format for CLI utils. */
-    public static final DateTimeFormatter CLI_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
-
     /** Cached local host address to make sure that every time the same local host is returned. */
     private static InetAddress locHost;
 

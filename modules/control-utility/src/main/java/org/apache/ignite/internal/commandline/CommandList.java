@@ -32,7 +32,7 @@ import org.apache.ignite.internal.commandline.performancestatistics.PerformanceS
 import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.query.KillCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
 
 /**
  * High-level commands.
@@ -93,7 +93,7 @@ public enum CommandList {
     PROPERTY("--property", new PropertyCommand()),
 
     /** Command for printing system view content. */
-    SYSTEM_VIEW("--system-view", new SystemViewCommand()),
+    SYSTEM_VIEW("--system-view", new DeclarativeCommandAdapter<>(new SystemViewCommand())),
 
     /** Command for printing metric values. */
     METRIC("--metric", new MetricCommand()),

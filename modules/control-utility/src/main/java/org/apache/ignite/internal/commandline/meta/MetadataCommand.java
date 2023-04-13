@@ -66,7 +66,7 @@ public class MetadataCommand extends AbstractCommand<Object> {
         usage(log, "Remove the metadata of the specified type " +
                 "(the type must be specified by type name or by type identifier) from cluster and saves the removed " +
                 "metadata to the specified file. \n" +
-                "If the file name isn't specified the output file name is: '<typeId>.bin':",
+                "If the file name isn't specified the output file name is: '<typeId>.bin'",
             METADATA,
             REMOVE.toString(),
             optional(MetadataTypeArgs.TYPE_ID, "<typeId>"),
@@ -74,7 +74,7 @@ public class MetadataCommand extends AbstractCommand<Object> {
             optional(MetadataRemoveCommand.OUT_FILE_NAME, "<fileName>")
         );
 
-        usage(log, "Update cluster metadata from specified file (file name is required):",
+        usage(log, "Update cluster metadata from specified file (file name is required)",
             METADATA,
             UPDATE.toString(),
             MetadataUpdateCommand.IN_FILE_NAME, "<fileName>"

@@ -55,7 +55,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStatistic;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
@@ -95,7 +95,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;

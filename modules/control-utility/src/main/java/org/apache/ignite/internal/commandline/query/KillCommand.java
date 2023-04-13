@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.query;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
@@ -240,31 +240,31 @@ public class KillCommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
         usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
-            COMPUTE.toString().toLowerCase(), "session_id");
+            COMPUTE.toString(), "session_id");
 
         usage(log, "Kill service by name:", KILL, singletonMap("name", "Service name."),
-            SERVICE.toString().toLowerCase(), "name");
+            SERVICE.toString(), "name");
 
         usage(log, "Kill transaction by xid:", KILL, singletonMap("xid", "Transaction identifier."),
-            TRANSACTION.toString().toLowerCase(), "xid");
+            TRANSACTION.toString(), "xid");
 
         usage(log, "Kill sql query by query id:", KILL, singletonMap("query_id", "Query identifier."),
-            SQL.toString().toLowerCase(), "query_id");
+            SQL.toString(), "query_id");
 
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, String> params = new HashMap<>();
 
         params.put("origin_node_id", "Originating node id.");
         params.put("cache_name", "Cache name.");
         params.put("query_id", "Query identifier.");
 
         usage(log, "Kill scan query by node id, cache name and query id:", KILL,
-            params, SCAN.toString().toLowerCase(), "origin_node_id", "cache_name", "query_id");
+            params, SCAN.toString(), "origin_node_id", "cache_name", "query_id");
 
         params.clear();
         params.put("origin_node_id", "Originating node id.");
         params.put("routine_id", "Routine identifier.");
 
-        usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString().toLowerCase(),
+        usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
             "origin_node_id", "routine_id");
 
         params.clear();
@@ -272,12 +272,12 @@ public class KillCommand extends AbstractCommand<Object> {
         params.put("connection_id", "Connection identifier or ALL.");
         params.put("--node-id node_id", "Node id to drop connection from.");
 
-        usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString().toLowerCase(),
+        usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString(),
             "connection_id",
             optional("--node-id node_id"));
 
         usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
-            SNAPSHOT.toString().toLowerCase(), "snapshot_name");
+            SNAPSHOT.toString(), "snapshot_name");
     }
 
     /** {@inheritDoc} */

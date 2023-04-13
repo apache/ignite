@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commands;
+package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
@@ -40,9 +40,6 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
  * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
  */
 public interface Command<T> {
-    /** */
-    public String EXPERIMENTAL_LABEL = "[EXPERIMENTAL]";
-
     /**
      * Method to create thin client for communication with cluster.
      *
@@ -150,7 +147,7 @@ public interface Command<T> {
         logger.info("");
 
         if (experimental())
-            logger.info(INDENT + EXPERIMENTAL_LABEL);
+            logger.info(INDENT + "[EXPERIMENTAL]");
 
         logger.info(INDENT + desc);
         logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));
@@ -175,7 +172,31 @@ public interface Command<T> {
         int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
 
         for (Map.Entry<String, String> param : paramsDesc.entrySet())
-            logger.info(indent + U.extendToLen(param.getKey(), maxParamLen) + "  " + "- " + param.getValue());
+            logger.info(indent + extendToLen(param.getKey(), maxParamLen) + "  " + "- " + param.getValue());
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
     }
 
     /**

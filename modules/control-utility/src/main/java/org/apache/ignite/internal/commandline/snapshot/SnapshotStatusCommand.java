@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
-
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.STATUS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;

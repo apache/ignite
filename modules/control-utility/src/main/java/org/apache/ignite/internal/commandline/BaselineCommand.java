@@ -66,7 +66,7 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
         usage(logger, "Print cluster baseline topology:", BASELINE,
-            singletonMap("--verbose", "Show the full list of node ips."), optional("--verbose"));
+            singletonMap("verbose", "Show the full list of node ips."), optional("--verbose"));
         usage(logger, "Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(),
             constistIds, optional(CMD_AUTO_CONFIRMATION));
         usage(logger, "Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(),
@@ -76,7 +76,7 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
         usage(logger, "Set baseline topology based on version:", BASELINE,
             BaselineSubcommands.VERSION.text() + " topologyVersion", optional(CMD_AUTO_CONFIRMATION));
         usage(logger, "Set baseline autoadjustment settings:", BASELINE,
-            BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable [timeout <timeoutMillis>]", optional(CMD_AUTO_CONFIRMATION));
+            BaselineSubcommands.AUTO_ADJUST.text(), "[disable|enable] [timeout <timeoutMillis>]", optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */

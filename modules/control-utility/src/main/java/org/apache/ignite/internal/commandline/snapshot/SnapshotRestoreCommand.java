@@ -172,11 +172,15 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         startParams.put(CHECK.argName(), CHECK.description());
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG,
+            optional(INCREMENT.argName(), INCREMENT.arg()),
             optional(GROUPS.argName(), GROUPS.arg()),
             optional(SOURCE.argName(), SOURCE.arg()),
-            optional(INCREMENT.argName(), INCREMENT.arg()),
             optional(SYNC.argName()),
             optional(CHECK.argName()));
+        usage(log, "Snapshot restore operation status (Command deprecated. Use '" + SNAPSHOT + ' '
+            + SnapshotSubcommands.STATUS + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
+        usage(log, "Cancel snapshot restore operation (Command deprecated. Use '" + SNAPSHOT + ' '
+            + SnapshotSubcommands.CANCEL + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }
 
     /** {@inheritDoc} */

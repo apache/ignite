@@ -30,13 +30,12 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.TaskExecutor;
-import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTask;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskArg;
 import org.apache.ignite.internal.visor.cache.metrics.VisorCacheMetricsTaskResult;
-
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
