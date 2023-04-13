@@ -45,9 +45,11 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 import static java.util.Collections.singleton;
@@ -58,6 +60,7 @@ import static org.apache.ignite.internal.commandline.CommandUtils.CMD_WORDS_DELI
 import static org.apache.ignite.internal.commandline.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.commandline.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commandline.CommandUtils.commandName;
+import static org.apache.ignite.internal.commandline.CommandUtils.hasDescribedParameters;
 import static org.apache.ignite.internal.commandline.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.commandline.CommandUtils.parameterName;
 import static org.apache.ignite.internal.commandline.CommandUtils.valueExample;
@@ -219,7 +222,85 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        printExample(cmd, Collections.emptyList(), logger);
+        usage(cmd, Collections.emptyList(), logger);
+    }
+
+    /** */
+    private void usage(
+        org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
+        List<CommandWithSubs> parents,
+        IgniteLogger logger
+    ) {
+        boolean skip = (cmd instanceof CommandWithSubs)
+            && !(cmd instanceof org.apache.ignite.internal.management.api.Command);
+
+        if (!skip) {
+            logger.info("");
+
+            printExample(cmd, parents, logger);
+
+            if (hasDescribedParameters(cmd)) {
+                logger.info("");
+                logger.info(DOUBLE_INDENT + "Parameters:");
+
+                AtomicInteger maxParamLen = new AtomicInteger();
+
+                Consumer<Field> lenCalc = fld -> {
+                    maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length()));
+
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                        for (String name : enumDesc.names())
+                            maxParamLen.set(Math.max(maxParamLen.get(), name.length()));
+                    }
+                };
+
+                visitCommandParams(cmd.args(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
+
+                Consumer<Field> printer = fld -> {
+                    BiConsumer<String, String> logParam = (name, description) -> logger.info(
+                        DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
+                    );
+
+                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
+                        Argument desc = fld.getAnnotation(Argument.class);
+                        PositionalArgument posDesc = fld.getAnnotation(PositionalArgument.class);
+
+                        if (desc != null && desc.excludeFromDescription())
+                            return;
+
+                        logParam.accept(
+                            parameterExample(fld, false),
+                            (desc != null ? desc.description() : posDesc.description())
+                        );
+                    }
+                    else {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                        String[] names = enumDesc.names();
+                        String[] descriptions = enumDesc.descriptions();
+
+                        for (int i = 0; i < names.length; i++)
+                            logParam.accept(names[i], descriptions[i]);
+                    }
+                };
+
+                visitCommandParams(cmd.args(), printer, printer, (optional, flds) -> flds.forEach(printer));
+            }
+        }
+
+        if (cmd instanceof CommandWithSubs) {
+            List<CommandWithSubs> parents0 = new ArrayList<>(parents);
+
+            parents0.add((CommandWithSubs)cmd);
+
+            ((CommandWithSubs)cmd).subcommands().forEach(cmdSupplier -> {
+                org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd0 = cmdSupplier.get();
+
+                usage(cmd0, parents0, logger);
+            });
+        }
     }
 
     /** */

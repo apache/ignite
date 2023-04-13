@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -46,6 +47,8 @@ import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import com.github.difflib.text.DiffRow;
+import com.github.difflib.text.DiffRowGenerator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -91,7 +94,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.singletonList;
@@ -360,7 +362,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
         }
 
-        checkHelp(output, "org.apache.ignite.util/" + getClass().getSimpleName() + "_cache_help.output");
+        diff(output, new String(readResource(
+            getClass().getClassLoader(),
+            "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output"
+        )));
     }
 
     /** */
@@ -391,48 +396,51 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertNotContains(log, testOutStr, "Control.sh");
 
-        checkHelp(testOutStr, "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output");
+        diff(testOutStr, new String(readResource(
+            getClass().getClassLoader(),
+            "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output"
+        )));
     }
 
-    /**
-     * Checks that golden copy of output and current output are same.
-     *
-     * @param output Current output.
-     * @param resourceName Name of resource with golden copy on output.
-     * @throws Exception If something goes wrong.
-     */
-    private void checkHelp(String output, String resourceName) throws Exception {
-        String correctOutput = new String(readResource(getClass().getClassLoader(), resourceName));
+    /** */
+    private void diff(String output, String correctOutput) {
+        correctOutput = correctOutput.replace(COPYRIGHT, IgniteVersionUtils.COPYRIGHT);
 
-        try {
-            // Split by lines.
-            List<String> correctOutputLines = U.sealList(correctOutput.split("\\r?\\n"));
-            List<String> outputLines = U.sealList(output.split("\\r?\\n"));
+        List<String> correctOutputLines = U.sealList(correctOutput.split("\\r?\\n"));
+        List<String> outputLines = U.sealList(output.split("\\r?\\n"));
 
-            assertEquals("Wrong number of lines! Golden copy resource: " + resourceName, correctOutputLines.size(), outputLines.size());
+        List<DiffRow> diff = DiffRowGenerator.create()
+            .ignoreWhiteSpaces(true)
+            .lineNormalizer(Function.identity())
+            .build()
+            .generateDiffRows(outputLines, correctOutputLines);
 
-            for (int i = 0; i < correctOutputLines.size(); i++) {
-                String cLine = correctOutputLines.get(i);
+        int lines = 0;
 
-                cLine = cLine.replace(COPYRIGHT, IgniteVersionUtils.COPYRIGHT);
+        if (!diff.isEmpty()) {
+            Consumer<String> printer = System.out::println;
 
-                // Remove all spaces from end of line.
-                String line = outputLines.get(i).replaceAll("\\s+$", "");
+            for (DiffRow row : diff) {
+                if (row.getTag() == DiffRow.Tag.EQUAL)
+                    continue;
 
-                if (cLine.contains(ANY)) {
-                    String cuttedCLine = cLine.substring(0, cLine.length() - ANY.length());
+                if (row.getNewLine().contains(ANY))
+                    continue;
 
-                    assertTrue("line: " + i, line.startsWith(cuttedCLine));
+                lines++;
+
+                if (row.getTag() == DiffRow.Tag.CHANGE) {
+                    printer.accept("- " + row.getOldLine());
+                    printer.accept("+ " + row.getNewLine());
                 }
-                else
-                    assertEquals("line: " + i, cLine, line);
+                else if (row.getTag() == DiffRow.Tag.INSERT)
+                    printer.accept("+ " + row.getNewLine());
+                else if (row.getTag() == DiffRow.Tag.DELETE)
+                    printer.accept("- " + row.getOldLine());
             }
         }
-        catch (AssertionError e) {
-            log.info("Correct output is: " + correctOutput);
 
-            throw e;
-        }
+        assertTrue("Diff must be empty [lines=" + lines + ']', lines == 0);
     }
 
     /** */

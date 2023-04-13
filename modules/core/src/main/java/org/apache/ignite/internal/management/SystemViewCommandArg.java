@@ -55,6 +55,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     @Argument(
         description = "Comma-separated list of nodes IDs to get the system view from. " +
         "If not set, random node will be chosen",
+        example = "nodeId1,nodeId2,..",
         optional = true,
         javaStyleExample = true
     )
