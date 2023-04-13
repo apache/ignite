@@ -123,7 +123,7 @@ public abstract class AbstractDataLoadApplication extends IgniteAwareApplication
     }
 
     /** Creates test caches. */
-    private void createCaches() {
+    protected void createCaches() {
         for (int i = 1; i <= cfg.cacheCount; i++) {
             CacheConfiguration<Integer, BinaryObject> ccfg = new CacheConfiguration<Integer, BinaryObject>()
                 .setName(cacheName(i))

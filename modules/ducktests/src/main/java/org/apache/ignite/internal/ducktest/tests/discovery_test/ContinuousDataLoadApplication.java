@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests;
+package org.apache.ignite.internal.ducktest.tests.discovery_test;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ducktest.tests.AbstractDataLoadApplication;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

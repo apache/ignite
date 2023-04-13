@@ -341,7 +341,7 @@ def start_load_app(test_context, ignite_config, params, modules=None):
     app = IgniteApplicationService(
         test_context,
         config=ignite_config,
-        java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
+        java_class_name="org.apache.ignite.internal.ducktest.tests.discovery_test.ContinuousDataLoadApplication",
         modules=modules,
         # mute spam in log.
         jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"],

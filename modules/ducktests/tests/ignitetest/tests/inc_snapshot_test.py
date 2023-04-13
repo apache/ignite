@@ -26,6 +26,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.tests.util import preload_data, DataGenerationParams
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -38,7 +39,7 @@ class IncrementalSnapshotTest(IgniteTest):
     """
     SNAPSHOT_NAME = "test_base_snapshot"
 
-    @cluster(num_nodes=8)
+    @cluster(num_nodes=12)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(backups=[2], inc_create_period_sec=[15], inc_count=[4], loaders_count=[4],
               entry_size=[1024], preload_count=[10_000])
@@ -68,11 +69,28 @@ class IncrementalSnapshotTest(IgniteTest):
             metric_exporters={'org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'}
         )
 
-        nodes = IgniteService(self.test_context, ignite_config, num_nodes=self.available_cluster_size - loaders_count)
+        nodes = IgniteService(self.test_context,
+                              ignite_config,
+                              num_nodes=self.available_cluster_size - 2 * loaders_count)
         nodes.start()
 
         control_utility = ControlUtility(nodes)
         control_utility.activate()
+
+        preload_time = preload_data(
+            self.test_context,
+            nodes.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
+            data_gen_params=DataGenerationParams(
+                backups=backups,
+                cache_count=1,
+                entry_count=preload_count,
+                entry_size=entry_size,
+                preloaders=loaders_count,
+                index_count=1,
+                transactional=True
+            ))
+
+        print("Preload time = " + str(preload_time))
 
         loaders = []
 
@@ -80,22 +98,13 @@ class IncrementalSnapshotTest(IgniteTest):
             app = IgniteApplicationService(
                 self.test_context,
                 nodes.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(nodes)),
-                java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataLoadApplication",
+                java_class_name="org.apache.ignite.internal.ducktest.tests.ContinuousDataGenerationApplication",
                 params={
-                    "cacheCount": 1,
-                    "backups": backups,
-                    "transactional": True,
-                    "indexCount": 1,
-                    "entrySize": entry_size,
-                    "range": 1,
-                    "warmUpRange": preload_count / loaders_count
+                    "cacheCount": 1
                 })
 
             app.start_async()
             loaders.append(app)
-
-        for app in loaders:
-            app.await_event("Warm up finished.", 3600, True)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
