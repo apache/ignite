@@ -181,14 +181,14 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     @Test
     public void testSystemViewNameMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW),
-            "The name of the system view for which its content should be printed is expected.");
+            "Argument system_view_name required.");
     }
 
     /** Tests command error output in case value of {@code --node-id} argument is omitted. */
     @Test
     public void testNodeIdMissedFailure() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, "--node-id"),
-            "ID of the node from which system view content should be obtained is expected.");
+            "Please specify a value for argument: --node-id");
     }
 
     /** Tests command error output in case value of {@code --node-id} argument is invalid.*/
@@ -207,7 +207,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testMultipleSystemViewNamesFailure() {
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW),
-            "Multiple system view names are not supported.");
+            "Unexpected argument: " + CACHE_GRP_PAGE_LIST_VIEW);
     }
 
     /**
@@ -218,11 +218,11 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testAllNodesAndNodeIds() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CMD_SYS_VIEW, SVCS_VIEW, "--all-nodes", "--node-ids", ignite0.localNode().id().toString()),
-            "The " + "--all-nodes" + " parameter cannot be used with specified node IDs.");
+            "Only one of [nodeIds, nodeId, allNodes] allowed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CMD_SYS_VIEW, SVCS_VIEW, "--all-nodes", "--node-id", ignite0.localNode().id().toString()),
-            "The " + "--all-nodes" + " parameter cannot be used with specified node IDs.");
+            "Only one of [nodeIds, nodeId, allNodes] allowed");
     }
 
     /**

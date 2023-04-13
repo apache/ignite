@@ -441,6 +441,14 @@ public class IgniteDataTransferObjectSerDesGenerator {
                 read.add(TAB + TAB + (name.equals("in") ? "this." : "") + name +
                     " = U.readEnum(in, " + fld.getType().getSimpleName() + ".class);");
             }
+            else if (fld.getType().isArray() && !fld.getType().getComponentType().isPrimitive()) {
+                imports.add(U.class.getName() + ';');
+                imports.add(fld.getType().getComponentType().getName() + ';');
+
+                write.add(TAB + TAB + "U.writeArray(out, " + (name.equals("out") ? "this.out." : "") + name + ");");
+                read.add(TAB + TAB + (name.equals("in") ? "this." : "") + name +
+                    " = U.readArray(in, " + fld.getType().getComponentType().getSimpleName() + ".class);");
+            }
             else {
                 GridTuple3<Function<String, String>, Function<String, String>, Boolean> gen
                     = TYPE_GENS.get(fld.getType());

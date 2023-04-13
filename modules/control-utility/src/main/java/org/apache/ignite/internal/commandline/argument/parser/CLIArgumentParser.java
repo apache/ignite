@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.argument.parser;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,25 +51,19 @@ public class CLIArgumentParser {
     private final Map<String, Object> parsedNamedArgs = new HashMap<>();
 
     /** */
-    private final boolean failOnUnknown;
-
-    /** */
     public CLIArgumentParser(List<CLIArgument<?>> namedArgCfg) {
-        this(Collections.emptyList(), namedArgCfg, true);
+        this(Collections.emptyList(), namedArgCfg);
     }
 
     /** */
     public CLIArgumentParser(
         List<CLIArgument<?>> positionalArgConfig,
-        List<CLIArgument<?>> namedArgCfg,
-        boolean failOnUnknown
+        List<CLIArgument<?>> namedArgCfg
     ) {
         this.positionalArgCfg = positionalArgConfig;
 
         for (CLIArgument<?> cliArgument : namedArgCfg)
             this.namedArgCfg.put(cliArgument.name(), cliArgument);
-
-        this.failOnUnknown = failOnUnknown;
     }
 
     /**
@@ -93,22 +88,30 @@ public class CLIArgumentParser {
                     cliArg = positionalArgCfg.get(positionalIdx);
 
                     parsedPositionalArgs.add(parseVal(arg, cliArg.type()));
+
+                    positionalIdx++;
                 }
-                else if (failOnUnknown)
-                    throw new IgniteException("Unexpected argument: " + arg);
+                else
+                    throw new IllegalArgumentException("Unexpected argument: " + arg);
 
                 continue;
             }
 
-            if (cliArg.type().equals(Boolean.class))
+            if (cliArg.type().equals(Boolean.class) || cliArg.type().equals(boolean.class))
                 parsedNamedArgs.put(cliArg.name(), true);
             else {
                 if (!argsIter.hasNext())
-                    throw new IgniteException("Please specify a value for argument: " + arg);
+                    throw new IllegalArgumentException("Please specify a value for argument: " + arg);
 
                 String strVal = argsIter.next();
 
-                parsedNamedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
+                try {
+                    parsedNamedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
+                }
+                catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("Failed to parse " + cliArg.name() + " command argument. "
+                        + e.getMessage());
+                }
             }
 
             obligatoryArgs.remove(cliArg.name());
@@ -120,16 +123,42 @@ public class CLIArgumentParser {
 
     /** */
     private <T> T parseVal(String val, Class<T> type) {
+        if (type.isArray()) {
+            String[] vals = val.split(",");
+
+            Class<?> compType = type.getComponentType();
+
+            if (compType == String.class)
+                return (T)vals;
+
+            Object[] res = (Object[])Array.newInstance(compType, vals.length);
+
+            for (int i = 0; i < vals.length; i++)
+                res[i] = parseSingleVal(vals[i], compType);
+
+            return (T)res;
+        }
+
+        return parseSingleVal(val, type);
+    }
+
+    /** */
+    private <T> T parseSingleVal(String val, Class<T> type) {
         if (type == String.class)
             return (T)val;
-        else if (type == String[].class)
-            return (T)val.split(",");
         else if (type == Integer.class)
             return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
         else if (type == Long.class)
             return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
-        else if (type == UUID.class)
-            return (T)UUID.fromString(val);
+        else if (type == UUID.class) {
+            try {
+                return (T)UUID.fromString(val);
+            }
+            catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("String representation of \"java.util.UUID\" is exepected. " +
+                        "For example: 123e4567-e89b-42d3-a456-556642440000");
+            }
+        }
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }
@@ -191,7 +220,7 @@ public class CLIArgumentParser {
      * @return Value.
      */
     public <T> T get(int position) {
-        if (parsedPositionalArgs.size() < position)
+        if (parsedPositionalArgs.size() - 1 < position)
             return null;
 
         return (T)parsedPositionalArgs.get(position);

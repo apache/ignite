@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
 import java.util.UUID;
 import lombok.Data;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -33,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  */
 @Data
-@OneOf({"nodeIds", "nodeId", "allNodes"})
+@OneOf(value = {"nodeIds", "nodeId", "allNodes"}, optional = true)
 public class SystemViewCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
@@ -59,7 +58,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
         optional = true,
         javaStyleExample = true
     )
-    private Collection<UUID> nodeIds;
+    private UUID[] nodeIds;
 
     /** Flag to get the system view from all nodes. */
     @Argument(
@@ -72,7 +71,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, systemViewName);
         U.writeUuid(out, nodeId);
-        U.writeCollection(out, nodeIds);
+        U.writeArray(out, nodeIds);
         out.writeBoolean(allNodes);
     }
 
@@ -80,7 +79,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         systemViewName = U.readString(in);
         nodeId = U.readUuid(in);
-        nodeIds = U.readCollection(in);
+        nodeIds = U.readArray(in, UUID.class);
         allNodes = in.readBoolean();
     }
 }

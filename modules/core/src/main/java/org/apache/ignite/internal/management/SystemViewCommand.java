@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -63,8 +64,11 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
         if (arg.isAllNodes())
             return nodes;
 
+        if (arg.getNodeId() == null && arg.getNodeIds() == null)
+            return Collections.emptyList();
+
         Collection<UUID> argNodes = arg.getNodeIds() != null
-            ? arg.getNodeIds()
+            ? Arrays.asList(arg.getNodeIds())
             : Collections.singleton(arg.getNodeId());
 
         for (UUID id : argNodes) {
