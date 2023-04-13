@@ -61,6 +61,11 @@ namespace Apache.Ignite.Core.Client
         public const bool DefaultEnablePartitionAwareness = true;
 
         /// <summary>
+        /// Default value of <see cref="EnableClusterDiscovery" /> property.
+        /// </summary>
+        public const bool DefaultEnableClusterDiscovery = true;
+
+        /// <summary>
         /// Default socket timeout.
         /// </summary>
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
@@ -84,6 +89,7 @@ namespace Apache.Ignite.Core.Client
             SocketTimeout = DefaultSocketTimeout;
             Logger = new ConsoleLogger();
             EnablePartitionAwareness = DefaultEnablePartitionAwareness;
+            EnableClusterDiscovery = DefaultEnableClusterDiscovery;
         }
 
         /// <summary>
@@ -130,6 +136,7 @@ namespace Apache.Ignite.Core.Client
             Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
             EnablePartitionAwareness = cfg.EnablePartitionAwareness;
+            EnableClusterDiscovery = cfg.EnableClusterDiscovery;
             Logger = cfg.Logger;
             ProtocolVersion = cfg.ProtocolVersion;
 
@@ -239,9 +246,24 @@ namespace Apache.Ignite.Core.Client
         /// To do so, connection is established to every known server node at all times.
         /// <para />
         /// When false: only one connection is established at a given moment to a random server node.
+        /// <para />
+        /// See also <see cref="EnableClusterDiscovery"/>.
         /// </summary>
         [DefaultValue(DefaultEnablePartitionAwareness)]
         public bool EnablePartitionAwareness { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Cluster Discovery should be enabled.
+        /// <para />
+        /// Default is true: Ignite will maintain an actual list of all server nodes in the cluster and connect to
+        /// them when necessary.
+        /// When <see cref="EnablePartitionAwareness"/> is false, this list of nodes will be used for failover.
+        /// When <see cref="EnablePartitionAwareness"/> is true, connections will be established to all known nodes.
+        /// <para />
+        /// When false: Ignite client will connect only to nodes in the <see cref="Endpoints"/> list.
+        /// </summary>
+        [DefaultValue(DefaultEnableClusterDiscovery)]
+        public bool EnableClusterDiscovery { get; set; }
 
         /// <summary>
         /// Gets or sets the logger.
