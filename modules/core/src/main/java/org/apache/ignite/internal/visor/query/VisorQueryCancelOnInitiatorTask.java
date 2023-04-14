@@ -18,26 +18,31 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.management.kill.KillSqlCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
+import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
 /**
  * Task to cancel queries on initiator node.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQueryCancelOnInitiatorTaskArg, Void> {
+public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<KillSqlCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelQueryOnInitiatorJob job(VisorQueryCancelOnInitiatorTaskArg arg) {
+    @Override protected VisorCancelQueryOnInitiatorJob job(KillSqlCommandArg arg) {
         return new VisorCancelQueryOnInitiatorJob(arg, debug);
     }
 
@@ -47,7 +52,7 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQuery
     }
 
     /** Job to cancel query on node. */
-    private static class VisorCancelQueryOnInitiatorJob extends VisorJob<VisorQueryCancelOnInitiatorTaskArg, Void> {
+    private static class VisorCancelQueryOnInitiatorJob extends VisorJob<KillSqlCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -57,13 +62,18 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQuery
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCancelQueryOnInitiatorJob(VisorQueryCancelOnInitiatorTaskArg arg, boolean debug) {
+        protected VisorCancelQueryOnInitiatorJob(KillSqlCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorQueryCancelOnInitiatorTaskArg arg) throws IgniteException {
-            new QueryMXBeanImpl(ignite.context()).cancelSQL(arg.getNodeId(), arg.getQueryId());
+        @Override protected Void run(KillSqlCommandArg arg) throws IgniteException {
+            T2<UUID, Long> ids = parseGlobalQueryId(arg.getQueryId());
+
+            if (ids == null)
+                throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
+
+            new QueryMXBeanImpl(ignite.context()).cancelSQL(ids.get1(), ids.get2());
 
             return null;
         }

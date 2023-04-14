@@ -66,7 +66,7 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
     }
 
     /** */
-    default Collection<UUID> filterById(Collection<UUID> nodes, A arg) {
+    default Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
         return Collections.emptyList();
     }
 }

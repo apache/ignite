@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 
 /**
@@ -25,35 +28,18 @@ import org.apache.ignite.internal.management.api.CommandWithSubs;
  */
 @CliPositionalSubcommands
 public class KillCommand extends CommandWithSubs {
-    /** */
-    public KillCommand() {
-        register(KillComputeCommand::new);
-        register(KillServiceCommand::new);
-        register(KillTransactionCommand::new);
-        register(KillSqlCommand::new);
-        register(KillScanCommand::new);
-        register(KillContinuousCommand::new);
-        register(KillClientCommand::new);
-        register(KillSnapshotCommand::new);
-    }
-
     /** {@inheritDoc} */
-    @Override public boolean canBeExecuted() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class args() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class task() {
-        throw new UnsupportedOperationException();
+    @Override protected List<Command<?, ?, ?>> subcommands() {
+        return Arrays.asList(
+            new KillComputeCommand(),
+            new KillServiceCommand(),
+            new KillTransactionCommand(),
+            new KillSqlCommand(),
+            new KillScanCommand(),
+            new KillContinuousCommand(),
+            new KillClientCommand(),
+            new KillSnapshotCommand(),
+            new KillConsistencyCommand()
+        );
     }
 }

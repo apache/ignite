@@ -17,29 +17,48 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.CommandsRegistry;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
  *
  */
-public abstract class CommandWithSubs implements Command {
+public abstract class CommandWithSubs implements Command, Iterable<Command<?, ?, ?>> {
     /** */
-    private final Map<String, Supplier<? extends Command<?, ?, ?>>> commands = new LinkedHashMap<>();
+    private final Map<String, Command<?, ?, ?>> commands = new LinkedHashMap<>();
 
     /** */
-    public Collection<Supplier<? extends Command<?, ?, ?>>> subcommands() {
-        return commands.values();
+    protected void registerAll() {
+        subcommands().forEach(cmd -> {
+            register(cmd);
+
+            if (cmd instanceof CommandWithSubs)
+                ((CommandWithSubs)cmd).registerAll();
+        });
     }
 
     /** */
-    public void register(Supplier<? extends Command<?, ?, ?>> cmd) {
-        Command<?, ?, ?> cmdInstance = cmd.get();
+    void register(Command<?, ?, ?> cmd) {
+        Class<? extends CommandWithSubs> parent = getClass() == CommandsRegistry.class ? null : getClass();
 
-        String name = cmdInstance.getClass().getSimpleName();
+        String name = cmd.getClass().getSimpleName();
+
+        if (parent != null) {
+            String parentName = parent.getSimpleName();
+            parentName = parentName.substring(0, parentName.length() - CMD_NAME_POSTFIX.length());
+
+            if (!name.startsWith(parentName)) {
+                throw new IllegalArgumentException(
+                    "Command class name must starts with parent name [parent=" + parentName + ']');
+            }
+
+            name = name.substring(parentName.length());
+        }
 
         if (!name.endsWith(CMD_NAME_POSTFIX))
             throw new IllegalArgumentException("Command class name must ends with 'Command'");
@@ -53,17 +72,35 @@ public abstract class CommandWithSubs implements Command {
     }
 
     /** */
-    public Command<?, ?, ?> command(String name) {
-        Supplier<? extends Command<?, ?, ?>> supplier = commands.get(name);
+    protected abstract List<Command<?, ?, ?>> subcommands();
 
-        if (supplier == null)
-            return null;
+    /** */
+    public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name) {
+        return (Command<A, ?, ?>)commands.get(name);
+    }
 
-        return supplier.get();
+    /** {@inheritDoc} */
+    @Override public Iterator<Command<?, ?, ?>> iterator() {
+        return commands.values().iterator();
     }
 
     /** */
     public boolean canBeExecuted() {
-        return true;
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class args() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class task() {
+        throw new UnsupportedOperationException();
     }
 }

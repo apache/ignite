@@ -17,29 +17,28 @@
 
 package org.apache.ignite.internal.management;
 
+import java.util.Arrays;
+import java.util.List;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.kill.KillCommand;
 
 /**
  *
  */
 public class CommandsRegistry extends CommandWithSubs {
     /** */
-    public CommandsRegistry() {
-        register(SystemViewCommand::new);
+    public static final CommandsRegistry INSTANCE = new CommandsRegistry();
+
+    static {
+        INSTANCE.registerAll();
     }
 
     /** {@inheritDoc} */
-    @Override public String description() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class args() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class task() {
-        throw new UnsupportedOperationException();
+    @Override protected List<Command<?, ?, ?>> subcommands() {
+        return Arrays.<Command<?, ?, ?>>asList(
+            new SystemViewCommand(),
+            new KillCommand()
+        );
     }
 }

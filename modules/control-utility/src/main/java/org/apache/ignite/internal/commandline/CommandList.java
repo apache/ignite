@@ -31,8 +31,6 @@ import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
-import org.apache.ignite.internal.management.SystemViewCommand;
-import org.apache.ignite.internal.management.kill.KillCommand;
 
 /**
  * High-level commands.
@@ -69,7 +67,7 @@ public enum CommandList {
     ENCRYPTION("--encryption", new EncryptionCommands()),
 
     /** Kill command. */
-    KILL("--kill", new DeclarativeCommandAdapter<>(new KillCommand())),
+    KILL("--kill", new DeclarativeCommandAdapter<>("Kill")),
 
     /** Snapshot commands. */
     SNAPSHOT("--snapshot", new SnapshotCommand()),
@@ -93,7 +91,7 @@ public enum CommandList {
     PROPERTY("--property", new PropertyCommand()),
 
     /** Command for printing system view content. */
-    SYSTEM_VIEW("--system-view", new DeclarativeCommandAdapter<>(new SystemViewCommand())),
+    SYSTEM_VIEW("--system-view", new DeclarativeCommandAdapter<>("SystemView")),
 
     /** Command for printing metric values. */
     METRIC("--metric", new MetricCommand()),

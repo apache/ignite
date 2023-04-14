@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.lang.IgniteUuid;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -146,9 +147,9 @@ public class CLIArgumentParser {
     private <T> T parseSingleVal(String val, Class<T> type) {
         if (type == String.class)
             return (T)val;
-        else if (type == Integer.class)
+        else if (type == Integer.class || type == int.class)
             return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
-        else if (type == Long.class)
+        else if (type == Long.class || type == long.class)
             return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
         else if (type == UUID.class) {
             try {
@@ -158,6 +159,9 @@ public class CLIArgumentParser {
                 throw new IllegalArgumentException("String representation of \"java.util.UUID\" is exepected. " +
                         "For example: 123e4567-e89b-42d3-a456-556642440000");
             }
+        }
+        else if (type == IgniteUuid.class) {
+            return (T)IgniteUuid.fromString(val);
         }
 
         throw new IgniteException("Unsupported argument type: " + type.getName());

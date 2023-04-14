@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.kill;
+package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-/**
- *
- */
-public class KillSqlCommand extends BaseCommand<KillSqlCommandArg, Void, VisorQueryCancelOnInitiatorTask> {
+/** */
+public class EmptyArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Kill sql query by query id";
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillSqlCommandArg> args() {
-        return KillSqlCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<VisorQueryCancelOnInitiatorTask> task() {
-        return VisorQueryCancelOnInitiatorTask.class;
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op.
     }
 }

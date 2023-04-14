@@ -17,25 +17,33 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.internal.management.api.BaseCommand;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
+import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
 /**
  *
  */
-public class KillSqlCommand extends BaseCommand<KillSqlCommandArg, Void, VisorQueryCancelOnInitiatorTask> {
+public class KillConsistencyCommand extends BaseCommand<EmptyArg, Void, VisorConsistencyCancelTask> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill sql query by query id";
+        return "Kill consistency task";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillSqlCommandArg> args() {
-        return KillSqlCommandArg.class;
+    @Override public Class<EmptyArg> args() {
+        return EmptyArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorQueryCancelOnInitiatorTask> task() {
-        return VisorQueryCancelOnInitiatorTask.class;
+    @Override public Class<VisorConsistencyCancelTask> task() {
+        return VisorConsistencyCancelTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, EmptyArg arg) {
+        return nodes;
     }
 }

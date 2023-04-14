@@ -44,8 +44,13 @@ public class KillTransactionTask
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    @Override protected @Nullable Map<ClusterNode, VisorTxTaskResult> reduce0(
+        List<ComputeJobResult> results
+    ) throws IgniteException {
+        return VisorTxTask.reduce0(
+            results,
+            new VisorTxTaskArg(KILL, null, null, null, null, null, null, taskArg.getXid(), null, null, null)
+        );
     }
 
     /** */

@@ -60,23 +60,16 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> filterById(Collection<UUID> nodes, SystemViewCommandArg arg) {
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, SystemViewCommandArg arg) {
         if (arg.isAllNodes())
             return nodes;
 
-        if (arg.getNodeId() == null && arg.getNodeIds() == null)
-            return Collections.emptyList();
+        if (arg.getNodeIds() != null)
+            return Arrays.asList(arg.getNodeIds());
 
-        Collection<UUID> argNodes = arg.getNodeIds() != null
-            ? Arrays.asList(arg.getNodeIds())
-            : Collections.singleton(arg.getNodeId());
-
-        for (UUID id : argNodes) {
-            if (!nodes.contains(id))
-                throw new IllegalArgumentException("Node with id=" + id + " not found.");
-        }
-
-        return argNodes;
+        return arg.getNodeId() != null
+                ? Collections.singleton(arg.getNodeId())
+                : Collections.emptyList();
     }
 
     /** {@inheritDoc} */

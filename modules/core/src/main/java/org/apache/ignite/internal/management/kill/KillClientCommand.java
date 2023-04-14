@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
@@ -37,5 +40,13 @@ public class KillClientCommand extends BaseCommand<KillClientCommandArg, Void, V
     /** {@inheritDoc} */
     @Override public Class<VisorClientConnectionDropTask> task() {
         return VisorClientConnectionDropTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, KillClientCommandArg arg) {
+        if (arg.getNodeId() == null)
+            return nodes;
+
+        return Collections.singleton(arg.getNodeId());
     }
 }

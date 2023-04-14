@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.tx.KillTransactionTask;
@@ -41,5 +43,10 @@ public class KillTransactionCommand
     /** {@inheritDoc} */
     @Override public Class<KillTransactionTask> task() {
         return KillTransactionTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, KillTransactionCommandArg arg) {
+        return nodes;
     }
 }

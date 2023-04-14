@@ -38,10 +38,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
@@ -60,11 +62,14 @@ import static org.apache.ignite.internal.commandline.CommandUtils.CMD_WORDS_DELI
 import static org.apache.ignite.internal.commandline.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.commandline.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.commandline.CommandUtils.commandName;
+import static org.apache.ignite.internal.commandline.CommandUtils.formattedName;
+import static org.apache.ignite.internal.commandline.CommandUtils.fromFormattedName;
 import static org.apache.ignite.internal.commandline.CommandUtils.hasDescribedParameters;
 import static org.apache.ignite.internal.commandline.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.commandline.CommandUtils.parameterName;
 import static org.apache.ignite.internal.commandline.CommandUtils.valueExample;
 import static org.apache.ignite.internal.commandline.CommandUtils.visitCommandParams;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNode;
 
 /**
@@ -75,15 +80,28 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
     private final org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd;
 
     /** */
-    private A arg;
+    private IgniteBiTuple<org.apache.ignite.internal.management.api.Command<A, ?, ?>, A> parsed;
 
     /** */
-    public DeclarativeCommandAdapter(org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd) {
-        this.cmd = cmd;
+    public DeclarativeCommandAdapter(String name) {
+        cmd = CommandsRegistry.INSTANCE.command(name);
+
+        assert cmd != null;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
+        org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 = commandToExecute(argIterator);
+
+        A arg;
+        try {
+            arg = cmd0.args().newInstance();
+            parsed = F.t(cmd0, arg);
+        }
+        catch (InstantiationException | IllegalAccessException e) {
+            throw new IgniteException(e);
+        }
+
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
         List<IgniteBiTuple<Boolean, List<CLIArgument<?>>>> oneOfArgs = new ArrayList<>();
@@ -97,7 +115,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
         );
 
         visitCommandParams(
-            cmd.args(),
+            arg.getClass(),
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
@@ -117,23 +135,18 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
             }
         );
 
+        namedArgs.add(CLIArgument.optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class));
+
         CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
 
         parser.parse(argIterator.raw());
 
         AtomicInteger position = new AtomicInteger();
 
-        try {
-            arg = cmd.args().newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
-
         AtomicBoolean oneOfSet = new AtomicBoolean(false);
 
-        Set<String> oneOfFields = cmd.args().isAnnotationPresent(OneOf.class)
-            ? new HashSet<>(Arrays.asList(cmd.args().getAnnotation(OneOf.class).value()))
+        Set<String> oneOfFields = arg.getClass().isAnnotationPresent(OneOf.class)
+            ? new HashSet<>(Arrays.asList(arg.getClass().getAnnotation(OneOf.class).value()))
             : Collections.emptySet();
 
         BiConsumer<Field, Object> fldSetter = (fld, val) -> {
@@ -162,7 +175,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
             try {
                 // TODO: use setters here.
                 fld.setAccessible(true);
-                fld.set(arg, val);
+                fld.set(parsed.get2(), val);
             }
             catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -170,15 +183,15 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
         };
 
         visitCommandParams(
-            cmd.args(),
+            arg.getClass(),
             fld -> fldSetter.accept(fld, parser.get(position.getAndIncrement())),
             fld -> fldSetter.accept(fld, parser.get(parameterName(fld))),
             (optionals, flds) ->
                 flds.forEach(fld -> fldSetter.accept(fld, parser.get(parameterName(fld))))
         );
 
-        boolean oneOfRequired = cmd.args().isAnnotationPresent(OneOf.class)
-            && !cmd.args().getAnnotation(OneOf.class).optional();
+        boolean oneOfRequired = arg.getClass().isAnnotationPresent(OneOf.class)
+            && !arg.getClass().getAnnotation(OneOf.class).optional();
 
         if (oneOfRequired && !oneOfSet.get())
             throw new IllegalArgumentException("One of " + oneOfFields + " required");
@@ -192,7 +205,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
             Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
                 .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
 
-            Collection<UUID> nodeIds = cmd.filterById(clusterNodes.keySet(), arg);
+            Collection<UUID> nodeIds = parsed.get1().nodes(clusterNodes.keySet(), parsed.get2());
+
+            for (UUID id : nodeIds) {
+                if (!clusterNodes.containsKey(id))
+                    throw new IllegalArgumentException("Node with id=" + id + " not found.");
+            }
 
             if (nodeIds.isEmpty())
                 nodeIds = singleton(getBalancedNode(compute).nodeId());
@@ -203,12 +221,15 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
                 id -> clusterNodes.get(id).connectable()
             );
 
+            if (F.isEmpty(connectable))
+                throw new GridClientDisconnectedException("Connectable nodes not found", null);
+
             if (!F.isEmpty(connectable))
                 compute = compute.projection(connectable);
 
-            Object res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+            Object res = compute.execute(parsed.get1().task().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
 
-            cmd.printResult(arg, res, logger);
+            parsed.get1().printResult(parsed.get2(), res, logger);
 
             return res;
         }
@@ -294,11 +315,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
 
             parents0.add((CommandWithSubs)cmd);
 
-            ((CommandWithSubs)cmd).subcommands().forEach(cmdSupplier -> {
-                org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd0 = cmdSupplier.get();
-
-                usage(cmd0, parents0, logger);
-            });
+            ((CommandWithSubs)cmd).forEach(cmd0 -> usage(cmd0, parents0, logger));
         }
     }
 
@@ -369,11 +386,48 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
 
     /** {@inheritDoc} */
     @Override public A arg() {
-        return arg;
+        return parsed.get2();
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return CommandUtils.commandName(cmd.getClass(), CMD_WORDS_DELIM).toUpperCase();
+    }
+
+    /** */
+    private org.apache.ignite.internal.management.api.Command<A, ?, ?> commandToExecute(CommandArgIterator argIterator) {
+        org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 = cmd;
+
+        while (cmd0 instanceof CommandWithSubs && argIterator.hasNextArg()) {
+            String subName = argIterator.peekNextArg();
+
+            if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)) {
+                if (!subName.startsWith(PARAMETER_PREFIX))
+                    break;
+
+                subName = subName.substring(PARAMETER_PREFIX.length());
+            }
+
+            subName = fromFormattedName(subName, CMD_WORDS_DELIM);
+
+            org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd1 = ((CommandWithSubs)cmd0).command(subName);
+
+            if (cmd1 != null) {
+                cmd0 = cmd1;
+
+                argIterator.nextArg("Sub command name");
+            }
+        }
+
+        if (cmd0 instanceof CommandWithSubs && !((CommandWithSubs)cmd0).canBeExecuted()) {
+            throw new IllegalArgumentException(
+                "Command " + formattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
+            );
+        }
+
+        if (cmd0 == null)
+            throw new IllegalArgumentException("Unknown command");
+
+        return cmd0;
     }
 }
