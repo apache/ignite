@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.BaseCommand;
+import org.apache.ignite.internal.visor.tx.KillTransactionTask;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 /**
  *
  */
-public class KillTransactionCommand extends BaseCommand<KillTransactionCommandArg, Void> {
+public class KillTransactionCommand
+    extends BaseCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>, KillTransactionTask> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill transaction by xid";
@@ -34,7 +39,7 @@ public class KillTransactionCommand extends BaseCommand<KillTransactionCommandAr
     }
 
     /** {@inheritDoc} */
-    @Override public Class task() {
-        return null;
+    @Override public Class<KillTransactionTask> task() {
+        return KillTransactionTask.class;
     }
 }

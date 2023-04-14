@@ -182,7 +182,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
     /**
      *
      */
-    private static class VisorTxJob extends VisorJob<VisorTxTaskArg, VisorTxTaskResult> {
+    static class VisorTxJob extends VisorJob<VisorTxTaskArg, VisorTxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -202,12 +202,17 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorTxJob(VisorTxTaskArg arg, boolean debug) {
+        VisorTxJob(VisorTxTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected VisorTxTaskResult run(@Nullable VisorTxTaskArg arg) throws IgniteException {
+            return run(ignite, arg);
+        }
+
+        /** */
+        static VisorTxTaskResult run(IgniteEx ignite, VisorTxTaskArg arg) {
             if (arg == null)
                 return new VisorTxTaskResult(Collections.emptyList());
 
