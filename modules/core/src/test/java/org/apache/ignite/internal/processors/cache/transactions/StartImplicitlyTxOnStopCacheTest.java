@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -36,6 +37,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
@@ -131,23 +133,19 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testTxPrepareOnCacheDestroy() throws Exception {
-        final IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
+    public void testTxStartAfterGatewayBlockedOnCacheDestroy() throws Exception {
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().state(ClusterState.ACTIVE);
 
         // Cache group with multiple caches are important here, in this case cache removals are not so rapid.
-        Collection<CacheConfiguration> ccfgs = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++) {
-            crd.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME + "_" + i)
-                .setGroupName(GROUP)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-        }
-
-        crd.createCaches(ccfgs);
+        crd.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME + "_1")
+            .setGroupName(GROUP)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+        CountDownLatch beforeGateBlock = new CountDownLatch(1);
 
         // Preload data.
         List<Integer> pkeys = primaryKeys(cache, 100);
@@ -161,9 +159,14 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
         List<IgniteFuture<Boolean>> asyncRmFuts = new ArrayList<>(pkeys.size());
 
         IgniteInternalFuture<Object> loadFut = runAsync(() -> {
+            beforeGateBlock.await();
+
             for (Integer key : pkeys)
                 asyncRmFuts.add(cache.removeAsync(key));
         });
+
+        crd.context().discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
+            (topVer, snd, msg) -> beforeGateBlock.countDown());
 
         grid(1).destroyCache(DEFAULT_CACHE_NAME);
 
@@ -173,8 +176,10 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
             loadFut.get();
         }
         catch (Exception e) {
-            if (!X.hasCause(e, "cache is stopped", IllegalStateException.class))
+            if (!X.hasCause(e, "cache is stopped", IllegalStateException.class)
+                && !X.hasCause(e, IgniteCacheRestartingException.class)) {
                 throw new AssertionError(e);
+            }
         }
 
         try {
@@ -184,6 +189,6 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        assertFalse(GridTestUtils.waitForCondition(failure::get, 5_000));
+        assertFalse(GridTestUtils.waitForCondition(failure::get, 2_000));
     }
 }
