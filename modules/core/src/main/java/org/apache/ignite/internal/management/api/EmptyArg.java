@@ -24,13 +24,16 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
 public class EmptyArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        // No-op.
+        //No-op.
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op.
+        //No-op.
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.kill;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,26 +33,26 @@ public class KillSnapshotCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalArgument(description = "Snapshot name")
-    private String snapshotName;
+    @PositionalArgument(description = "Request id")
+    private UUID requestId;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, snapshotName);
+        U.writeUuid(out, requestId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        snapshotName = U.readString(in);
+        requestId = U.readUuid(in);
     }
 
     /** */
-    public String getSnapshotName() {
-        return snapshotName;
+    public UUID getRequestId() {
+        return requestId;
     }
 
     /** */
-    public void setSnapshotName(String snapshotName) {
-        this.snapshotName = snapshotName;
+    public void setRequestId(UUID requestId) {
+        this.requestId = requestId;
     }
 }

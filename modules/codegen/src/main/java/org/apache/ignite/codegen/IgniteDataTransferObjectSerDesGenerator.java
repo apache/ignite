@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,9 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.SystemViewCommandArg;
+import org.apache.ignite.internal.management.CommandsRegistry;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -207,102 +208,29 @@ public class IgniteDataTransferObjectSerDesGenerator {
      * @param args Command line arguments.
      * @throws Exception If generation failed.
      */
-    public static void main(String[] args) throws Exception {
-        IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
+    public static void main(String[] args) {
+        new IgniteDataTransferObjectSerDesGenerator().generate(CommandsRegistry.INSTANCE);
+    }
 
-        gen.generateAndWrite(SystemViewCommandArg.class, DFLT_SRC_DIR);
-/*
-        gen.generateAndWrite(MetricCommandArg.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetricConfigureHistogramCommandArg.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetricConfigureHitrateCommandArg.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(CdcDeleteLostSegmentLinksCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(CdcResendCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ChangeTagCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ConsistencyRepairCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(DeactivateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(DefragmentationScheduleCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SetStateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ShutdownPolicyCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TxCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TxInfoCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(WarmUpCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(WalDeleteCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(WalPrintCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TracingConfigurationGetAllCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TracingConfigurationGetCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TracingConfigurationResetAllCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TracingConfigurationResetCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TracingConfigurationSetCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SnapshotCancelCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SnapshotCheckCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SnapshotCreateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SnapshotRestoreCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PropertyGetCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PropertySetCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceBackupCachesCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceCleanCachesCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetaDetailsCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetaRemoveCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetaUpdateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillClientCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillComputeCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillContinuousCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillScanCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillServiceCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillSnapshotCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillSqlCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillTransactionCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionCacheKeyIdsCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionChangeCacheKeyCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionChangeMasterKeyCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionReencryptionRateLimitCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionReencryptionStatusCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionResumeReencryptionCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionSuspendReencryptionCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(BaselineAddCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(BaselineAutoAdjustCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(BaselineCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(BaselineRemoveCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(BaselineSetCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(BaselineVersionCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionGetMasterKeyNameCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(EncryptionCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(TracingConfigurationCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SnapshotStatusCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(SnapshotCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(DefragmentationCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(CacheHelpCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(WalCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PropertyCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PropertyListCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PropertyHelpCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(StateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(CacheCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetaCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetaListCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(MetaHelpCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(KillCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceBackupCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceBackupCorruptedCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceBackupAllCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceInfoCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceCleanAllCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceCleanCorruptedCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PersistenceCleanCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ConsistencyFinalizeCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ConsistencyCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(CdcCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(DefragmentationCancelCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(DiagnosticCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ConsistencyStatusCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PerformanceStatisticsCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PerformanceStatisticsStartCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PerformanceStatisticsRotateCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PerformanceStatisticsStopCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(PerformanceStatisticsStatusCommand.class, DFLT_SRC_DIR);
-        gen.generateAndWrite(ActivateCommand.class, DFLT_SRC_DIR);
-*/
+    /** */
+    private void generate(Command<?, ?, ?> cmd) {
+        boolean generate = true;
+
+        if (cmd instanceof CommandWithSubs) {
+            generate = ((CommandWithSubs)cmd).canBeExecuted();
+
+            ((CommandWithSubs)cmd).iterator().forEachRemaining(this::generate);
+        }
+
+        if (!generate)
+            return;
+
+        try {
+            generateAndWrite(cmd.args(), DFLT_SRC_DIR);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
@@ -399,10 +327,13 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
     /** */
     private List<List<String>> generateMethods(Class<? extends IgniteDataTransferObject> cls) {
-        Field[] flds = cls.getDeclaredFields();
+        List<Field> flds = Arrays.stream(cls.getDeclaredFields())
+            .filter(fld -> {
+                int mod = fld.getModifiers();
 
-        if (flds.length == 0)
-            return Arrays.asList(Collections.emptyList(), Collections.emptyList());
+                return !isStatic(mod) && !isTransient(mod);
+            })
+            .collect(Collectors.toList());
 
         List<String> write = new ArrayList<>();
         List<String> read = new ArrayList<>();
@@ -418,7 +349,11 @@ public class IgniteDataTransferObjectSerDesGenerator {
         imports.add(ObjectOutput.class.getName() + ';');
         imports.add(ObjectInput.class.getName() + ';');
 
-        if (cls.getSuperclass() != IgniteDataTransferObject.class) {
+        if (flds.isEmpty()) {
+            write.add(TAB + TAB + "//No-op.");
+            read.add(TAB + TAB + "//No-op.");
+        }
+        else if (cls.getSuperclass() != IgniteDataTransferObject.class) {
             write.add(TAB + TAB + "super.writeExternalData(out);");
             write.add("");
 
@@ -427,11 +362,6 @@ public class IgniteDataTransferObjectSerDesGenerator {
         }
 
         for (Field fld : flds) {
-            int mod = fld.getModifiers();
-
-            if (isStatic(mod) || isTransient(mod))
-                continue;
-
             String name = fld.getName();
 
             if (Enum.class.isAssignableFrom(fld.getType())) {
