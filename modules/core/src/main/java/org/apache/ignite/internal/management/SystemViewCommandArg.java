@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
-import lombok.Data;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.OneOf;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-@Data
 @OneOf(value = {"nodeIds", "nodeId", "allNodes"}, optional = true)
 public class SystemViewCommandArg extends IgniteDataTransferObject {
     /** */
@@ -82,5 +80,45 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
         nodeId = U.readUuid(in);
         nodeIds = U.readArray(in, UUID.class);
         allNodes = in.readBoolean();
+    }
+
+    /** */
+    public String getSystemViewName() {
+        return systemViewName;
+    }
+
+    /** */
+    public void setSystemViewName(String systemViewName) {
+        this.systemViewName = systemViewName;
+    }
+
+    /** */
+    public UUID getNodeId() {
+        return nodeId;
+    }
+
+    /** */
+    public void setNodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /** */
+    public UUID[] getNodeIds() {
+        return nodeIds;
+    }
+
+    /** */
+    public void setNodeIds(UUID[] nodeIds) {
+        this.nodeIds = nodeIds;
+    }
+
+    /** */
+    public boolean isAllNodes() {
+        return allNodes;
+    }
+
+    /** */
+    public void setAllNodes(boolean allNodes) {
+        this.allNodes = allNodes;
     }
 }

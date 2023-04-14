@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.query;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.management.kill.KillContinuousCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -31,19 +32,19 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContinuousQueryCancelTaskArg, Void> {
+public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<KillContinuousCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorContinuousQueryCancelJob job(VisorContinuousQueryCancelTaskArg arg) {
+    @Override protected VisorContinuousQueryCancelJob job(KillContinuousCommandArg arg) {
         return new VisorContinuousQueryCancelJob(arg, debug);
     }
 
     /**
      * Job to cancel scan queries on node.
      */
-    private static class VisorContinuousQueryCancelJob extends VisorJob<VisorContinuousQueryCancelTaskArg, Void> {
+    private static class VisorContinuousQueryCancelJob extends VisorJob<KillContinuousCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -53,18 +54,18 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContin
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorContinuousQueryCancelJob(@Nullable VisorContinuousQueryCancelTaskArg arg, boolean debug) {
+        protected VisorContinuousQueryCancelJob(@Nullable KillContinuousCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable VisorContinuousQueryCancelTaskArg arg) throws IgniteException {
+        @Override protected Void run(@Nullable KillContinuousCommandArg arg) throws IgniteException {
             IgniteLogger log = ignite.log().getLogger(VisorContinuousQueryCancelJob.class);
 
             if (log.isInfoEnabled())
                 log.info("Cancelling continuous query[routineId=" + arg.getRoutineId() + ']');
 
-            new QueryMXBeanImpl(ignite.context()).cancelContinuous(arg.getNodeId(), arg.getRoutineId());
+            new QueryMXBeanImpl(ignite.context()).cancelContinuous(arg.getOriginNodeId(), arg.getRoutineId());
 
             return null;
         }
