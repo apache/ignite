@@ -260,6 +260,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         // Restore full snapshot.
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         fut = srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME));
@@ -278,6 +280,8 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         // TODO: remove condition after resolving IGNITE-17819.
         if (!encryption) {
             srv.destroyCache(DEFAULT_CACHE_NAME);
+
+            awaitPartitionMapExchange();
 
             spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 

@@ -437,12 +437,7 @@ public class SnapshotRestoreProcess {
     public @Nullable String restoringSnapshotName() {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 != null)
-            return opCtx0.snpName;
-
-        ClusterSnapshotFuture fut0 = fut;
-
-        return fut0 != null ? fut0.name : null;
+        return opCtx0 == null ? null : opCtx0.snpName;
     }
 
     /**
