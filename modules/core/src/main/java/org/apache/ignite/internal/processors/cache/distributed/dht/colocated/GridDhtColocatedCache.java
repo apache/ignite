@@ -120,26 +120,32 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        assert !ctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + name() + ']';
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
+            GridNearGetResponse.class,
+            (CI2<UUID, GridNearGetResponse>)this::processNearGetResponse);
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
+            GridNearSingleGetResponse.class,
+            (CI2<UUID, GridNearSingleGetResponse>)this::processNearSingleGetResponse);
+
+        ctx.io().addCacheHandler(
+            ctx.cacheId(),
+            ctx.startTopologyVersion(),
+            GridNearLockResponse.class,
+            (CI2<UUID, GridNearLockResponse>)this::processNearLockResponse);
+    }
+
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearGetResponse.class, new CI2<UUID, GridNearGetResponse>() {
-            @Override public void apply(UUID nodeId, GridNearGetResponse res) {
-                processNearGetResponse(nodeId, res);
-            }
-        });
-
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearSingleGetResponse.class, new CI2<UUID, GridNearSingleGetResponse>() {
-            @Override public void apply(UUID nodeId, GridNearSingleGetResponse res) {
-                processNearSingleGetResponse(nodeId, res);
-            }
-        });
-
-        ctx.io().addCacheHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse>() {
-            @Override public void apply(UUID nodeId, GridNearLockResponse res) {
-                processNearLockResponse(nodeId, res);
-            }
-        });
     }
 
     /**

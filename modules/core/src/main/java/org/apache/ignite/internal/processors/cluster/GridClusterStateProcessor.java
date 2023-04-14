@@ -892,7 +892,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         sharedCtx = cacheProc.context();
 
         sharedCtx.io().addCacheHandler(
-            0, GridChangeGlobalStateMessageResponse.class,
+            GridChangeGlobalStateMessageResponse.class,
             this::processChangeGlobalStateResponse
         );
     }
