@@ -407,6 +407,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
+                    if(U.TEST){
+                        log.error("TEST | send prepare near from " + cctx.localNodeId() + " / " +
+                            cctx.localNode().order() + " to " + primary.id() + " / " + primary.order());
+                    }
+
                     cctx.tm().sendTransactionMessage(primary, req, tx, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {

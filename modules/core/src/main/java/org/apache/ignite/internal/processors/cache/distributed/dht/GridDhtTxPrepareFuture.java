@@ -1514,10 +1514,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                if (U.TEST) {
-                    log.error("TEST | prepare from " + cctx.localNode().id() + " / " + cctx.localNode().order() +
-                        " to " + n.id() + " / " + n.order());
-                }
+                if (U.TEST)
+                    log.error("TEST | prepare from " + U.toString(cctx.localNode()) + " to " + U.toString(n));
 
                 cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 

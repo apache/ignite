@@ -577,6 +577,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
                 else {
                     try {
+                        if (U.TEST) {
+                            log.error("TEST | send near prepare from " + cctx.localNodeId() + " / " +
+                                cctx.localNode().order() + " to " + n.id() + " / " + n.order() + ". Mappings size: " +
+                                mappings.size());
+                        }
+
                         cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                         if (msgLog.isDebugEnabled()) {
@@ -996,8 +1002,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         parent.onPrepareResponse(m, res, m.hasNearCacheEntries());
 
                         // Proceed prepare before finishing mini future.
-                        if (mappings != null)
+                        if (mappings != null) {
+                            if(U.TEST){
+                                log.error("TEST | GridNearOptimisticTxPrepareFuture.proceedPrepare() on " +
+                                    parent.cctx.localNodeId() + " / " + parent.cctx.localNode().order());
+                            }
+
                             parent.proceedPrepare(mappings);
+                        }
 
                         // Finish this mini future.
                         onDone((GridNearTxPrepareResponse)null);

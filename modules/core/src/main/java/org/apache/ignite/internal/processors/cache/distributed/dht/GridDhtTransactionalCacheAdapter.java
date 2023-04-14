@@ -1272,6 +1272,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             assert !t.implicit() : t;
                             assert !t.onePhaseCommit() : t;
 
+                            if (U.TEST) {
+                                log.error("TEST | send GridNearLockResponse from " + U.toString(ctx.localNode()) +
+                                    " to " + U.toString(nearNode));
+                            }
+
                             sendLockReply(nearNode, t, req, resp);
 
                             return new GridFinishedFuture<>(resp);
@@ -1397,8 +1402,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Throwable err) {
         assert mappedVer != null;
         assert tx == null || tx.xidVersion().equals(mappedVer);
-
-        log.error("Lock reply on node with order " + ctx.kernalContext().cluster().get().localNode().order());
 
         try {
             // All subsequent lock requests must use actual topology version to avoid mapping on invalid primaries.

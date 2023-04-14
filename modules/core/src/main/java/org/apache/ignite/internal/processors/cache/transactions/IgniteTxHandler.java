@@ -157,6 +157,11 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processNearTxPrepareRequest(UUID nearNodeId, GridNearTxPrepareRequest req) {
+        if (U.TEST) {
+            log.error("TEST | process prepare near request on " + ctx.localNodeId() + " / " +
+                ctx.localNode().order() + " from " + nearNodeId);
+        }
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_PREPARE_REQ, MTC.span()))) {
             if (txPrepareMsgLog.isDebugEnabled()) {
@@ -604,11 +609,6 @@ public class IgniteTxHandler {
                     assert topFut.isDone();
                 }
 
-                if (U.TEST) {
-                    log.error("TEST | prepare near from " + ctx.localNodeId() + " / " +
-                        ctx.localNode().order() + " to " + nearNode.id() + " / " + nearNode.order());
-                }
-
                 tx = new GridDhtTxLocal(
                     ctx,
                     req.topologyVersion(),
@@ -823,6 +823,9 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
+        if (U.TEST)
+            log.error("TEST | process near prepare response on " + U.toString(ctx.localNode()) + " from " + nodeId);
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_PREPARE_RESP, MTC.span()))) {
             if (txPrepareMsgLog.isDebugEnabled())

@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -491,6 +492,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param res Result.
      */
     private boolean onResult0(UUID nodeId, GridNearLockResponse res) {
+        if (U.TEST) {
+            log.error("TEST | process GridNearLockResponse on " + U.toString(cctx.localNode()) + " from " +
+                nodeId);
+        }
+
         MiniFuture mini = miniFuture(res.miniId());
 
         if (mini != null) {
@@ -1244,6 +1250,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             add(fut); // Append new future.
 
+            if (U.TEST) {
+                log.error("TEST | Send GridNearLockRequest from " + U.toString(cctx.localNode()) + " to " +
+                    U.toString(node));
+            }
+
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
 
@@ -1519,7 +1530,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             if (inTx()) {
                 if (cctx.tm().deadlockDetectionEnabled()) {
+                    Collection<IgniteInternalFuture<Boolean>> miniFuts;
+
                     synchronized (GridDhtColocatedLockFuture.this) {
+                        miniFuts = futures();
+
                         requestedKeys = requestedKeys0();
 
                         clear(); // Stop response processing.
@@ -1539,10 +1554,28 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             try {
                                 TxDeadlock deadlock = fut.get();
 
-                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
-                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
-                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
-                                        null);
+                                String errMsg = "Failed to acquire lock within provided timeout for transaction " +
+                                    "[timeout=" + tx.timeout() + ", tx=" + CU.txString(tx);
+
+                                if (deadlock != null) {
+                                    errMsg += +']';
+
+                                    err = new IgniteTxTimeoutCheckedException(errMsg,
+                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
+                                }
+                                else {
+                                    String notResponded = miniFuts.stream()
+                                        .filter(f -> isMini(f) && !((MiniFuture)f).rcvRes)
+                                        .map(f -> ((MiniFuture)f).node.id().toString())
+                                        .collect(Collectors.joining(","));
+
+                                    if (!F.isEmpty(notResponded))
+                                        errMsg += ", not responded nodes: " + notResponded;
+
+                                    errMsg += ']';
+
+                                    err = new IgniteTxTimeoutCheckedException(errMsg, null);
+                                }
                             }
                             catch (IgniteCheckedException e) {
                                 err = e;

@@ -7846,6 +7846,11 @@ public abstract class IgniteUtils {
         return c;
     }
 
+    /** */
+    public static String toString(ClusterNode node) {
+        return node.id().toString() + " / " + node.order();
+    }
+
     /**
      * Adds values to collection and returns the same collection to allow chaining.
      *

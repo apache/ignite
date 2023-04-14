@@ -429,6 +429,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
+        if (U.TEST) {
+            log.error("TEST | process lock response on " + U.toString(ctx.localNode()) +
+                " from " + nodeId);
+        }
+
         GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>versionedFuture(res.version(),
             res.futureId());
 
