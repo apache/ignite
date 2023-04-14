@@ -231,8 +231,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
         List<CommandWithSubs> parents,
         IgniteLogger logger
     ) {
-        boolean skip = (cmd instanceof CommandWithSubs)
-            && !(cmd instanceof org.apache.ignite.internal.management.api.Command);
+        boolean skip = (cmd instanceof CommandWithSubs) && !((CommandWithSubs)cmd).canBeExecuted();
 
         if (!skip) {
             logger.info("");

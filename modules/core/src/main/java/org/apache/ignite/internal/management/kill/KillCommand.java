@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.management.kill;
 
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 
 /**
  *
  */
+@CliPositionalSubcommands
 public class KillCommand extends CommandWithSubs {
     /** */
     public KillCommand() {
@@ -33,5 +35,25 @@ public class KillCommand extends CommandWithSubs {
         register(KillContinuousCommand::new);
         register(KillClientCommand::new);
         register(KillSnapshotCommand::new);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canBeExecuted() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class args() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class task() {
+        throw new UnsupportedOperationException();
     }
 }

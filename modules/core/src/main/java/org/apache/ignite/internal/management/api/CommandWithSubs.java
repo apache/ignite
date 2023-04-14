@@ -26,7 +26,7 @@ import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POS
 /**
  *
  */
-public abstract class CommandWithSubs {
+public abstract class CommandWithSubs implements Command {
     /** */
     private final Map<String, Supplier<? extends Command<?, ?, ?>>> commands = new LinkedHashMap<>();
 
@@ -63,7 +63,7 @@ public abstract class CommandWithSubs {
     }
 
     /** */
-    public boolean positionalSubsName() {
+    public boolean canBeExecuted() {
         return true;
     }
 }

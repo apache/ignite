@@ -27,4 +27,19 @@ public class CommandsRegistry extends CommandWithSubs {
     public CommandsRegistry() {
         register(SystemViewCommand::new);
     }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class args() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class task() {
+        throw new UnsupportedOperationException();
+    }
 }

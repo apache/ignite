@@ -364,7 +364,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         diff(output, new String(readResource(
             getClass().getClassLoader(),
-            "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output"
+            "org.apache.ignite.util/" + getClass().getSimpleName() + "_cache_help.output"
         )));
     }
 
