@@ -74,9 +74,7 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
     }
 
     /** */
-    protected ClientResponse process0(ClientConnectionContext ctx) {
-        return super.process(ctx);
-    }
+    protected abstract ClientResponse process0(ClientConnectionContext ctx);
 
     /**
      * Gets the key.

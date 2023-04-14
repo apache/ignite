@@ -39,6 +39,6 @@ public class ClientCacheClearKeyRequest extends ClientCacheKeyRequest {
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
         cache(ctx).clear(key());
 
-        return super.process0(ctx);
+        return new ClientResponse(requestId());
     }
 }

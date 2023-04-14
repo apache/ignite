@@ -39,7 +39,7 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
     @Override public ClientResponse process0(ClientConnectionContext ctx) {
         cache(ctx).put(key(), val());
 
-        return super.process0(ctx);
+        return new ClientResponse(requestId());
     }
 }
 
