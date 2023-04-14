@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Cache request involving key.
@@ -36,6 +43,39 @@ public abstract class ClientCacheKeyRequest extends ClientCacheDataRequest imple
         super(reader);
 
         key = reader.readObjectDetached();
+    }
+
+    /** {@inheritDoc} */
+    @Override public final ClientResponse process(ClientConnectionContext ctx) {
+        if (!isTransactional()) {
+            // Calculate affinity metrics.
+            DynamicCacheDescriptor desc = cacheDescriptor(ctx);
+            CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
+
+            if (cfg.getCacheMode() == CacheMode.PARTITIONED && cfg.isStatisticsEnabled()) {
+                String cacheName = desc.cacheName();
+
+                try {
+                    GridKernalContext kctx = ctx.kernalContext();
+
+                    if (F.first(kctx.affinity().mapKeyToPrimaryAndBackups(cacheName, key, null)).isLocal())
+                        kctx.clientListener().metrics().onAffinityKeyHit();
+                    else
+                        kctx.clientListener().metrics().onAffinityKeyMiss();
+                }
+                catch (Exception ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        // Process request in overriden method.
+        return process0(ctx);
+    }
+
+    /** */
+    protected ClientResponse process0(ClientConnectionContext ctx) {
+        return super.process(ctx);
     }
 
     /**

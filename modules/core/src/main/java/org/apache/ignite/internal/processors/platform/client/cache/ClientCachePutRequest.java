@@ -36,10 +36,10 @@ public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process0(ClientConnectionContext ctx) {
         cache(ctx).put(key(), val());
 
-        return super.process(ctx);
+        return super.process0(ctx);
     }
 }
 
