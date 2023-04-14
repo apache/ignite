@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -26,10 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCacheRestartingException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
@@ -37,17 +32,18 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.GridCacheGateway;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /**
  * The test starts an implicit transaction during the cache is stopping.
@@ -117,9 +113,9 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture runTxFut = GridTestUtils.runAsync(() -> cache.put(100, 100));
+        IgniteInternalFuture runTxFut = runAsync(() -> cache.put(100, 100));
 
-        IgniteInternalFuture destroyCacheFut = GridTestUtils.runAsync(() ->
+        IgniteInternalFuture destroyCacheFut = runAsync(() ->
             client.destroyCache(DEFAULT_CACHE_NAME));
 
         exchnageStartedBarrier.await();
@@ -134,61 +130,65 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testTxStartAfterGatewayBlockedOnCacheDestroy() throws Exception {
-        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(2);
+        GridCacheSharedContext<Object, Object> cctx = crd.context().cache().context();
 
-        crd.cluster().state(ClusterState.ACTIVE);
-
-        // Cache group with multiple caches are important here, in this case cache removals are not so rapid.
+        // Cache group with multiple caches are important here, partition topology will not be stopped on cache destroy.
         crd.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME + "_1")
             .setGroupName(GROUP)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+        CountDownLatch txStarted = new CountDownLatch(1);
+        CountDownLatch gatewayStopped = new CountDownLatch(1);
 
-        CountDownLatch beforeGateBlock = new CountDownLatch(1);
+        IgniteTxManager tm = Mockito.spy(cctx.tm());
+        setFieldValue(crd.context().cache().context(), "txMgr", tm);
 
-        // Preload data.
-        List<Integer> pkeys = primaryKeys(cache, 100);
+        Mockito.doAnswer(m -> {
+            // Create tx after gateway was stopped (but not blocked).
+            txStarted.countDown();
+            gatewayStopped.await();
 
-        try (final IgniteDataStreamer<Object, Object> streamer = crd.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (Integer key : pkeys)
-                streamer.addData(key, key);
-        }
+            return m.callRealMethod();
+        }).when(tm).onCreated(Mockito.any(), Mockito.any());
 
-        // Start async operations and concurrently destroy the cache.
-        List<IgniteFuture<Boolean>> asyncRmFuts = new ArrayList<>(pkeys.size());
+        GridCacheGateway gate = Mockito.spy(cctx.cache().cache(DEFAULT_CACHE_NAME).context().gate());
+        setFieldValue(crd.context().cache().context().cache().cache(DEFAULT_CACHE_NAME).context(), "gate", gate);
 
-        IgniteInternalFuture<Object> loadFut = runAsync(() -> {
-            beforeGateBlock.await();
+        Mockito.doAnswer(m -> {
+            // Await tx gateway enter and mark gateway to stop.
+            txStarted.await();
 
-            for (Integer key : pkeys)
-                asyncRmFuts.add(cache.removeAsync(key));
+            return m.callRealMethod();
+        }).when(gate).stopped();
+
+        Mockito.doAnswer(m -> {
+            // Gateway is ready to block.
+            gatewayStopped.countDown();
+
+            return m.callRealMethod();
+        }).when(gate).onStopped();
+
+        IgniteInternalFuture<Object> fut = runAsync(() -> {
+            txStarted.await();
+
+            grid(1).destroyCache(DEFAULT_CACHE_NAME);
         });
 
-        crd.context().discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
-            (topVer, snd, msg) -> beforeGateBlock.countDown());
-
-        grid(1).destroyCache(DEFAULT_CACHE_NAME);
-
-        awaitPartitionMapExchange();
-
         try {
-            loadFut.get();
-        }
-        catch (Exception e) {
-            if (!X.hasCause(e, "cache is stopped", IllegalStateException.class)
-                && !X.hasCause(e, IgniteCacheRestartingException.class)) {
-                throw new AssertionError(e);
-            }
-        }
+            Integer remoteKey = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
 
-        try {
-            asyncRmFuts.forEach(f -> f.get(getTestTimeout()));
+            crd.cache(DEFAULT_CACHE_NAME).putAsync(remoteKey, "val").get();
         }
         catch (CacheException e) {
             // No-op.
         }
 
-        assertFalse(GridTestUtils.waitForCondition(failure::get, 2_000));
+        fut.get();
+
+        // Make sure exchange worker processed previous task to get potential failure.
+        crd.getOrCreateCache("new-cache");
+
+        assertFalse(failure.get());
     }
 }
