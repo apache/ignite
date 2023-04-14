@@ -141,10 +141,13 @@ This utility can do the following commands:
       --node-id node_id  - Node id to drop connection from.
 
   Kill running snapshot by snapshot name:
-    control.(sh|bat) --kill snapshot snapshot_name
+    control.(sh|bat) --kill snapshot request_id
 
     Parameters:
-      snapshot_name  - Snapshot name.
+      request_id  - Request id.
+
+  Kill consistency task:
+    control.(sh|bat) --kill consistency
 
   Create cluster snapshot:
     control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync] [--incremental]

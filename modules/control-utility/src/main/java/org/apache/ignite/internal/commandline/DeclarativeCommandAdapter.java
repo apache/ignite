@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
@@ -220,9 +219,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
                 clusterNodes::get,
                 id -> clusterNodes.get(id).connectable()
             );
-
-            if (F.isEmpty(connectable))
-                throw new GridClientDisconnectedException("Connectable nodes not found", null);
 
             if (!F.isEmpty(connectable))
                 compute = compute.projection(connectable);
