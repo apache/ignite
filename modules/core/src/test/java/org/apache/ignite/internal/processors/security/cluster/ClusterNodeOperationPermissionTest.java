@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.security.cluster;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -37,9 +37,12 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -48,24 +51,27 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
-import static org.apache.ignite.internal.processors.security.cluster.ClusterNodeKillPermissionTest.Operation.RESTART;
-import static org.apache.ignite.internal.processors.security.cluster.ClusterNodeKillPermissionTest.Operation.RESTART_ALL;
-import static org.apache.ignite.internal.processors.security.cluster.ClusterNodeKillPermissionTest.Operation.STOP;
-import static org.apache.ignite.internal.processors.security.cluster.ClusterNodeKillPermissionTest.Operation.STOP_ALL;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.internal.processors.security.cluster.ClusterNodeOperationPermissionTest.Operation.RESTART;
+import static org.apache.ignite.internal.processors.security.cluster.ClusterNodeOperationPermissionTest.Operation.RESTART_ALL;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_NODE_STOP;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class ClusterNodeKillPermissionTest extends AbstractSecurityTest {
+public class ClusterNodeOperationPermissionTest extends AbstractSecurityTest {
     /** */
     private IgniteClient cli;
 
     /** */
     private IgniteProcessProxy ignite;
+
+    /** */
+    public static final String RESTART_FILE_PATH = "src/test/resources/ignite-restart.tmp";
 
     /** */
     private IgniteConfiguration configuration(int idx) throws Exception {
@@ -76,64 +82,88 @@ public class ClusterNodeKillPermissionTest extends AbstractSecurityTest {
             new TestSecurityPluginProvider(
                 login,
                 "",
-                systemPermissions(JOIN_AS_SERVER),
+                 systemPermissions(JOIN_AS_SERVER),
                 null,
                 false,
-                new TestSecurityData("kill-allowed", clientPermissionsBuilder().appendSystemPermissions(ADMIN_KILL).build()),
-                new TestSecurityData("kill-forbidden", clientPermissionsBuilder().build())
+                new TestSecurityData("stop-allowed", clientPermissionsBuilder()
+                    .appendSystemPermissions(ADMIN_CLUSTER_NODE_STOP)
+                    .build()),
+                new TestSecurityData("stop-forbidden", clientPermissionsBuilder().build())
             ))
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()
                 .setThinClientConfiguration(new ThinClientConfiguration()
                     .setMaxActiveComputeTasksPerConnection(1)));
     }
 
-    /** */
-    @Test
-    public void testKillNodeAuthorization() throws Exception {
-        for (Operation operation : Operation.values()) {
-            doKillNodeTest("kill-allowed", operation, true);
-            doKillNodeTest("kill-forbidden", operation, false);
-        }
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /** */
-    private void doKillNodeTest(String login, Operation op, boolean isSuccessExpected) throws Exception {
+    @Test
+    public void testStartNodeAuthorization() throws Exception {
+        IgniteEx ignite = startGrid(configuration(0));
+
+        assertAuthorizationFailed(
+            () -> ignite.cluster().startNodes(new File("src/test/config/start-nodes.ini"), true, 1, 1),
+            SecurityException.class
+        );
+
+        assertAuthorizationFailed(() ->
+            ignite.cluster().startNodesAsync(new File("src/test/config/start-nodes.ini"), true, 1, 1).get(),
+            SecurityException.class
+        );
+
+        assertAuthorizationFailed(() ->
+            ignite.cluster().startNodes(Collections.emptyList(), Collections.emptyMap(), true, 1, 1),
+            SecurityException.class
+        );
+
+        assertAuthorizationFailed(() ->
+            ignite.cluster().startNodes(Collections.emptyList(), Collections.emptyMap(), true, 1, 1),
+            SecurityException.class
+        );
+    }
+
+    /** */
+    @Test
+    public void testStopNodeAuthorization() throws Exception {
+        for (Operation op : Operation.values()) {
+            doClusterNodeTest("stop-allowed", op, true);
+            doClusterNodeTest("stop-forbidden", op, false);
+        }
+    }
+
+    /**
+     * We are forced to initiate the test operation through the thin client, because otherwise the node stop/restart
+     * operations will halt the local test JVM.
+     */
+    private void doClusterNodeTest(String login, Operation op, boolean isSuccessExpected) throws Exception {
         prepareCluster(login);
 
         try {
-            UUID clusterNodeId = cli.cluster().node().id();
-
             if (isSuccessExpected) {
                 try {
-                    cli.compute().execute(ServerNodeOperationExecutor.class.getName(), op);
+                    cli.compute().execute(ClusterNodeOperationExecutor.class.getName(), op);
                 }
                 catch (ClientException e) {
                     // It is possible for the Ignite node to shut down before the task execution response is sent.
                     assertTrue(e.getMessage().contains("Task cancelled due to stopping of the grid"));
                 }
 
-                if (op == STOP || op == STOP_ALL)
-                    assertTrue(waitForCondition(() -> !ignite.getProcess().getProcess().isAlive(), getTestTimeout()));
-                else if (op == RESTART || op == RESTART_ALL) {
-                    assertTrue(waitForCondition(() -> {
-                        try (IgniteClient cli = startClient(login)) {
-                            return cli.cluster().node().id() != clusterNodeId;
-                        }
-                        catch (ClientConnectionException e) {
-                            return false;
-                        }
-                    }, getTestTimeout()));
-                }
+                assertTrue(waitForCondition(() -> !ignite.getProcess().getProcess().isAlive(), getTestTimeout()));
+
+                assertTrue((op != RESTART && op != RESTART_ALL) || new File(RESTART_FILE_PATH).exists());
             }
             else {
-                assertThrows(
-                    log,
-                    () -> cli.compute().execute(ServerNodeOperationExecutor.class.getName(), op),
-                    ClientException.class,
-                    "Authorization failed [perm=ADMIN_KILL"
+                assertAuthorizationFailed(
+                    () -> cli.compute().execute(ClusterNodeOperationExecutor.class.getName(), op),
+                    ClientException.class
                 );
 
-                assertEquals(clusterNodeId, cli.cluster().node().id());
                 assertTrue(ignite.getProcess().getProcess().isAlive());
             }
         }
@@ -144,7 +174,13 @@ public class ClusterNodeKillPermissionTest extends AbstractSecurityTest {
 
     /** */
     private void prepareCluster(String opExecutorLogin) throws Exception {
-        ignite = new IgniteProcessProxy(configuration(0), log, null);
+        ignite = new IgniteProcessProxy(
+            configuration(0),
+            log,
+            null,
+            true,
+            singletonList("-D" + IGNITE_SUCCESS_FILE + "=" + RESTART_FILE_PATH)
+        );
 
         AtomicReference<IgniteClient> cli = new AtomicReference<>();
 
@@ -169,6 +205,25 @@ public class ClusterNodeKillPermissionTest extends AbstractSecurityTest {
         ignite.kill();
 
         waitForCondition(() -> !ignite.getProcess().getProcess().isAlive(), getTestTimeout());
+
+        File restartFile = new File(RESTART_FILE_PATH);
+
+        if (restartFile.exists())
+            restartFile.delete();
+    }
+
+    /** */
+    private void assertAuthorizationFailed(RunnableX r, Class<? extends Exception> exCls) {
+        assertThrowsAnyCause(
+            log,
+            () -> {
+                r.run();
+
+                return null;
+            },
+            exCls,
+            "Authorization failed"
+        );
     }
 
     /** */
@@ -183,14 +238,16 @@ public class ClusterNodeKillPermissionTest extends AbstractSecurityTest {
     private SecurityPermissionSetBuilder clientPermissionsBuilder() {
         return new SecurityPermissionSetBuilder()
             .defaultAllowAll(false)
-            .appendTaskPermissions(ServerNodeOperationExecutor.class.getName(), TASK_EXECUTE);
+            .appendTaskPermissions(ClusterNodeOperationExecutor.class.getName(), TASK_EXECUTE);
     }
 
     /** */
-    public static final class ServerNodeOperationExecutor extends ComputeTaskAdapter<Operation, Void> {
+    public static final class ClusterNodeOperationExecutor extends ComputeTaskAdapter<Operation, Void> {
         /** {@inheritDoc} */
-        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Operation arg) throws IgniteException {
+        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List<ClusterNode> subgrid,
+            @Nullable Operation arg
+        ) throws IgniteException {
             return Collections.singletonMap(new Job(arg), subgrid.get(0));
         }
 

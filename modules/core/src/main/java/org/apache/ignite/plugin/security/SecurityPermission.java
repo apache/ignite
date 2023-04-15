@@ -101,6 +101,12 @@ public enum SecurityPermission {
      */
     ADMIN_CLUSTER_STATE,
 
+    /** Start new cluster node permission. */
+    ADMIN_CLUSTER_NODE_START,
+
+    /** Stop/restart cluster node permission. */
+    ADMIN_CLUSTER_NODE_STOP,
+
     /** Permission to execute REFRESH STATISTICS command. */
     REFRESH_STATISTICS,
 
