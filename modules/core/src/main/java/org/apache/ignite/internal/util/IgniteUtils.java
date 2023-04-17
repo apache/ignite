@@ -5067,7 +5067,7 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    private static void appendClassLoaderHash(SB sb) {
+    public static void appendClassLoaderHash(SB sb) {
         if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, DFLT_MBEAN_APPEND_CLASS_LOADER_ID)) {
             String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
@@ -5078,7 +5078,7 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    private static void appendJvmId(SB sb) {
+    public static void appendJvmId(SB sb) {
         if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String jvmId = ManagementFactory.getRuntimeMXBean().getName();
 
@@ -5102,7 +5102,7 @@ public abstract class IgniteUtils {
      * @param s A string to be escape.
      * @return An escaped string.
      */
-    private static String escapeObjectNameValue(String s) {
+    public static String escapeObjectNameValue(String s) {
         if (alphanumericUnderscore(s))
             return s;
 

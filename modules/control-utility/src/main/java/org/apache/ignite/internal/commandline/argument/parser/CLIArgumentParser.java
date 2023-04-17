@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.argument.parser;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,13 +26,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.lang.IgniteUuid;
-
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 
 /**
  * Parser for command line arguments.
@@ -120,68 +116,6 @@ public class CLIArgumentParser {
 
         if (!obligatoryArgs.isEmpty())
             throw new IgniteException("Mandatory argument(s) missing: " + obligatoryArgs);
-    }
-
-    /** */
-    private <T> T parseVal(String val, Class<T> type) {
-        if (type.isArray()) {
-            String[] vals = val.split(",");
-
-            Class<?> compType = type.getComponentType();
-
-            if (compType == String.class)
-                return (T)vals;
-
-            Object[] res = (Object[])Array.newInstance(compType, vals.length);
-
-            for (int i = 0; i < vals.length; i++)
-                res[i] = parseSingleVal(vals[i], compType);
-
-            return (T)res;
-        }
-
-        return parseSingleVal(val, type);
-    }
-
-    /** */
-    private <T> T parseSingleVal(String val, Class<T> type) {
-        if (type == String.class)
-            return (T)val;
-        else if (type == Integer.class || type == int.class)
-            return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
-        else if (type == Long.class || type == long.class)
-            return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
-        else if (type == UUID.class) {
-            try {
-                return (T)UUID.fromString(val);
-            }
-            catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("String representation of \"java.util.UUID\" is exepected. " +
-                        "For example: 123e4567-e89b-42d3-a456-556642440000");
-            }
-        }
-        else if (type == IgniteUuid.class) {
-            return (T)IgniteUuid.fromString(val);
-        }
-
-        throw new IgniteException("Unsupported argument type: " + type.getName());
-    }
-
-    /**
-     * Wrap {@link NumberFormatException} to get more user friendly message.
-     *
-     * @param closure Closure that parses number.
-     * @param val String value.
-     * @param expectedType Expected type.
-     * @return Parsed result, if parse had success.
-     */
-    private Object wrapNumberFormatException(Supplier<Object> closure, String val, Class<? extends Number> expectedType) {
-        try {
-            return closure.get();
-        }
-        catch (NumberFormatException e) {
-            throw new NumberFormatException("Can't parse number '" + val + "', expected type: " + expectedType.getName());
-        }
     }
 
     /**

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.api;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
+import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -39,7 +39,7 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
     public Class<T> task();
 
     /** */
-    public default void printResult(IgniteDataTransferObject arg, Object res, IgniteLogger log) {
+    public default void printResult(IgniteDataTransferObject arg, Object res, Consumer<String> printer) {
         // No-op.
     }
 

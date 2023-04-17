@@ -40,6 +40,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.management.CommandsRegistryImpl;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -392,6 +394,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Failure processor. */
     private FailureProcessor failureProc;
 
+    /** */
+    private CommandsRegistry commands;
+
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
 
@@ -448,6 +453,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/ignite.xml.");
         }
+
+        commands = new CommandsRegistryImpl();
+
+        ((CommandsRegistryImpl)commands).registerAll();
     }
 
     /** {@inheritDoc} */
@@ -1101,5 +1110,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return config().getAsyncContinuationExecutor() == null
                 ? ForkJoinPool.commonPool()
                 : config().getAsyncContinuationExecutor();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CommandsRegistry commands() {
+        return commands;
     }
 }

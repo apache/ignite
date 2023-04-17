@@ -19,13 +19,10 @@ package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,12 +39,13 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistry;
+import org.apache.ignite.internal.management.CommandsRegistryImpl;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.PositionalArgument;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,19 +55,20 @@ import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.commandline.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.commandline.CommandUtils.PARAMETER_PREFIX;
-import static org.apache.ignite.internal.commandline.CommandUtils.PARAM_WORDS_DELIM;
-import static org.apache.ignite.internal.commandline.CommandUtils.commandName;
-import static org.apache.ignite.internal.commandline.CommandUtils.formattedName;
-import static org.apache.ignite.internal.commandline.CommandUtils.fromFormattedName;
-import static org.apache.ignite.internal.commandline.CommandUtils.hasDescribedParameters;
-import static org.apache.ignite.internal.commandline.CommandUtils.parameterExample;
-import static org.apache.ignite.internal.commandline.CommandUtils.parameterName;
-import static org.apache.ignite.internal.commandline.CommandUtils.valueExample;
-import static org.apache.ignite.internal.commandline.CommandUtils.visitCommandParams;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNode;
+import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.arguments;
+import static org.apache.ignite.internal.management.api.CommandUtils.commandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
+import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
+import static org.apache.ignite.internal.management.api.CommandUtils.hasDescribedParameters;
+import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
+import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
  *
@@ -83,7 +82,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
 
     /** */
     public DeclarativeCommandAdapter(String name) {
-        cmd = CommandsRegistry.INSTANCE.command(name);
+        cmd = CommandsRegistryImpl.INSTANCE.command(name);
 
         assert cmd != null;
     }
@@ -91,15 +90,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
         org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 = commandToExecute(argIterator);
-
-        A arg;
-        try {
-            arg = cmd0.args().newInstance();
-            parsed = F.t(cmd0, arg);
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
@@ -114,7 +104,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
         );
 
         visitCommandParams(
-            arg.getClass(),
+            cmd0.args(),
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
@@ -140,60 +130,20 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
 
         parser.parse(argIterator.raw());
 
-        AtomicInteger position = new AtomicInteger();
+        try {
+            parsed = F.t(
+                cmd0,
+                arguments(
+                    cmd0.args(),
+                    (fld, pos) -> parser.get(pos),
+                    fld -> parser.get(parameterName(fld))
+                )
+            );
+        }
+        catch (InstantiationException | IllegalAccessException e) {
+            throw new IgniteException(e);
+        }
 
-        AtomicBoolean oneOfSet = new AtomicBoolean(false);
-
-        Set<String> oneOfFields = arg.getClass().isAnnotationPresent(OneOf.class)
-            ? new HashSet<>(Arrays.asList(arg.getClass().getAnnotation(OneOf.class).value()))
-            : Collections.emptySet();
-
-        BiConsumer<Field, Object> fldSetter = (fld, val) -> {
-            if (val == null) {
-                boolean optional = fld.isAnnotationPresent(Argument.class)
-                    ? fld.getAnnotation(Argument.class).optional()
-                    : fld.getAnnotation(PositionalArgument.class).optional();
-
-                if (optional)
-                    return;
-
-                String name = fld.isAnnotationPresent(Argument.class)
-                    ? parameterName(fld)
-                    : parameterExample(fld, false);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (oneOfFields.contains(fld.getName())) {
-                if (oneOfSet.get())
-                    throw new IllegalArgumentException("Only one of " + oneOfFields + " allowed");
-
-                oneOfSet.set(true);
-            }
-
-            try {
-                // TODO: use setters here.
-                fld.setAccessible(true);
-                fld.set(parsed.get2(), val);
-            }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        };
-
-        visitCommandParams(
-            arg.getClass(),
-            fld -> fldSetter.accept(fld, parser.get(position.getAndIncrement())),
-            fld -> fldSetter.accept(fld, parser.get(parameterName(fld))),
-            (optionals, flds) ->
-                flds.forEach(fld -> fldSetter.accept(fld, parser.get(parameterName(fld))))
-        );
-
-        boolean oneOfRequired = arg.getClass().isAnnotationPresent(OneOf.class)
-            && !arg.getClass().getAnnotation(OneOf.class).optional();
-
-        if (oneOfRequired && !oneOfSet.get())
-            throw new IllegalArgumentException("One of " + oneOfFields + " required");
     }
 
     /** {@inheritDoc} */
@@ -225,7 +175,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
 
             Object res = compute.execute(parsed.get1().task().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
 
-            parsed.get1().printResult(parsed.get2(), res, logger);
+            parsed.get1().printResult(parsed.get2(), res, logger::info);
 
             return res;
         }
@@ -245,7 +195,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
     /** */
     private void usage(
         org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
-        List<CommandWithSubs> parents,
+        List<CommandsRegistry> parents,
         IgniteLogger logger
     ) {
         boolean skip = (cmd instanceof CommandWithSubs) && !((CommandWithSubs)cmd).canBeExecuted();
@@ -283,9 +233,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
                         Argument desc = fld.getAnnotation(Argument.class);
                         PositionalArgument posDesc = fld.getAnnotation(PositionalArgument.class);
 
-                        if (desc != null && desc.excludeFromDescription())
-                            return;
-
                         logParam.accept(
                             parameterExample(fld, false),
                             (desc != null ? desc.description() : posDesc.description())
@@ -306,19 +253,19 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
             }
         }
 
-        if (cmd instanceof CommandWithSubs) {
-            List<CommandWithSubs> parents0 = new ArrayList<>(parents);
+        if (cmd instanceof CommandsRegistry) {
+            List<CommandsRegistry> parents0 = new ArrayList<>(parents);
 
-            parents0.add((CommandWithSubs)cmd);
+            parents0.add((CommandsRegistry)cmd);
 
-            ((CommandWithSubs)cmd).forEach(cmd0 -> usage(cmd0, parents0, logger));
+            ((CommandsRegistry)cmd).forEach(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
     }
 
     /** */
     private void printExample(
         org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
-        List<CommandWithSubs> parents,
+        List<CommandsRegistry> parents,
         IgniteLogger logger
     ) {
         logger.info(INDENT + cmd.description() + ":");

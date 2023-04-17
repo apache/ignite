@@ -15,30 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.api;
 
-import java.util.Arrays;
-import java.util.List;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.kill.KillCommand;
+import java.util.Map;
 
-/**
- *
- */
-public class CommandsRegistry extends CommandWithSubs {
-    /** */
-    public static final CommandsRegistry INSTANCE = new CommandsRegistry();
-
-    static {
-        INSTANCE.registerAll();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<Command<?, ?, ?>> subcommands() {
-        return Arrays.<Command<?, ?, ?>>asList(
-            new SystemViewCommand(),
-            new KillCommand()
-        );
-    }
+/** */
+public interface CommandsRegistry extends Iterable<Map.Entry<String, Command<?, ?, ?>>> {
+    // No-op.
 }

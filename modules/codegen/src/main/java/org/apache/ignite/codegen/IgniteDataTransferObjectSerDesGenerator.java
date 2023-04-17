@@ -37,7 +37,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistry;
+import org.apache.ignite.internal.management.CommandsRegistryImpl;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -204,16 +204,16 @@ public class IgniteDataTransferObjectSerDesGenerator {
         ));
     }
 
-    /**
-     * @param args Command line arguments.
-     * @throws Exception If generation failed.
-     */
+    /** @param args Command line arguments. */
     public static void main(String[] args) {
-        new IgniteDataTransferObjectSerDesGenerator().generate(CommandsRegistry.INSTANCE);
+        IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
+
+        // TODO: add to string generation.
+        CommandsRegistryImpl.INSTANCE.forEach(gen::generate);
     }
 
     /** */
-    private void generate(Command<?, ?, ?> cmd) {
+    private void generate(Map.Entry<String, Command<?, ?, ?>> cmd) {
         boolean generate = true;
 
         if (cmd instanceof CommandWithSubs) {
@@ -226,7 +226,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
             return;
 
         try {
-            generateAndWrite(cmd.args(), DFLT_SRC_DIR);
+            generateAndWrite(cmd.getValue().args(), DFLT_SRC_DIR);
         }
         catch (IOException e) {
             throw new RuntimeException(e);

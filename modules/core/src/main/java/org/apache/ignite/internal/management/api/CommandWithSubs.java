@@ -22,13 +22,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistry;
+import org.apache.ignite.internal.management.CommandsRegistryImpl;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
  *
  */
-public abstract class CommandWithSubs implements Command, Iterable<Command<?, ?, ?>> {
+public abstract class CommandWithSubs implements Command, CommandsRegistry {
     /** */
     private final Map<String, Command<?, ?, ?>> commands = new LinkedHashMap<>();
 
@@ -44,7 +44,7 @@ public abstract class CommandWithSubs implements Command, Iterable<Command<?, ?,
 
     /** */
     void register(Command<?, ?, ?> cmd) {
-        Class<? extends CommandWithSubs> parent = getClass() == CommandsRegistry.class ? null : getClass();
+        Class<? extends CommandsRegistry> parent = getClass() == CommandsRegistryImpl.class ? null : getClass();
 
         String name = cmd.getClass().getSimpleName();
 
@@ -80,8 +80,8 @@ public abstract class CommandWithSubs implements Command, Iterable<Command<?, ?,
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Command<?, ?, ?>> iterator() {
-        return commands.values().iterator();
+    @Override public Iterator<Map.Entry<String, Command<?, ?, ?>>> iterator() {
+        return commands.entrySet().iterator();
     }
 
     /** */

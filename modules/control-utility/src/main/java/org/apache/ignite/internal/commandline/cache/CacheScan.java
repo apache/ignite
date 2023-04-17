@@ -77,7 +77,7 @@ public class CacheScan extends AbstractCommand<CacheScan.Arguments> {
             List<VisorSystemViewTask.SimpleType> types = res.titles().stream()
                 .map(x -> VisorSystemViewTask.SimpleType.STRING).collect(Collectors.toList());
 
-            SystemViewCommand.printTable(res.titles(), types, res.entries(), log);
+            SystemViewCommand.printTable(res.titles(), types, res.entries(), log::info);
 
             if (res.entries().size() == args.limit)
                 log.info("Result limited to " + args.limit + " rows. Limit can be changed with '--limit' argument.");

@@ -48,7 +48,4 @@ public @interface Argument {
 
     /** */
     public boolean brackets() default false;
-
-    /** */
-    public boolean excludeFromDescription() default false;
 }

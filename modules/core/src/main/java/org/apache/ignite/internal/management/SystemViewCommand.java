@@ -25,8 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,22 +73,22 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(IgniteDataTransferObject arg, Object res0, IgniteLogger log) {
+    @Override public void printResult(IgniteDataTransferObject arg, Object res0, Consumer<String> printer) {
         org.apache.ignite.internal.management.SystemViewCommandArg taskArg = (SystemViewCommandArg)arg;
         VisorSystemViewTaskResult res = (VisorSystemViewTaskResult)res0;
 
         if (res != null) {
             res.rows().forEach((nodeId, rows) -> {
-                log.info("Results from node with ID: " + nodeId);
-                log.info("---");
+                printer.accept("Results from node with ID: " + nodeId);
+                printer.accept("---");
 
-                printTable(res.attributes(), res.types(), rows, log);
+                printTable(res.attributes(), res.types(), rows, printer);
 
-                log.info("---" + U.nl());
+                printer.accept("---" + U.nl());
             });
         }
         else
-            log.info("No system view with specified name was found [name=" + taskArg.getSystemViewName() + "]");
+            printer.accept("No system view with specified name was found [name=" + taskArg.getSystemViewName() + "]");
     }
 
     /**
@@ -97,9 +97,14 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
      * @param titles Titles of the table columns.
      * @param types  Types of the table columns.
      * @param data Table data rows.
-     * @param log Logger.
+     * @param printer Result printer.
      */
-    public static void printTable(List<String> titles, List<VisorSystemViewTask.SimpleType> types, List<List<?>> data, IgniteLogger log) {
+    public static void printTable(
+        List<String> titles,
+        List<VisorSystemViewTask.SimpleType> types,
+        List<List<?>> data,
+        Consumer<String> printer
+    ) {
         List<Integer> colSzs;
 
         if (titles != null)
@@ -122,9 +127,9 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
         });
 
         if (titles != null)
-            printRow(titles, nCopies(titles.size(), STRING), colSzs, log);
+            printRow(titles, nCopies(titles.size(), STRING), colSzs, printer);
 
-        rows.forEach(row -> printRow(row, types, colSzs, log));
+        rows.forEach(row -> printRow(row, types, colSzs, printer));
     }
 
     /**
@@ -133,18 +138,18 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
      * @param row Row which content should be printed.
      * @param types Column types in sequential order for decent row formatting.
      * @param colSzs Column sizes in sequential order for decent row formatting.
-     * @param log Logger.
+     * @param printer Result printer.
      */
     private static void printRow(
         Collection<String> row,
         Collection<VisorSystemViewTask.SimpleType> types,
         Collection<Integer> colSzs,
-        IgniteLogger log
+        Consumer<String> printer
     ) {
         Iterator<VisorSystemViewTask.SimpleType> typeIter = types.iterator();
         Iterator<Integer> colSzsIter = colSzs.iterator();
 
-        log.info(row.stream().map(colVal -> {
+        printer.accept(row.stream().map(colVal -> {
             VisorSystemViewTask.SimpleType colType = typeIter.next();
 
             int colSz = colSzsIter.next();

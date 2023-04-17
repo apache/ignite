@@ -99,7 +99,7 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
             .map(e -> desc.buildRow(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
 
-        SystemViewCommand.printTable(desc.titles(), desc.types(), rows, log);
+        SystemViewCommand.printTable(desc.titles(), desc.types(), rows, log::info);
 
         log.info(U.nl());
     }

@@ -94,6 +94,7 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -3091,6 +3092,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CommandsRegistry commands() {
+        return ctx.commands();
     }
 
     /**

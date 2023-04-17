@@ -78,7 +78,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
                     .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
                     .collect(Collectors.toList());
 
-                SystemViewCommand.printTable(asList("metric", "value"), asList(STRING, STRING), data, log);
+                SystemViewCommand.printTable(asList("metric", "value"), asList(STRING, STRING), data, log::info);
             }
             else if (arg().bounds() == null && arg().rateTimeInterval() < 0)
                 log.info("No metric with specified name was found [name=" + taskArg.name() + "]");

@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -643,4 +644,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Executor that is in charge of processing user async continuations.
      */
     public Executor getAsyncContinuationExecutor();
+
+    /** */
+    public CommandsRegistry commands();
 }

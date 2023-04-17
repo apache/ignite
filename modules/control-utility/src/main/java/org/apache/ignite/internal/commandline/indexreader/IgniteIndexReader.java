@@ -972,7 +972,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 Arrays.asList("Total pages encountered during sequential scan:", ctx.stats.values().stream().mapToLong(a -> a.cnt).sum()),
                 Arrays.asList("Total errors occurred during sequential scan: ", ctx.errCnt)
             ),
-            log
+            log::info
         );
 
         if (idxFilter != null)
@@ -1022,7 +1022,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     Arrays.asList(prefix, "Used bytes", "Entries count"),
                     Arrays.asList(STRING, NUMBER, NUMBER),
                     data,
-                    log
+                    log::info
                 );
             }
 
@@ -1074,7 +1074,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 Arrays.asList(prefix + "Total pages found in trees: ", stats.values().stream().mapToLong(a -> a.cnt).sum()),
                 Arrays.asList(prefix + "Total errors during trees traversal: ", totalErr)
             ),
-            log
+            log::info
         );
 
         log.info("");
@@ -1124,7 +1124,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 Arrays.asList(PAGE_LISTS_PREFIX + "Total index pages found in lists:", pageListsInfo.pagesCnt),
                 Arrays.asList(PAGE_LISTS_PREFIX + "Total errors during lists scan:", pageListsInfo.errCnt)
             ),
-            log
+            log::info
         );
 
         log.info("------------------");
@@ -1166,7 +1166,7 @@ public class IgniteIndexReader implements AutoCloseable {
             Arrays.asList(prefix + "Type", "Pages", "Free space (Kb)", "Free space (%)"),
             Arrays.asList(STRING, NUMBER, NUMBER, NUMBER),
             data,
-            log
+            log::info
         );
     }
 

@@ -80,7 +80,7 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
             for (Map.Entry<String, Boolean> e : res.result().entrySet())
                 values.add(asList(e.getKey(), e.getValue() ? "enabled" : "disabled"));
 
-            SystemViewCommand.printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING), values, log);
+            SystemViewCommand.printTable(asList("Cache Name", "Metrics Status"), asList(STRING, STRING), values, log::info);
 
             return null;
         }

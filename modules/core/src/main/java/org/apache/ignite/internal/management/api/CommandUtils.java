@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline;
+package org.apache.ignite.internal.management.api;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,16 +26,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.OneOf;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.lang.IgniteUuid;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
@@ -57,6 +60,71 @@ public class CommandUtils {
         assert name.endsWith(CMD_NAME_POSTFIX);
 
         return formattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
+    }
+
+    /** */
+    public static <C extends IgniteDataTransferObject> C arguments(
+        Class<C> argCls,
+        BiFunction<Field, Integer, Object> positionalParameterProvider,
+        Function<Field, Object> paramProvider
+    ) throws InstantiationException, IllegalAccessException {
+        C arg = argCls.newInstance();
+
+        AtomicInteger position = new AtomicInteger();
+
+        AtomicBoolean oneOfSet = new AtomicBoolean(false);
+
+        Set<String> oneOfFields = arg.getClass().isAnnotationPresent(OneOf.class)
+            ? new HashSet<>(Arrays.asList(arg.getClass().getAnnotation(OneOf.class).value()))
+            : Collections.emptySet();
+
+        BiConsumer<Field, Object> fldSetter = (fld, val) -> {
+            if (val == null) {
+                boolean optional = fld.isAnnotationPresent(Argument.class)
+                    ? fld.getAnnotation(Argument.class).optional()
+                    : fld.getAnnotation(PositionalArgument.class).optional();
+
+                if (optional)
+                    return;
+
+                String name = fld.isAnnotationPresent(Argument.class)
+                    ? parameterName(fld)
+                    : parameterExample(fld, false);
+
+                throw new IllegalArgumentException("Argument " + name + " required.");
+            }
+
+            if (oneOfFields.contains(fld.getName())) {
+                if (oneOfSet.get())
+                    throw new IllegalArgumentException("Only one of " + oneOfFields + " allowed");
+
+                oneOfSet.set(true);
+            }
+
+            try {
+                // TODO: use setters here.
+                fld.setAccessible(true);
+                fld.set(arg, val);
+            }
+            catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        visitCommandParams(
+            arg.getClass(),
+            fld -> fldSetter.accept(fld, positionalParameterProvider.apply(fld, position.getAndIncrement())),
+            fld -> fldSetter.accept(fld, paramProvider.apply(fld)),
+            (optionals, flds) -> flds.forEach(fld -> fldSetter.accept(fld, paramProvider.apply(fld)))
+        );
+
+        boolean oneOfRequired = arg.getClass().isAnnotationPresent(OneOf.class)
+            && !arg.getClass().getAnnotation(OneOf.class).optional();
+
+        if (oneOfRequired && !oneOfSet.get())
+            throw new IllegalArgumentException("One of " + oneOfFields + " required");
+
+        return arg;
     }
 
     /** */
@@ -271,10 +339,8 @@ public class CommandUtils {
             ),
             fld -> res.compareAndSet(
                 false,
-                (!fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class))
-                    && !fld.getAnnotation(Argument.class).excludeFromDescription()
-
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
             ),
             (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(
                 false,
@@ -298,5 +364,67 @@ public class CommandUtils {
     /** */
     public static boolean isArgumentName(String arg) {
         return arg.startsWith(PARAMETER_PREFIX);
+    }
+
+    /** */
+    public static <T> T parseVal(String val, Class<T> type) {
+        if (type.isArray()) {
+            String[] vals = val.split(",");
+
+            Class<?> compType = type.getComponentType();
+
+            if (compType == String.class)
+                return (T)vals;
+
+            Object[] res = (Object[])Array.newInstance(compType, vals.length);
+
+            for (int i = 0; i < vals.length; i++)
+                res[i] = parseSingleVal(vals[i], compType);
+
+            return (T)res;
+        }
+
+        return parseSingleVal(val, type);
+    }
+
+    /** */
+    public static <T> T parseSingleVal(String val, Class<T> type) {
+        if (type == String.class)
+            return (T)val;
+        else if (type == Integer.class || type == int.class)
+            return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
+        else if (type == Long.class || type == long.class)
+            return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
+        else if (type == UUID.class) {
+            try {
+                return (T)UUID.fromString(val);
+            }
+            catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("String representation of \"java.util.UUID\" is exepected. " +
+                    "For example: 123e4567-e89b-42d3-a456-556642440000");
+            }
+        }
+        else if (type == IgniteUuid.class) {
+            return (T)IgniteUuid.fromString(val);
+        }
+
+        throw new IgniteException("Unsupported argument type: " + type.getName());
+    }
+
+    /**
+     * Wrap {@link NumberFormatException} to get more user friendly message.
+     *
+     * @param closure Closure that parses number.
+     * @param val String value.
+     * @param expectedType Expected type.
+     * @return Parsed result, if parse had success.
+     */
+    private static Object wrapNumberFormatException(Supplier<Object> closure, String val, Class<? extends Number> expectedType) {
+        try {
+            return closure.get();
+        }
+        catch (NumberFormatException e) {
+            throw new NumberFormatException("Can't parse number '" + val + "', expected type: " + expectedType.getName());
+        }
     }
 }
