@@ -32,11 +32,13 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -131,18 +133,20 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
     @Test
     public void testTxStartAfterGatewayBlockedOnCacheDestroy() throws Exception {
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(2);
-        GridCacheSharedContext<Object, Object> cctx = crd.context().cache().context();
 
         // Cache group with multiple caches are important here, partition topology will not be stopped on cache destroy.
         crd.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME + "_1")
             .setGroupName(GROUP)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
+        GridCacheSharedContext<Object, Object> sharedCtx = crd.context().cache().context();
+        GridCacheContext<Object, Object> cacheCtx = sharedCtx.cacheContext(CU.cacheId(DEFAULT_CACHE_NAME));
+
         CountDownLatch txStarted = new CountDownLatch(1);
         CountDownLatch gatewayStopped = new CountDownLatch(1);
 
-        IgniteTxManager tm = Mockito.spy(cctx.tm());
-        setFieldValue(crd.context().cache().context(), "txMgr", tm);
+        IgniteTxManager tm = Mockito.spy(sharedCtx.tm());
+        sharedCtx.setTxManager(tm);
 
         Mockito.doAnswer(m -> {
             // Create tx after gateway was stopped (but not blocked).
@@ -152,15 +156,8 @@ public class StartImplicitlyTxOnStopCacheTest extends GridCommonAbstractTest {
             return m.callRealMethod();
         }).when(tm).onCreated(Mockito.any(), Mockito.any());
 
-        GridCacheGateway gate = Mockito.spy(cctx.cache().cache(DEFAULT_CACHE_NAME).context().gate());
-        setFieldValue(crd.context().cache().context().cache().cache(DEFAULT_CACHE_NAME).context(), "gate", gate);
-
-        Mockito.doAnswer(m -> {
-            // Await tx gateway enter and mark gateway to stop.
-            txStarted.await();
-
-            return m.callRealMethod();
-        }).when(gate).stopped();
+        GridCacheGateway gate = Mockito.spy(cacheCtx.gate());
+        setFieldValue(cacheCtx, "gate", gate);
 
         Mockito.doAnswer(m -> {
             // Gateway is ready to block.
