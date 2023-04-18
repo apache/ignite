@@ -213,13 +213,6 @@ licenses.
 
 
 ==============================================================================
-For SnapTree:
-==============================================================================
-This product bundles SnapTree, which is available under a
-"3-clause BSD" license.  For details, see
-https://github.com/nbronson/snaptree/blob/master/LICENSE.
-
-==============================================================================
 For JSR 166 classes in "org.jsr166" package
 ==============================================================================
 This product bundles JSR-166 classes which are donated to public domain.
@@ -227,7 +220,7 @@ For details, see CC0 1.0 Universal (1.0), Public Domain Dedication,
 http://creativecommons.org/publicdomain/zero/1.0/
 
 ==============================================================================
-For books used for tests in "org.apache.ignite.internal.processors.hadoop.books"
+For books used in "examples" module
 ==============================================================================
 This code bundles book text files used for testing purposes which contain
 the following header:
