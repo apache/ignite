@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientTransaction;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -45,7 +44,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.A
 /**
  * Test thin client affinity hits/misses metrics.
  */
-public class AffinityMetricsTest extends AbstractThinClientTest {
+public class AffinityMetricsTest extends ThinClientAbstractPartitionAwarenessTest {
     /** Grids count. */
     private static final int GRIDS_CNT = 3;
 
@@ -58,9 +57,6 @@ public class AffinityMetricsTest extends AbstractThinClientTest {
     /** */
     private static final String[] ALL_AFF_METRICS =
         new String[] {AFF_KEY_HITS, AFF_KEY_MISSES, AFF_QRY_HITS, AFF_QRY_MISSES};
-
-    /** */
-    private IgniteClient client;
 
     /** */
     private final Map<String, Long> lastMetricValues = new HashMap<>();
@@ -76,7 +72,7 @@ public class AffinityMetricsTest extends AbstractThinClientTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        client = startClient(0, 1);
+        initClient(getClientConfiguration(0, 1).setClusterDiscoveryEnabled(false), 0, 1);
 
         super.beforeTest();
     }
@@ -89,11 +85,6 @@ public class AffinityMetricsTest extends AbstractThinClientTest {
             new CacheConfiguration<>(REPL_CACHE).setCacheMode(REPLICATED).setAtomicityMode(TRANSACTIONAL)
                 .setStatisticsEnabled(true)
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isClientEndpointsDiscoveryEnabled() {
-        return false;
     }
 
     /** */
