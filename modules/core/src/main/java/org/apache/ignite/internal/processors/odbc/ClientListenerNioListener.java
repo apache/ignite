@@ -101,9 +101,14 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
      * @param cliConnCfg Client connector configuration.
+     * @param metrics Client listener metrics.
      */
-    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        ClientConnectorConfiguration cliConnCfg) {
+    public ClientListenerNioListener(
+        GridKernalContext ctx,
+        GridSpinBusyLock busyLock,
+        ClientConnectorConfiguration cliConnCfg,
+        ClientListenerMetrics metrics
+    ) {
         assert cliConnCfg != null;
 
         this.ctx = ctx;
@@ -116,7 +121,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         thinCfg = cliConnCfg.getThinClientConfiguration() == null ? new ThinClientConfiguration()
             : new ThinClientConfiguration(cliConnCfg.getThinClientConfiguration());
 
-        metrics = new ClientListenerMetrics(ctx);
+        this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
