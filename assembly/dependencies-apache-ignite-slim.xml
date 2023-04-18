@@ -123,7 +123,6 @@
                 <exclude>${project.groupId}:ignite-extdata-pluggable</exclude>
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-indexing</exclude>
-                <exclude>${project.groupId}:ignite-hadoop</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
