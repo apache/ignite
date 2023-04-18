@@ -36,7 +36,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Scan query request.
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
+public class ClientCacheScanQueryRequest extends ClientCacheQueryRequest implements ClientTxAwareRequest {
     /** Local flag. */
     private final boolean loc;
 
@@ -81,6 +81,9 @@ public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implemen
             .setPageSize(pageSize)
             .setPartition(part)
             .setFilter(createFilter(ctx.kernalContext(), filterObj, filterPlatform));
+
+        if (part != null)
+            updateAffinityMetrics(ctx, part);
 
         ctx.incrementCursors();
 

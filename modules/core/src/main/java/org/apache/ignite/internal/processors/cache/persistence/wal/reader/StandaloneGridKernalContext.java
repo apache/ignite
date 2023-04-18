@@ -457,7 +457,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProcessor sqlListener() {
+    @Override public ClientListenerProcessor clientListener() {
         return null;
     }
 

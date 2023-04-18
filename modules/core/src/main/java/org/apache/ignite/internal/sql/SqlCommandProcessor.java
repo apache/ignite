@@ -189,9 +189,9 @@ public class SqlCommandProcessor {
      */
     private void processKillClientCommand(SqlKillClientCommand cmd) {
         if (cmd.connectionId() == null)
-            ctx.sqlListener().mxBean().dropAllConnections();
+            ctx.clientListener().mxBean().dropAllConnections();
         else
-            ctx.sqlListener().mxBean().dropConnection(cmd.connectionId());
+            ctx.clientListener().mxBean().dropConnection(cmd.connectionId());
     }
 
     /**

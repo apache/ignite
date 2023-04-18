@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 /**
  * Cache request involving key and value.
  */
-public class ClientCacheKeyValueRequest extends ClientCacheKeyRequest {
+public abstract class ClientCacheKeyValueRequest extends ClientCacheKeyRequest {
     /** Value. */
     private final Object val;
 
