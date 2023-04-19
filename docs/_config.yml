@@ -25,7 +25,7 @@ attrs: &asciidoc_attributes
   csharpCodeDir: code-snippets/dotnet
   githubUrl: https://github.com/apache/ignite/tree/master
   githubVersionUrl: https://github.com/apache/ignite/tree/ignite-{version}
-  docSourceUrl: https://github.com/apache/ignite/tree/IGNITE-7595/docs
+  docSourceUrl: https://github.com/apache/ignite/tree/master/docs
 collections:
   docs:
     permalink: /docs/:path:output_ext

@@ -35,92 +35,112 @@
     <artifactId>ignite-dotnet</artifactId>
     <packaging>pom</packaging>
 
-    <dependencies>
-        <!--
-            The modules below are required to build the .NET sources.
-            These dependencies are required for the maven reactor to build them first.
-        -->
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-indexing</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-spring</artifactId>
-        </dependency>
-    </dependencies>
+    <profiles>
+        <profile>
+            <id>update-versions</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>update-versions</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <target>
+                                        <echo message="Update ignite.version in .NET" />
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>update-versions</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <target>
-                                <echo message="Update ignite.version in .NET" />
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
+                                            <substitution expression="\1${ignite.platform.full.version}\3" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/SharedAssemblyInfo.cs" />
+                                            </fileset>
+                                        </replaceregexp>
 
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
-                                    <substitution expression="\1${ignite.platform.full.version}\3" />
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/SharedAssemblyInfo.cs" />
-                                    </fileset>
-                                </replaceregexp>
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
+                                            <substitution
+                                                expression="\1${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}\2" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/SharedAssemblyInfo.cs" />
+                                            </fileset>
+                                        </replaceregexp>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
-                                    <substitution
-                                        expression="\1${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}\2" />
-                                    <fileset dir="${basedir}/">
-                                        <include name="**/SharedAssemblyInfo.cs" />
-                                    </fileset>
-                                </replaceregexp>
-                            </target>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-dotnet</id>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <tasks>
-                                <exec executable="pwsh" dir="${project.basedir}" failonerror="true">
-                                    <arg line="${project.basedir}/build.ps1"/>
-                                    <arg line="-skipJava -skipExamples"/>
-                                </exec>
-                            </tasks>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>clean-native</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <echo>Basedir: ${project.basedir}</echo>
-                                <delete dir="${project.basedir}/bin/"/>
-                                <delete dir="${project.basedir}/nupkg/"/>
-                                <delete dir="${project.basedir}/obj/"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+        <profile>
+            <id>build-dotnet</id>
+            <dependencies>
+                <!--
+                    The modules below are required to build the .NET sources.
+                    These dependencies are required for the maven reactor to build them first.
+                -->
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ignite-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ignite-indexing</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ignite-spring</artifactId>
+                </dependency>
+
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>build-dotnet</id>
+                                <phase>generate-sources</phase>
+                                <configuration>
+                                    <tasks>
+                                        <exec executable="pwsh" dir="${project.basedir}" failonerror="true">
+                                            <arg line="${project.basedir}/build.ps1"/>
+                                            <arg line="-skipJava -skipExamples"/>
+                                        </exec>
+                                    </tasks>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>clean-native</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <echo>Basedir: ${project.basedir}</echo>
+                                        <delete dir="${project.basedir}/bin/"/>
+                                        <delete dir="${project.basedir}/nupkg/"/>
+                                        <delete dir="${project.basedir}/obj/"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

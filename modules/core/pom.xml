@@ -295,33 +295,6 @@
                     <skip>false</skip>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>update-versions</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <target>
-                                <echo message="Update ignite.version in resource files" />
-
-                                <replaceregexp byline="true" encoding="UTF-8">
-                                    <regexp pattern="(ignite.version=).+$" />
-                                    <substitution expression="\1${project.version}" />
-                                    <fileset dir="${project.basedir}/src/main/resources">
-                                        <include name="ignite.properties" />
-                                    </fileset>
-                                </replaceregexp>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -485,6 +458,41 @@
                                 <exclude>**/ClientServerTest.java</exclude>
                             </excludes>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>update-versions</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>update-versions</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <target>
+                                        <echo message="Update ignite.version in resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${project.version}" />
+                                            <fileset dir="${project.basedir}/src/main/resources">
+                                                <include name="ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
