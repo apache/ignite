@@ -112,41 +112,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>update-versions</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>update-versions</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>validate</phase>
-                                <configuration>
-                                    <target>
-                                        <echo message="Update ignite.version in build.gradle" />
-
-                                        <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(ignVer = ).*$"/>
-                                            <substitution expression="\1'${project.version}'" />
-                                            <fileset dir="${project.basedir}/ignite-modules-test/">
-                                                <include name="build.gradle" />
-                                            </fileset>
-                                        </replaceregexp>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

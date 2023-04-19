@@ -123,18 +123,6 @@
         </profile>
 
         <profile>
-            <id>update-versions</id>
-            <modules>
-                <module>docs</module>
-                <module>modules/core</module>
-                <module>modules/ducktests</module>
-                <module>modules/dev-utils</module>
-                <module>modules/platforms/dotnet</module>
-                <module>modules/platforms/cpp</module>
-            </modules>
-        </profile>
-
-        <profile>
             <id>javadoc</id>
             <build>
                 <plugins>
@@ -485,6 +473,107 @@
             </modules>
         </profile>
 
+        <profile>
+            <id>update-versions</id>
+            <!-- updates versions -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>update-versions</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <target>
+                                        <echo message="Update ignite.version in docs" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(&lt;ignite\.version&gt;).+(&lt;/ignite\.version&gt;)" />
+                                            <substitution expression="\1${project.version}\2" />
+                                            <fileset dir="${project.basedir}/docs/">
+                                                <include name="_docs/code-snippets/java/pom.xml" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(version: ).+" />
+                                            <substitution expression="\1${project.version}" />
+                                            <fileset dir="${project.basedir}/docs/">
+                                                <include name="_config.yml" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in ducktests" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(__version__ = ).*$"/>
+                                            <substitution expression="\1'${project.version}'" />
+                                            <fileset dir="${project.basedir}/modules/ducktests/">
+                                                <include name="tests/ignitetest/__init__.py" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in C++" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(project\(.*\s)\d+\.\d+\.\d+.*?(\))" />
+                                            <substitution expression="\1${ignite.platform.full.version}\2" />
+                                            <fileset dir="${project.basedir}/modules/platforms/cpp/">
+                                                <include name="**/CMakeLists.txt" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in .NET" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
+                                            <substitution expression="\1${ignite.platform.full.version}\3" />
+                                            <fileset dir="${project.basedir}/modules/platforms/dotnet/">
+                                                <include name="**/SharedAssemblyInfo.cs" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
+                                            <substitution
+                                                expression="\1${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}\2" />
+                                            <fileset dir="${project.basedir}/modules/platforms/dotnet/">
+                                                <include name="**/SharedAssemblyInfo.cs" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in resource files" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignite.version=).+$" />
+                                            <substitution expression="\1${project.version}" />
+                                            <fileset dir="${project.basedir}/modules/core/">
+                                                <include name="src/main/resources/ignite.properties" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in build.gradle" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(ignVer = ).*$"/>
+                                            <substitution expression="\1'${project.version}'" />
+                                            <fileset dir="${project.basedir}/modules/dev-utils/">
+                                                <include name="ignite-modules-test/build.gradle" />
+                                            </fileset>
+                                        </replaceregexp>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <!--
             This profile is used to provide a check that all tests are defined in at least one suite.
