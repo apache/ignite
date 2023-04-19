@@ -1335,7 +1335,7 @@ public class SnapshotRestoreProcess {
         opCtx0.err.compareAndSet(null, failure);
 
         if (U.isLocalNodeCoordinator(ctx.discovery()))
-            rollbackRestoreProc.start(reqId, reqId);
+            cacheStopProc.start(reqId, reqId);
     }
 
     /**
