@@ -26,6 +26,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.tests.index_rebuild_test import get_file_sizes
 from ignitetest.tests.util import preload_data, DataGenerationParams
 from ignitetest.utils import ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -39,7 +40,7 @@ class IncrementalSnapshotTest(IgniteTest):
     """
     SNAPSHOT_NAME = "test_base_snapshot"
 
-    @cluster(num_nodes=12)
+    @cluster(num_nodes=8)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(backups=[2], inc_create_period_sec=[15], inc_count=[4], loaders_count=[4],
               entry_size=[1024], preload_count=[10_000])
@@ -71,7 +72,7 @@ class IncrementalSnapshotTest(IgniteTest):
 
         nodes = IgniteService(self.test_context,
                               ignite_config,
-                              num_nodes=self.available_cluster_size - 2 * loaders_count)
+                              num_nodes=self.available_cluster_size - loaders_count)
         nodes.start()
 
         control_utility = ControlUtility(nodes)
@@ -90,7 +91,12 @@ class IncrementalSnapshotTest(IgniteTest):
                 transactional=True
             ))
 
+        control_utility.snapshot_create(self.SNAPSHOT_NAME)
+
+        snapshot_size = get_file_sizes(nodes.nodes, nodes.snapshots_dir, True)
+
         print("Preload time = " + str(preload_time))
+        print("Snapshot size MB = " + str(snapshot_size))
 
         loaders = []
 
@@ -105,8 +111,6 @@ class IncrementalSnapshotTest(IgniteTest):
 
             app.start_async()
             loaders.append(app)
-
-        control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
         for i in range(1, inc_count + 1):
             control_utility.snapshot_create(self.SNAPSHOT_NAME, incremental=True)
@@ -128,7 +132,8 @@ class IncrementalSnapshotTest(IgniteTest):
             result.append({
                 "increment": i,
                 "checkTimeSec": check_time,
-                "restoreStat": restore_stat
+                "restoreStat": restore_stat,
+                "size:": get_file_sizes(nodes.nodes, nodes.incremental_snapshot_dir(self.SNAPSHOT_NAME, i), True)
             })
 
             control_utility.validate_indexes()

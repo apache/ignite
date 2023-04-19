@@ -217,6 +217,12 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
         """
         return os.path.join(self.work_dir, "snapshots")
 
+    def incremental_snapshot_dir(self, snp: str, increment: int):
+        """
+        :return: path to snapshots directory
+        """
+        return os.path.join(self.work_dir, "snapshots", snp, "increments", "%016d" % increment)
+
     @property
     def certificate_dir(self):
         """

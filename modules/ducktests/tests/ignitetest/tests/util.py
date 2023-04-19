@@ -99,11 +99,18 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
 
     start_app(end, data_gen_params.entry_count)
 
+    finish_time = None
+    init_time = None
+
     for app in apps:
         app.await_stopped()
 
-    return (max(map(lambda app: app.get_finish_time(), apps)) -
-            min(map(lambda app: app.get_init_time(), apps))).total_seconds()
+        finish_time = app.get_finish_time() if finish_time is None else max(finish_time, app.get_finish_time())
+        init_time = app.get_init_time() if init_time is None else min(init_time, app.get_init_time())
+
+        app.free()
+
+    return (finish_time - init_time).total_seconds()
 
 
 def current_millis():
