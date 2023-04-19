@@ -60,6 +60,9 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<KillContinu
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable KillContinuousCommandArg arg) throws IgniteException {
+            if (arg == null)
+                return null;
+
             IgniteLogger log = ignite.log().getLogger(VisorContinuousQueryCancelJob.class);
 
             if (log.isInfoEnabled())
