@@ -52,7 +52,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -79,10 +78,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CDC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.segmentIndex;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -489,7 +486,7 @@ public class CdcMain implements Runnable {
                 .marshallerMappingFileStoreDir(marshaller)
                 .keepBinary(cdcCfg.isKeepBinary())
                 .filesOrDirs(segment.toFile())
-                .addFilter((type, ptr) -> type == DATA_RECORD_V2);
+                .addFilter((type, ptr) -> type == DATA_RECORD_V2 || type == CDC_DATA_RECORD);
 
         if (igniteCfg.getDataStorageConfiguration().getPageSize() != 0)
             builder.pageSize(igniteCfg.getDataStorageConfiguration().getPageSize());
@@ -693,43 +690,28 @@ public class CdcMain implements Runnable {
             if (!dbDir.exists())
                 return;
 
-            File[] files = dbDir.listFiles();
-
-            if (files == null)
-                return;
-
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
-            Iterator<CdcCacheEvent> cacheEvts = Arrays.stream(files)
-                .filter(f -> f.isDirectory() &&
-                    (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
-                    !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
-                .filter(File::exists)
-                // Cache group directory can contain several cache data files.
-                // See GridLocalConfigManager#cacheConfigurationFile(CacheConfiguration<?, ?>)
-                .flatMap(cacheDir -> Arrays.stream(FilePageStoreManager.cacheDataFiles(cacheDir)))
-                .map(f -> {
-                    try {
-                        CdcCacheEvent evt = GridLocalConfigManager.readCacheData(
-                            f,
-                            MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
-                            igniteCfg
-                        );
+            Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
+                .readCachesData(
+                    dbDir,
+                    MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                    igniteCfg)
+                .entrySet().stream()
+                .map(data -> {
+                    int cacheId = data.getValue().cacheId();
+                    long lastModified = data.getKey().lastModified();
 
-                        destroyed.remove(evt.cacheId());
+                    destroyed.remove(cacheId);
 
-                        Long lastModified0 = cachesState.get(evt.cacheId());
+                    Long lastModified0 = cachesState.get(cacheId);
 
-                        if (lastModified0 != null && lastModified0 == f.lastModified())
-                            return null;
+                    if (lastModified0 != null && lastModified0 == lastModified)
+                        return null;
 
-                        cachesState.put(evt.cacheId(), f.lastModified());
+                    cachesState.put(cacheId, lastModified);
 
-                        return evt;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+                    return (CdcCacheEvent)data.getValue();
                 })
                 .filter(Objects::nonNull)
                 .iterator();

@@ -344,7 +344,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         /** @return Read keys. */
         public List<T> data(ChangeEventType op, int cacheId) {
-            return data.get(F.t(op, cacheId));
+            return data.computeIfAbsent(F.t(op, cacheId), k -> new ArrayList<>());
+        }
+
+        /** */
+        public void clear() {
+            data.clear();
         }
 
         /** */
@@ -405,7 +410,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                 String typeName = m.typeName();
 
                 assertFalse(typeName.isEmpty());
-                assertEquals(mapper.typeId(typeName), m.typeId());
+                // Can also be registered by OptimizedMarshaller.
+                assertTrue(m.typeId() == mapper.typeId(typeName) || m.typeId() == typeName.hashCode());
             });
         }
     }

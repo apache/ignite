@@ -83,6 +83,7 @@ import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewW
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -1857,6 +1858,29 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertTrue(dr0flPages > 0);
             assertTrue(dr0flStripes > 0);
+
+            int bucketsCnt = ((PagesList)ignite.context().cache().context().database().freeList("dr0")).bucketsCount();
+            int[] bucketPagesSize = new int[bucketsCnt];
+
+            for (PagesListView pagesListView : dataRegionPageLists) {
+                int bucket = pagesListView.bucketNumber();
+
+                if (bucketPagesSize[bucket] == 0) {
+                    assertTrue(bucket == 0 || pagesListView.pageFreeSpace() != 0);
+                    bucketPagesSize[bucket] = pagesListView.pageFreeSpace();
+                }
+                else
+                    assertEquals(bucketPagesSize[bucket], pagesListView.pageFreeSpace());
+            }
+
+            int prev = 0;
+
+            for (int size : bucketPagesSize) {
+                if (size > 0) {
+                    assertTrue(size > prev);
+                    prev = size;
+                }
+            }
 
             SystemView<CachePagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
 

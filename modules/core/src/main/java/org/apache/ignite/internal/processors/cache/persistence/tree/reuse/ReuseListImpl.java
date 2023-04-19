@@ -118,6 +118,11 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
+    @Override public int getPageFreeSpace(int bucket) {
+        return pageSize();
+    }
+
+    /** {@inheritDoc} */
     @Override protected int getBucketIndex(int freeSpace) {
         return 0;
     }

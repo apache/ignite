@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -119,8 +120,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
-import static org.apache.ignite.internal.commandline.cdc.CdcCommand.DELETE_LOST_SEGMENT_LINKS;
-import static org.apache.ignite.internal.commandline.cdc.CdcCommand.NODE_ID;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
+import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.NODE_ID;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
@@ -1439,6 +1441,62 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
+    public void testCacheScan() {
+        injectTestSystemOut();
+
+        autoConfirmation = false;
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text()));
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cacheX", "test"));
+
+        assertContains(log, testOut.toString(), "Unknown argument: test");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit"));
+
+        if (sslEnabled()) // Extra arguments at the end added.
+            assertContains(log, testOut.toString(), "Invalid value for limit");
+        else
+            assertContains(log, testOut.toString(), "Expecting limit");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit", "test"));
+
+        assertContains(log, testOut.toString(), "Invalid value for limit: test");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit", "123", "test"));
+
+        assertContains(log, testOut.toString(), "Unknown argument: test");
+
+        IgniteCache<Integer, Object> c = crd.createCache(new CacheConfiguration<>("testCache"));
+
+        c.put(0, 0);
+        c.put(1, "test string");
+        c.put(2, new Date());
+        c.put(3, new byte[] {1, 2, 3});
+        c.put(4, asList("test list 1", "test list 2"));
+        c.put(5, new String[] {"test array 1", "test array 2"});
+        c.put(6, UUID.randomUUID());
+        c.put(7, new TestClass(0, "test class"));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN.text(), "testCache"));
+
+        assertContains(log, testOut.toString(), "test string");
+        assertContains(log, testOut.toString(), "test list 1");
+        assertContains(log, testOut.toString(), "test array 1");
+        assertContains(log, testOut.toString(), "test class");
+        assertNotContains(log, testOut.toString(), "Result limited");
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN.text(), "testCache", "--limit", "5"));
+
+        assertContains(log, testOut.toString(), "Result limited");
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN.text(), "testCache", "--limit", "10"));
+
+        assertNotContains(log, testOut.toString(), "Result limited");
+    }
+
+    /** */
+    @Test
     public void testCacheConfigNoOutputFormat() {
         testCacheConfig(null, 1, 1);
     }
@@ -1989,5 +2047,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         execute("--help");
 
         consumer.accept(testOut.toString());
+    }
+
+    /** */
+    private static class TestClass {
+        /** */
+        private final int i;
+
+        /** */
+        private final String s;
+
+        /** */
+        public TestClass(int i, String s) {
+            this.i = i;
+            this.s = s;
+        }
     }
 }
