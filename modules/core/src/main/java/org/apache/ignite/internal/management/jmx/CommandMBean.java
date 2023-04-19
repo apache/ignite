@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.management.jmx;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.management.api.PositionalArgument;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -39,19 +35,18 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.PositionalArgument;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import static java.util.Collections.singleton;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import static javax.management.MBeanOperationInfo.ACTION;
+import static org.apache.ignite.internal.management.api.CommandUtils.executeAndPrint;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
@@ -128,29 +123,9 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
         try {
             A arg = CommandUtils.arguments(cmd.args(), (fld, pos) -> val.apply(fld), val);
 
-            IgniteCompute compute = grid.compute();
-
-            Map<UUID, ClusterNode> clusterNodes = grid.cluster().nodes().stream()
-                .collect(Collectors.toMap(ClusterNode::id, n -> n));
-
-            Collection<UUID> nodeIds = cmd.nodes(clusterNodes.keySet(), arg);
-
-            for (UUID id : nodeIds) {
-                if (!clusterNodes.containsKey(id))
-                    throw new IllegalArgumentException("Node with id=" + id + " not found.");
-            }
-
-            if (nodeIds.isEmpty())
-                nodeIds = singleton(grid.localNode().id());
-
-            if (!F.isEmpty(nodeIds))
-                compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
-
-            Object res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
-
             StringBuilder resStr = new StringBuilder();
 
-            cmd.printResult(arg, res, str -> resStr.append(str).append('\n'));
+            executeAndPrint(grid, cmd, arg, line -> resStr.append(line).append('\n'));
 
             return resStr.toString();
         }

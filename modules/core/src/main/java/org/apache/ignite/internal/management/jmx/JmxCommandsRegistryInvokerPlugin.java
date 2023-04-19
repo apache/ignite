@@ -27,6 +27,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.appendJvmId;
 /**
  *
  */
-public class JmxComandRegistryInvoker implements IgnitePlugin {
+public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
     /** */
     private PluginContext ctx;
 
@@ -58,8 +59,8 @@ public class JmxComandRegistryInvoker implements IgnitePlugin {
     /** */
     public void context(PluginContext ctx) {
         this.ctx = ctx;
-        this.grid = (IgniteEx)ctx.grid();
-        this.log = ctx.log(JmxComandRegistryInvoker.class);
+        grid = (IgniteEx)ctx.grid();
+        log = ctx.log(JmxCommandsRegistryInvokerPlugin.class);
     }
 
     /** */
@@ -74,7 +75,7 @@ public class JmxComandRegistryInvoker implements IgnitePlugin {
     }
 
     /** */
-    public void register(String name, List<String> parents, Command<?, ?, ?> cmd) {
+    public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?, ?> cmd) {
         if (cmd instanceof CommandsRegistry) {
             parents.add(name);
 
@@ -92,7 +93,7 @@ public class JmxComandRegistryInvoker implements IgnitePlugin {
             ObjectName mbean = U.registerMBean(
                 grid.configuration().getMBeanServer(),
                 makeMBeanName(grid.context().igniteInstanceName(), parents, name),
-                new CommandMBean(grid, cmd),
+                new CommandMBean<>(grid, cmd),
                 CommandMBean.class
             );
 

@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.management.api;
 
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+
 import java.util.Map;
 
 /** */
 public interface CommandsRegistry extends Iterable<Map.Entry<String, Command<?, ?, ?>>> {
-    // No-op.
+    /** */
+    public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name);
 }

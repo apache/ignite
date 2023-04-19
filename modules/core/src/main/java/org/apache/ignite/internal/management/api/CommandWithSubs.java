@@ -74,8 +74,8 @@ public abstract class CommandWithSubs implements Command, CommandsRegistry {
     /** */
     protected abstract List<Command<?, ?, ?>> subcommands();
 
-    /** */
-    public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name) {
+    /** {@inheritDoc} */
+    @Override public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name) {
         return (Command<A, ?, ?>)commands.get(name);
     }
 

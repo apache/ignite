@@ -94,21 +94,19 @@ public class CLIArgumentParser {
                 continue;
             }
 
-            if (cliArg.type().equals(Boolean.class) || cliArg.type().equals(boolean.class))
-                parsedNamedArgs.put(cliArg.name(), true);
-            else {
-                if (!argsIter.hasNext())
-                    throw new IllegalArgumentException("Please specify a value for argument: " + arg);
+            boolean bool = cliArg.type().equals(Boolean.class) || cliArg.type().equals(boolean.class);
 
-                String strVal = argsIter.next();
+            if (!bool && !argsIter.hasNext())
+                throw new IllegalArgumentException("Please specify a value for argument: " + arg);
 
-                try {
-                    parsedNamedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Failed to parse " + cliArg.name() + " command argument. "
-                        + e.getMessage());
-                }
+            String strVal = bool ? null : argsIter.next();
+
+            try {
+                parsedNamedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
+            }
+            catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Failed to parse " + cliArg.name() + " command argument. "
+                    + e.getMessage());
             }
 
             obligatoryArgs.remove(cliArg.name());
