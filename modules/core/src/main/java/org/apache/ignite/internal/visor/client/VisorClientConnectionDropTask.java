@@ -78,7 +78,7 @@ public class VisorClientConnectionDropTask extends VisorMultiNodeTask<KillClient
 
         /** {@inheritDoc} */
         @Override protected Boolean run(@Nullable KillClientCommandArg arg) throws IgniteException {
-            ClientProcessorMXBean bean = ignite.context().sqlListener().mxBean();
+            ClientProcessorMXBean bean = ignite.context().clientListener().mxBean();
 
             if (!"ALL".equals(arg.getConnectionId()))
                 return bean.dropConnection(Long.parseLong(arg.getConnectionId()));

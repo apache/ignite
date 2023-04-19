@@ -2777,9 +2777,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
 
                     for (ExchangeActions.CacheActionData action : cachesToStopByGrp.getValue()) {
+                        // Rollback tx started before gateway blocked to avoid deadlock with gateway stop.
                         context().tm().rollbackTransactionsForStoppingCache(action.descriptor().cacheId());
 
                         stopGateway(action.request());
+
+                        // Rollback tx started after gateway blocked but not stopped.
+                        context().tm().rollbackTransactionsForStoppingCache(action.descriptor().cacheId());
 
                         String cacheName = action.request().cacheName();
 

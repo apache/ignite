@@ -315,6 +315,10 @@ Register name: `client.connector`
 |SentBytesCount|   long|   Sent bytes count.
 |SslEnabled|   boolean|   Indicates whether SSL is enabled.
 |SslHandshakeDurationHistogram|   histogram|   Histogram of SSL handshake duration in milliseconds (metric is exported only if SSL is enabled).
+|AffinityKeyRequestsHits|   long|   The number of affinity-aware cache key requests that were sent to the primary node.
+|AffinityKeyRequestsMisses|   long|   The number of affinity-aware cache key requests that were sent not to the primary node.
+|AffinityQueryRequestsHits|   long|   The number of affinity-aware query requests that were sent to the primary node.
+|AffinityQueryRequestsMisses|   long|   The number of affinity-aware query requests that were sent not to the primary node.
 |===
 
 

@@ -155,7 +155,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
 
         /** {@inheritDoc} */
         @Override public void run() throws IgniteException {
-            ignite.context().sqlListener().closeAllSessions();
+            ignite.context().clientListener().closeAllSessions();
         }
     }
 }

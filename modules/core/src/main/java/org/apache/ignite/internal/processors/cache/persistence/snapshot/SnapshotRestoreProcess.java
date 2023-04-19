@@ -290,7 +290,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                if (restoringSnapshotName() != null)
+                if (restoringSnapshotName() != null || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName, incIdx);
@@ -437,12 +437,7 @@ public class SnapshotRestoreProcess {
     public @Nullable String restoringSnapshotName() {
         SnapshotRestoreContext opCtx0 = opCtx;
 
-        if (opCtx0 != null)
-            return opCtx0.snpName;
-
-        ClusterSnapshotFuture fut0 = fut;
-
-        return fut0 != null ? fut0.name : null;
+        return opCtx0 == null ? null : opCtx0.snpName;
     }
 
     /**

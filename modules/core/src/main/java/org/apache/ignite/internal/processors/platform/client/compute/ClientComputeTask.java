@@ -128,7 +128,7 @@ class ClientComputeTask implements ClientCloseableResource {
                 ClientNotification notification;
 
                 if (f.error() != null) {
-                    String msg = ctx.kernalContext().sqlListener().sendServerExceptionStackTraceToClient()
+                    String msg = ctx.kernalContext().clientListener().sendServerExceptionStackTraceToClient()
                             ? f.error().getMessage() + U.nl() + X.getFullStackTrace(f.error())
                             : f.error().getMessage();
 
