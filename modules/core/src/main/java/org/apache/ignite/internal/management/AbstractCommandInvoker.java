@@ -17,23 +17,6 @@
 
 package org.apache.ignite.internal.management;
 
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.OneOf;
-import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.lang.PeekableIterator;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +33,22 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.OneOf;
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.lang.PeekableIterator;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
@@ -65,7 +63,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  */
 public abstract class AbstractCommandInvoker {
     /** */
-    protected  <A extends IgniteDataTransferObject> void execute(
+    protected <A extends IgniteDataTransferObject> void execute(
         Command<A, ?, ?> cmd,
         Map<String, String> args,
         Consumer<String> printer

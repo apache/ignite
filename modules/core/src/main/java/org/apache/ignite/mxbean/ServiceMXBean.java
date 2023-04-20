@@ -21,6 +21,9 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
 
 /**
  * Service MXBean interface.
+ *
+ * @see org.apache.ignite.internal.management.jmx.JmxCommandsRegistryInvokerPlugin
+ * @deprecated Use Management API instead.
  */
 public interface ServiceMXBean {
     /**

@@ -67,6 +67,8 @@ public interface TransactionsMXBean {
      *
      * @param xid Transaction xid.
      * @see TransactionView#xid()
+     * @see org.apache.ignite.internal.management.jmx.JmxCommandsRegistryInvokerPlugin
+     * @deprecated Use Management API instead.
      */
     @MXBeanDescription("Kills transactions by the xid.")
     public void cancel(
