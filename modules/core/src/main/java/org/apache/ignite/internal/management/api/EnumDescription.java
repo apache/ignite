@@ -23,7 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
+ * TODO: add assert that all enum values described
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

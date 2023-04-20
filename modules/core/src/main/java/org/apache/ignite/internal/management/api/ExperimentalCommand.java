@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.management.api;
 
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+
 /**
  *
  */
-public interface ExperimentalCommand extends Command {
+public interface ExperimentalCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
+    extends Command<A, R, T> {
     /** {@inheritDoc} */
     @Override default boolean experimental() {
         return true;
