@@ -17,6 +17,19 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,21 +52,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -97,11 +95,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 =
             baseCmd instanceof CommandsRegistry
                 ? command(
-                    (CommandsRegistry) baseCmd,
+                    (CommandsRegistry)baseCmd,
                     argIterator.raw(),
                     true)
                 : baseCmd;
-
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
@@ -155,7 +152,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         catch (InstantiationException | IllegalAccessException e) {
             throw new IgniteException(e);
         }
-
     }
 
     /** {@inheritDoc} */
