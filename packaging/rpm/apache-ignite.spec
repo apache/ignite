@@ -12,7 +12,7 @@
 #
 
 Name:             apache-ignite
-Version:          2.14.0
+Version:          2.15.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
