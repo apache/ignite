@@ -575,13 +575,16 @@ public class CommandHandler {
 
         String[] sslProtocols = split(args.sslProtocol(), ",");
 
-        String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols[0];
+        if (F.isEmpty(sslProtocols))
+            factory.setProtocol(DFLT_SSL_PROTOCOL);
+        else {
+            factory.setProtocol(sslProtocols[0]);
 
-        factory.setProtocol(sslProtocol);
+            if (sslProtocols.length > 1)
+                factory.setProtocols(sslProtocols);
+        }
+
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-        if (sslProtocols.length > 1)
-            factory.setProtocols(sslProtocols);
 
         factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
 
