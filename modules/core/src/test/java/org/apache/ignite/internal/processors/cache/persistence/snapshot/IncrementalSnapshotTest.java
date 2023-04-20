@@ -46,6 +46,7 @@ import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotMetaFileName;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -391,13 +392,14 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         DistributedProcess.DistributedProcessType[] stages = new DistributedProcess.DistributedProcessType[] {
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
             RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD,
+            RESTORE_CACHE_GROUP_SNAPSHOT_START,
             RESTORE_INCREMENTAL_SNAPSHOT_START
         };
 
         IgniteEx srv = startGridsWithCache(
             2,
             CACHE_KEYS_RANGE,
-            key -> new Account(key, key),
+            valueBuilder(),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
         );
 
@@ -414,7 +416,9 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             if (msg instanceof SingleNodeMessage) {
                 SingleNodeMessage<?> singleMsg = (SingleNodeMessage<?>)msg;
 
-                if (failStage.get().ordinal() == singleMsg.type())
+                DistributedProcess.DistributedProcessType stage = failStage.get();
+
+                if (stage != null && stage.ordinal() == singleMsg.type())
                     GridTestUtils.setFieldValue(singleMsg, "err", new IgniteException("Test exception."));
             }
 
@@ -428,6 +432,12 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 () -> srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, singleton(DEFAULT_CACHE_NAME), 1).get(),
                 IgniteException.class, "Test exception.");
         }
+
+        failStage.set(null);
+
+        srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, singleton(DEFAULT_CACHE_NAME), 1).get();
+
+        assertCacheKeys(srv.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
     /** */
