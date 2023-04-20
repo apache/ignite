@@ -259,10 +259,7 @@ class ControlUtility:
         """
         node = self._cluster.nodes[0]
 
-        if increment > 0:
-            res = self.__run(f"--snapshot restore {snapshot_name} --increment {increment} --yes", node)
-        else:
-            assert False
+        res = self.__run(f"--snapshot restore {snapshot_name} --increment {increment} --yes", node)
 
         assert "Command [SNAPSHOT] finished with code: 0" in res
 

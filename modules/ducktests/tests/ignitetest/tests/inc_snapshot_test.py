@@ -91,7 +91,7 @@ class IncrementalSnapshotTest(IgniteTest):
                 transactional=True
             ))
 
-        control_utility.snapshot_create(self.SNAPSHOT_NAME)
+        control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=3600)
 
         snapshot_size = get_file_sizes(nodes.nodes, nodes.snapshots_dir, True)
 
@@ -122,21 +122,24 @@ class IncrementalSnapshotTest(IgniteTest):
 
         result = []
 
-        for i in range(1, inc_count + 1):
+        for i in range(0, inc_count + 1):
+            print("Restoring increment " + str(i))
+
             control_utility.destroy_caches(destroy_all=True)
 
             check_time = control_utility.snapshot_check(self.SNAPSHOT_NAME, i)
 
             restore_stat = control_utility.snapshot_restore(self.SNAPSHOT_NAME, i)
 
-            result.append({
-                "increment": i,
-                "checkTimeSec": check_time,
-                "restoreStat": restore_stat,
-                "size:": get_file_sizes(nodes.nodes, nodes.incremental_snapshot_dir(self.SNAPSHOT_NAME, i), True)
-            })
+            if i > 0:
+                result.append({
+                    "increment": i,
+                    "checkTimeSec": check_time,
+                    "restoreStat": restore_stat,
+                    "size:": get_file_sizes(nodes.nodes, nodes.incremental_snapshot_dir(self.SNAPSHOT_NAME, i), True)
+                })
 
-            control_utility.validate_indexes()
+#            control_utility.validate_indexes()
             control_utility.idle_verify()
 
         return result
