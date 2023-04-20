@@ -23,9 +23,6 @@ import javax.net.ssl.SSLException;
 
 /**
  * This interface provides creation of SSL context both for server and client use.
- * <p>
- * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
- * in {@link GridSslBasicContextFactory}.
  * @deprecated Use {@link Factory} instead.
  */
 @Deprecated

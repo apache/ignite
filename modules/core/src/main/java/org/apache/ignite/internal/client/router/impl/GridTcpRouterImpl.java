@@ -121,7 +121,6 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
         sslCtx = sslCtxFactory == null ? null : sslCtxFactory.create();
 
-
         for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
             if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), sslCtx, cfg.isSslClientAuth(),
                 cfg.isSslClientAuth())) {
