@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutAllRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGetRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheRecreateTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -40,6 +41,8 @@ import org.junit.runners.Suite;
     GridCachePutAllFailoverSelfTest.class,
 
     IgniteBinaryMetadataUpdateNodeRestartTest.class,
+
+    IgniteCacheRecreateTest.class,
 
     IgniteCacheGetRestartTest.class
 })

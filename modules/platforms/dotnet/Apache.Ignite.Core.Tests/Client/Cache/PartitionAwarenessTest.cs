@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private const int ServerCount = 3;
 
         /** */
-        private ICacheClient<int, int> _cache;
+        protected ICacheClient<int, int> _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
@@ -150,44 +150,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(expected, ex.Message);
         }
-
-#if NETCOREAPP // TODO: IGNITE-15710
-        [Test]
-        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToNewNode()
-        {
-            // Warm-up.
-            Assert.AreEqual(1, _cache.Get(1));
-
-            // Before topology change.
-            Assert.AreEqual(12, _cache.Get(12));
-            Assert.AreEqual(1, GetClientRequestGridIndex());
-
-            Assert.AreEqual(14, _cache.Get(14));
-            Assert.AreEqual(2, GetClientRequestGridIndex());
-
-            // After topology change.
-            var cfg = GetIgniteConfiguration();
-            cfg.AutoGenerateIgniteInstanceName = true;
-
-            using (Ignition.Start(cfg))
-            {
-                TestUtils.WaitForTrueCondition(() =>
-                {
-                    // Keys 12 and 14 belong to a new node now (-1).
-                    Assert.AreEqual(12, _cache.Get(12));
-                    if (GetClientRequestGridIndex() != -1)
-                    {
-                        return false;
-                    }
-
-                    Assert.AreEqual(14, _cache.Get(14));
-                    Assert.AreEqual(-1, GetClientRequestGridIndex());
-
-                    return true;
-                }, 6000);
-            }
-        }
-#endif
 
         [Test]
         [TestCase(1, 1)]
@@ -496,8 +458,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase("default-grp-partitioned-set", null, CacheMode.Partitioned, 4, 1)]
         [TestCase("custom-grp-partitioned-set", "testIgniteSet1", CacheMode.Partitioned, 1, 1)]
         [TestCase("custom-grp-partitioned-set", "testIgniteSet1", CacheMode.Partitioned, 3, 0)]
-        [TestCase("custom-grp-replicated-set", "testIgniteSet2", CacheMode.Replicated, 1, 1)]
-        [TestCase("custom-grp-replicated-set", "testIgniteSet2", CacheMode.Replicated, 3, 1)]
         public void IgniteSet_RequestIsRoutedToPrimaryNode(
             string name, string groupName, CacheMode cacheMode, int item, int gridIdx)
         {
@@ -528,9 +488,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase("custom-grp-partitioned-set-2", "testIgniteSetColocated1", CacheMode.Partitioned, 1, 1)]
         [TestCase("custom-grp-partitioned-set-2", "testIgniteSetColocated1", CacheMode.Partitioned, 2, 1)]
         [TestCase("custom-grp-partitioned-set-2", "testIgniteSetColocated1", CacheMode.Partitioned, 3, 1)]
-        [TestCase("custom-grp-replicated-set-2", "testIgniteSetColocated2", CacheMode.Replicated, 1, 1)]
-        [TestCase("custom-grp-replicated-set-2", "testIgniteSetColocated2", CacheMode.Replicated, 2, 1)]
-        [TestCase("custom-grp-replicated-set-2", "testIgniteSetColocated2", CacheMode.Replicated, 3, 1)]
         public void IgniteSetColocated_RequestIsRoutedToPrimaryNode(
             string name, string groupName, CacheMode cacheMode, int item, int gridIdx)
         {
@@ -559,13 +516,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var cfg = base.GetClientConfiguration();
 
             cfg.EnablePartitionAwareness = true;
+            cfg.EnableClusterDiscovery = false;
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
 
             return cfg;
         }
 
-        private int GetClientRequestGridIndex(string message = null, string prefix = null)
+        protected int GetClientRequestGridIndex(string message = null, string prefix = null)
         {
             message = message ?? "Get";
 

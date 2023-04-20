@@ -158,11 +158,22 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        super.start0();
+
         // Append cache name to the topic.
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        assert !cctx.isRecoveryMode() : "Registering message handlers in recovery mode [cacheName=" + cctx.name() + ']';
 
         if (cctx.affinityNode()) {
-            cctx.io().addCacheHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
+            cctx.io().addCacheHandler(
+                cctx.cacheId(),
+                cctx.startTopologyVersion(),
+                CacheContinuousQueryBatchAck.class,
                 new CI2<UUID, CacheContinuousQueryBatchAck>() {
                     @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
                         CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
@@ -174,11 +185,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
             cancelableTask = cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
         }
-    }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
         Iterable<CacheEntryListenerConfiguration> cfgs = cctx.config().getCacheEntryListenerConfigurations();
 
         if (cfgs != null) {

@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
  * IndexQuery request.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
+public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
     /** IndexQuery. */
     private final IndexQuery qry;
 
@@ -143,6 +143,9 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
      */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteCache cache = !isKeepBinary() ? rawCache(ctx) : cache(ctx);
+
+        if (qry.getPartition() != null)
+            updateAffinityMetrics(ctx, qry.getPartition());
 
         ctx.incrementCursors();
 

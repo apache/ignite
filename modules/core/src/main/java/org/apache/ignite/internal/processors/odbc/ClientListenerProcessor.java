@@ -96,6 +96,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** TCP Server. */
     private GridNioServer<ClientMessage> srv;
 
+    /** Metrics. */
+    private ClientListenerMetrics metrics;
+
     /** Executor service. */
     private ExecutorService execSvc;
 
@@ -151,12 +154,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
 
+                metrics = new ClientListenerMetrics(mreg);
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
                         srv = GridNioServer.<ClientMessage>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg, metrics))
                             .logger(log)
                             .selectorCount(selectorCnt)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -464,6 +469,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     public int port() {
         return srv.port();
+    }
+
+    /**
+     * @return Client listener metrics.
+     */
+    public ClientListenerMetrics metrics() {
+        return metrics;
     }
 
     /**
