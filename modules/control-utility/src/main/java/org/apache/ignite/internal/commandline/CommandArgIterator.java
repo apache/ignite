@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,13 +34,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class CommandArgIterator {
     /** */
-    private final Iterator<String> argsIt;
+    private final PeekableIterator<String> argsIt;
 
     /** */
     private final Map<String, Command<?>> cmds;
-
-    /** */
-    private String peekedArg;
 
     /**
      * Set of common arguments names and high level command name set.
@@ -55,7 +54,7 @@ public class CommandArgIterator {
         Set<String> commonArgumentsAndHighLevelCommandSet,
         Map<String, Command<?>> cmds
     ) {
-        this.argsIt = argsIt;
+        this.argsIt = new PeekableIterator<>(argsIt);
         this.commonArgumentsAndHighLevelCommandSet = commonArgumentsAndHighLevelCommandSet;
         this.cmds = cmds;
     }
@@ -64,7 +63,7 @@ public class CommandArgIterator {
      * @return Returns {@code true} if the iteration has more elements.
      */
     public boolean hasNextArg() {
-        return peekedArg != null || argsIt.hasNext();
+        return argsIt.hasNext();
     }
 
     /**
@@ -82,14 +81,6 @@ public class CommandArgIterator {
      * @return Next argument value.
      */
     public String nextArg(String err) {
-        if (peekedArg != null) {
-            String res = peekedArg;
-
-            peekedArg = null;
-
-            return res;
-        }
-
         if (argsIt.hasNext())
             return argsIt.next();
 
@@ -102,10 +93,7 @@ public class CommandArgIterator {
      * @return Next argument value or {@code null} if no next argument.
      */
     public String peekNextArg() {
-        if (peekedArg == null && argsIt.hasNext())
-            peekedArg = argsIt.next();
-
-        return peekedArg;
+        return argsIt.peek();
     }
 
     /**
@@ -215,7 +203,7 @@ public class CommandArgIterator {
     }
 
     /** */
-    public Iterator<String> raw() {
+    public PeekableIterator<String> raw() {
         return argsIt;
     }
 }

@@ -64,8 +64,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_D
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.commandName;
-import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
-import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.hasDescribedParameters;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
@@ -77,21 +75,33 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** */
-    private final org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd;
+    public final CommandsRegistryImpl standaloneRegistry = new CommandsRegistryImpl();
+
+    /** */
+    private final org.apache.ignite.internal.management.api.Command<A, ?, ?> baseCmd;
 
     /** */
     private IgniteBiTuple<org.apache.ignite.internal.management.api.Command<A, ?, ?>, A> parsed;
 
     /** */
     public DeclarativeCommandAdapter(String name) {
-        cmd = CommandsRegistryImpl.INSTANCE.command(name);
+        standaloneRegistry.registerAll();
 
-        assert cmd != null;
+        baseCmd = standaloneRegistry.command(name);
+
+        assert baseCmd != null;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
-        org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 = commandToExecute(argIterator);
+        org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 =
+            baseCmd instanceof CommandsRegistry
+                ? command(
+                    (CommandsRegistry) baseCmd,
+                    argIterator.raw(),
+                    true)
+                : baseCmd;
+
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
@@ -191,7 +201,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        usage(cmd, Collections.emptyList(), logger);
+        usage(baseCmd, Collections.emptyList(), logger);
     }
 
     /** */
@@ -333,44 +343,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CommandUtils.commandName(cmd.getClass(), CMD_WORDS_DELIM).toUpperCase();
-    }
-
-    /** */
-    private org.apache.ignite.internal.management.api.Command<A, ?, ?> commandToExecute(CommandArgIterator argIterator) {
-        org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 = cmd;
-
-        while (cmd0 instanceof CommandWithSubs && argIterator.hasNextArg()) {
-            String subName = argIterator.peekNextArg();
-
-            if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)) {
-                if (!subName.startsWith(PARAMETER_PREFIX))
-                    break;
-
-                subName = subName.substring(PARAMETER_PREFIX.length());
-            }
-
-            subName = fromFormattedName(subName, CMD_WORDS_DELIM);
-
-            org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd1 = ((CommandWithSubs)cmd0).command(subName);
-
-            if (cmd1 != null) {
-                cmd0 = cmd1;
-
-                argIterator.nextArg("Sub command name");
-            }
-        }
-
-        if (cmd0 instanceof CommandWithSubs && !((CommandWithSubs)cmd0).canBeExecuted()) {
-            throw new IllegalArgumentException(
-                "Command " + formattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
-            );
-        }
-
-        if (cmd0 == null)
-            throw new IllegalArgumentException("Unknown command");
-
-        return cmd0;
+        return CommandUtils.commandName(baseCmd.getClass(), CMD_WORDS_DELIM).toUpperCase();
     }
 
     /** {@inheritDoc} */

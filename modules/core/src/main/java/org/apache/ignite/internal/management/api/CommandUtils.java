@@ -290,11 +290,6 @@ public class CommandUtils {
     }
 
     /** */
-    public static boolean isArgumentName(String arg) {
-        return arg.startsWith(PARAMETER_PREFIX);
-    }
-
-    /** */
     public static <T> T parseVal(String val, Class<T> type) {
         if (type.isArray()) {
             String[] vals = val.split(",");

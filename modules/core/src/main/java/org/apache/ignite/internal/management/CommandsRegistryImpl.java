@@ -27,13 +27,6 @@ import org.apache.ignite.internal.management.kill.KillCommand;
  *
  */
 public class CommandsRegistryImpl extends CommandWithSubs {
-    /** TODO: move instance to command-handler. Each node will use own instance of registry. */
-    public static final CommandsRegistryImpl INSTANCE = new CommandsRegistryImpl();
-
-    static {
-        INSTANCE.registerAll();
-    }
-
     /** {@inheritDoc} */
     @Override protected List<Command<?, ?, ?>> subcommands() {
         return Arrays.<Command<?, ?, ?>>asList(

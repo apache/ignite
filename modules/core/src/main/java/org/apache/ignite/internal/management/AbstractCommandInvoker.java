@@ -23,11 +23,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
@@ -36,7 +39,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -51,6 +53,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
@@ -173,18 +176,32 @@ public abstract class AbstractCommandInvoker {
 
     /** */
     protected <A extends IgniteDataTransferObject> Command<A, ?, ?> command(
-        Iterator<String> names
+        CommandsRegistry root,
+        PeekableIterator<String> iter,
+        boolean isCli
     ) {
-        if (!names.hasNext())
-            throw new IllegalArgumentException("names is empty.");
+        if (!iter.hasNext())
+            return (Command<A, ?, ?>)root;
 
-        Command<A, ?, ?> cmd0 = grid().context().commands().command(names.next());
+        Command<A, ?, ?> cmd0 = (Command<A, ?, ?>)root;
 
-        while (cmd0 instanceof CommandWithSubs && names.hasNext()) {
-            Command<A, ?, ?> cmd1 = ((CommandWithSubs)cmd0).command(fromFormattedName(names.next(), CMD_WORDS_DELIM));
+        while (cmd0 instanceof CommandWithSubs && iter.hasNext()) {
+            String name = iter.peek();
 
-            if (cmd1 != null)
+            if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class) && isCli) {
+                if (!name.startsWith(PARAMETER_PREFIX))
+                    break;
+
+                name = name.substring(PARAMETER_PREFIX.length());
+            }
+
+            Command<A, ?, ?> cmd1 = ((CommandWithSubs)cmd0).command(fromFormattedName(name, CMD_WORDS_DELIM));
+
+            if (cmd1 != null) {
                 cmd0 = cmd1;
+
+                iter.next();
+            }
         }
 
         if (cmd0 instanceof CommandWithSubs && !((CommandWithSubs)cmd0).canBeExecuted()) {
