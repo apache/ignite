@@ -92,8 +92,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2080,26 +2078,9 @@ public final class GridTestUtils {
         keyMgrFactory.init(keyStore, storePass);
 
         ctx.init(keyMgrFactory.getKeyManagers(),
-            new TrustManager[]{GridSslBasicContextFactory.getDisabledTrustManager()}, null);
+            new TrustManager[]{SslContextFactory.getDisabledTrustManager()}, null);
 
         return ctx;
-    }
-
-    /**
-     * Creates test-purposed SSL context factory from test key store with disabled trust manager.
-     *
-     * @return SSL context factory used in test.
-     */
-    public static GridSslContextFactory sslContextFactory() {
-        GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
-
-        factory.setKeyStoreFilePath(
-            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(keyStorePassword().toCharArray());
-
-        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
-
-        return factory;
     }
 
     /**
