@@ -27,16 +27,6 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface PositionalArgument {
-    /** */
-    public boolean optional() default false;
-
-    /** */
-    public String description() default "";
-
-    /** */
-    public String example() default "";
-
-    /** */
-    public boolean javaStyleExample() default false;
+public @interface Positional {
+    // No-op.
 }

@@ -29,19 +29,19 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Argument {
     /** */
+    public boolean optional() default false;
+
+    /** */
     public String description() default "";
 
     /** */
     public String example() default "";
 
     /** */
-    public boolean optional() default false;
+    public boolean javaStyleExample() default false;
 
     /** */
     public boolean withoutPrefix() default false;
-
-    /** */
-    public boolean javaStyleExample() default false;
 
     /** */
     public boolean javaStyleName() default false;

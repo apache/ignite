@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.management.jmx;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.AbstractCommandInvoker;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.management.api.Positional;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -36,21 +35,21 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
 import static javax.management.MBeanOperationInfo.ACTION;
-import static org.apache.ignite.internal.management.api.CommandUtils.executeAndPrint;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
  *
  */
-public class CommandMBean<A extends IgniteDataTransferObject> implements DynamicMBean {
+public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements DynamicMBean {
     /** */
     public static final String METHOD = "invoke";
 
@@ -99,7 +98,7 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
         if (!METHOD.equals(actionName))
             throw new UnsupportedOperationException(actionName);
 
-        Map<Field, String> vals = new HashMap<>();
+        Map<String, String> vals = new HashMap<>();
         AtomicInteger cntr = new AtomicInteger();
 
         Consumer<Field> fillVals = fld -> {
@@ -108,28 +107,20 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
             if (val.isEmpty())
                 return;
 
-            vals.put(fld, val);
+            vals.put(fld.getName(), val);
         };
 
         visitCommandParams(cmd.args(), fillVals, fillVals, (optional, flds) -> flds.forEach(fillVals));
 
-        Function<Field, Object> val = fld -> Optional
-            .ofNullable(vals.get(fld))
-            .map(v -> CommandUtils.parseVal(v, fld.getType()))
-            .orElse(null);
+        StringBuilder resStr = new StringBuilder();
 
-        try {
-            A arg = CommandUtils.arguments(cmd.args(), (fld, pos) -> val.apply(fld), val);
+        execute(
+            cmd,
+            vals,
+            line -> resStr.append(line).append('\n')
+        );
 
-            StringBuilder resStr = new StringBuilder();
-
-            executeAndPrint(grid, cmd, arg, line -> resStr.append(line).append('\n'));
-
-            return resStr.toString();
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        return resStr.toString();
     }
 
     /** {@inheritDoc} */
@@ -153,12 +144,8 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
         Consumer<Field> fldCnsmr = fld -> {
             String descStr;
 
-            if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                Argument desc = fld.getAnnotation(Argument.class);
-                PositionalArgument posDesc = fld.getAnnotation(PositionalArgument.class);
-
-                descStr = desc != null ? desc.description() : posDesc.description();
-            }
+            if (!fld.isAnnotationPresent(EnumDescription.class))
+                descStr = fld.getAnnotation(Argument.class).description();
             else {
                 EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
 
@@ -182,5 +169,10 @@ public class CommandMBean<A extends IgniteDataTransferObject> implements Dynamic
         visitCommandParams(cmd.args(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
 
         return args.toArray(new MBeanParameterInfo[args.size()]);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEx grid() {
+        return grid;
     }
 }

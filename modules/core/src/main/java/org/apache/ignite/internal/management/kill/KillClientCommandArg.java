@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,7 +34,8 @@ public class KillClientCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalArgument(description = "Connection identifier or ALL")
+    @Positional
+    @Argument(description = "Connection identifier or ALL")
     private String connectionId;
 
     /** */

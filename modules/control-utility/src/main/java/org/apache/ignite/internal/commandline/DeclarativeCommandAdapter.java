@@ -17,6 +17,29 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.AbstractCommandInvoker;
+import org.apache.ignite.internal.management.CommandsRegistryImpl;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.lang.IgniteBiTuple;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,27 +53,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
-import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistryImpl;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.PositionalArgument;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.lang.IgniteBiTuple;
+
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -60,7 +63,6 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNod
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.arguments;
 import static org.apache.ignite.internal.management.api.CommandUtils.commandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
@@ -73,7 +75,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
 /**
  *
  */
-public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> implements Command<A> {
+public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** */
     private final org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd;
 
@@ -108,7 +110,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
-                fld.getAnnotation(PositionalArgument.class).optional(),
+                fld.getAnnotation(Argument.class).optional(),
                 fld.getType(),
                 null
             )),
@@ -133,7 +135,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
         try {
             parsed = F.t(
                 cmd0,
-                arguments(
+                argument(
                     cmd0.args(),
                     (fld, pos) -> parser.get(pos),
                     fld -> parser.get(parameterName(fld))
@@ -230,12 +232,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
                     );
 
                     if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                        Argument desc = fld.getAnnotation(Argument.class);
-                        PositionalArgument posDesc = fld.getAnnotation(PositionalArgument.class);
-
                         logParam.accept(
                             parameterExample(fld, false),
-                            (desc != null ? desc.description() : posDesc.description())
+                            fld.getAnnotation(Argument.class).description()
                         );
                     }
                     else {
@@ -372,5 +371,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> imple
             throw new IllegalArgumentException("Unknown command");
 
         return cmd0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEx grid() {
+        return null;
     }
 }

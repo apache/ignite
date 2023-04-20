@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.OneOf;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -36,7 +36,8 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** System view name. */
-    @PositionalArgument(description = "Name of the system view which content should be printed." +
+    @Positional
+    @Argument(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
         " (e.g. SQL_TABLES and sql.tables will be handled similarly)")
     private String systemViewName;

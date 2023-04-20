@@ -22,7 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import lombok.Data;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -35,7 +36,8 @@ public class KillComputeCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalArgument(description = "Session identifier")
+    @Positional
+    @Argument(description = "Session identifier")
     private IgniteUuid sessionId;
 
     /** {@inheritDoc} */

@@ -22,7 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -33,15 +34,18 @@ public class KillScanCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalArgument(description = "Originating node id")
+    @Positional
+    @Argument(description = "Originating node id")
     private UUID originNodeId;
 
     /** */
-    @PositionalArgument(description = "Cache name")
+    @Positional
+    @Argument(description = "Cache name")
     private String cacheName;
 
     /** */
-    @PositionalArgument(description = "Query identifier")
+    @Positional
+    @Argument(description = "Query identifier")
     private long queryId;
 
     /** {@inheritDoc} */

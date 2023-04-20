@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
@@ -30,7 +31,8 @@ public class KillServiceCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @PositionalArgument(description = "Service name")
+    @Positional
+    @Argument(description = "Service name")
     private String name;
 
     /** {@inheritDoc} */
