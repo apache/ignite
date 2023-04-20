@@ -40,6 +40,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.CommandsRegistryImpl;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -209,24 +210,30 @@ public class IgniteDataTransferObjectSerDesGenerator {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
         // TODO: add to string generation.
-        CommandsRegistryImpl.INSTANCE.forEach(gen::generate);
+        CommandsRegistryImpl registry = new CommandsRegistryImpl();
+
+        registry.registerAll();
+
+        registry.forEach(gen::generate);
     }
 
     /** */
-    private void generate(Map.Entry<String, Command<?, ?, ?>> cmd) {
+    private void generate(Map.Entry<String, Command<?, ?, ?>> entry) {
         boolean generate = true;
 
-        if (cmd instanceof CommandWithSubs) {
+        Command<?, ?, ?> cmd = entry.getValue();
+
+        if (cmd instanceof CommandsRegistry) {
             generate = ((CommandWithSubs)cmd).canBeExecuted();
 
-            ((CommandWithSubs)cmd).iterator().forEachRemaining(this::generate);
+            ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
         }
 
         if (!generate)
             return;
 
         try {
-            generateAndWrite(cmd.getValue().args(), DFLT_SRC_DIR);
+            generateAndWrite(cmd.args(), DFLT_SRC_DIR);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
