@@ -824,7 +824,7 @@ public class IgniteTxHandler {
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         if (U.TEST)
-            log.error("TEST | process near prepare response on " + U.toString(ctx.localNode()) + " from " + nodeId);
+            log.error("TEST | IgniteTxHandler::processNearTxPrepareResponse " + U.toString(ctx.localNode()) + " from " + nodeId);
 
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_PREPARE_RESP, MTC.span()))) {
@@ -858,6 +858,9 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
+        if (U.TEST)
+            log.error("TEST | processNearTxFinishResponse on " + U.toString(ctx.localNode()) + " from " + nodeId);
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_FINISH_RESP, MTC.span()))) {
             if (txFinishMsgLog.isDebugEnabled())
@@ -884,10 +887,8 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        if (U.TEST) {
-            log.error("TEST | process prepare response on " + ctx.localNodeId() + " / " +
-                ctx.localNode().order() + " from " + nodeId);
-        }
+        if (U.TEST)
+            log.error("TEST | IgniteTxHandler::processDhtTxPrepareResponse on " + U.toString(ctx.localNode()) + " from " + nodeId);
 
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_RESP, MTC.span()))) {
@@ -923,6 +924,11 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxFinishResponse(UUID nodeId, GridDhtTxFinishResponse res) {
+        if (U.TEST) {
+            log.error("TEST | IgniteTxHandler::processDhtTxFinishResponse on primary " +
+                U.toString(ctx.localNode()) + " from backup " + nodeId);
+        }
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_FINISH_RESP, MTC.span()))) {
             assert nodeId != null;
@@ -982,6 +988,9 @@ public class IgniteTxHandler {
         UUID nodeId,
         GridNearTxFinishRequest req
     ) {
+        if (U.TEST)
+            log.error("TEST | processNearTxFinishRequest on " + U.toString(ctx.localNode()) + " from " + nodeId);
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_FINISH_REQ, MTC.span()))) {
             if (txFinishMsgLog.isDebugEnabled())
@@ -1411,6 +1420,10 @@ public class IgniteTxHandler {
      */
     private void processDhtTxOnePhaseCommitAckRequest(final UUID nodeId,
         final GridDhtTxOnePhaseCommitAckRequest req) {
+
+        if (U.TEST)
+            log.error("TEST | processDhtTxOnePhaseCommitAckRequest on " + U.toString(ctx.localNode()) + " from " + nodeId);
+
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_ONE_PHASE_COMMIT_ACK_REQ, MTC.span()))) {
             assert nodeId != null;
@@ -1736,6 +1749,11 @@ public class IgniteTxHandler {
             }
 
             try {
+                if (U.TEST) {
+                    log.error("TEST | sending GridDhtTxFinishResponse from " + U.toString(ctx.localNode()) +
+                        " to " + nodeId);
+                }
+
                 ctx.io().send(nodeId, res, req.policy());
 
                 if (txFinishMsgLog.isDebugEnabled()) {
@@ -2319,6 +2337,9 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
+        if (U.TEST)
+            log.error("TEST | processDhtTxFinishResponse on " + U.toString(ctx.localNode()) + " from " + nodeId);
+
         if (txRecoveryMsgLog.isInfoEnabled()) {
             txRecoveryMsgLog.info("Received tx recovery response [txId=" + res.version() +
                 ", node=" + nodeId +

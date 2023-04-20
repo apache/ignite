@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -80,7 +81,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.binary.AbstractBinaryArraysTest;
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsAbstractTest.TestEnum;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -681,9 +685,7 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
     public void test0() throws Exception {
         U.TEST = false;
 
-        int grids = 4;
-
-        int putCnt = 10;
+        int grids = 3;
 
         try {
             Ignite ig0 = startGridsMultiThreaded(grids);
@@ -696,14 +698,15 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
                 .setBackups(2)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
+//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             );
 
             IgniteCache cache = client.cache("cache");
 
             Map data = new TreeMap();
 
-            for (int i = 0; i < 1000; ++i)
+            for (int i = 0; i < 1_000; ++i)
                 data.put(i, i);
 
             try (Transaction tx = client.transactions().txStart()){
@@ -712,29 +715,32 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
                 tx.commit();
             }
 
-            U.sleep(3000);
+            awaitPartitionMapExchange();
 
             U.TEST = true;
 
-            log.error("TEST | begin test");
-            
-            blockMessage(grid(1), GridNearLockResponse.class);
-            blockMessage(grid(3), GridNearLockResponse.class);
+            List<Integer> keys = IntStream.range(0, 1).boxed().collect(Collectors.toList());
 
-            runAsync(() -> tx(putCnt, client));
+            Ignite primary = primaryNode(0, "cache");
 
-//            runAsync(() -> {
-//                tx(putCnt, latch0, grid(1));
-//            });
-//
-//            runAsync(() -> {
-//                tx(putCnt, latch0, grid(2));
-//            });
+            List<Ignite> backups = backupNodes(0, "cache");
 
-            U.sleep(txTimeout * 2);
+            log.error("TEST | begin test. Primary node for key " + 0 + " is " +
+                U.toString(primary.cluster().localNode()) + ", backups: " + backups.stream()
+                .map(b -> U.toString(b.cluster().localNode())).collect(Collectors.joining(",")));
 
-            for (int i = 0; i < putCnt; ++i)
-                assertEquals(i, cache.get(i));
+//            blockMessage(primary, []].class);
+            blockMessage(primary, GridNearTxFinishResponse.class);
+//            blockMessage(backups.get(0), GridDhtTxPrepareResponse.class);
+//            blockMessage(backups.get(0), GridDhtTxFinishResponse.class);
+//            blockMessage(backups.get(1), GridDhtTxFinishResponse.class);
+
+            tx(keys, client);
+
+           // U.sleep(txTimeout * 2);
+
+            for (int i = 0; i < keys.size(); ++i)
+                assertEquals(keys.get(i), cache.get(keys.get(i)));
         }
         finally {
             stopAllGrids();
@@ -742,16 +748,13 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
     }
 
     /** */
-    private void blockMessage(IgniteEx grid, Class<? extends Message> cl) {
-        ((TestRecordingCommunicationSpi)grid.configuration().getCommunicationSpi()).blockMessages((n, m) -> {
-            return cl.isAssignableFrom(m.getClass());
-        });
+    private void blockMessage(Ignite grid, Class<? extends Message> cl) {
+        ((TestRecordingCommunicationSpi)grid.configuration().getCommunicationSpi())
+            .blockMessages((n, m) -> cl.isAssignableFrom(m.getClass()));
     }
 
     /** */
-    private void tx(int cnt, IgniteEx putter) {
-        List<Integer> keys = IntStream.range(0, cnt).boxed().collect(Collectors.toList());
-
+    private void tx(List<Integer> keys, IgniteEx putter) {
         Map data = new TreeMap<>();
 
         for (int i = 0; i < keys.size(); ++i)
@@ -762,7 +765,11 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
 
             cache.putAll(data);
 
+            log.error("TEST | commit Tx");
+
             tx0.commit();
+
+            log.error("TEST | commited");
         } catch (Exception e){
             log.error("Unable to close tx.", e);
         }
@@ -1607,7 +1614,7 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
         cfg.setTransactionConfiguration(new TransactionConfiguration()
             .setDefaultTxConcurrency(PESSIMISTIC)
             .setDefaultTxIsolation(READ_COMMITTED)
-            .setDefaultTxTimeout(3_000)
+            .setDefaultTxTimeout(5_000)
         );
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());

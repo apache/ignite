@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 
@@ -49,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
  * Common code for tx prepare in optimistic and pessimistic modes.
  */
 public abstract class GridNearTxPrepareFutureAdapter extends
-    GridCacheCompoundFuture<Object, IgniteInternalTx> implements GridCacheVersionedFuture<IgniteInternalTx> {
+    GridCacheCompoundFuture<GridNearTxPrepareResponse, IgniteInternalTx> implements GridCacheVersionedFuture<IgniteInternalTx> {
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -58,9 +60,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxPrepareFutureAdapter.class, Throwable.class, "err");
 
     /** */
-    private static final IgniteReducer<Object, IgniteInternalTx> REDUCER =
-        new IgniteReducer<Object, IgniteInternalTx>() {
-            @Override public boolean collect(Object e) {
+    private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
+        new IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx>() {
+            @Override public boolean collect(GridNearTxPrepareResponse e) {
                 return true;
             }
 
@@ -138,7 +140,15 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /**
      * Called when related {@link GridNearTxLocal} is completed asynchronously on timeout,
      */
-    public abstract void onNearTxLocalTimeout();
+    public void onNearTxLocalTimeout() {
+        if (U.TEST)
+            log.error("TEST | onNearTxLocalTimeout on " + U.toString(cctx.localNode()));
+    }
+
+    /**
+     * @return List of the nodes which haven't finished transaction conversation.
+     */
+    abstract List<UUID> notRespondedNodes();
 
     /**
      * @return Transaction.
@@ -150,13 +160,27 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /**
      * Prepares transaction.
      */
-    public abstract void prepare();
+    public void prepare(){
+        if(U.TEST)
+            log.error("TEST | GridNearTxPrepareFutureAdapter::prepare()");
+    }
 
     /**
      * @param nodeId Sender.
      * @param res Result.
      */
-    public abstract void onResult(UUID nodeId, GridNearTxPrepareResponse res);
+    public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
+        if (U.TEST)
+            log.error("TEST | GridNearTxPrepareFutureAdapter::onResult() on " + U.toString(cctx.localNode()));
+    }
+
+    /** */
+    @Override protected boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err, boolean cancel) {
+        if (U.TEST)
+            log.error("TEST | GridNearTxPrepareFutureAdapter::onDone#onResult() on " + U.toString(cctx.localNode()));
+
+        return super.onDone(res, err, cancel);
+    }
 
     /**
      * Checks if mapped transaction can be committed on one phase.
@@ -202,6 +226,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             return;
 
         assert res.error() == null : res;
+
+        if (U.TEST)
+            log.error("TEST | GridNearTxPrepareFutureAdapter::onPrepareResponse() (NEAR) on " + U.toString(cctx.localNode()));
 
         if (tx.onePhaseCommit() && !res.onePhaseCommit())
             tx.onePhaseCommit(false);

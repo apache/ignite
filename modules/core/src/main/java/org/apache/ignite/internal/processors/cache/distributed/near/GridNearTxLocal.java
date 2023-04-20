@@ -25,12 +25,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
@@ -92,6 +94,7 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -129,6 +132,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxE
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_READ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_WRITE;
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -145,8 +149,8 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
     /** Prepare future updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
+    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxPrepareFutureAdapter> PREP_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, GridNearTxPrepareFutureAdapter.class, "prepFut");
 
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
@@ -161,7 +165,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** Prepare future. */
     @GridToStringExclude
-    private volatile IgniteInternalFuture<?> prepFut;
+    private volatile GridNearTxPrepareFutureAdapter prepFut;
 
     /** Commit future. */
     @GridToStringExclude
@@ -772,7 +776,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         assert map != null || invokeMap != null;
 
-        if (F.isEmpty(map) && F.isEmpty(invokeMap)) {
+        if (isEmpty(map) && isEmpty(invokeMap)) {
             if (implicit())
                 try {
                     commit();
@@ -904,7 +908,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
-        if (F.isEmpty(map0) && F.isEmpty(invokeMap0)) {
+        if (isEmpty(map0) && isEmpty(invokeMap0)) {
             if (implicit())
                 try {
                     commit();
@@ -1790,7 +1794,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
-        if (F.isEmpty(keys0)) {
+        if (isEmpty(keys0)) {
             if (implicit()) {
                 try {
                     commit();
@@ -1811,7 +1815,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final CacheEntryPredicate[] filters = CU.filterArray(filter);
 
-        if (!F.isEmpty(filters))
+        if (!isEmpty(filters))
             plc = opCtx != null ? opCtx.expiry() : null;
         else
             plc = null;
@@ -1987,7 +1991,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        if (F.isEmpty(keys)) {
+        if (isEmpty(keys)) {
             if (implicit()) {
                 try {
                     commit();
@@ -2240,7 +2244,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean recovery,
         final ReadRepairStrategy readRepairStrategy,
         final boolean needVer) {
-        if (F.isEmpty(keys))
+        if (isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(true))
@@ -2356,7 +2360,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                                 try {
                                     Object transformClo =
-                                        (!F.isEmpty(txEntry.entryProcessors()) &&
+                                        (!isEmpty(txEntry.entryProcessors()) &&
                                             cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ)) ?
                                             F.first(txEntry.entryProcessors()) : null;
 
@@ -2396,7 +2400,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                                         txEntry.setAndMarkValid(val);
 
-                                        if (!F.isEmpty(txEntry.entryProcessors()))
+                                        if (!isEmpty(txEntry.entryProcessors()))
                                             val = txEntry.applyEntryProcessors(val);
 
                                         cacheCtx.addResult(retMap,
@@ -2625,7 +2629,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         ReadRepairStrategy readRepairStrategy,
         final boolean needVer
     ) throws IgniteCheckedException {
-        assert !F.isEmpty(keys);
+        assert !isEmpty(keys);
         assert keysCnt == keys.size();
 
         try (TraceSurroundings ignored2 =
@@ -2660,7 +2664,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     CacheObject val = txEntry.value();
 
                     if (txEntry.hasValue()) {
-                        if (!F.isEmpty(txEntry.entryProcessors()))
+                        if (!isEmpty(txEntry.entryProcessors()))
                             val = txEntry.applyEntryProcessors(val);
 
                         if (val != null) {
@@ -2749,7 +2753,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     if (!readCommitted() && !skipVals)
                                         txEntry.readValue(val);
 
-                                    if (!F.isEmpty(txEntry.entryProcessors()))
+                                    if (!isEmpty(txEntry.entryProcessors()))
                                         val = txEntry.applyEntryProcessors(val);
 
                                     cacheCtx.addResult(map,
@@ -3558,7 +3562,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param maps Mappings.
      */
     void addEntryMapping(@Nullable Collection<GridDistributedTxMapping> maps) {
-        if (!F.isEmpty(maps)) {
+        if (!isEmpty(maps)) {
             for (GridDistributedTxMapping map : maps) {
                 ClusterNode primary = map.primary();
 
@@ -4308,7 +4312,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         IgniteInternalFuture<?> prep = prepFut;
 
         // Do not create finish future if there are no remote nodes.
-        if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
+        if (isEmpty(dhtMap) && isEmpty(nearMap)) {
             IgniteInternalFuture fut = prep != null ? prep : new GridFinishedFuture<>(this);
 
             if (fut.isDone())
@@ -4454,7 +4458,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         final GridCacheReturn ret = new GridCacheReturn(localResult(), false);
 
-        if (F.isEmpty(keys))
+        if (isEmpty(keys))
             return new GridFinishedFuture<>(ret);
 
         init();
@@ -4798,7 +4802,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             if (!readCommitted())
                                 txEntry.readValue(cacheVal);
 
-                            if (!F.isEmpty(txEntry.entryProcessors()))
+                            if (!isEmpty(txEntry.entryProcessors()))
                                 visibleVal = txEntry.applyEntryProcessors(visibleVal);
                         }
 
@@ -5008,6 +5012,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
+        if (U.TEST)
+            log.error("TEST | GridNearTxLocal::onTimeout() on " + U.toString(cctx.localNode()));
+
         boolean proceed;
 
         synchronized (this) {
@@ -5021,8 +5028,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(false, true);
 
+                    String notResponded = prepFut.notRespondedNodes().stream().map(UUID::toString)
+                        .collect(Collectors.joining(","));
+
                     U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
-                        CU.txString(GridNearTxLocal.this));
+                        CU.txString(GridNearTxLocal.this) + (isEmpty(notResponded) ? "" : ". Not responded nodes: " +
+                        notResponded + '.'));
                 }
             });
         }

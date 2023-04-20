@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -88,6 +89,8 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
     /** {@inheritDoc} */
     @Override public final void onNearTxLocalTimeout() {
+        super.onNearTxLocalTimeout();
+
         try (TraceSurroundings ignored = MTC.support(span)) {
             if (keyLockFut != null && !keyLockFut.isDone()) {
                 ERR_UPD.compareAndSet(this, null, new IgniteTxTimeoutCheckedException(
@@ -101,6 +104,8 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
     /** {@inheritDoc} */
     @Override public final void prepare() {
+        super.prepare();
+
         try (TraceSurroundings ignored =
                  MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_NEAR_PREPARE, MTC.span()))) {
             // Obtain the topology version to use.
@@ -241,6 +246,9 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      * @param timedOut {@code True} if timed out.
      */
     protected boolean errorOrTimeoutOnTopologyVersion(IgniteCheckedException e, boolean timedOut) {
+        if (U.TEST)
+            log.error("TEST | " + getClass().getSimpleName() + "::errorOrTimeoutOnTopologyVersion() on " + U.toString(cctx.localNode()));
+
         if (e != null || timedOut) {
             if (timedOut)
                 e = tx.timeoutException();

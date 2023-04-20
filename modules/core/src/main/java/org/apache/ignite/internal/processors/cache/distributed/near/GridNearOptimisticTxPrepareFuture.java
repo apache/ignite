@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -92,6 +93,19 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         super(cctx, tx);
 
         assert tx.optimistic() && !tx.serializable() : tx;
+    }
+
+    /** {@inheritDoc} */
+    @Override List<UUID> notRespondedNodes() {
+        compoundsReadLock();
+
+        try {
+            return futures().stream().filter(f -> isMini(f) && !(f.isDone() || f.isCancelled()))
+                .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
+        }
+        finally {
+            compoundsReadUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -756,7 +770,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     }
                 }
 
-                add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, Object>() {
+                add(new GridEmbeddedFuture<>(new IgniteBiClosure<TxDeadlock, Exception, GridNearTxPrepareResponse>() {
                     @Override public GridNearTxPrepareResponse apply(TxDeadlock deadlock, Exception e) {
                         if (e != null)
                             U.warn(log, "Failed to detect deadlock.", e);
@@ -843,8 +857,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @Override public String apply(IgniteInternalFuture<?> f) {
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<GridNearTxPrepareResponse>, String>() {
+            @Override public String apply(IgniteInternalFuture<GridNearTxPrepareResponse> f) {
                 if (isMini(f)) {
                     return "[node=" + ((MiniFuture)f).node().id() +
                         ", loc=" + ((MiniFuture)f).node().isLocal() +
@@ -853,8 +867,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 else
                     return f.toString();
             }
-        }, new P1<IgniteInternalFuture<Object>>() {
-            @Override public boolean apply(IgniteInternalFuture<Object> fut) {
+        }, new P1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+            @Override public boolean apply(IgniteInternalFuture<GridNearTxPrepareResponse> fut) {
                 return isMini(fut);
             }
         });
