@@ -163,7 +163,6 @@ public class GridTcpRouterConfiguration {
      * of both rest binary server and out coming connections.
      *
      * @return SslContextFactory instance.
-     * @see Factory<SSLContext>
      */
     @Nullable public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;

@@ -339,7 +339,6 @@ public class GridClientConfiguration {
      * If it returns {@code null} then SSL is considered disabled.
      *
      * @return Factory instance.
-     * @see Factory<SSLContext>
      */
     public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
