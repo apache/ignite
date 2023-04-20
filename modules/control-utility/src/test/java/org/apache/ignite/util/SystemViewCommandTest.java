@@ -178,7 +178,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         ignite0 = ignite(0);
         ignite1 = ignite(1);
 
-        //Thread.sleep(3 * 60_000); //TODO: remove me before merge.
+        Thread.sleep(3 * 60_000); //TODO: remove me before merge.
     }
 
     /** Tests command error output in case of mandatory system view name is omitted. */

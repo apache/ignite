@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.kill;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import lombok.Data;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -30,7 +29,6 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  *
  */
-@Data
 public class KillComputeCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
