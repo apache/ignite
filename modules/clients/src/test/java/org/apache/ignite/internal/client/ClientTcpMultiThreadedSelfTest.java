@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 
 /**
  * Runs multi-threaded tests on tcp binary protocol (ssl is disabled).
@@ -39,7 +40,7 @@ public class ClientTcpMultiThreadedSelfTest extends ClientAbstractMultiThreadedS
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
+    @Override protected Factory<SSLContext> sslContextFactory() {
         return null;
     }
 }

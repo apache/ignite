@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.client.router;
 
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 
@@ -33,8 +34,8 @@ public class TcpSslRouterSelfTest extends TcpRouterAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
-        return GridTestUtils.sslContextFactory();
+    @Override protected Factory<SSLContext> sslContextFactory() {
+        return GridTestUtils.sslFactory();
     }
 
     /**

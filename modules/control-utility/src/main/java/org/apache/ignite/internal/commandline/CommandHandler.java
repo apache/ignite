@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -572,18 +570,21 @@ public class CommandHandler {
      * @param args Commond args.
      * @return Ssl support factory.
      */
-    @NotNull private GridSslBasicContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
-        GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+    @NotNull private SslContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
+        SslContextFactory factory = new SslContextFactory();
 
-        List<String> sslProtocols = split(args.sslProtocol(), ",");
+        String[] sslProtocols = split(args.sslProtocol(), ",");
 
-        String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+        if (F.isEmpty(sslProtocols))
+            factory.setProtocol(DFLT_SSL_PROTOCOL);
+        else {
+            factory.setProtocol(sslProtocols[0]);
 
-        factory.setProtocol(sslProtocol);
+            if (sslProtocols.length > 1)
+                factory.setProtocols(sslProtocols);
+        }
+
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-        if (sslProtocols.size() > 1)
-            factory.setProtocols(sslProtocols);
 
         factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
 
@@ -601,7 +602,7 @@ public class CommandHandler {
         factory.setKeyStoreType(args.sslKeyStoreType());
 
         if (F.isEmpty(args.sslTrustStorePath()))
-            factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+            factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
         else {
             factory.setTrustStoreFilePath(args.sslTrustStorePath());
 
@@ -713,14 +714,14 @@ public class CommandHandler {
      * @param delim Delimiter.
      * @return List with items.
      */
-    private static List<String> split(String s, String delim) {
+    private static String[] split(String s, String delim) {
         if (F.isEmpty(s))
-            return Collections.emptyList();
+            return null;
 
         return Arrays.stream(s.split(delim))
             .map(String::trim)
             .filter(item -> !item.isEmpty())
-            .collect(Collectors.toList());
+            .toArray(String[]::new);
     }
 
     /** @param rawArgs Arguments. */
