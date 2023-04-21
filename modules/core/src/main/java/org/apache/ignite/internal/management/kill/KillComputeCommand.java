@@ -20,9 +20,7 @@ package org.apache.ignite.internal.management.kill;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 
-/**
- *
- */
+/** */
 public class KillComputeCommand extends BaseCommand<KillComputeCommandArg, Void, VisorComputeCancelSessionTask> {
     /** {@inheritDoc} */
     @Override public String description() {

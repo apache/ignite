@@ -20,9 +20,7 @@ package org.apache.ignite.internal.management.kill;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 
-/**
- *
- */
+/** */
 public class KillSqlCommand extends BaseCommand<KillSqlCommandArg, Void, VisorQueryCancelOnInitiatorTask> {
     /** {@inheritDoc} */
     @Override public String description() {

@@ -21,9 +21,7 @@ import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
-/**
- *
- */
+/** */
 public class KillSnapshotCommand extends BaseCommand<KillSnapshotCommandArg, VisorSnapshotTaskResult, VisorSnapshotCancelTask> {
     /** {@inheritDoc} */
     @Override public String description() {

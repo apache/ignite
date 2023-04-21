@@ -26,9 +26,7 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
-/**
- *
- */
+/** */
 public class KillComputeCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

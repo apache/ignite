@@ -25,9 +25,7 @@ import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.tx.KillTransactionTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
-/**
- *
- */
+/** */
 public class KillTransactionCommand
     extends BaseCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>, KillTransactionTask> {
     /** {@inheritDoc} */

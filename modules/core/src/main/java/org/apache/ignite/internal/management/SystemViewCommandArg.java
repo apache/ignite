@@ -27,9 +27,7 @@ import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- *
- */
+/** */
 @OneOf(value = {"nodeIds", "nodeId", "allNodes"}, optional = true)
 public class SystemViewCommandArg extends IgniteDataTransferObject {
     /** */

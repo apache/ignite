@@ -23,9 +23,7 @@ import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
-/**
- *
- */
+/** */
 public class KillConsistencyCommand extends BaseCommand<EmptyArg, Void, VisorConsistencyCancelTask> {
     /** {@inheritDoc} */
     @Override public String description() {

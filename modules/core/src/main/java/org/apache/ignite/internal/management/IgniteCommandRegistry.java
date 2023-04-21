@@ -24,7 +24,7 @@ import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.kill.KillCommand;
 
 /**
- *
+ * Root command registry. Contains all known commands.
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl {
     /** {@inheritDoc} */

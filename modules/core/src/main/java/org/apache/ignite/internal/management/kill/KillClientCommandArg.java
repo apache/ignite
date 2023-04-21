@@ -26,9 +26,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- *
- */
+/** */
 public class KillClientCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

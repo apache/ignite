@@ -20,9 +20,7 @@ package org.apache.ignite.internal.management.kill;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
 
-/**
- *
- */
+/** */
 public class KillContinuousCommand extends BaseCommand<KillContinuousCommandArg, Void, VisorContinuousQueryCancelTask> {
     /** {@inheritDoc} */
     @Override public String description() {

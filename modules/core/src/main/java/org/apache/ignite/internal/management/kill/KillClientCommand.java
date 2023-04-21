@@ -23,9 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
-/**
- *
- */
+/** */
 public class KillClientCommand extends BaseCommand<KillClientCommandArg, Void, VisorClientConnectionDropTask> {
     /** {@inheritDoc} */
     @Override public String description() {

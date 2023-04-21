@@ -23,9 +23,7 @@ import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/**
- *
- */
+/** */
 @CliPositionalSubcommands
 public class KillCommand extends CommandRegistryImpl {
     /** {@inheritDoc} */
