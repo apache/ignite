@@ -1,3 +1,9 @@
+apache-ignite (2.15.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.15.0
+
+ -- Alexey Plekhanov <alexpl@apache.org>  Thu, 20 Apr 2023 11:00:00 +0300
+
 apache-ignite (2.14.0-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.14.0
