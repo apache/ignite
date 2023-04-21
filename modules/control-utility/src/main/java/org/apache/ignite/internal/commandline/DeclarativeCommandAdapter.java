@@ -42,11 +42,10 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.AbstractCommandInvoker;
-import org.apache.ignite.internal.management.CommandsRegistryImpl;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.F;
@@ -74,7 +73,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** */
-    public final CommandsRegistryImpl standaloneRegistry = new CommandsRegistryImpl();
+    private final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
 
     /** */
     private final org.apache.ignite.internal.management.api.Command<A, ?, ?> baseCmd;
@@ -84,8 +83,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** */
     public DeclarativeCommandAdapter(String name) {
-        standaloneRegistry.registerAll();
-
         baseCmd = standaloneRegistry.command(name);
 
         assert baseCmd != null;
@@ -215,7 +212,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         List<CommandsRegistry> parents,
         IgniteLogger logger
     ) {
-        boolean skip = (cmd instanceof CommandWithSubs) && !((CommandWithSubs)cmd).canBeExecuted();
+        boolean skip = (cmd instanceof CommandsRegistry) && !((CommandsRegistry)cmd).canBeExecuted();
 
         if (!skip) {
             logger.info("");
@@ -308,7 +305,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
             parentPrefix.append(cmdName).append(CMD_WORDS_DELIM);
 
-            if (cmd0 instanceof CommandWithSubs)
+            if (cmd0 instanceof CommandsRegistry)
                 prefixInclude.set(!(cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)));
         };
 

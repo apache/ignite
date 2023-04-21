@@ -23,7 +23,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
+ * Required for {@code control.sh} backward compatibility.
+ * {@link CommandsRegistry} marked with this annotation must expect subcommand name without {@code --} prefix.
+ * Example: {@code ./control.sh --kill COMPUTE ... other options}.
+ * Here subcommand name "COMPUTE" passed without {@code --} command prefix.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

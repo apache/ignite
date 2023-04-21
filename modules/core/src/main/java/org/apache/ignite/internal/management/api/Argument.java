@@ -30,24 +30,19 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Argument {
-    /** */
+    /** @return {@code True} if argument optional, {@code false} if required. */
     public boolean optional() default false;
 
-    /** */
+    /** @return Argument description. */
     public String description() default "";
 
-    /** */
+    /** @return Command example. If empty string returned then example will be generated automatically. */
     public String example() default "";
 
-    /** */
+    /**
+     * Required to keep compatibility with existing {@code control.sh} output.
+     *
+     * @return {@code True} if paramter name printed in help message must be formatted in java style.
+     */
     public boolean javaStyleExample() default false;
-
-    /** */
-    public boolean withoutPrefix() default false;
-
-    /** */
-    public boolean javaStyleName() default false;
-
-    /** */
-    public boolean brackets() default false;
 }

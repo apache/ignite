@@ -27,8 +27,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
  */
 public abstract class BaseCommand<A extends IgniteDataTransferObject, R, T
     extends ComputeTask<VisorTaskArgument<A>, R>> implements Command<A, R, T> {
-    /** */
-    public static final String CMD_NAME_POSTFIX = "Command";
 
     /** {@inheritDoc} */
     @Override public String toString() {

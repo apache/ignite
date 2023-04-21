@@ -29,11 +29,19 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
  * Base management command interface.
  * Implementations represents single atomic action to manage Ignite cluster.
  *
+ * Name of the command that is expected from caller derived from actual command class name.
+ * Name format: all words divided by capital letters except "Command" suffix will form hierarchical command name.
+ * Example: {@code MyUsefullCommand} is name of command so {@code control.sh --my-usesull param1 param2} expected from user.
+ * Other protocols must expose command similarly. Rest API must expect {@code /api-root/my-usefull?param1=value1&param2=value2} URI.
+ *
  * @param <A> Argument type.
  * @param <R> Result type.
  * @param <T> Compute task type.
  */
 public interface Command<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> {
+    /** */
+    public static final String CMD_NAME_POSTFIX = "Command";
+
     /** Command description. */
     public String description();
 

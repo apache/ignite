@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,9 +44,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.appendJvmId;
  */
 public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
     /** */
-    private PluginContext ctx;
-
-    /** */
     private IgniteLogger log;
 
     /** */
@@ -58,7 +54,6 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
     /** */
     public void context(PluginContext ctx) {
-        this.ctx = ctx;
         grid = (IgniteEx)ctx.grid();
         log = ctx.log(JmxCommandsRegistryInvokerPlugin.class);
     }
@@ -85,7 +80,7 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
             parents.remove(parents.size() - 1);
 
-            if (!((CommandWithSubs)cmd).canBeExecuted())
+            if (!((CommandsRegistry)cmd).canBeExecuted())
                 return;
         }
 

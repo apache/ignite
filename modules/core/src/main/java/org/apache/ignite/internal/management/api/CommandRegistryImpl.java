@@ -22,29 +22,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistryImpl;
-import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 
 /**
  *
  */
-public abstract class CommandWithSubs implements Command, CommandsRegistry {
+public abstract class CommandRegistryImpl implements Command, CommandsRegistry {
     /** */
     private final Map<String, Command<?, ?, ?>> commands = new LinkedHashMap<>();
 
     /** */
-    protected void registerAll() {
-        subcommands().forEach(cmd -> {
-            register(cmd);
-
-            if (cmd instanceof CommandWithSubs)
-                ((CommandWithSubs)cmd).registerAll();
-        });
+    protected CommandRegistryImpl() {
+        subcommands().forEach(this::register);
     }
 
     /** */
     void register(Command<?, ?, ?> cmd) {
-        Class<? extends CommandsRegistry> parent = getClass() == CommandsRegistryImpl.class ? null : getClass();
+        Class<? extends CommandsRegistry> parent = getClass() == IgniteCommandRegistry.class ? null : getClass();
 
         String name = cmd.getClass().getSimpleName();
 
@@ -82,11 +76,6 @@ public abstract class CommandWithSubs implements Command, CommandsRegistry {
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<String, Command<?, ?, ?>>> iterator() {
         return commands.entrySet().iterator();
-    }
-
-    /** */
-    public boolean canBeExecuted() {
-        return false;
     }
 
     /** {@inheritDoc} */

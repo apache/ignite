@@ -43,7 +43,6 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
@@ -184,7 +183,7 @@ public abstract class AbstractCommandInvoker {
 
         Command<A, ?, ?> cmd0 = (Command<A, ?, ?>)root;
 
-        while (cmd0 instanceof CommandWithSubs && iter.hasNext()) {
+        while (cmd0 instanceof CommandsRegistry && iter.hasNext()) {
             String name = iter.peek();
 
             if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class) && isCli) {
@@ -194,7 +193,7 @@ public abstract class AbstractCommandInvoker {
                 name = name.substring(PARAMETER_PREFIX.length());
             }
 
-            Command<A, ?, ?> cmd1 = ((CommandWithSubs)cmd0).command(fromFormattedName(name, CMD_WORDS_DELIM));
+            Command<A, ?, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedName(name, CMD_WORDS_DELIM));
 
             if (cmd1 != null) {
                 cmd0 = cmd1;
@@ -203,7 +202,7 @@ public abstract class AbstractCommandInvoker {
             }
         }
 
-        if (cmd0 instanceof CommandWithSubs && !((CommandWithSubs)cmd0).canBeExecuted()) {
+        if (cmd0 instanceof CommandsRegistry && !((CommandsRegistry)cmd0).canBeExecuted()) {
             throw new IllegalArgumentException(
                 "Command " + formattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
             );

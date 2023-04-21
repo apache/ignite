@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-/** */
+/** Utility class for commands without any specific arguments. */
 public class EmptyArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

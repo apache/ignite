@@ -23,14 +23,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
+ * Defines commands arguments restriction.
+ * Only one of {@link #value()} fields must be presented in Arguments.
+ * If several values from {@link #value()} presented arguments in invalid. Error will be thrown.
+ * @see org.apache.ignite.internal.management.SystemViewCommandArg
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface OneOf {
-    /** */
+    /** @return Names of argument class fields to forms "one of" restriction. */
     public String[] value();
 
-    /** */
+    /** @return {@code True} if arguments is optional, {@code false} if required. */
     public boolean optional() default false;
 }

@@ -37,9 +37,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.CommandsRegistryImpl;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -209,12 +208,8 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
-        // TODO: add to string generation.
-        CommandsRegistryImpl registry = new CommandsRegistryImpl();
-
-        registry.registerAll();
-
-        registry.forEach(gen::generate);
+        // TODO: add to string ang getters setters generation.
+        new IgniteCommandRegistry().forEach(gen::generate);
     }
 
     /** */
@@ -224,7 +219,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         Command<?, ?, ?> cmd = entry.getValue();
 
         if (cmd instanceof CommandsRegistry) {
-            generate = ((CommandWithSubs)cmd).canBeExecuted();
+            generate = ((CommandsRegistry)cmd).canBeExecuted();
 
             ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
         }

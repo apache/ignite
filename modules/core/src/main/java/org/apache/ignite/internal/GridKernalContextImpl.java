@@ -40,7 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
-import org.apache.ignite.internal.management.CommandsRegistryImpl;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -454,9 +454,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                     "META-INF/ignite.xml.");
         }
 
-        commands = new CommandsRegistryImpl();
-
-        ((CommandsRegistryImpl)commands).registerAll();
+        commands = new IgniteCommandRegistry();
     }
 
     /** {@inheritDoc} */

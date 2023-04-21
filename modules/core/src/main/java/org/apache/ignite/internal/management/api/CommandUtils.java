@@ -30,7 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -66,7 +65,7 @@ public class CommandUtils {
 
             return asOptional(
                 arg.example().isEmpty()
-                    ? name(fld, PARAM_WORDS_DELIM, Argument::javaStyleName)
+                    ? name(fld, PARAM_WORDS_DELIM)
                     : arg.example(),
                 appendOptional && arg.optional()
             );
@@ -109,7 +108,7 @@ public class CommandUtils {
             return asOptional(bldr.toString(), optional);
         }
 
-        String name = name(fld, PARAM_WORDS_DELIM, Argument::javaStyleExample);
+        String name = name(fld, PARAM_WORDS_DELIM);
 
         if (fld.getType().isArray() || Collection.class.isAssignableFrom(fld.getType())) {
             if (name.endsWith("s"))
@@ -125,9 +124,6 @@ public class CommandUtils {
 
             return asOptional(example, optional);
         }
-
-        if (param.brackets())
-            name = '<' + name + '>';
 
         return asOptional(name, optional);
     }
@@ -181,16 +177,14 @@ public class CommandUtils {
     }
 
     /** */
-    private static String name(Field fld, char delim, Predicate<Argument> javaStyle) {
+    private static String name(Field fld, char delim) {
         if (fld.isAnnotationPresent(Positional.class)) {
             return fld.getAnnotation(Argument.class).javaStyleExample()
                 ? fld.getName()
                 : formattedName(fld.getName(), delim);
         }
 
-        return javaStyle.test(fld.getAnnotation(Argument.class))
-            ? fld.getName()
-            : formattedName(fld.getName(), delim);
+        return formattedName(fld.getName(), delim);
     }
 
     /** */
@@ -275,8 +269,7 @@ public class CommandUtils {
 
     /** */
     public static String parameterName(Field fld) {
-        return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
-            + name(fld, CMD_WORDS_DELIM, Argument::javaStyleName);
+        return PARAMETER_PREFIX + name(fld, CMD_WORDS_DELIM);
     }
 
     /** */

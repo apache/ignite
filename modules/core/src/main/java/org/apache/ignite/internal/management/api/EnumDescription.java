@@ -23,14 +23,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * TODO: add assert that all enum values described
+ * Annotation clarifies enum values in command arguments if required.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface EnumDescription {
-    /** */
+    /** @return Names of enum constants. */
     public String[] names();
 
-    /** */
+    /** @return Description of each enum constant. */
     public String[] descriptions();
 }

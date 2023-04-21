@@ -20,8 +20,20 @@ package org.apache.ignite.internal.management.api;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-/** */
+/**
+ * Registry that knows all of it's children commands.
+ *
+ * @see org.apache.ignite.internal.management.IgniteCommandRegistry
+ */
 public interface CommandsRegistry extends Iterable<Map.Entry<String, Command<?, ?, ?>>> {
-    /** */
+    /**
+     * @param name Name of the command.
+     * @return Command instance by name.
+     */
     public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name);
+
+    /** @return {@code True} if base command represented by this registry can itself be executed. */
+    public default boolean canBeExecuted() {
+        return false;
+    }
 }

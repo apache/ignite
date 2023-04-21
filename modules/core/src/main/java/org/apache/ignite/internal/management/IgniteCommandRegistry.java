@@ -20,23 +20,18 @@ package org.apache.ignite.internal.management;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.kill.KillCommand;
 
 /**
  *
  */
-public class CommandsRegistryImpl extends CommandWithSubs {
+public class IgniteCommandRegistry extends CommandRegistryImpl {
     /** {@inheritDoc} */
     @Override protected List<Command<?, ?, ?>> subcommands() {
-        return Arrays.<Command<?, ?, ?>>asList(
+        return Arrays.asList(
             new SystemViewCommand(),
             new KillCommand()
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerAll() {
-        super.registerAll();
     }
 }
