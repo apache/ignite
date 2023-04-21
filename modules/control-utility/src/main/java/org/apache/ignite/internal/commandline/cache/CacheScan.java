@@ -33,6 +33,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheScanTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTaskResult;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
+
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
 

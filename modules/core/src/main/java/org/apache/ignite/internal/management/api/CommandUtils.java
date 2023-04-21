@@ -21,7 +21,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteUuid;
@@ -185,29 +184,6 @@ public class CommandUtils {
         }
 
         return name.toString();
-    }
-
-    /** */
-    public static boolean hasDescribedParameters(Command<?, ?, ?> cmd) {
-        AtomicBoolean res = new AtomicBoolean();
-
-        visitCommandParams(
-            cmd.args(),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ))
-        );
-
-        return res.get();
     }
 
     /** */

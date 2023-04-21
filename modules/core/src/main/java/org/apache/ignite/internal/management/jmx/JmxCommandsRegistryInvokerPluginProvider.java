@@ -36,11 +36,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JmxCommandsRegistryInvokerPluginProvider implements PluginProvider {
     /** */
-    private JmxCommandsRegistryInvokerPlugin invoker = new JmxCommandsRegistryInvokerPlugin();
+    private final JmxCommandsRegistryInvokerPlugin plugin = new JmxCommandsRegistryInvokerPlugin();
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "JMX invoker of CommandRegistry";
+        return "Commands JMX invoker";
     }
 
     /** {@inheritDoc} */
@@ -55,12 +55,12 @@ public class JmxCommandsRegistryInvokerPluginProvider implements PluginProvider 
 
     /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
-        return invoker;
+        return plugin;
     }
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-        invoker.context(ctx);
+        plugin.context(ctx);
     }
 
     /** {@inheritDoc} */
@@ -70,12 +70,12 @@ public class JmxCommandsRegistryInvokerPluginProvider implements PluginProvider 
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
-        invoker.onIgniteStart();
+        plugin.onIgniteStart();
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-        invoker.onIgniteStop();
+        plugin.onIgniteStop();
     }
 
     /** {@inheritDoc} */

@@ -62,25 +62,24 @@ import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_D
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.commandName;
-import static org.apache.ignite.internal.management.api.CommandUtils.hasDescribedParameters;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 
 /**
- *
+ * Adapter of new management API command to legacy {@code control.sh} execution flow.
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
-    /** */
+    /** All commands registry. */
     private final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
 
-    /** */
+    /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<A, ?, ?> baseCmd;
 
-    /** */
+    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
     private IgniteBiTuple<org.apache.ignite.internal.management.api.Command<A, ?, ?>, A> parsed;
 
-    /** */
+    /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
         baseCmd = standaloneRegistry.command(name);
 
@@ -156,7 +155,13 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         return execute0(clientCfg, logger);
     }
 
-    /** */
+    /**
+     * @param clientCfg Client configuration.
+     * @param logger Logger to print result.
+     * @return Command result.
+     * @param <R> Result type
+     * @throws Exception If failed.
+     */
     private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientCompute compute = client.compute();
@@ -205,7 +210,13 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         usage(baseCmd, Collections.emptyList(), logger);
     }
 
-    /** */
+    /**
+     * Generates usage for base command and all of its children, if any.
+     *
+     * @param cmd Base command.
+     * @param parents Collection of parent commands.
+     * @param logger Logger to print help to.
+     */
     private void usage(
         org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
         List<CommandsRegistry> parents,
@@ -272,7 +283,13 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
     }
 
-    /** */
+    /**
+     * Generates and prints example of command.
+     *
+     * @param cmd Command.
+     * @param parents Collection of parent commands.
+     * @param logger Logger to print help to.
+     */
     private void printExample(
         org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
         List<CommandsRegistry> parents,
@@ -350,5 +367,31 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         return null;
+    }
+
+    /**
+     * @param cmd Command.
+     * @return {@code True} if command has described parameters.
+     */
+    public boolean hasDescribedParameters(org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd) {
+        AtomicBoolean res = new AtomicBoolean();
+
+        visitCommandParams(
+            cmd.args(),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ))
+        );
+
+        return res.get();
     }
 }
