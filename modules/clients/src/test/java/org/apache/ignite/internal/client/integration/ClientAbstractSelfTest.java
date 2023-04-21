@@ -35,6 +35,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteException;
@@ -61,7 +62,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -70,6 +70,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -181,7 +182,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return SSL context factory used in test.
      */
-    protected abstract GridSslContextFactory sslContextFactory();
+    protected abstract Factory<SSLContext> sslContextFactory();
 
     /**
      * Get task name.
@@ -223,7 +224,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         if (useSsl()) {
             clientCfg.setSslEnabled(true);
 
-            clientCfg.setSslContextFactory(sslContextFactory());
+            clientCfg.setSslFactory(sslContextFactory());
         }
 
         cfg.setConnectorConfiguration(clientCfg);

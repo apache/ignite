@@ -31,8 +31,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
@@ -60,7 +60,6 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManager;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerOsImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.CycleThread;
@@ -164,17 +163,10 @@ public class GridClientImpl implements GridClient, GridClientBeforeNodeStart {
             if (!beforeNodeStart && cfg.getBalancer() instanceof GridClientTopologyListener)
                 top.addTopologyListener((GridClientTopologyListener)cfg.getBalancer());
 
-            GridSslContextFactory factory = cfg.getSslContextFactory();
+            Factory<SSLContext> factory = cfg.getSslContextFactory();
 
-            if (factory != null) {
-                try {
-                    sslCtx = factory.createSslContext();
-                }
-                catch (SSLException e) {
-                    throw new GridClientException("Failed to create client (unable to create SSL context, " +
-                        "check ssl context factory configuration): " + e.getMessage(), e);
-                }
-            }
+            if (factory != null)
+                sslCtx = factory.create();
             else
                 sslCtx = null;
 
