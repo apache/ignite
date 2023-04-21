@@ -66,7 +66,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.hasDescribe
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
-import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
  *

@@ -19,20 +19,11 @@ package org.apache.ignite.internal.management.api;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
@@ -126,54 +117,6 @@ public class CommandUtils {
         }
 
         return asOptional(name, optional);
-    }
-
-    /**
-     * Iterates and visits each command parameter.
-     */
-    public static <C extends IgniteDataTransferObject> void visitCommandParams(
-        Class<C> clazz,
-        Consumer<Field> positionalParamVisitor,
-        Consumer<Field> namedParamVisitor,
-        BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
-    ) {
-        List<Field> positionalParams = new ArrayList<>();
-        List<Field> namedParams = new ArrayList<>();
-
-        OneOf oneOf = clazz.getAnnotation(OneOf.class);
-
-        Set<String> oneOfNames = oneOf != null
-            ? new HashSet<>(Arrays.asList(oneOf.value()))
-            : Collections.emptySet();
-
-        List<Field> oneOfFlds = new ArrayList<>();
-
-        Class<? extends IgniteDataTransferObject> clazz0 = clazz;
-
-        while (clazz0 != IgniteDataTransferObject.class) {
-            Field[] flds = clazz0.getDeclaredFields();
-
-            for (Field fld : flds) {
-                if (oneOfNames.contains(fld.getName()))
-                    oneOfFlds.add(fld);
-                else if (fld.isAnnotationPresent(Positional.class))
-                    positionalParams.add(fld);
-                else if (fld.isAnnotationPresent(Argument.class))
-                    namedParams.add(fld);
-            }
-
-            if (IgniteDataTransferObject.class.isAssignableFrom(clazz0.getSuperclass()))
-                clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
-            else
-                break;
-        }
-
-        positionalParams.forEach(positionalParamVisitor);
-
-        namedParams.forEach(namedParamVisitor);
-
-        if (oneOf != null)
-            oneOfNamedParamVisitor.accept(oneOf.optional(), oneOfFlds);
     }
 
     /** */

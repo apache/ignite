@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.management.jmx;
 
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.AbstractCommandInvoker;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.Positional;
-
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -35,58 +34,34 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.ReflectionException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.AbstractCommandInvoker;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.EnumDescription;
 import static javax.management.MBeanOperationInfo.ACTION;
-import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
- *
+ * MBean to expose single command.
  */
 public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements DynamicMBean {
-    /** */
+    /** Each command exposed via JMX has name "invoke". */
     public static final String METHOD = "invoke";
 
-    /** */
+    /** Local node. */
     private final IgniteEx grid;
 
-    /** */
+    /** Command to expose. */
     private final Command<A, ?, ?> cmd;
 
-    /** */
+    /**
+     * @param grid Local node.
+     * @param cmd Command to expose.
+     */
     public CommandMBean(IgniteEx grid, Command<A, ?, ?> cmd) {
         this.grid = grid;
         this.cmd = cmd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getAttribute(
-        String attribute
-    ) throws AttributeNotFoundException, MBeanException, ReflectionException {
-        throw new UnsupportedOperationException("getAttribute");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setAttribute(
-        Attribute attribute
-    ) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
-        throw new UnsupportedOperationException("setAttribute");
-    }
-
-    /** {@inheritDoc} */
-    @Override public AttributeList getAttributes(String[] attributes) {
-        throw new UnsupportedOperationException("getAttributes");
-    }
-
-    /** {@inheritDoc} */
-    @Override public AttributeList setAttributes(AttributeList attributes) {
-        throw new UnsupportedOperationException("setAttributes");
     }
 
     /** {@inheritDoc} */
@@ -125,20 +100,6 @@ public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCo
 
     /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
-        return new MBeanInfo(
-            CommandMBean.class.getName(),
-            cmd.getClass().getSimpleName(),
-            null,
-            null,
-            new MBeanOperationInfo[]{
-                new MBeanOperationInfo(METHOD, cmd.description(), arguments(), String.class.getName(), ACTION)
-            },
-            null
-        );
-    }
-
-    /** */
-    public MBeanParameterInfo[] arguments() {
         List<MBeanParameterInfo> args = new ArrayList<>();
 
         Consumer<Field> fldCnsmr = fld -> {
@@ -168,11 +129,50 @@ public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCo
 
         visitCommandParams(cmd.args(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
 
-        return args.toArray(new MBeanParameterInfo[args.size()]);
+        return new MBeanInfo(
+            CommandMBean.class.getName(),
+            cmd.getClass().getSimpleName(),
+            null,
+            null,
+            new MBeanOperationInfo[]{
+                new MBeanOperationInfo(
+                    METHOD,
+                    cmd.description(),
+                    args.toArray(new MBeanParameterInfo[args.size()]),
+                    String.class.getName(),
+                    ACTION
+                )
+            },
+            null
+        );
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         return grid;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object getAttribute(
+        String attribute
+    ) throws AttributeNotFoundException, MBeanException, ReflectionException {
+        throw new UnsupportedOperationException("getAttribute");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setAttribute(
+        Attribute attribute
+    ) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
+        throw new UnsupportedOperationException("setAttribute");
+    }
+
+    /** {@inheritDoc} */
+    @Override public AttributeList getAttributes(String[] attributes) {
+        throw new UnsupportedOperationException("getAttributes");
+    }
+
+    /** {@inheritDoc} */
+    @Override public AttributeList setAttributes(AttributeList attributes) {
+        throw new UnsupportedOperationException("setAttributes");
     }
 }

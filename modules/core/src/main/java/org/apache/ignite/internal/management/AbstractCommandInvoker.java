@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.management;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,13 +58,21 @@ import static org.apache.ignite.internal.management.api.CommandUtils.formattedNa
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
-import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
- *
+ * Abstract class for management command invokers.
  */
 public abstract class AbstractCommandInvoker {
-    /** */
+    /**
+     * Executes command with given arguments.
+     *
+     * @param cmd Command.
+     * @param args String arguments.
+     * @param printer Result printer.
+     * @param <A> Argument type.
+     * @param <R> Result type.
+     * @param <T> Task type.
+     */
     protected <A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> void execute(
         Command<A, R, T> cmd,
         Map<String, String> args,
@@ -111,13 +121,23 @@ public abstract class AbstractCommandInvoker {
         cmd.printResult(arg, res, printer);
     }
 
-    /** */
-    protected <C extends IgniteDataTransferObject> C argument(
-        Class<C> argCls,
+    /**
+     * Fill and vaildate command argument.
+     *
+     * @param argCls Argument class.
+     * @param positionalParamProvider Provider of positional parameters.
+     * @param paramProvider Provider of named parameters.
+     * @return Argument filled with parameters.
+     * @param <A> Argument type.
+     * @throws InstantiationException If failed.
+     * @throws IllegalAccessException If failed.
+     */
+    protected <A extends IgniteDataTransferObject> A argument(
+        Class<A> argCls,
         BiFunction<Field, Integer, Object> positionalParamProvider,
         Function<Field, Object> paramProvider
     ) throws InstantiationException, IllegalAccessException {
-        C arg = argCls.newInstance();
+        A arg = argCls.newInstance();
 
         AtomicBoolean oneOfSet = new AtomicBoolean(false);
 
@@ -172,7 +192,15 @@ public abstract class AbstractCommandInvoker {
         return arg;
     }
 
-    /** */
+    /**
+     * Get command from hierarchical root.
+     *
+     * @param root Root command.
+     * @param iter Iterator of commands names.
+     * @param isCli {@code True} if command parsed in cli utility.
+     * @return Command to execute.
+     * @param <A> Argument type.
+     */
     protected <A extends IgniteDataTransferObject> Command<A, ?, ?> command(
         CommandsRegistry root,
         PeekableIterator<String> iter,
@@ -214,6 +242,60 @@ public abstract class AbstractCommandInvoker {
         return cmd0;
     }
 
-    /** */
+    /**
+     * Utility method. Scans argument class fields and visits each field representing command argument.
+     *
+     * @param argCls Argument class.
+     * @param positionalParamVisitor Visitor of positional parameters.
+     * @param namedParamVisitor Visitor of named parameters.
+     * @param oneOfNamedParamVisitor Visitor of "one of" parameters.
+     * @param <A> Argument type.
+     */
+    protected <A extends IgniteDataTransferObject> void visitCommandParams(
+        Class<A> argCls,
+        Consumer<Field> positionalParamVisitor,
+        Consumer<Field> namedParamVisitor,
+        BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
+    ) {
+        List<Field> positionalParams = new ArrayList<>();
+        List<Field> namedParams = new ArrayList<>();
+
+        OneOf oneOf = argCls.getAnnotation(OneOf.class);
+
+        Set<String> oneOfNames = oneOf != null
+            ? new HashSet<>(Arrays.asList(oneOf.value()))
+            : Collections.emptySet();
+
+        List<Field> oneOfFlds = new ArrayList<>();
+
+        Class<? extends IgniteDataTransferObject> clazz0 = argCls;
+
+        while (clazz0 != IgniteDataTransferObject.class) {
+            Field[] flds = clazz0.getDeclaredFields();
+
+            for (Field fld : flds) {
+                if (oneOfNames.contains(fld.getName()))
+                    oneOfFlds.add(fld);
+                else if (fld.isAnnotationPresent(Positional.class))
+                    positionalParams.add(fld);
+                else if (fld.isAnnotationPresent(Argument.class))
+                    namedParams.add(fld);
+            }
+
+            if (IgniteDataTransferObject.class.isAssignableFrom(clazz0.getSuperclass()))
+                clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
+            else
+                break;
+        }
+
+        positionalParams.forEach(positionalParamVisitor);
+
+        namedParams.forEach(namedParamVisitor);
+
+        if (oneOf != null)
+            oneOfNamedParamVisitor.accept(oneOf.optional(), oneOfFlds);
+    }
+
+    /** @return Local node. */
     public abstract IgniteEx grid();
 }
