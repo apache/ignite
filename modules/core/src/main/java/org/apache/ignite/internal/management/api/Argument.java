@@ -23,7 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
+ * Fields marked with this annotation is command arguments.
+ * @see Command
+ * @see CommandsRegistry
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

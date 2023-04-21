@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -63,8 +64,8 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  */
 public abstract class AbstractCommandInvoker {
     /** */
-    protected <A extends IgniteDataTransferObject> void execute(
-        Command<A, ?, ?> cmd,
+    protected <A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> void execute(
+        Command<A, R, T> cmd,
         Map<String, String> args,
         Consumer<String> printer
     ) {
@@ -106,7 +107,7 @@ public abstract class AbstractCommandInvoker {
         if (!F.isEmpty(nodeIds))
             compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
 
-        Object res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+        R res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
 
         cmd.printResult(arg, res, printer);
     }

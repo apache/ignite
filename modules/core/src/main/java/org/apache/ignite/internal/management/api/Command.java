@@ -26,46 +26,50 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
+ * Base management command interface.
+ * Implementations represents single atomic action to manage Ignite cluster.
  *
+ * @param <A> Argument type.
+ * @param <R> Result type.
+ * @param <T> Compute task type.
  */
 public interface Command<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> {
     /** Command description. */
     public String description();
 
-    /** @return Empty arguments class. */
+    /** @return Arguments class. */
     public Class<A> args();
 
     /** @return Task class. */
     public Class<T> task();
 
-    /** */
-    public default void printResult(IgniteDataTransferObject arg, Object res, Consumer<String> printer) {
+    /**
+     * Prints command result to the user.
+     * @param arg Argument.
+     * @param res Result.
+     * @param printer Implementation specific printer.
+     */
+    public default void printResult(A arg, R res, Consumer<String> printer) {
         // No-op.
     }
 
-    /**
-     * Return {@code true} if the command is experimental or {@code false}
-     * otherwise.
-     *
-     * @return {@code true} if the command is experimental or {@code false}
-     *      otherwise.
-     */
+    /** @return {@code true} if the command is experimental, {@code false} otherwise. */
     default boolean experimental() {
         return false;
     }
 
     /**
-     * Return {@code true} if the command is experimental or {@code false}
-     * otherwise.
-     *
-     * @return {@code true} if the command is experimental or {@code false}
-     *      otherwise.
+     * @return {@code true} if the command must be explicitly confirmed, {@code false} otherwise.
      */
     default boolean confirmable() {
         return false;
     }
 
-    /** */
+    /**
+     * @param nodes Live nodes.
+     * @param arg Argument.
+     * @return nodes to execute command on, empty collection means default node must be used.
+     */
     default Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
         return Collections.emptyList();
     }

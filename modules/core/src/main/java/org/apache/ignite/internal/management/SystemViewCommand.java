@@ -27,7 +27,6 @@ import java.util.ListIterator;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.BaseCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
@@ -73,10 +72,7 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(IgniteDataTransferObject arg, Object res0, Consumer<String> printer) {
-        org.apache.ignite.internal.management.SystemViewCommandArg taskArg = (SystemViewCommandArg)arg;
-        VisorSystemViewTaskResult res = (VisorSystemViewTaskResult)res0;
-
+    @Override public void printResult(SystemViewCommandArg arg, VisorSystemViewTaskResult res, Consumer<String> printer) {
         if (res != null) {
             res.rows().forEach((nodeId, rows) -> {
                 printer.accept("Results from node with ID: " + nodeId);
@@ -88,7 +84,7 @@ public class SystemViewCommand extends BaseCommand<SystemViewCommandArg, VisorSy
             });
         }
         else
-            printer.accept("No system view with specified name was found [name=" + taskArg.getSystemViewName() + "]");
+            printer.accept("No system view with specified name was found [name=" + arg.getSystemViewName() + "]");
     }
 
     /**

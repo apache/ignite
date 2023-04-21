@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -156,6 +157,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        return execute0(clientCfg, logger);
+    }
+
+    /** */
+    private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientCompute compute = client.compute();
 
@@ -181,9 +187,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             if (!F.isEmpty(connectable))
                 compute = compute.projection(connectable);
 
-            Object res = compute.execute(parsed.get1().task().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
+            org.apache.ignite.internal.management.api.Command<A, R, ComputeTask<VisorTaskArgument<A>, R>> cmd =
+                (org.apache.ignite.internal.management.api.Command<A, R, ComputeTask<VisorTaskArgument<A>, R>>)parsed.get1();
 
-            parsed.get1().printResult(parsed.get2(), res, logger::info);
+            R res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
+
+            cmd.printResult(parsed.get2(), res, logger::info);
 
             return res;
         }

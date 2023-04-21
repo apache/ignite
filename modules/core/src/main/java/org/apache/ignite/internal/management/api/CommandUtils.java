@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,18 +32,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteUuid;
-
-import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
 
 /**
@@ -334,36 +324,6 @@ public class CommandUtils {
         }
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
-    }
-
-    /** */
-    public static <A extends IgniteDataTransferObject> void executeAndPrint(
-        IgniteEx grid,
-        Command<A, ?, ?> cmd,
-        A arg,
-        Consumer<String> printer
-    ) {
-        IgniteCompute compute = grid.compute();
-
-        Map<UUID, ClusterNode> clusterNodes = grid.cluster().nodes().stream()
-            .collect(Collectors.toMap(ClusterNode::id, n -> n));
-
-        Collection<UUID> nodeIds = cmd.nodes(clusterNodes.keySet(), arg);
-
-        for (UUID id : nodeIds) {
-            if (!clusterNodes.containsKey(id))
-                throw new IllegalArgumentException("Node with id=" + id + " not found.");
-        }
-
-        if (nodeIds.isEmpty())
-            nodeIds = singleton(grid.localNode().id());
-
-        if (!F.isEmpty(nodeIds))
-            compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
-
-        Object res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
-
-        cmd.printResult(arg, res, printer);
     }
 
     /**
