@@ -67,7 +67,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.parameterNa
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 
 /**
- * Adapter of new management API command to legacy {@code control.sh} execution flow.
+ * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** All commands registry. */

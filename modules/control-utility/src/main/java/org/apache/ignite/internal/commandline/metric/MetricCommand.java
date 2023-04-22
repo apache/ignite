@@ -31,7 +31,6 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 import org.apache.ignite.internal.visor.metric.VisorMetricTaskArg;
@@ -45,6 +44,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HISTOGRAM;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.CONFIGURE_HITRATE;
 import static org.apache.ignite.internal.commandline.metric.MetricCommandArg.NODE_ID;
+import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Represents command for metric values printing. */
@@ -78,7 +78,7 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
                     .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
                     .collect(Collectors.toList());
 
-                SystemViewCommand.printTable(asList("metric", "value"), asList(STRING, STRING), data, log::info);
+                printTable(asList("metric", "value"), asList(STRING, STRING), data, log::info);
             }
             else if (arg().bounds() == null && arg().rateTimeInterval() < 0)
                 log.info("No metric with specified name was found [name=" + taskArg.name() + "]");

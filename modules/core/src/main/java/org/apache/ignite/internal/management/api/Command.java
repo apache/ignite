@@ -26,8 +26,8 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
- * Base management command interface.
- * Implementations represents single atomic action to manage Ignite cluster.
+ * Management command interface.
+ * Implementations represents single action to manage Ignite cluster.
  *
  * Name of the command that is expected from caller derived from actual command class name.
  * Name format: all words divided by capital letters except "Command" suffix will form hierarchical command name.
@@ -40,7 +40,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
  */
 public interface Command<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> {
     /** */
-    public static final String CMD_NAME_POSTFIX = "Command";
+    public String CMD_NAME_POSTFIX = "Command";
 
     /** Command description. */
     public String description();

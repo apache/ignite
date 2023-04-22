@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
  * Defines commands arguments restriction.
  * Only one of {@link #value()} fields must be presented in Arguments.
  * If several values from {@link #value()} presented arguments in invalid. Error will be thrown.
+ *
  * @see org.apache.ignite.internal.management.SystemViewCommandArg
  */
 @Retention(RetentionPolicy.RUNTIME)

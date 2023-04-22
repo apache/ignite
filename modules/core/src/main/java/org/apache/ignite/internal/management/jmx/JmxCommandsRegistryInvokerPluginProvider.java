@@ -32,10 +32,10 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Provider of {@link JmxCommandsRegistryInvokerPlugin} to expose Ignite management commands as JMX beans.
  */
 public class JmxCommandsRegistryInvokerPluginProvider implements PluginProvider {
-    /** */
+    /** Plugin instance */
     private final JmxCommandsRegistryInvokerPlugin plugin = new JmxCommandsRegistryInvokerPlugin();
 
     /** {@inheritDoc} */

@@ -24,7 +24,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.lang.IgniteUuid;
-import static org.apache.ignite.internal.management.api.BaseCommand.CMD_NAME_POSTFIX;
+import static org.apache.ignite.internal.management.api.AbstractCommand.CMD_NAME_POSTFIX;
 
 /**
  *

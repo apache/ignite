@@ -46,7 +46,7 @@ import static javax.management.MBeanOperationInfo.ACTION;
  * MBean to expose single command.
  */
 public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements DynamicMBean {
-    /** Each command exposed via JMX has name "invoke". */
+    /** Each command exposed via JMX has method named "invoke". */
     public static final String METHOD = "invoke";
 
     /** Local node. */

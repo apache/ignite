@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
- * Registry that knows all of it's children commands.
+ * Registry that knows all of its subcommands.
  *
  * @see org.apache.ignite.internal.management.IgniteCommandRegistry
  */

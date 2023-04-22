@@ -40,19 +40,20 @@ import static org.apache.ignite.internal.util.IgniteUtils.appendClassLoaderHash;
 import static org.apache.ignite.internal.util.IgniteUtils.appendJvmId;
 
 /**
- *
+ * Plugin registers each {@link Command} from {@link org.apache.ignite.internal.management.IgniteCommandRegistry}
+ * as JMX bean ({@link CommandMBean} which allow to execute management commands via JMX.
  */
 public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
     /** */
     private IgniteLogger log;
 
-    /** */
+    /** Local node. */
     private IgniteEx grid;
 
-    /** */
+    /** Registered mbeans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
 
-    /** */
+    /** @param ctx Plugin context. */
     public void context(PluginContext ctx) {
         grid = (IgniteEx)ctx.grid();
         log = ctx.log(JmxCommandsRegistryInvokerPlugin.class);
@@ -69,7 +70,14 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
         grid.commands().forEach(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
     }
 
-    /** */
+    /**
+     * Registers single command.
+     *
+     * @param name Command name.
+     * @param parents Parent commands names.
+     * @param cmd Command to expose.
+     * @param <A> Argument type.
+     */
     public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?, ?> cmd) {
         if (cmd instanceof CommandsRegistry) {
             parents.add(name);
