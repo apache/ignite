@@ -169,53 +169,35 @@ public class CLIArgumentParser {
      * @return Usage.
      */
     public String usage() {
-        return usage(true, "Usage:", "");
-    }
-
-    /**
-     * Returns usage description.
-     *
-     * @return Usage.
-     */
-    public String usage(boolean includeDetailedDesc, String utilName, String additional) {
-        GridStringBuilder sb = new GridStringBuilder(utilName + " ");
+        GridStringBuilder sb = new GridStringBuilder("Usage: ");
 
         for (CLIArgument<?> arg : namedArgCfg.values())
-            sb.a(argNameForUsage(arg, includeDetailedDesc)).a(" ");
+            sb.a(argNameForUsage(arg)).a(" ");
 
-        if (includeDetailedDesc) {
-            for (CLIArgument<?> arg : namedArgCfg.values()) {
-                Object dfltVal = null;
+        for (CLIArgument<?> arg : namedArgCfg.values()) {
+            Object dfltVal = null;
 
-                try {
-                    dfltVal = arg.defaultValueSupplier().apply(this);
-                }
-                catch (Exception ignored) {
-                    /* No op. */
-                }
-
-                sb.a("\n\n").a(arg.name()).a(": ").a(arg.usage());
-
-                if (arg.optional())
-                    sb.a(" Default value: ").a(dfltVal instanceof String[] ? Arrays.toString((Object[])dfltVal) : dfltVal);
+            try {
+                dfltVal = arg.defaultValueSupplier().apply(this);
             }
-        }
+            catch (Exception ignored) {
+                /* No op. */
+            }
 
-        sb.a(additional);
+            sb.a("\n\n").a(arg.name()).a(": ").a(arg.usage());
+
+            if (arg.optional())
+                sb.a(" Default value: ").a(dfltVal instanceof String[] ? Arrays.toString((Object[])dfltVal) : dfltVal);
+        }
 
         return sb.toString();
     }
 
     /** */
-    private String argNameForUsage(CLIArgument<?> arg, boolean inclueDetailedDesc) {
-        String name = arg.name();
-
-        if (!inclueDetailedDesc && arg.type() != Boolean.class && arg.type() != boolean.class)
-            name += " " + arg.usage();
-
+    private String argNameForUsage(CLIArgument<?> arg) {
         if (arg.optional())
-            return "[" + name + "]";
+            return "[" + arg.name() + "]";
         else
-            return name;
+            return arg.name();
     }
 }
