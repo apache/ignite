@@ -67,7 +67,7 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
             return;
         }
 
-        grid.commands().forEach(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+        grid.context().commands().forEach(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
     }
 
     /**

@@ -38,6 +38,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 import org.jetbrains.annotations.Nullable;
+
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;

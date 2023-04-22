@@ -29,9 +29,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.visor.tx.VisorTxOperation.KILL;
 
-/**
- *
- */
+/** */
 @GridInternal
 public class KillTransactionTask
     extends VisorMultiNodeTask<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>, VisorTxTaskResult> {

@@ -395,7 +395,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private FailureProcessor failureProc;
 
     /** */
-    private CommandsRegistry commands;
+    private IgniteCommandRegistry cmds;
 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
@@ -454,7 +454,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                     "META-INF/ignite.xml.");
         }
 
-        commands = new IgniteCommandRegistry();
+        cmds = new IgniteCommandRegistry();
     }
 
     /** {@inheritDoc} */
@@ -1112,6 +1112,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public CommandsRegistry commands() {
-        return commands;
+        return cmds;
     }
 }

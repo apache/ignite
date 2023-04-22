@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -173,7 +172,4 @@ public interface IgniteEx extends Ignite {
      * @throws IgniteException If set could not be fetched or created.
      */
     public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException;
-
-    /** */
-    public CommandsRegistry commands();
 }

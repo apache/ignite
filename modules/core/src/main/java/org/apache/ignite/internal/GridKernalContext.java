@@ -645,6 +645,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      */
     public Executor getAsyncContinuationExecutor();
 
-    /** */
+    /** @return Commands registry that contains all management commands known. */
     public CommandsRegistry commands();
 }

@@ -21,16 +21,18 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- *
+ * Iterator extension that adds {@link #peek()} method to get element without moving to the next.
  */
 public class PeekableIterator<T1> implements Iterator<T1> {
-    /** */
+    /** Underlying iterator. */
     private final Iterator<T1> iter;
 
-    /** */
+    /** Peeked element. */
     private T1 peeked;
 
-    /** */
+    /**
+     * @param iter Underlying iterator.
+     */
     public PeekableIterator(Iterator<T1> iter) {
         this.iter = iter;
     }
@@ -38,8 +40,8 @@ public class PeekableIterator<T1> implements Iterator<T1> {
     /**
      * Peek and return the next element in the iteration.
      *
-     * @return the next element in the iteration
-     * @throws NoSuchElementException if the iteration has no more elements
+     * @return the next element in the iteration.
+     * @throws NoSuchElementException if the iteration has no more elements.
      */
     public T1 peek() {
         return peeked != null ? peeked : (peeked = next());
