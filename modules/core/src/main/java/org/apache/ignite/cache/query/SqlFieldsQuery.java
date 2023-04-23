@@ -143,7 +143,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * @param collocated Collocated flag.
      */
     public SqlFieldsQuery(String sql, boolean collocated) {
-        this.sql = sql;
+        setSql(sql);
         this.collocated = collocated;
     }
 
