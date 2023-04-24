@@ -64,11 +64,6 @@ public class JmxCommandsRegistryInvokerPluginProvider implements PluginProvider 
     }
 
     /** {@inheritDoc} */
-    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
         plugin.onIgniteStart();
     }
@@ -76,6 +71,11 @@ public class JmxCommandsRegistryInvokerPluginProvider implements PluginProvider 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
         plugin.onIgniteStop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+        return null;
     }
 
     /** {@inheritDoc} */

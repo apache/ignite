@@ -39,7 +39,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  * as JMX bean ({@link CommandMBean} which allow to execute management commands via JMX.
  */
 public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
-    /** */
+    /** Bean group name. */
+    public static final String GRP = "management";
+
+    /** Logger. */
     private IgniteLogger log;
 
     /** Local node. */
@@ -88,17 +91,17 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
         }
 
         try {
-            ObjectName mbean = U.registerMBean(
+            ObjectName mbeanName = U.registerMBean(
                 grid.configuration().getMBeanServer(),
-                makeMBeanName(grid.context().igniteInstanceName(), "management", parents, name),
+                makeMBeanName(grid.context().igniteInstanceName(), GRP, parents, name),
                 new CommandMBean<>(grid, cmd),
                 CommandMBean.class
             );
 
-            mBeans.add(mbean);
+            mBeans.add(mbeanName);
 
             if (log.isDebugEnabled())
-                log.debug("Command JMX bean created. " + mbean);
+                log.debug("Command JMX bean created: " + mbeanName);
         }
         catch (JMException e) {
             log.error("MBean for command '" + name + "' can't be created.", e);
@@ -109,15 +112,15 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
     public void onIgniteStop() {
         MBeanServer jmx = grid.configuration().getMBeanServer();
 
-        for (ObjectName mBean : mBeans) {
+        for (ObjectName name : mBeans) {
             try {
-                jmx.unregisterMBean(mBean);
+                jmx.unregisterMBean(name);
 
                 if (log.isDebugEnabled())
-                    log.debug("Unregistered command MBean: " + mBean);
+                    log.debug("Unregistered command MBean: " + name);
             }
             catch (JMException e) {
-                log.error("Failed to unregister command MBean: " + mBean, e);
+                log.error("Failed to unregister command MBean: " + name, e);
             }
         }
     }
