@@ -27,35 +27,111 @@ import org.apache.ignite.lang.IgniteUuid;
 import static org.apache.ignite.internal.management.api.AbstractCommand.CMD_NAME_POSTFIX;
 
 /**
- *
+ * Utility class for management commands.
  */
 public class CommandUtils {
-    /** */
+    /** CLI named parameter prefix. */
     public static final String PARAMETER_PREFIX = "--";
 
-    /** */
+    /** Delimeter for words in parameter and command names. */
     public static final char CMD_WORDS_DELIM = '-';
 
-    /** */
+    /** Delimeter for words in positional parameters and parameter examples. */
     public static final char PARAM_WORDS_DELIM = '_';
 
-    /** */
-    public static String commandName(Class<?> cls, char delim) {
+    /**
+     * Example: {@code "SystemView" -> "system-view"}.
+     *
+     * @param cls Command name class.
+     * @param delim Words delimeter.
+     * @return Formatted command name.
+     */
+    public static String toFormattedCommandName(Class<?> cls, char delim) {
         String name = cls.getSimpleName();
 
         assert name.endsWith(CMD_NAME_POSTFIX);
 
-        return formattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
+        return toFormattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
     }
 
-    /** */
+    /**
+     * @param fld Field.
+     * @return Formatted name of parameter for this field.
+     */
+    public static String toFormattedFieldName(Field fld) {
+        return PARAMETER_PREFIX + toFormattedFieldName(fld, CMD_WORDS_DELIM);
+    }
+
+    /**
+     * @param name Field, command name.
+     * @param delim Words delimeter.
+     * @return Formatted name.
+     */
+    public static String toFormattedName(String name, char delim) {
+        StringBuilder formatted = new StringBuilder();
+
+        formatted.append(Character.toLowerCase(name.charAt(0)));
+
+        int i = 1;
+
+        while (i < name.length()) {
+            if (Character.isLowerCase(name.charAt(i))) {
+                formatted.append(name.charAt(i));
+
+                i++;
+            }
+            else {
+                formatted.append(delim);
+                formatted.append(Character.toLowerCase(name.charAt(i)));
+                i++;
+            }
+        }
+
+        return formatted.toString();
+    }
+
+    /**
+     * Example: {@code "system-view" -> "SystemView"}.
+     *
+     * @param formatted Formatted command name.
+     * @param delim Words delimeter.
+     * @return Source command name.
+     */
+    public static String fromFormattedCommandName(String formatted, char delim) {
+        StringBuilder name = new StringBuilder();
+
+        name.append(Character.toUpperCase(formatted.charAt(0)));
+
+        int i = 1;
+
+        while (i < formatted.length()) {
+            if (formatted.charAt(i) != delim) {
+                name.append(formatted.charAt(i));
+
+                i++;
+            }
+            else {
+                i++;
+                name.append(Character.toUpperCase(formatted.charAt(i)));
+                i++;
+            }
+        }
+
+        return name.toString();
+    }
+
+    /**
+     * @param fld Field.
+     * @param appendOptional If {@code true} then example must be marked as optional.
+     * @return Example of the field.
+     */
     public static String parameterExample(Field fld, boolean appendOptional) {
         if (fld.isAnnotationPresent(Positional.class)) {
             Argument arg = fld.getAnnotation(Argument.class);
 
             return asOptional(
                 arg.example().isEmpty()
-                    ? name(fld, PARAM_WORDS_DELIM)
+                    ? toFormattedFieldName(fld, PARAM_WORDS_DELIM)
                     : arg.example(),
                 appendOptional && arg.optional()
             );
@@ -66,12 +142,15 @@ public class CommandUtils {
         String example = valueExample(fld);
 
         return asOptional(
-            parameterName(fld) + (example.isEmpty() ? "" : (" " + example)),
+            toFormattedFieldName(fld) + (example.isEmpty() ? "" : (" " + example)),
             appendOptional && param.optional()
         );
     }
 
-    /** */
+    /**
+     * @param fld Field
+     * @return Example of value for the field.
+     */
     public static String valueExample(Field fld) {
         if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
             return "";
@@ -98,7 +177,7 @@ public class CommandUtils {
             return asOptional(bldr.toString(), optional);
         }
 
-        String name = name(fld, PARAM_WORDS_DELIM);
+        String name = toFormattedFieldName(fld, PARAM_WORDS_DELIM);
 
         if (fld.getType().isArray() || Collection.class.isAssignableFrom(fld.getType())) {
             if (name.endsWith("s"))
@@ -118,80 +197,32 @@ public class CommandUtils {
         return asOptional(name, optional);
     }
 
-    /** */
-    private static String name(Field fld, char delim) {
+    /**
+     * @param fld Field.
+     * @param delim Words delimeter.
+     * @return Name of the field.
+     */
+    private static String toFormattedFieldName(Field fld, char delim) {
         if (fld.isAnnotationPresent(Positional.class)) {
             return fld.getAnnotation(Argument.class).javaStyleExample()
                 ? fld.getName()
-                : formattedName(fld.getName(), delim);
+                : toFormattedName(fld.getName(), delim);
         }
 
-        return formattedName(fld.getName(), delim);
+        return toFormattedName(fld.getName(), delim);
     }
 
     /** */
-    private static String asOptional(String str, boolean optional) {
+    static String asOptional(String str, boolean optional) {
         return (optional ? "[" : "") + str + (optional ? "]" : "");
     }
 
     /**
-     * @param name Field, command name.
-     * @param delim Words delimeter.
-     * @return Formatted name.
+     * @param val String value.
+     * @param type Class of the value.
+     * @return Value.
+     * @param <T> Value type.
      */
-    public static String formattedName(String name, char delim) {
-        StringBuilder formatted = new StringBuilder();
-
-        formatted.append(Character.toLowerCase(name.charAt(0)));
-
-        int i = 1;
-
-        while (i < name.length()) {
-            if (Character.isLowerCase(name.charAt(i))) {
-                formatted.append(name.charAt(i));
-
-                i++;
-            }
-            else {
-                formatted.append(delim);
-                formatted.append(Character.toLowerCase(name.charAt(i)));
-                i++;
-            }
-        }
-
-        return formatted.toString();
-    }
-
-    /** */
-    public static String fromFormattedName(String formatted, char delim) {
-        StringBuilder name = new StringBuilder();
-
-        name.append(Character.toUpperCase(formatted.charAt(0)));
-
-        int i = 1;
-
-        while (i < formatted.length()) {
-            if (formatted.charAt(i) != delim) {
-                name.append(formatted.charAt(i));
-
-                i++;
-            }
-            else {
-                i++;
-                name.append(Character.toUpperCase(formatted.charAt(i)));
-                i++;
-            }
-        }
-
-        return name.toString();
-    }
-
-    /** */
-    public static String parameterName(Field fld) {
-        return PARAMETER_PREFIX + name(fld, CMD_WORDS_DELIM);
-    }
-
-    /** */
     public static <T> T parseVal(String val, Class<T> type) {
         if (type.isArray()) {
             String[] vals = val.split(",");
@@ -212,8 +243,15 @@ public class CommandUtils {
         return parseSingleVal(val, type);
     }
 
-    /** */
-    public static <T> T parseSingleVal(String val, Class<T> type) {
+    /**
+     * Parse and return single value (without support of array type).
+     *
+     * @param val String value.
+     * @param type Class of the value.
+     * @return Value.
+     * @param <T> Value type
+     */
+    private static <T> T parseSingleVal(String val, Class<T> type) {
         if (type == Boolean.class || type == boolean.class)
             return (T)Boolean.TRUE;
         if (type == String.class)

@@ -45,13 +45,13 @@ import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
+
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -61,9 +61,9 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNod
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.commandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
-import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 
 /**
@@ -101,7 +101,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         List<IgniteBiTuple<Boolean, List<CLIArgument<?>>>> oneOfArgs = new ArrayList<>();
 
         BiFunction<Field, Boolean, CLIArgument<?>> toArg = (fld, optional) -> new CLIArgument<>(
-            parameterName(fld),
+            toFormattedFieldName(fld),
             null,
             optional,
             fld.getType(),
@@ -141,7 +141,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 argument(
                     cmd0.args(),
                     (fld, pos) -> parser.get(pos),
-                    fld -> parser.get(parameterName(fld))
+                    fld -> parser.get(toFormattedFieldName(fld))
                 )
             );
         }
@@ -308,7 +308,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             if (prefixInclude.get())
                 bldr.append(PARAMETER_PREFIX);
 
-            String cmdName = commandName(cmd0.getClass(), CMD_WORDS_DELIM);
+            String cmdName = toFormattedCommandName(cmd0.getClass(), CMD_WORDS_DELIM);
 
             if (parentPrefix.length() > 0) {
                 cmdName = cmdName.replaceFirst(parentPrefix.toString(), "");
@@ -361,7 +361,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CommandUtils.commandName(baseCmd.getClass(), CMD_WORDS_DELIM).toUpperCase();
+        return toFormattedCommandName(baseCmd.getClass(), CMD_WORDS_DELIM).toUpperCase();
     }
 
     /** {@inheritDoc} */

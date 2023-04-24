@@ -40,28 +40,28 @@ public class CLIArgumentParser {
     private final List<CLIArgument<?>> positionalArgCfg;
 
     /** */
-    private final Map<String, CLIArgument<?>> namedArgCfg = new LinkedHashMap<>();
+    private final Map<String, CLIArgument<?>> argConfiguration = new LinkedHashMap<>();
 
     /** */
     private final List<Object> parsedPositionalArgs = new ArrayList<>();
 
     /** */
-    private final Map<String, Object> parsedNamedArgs = new HashMap<>();
+    private final Map<String, Object> parsedArgs = new HashMap<>();
 
     /** */
-    public CLIArgumentParser(List<CLIArgument<?>> namedArgCfg) {
-        this(Collections.emptyList(), namedArgCfg);
+    public CLIArgumentParser(List<CLIArgument<?>> argConfiguration) {
+        this(Collections.emptyList(), argConfiguration);
     }
 
     /** */
     public CLIArgumentParser(
         List<CLIArgument<?>> positionalArgConfig,
-        List<CLIArgument<?>> namedArgCfg
+        List<CLIArgument<?>> argConfiguration
     ) {
         this.positionalArgCfg = positionalArgConfig;
 
-        for (CLIArgument<?> cliArgument : namedArgCfg)
-            this.namedArgCfg.put(cliArgument.name(), cliArgument);
+        for (CLIArgument<?> cliArgument : argConfiguration)
+            this.argConfiguration.put(cliArgument.name(), cliArgument);
     }
 
     /**
@@ -72,14 +72,14 @@ public class CLIArgumentParser {
      */
     public void parse(Iterator<String> argsIter) {
         Set<String> obligatoryArgs =
-            namedArgCfg.values().stream().filter(a -> !a.optional()).map(CLIArgument::name).collect(toSet());
+            argConfiguration.values().stream().filter(a -> !a.optional()).map(CLIArgument::name).collect(toSet());
 
         int positionalIdx = 0;
 
         while (argsIter.hasNext()) {
             String arg = argsIter.next();
 
-            CLIArgument<?> cliArg = namedArgCfg.get(arg);
+            CLIArgument<?> cliArg = argConfiguration.get(arg);
 
             if (cliArg == null) {
                 if (positionalIdx < positionalArgCfg.size()) {
@@ -103,7 +103,7 @@ public class CLIArgumentParser {
             String strVal = bool ? null : argsIter.next();
 
             try {
-                parsedNamedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
+                parsedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
             }
             catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Failed to parse " + cliArg.name() + " command argument. "
@@ -125,7 +125,7 @@ public class CLIArgumentParser {
      * @return Value.
      */
     public <T> T get(CLIArgument<?> arg) {
-        Object val = parsedNamedArgs.get(arg.name());
+        Object val = parsedArgs.get(arg.name());
 
         if (val == null)
             return (T)arg.defaultValueSupplier().apply(this);
@@ -141,7 +141,7 @@ public class CLIArgumentParser {
      * @return Value.
      */
     public <T> T get(String name) {
-        CLIArgument<?> arg = namedArgCfg.get(name);
+        CLIArgument<?> arg = argConfiguration.get(name);
 
         if (arg == null)
             throw new IgniteException("No such argument: " + name);
@@ -171,10 +171,10 @@ public class CLIArgumentParser {
     public String usage() {
         GridStringBuilder sb = new GridStringBuilder("Usage: ");
 
-        for (CLIArgument<?> arg : namedArgCfg.values())
+        for (CLIArgument<?> arg : argConfiguration.values())
             sb.a(argNameForUsage(arg)).a(" ");
 
-        for (CLIArgument<?> arg : namedArgCfg.values()) {
+        for (CLIArgument<?> arg : argConfiguration.values()) {
             Object dfltVal = null;
 
             try {

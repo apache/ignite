@@ -52,7 +52,9 @@ import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
 import static org.apache.ignite.codegen.MessageCodeGenerator.TAB;
 
 /**
- *
+ * This class can generate boilerplate code for classes extends {@link IgniteDataTransferObject}.
+ * This class can generate {@code IgniteDataTransferObject#writeExternalData(ObjectOutput)}
+ * and {@code IgniteDataTransferObject#readExternalData(byte, ObjectInput)}.
  */
 public class IgniteDataTransferObjectSerDesGenerator {
     /** */

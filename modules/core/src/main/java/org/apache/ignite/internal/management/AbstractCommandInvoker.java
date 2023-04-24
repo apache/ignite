@@ -51,13 +51,14 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
-import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
-import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
+import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
-import static org.apache.ignite.internal.management.api.CommandUtils.parameterName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedName;
 
 /**
  * Abstract class for management command invokers.
@@ -152,7 +153,7 @@ public abstract class AbstractCommandInvoker {
 
                 String name = fld.isAnnotationPresent(Positional.class)
                     ? parameterExample(fld, false)
-                    : parameterName(fld);
+                    : toFormattedFieldName(fld);
 
                 throw new IllegalArgumentException("Argument " + name + " required.");
             }
@@ -221,7 +222,7 @@ public abstract class AbstractCommandInvoker {
                 name = name.substring(PARAMETER_PREFIX.length());
             }
 
-            Command<A, ?, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedName(name, CMD_WORDS_DELIM));
+            Command<A, ?, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, CMD_WORDS_DELIM));
 
             if (cmd1 != null) {
                 cmd0 = cmd1;
@@ -232,7 +233,7 @@ public abstract class AbstractCommandInvoker {
 
         if (cmd0 instanceof CommandsRegistry && !((CommandsRegistry)cmd0).canBeExecuted()) {
             throw new IllegalArgumentException(
-                "Command " + formattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
+                "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
             );
         }
 
