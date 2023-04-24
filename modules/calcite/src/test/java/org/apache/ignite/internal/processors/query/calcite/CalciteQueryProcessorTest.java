@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -45,6 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -65,6 +65,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -586,7 +587,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(2, rows.size());
     }
-
 
     /** */
     @Test
@@ -1146,6 +1146,13 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .returns(1)
             .returns(new Object[]{null})
             .check();
+    }
+
+    /** */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testEmptyQuery() {
+        assertThrows(log, () -> sql(""), IgniteSQLException.class, "Failed to parse query");
     }
 
     /** */
