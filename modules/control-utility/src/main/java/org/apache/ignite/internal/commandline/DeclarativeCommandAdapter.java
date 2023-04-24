@@ -68,6 +68,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
 
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
+ * TODO: support confirmation for encryption commands!
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** All commands registry. */

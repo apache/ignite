@@ -157,12 +157,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CACHE_GROUP_KEY_IDS;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CHANGE_CACHE_GROUP_KEY;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RATE;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_RESUME;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_STATUS;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.REENCRYPTION_SUSPEND;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -195,6 +189,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** Replicated cache name. */
     protected static final String REPLICATED_CACHE_NAME = "repl_cache";
+
+    /** */
+    public static final String CACHE_GROUP_KEY_IDS = "cache_key_ids";
+
+    /** */
+    public static final String CHANGE_CACHE_GROUP_KEY = "change_cache_key";
+
+    /** */
+    public static final String REENCRYPTION_RATE = "reencryption_rate_limit";
+
+    /** */
+    public static final String REENCRYPTION_RESUME = "resume_reencryption";
+
+    /** */
+    public static final String REENCRYPTION_STATUS = "reencryption_status";
+
+    /** */
+    public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
 
     /** */
     protected static File defaultDiagnosticDir;
@@ -2830,26 +2842,26 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ignite, 1000);
 
-        int ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
+        int ret = execute("--encryption", CACHE_GROUP_KEY_IDS, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertContains(log, testOut.toString(), "Encryption key identifiers for cache: " + DEFAULT_CACHE_NAME);
         assertEquals(srvNodes, countSubstrs(testOut.toString(), "0 (active)"));
 
-        ret = execute("--encryption", CHANGE_CACHE_GROUP_KEY.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", CHANGE_CACHE_GROUP_KEY, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertContains(log, testOut.toString(),
             "The encryption key has been changed for the cache group \"" + DEFAULT_CACHE_NAME + '"');
 
-        ret = execute("--encryption", CACHE_GROUP_KEY_IDS.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", CACHE_GROUP_KEY_IDS, DEFAULT_CACHE_NAME);
 
         assertEquals(testOut.toString(), EXIT_CODE_OK, ret);
         assertContains(log, testOut.toString(), "Encryption key identifiers for cache: " + DEFAULT_CACHE_NAME);
         assertEquals(srvNodes, countSubstrs(testOut.toString(), "1 (active)"));
 
         GridTestUtils.waitForCondition(() -> {
-            execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+            execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME);
 
             return srvNodes == countSubstrs(testOut.toString(),
                 "re-encryption will be completed after the next checkpoint");
@@ -2859,7 +2871,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         forceCheckpoint(srvGrids);
 
         GridTestUtils.waitForCondition(() -> {
-            execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+            execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME);
 
             return srvNodes == countSubstrs(testOut.toString(), "re-encryption completed or not required");
         }, getTestTimeout());
@@ -2876,26 +2888,26 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        int ret = execute("--encryption", REENCRYPTION_RATE.toString());
+        int ret = execute("--encryption", REENCRYPTION_RATE);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
 
         double newRate = 0.01;
 
-        ret = execute("--encryption", REENCRYPTION_RATE.toString(), Double.toString(newRate));
+        ret = execute("--encryption", REENCRYPTION_RATE, Double.toString(newRate));
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
             String.format("re-encryption rate has been limited to %.2f MB/s.", newRate)));
 
-        ret = execute("--encryption", REENCRYPTION_RATE.toString());
+        ret = execute("--encryption", REENCRYPTION_RATE);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
             String.format("re-encryption rate is limited to %.2f MB/s.", newRate)));
 
-        ret = execute("--encryption", REENCRYPTION_RATE.toString(), "0");
+        ret = execute("--encryption", REENCRYPTION_RATE, "0");
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(), "re-encryption rate is not limited."));
@@ -2922,7 +2934,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        int ret = execute("--encryption", REENCRYPTION_STATUS.toString(), DEFAULT_CACHE_NAME);
+        int ret = execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
 
@@ -2942,27 +2954,27 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(srvNodes, matchesCnt);
 
-        ret = execute("--encryption", REENCRYPTION_SUSPEND.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", REENCRYPTION_SUSPEND, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
             "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been suspended."));
         assertFalse(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        ret = execute("--encryption", REENCRYPTION_SUSPEND.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", REENCRYPTION_SUSPEND, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
             "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has already been suspended."));
 
-        ret = execute("--encryption", REENCRYPTION_RESUME.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", REENCRYPTION_RESUME, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),
             "re-encryption of the cache group \"" + DEFAULT_CACHE_NAME + "\" has been resumed."));
         assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        ret = execute("--encryption", REENCRYPTION_RESUME.toString(), DEFAULT_CACHE_NAME);
+        ret = execute("--encryption", REENCRYPTION_RESUME, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),

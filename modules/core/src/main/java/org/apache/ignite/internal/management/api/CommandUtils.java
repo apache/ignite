@@ -266,6 +266,10 @@ public class CommandUtils {
             return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
         else if (type == Long.class || type == long.class)
             return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
+        else if (type == Float.class || type == float.class)
+            return (T)wrapNumberFormatException(() -> Float.parseFloat(val), val, Float.class);
+        else if (type == Double.class || type == double.class)
+            return (T)wrapNumberFormatException(() -> Double.parseDouble(val), val, Double.class);
         else if (type == UUID.class) {
             try {
                 return (T)UUID.fromString(val);

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import org.apache.ignite.internal.management.api.AbstractCommand;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionStatusTask;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
-public class EncryptionReencryptionStatusCommand
-    extends AbstractCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<Long>, VisorReencryptionStatusTask> {
+public class EncryptionReencryptionStatusCommand extends CacheGroupEncryptionCommand<Long, VisorReencryptionStatusTask> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Display re-encryption status of the cache group";
@@ -37,5 +36,15 @@ public class EncryptionReencryptionStatusCommand
     /** {@inheritDoc} */
     @Override public Class<VisorReencryptionStatusTask> task() {
         return VisorReencryptionStatusTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printNodeResult(Long bytesLeft, String grpName, Consumer<String> printer) {
+        if (bytesLeft == -1)
+            printer.accept(DOUBLE_INDENT + "re-encryption completed or not required");
+        else if (bytesLeft == 0)
+            printer.accept(DOUBLE_INDENT + "re-encryption will be completed after the next checkpoint");
+        else
+            printer.accept(String.format("%s%d KB of data left for re-encryption", DOUBLE_INDENT, bytesLeft / 1024));
     }
 }

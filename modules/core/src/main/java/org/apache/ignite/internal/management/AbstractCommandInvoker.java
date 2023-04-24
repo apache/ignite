@@ -55,6 +55,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
@@ -221,7 +222,7 @@ public abstract class AbstractCommandInvoker {
                 name = name.substring(PARAMETER_PREFIX.length());
             }
 
-            Command<A, ?, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, CMD_WORDS_DELIM));
+            Command<A, ?, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
 
             if (cmd1 != null) {
                 cmd0 = cmd1;

@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.management.encryption;
 
 import java.util.List;
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import org.apache.ignite.internal.visor.encryption.VisorEncryptionKeyIdsTask;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
-public class EncryptionCacheKeyIdsCommand
-    extends AbstractCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<List<Integer>>, VisorEncryptionKeyIdsTask> {
+public class EncryptionCacheKeyIdsCommand extends CacheGroupEncryptionCommand<List<Integer>, VisorEncryptionKeyIdsTask> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View encryption key identifiers of the cache group";
@@ -38,5 +39,28 @@ public class EncryptionCacheKeyIdsCommand
     /** {@inheritDoc} */
     @Override public Class<VisorEncryptionKeyIdsTask> task() {
         return VisorEncryptionKeyIdsTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(
+        EncryptionCacheGroupArg arg,
+        VisorCacheGroupEncryptionTaskResult<List<Integer>> res,
+        Consumer<String> printer
+    ) {
+        printer.accept("Encryption key identifiers for cache: " + arg.getCacheGroupName());
+
+        super.printResult(arg, res, printer);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printNodeResult(List<Integer> res, String grpName, Consumer<String> printer) {
+        if (F.isEmpty(res)) {
+            printer.accept(DOUBLE_INDENT + "---");
+
+            return;
+        }
+
+        for (int i = 0; i < res.size(); i++)
+            printer.accept(DOUBLE_INDENT + res.get(i) + (i == 0 ? " (active)" : ""));
     }
 }

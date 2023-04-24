@@ -32,25 +32,25 @@ public class EncryptionReencryptionRateLimitCommandArg extends IgniteDataTransfe
     /** */
     @Positional
     @Argument(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
-    private double newLimit;
+    private Double newLimit;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeDouble(newLimit);
+        out.writeObject(newLimit);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        newLimit = in.readDouble();
+        newLimit = (Double)in.readObject();
     }
 
     /** */
-    public double getNewLimit() {
+    public Double getNewLimit() {
         return newLimit;
     }
 
     /** */
-    public void setNewLimit(double newLimit) {
+    public void setNewLimit(Double newLimit) {
         this.newLimit = newLimit;
     }
 }

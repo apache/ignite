@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.encryption;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -27,9 +28,7 @@ import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTask;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
-/**
- *
- */
+/** */
 public class EncryptionReencryptionRateLimitCommand extends AbstractCommand<
         EncryptionReencryptionRateLimitCommandArg,
         VisorCacheGroupEncryptionTaskResult<Double>,
@@ -50,6 +49,11 @@ public class EncryptionReencryptionRateLimitCommand extends AbstractCommand<
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, EncryptionReencryptionRateLimitCommandArg arg) {
+        return nodes;
+    }
+
+    /** {@inheritDoc} */
     @Override public void printResult(
         EncryptionReencryptionRateLimitCommandArg arg,
         VisorCacheGroupEncryptionTaskResult<Double> res,
@@ -64,12 +68,12 @@ public class EncryptionReencryptionRateLimitCommand extends AbstractCommand<
         }
 
         Map<UUID, Double> results = res.results();
-        boolean read = arg.getNewLimit() == 0;
+        boolean read = arg.getNewLimit() == null;
 
         for (Map.Entry<UUID, Double> entry : results.entrySet()) {
             printer.accept(INDENT + "Node " + entry.getKey() + ":");
 
-            double rateLimit = read ? entry.getValue() : arg.getNewLimit();
+            Double rateLimit = read ? entry.getValue() : arg.getNewLimit();
 
             if (rateLimit == 0)
                 printer.accept(DOUBLE_INDENT + "re-encryption rate is not limited.");

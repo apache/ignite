@@ -22,9 +22,7 @@ import org.apache.ignite.internal.management.api.AbstractCommand;
 import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 
-/**
- *
- */
+/** */
 public class EncryptionGetMasterKeyNameCommand extends AbstractCommand<EmptyArg, String, VisorGetMasterKeyNameTask> {
     /** {@inheritDoc} */
     @Override public String description() {

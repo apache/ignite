@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import org.apache.ignite.internal.management.api.AbstractCommand;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionSuspendTask;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
-public class EncryptionSuspendReencryptionCommand
-    extends AbstractCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<Boolean>, VisorReencryptionSuspendTask> {
+public class EncryptionSuspendReencryptionCommand extends CacheGroupEncryptionCommand<Boolean, VisorReencryptionSuspendTask> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Suspend re-encryption of the cache group";
@@ -37,5 +36,11 @@ public class EncryptionSuspendReencryptionCommand
     /** {@inheritDoc} */
     @Override public Class<VisorReencryptionSuspendTask> task() {
         return VisorReencryptionSuspendTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printNodeResult(Boolean success, String grpName, Consumer<String> printer) {
+        printer.accept(String.format("%sre-encryption of the cache group \"%s\" has %sbeen suspended.",
+            DOUBLE_INDENT, grpName, (success ? "" : "already ")));
     }
 }
