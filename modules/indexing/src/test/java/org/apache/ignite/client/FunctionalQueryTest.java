@@ -44,7 +44,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import static org.apache.ignite.internal.util.GridArgumentCheck.NULL_MSG_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -302,7 +301,7 @@ public class FunctionalQueryTest {
         }
     }
 
-    /** Tests {@link SqlFieldsQuery} parameter validation. */
+    /** */
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testEmptyQuery() {
@@ -315,10 +314,6 @@ public class FunctionalQueryTest {
                 SqlParseException.class, "Failed to parse SQL");
 
             assertThrows(null, () -> client.query(empty).getAll(), ClientException.class, "Failed to parse SQL");
-
-            assertThrows(null, () -> new SqlFieldsQuery((String)null), NullPointerException.class, NULL_MSG_PREFIX);
-            assertThrows(null, () -> new SqlFieldsQuery(null, false), NullPointerException.class, NULL_MSG_PREFIX);
-            assertThrows(null, () -> new SqlFieldsQuery("").setSql(null), NullPointerException.class, NULL_MSG_PREFIX);
         }
     }
 
