@@ -97,6 +97,9 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
 
         /** {@inheritDoc} */
         @Override protected VisorSystemViewTaskResult run(@Nullable SystemViewCommandArg arg) throws IgniteException {
+            if (arg == null)
+                return null;
+
             SystemView<?> sysView = systemView(arg.getSystemViewName());
 
             if (sysView == null)
