@@ -23,21 +23,16 @@ import java.util.List;
 import java.util.Map;
 import javax.management.JMException;
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
-import org.jetbrains.annotations.Nullable;
-import static org.apache.ignite.internal.util.IgniteUtils.JMX_DOMAIN;
-import static org.apache.ignite.internal.util.IgniteUtils.appendClassLoaderHash;
-import static org.apache.ignite.internal.util.IgniteUtils.appendJvmId;
+import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
  * Plugin registers each {@link Command} from {@link org.apache.ignite.internal.management.IgniteCommandRegistry}
@@ -95,7 +90,7 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
         try {
             ObjectName mbean = U.registerMBean(
                 grid.configuration().getMBeanServer(),
-                makeMBeanName(grid.context().igniteInstanceName(), parents, name),
+                makeMBeanName(grid.context().igniteInstanceName(), "management", parents, name),
                 new CommandMBean<>(grid, cmd),
                 CommandMBean.class
             );
@@ -108,28 +103,6 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
         catch (JMException e) {
             log.error("MBean for command '" + name + "' can't be created.", e);
         }
-    }
-
-    /** TODO: move to the rest JXM name methods. */
-    public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, List<String> parents, String name)
-        throws MalformedObjectNameException {
-        SB sb = new SB(JMX_DOMAIN + ':');
-
-        appendClassLoaderHash(sb);
-
-        appendJvmId(sb);
-
-        if (igniteInstanceName != null && !igniteInstanceName.isEmpty())
-            sb.a("igniteInstanceName=").a(igniteInstanceName).a(',');
-
-        sb.a("group=").a("management").a(',');
-
-        for (int i = 0; i < parents.size(); i++)
-            sb.a("parent").a(i).a("=").a(parents.get(i)).a(',');
-
-        sb.a("name=").a(name);
-
-        return new ObjectName(sb.toString());
     }
 
     /** */

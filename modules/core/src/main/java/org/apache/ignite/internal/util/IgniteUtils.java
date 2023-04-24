@@ -5047,6 +5047,22 @@ public abstract class IgniteUtils {
      */
     public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
+        return makeMBeanName(igniteInstanceName, grp, null, name);
+    }
+
+    /**
+     * Constructs JMX object name with given properties.
+     * Map with ordered {@code groups} used for proper object name construction.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param parents Parents list.
+     * @param name Name of mbean.
+     * @return JMX object name.
+     * @throws MalformedObjectNameException Thrown in case of any errors.
+     */
+    public static ObjectName makeMBeanName(@Nullable String igniteInstanceName, @Nullable String grp, List<String> parents, String name)
+        throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
         appendClassLoaderHash(sb);
@@ -5059,6 +5075,11 @@ public abstract class IgniteUtils {
         if (grp != null)
             sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
 
+        if (parents != null) {
+            for (int i = 0; i < parents.size(); i++)
+                sb.a("parent").a(i).a("=").a(parents.get(i)).a(',');
+        }
+
         sb.a("name=").a(escapeObjectNameValue(name));
 
         return new ObjectName(sb.toString());
@@ -5067,7 +5088,7 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    public static void appendClassLoaderHash(SB sb) {
+    private static void appendClassLoaderHash(SB sb) {
         if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, DFLT_MBEAN_APPEND_CLASS_LOADER_ID)) {
             String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
@@ -5078,7 +5099,7 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    public static void appendJvmId(SB sb) {
+    private static void appendJvmId(SB sb) {
         if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String jvmId = ManagementFactory.getRuntimeMXBean().getName();
 
@@ -5102,7 +5123,7 @@ public abstract class IgniteUtils {
      * @param s A string to be escape.
      * @return An escaped string.
      */
-    public static String escapeObjectNameValue(String s) {
+    private static String escapeObjectNameValue(String s) {
         if (alphanumericUnderscore(s))
             return s;
 
