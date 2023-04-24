@@ -2067,9 +2067,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            Collection<? extends IgniteInternalFuture<?>> futs = futures();
+            Collection<? extends IgniteInternalFuture<?>> futs;
 
             synchronized (GridDhtTxPrepareFuture.this) {
+                futs = futures();
+
                 clear();
 
                 lockKeys.clear();

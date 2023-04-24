@@ -1212,6 +1212,9 @@ public class IgniteTxHandler {
     public IgniteInternalFuture<IgniteInternalTx> finishColocatedLocal(boolean commit, GridNearTxLocal tx) {
         try {
             if (commit) {
+                if (U.TEST)
+                    log.error("TEST | commiting on " + U.toString(ctx.localNode()) + ".");
+
                 if (!tx.markFinalizing(USER_FINISH)) {
                     if (log.isDebugEnabled())
                         log.debug("Will not finish transaction (it is handled by another thread): " + tx);
@@ -1590,6 +1593,9 @@ public class IgniteTxHandler {
         GridDistributedTxRemoteAdapter tx,
         GridDhtTxPrepareRequest req) throws IgniteTxHeuristicCheckedException {
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
+
+        if(U.TEST)
+            log.error("TEST | commiting one-phase commit on " + U.toString(ctx.localNode()) + ".");
 
         try {
             tx.commitVersion(req.writeVersion());

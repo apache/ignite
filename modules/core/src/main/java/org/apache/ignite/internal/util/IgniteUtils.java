@@ -7848,7 +7848,7 @@ public abstract class IgniteUtils {
 
     /** */
     public static String toString(ClusterNode node) {
-        return node.id().toString() + " / " + node.order();
+        return node.order() + " / " + node.id().toString();
     }
 
     /**

@@ -4598,6 +4598,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param clearThreadMap Clear thread map.
      */
     public void close(boolean clearThreadMap) throws IgniteCheckedException {
+        if(U.TEST)
+            log.error("TEST | closing GridNearxLocal on " + U.toString(cctx.localNode()));
+
         TransactionState state = state();
 
         try {
@@ -5032,8 +5035,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         .collect(Collectors.joining(","));
 
                     U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
-                        CU.txString(GridNearTxLocal.this) + (isEmpty(notResponded) ? "" : ". Not responded nodes: " +
-                        notResponded + '.'));
+                        CU.txString(GridNearTxLocal.this) + (isEmpty(notResponded) ? "" :
+                        ". Not responded primary nodes (or its backups): " + notResponded + '.'));
                 }
             });
         }
