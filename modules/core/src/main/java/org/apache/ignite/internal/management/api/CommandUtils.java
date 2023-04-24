@@ -39,6 +39,12 @@ public class CommandUtils {
     /** Delimeter for words in positional parameters and parameter examples. */
     public static final char PARAM_WORDS_DELIM = '_';
 
+    /** Indent for help output. */
+    public static final String INDENT = "  ";
+
+    /** Double indent for help output. */
+    public static final String DOUBLE_INDENT = INDENT + INDENT;
+
     /**
      * Example: {@code "SystemView" -> "system-view"}.
      *

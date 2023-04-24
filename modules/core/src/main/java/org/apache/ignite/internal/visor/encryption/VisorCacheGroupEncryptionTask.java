@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -37,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> The type of the task result.
  */
-public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTask<VisorCacheGroupEncryptionTaskArg,
+public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTask<EncryptionCacheGroupArg,
     VisorCacheGroupEncryptionTaskResult<T>, VisorCacheGroupEncryptionTask.VisorSingleFieldDto<T>> {
     /** {@inheritDoc} */
     @Nullable @Override protected VisorCacheGroupEncryptionTaskResult<T> reduce0(List<ComputeJobResult> results) {
@@ -62,7 +63,7 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
     }
 
     /** */
-    protected abstract static class VisorSingleFieldDto<T> extends IgniteDataTransferObject {
+    public abstract static class VisorSingleFieldDto<T> extends IgniteDataTransferObject {
         /** Object value. */
         private T val;
 
@@ -88,19 +89,19 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
      * @param <T> Type of job result.
      */
     protected abstract static class VisorReencryptionBaseJob<T>
-        extends VisorJob<VisorCacheGroupEncryptionTaskArg, VisorSingleFieldDto<T>> {
+        extends VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<T>> {
         /**
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorReencryptionBaseJob(@Nullable VisorCacheGroupEncryptionTaskArg arg, boolean debug) {
+        protected VisorReencryptionBaseJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorSingleFieldDto<T> run(VisorCacheGroupEncryptionTaskArg arg) throws IgniteException {
+        @Override protected VisorSingleFieldDto<T> run(EncryptionCacheGroupArg arg) throws IgniteException {
             try {
-                String grpName = arg.groupName();
+                String grpName = arg.getCacheGroupName();
                 CacheGroupContext grp = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
 
                 if (grp == null) {

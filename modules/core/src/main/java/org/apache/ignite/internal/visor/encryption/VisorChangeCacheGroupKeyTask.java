@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
@@ -29,17 +30,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  *
  * @see IgniteEncryption#changeCacheGroupKey(Collection)
  */
-public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<VisorCacheGroupEncryptionTaskArg, Void> {
+public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCacheGroupArg, Void> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCacheGroupEncryptionTaskArg, Void> job(VisorCacheGroupEncryptionTaskArg arg) {
+    @Override protected VisorJob<EncryptionCacheGroupArg, Void> job(EncryptionCacheGroupArg arg) {
         return new VisorChangeCacheGroupKeyJob(arg, debug);
     }
 
     /** The job for changing the encryption key of the cache group. */
-    private static class VisorChangeCacheGroupKeyJob extends VisorJob<VisorCacheGroupEncryptionTaskArg, Void> {
+    private static class VisorChangeCacheGroupKeyJob extends VisorJob<EncryptionCacheGroupArg, Void> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -47,13 +48,13 @@ public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<VisorCacheGro
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorChangeCacheGroupKeyJob(VisorCacheGroupEncryptionTaskArg arg, boolean debug) {
+        protected VisorChangeCacheGroupKeyJob(EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorCacheGroupEncryptionTaskArg taskArg) throws IgniteException {
-            ignite.encryption().changeCacheGroupKey(Collections.singleton(taskArg.groupName())).get();
+        @Override protected Void run(EncryptionCacheGroupArg taskArg) throws IgniteException {
+            ignite.encryption().changeCacheGroupKey(Collections.singleton(taskArg.getCacheGroupName())).get();
 
             return null;
         }

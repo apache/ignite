@@ -29,14 +29,13 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskArg;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import org.apache.ignite.internal.visor.encryption.VisorEncryptionKeyIdsTask;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionResumeTask;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionStatusTask;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionSuspendTask;
-
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -49,12 +48,12 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
  *
  * @param <T> Command result type.
  */
-public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<VisorCacheGroupEncryptionTaskArg> {
+public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<EncryptionCacheGroupArg> {
     /** Cache group reencryption task argument. */
-    private VisorCacheGroupEncryptionTaskArg taskArg;
+    private EncryptionCacheGroupArg taskArg;
 
     /** {@inheritDoc} */
-    @Override public VisorCacheGroupEncryptionTaskArg arg() {
+    @Override public EncryptionCacheGroupArg arg() {
         return taskArg;
     }
 
@@ -65,7 +64,9 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         if (argIter.hasNextSubArg())
             throw new IllegalArgumentException("Unexpected command argument: " + argIter.peekNextArg());
 
-        taskArg = new VisorCacheGroupEncryptionTaskArg(grpName);
+        taskArg = new EncryptionCacheGroupArg();
+
+        taskArg.setCacheGroupName(grpName);
     }
 
     /** {@inheritDoc} */
@@ -79,7 +80,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
                 clientCfg
             );
 
-            printResults(res, taskArg.groupName(), log);
+            printResults(res, taskArg.getCacheGroupName(), log);
 
             return res;
         }

@@ -24,9 +24,8 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskArg;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
-
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommands.CHANGE_CACHE_GROUP_KEY;
@@ -34,9 +33,9 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 /**
  * Change cache group key encryption subcommand.
  */
-public class ChangeCacheGroupKeyCommand extends AbstractCommand<VisorCacheGroupEncryptionTaskArg> {
+public class ChangeCacheGroupKeyCommand extends AbstractCommand<EncryptionCacheGroupArg> {
     /** Change cache group key task argument. */
-    private VisorCacheGroupEncryptionTaskArg taskArg;
+    private EncryptionCacheGroupArg taskArg;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
@@ -49,7 +48,7 @@ public class ChangeCacheGroupKeyCommand extends AbstractCommand<VisorCacheGroupE
                 clientCfg
             );
 
-            log.info("The encryption key has been changed for the cache group \"" + taskArg.groupName() + "\".");
+            log.info("The encryption key has been changed for the cache group \"" + taskArg.getCacheGroupName() + "\".");
 
             return null;
         }
@@ -68,7 +67,7 @@ public class ChangeCacheGroupKeyCommand extends AbstractCommand<VisorCacheGroupE
     }
 
     /** {@inheritDoc} */
-    @Override public VisorCacheGroupEncryptionTaskArg arg() {
+    @Override public EncryptionCacheGroupArg arg() {
         return taskArg;
     }
 
@@ -76,7 +75,9 @@ public class ChangeCacheGroupKeyCommand extends AbstractCommand<VisorCacheGroupE
     @Override public void parseArguments(CommandArgIterator argIter) {
         String argCacheGrpName = argIter.nextArg("Сache group name is expected.");
 
-        taskArg = new VisorCacheGroupEncryptionTaskArg(argCacheGrpName);
+        taskArg = new EncryptionCacheGroupArg();
+
+        taskArg.setCacheGroupName(argCacheGrpName);
 
         if (argIter.hasNextSubArg())
             throw new IllegalArgumentException("Unexpected command argument: " + argIter.peekNextArg());

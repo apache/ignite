@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.encryption;
 
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -29,17 +30,17 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * @see IgniteEncryption#getMasterKeyName()
  */
 @GridInternal
-public class VisorGetMasterKeyNameTask extends VisorOneNodeTask<Void, String> {
+public class VisorGetMasterKeyNameTask extends VisorOneNodeTask<EmptyArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Void, String> job(Void arg) {
+    @Override protected VisorJob<EmptyArg, String> job(EmptyArg arg) {
         return new VisorGetMasterKeyNameJob(arg, debug);
     }
 
     /** The job for getting the master key name. */
-    private static class VisorGetMasterKeyNameJob extends VisorJob<Void, String> {
+    private static class VisorGetMasterKeyNameJob extends VisorJob<EmptyArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -49,12 +50,12 @@ public class VisorGetMasterKeyNameTask extends VisorOneNodeTask<Void, String> {
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorGetMasterKeyNameJob(Void arg, boolean debug) {
+        protected VisorGetMasterKeyNameJob(EmptyArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(Void arg) throws IgniteException {
+        @Override protected String run(EmptyArg arg) throws IgniteException {
             return ignite.encryption().getMasterKeyName();
         }
     }

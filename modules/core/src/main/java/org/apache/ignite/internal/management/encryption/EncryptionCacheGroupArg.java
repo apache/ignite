@@ -15,54 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.encryption;
+package org.apache.ignite.internal.management.encryption;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Cache group aware task argument.
+ *
  */
-public class VisorCacheGroupEncryptionTaskArg extends IgniteDataTransferObject {
+public class EncryptionCacheGroupArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
-    /** Cache group name. */
-    private String grpName;
-
-    /** Default constructor. */
-    public VisorCacheGroupEncryptionTaskArg() {
-        // No-op.
-    }
-
-    /**
-     * @param grpName Cache group name.
-     */
-    public VisorCacheGroupEncryptionTaskArg(String grpName) {
-        this.grpName = grpName;
-    }
-
-    /** @return Cache group name. */
-    public String groupName() {
-        return grpName;
-    }
+    /** */
+    @Positional
+    @Argument(javaStyleExample = true)
+    private String cacheGroupName;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, grpName);
+        U.writeString(out, cacheGroupName);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        grpName = U.readString(in);
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        cacheGroupName = U.readString(in);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorCacheGroupEncryptionTaskArg.class, this);
+    /** */
+    public String getCacheGroupName() {
+        return cacheGroupName;
+    }
+
+    /** */
+    public void setCacheGroupName(String cacheGroupName) {
+        this.cacheGroupName = cacheGroupName;
     }
 }

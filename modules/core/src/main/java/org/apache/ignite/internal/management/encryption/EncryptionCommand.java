@@ -15,25 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.encryption;
 
 import java.util.Arrays;
 import java.util.List;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.encryption.EncryptionCommand;
-import org.apache.ignite.internal.management.kill.KillCommand;
 
-/**
- * Root command registry. Contains all known commands.
- */
-public class IgniteCommandRegistry extends CommandRegistryImpl {
+/** */
+@CliPositionalSubcommands
+public class EncryptionCommand extends CommandRegistryImpl {
     /** {@inheritDoc} */
     @Override protected List<Command<?, ?, ?>> subcommands() {
         return Arrays.asList(
-            new EncryptionCommand(),
-            new KillCommand(),
-            new SystemViewCommand()
+            new EncryptionGetMasterKeyNameCommand(),
+            new EncryptionChangeMasterKeyCommand(),
+            new EncryptionChangeCacheKeyCommand(),
+            new EncryptionCacheKeyIdsCommand(),
+            new EncryptionReencryptionStatusCommand(),
+            new EncryptionSuspendReencryptionCommand(),
+            new EncryptionResumeReencryptionCommand(),
+            new EncryptionReencryptionRateLimitCommand()
         );
     }
 }

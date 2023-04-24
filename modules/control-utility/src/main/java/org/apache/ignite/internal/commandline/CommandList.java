@@ -25,7 +25,6 @@ import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cdc.CdcCommand;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
-import org.apache.ignite.internal.commandline.encryption.EncryptionCommands;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsCommand;
@@ -64,7 +63,7 @@ public enum CommandList {
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
     /** Encryption features command. */
-    ENCRYPTION("--encryption", new EncryptionCommands()),
+    ENCRYPTION("--encryption", new DeclarativeCommandAdapter<>("Encryption")),
 
     /** Kill command. */
     KILL("--kill", new DeclarativeCommandAdapter<>("Kill")),
