@@ -36,14 +36,19 @@ public class KillSnapshotCommandArg extends IgniteDataTransferObject {
     @Argument(description = "Request id")
     private UUID requestId;
 
+    /** */
+    private String snapshotName;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeUuid(out, requestId);
+        U.writeString(out, snapshotName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         requestId = U.readUuid(in);
+        snapshotName = U.readString(in);
     }
 
     /** */
@@ -54,5 +59,15 @@ public class KillSnapshotCommandArg extends IgniteDataTransferObject {
     /** */
     public void setRequestId(UUID requestId) {
         this.requestId = requestId;
+    }
+
+    /** */
+    public String getSnapshotName() {
+        return snapshotName;
+    }
+
+    /** */
+    public void setSnapshotName(String snapshotName) {
+        this.snapshotName = snapshotName;
     }
 }

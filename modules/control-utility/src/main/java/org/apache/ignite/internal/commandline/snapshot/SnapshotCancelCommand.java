@@ -24,9 +24,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.management.kill.KillSnapshotCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -44,7 +44,7 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        if (!F.isEmpty(((VisorSnapshotCancelTaskArg)cmdArg).snapshotName()))
+        if (!F.isEmpty(((KillSnapshotCommandArg)cmdArg).getSnapshotName()))
             log.warning("'" + NAME.arg() + "' option is deprecated, please use operation request ID to cancel operation.");
 
         return super.execute(clientCfg, log);
@@ -68,7 +68,12 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
         if (argIter.hasNextSubArg())
             throw new IllegalArgumentException("No more arguments expected.");
 
-        cmdArg = new VisorSnapshotCancelTaskArg(reqId, snpName);
+        KillSnapshotCommandArg cmdArg0 = new KillSnapshotCommandArg();
+
+        cmdArg0.setRequestId(reqId);
+        cmdArg0.setSnapshotName(snpName);
+
+        cmdArg = cmdArg0;
     }
 
     /** {@inheritDoc} */

@@ -44,13 +44,10 @@ public class PeekableIterator<T1> implements Iterator<T1> {
      * @throws NoSuchElementException if the iteration has no more elements.
      */
     public T1 peek() {
-        if (peeked != null)
-            return peeked;
+        if (peeked == null && iter.hasNext())
+            peeked = iter.next();
 
-        if (hasNext())
-            return peeked = next();
-
-        return null;
+        return peeked;
     }
 
     /** {@inheritDoc} */

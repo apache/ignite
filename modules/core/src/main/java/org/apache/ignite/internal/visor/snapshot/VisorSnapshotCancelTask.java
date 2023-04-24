@@ -53,9 +53,15 @@ public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<KillSnapsh
 
         /** {@inheritDoc} */
         @Override protected String run(KillSnapshotCommandArg taskArg) throws IgniteException {
-            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshotOperation(taskArg.getRequestId().toString());
+            if (taskArg.getRequestId() != null) {
+                new SnapshotMXBeanImpl(ignite.context()).cancelSnapshotOperation(taskArg.getRequestId().toString());
 
-            return "Snapshot operation cancelled [id=" + taskArg.getRequestId() + "].";
+                return "Snapshot operation cancelled [id=" + taskArg.getRequestId() + "].";
+            }
+
+            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshot(taskArg.getSnapshotName());
+
+            return "Snapshot operation cancelled [snapshot=" + taskArg.getSnapshotName() + "].";
         }
     }
 }
