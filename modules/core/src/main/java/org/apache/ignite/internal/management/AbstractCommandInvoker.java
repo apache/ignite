@@ -94,7 +94,7 @@ public abstract class AbstractCommandInvoker {
             );
         }
         catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e); //TODO: replace with print error to printer.
+            throw new IgniteException(e);
         }
 
         IgniteEx grid = grid();
@@ -166,7 +166,6 @@ public abstract class AbstractCommandInvoker {
             }
 
             try {
-                // TODO: use setters here.
                 fld.setAccessible(true);
                 fld.set(arg, val);
             }

@@ -211,7 +211,6 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
-        // TODO: add to string ang getters setters generation.
         new IgniteCommandRegistry().forEach(gen::generate);
     }
 
