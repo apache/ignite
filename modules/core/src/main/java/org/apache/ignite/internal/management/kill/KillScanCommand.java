@@ -21,7 +21,7 @@ import org.apache.ignite.internal.management.api.AbstractCommand;
 import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
 
 /** */
-public class KillScanCommand extends AbstractCommand<KillScanCommandArg, Void, VisorScanQueryCancelTask> {
+public class KillScanCommand extends AbstractCommand<KillScanCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill scan query by node id, cache name and query id";

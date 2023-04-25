@@ -28,7 +28,7 @@ import org.apache.ignite.internal.management.api.ComplexCommand;
 @CliPositionalSubcommands
 public class KillCommand extends CommandRegistryImpl implements ComplexCommand {
     /** {@inheritDoc} */
-    @Override protected List<Command<?, ?, ?>> subcommands() {
+    @Override protected List<Command<?, ?>> subcommands() {
         return Arrays.asList(
             new KillComputeCommand(),
             new KillServiceCommand(),

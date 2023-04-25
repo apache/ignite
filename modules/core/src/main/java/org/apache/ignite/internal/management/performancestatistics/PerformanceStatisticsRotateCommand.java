@@ -23,8 +23,7 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsRotateCommand
-    extends AbstractCommand<EmptyArg, String, VisorPerformanceStatisticsTask> {
+public class PerformanceStatisticsRotateCommand extends AbstractCommand<EmptyArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Rotate collecting performance statistics in the cluster";

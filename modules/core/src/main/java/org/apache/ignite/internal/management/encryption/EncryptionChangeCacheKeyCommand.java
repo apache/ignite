@@ -23,7 +23,7 @@ import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
 
 /** */
 public class EncryptionChangeCacheKeyCommand
-    extends AbstractCommand<EncryptionCacheGroupArg, Void, VisorChangeCacheGroupKeyTask> {
+    extends AbstractCommand<EncryptionCacheGroupArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change the encryption key of the cache group";

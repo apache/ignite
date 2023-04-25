@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  * Command that have subcommands. Combine {@link Command} and {@link CommandsRegistry} features.
@@ -29,8 +27,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
  *     <li>Subcommand: {@code StateSetCommand}, {@code StateGetCommand}, etc.</li>
  * </ul>
  */
-public interface ComplexCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
-    extends Command<A, R, T>, CommandsRegistry {
+public interface ComplexCommand<A extends IgniteDataTransferObject, R>
+    extends Command<A, R>, CommandsRegistry {
     /** @return {@code True} if base command represented by this registry can itself be executed. */
     public default boolean canBeExecuted() {
         return false;
@@ -47,7 +45,7 @@ public interface ComplexCommand<A extends IgniteDataTransferObject, R, T extends
     }
 
     /** {@inheritDoc} */
-    @Override public default Class<T> task() {
+    @Override public default Class task() {
         throw new UnsupportedOperationException();
     }
 }

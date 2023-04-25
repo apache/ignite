@@ -23,8 +23,7 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsStatusCommand
-    extends AbstractCommand<EmptyArg, String, VisorPerformanceStatisticsTask> {
+public class PerformanceStatisticsStatusCommand extends AbstractCommand<EmptyArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get status of collecting performance statistics in the cluster";

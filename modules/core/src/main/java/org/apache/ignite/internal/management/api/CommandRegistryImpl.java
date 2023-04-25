@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX
  */
 public abstract class CommandRegistryImpl implements CommandsRegistry {
     /** Subcommands. */
-    private final Map<String, Command<?, ?, ?>> commands = new LinkedHashMap<>();
+    private final Map<String, Command<?, ?>> commands = new LinkedHashMap<>();
 
     /** */
     protected CommandRegistryImpl() {
@@ -43,9 +43,9 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
      * Register new command.
      * @param cmd Command to register.
      */
-    void register(Command<?, ?, ?> cmd) {
-        Class<? extends ComplexCommand<?, ?, ?>> parent = ComplexCommand.class.isAssignableFrom(getClass())
-            ? (Class<? extends ComplexCommand<?, ?, ?>>)getClass()
+    void register(Command<?, ?> cmd) {
+        Class<? extends ComplexCommand<?, ?>> parent = ComplexCommand.class.isAssignableFrom(getClass())
+            ? (Class<? extends ComplexCommand<?, ?>>)getClass()
             : null;
 
         String name = cmd.getClass().getSimpleName();
@@ -77,15 +77,15 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
      * Note, this method invoked in constructor so some constant or nearly constant list is expected.
      * @return Subcommands list.
      */
-    protected abstract List<Command<?, ?, ?>> subcommands();
+    protected abstract List<Command<?, ?>> subcommands();
 
     /** {@inheritDoc} */
-    @Override public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name) {
-        return (Command<A, ?, ?>)commands.get(name);
+    @Override public <A extends IgniteDataTransferObject> Command<A, ?> command(String name) {
+        return (Command<A, ?>)commands.get(name);
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<String, Command<?, ?, ?>>> commands() {
+    @Override public Iterator<Map.Entry<String, Command<?, ?>>> commands() {
         return commands.entrySet().iterator();
     }
 }

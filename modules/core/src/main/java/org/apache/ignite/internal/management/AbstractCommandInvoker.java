@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -52,7 +51,6 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
@@ -74,10 +72,9 @@ public abstract class AbstractCommandInvoker {
      * @param printer Result printer.
      * @param <A> Argument type.
      * @param <R> Result type.
-     * @param <T> Task type.
      */
-    protected <A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> void execute(
-        Command<A, R, T> cmd,
+    protected <A extends IgniteDataTransferObject, R> void execute(
+        Command<A, R> cmd,
         Map<String, String> args,
         Consumer<String> printer
     ) {
@@ -203,15 +200,15 @@ public abstract class AbstractCommandInvoker {
      * @return Command to execute.
      * @param <A> Argument type.
      */
-    protected <A extends IgniteDataTransferObject> Command<A, ?, ?> command(
+    protected <A extends IgniteDataTransferObject> Command<A, ?> command(
         CommandsRegistry root,
         PeekableIterator<String> iter,
         boolean isCli
     ) {
         if (!iter.hasNext())
-            return (Command<A, ?, ?>)root;
+            return (Command<A, ?>)root;
 
-        Command<A, ?, ?> cmd0 = (Command<A, ?, ?>)root;
+        Command<A, ?> cmd0 = (Command<A, ?>)root;
 
         while (cmd0 instanceof ComplexCommand && iter.hasNext()) {
             String name = iter.peek();
@@ -223,7 +220,7 @@ public abstract class AbstractCommandInvoker {
                 name = name.substring(PARAMETER_PREFIX.length());
             }
 
-            Command<A, ?, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
+            Command<A, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
 
             if (cmd1 != null) {
                 cmd0 = cmd1;
@@ -232,7 +229,7 @@ public abstract class AbstractCommandInvoker {
             }
         }
 
-        if (cmd0 instanceof ComplexCommand && !((ComplexCommand<?, ?, ?>)cmd0).canBeExecuted()) {
+        if (cmd0 instanceof ComplexCommand && !((ComplexCommand<?, ?>)cmd0).canBeExecuted()) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
             );

@@ -31,10 +31,10 @@ public interface CommandsRegistry {
      * @param name Name of the command.
      * @return Command instance by name.
      */
-    public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name);
+    public <A extends IgniteDataTransferObject> Command<A, ?> command(String name);
 
     /**
      * @return Commands iterator.
      */
-    public Iterator<Map.Entry<String, Command<?, ?, ?>>> commands();
+    public Iterator<Map.Entry<String, Command<?, ?>>> commands();
 }

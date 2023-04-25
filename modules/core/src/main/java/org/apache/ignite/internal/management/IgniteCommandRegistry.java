@@ -30,7 +30,7 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl {
     /** {@inheritDoc} */
-    @Override protected List<Command<?, ?, ?>> subcommands() {
+    @Override protected List<Command<?, ?>> subcommands() {
         return Arrays.asList(
             new EncryptionCommand(),
             new KillCommand(),

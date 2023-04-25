@@ -36,9 +36,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
  *
  * @param <A> Argument type.
  * @param <R> Result type.
- * @param <T> Compute task type.
  */
-public interface Command<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>> {
+public interface Command<A extends IgniteDataTransferObject, R> {
     /** */
     public String CMD_NAME_POSTFIX = "Command";
 
@@ -49,7 +48,7 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
     public Class<? extends A> args();
 
     /** @return Task class. */
-    public Class<T> task();
+    public Class<? extends ComputeTask<VisorTaskArgument<A>, R>> task();
 
     /**
      * Prints command result to the user.

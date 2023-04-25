@@ -29,10 +29,8 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
-public class EncryptionReencryptionRateLimitCommand extends AbstractCommand<
-        EncryptionReencryptionRateLimitCommandArg,
-        VisorCacheGroupEncryptionTaskResult<Double>,
-        VisorReencryptionRateTask> {
+public class EncryptionReencryptionRateLimitCommand
+    extends AbstractCommand<EncryptionReencryptionRateLimitCommandArg, VisorCacheGroupEncryptionTaskResult<Double>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View/change re-encryption rate limit";

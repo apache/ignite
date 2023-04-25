@@ -21,7 +21,7 @@ import org.apache.ignite.internal.management.api.AbstractCommand;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
 
 /** */
-public class KillContinuousCommand extends AbstractCommand<KillContinuousCommandArg, Void, VisorContinuousQueryCancelTask> {
+public class KillContinuousCommand extends AbstractCommand<KillContinuousCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill continuous query by routine id";

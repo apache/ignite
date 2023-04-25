@@ -24,7 +24,7 @@ import org.apache.ignite.internal.management.api.AbstractCommand;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
 /** */
-public class KillClientCommand extends AbstractCommand<KillClientCommandArg, Void, VisorClientConnectionDropTask> {
+public class KillClientCommand extends AbstractCommand<KillClientCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill client connection by id";

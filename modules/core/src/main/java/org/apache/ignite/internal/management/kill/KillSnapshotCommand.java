@@ -22,7 +22,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public class KillSnapshotCommand extends AbstractCommand<KillSnapshotCommandArg, VisorSnapshotTaskResult, VisorSnapshotCancelTask> {
+public class KillSnapshotCommand extends AbstractCommand<KillSnapshotCommandArg, VisorSnapshotTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill running snapshot by snapshot name";

@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /** Basic command implementation. */
-public abstract class AbstractCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
-    implements Command<A, R, T> {
+public abstract class AbstractCommand<A extends IgniteDataTransferObject, R>
+    implements Command<A, R> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(((Class)getClass()), this);

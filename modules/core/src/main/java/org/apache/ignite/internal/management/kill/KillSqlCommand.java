@@ -21,7 +21,7 @@ import org.apache.ignite.internal.management.api.AbstractCommand;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 
 /** */
-public class KillSqlCommand extends AbstractCommand<KillSqlCommandArg, Void, VisorQueryCancelOnInitiatorTask> {
+public class KillSqlCommand extends AbstractCommand<KillSqlCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill sql query by query id";

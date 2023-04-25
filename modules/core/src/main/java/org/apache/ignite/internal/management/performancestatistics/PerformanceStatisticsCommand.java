@@ -29,7 +29,7 @@ import org.apache.ignite.internal.management.api.EmptyArg;
 @CliPositionalSubcommands
 public class PerformanceStatisticsCommand extends CommandRegistryImpl implements ComplexCommand {
     /** {@inheritDoc} */
-    @Override protected List<Command<?, ?, ?>> subcommands() {
+    @Override protected List<Command<?, ?>> subcommands() {
         return Arrays.asList(
             new PerformanceStatisticsStartCommand(),
             new PerformanceStatisticsStopCommand(),

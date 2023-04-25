@@ -27,7 +27,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 /** */
 public class KillTransactionCommand
-    extends AbstractCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>, KillTransactionTask> {
+    extends AbstractCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill transaction by xid";

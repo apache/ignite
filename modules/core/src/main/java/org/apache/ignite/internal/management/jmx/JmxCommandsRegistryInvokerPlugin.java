@@ -77,17 +77,17 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
      * @param cmd Command to expose.
      * @param <A> Argument type.
      */
-    public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?, ?> cmd) {
+    public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?> cmd) {
         if (cmd instanceof ComplexCommand) {
             parents.add(name);
 
-            ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).forEach(
+            ((Iterable<Map.Entry<String, Command<?, ?>>>)cmd).forEach(
                 cmd0 -> register(cmd0.getKey(), parents, cmd0.getValue()
             ));
 
             parents.remove(parents.size() - 1);
 
-            if (!((ComplexCommand<?, ?, ?>)cmd).canBeExecuted())
+            if (!((ComplexCommand<?, ?>)cmd).canBeExecuted())
                 return;
         }
 

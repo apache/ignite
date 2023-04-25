@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 abstract class CacheGroupEncryptionCommand<T, C extends VisorCacheGroupEncryptionTask<T>>
-    extends AbstractCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<T>, C> {
+    extends AbstractCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<T>> {
     /** {@inheritDoc} */
     @Override public void printResult(
         EncryptionCacheGroupArg arg,

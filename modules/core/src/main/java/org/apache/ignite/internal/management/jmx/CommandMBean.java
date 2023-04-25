@@ -53,13 +53,13 @@ public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCo
     private final IgniteEx grid;
 
     /** Command to expose. */
-    private final Command<A, ?, ?> cmd;
+    private final Command<A, ?> cmd;
 
     /**
      * @param grid Local node.
      * @param cmd Command to expose.
      */
-    public CommandMBean(IgniteEx grid, Command<A, ?, ?> cmd) {
+    public CommandMBean(IgniteEx grid, Command<A, ?> cmd) {
         this.grid = grid;
         this.cmd = cmd;
     }

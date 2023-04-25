@@ -23,7 +23,7 @@ import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 
 /** */
-public class EncryptionGetMasterKeyNameCommand extends AbstractCommand<EmptyArg, String, VisorGetMasterKeyNameTask> {
+public class EncryptionGetMasterKeyNameCommand extends AbstractCommand<EmptyArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print the current master key name";

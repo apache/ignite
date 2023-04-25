@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
@@ -52,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
-
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -76,10 +74,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
 
     /** Root command to start parsing from. */
-    private final org.apache.ignite.internal.management.api.Command<A, ?, ?> baseCmd;
+    private final org.apache.ignite.internal.management.api.Command<A, ?> baseCmd;
 
     /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
-    private IgniteBiTuple<org.apache.ignite.internal.management.api.Command<A, ?, ?>, A> parsed;
+    private IgniteBiTuple<org.apache.ignite.internal.management.api.Command<A, ?>, A> parsed;
 
     /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
@@ -90,7 +88,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
-        org.apache.ignite.internal.management.api.Command<A, ?, ?> cmd0 =
+        org.apache.ignite.internal.management.api.Command<A, ?> cmd0 =
             baseCmd instanceof CommandsRegistry
                 ? command(
                     (CommandsRegistry)baseCmd,
@@ -190,8 +188,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             if (!F.isEmpty(connectable))
                 compute = compute.projection(connectable);
 
-            org.apache.ignite.internal.management.api.Command<A, R, ComputeTask<VisorTaskArgument<A>, R>> cmd =
-                (org.apache.ignite.internal.management.api.Command<A, R, ComputeTask<VisorTaskArgument<A>, R>>)parsed.get1();
+            org.apache.ignite.internal.management.api.Command<A, R> cmd =
+                (org.apache.ignite.internal.management.api.Command<A, R>)parsed.get1();
 
             R res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
 
@@ -220,11 +218,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @param logger Logger to print help to.
      */
     private void usage(
-        org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
-        List<ComplexCommand<?, ?, ?>> parents,
+        org.apache.ignite.internal.management.api.Command<?, ?> cmd,
+        List<ComplexCommand<?, ?>> parents,
         IgniteLogger logger
     ) {
-        boolean skip = (cmd instanceof ComplexCommand) && !((ComplexCommand<?, ?, ?>)cmd).canBeExecuted();
+        boolean skip = (cmd instanceof ComplexCommand) && !((ComplexCommand<?, ?>)cmd).canBeExecuted();
 
         if (!skip) {
             logger.info("");
@@ -277,9 +275,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
 
         if (cmd instanceof ComplexCommand) {
-            List<ComplexCommand<?, ?, ?>> parents0 = new ArrayList<>(parents);
+            List<ComplexCommand<?, ?>> parents0 = new ArrayList<>(parents);
 
-            parents0.add((ComplexCommand<?, ?, ?>)cmd);
+            parents0.add((ComplexCommand<?, ?>)cmd);
 
             ((CommandsRegistry)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
@@ -293,8 +291,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @param logger Logger to print help to.
      */
     private void printExample(
-        org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
-        List<ComplexCommand<?, ?, ?>> parents,
+        org.apache.ignite.internal.management.api.Command<?, ?> cmd,
+        List<ComplexCommand<?, ?>> parents,
         IgniteLogger logger
     ) {
         logger.info(INDENT + cmd.description() + ":");
@@ -380,7 +378,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @param cmd Command.
      * @return {@code True} if command has described parameters.
      */
-    public boolean hasDescribedParameters(org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd) {
+    public boolean hasDescribedParameters(org.apache.ignite.internal.management.api.Command<?, ?> cmd) {
         AtomicBoolean res = new AtomicBoolean();
 
         visitCommandParams(
