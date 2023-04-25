@@ -62,15 +62,15 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
     }
 
     /** @return {@code true} if the command is experimental, {@code false} otherwise. */
-    default boolean experimental() {
+    public default boolean experimental() {
         return false;
     }
 
     /**
-     * @return {@code true} if the command must be explicitly confirmed, {@code false} otherwise.
+     * @return Message text to show user for. If null it means that confirmantion is not needed.
      */
-    default boolean confirmable() {
-        return false;
+    public default String confirmationPrompt() {
+        return null;
     }
 
     /**
@@ -78,7 +78,7 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
      * @param arg Argument.
      * @return nodes to execute command on, empty collection means default node must be used.
      */
-    default Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
+    public default Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
         return Collections.emptyList();
     }
 }

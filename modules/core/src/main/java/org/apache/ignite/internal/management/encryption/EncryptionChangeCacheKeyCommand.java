@@ -43,4 +43,10 @@ public class EncryptionChangeCacheKeyCommand
     @Override public void printResult(EncryptionCacheGroupArg arg, Void res, Consumer<String> printer) {
         printer.accept("The encryption key has been changed for the cache group \"" + arg.getCacheGroupName() + "\".");
     }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt() {
+        return "Warning: the command will change the encryption key of the cache group. Joining a node during " +
+            "the key change process is prohibited and will be rejected.";
+    }
 }

@@ -43,4 +43,10 @@ public class EncryptionChangeMasterKeyCommand
     @Override public void printResult(EncryptionChangeMasterKeyCommandArg arg, String res, Consumer<String> printer) {
         printer.accept(res);
     }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt() {
+        return "Warning: the command will change the master key. Cache start and node join during the key change " +
+            "process is prohibited and will be rejected.";
+    }
 }
