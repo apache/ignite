@@ -24,7 +24,7 @@ Ignite:
 * Added snapshot delta pages sorting.
 * Added partition size and counter check on snapshot create.
 * Added system view for Ignite configuration.
-* Added "page free space" column to pages lists system views.
+* Added "Page free space" column to pages lists system views.
 * Added API to kill client (THIN, ODBJ, JDBC) connections.
 * Added metrics for page read time and page replace time.
 * Added thin client affinity hits/misses metric (for partition awareness requests).
@@ -110,7 +110,7 @@ Java thin-client:
 * Added configurable logging.
 * Fixed the pending requests race on close.
 
-Ignite .Net:
+Ignite .NET:
 * Added support for default interface methods to Services.
 * Added support for Native AOT.
 * Added IgniteClientConfiguration.EnableClusterDiscovery thin client configuration property that can be used to enable or disable discovery.
