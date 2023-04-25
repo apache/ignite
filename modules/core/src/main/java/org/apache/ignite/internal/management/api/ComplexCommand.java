@@ -22,6 +22,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
+ * Command that have subcommands. Combine {@link Command} and {@link CommandsRegistry} features.
  */
 public interface ComplexCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
     extends Command<A, R, T>, CommandsRegistry {
