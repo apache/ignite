@@ -25,17 +25,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
- * Command that have subcommands.
- * There are name contract between commands registry and specific commands.
- * <ol>
- *     <li>All commands class names must end with {@link Command#CMD_NAME_POSTFIX}</li>
- *     <li>Subcommand name must start with the base command name like:
- *      <ul>
- *          <li>Base command: {@code StateCommand}.</li>
- *          <li>Subcommand: {@code StateSetCommand}, {@code StateGetCommand}, etc.</li>
- *      </ul>
- *     </li>
- * </ol>
+ * All commands class names stored in registry must ends with {@link Command#CMD_NAME_POSTFIX}.
  *
  * @see org.apache.ignite.internal.management.kill.KillCommand
  * @see org.apache.ignite.internal.management.kill.KillComputeCommand

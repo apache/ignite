@@ -23,6 +23,11 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  * Command that have subcommands. Combine {@link Command} and {@link CommandsRegistry} features.
+ * Subcommand name must start with the base command name like:
+ * <ul>
+ *     <li>Base command: {@code StateCommand}.</li>
+ *     <li>Subcommand: {@code StateSetCommand}, {@code StateGetCommand}, etc.</li>
+ * </ul>
  */
 public interface ComplexCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
     extends Command<A, R, T>, CommandsRegistry {
