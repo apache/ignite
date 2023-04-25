@@ -23,9 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /** Basic command implementation. */
-public abstract class AbstractCommand<A extends IgniteDataTransferObject, R, T
-    extends ComputeTask<VisorTaskArgument<A>, R>> implements Command<A, R, T> {
-
+public abstract class AbstractCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
+    implements Command<A, R, T> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(((Class)getClass()), this);
