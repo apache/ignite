@@ -321,9 +321,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
-    /** */
-    public static volatile boolean TEST;
-
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 
@@ -7844,11 +7841,6 @@ public abstract class IgniteUtils {
         Collections.addAll(c, vals);
 
         return c;
-    }
-
-    /** */
-    public static String toString(ClusterNode node) {
-        return node.order() + " / " + node.id().toString();
     }
 
     /**

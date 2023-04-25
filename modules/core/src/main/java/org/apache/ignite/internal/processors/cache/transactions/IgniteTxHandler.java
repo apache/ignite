@@ -155,11 +155,6 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processNearTxPrepareRequest(UUID nearNodeId, GridNearTxPrepareRequest req) {
-        if (U.TEST) {
-            log.error("TEST | process prepare near request on " + ctx.localNodeId() + " / " +
-                ctx.localNode().order() + " from " + nearNodeId);
-        }
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_PREPARE_REQ, MTC.span()))) {
             if (txPrepareMsgLog.isDebugEnabled()) {
@@ -549,11 +544,6 @@ public class IgniteTxHandler {
                     }
 
                     if (retry) {
-                        if (U.TEST) {
-                            log.error("TEST | retry prepare near transaction request on " + ctx.localNodeId() + " / " +
-                                ctx.localNode().order() + ". Node 'to': " + nearNode.id() + " / " + nearNode.order());
-                        }
-
                         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
                             req.partition(),
                             req.version(),
@@ -809,9 +799,6 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
-        if (U.TEST)
-            log.error("TEST | IgniteTxHandler::processNearTxPrepareResponse " + U.toString(ctx.localNode()) + " from " + nodeId);
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_PREPARE_RESP, MTC.span()))) {
             if (txPrepareMsgLog.isDebugEnabled())
@@ -844,9 +831,6 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
-        if (U.TEST)
-            log.error("TEST | processNearTxFinishResponse on " + U.toString(ctx.localNode()) + " from " + nodeId);
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_FINISH_RESP, MTC.span()))) {
             if (txFinishMsgLog.isDebugEnabled())
@@ -873,9 +857,6 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        if (U.TEST)
-            log.error("TEST | IgniteTxHandler::processDhtTxPrepareResponse on " + U.toString(ctx.localNode()) + " from " + nodeId);
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_RESP, MTC.span()))) {
             GridDhtTxPrepareFuture fut =
@@ -910,11 +891,6 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxFinishResponse(UUID nodeId, GridDhtTxFinishResponse res) {
-        if (U.TEST) {
-            log.error("TEST | IgniteTxHandler::processDhtTxFinishResponse on primary " +
-                U.toString(ctx.localNode()) + " from backup " + nodeId);
-        }
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_FINISH_RESP, MTC.span()))) {
             assert nodeId != null;
@@ -974,9 +950,6 @@ public class IgniteTxHandler {
         UUID nodeId,
         GridNearTxFinishRequest req
     ) {
-        if (U.TEST)
-            log.error("TEST | processNearTxFinishRequest on " + U.toString(ctx.localNode()) + " from " + nodeId);
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_NEAR_FINISH_REQ, MTC.span()))) {
             if (txFinishMsgLog.isDebugEnabled())
@@ -1212,9 +1185,6 @@ public class IgniteTxHandler {
     public IgniteInternalFuture<IgniteInternalTx> finishColocatedLocal(boolean commit, GridNearTxLocal tx) {
         try {
             if (commit) {
-                if (U.TEST)
-                    log.error("TEST | commiting on " + U.toString(ctx.localNode()) + ".");
-
                 if (!tx.markFinalizing(USER_FINISH)) {
                     if (log.isDebugEnabled())
                         log.debug("Will not finish transaction (it is handled by another thread): " + tx);
@@ -1256,11 +1226,6 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processDhtTxPrepareRequest(final UUID nodeId, final GridDhtTxPrepareRequest req) {
-        if (U.TEST) {
-            log.error("TEST | process prepare request on " +
-                ctx.localNode().id() + " / " + ctx.localNode().order() + " from " + nodeId);
-        }
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_REQ, MTC.span()))) {
             if (txPrepareMsgLog.isDebugEnabled()) {
@@ -1409,10 +1374,6 @@ public class IgniteTxHandler {
      */
     private void processDhtTxOnePhaseCommitAckRequest(final UUID nodeId,
         final GridDhtTxOnePhaseCommitAckRequest req) {
-
-        if (U.TEST)
-            log.error("TEST | processDhtTxOnePhaseCommitAckRequest on " + U.toString(ctx.localNode()) + " from " + nodeId);
-
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_ONE_PHASE_COMMIT_ACK_REQ, MTC.span()))) {
             assert nodeId != null;
@@ -1594,9 +1555,6 @@ public class IgniteTxHandler {
         GridDhtTxPrepareRequest req) throws IgniteTxHeuristicCheckedException {
         assert tx != null : "No transaction for one-phase commit prepare request: " + req;
 
-        if(U.TEST)
-            log.error("TEST | commiting one-phase commit on " + U.toString(ctx.localNode()) + ".");
-
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
@@ -1741,11 +1699,6 @@ public class IgniteTxHandler {
             }
 
             try {
-                if (U.TEST) {
-                    log.error("TEST | sending GridDhtTxFinishResponse from " + U.toString(ctx.localNode()) +
-                        " to " + nodeId);
-                }
-
                 ctx.io().send(nodeId, res, req.policy());
 
                 if (txFinishMsgLog.isDebugEnabled()) {
@@ -2329,9 +2282,6 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
-        if (U.TEST)
-            log.error("TEST | processDhtTxFinishResponse on " + U.toString(ctx.localNode()) + " from " + nodeId);
-
         if (txRecoveryMsgLog.isInfoEnabled()) {
             txRecoveryMsgLog.info("Received tx recovery response [txId=" + res.version() +
                 ", node=" + nodeId +

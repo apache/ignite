@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -84,19 +82,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         super(cctx, tx);
 
         assert tx.optimistic() && tx.serializable() : tx;
-    }
-
-    /** {@inheritDoc} */
-    @Override List<UUID> notRespondedNodes() {
-        compoundsReadLock();
-
-        try {
-            return futures().stream().filter(f -> isMini(f) && !(f.isDone() || f.isCancelled()))
-                .map(f -> ((MiniFuture)f).primary().id()).collect(Collectors.toList());
-        }
-        finally {
-            compoundsReadUnlock();
-        }
     }
 
     /** {@inheritDoc} */
@@ -184,8 +169,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
     /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
-        super.onResult(nodeId, res);
-
         if (!isDone()) {
             MiniFuture mini = miniFuture(res.miniId());
 
@@ -196,9 +179,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
-        if (U.TEST)
-            log.error("TEST | GridNearOptimisticSerializableTxPrepareFuture::onDone() on " + U.toString(cctx.localNode()));
-
         try (TraceSurroundings ignored = MTC.support(span)) {
             if (isDone())
                 return false;
@@ -762,7 +742,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     /**
      *
      */
-    private static class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    private static class MiniFuture extends NodeFuture<GridNearTxPrepareResponse> {
         /** Receive result flag updater. */
         private static final AtomicIntegerFieldUpdater<MiniFuture> RCV_RES_UPD =
             AtomicIntegerFieldUpdater.newUpdater(MiniFuture.class, "rcvRes");
@@ -803,6 +783,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          */
         public ClusterNode primary() {
             return m.primary();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected UUID nodeId() {
+            return primary().id();
         }
 
         /**

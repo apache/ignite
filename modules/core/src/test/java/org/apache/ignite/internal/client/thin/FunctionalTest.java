@@ -671,8 +671,8 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
-                .setName("cache")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             );
             cache.put(0, "value0");
 
@@ -706,7 +706,7 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
             assertEquals("value0", cache.get(0));
 
             assertThrowsAnyCause(null, fut::get, ClientException.class,
-                "Failed to acquire lock within provided timeout");
+                    "Failed to acquire lock within provided timeout");
         }
     }
 
@@ -719,8 +719,8 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
-                .setName("cache")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             );
             cache.put(0, "value0");
 
@@ -764,8 +764,8 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
-                .setName("cache")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             );
             cache.put(0, "value0");
 
@@ -1229,8 +1229,8 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
                  .setAddresses(cluster.clientAddresses().toArray(new String[clusterSize])))
         ) {
             ClientCache<Integer, String> cache = client.createCache(new ClientCacheConfiguration()
-                .setName("cache")
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setName("cache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             );
 
             cache.put(0, "value0");

@@ -492,11 +492,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param res Result.
      */
     private boolean onResult0(UUID nodeId, GridNearLockResponse res) {
-        if (U.TEST) {
-            log.error("TEST | process GridNearLockResponse on " + U.toString(cctx.localNode()) + " from " +
-                nodeId);
-        }
-
         MiniFuture mini = miniFuture(res.miniId());
 
         if (mini != null) {
@@ -1250,11 +1245,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             add(fut); // Append new future.
 
-            if (U.TEST) {
-                log.error("TEST | Send GridNearLockRequest from " + U.toString(cctx.localNode()) + " to " +
-                    U.toString(node));
-            }
-
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
 
@@ -1509,6 +1499,19 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         return false;
     }
 
+    /** TODO */
+    public Collection<UUID> notRespondedNodes() {
+        compoundsReadLock();
+
+        try {
+            return futures().stream().filter(f -> !f.isDone() && !f.isCancelled() && isMini(f))
+                .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
+        }
+        finally {
+            compoundsReadUnlock();
+        }
+    }
+
     /**
      * Lock request timeout object.
      */
@@ -1530,12 +1533,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
             if (inTx()) {
                 if (cctx.tm().deadlockDetectionEnabled()) {
-                    Collection<IgniteInternalFuture<Boolean>> miniFuts;
-
                     synchronized (GridDhtColocatedLockFuture.this) {
-                        miniFuts = futures();
-
                         requestedKeys = requestedKeys0();
+
+                        Collection<UUID> notResponded = notRespondedNodes();
+
+                        log.error("TEST | cleared futures");
 
                         clear(); // Stop response processing.
                     }
@@ -1554,28 +1557,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                             try {
                                 TxDeadlock deadlock = fut.get();
 
-                                String errMsg = "Failed to acquire lock within provided timeout for transaction " +
-                                    "[timeout=" + tx.timeout() + ", tx=" + CU.txString(tx);
-
-                                if (deadlock != null) {
-                                    errMsg += +']';
-
-                                    err = new IgniteTxTimeoutCheckedException(errMsg,
-                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
-                                }
-                                else {
-                                    String notResponded = miniFuts.stream()
-                                        .filter(f -> isMini(f) && !((MiniFuture)f).rcvRes)
-                                        .map(f -> ((MiniFuture)f).node.id().toString())
-                                        .collect(Collectors.joining(","));
-
-                                    if (!F.isEmpty(notResponded))
-                                        errMsg += ", not responded nodes: " + notResponded;
-
-                                    errMsg += ']';
-
-                                    err = new IgniteTxTimeoutCheckedException(errMsg, null);
-                                }
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
+                                        null);
                             }
                             catch (IgniteCheckedException e) {
                                 err = e;

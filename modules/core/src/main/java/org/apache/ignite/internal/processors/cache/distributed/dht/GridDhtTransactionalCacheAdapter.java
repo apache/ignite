@@ -1227,11 +1227,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             assert !t.implicit() : t;
                             assert !t.onePhaseCommit() : t;
 
-                            if (U.TEST) {
-                                log.error("TEST | send GridNearLockResponse from " + U.toString(ctx.localNode()) +
-                                    " to " + U.toString(nearNode));
-                            }
-
                             sendLockReply(nearNode, t, req, resp);
 
                             return new GridFinishedFuture<>(resp);

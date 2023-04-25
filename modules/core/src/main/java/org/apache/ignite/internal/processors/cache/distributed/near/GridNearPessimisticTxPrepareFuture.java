@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -79,19 +78,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /** {@inheritDoc} */
     @Override public void onNearTxLocalTimeout() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override List<UUID> notRespondedNodes() {
-        compoundsReadLock();
-
-        try {
-            return futures().stream().filter(f -> !(f.isDone() || f.isCancelled()))
-                .map(f -> ((MiniFuture)f).primary().id()).collect(Collectors.toList());
-        }
-        finally {
-            compoundsReadUnlock();
-        }
     }
 
     /** {@inheritDoc} */
@@ -153,8 +139,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             }
         }
     }
-
-
 
     /**
      * Finds pending mini future by the given mini ID.
@@ -423,11 +407,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
-                    if (U.TEST) {
-                        log.error("TEST | send prepare near from " + U.toString(cctx.localNode()) + " to " +
-                            U.toString(primary));
-                    }
-
                     cctx.tm().sendTransactionMessage(primary, req, tx, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
@@ -504,7 +483,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** */
-    private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    private class MiniFuture extends NodeFuture<GridNearTxPrepareResponse> {
         /** */
         private final int futId;
 
@@ -532,6 +511,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          */
         public ClusterNode primary() {
             return m.primary();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected UUID nodeId() {
+            return primary().id();
         }
 
         /**
