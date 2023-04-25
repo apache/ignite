@@ -46,6 +46,7 @@ import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -220,10 +221,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private void usage(
         org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
-        List<CommandsRegistry> parents,
+        List<ComplexCommand<?, ?, ?>> parents,
         IgniteLogger logger
     ) {
-        boolean skip = (cmd instanceof CommandsRegistry) && !((CommandsRegistry)cmd).canBeExecuted();
+        boolean skip = (cmd instanceof ComplexCommand) && !((ComplexCommand<?, ?, ?>)cmd).canBeExecuted();
 
         if (!skip) {
             logger.info("");
@@ -275,12 +276,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             }
         }
 
-        if (cmd instanceof CommandsRegistry) {
-            List<CommandsRegistry> parents0 = new ArrayList<>(parents);
+        if (cmd instanceof ComplexCommand) {
+            List<ComplexCommand<?, ?, ?>> parents0 = new ArrayList<>(parents);
 
-            parents0.add((CommandsRegistry)cmd);
+            parents0.add((ComplexCommand<?, ?, ?>)cmd);
 
-            ((CommandsRegistry)cmd).forEach(cmd0 -> usage(cmd0.getValue(), parents0, logger));
+            ((CommandsRegistry)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
     }
 
@@ -293,7 +294,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private void printExample(
         org.apache.ignite.internal.management.api.Command<?, ?, ?> cmd,
-        List<CommandsRegistry> parents,
+        List<ComplexCommand<?, ?, ?>> parents,
         IgniteLogger logger
     ) {
         logger.info(INDENT + cmd.description() + ":");

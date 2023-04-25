@@ -39,13 +39,12 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
@@ -211,7 +210,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
-        new IgniteCommandRegistry().forEach(gen::generate);
+        new IgniteCommandRegistry().commands().forEachRemaining(gen::generate);
     }
 
     /** */
@@ -220,8 +219,8 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
         Command<?, ?, ?> cmd = entry.getValue();
 
-        if (cmd instanceof CommandsRegistry) {
-            generate = ((CommandsRegistry)cmd).canBeExecuted();
+        if (cmd instanceof ComplexCommand) {
+            generate = ((ComplexCommand<?, ?, ?>)cmd).canBeExecuted();
 
             ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
         }

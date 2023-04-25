@@ -17,24 +17,31 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.util.Iterator;
-import java.util.Map;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
- * Registry that knows all of its subcommands.
- *
- * @see org.apache.ignite.internal.management.IgniteCommandRegistry
  */
-public interface CommandsRegistry {
-    /**
-     * @param name Name of the command.
-     * @return Command instance by name.
-     */
-    public <A extends IgniteDataTransferObject> Command<A, ?, ?> command(String name);
+public interface ComplexCommand<A extends IgniteDataTransferObject, R, T extends ComputeTask<VisorTaskArgument<A>, R>>
+    extends Command<A, R, T>, CommandsRegistry {
+    /** @return {@code True} if base command represented by this registry can itself be executed. */
+    public default boolean canBeExecuted() {
+        return false;
+    }
 
-    /**
-     * @return Commands iterator.
-     */
-    public Iterator<Map.Entry<String, Command<?, ?, ?>>> commands();
+    /** {@inheritDoc} */
+    @Override public default String description() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public default Class<A> args() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public default Class<T> task() {
+        throw new UnsupportedOperationException();
+    }
 }

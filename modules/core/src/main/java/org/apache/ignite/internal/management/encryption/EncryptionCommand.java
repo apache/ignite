@@ -22,10 +22,11 @@ import java.util.List;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
-public class EncryptionCommand extends CommandRegistryImpl {
+public class EncryptionCommand extends CommandRegistryImpl implements ComplexCommand {
     /** {@inheritDoc} */
     @Override protected List<Command<?, ?, ?>> subcommands() {
         return Arrays.asList(

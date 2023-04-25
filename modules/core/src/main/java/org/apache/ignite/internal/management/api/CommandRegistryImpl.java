@@ -22,13 +22,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
  * Command that have subcommands.
  * There are name contract between commands registry and specific commands.
  * <ol>
- *     <li>All commands class names must end with {@link #CMD_NAME_POSTFIX}</li>
+ *     <li>All commands class names must end with {@link Command#CMD_NAME_POSTFIX}</li>
  *     <li>Subcommand name must start with the base command name like:
  *      <ul>
  *          <li>Base command: {@code StateCommand}.</li>
@@ -40,7 +40,7 @@ import org.apache.ignite.internal.management.IgniteCommandRegistry;
  * @see org.apache.ignite.internal.management.kill.KillCommand
  * @see org.apache.ignite.internal.management.kill.KillComputeCommand
  */
-public abstract class CommandRegistryImpl implements Command, CommandsRegistry {
+public abstract class CommandRegistryImpl implements CommandsRegistry {
     /** Subcommands. */
     private final Map<String, Command<?, ?, ?>> commands = new LinkedHashMap<>();
 
@@ -54,7 +54,9 @@ public abstract class CommandRegistryImpl implements Command, CommandsRegistry {
      * @param cmd Command to register.
      */
     void register(Command<?, ?, ?> cmd) {
-        Class<? extends CommandsRegistry> parent = getClass() == IgniteCommandRegistry.class ? null : getClass();
+        Class<? extends ComplexCommand<?, ?, ?>> parent = ComplexCommand.class.isAssignableFrom(getClass())
+            ? (Class<? extends ComplexCommand<?, ?, ?>>)getClass()
+            : null;
 
         String name = cmd.getClass().getSimpleName();
 
@@ -93,22 +95,7 @@ public abstract class CommandRegistryImpl implements Command, CommandsRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<String, Command<?, ?, ?>>> iterator() {
+    @Override public Iterator<Map.Entry<String, Command<?, ?, ?>>> commands() {
         return commands.entrySet().iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class args() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class task() {
-        throw new UnsupportedOperationException();
     }
 }

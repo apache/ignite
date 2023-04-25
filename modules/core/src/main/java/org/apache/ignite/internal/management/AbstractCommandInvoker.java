@@ -46,6 +46,7 @@ import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
@@ -212,7 +213,7 @@ public abstract class AbstractCommandInvoker {
 
         Command<A, ?, ?> cmd0 = (Command<A, ?, ?>)root;
 
-        while (cmd0 instanceof CommandsRegistry && iter.hasNext()) {
+        while (cmd0 instanceof ComplexCommand && iter.hasNext()) {
             String name = iter.peek();
 
             if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class) && isCli) {
@@ -231,7 +232,7 @@ public abstract class AbstractCommandInvoker {
             }
         }
 
-        if (cmd0 instanceof CommandsRegistry && !((CommandsRegistry)cmd0).canBeExecuted()) {
+        if (cmd0 instanceof ComplexCommand && !((ComplexCommand<?, ?, ?>)cmd0).canBeExecuted()) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
             );

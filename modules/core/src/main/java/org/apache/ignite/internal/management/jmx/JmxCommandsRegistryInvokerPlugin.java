@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
@@ -65,7 +65,8 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
             return;
         }
 
-        grid.context().commands().forEach(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+        grid.context().commands().commands()
+            .forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
     }
 
     /**
@@ -77,7 +78,7 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
      * @param <A> Argument type.
      */
     public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?, ?> cmd) {
-        if (cmd instanceof CommandsRegistry) {
+        if (cmd instanceof ComplexCommand) {
             parents.add(name);
 
             ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).forEach(
@@ -86,7 +87,7 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
             parents.remove(parents.size() - 1);
 
-            if (!((CommandsRegistry)cmd).canBeExecuted())
+            if (!((ComplexCommand<?, ?, ?>)cmd).canBeExecuted())
                 return;
         }
 
