@@ -20,11 +20,11 @@ package org.apache.ignite.internal.management.kill;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
 /** */
-public class KillClientCommand extends AbstractCommand<KillClientCommandArg, Void> {
+public class KillClientCommand implements Command<KillClientCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill client connection by id";

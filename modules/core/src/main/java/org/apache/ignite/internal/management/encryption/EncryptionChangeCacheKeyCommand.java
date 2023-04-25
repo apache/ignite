@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
 
 /** */
-public class EncryptionChangeCacheKeyCommand
-    extends AbstractCommand<EncryptionCacheGroupArg, Void> {
+public class EncryptionChangeCacheKeyCommand implements Command<EncryptionCacheGroupArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change the encryption key of the cache group";

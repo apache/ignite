@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTask;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 public class EncryptionReencryptionRateLimitCommand
-    extends AbstractCommand<EncryptionReencryptionRateLimitCommandArg, VisorCacheGroupEncryptionTaskResult<Double>> {
+    implements Command<EncryptionReencryptionRateLimitCommandArg, VisorCacheGroupEncryptionTaskResult<Double>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View/change re-encryption rate limit";

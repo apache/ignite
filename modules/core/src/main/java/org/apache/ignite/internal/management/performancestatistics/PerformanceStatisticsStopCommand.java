@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStopCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsStopCommand extends AbstractCommand<EmptyArg, String> {
+public class PerformanceStatisticsStopCommand implements Command<EmptyArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Stop collecting performance statistics in the cluster";

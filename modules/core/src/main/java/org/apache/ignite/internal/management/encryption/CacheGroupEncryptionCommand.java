@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTask;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 abstract class CacheGroupEncryptionCommand<T, C extends VisorCacheGroupEncryptionTask<T>>
-    extends AbstractCommand<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<T>> {
+    implements Command<EncryptionCacheGroupArg, VisorCacheGroupEncryptionTaskResult<T>> {
     /** {@inheritDoc} */
     @Override public void printResult(
         EncryptionCacheGroupArg arg,

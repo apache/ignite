@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsStatusCommand extends AbstractCommand<EmptyArg, String> {
+public class PerformanceStatisticsStatusCommand implements Command<EmptyArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get status of collecting performance statistics in the cluster";

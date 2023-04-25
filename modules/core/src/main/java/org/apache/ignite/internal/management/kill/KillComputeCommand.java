@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 
 /** */
-public class KillComputeCommand extends AbstractCommand<KillComputeCommandArg, Void> {
+public class KillComputeCommand implements Command<KillComputeCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill compute task by session id";

@@ -19,12 +19,12 @@ package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.management.api.AbstractCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
 /** */
-public class KillConsistencyCommand extends AbstractCommand<EmptyArg, Void> {
+public class KillConsistencyCommand implements Command<EmptyArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill consistency task";
