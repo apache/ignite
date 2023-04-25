@@ -38,7 +38,7 @@ Ignite:
 * Added ability to use configured FailureHandler for segmentation handling.
 * Added authorization of .NET and C++ compute tasks.
 * Added authorization of Ignite Cluster Node stop/start/restart operations.
-* Added authorization of SQL user management operaitons.
+* Added authorization of SQL user management operations.
 * Added 'ADMIN_CLUSTER_STATE' security permission (now it's the only required permission to change cluster state).
 * Granting permissions to system compute tasks by their FQN has been replaced with predefined system permissions.
 * Improved rebalance and PME logging (partition ranges disabled).
