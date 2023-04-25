@@ -214,15 +214,15 @@ public class IgniteDataTransferObjectSerDesGenerator {
     }
 
     /** */
-    private void generate(Map.Entry<String, Command<?, ?, ?>> entry) {
+    private void generate(Map.Entry<String, Command<?, ?>> entry) {
         boolean generate = true;
 
-        Command<?, ?, ?> cmd = entry.getValue();
+        Command<?, ?> cmd = entry.getValue();
 
         if (cmd instanceof ComplexCommand) {
-            generate = ((ComplexCommand<?, ?, ?>)cmd).canBeExecuted();
+            generate = ((ComplexCommand<?, ?>)cmd).canBeExecuted();
 
-            ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
+            ((Iterable<Map.Entry<String, Command<?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
         }
 
         if (!generate)
