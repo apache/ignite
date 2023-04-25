@@ -10,7 +10,7 @@ Apache Ignite In-Memory Distributed Database 2.15.0
 * Removed legacy JMX metric beans (ThreadPoolMXBean, CacheGroupMetricsMXBean, CacheMetricsMXBean, PersistenceMetricsMXBean, DataStorageMetricsMXBean,  DataRegionMetricsMXBean).
 * Removed redundant ignite-spring to ignite-indexing module dependency. If you use SQL in Ignite and get Ignite dependency via maven, check that you have explicit dependency to the one of the SQL engines (ignite-indexing or ignite-calcite).
 * Moved ignite-ssh module to the ignite-extensions.
-* Deprecated lazy flag of SqlFieldsQuery.
+* Deprecated lazy flag of SqlFieldsQuery. Default value for this flag is changed to 'true'.
 * Operations on atomic caches within transactions are forbidden by default now. To allow such operations set system property IGNITE_ALLOW_ATOMIC_OPS_IN_TX to 'true'.
 
 Ignite:
@@ -38,12 +38,12 @@ Ignite:
 * Added ability to use configured FailureHandler for segmentation handling.
 * Added authorization of .NET and C++ compute tasks.
 * Added authorization of Ignite Cluster Node stop/start/restart operations.
-* Added authorization of SQL user managemnt operaitons.
+* Added authorization of SQL user management operaitons.
 * Added 'ADMIN_CLUSTER_STATE' security permission (now it's the only required permission to change cluster state).
 * Granting permissions to system compute tasks by their FQN has been replaced with predefined system permissions.
 * Improved rebalance and PME logging (partition ranges disabled).
-* Default metrics exportes is now the JMX exporter.
-* Optimized index rebuilding (disable writing of WAL records for indexes during rebuilding) .
+* Default metrics exporter is now the JMX exporter.
+* Optimized index rebuilding (disable writing of WAL records for indexes during rebuilding).
 * Optimized deactivation of large memory regions with persistence.
 * Optimized zeroing of memory pages.
 * Fixed lambdas serialization on Java 17.
@@ -83,10 +83,10 @@ Ignite:
 * Updated log4j2 dependency to version 2.20.0.
 * Updated Jetty dependency to 9.4.49.v20220914.
 * Updated Jackson Databind dependency to 2.14.0.
-* Updated postgresql dependency to 42.5.0 .
+* Updated postgresql dependency to 42.5.0.
 * Updated Netty dependency to 4.1.89.Final.
 * Updated Ant dependency to 1.10.13.
-* Updaded Apache Calcite dependency to 1.32.0.
+* Updated Apache Calcite dependency to 1.32.0.
 
 Control utility:
 * Added cache clear command.
@@ -132,7 +132,7 @@ SQL:
 * Fixed potential deadlock in discovery thread while updating SQL statistics.
 
 Calcite-based SQL engine:
-* Added ability to set up global heap memory quota and per-query hep memory quota .
+* Added ability to set up global heap memory quota and per-query hep memory quota.
 * Added ability to scan inlined keys of indexes without additional requests to data pages.
 * Added native support for SEARCH/SARG operator (this makes possible index scans for IN and some other conditions).
 * Added support for LocalDate/LocalTime types.
@@ -141,7 +141,7 @@ Calcite-based SQL engine:
 * Added details to Calcite parser exception.
 * Added new distribution type (optimization to make some joins colocated).
 * Added optimization for COUNT(column) if column is indexed.
-* Added optimization: merge index conditions for the same field .
+* Added optimization: merge index conditions for the same field.
 * Added optimization: use index first/last value for min()/max() aggregates.
 * Added optimization: push not correlated filter part to the table scan.
 * implemented query metadata, required for ODBC and JDBC.
