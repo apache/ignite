@@ -46,7 +46,7 @@ public interface Command<A extends IgniteDataTransferObject, R, T extends Comput
     public String description();
 
     /** @return Arguments class. */
-    public Class<A> args();
+    public Class<? extends A> args();
 
     /** @return Task class. */
     public Class<T> task();

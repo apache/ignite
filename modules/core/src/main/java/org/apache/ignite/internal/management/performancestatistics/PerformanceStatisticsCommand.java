@@ -15,27 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.performancestatistics;
 
 import java.util.Arrays;
 import java.util.List;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.encryption.EncryptionCommand;
-import org.apache.ignite.internal.management.kill.KillCommand;
-import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.management.api.ComplexCommand;
+import org.apache.ignite.internal.management.api.EmptyArg;
 
-/**
- * Root command registry. Contains all known commands.
- */
-public class IgniteCommandRegistry extends CommandRegistryImpl {
+/** */
+@CliPositionalSubcommands
+public class PerformanceStatisticsCommand extends CommandRegistryImpl implements ComplexCommand {
     /** {@inheritDoc} */
     @Override protected List<Command<?, ?, ?>> subcommands() {
         return Arrays.asList(
-            new EncryptionCommand(),
-            new KillCommand(),
-            new SystemViewCommand(),
-            new PerformanceStatisticsCommand()
+            new PerformanceStatisticsStartCommand(),
+            new PerformanceStatisticsStopCommand(),
+            new PerformanceStatisticsRotateCommand(),
+            new PerformanceStatisticsStatusCommand()
         );
+    }
+
+    /** */
+    public static class PerformanceStatisticsStartCommandArg extends EmptyArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PerformanceStatisticsStopCommandArg extends EmptyArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PerformanceStatisticsRotateCommandArg extends EmptyArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PerformanceStatisticsStatusCommandArg extends EmptyArg {
+        // No-op.
     }
 }

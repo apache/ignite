@@ -20,14 +20,9 @@ package org.apache.ignite.util;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
-
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.PERFORMANCE_STATISTICS;
-import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.ROTATE;
-import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.START;
-import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STATUS;
-import static org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsSubCommand.STOP;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.TIMEOUT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.statisticsFiles;
@@ -38,6 +33,18 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests {@link CommandList#PERFORMANCE_STATISTICS} command. */
 public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
+    /** */
+    public static final String START = "start";
+
+    /** */
+    public static final String STOP = "stop";
+
+    /** */
+    public static final String ROTATE = "rotate";
+
+    /** */
+    public static final String STATUS = "status";
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -63,30 +70,30 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
     /** @throws Exception If failed. */
     @Test
     public void testCommands() throws Exception {
-        int res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+        int res = execute(PERFORMANCE_STATISTICS.text(), STATUS);
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals(STATUS_DISABLED, lastOperationResult);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), ROTATE.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), ROTATE);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
         assertEquals(null, lastOperationResult);
 
         assertEquals(0, statisticsFiles().size());
 
-        res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), START);
 
         assertEquals(EXIT_CODE_OK, res);
 
         waitForStatisticsEnabled(true);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), STATUS);
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals(STATUS_ENABLED, lastOperationResult);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), ROTATE.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), ROTATE);
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals("Rotated.", lastOperationResult);
@@ -102,18 +109,18 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
             }
         }, TIMEOUT));
 
-        res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), STATUS);
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals(STATUS_ENABLED, lastOperationResult);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), STOP.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), STOP);
 
         assertEquals(EXIT_CODE_OK, res);
 
         waitForStatisticsEnabled(false);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), STATUS.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), STATUS);
 
         assertEquals(EXIT_CODE_OK, res);
         assertEquals(STATUS_DISABLED, lastOperationResult);
@@ -122,13 +129,13 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
     /** @throws Exception If failed. */
     @Test
     public void testStartAlreadyStarted() throws Exception {
-        int res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
+        int res = execute(PERFORMANCE_STATISTICS.text(), START);
 
         assertEquals(EXIT_CODE_OK, res);
 
         waitForStatisticsEnabled(true);
 
-        res = execute(PERFORMANCE_STATISTICS.text(), START.toString());
+        res = execute(PERFORMANCE_STATISTICS.text(), START);
 
         assertEquals(EXIT_CODE_OK, res);
     }
@@ -136,7 +143,7 @@ public class PerformanceStatisticsCommandTest extends GridCommandHandlerClusterB
     /** */
     @Test
     public void testStopAlreadyStopped() {
-        int res = execute(PERFORMANCE_STATISTICS.text(), STOP.toString());
+        int res = execute(PERFORMANCE_STATISTICS.text(), STOP);
 
         assertEquals(EXIT_CODE_OK, res);
     }

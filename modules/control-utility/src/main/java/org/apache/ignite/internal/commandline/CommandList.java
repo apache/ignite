@@ -27,7 +27,6 @@ import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
-import org.apache.ignite.internal.commandline.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 
@@ -102,7 +101,7 @@ public enum CommandList {
     DEFRAGMENTATION("--defragmentation", new DefragmentationCommand()),
 
     /** Command to manage performance statistics. */
-    PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand()),
+    PERFORMANCE_STATISTICS("--performance-statistics", new DeclarativeCommandAdapter<>("PerformanceStatistics")),
 
     /** Command to check/repair consistency. */
     CONSISTENCY("--consistency", new ConsistencyCommand()),
