@@ -110,7 +110,13 @@ public abstract class AbstractCommandInvoker {
                 throw new IllegalArgumentException("Node with id=" + id + " not found.");
         }
 
-        if (nodeIds.isEmpty())
+        if (nodeIds != null) {
+            for (UUID id : nodeIds) {
+                if (!clusterNodes.containsKey(id))
+                    throw new IllegalArgumentException("Node with id=" + id + " not found.");
+            }
+        }
+        else
             nodeIds = singleton(grid.localNode().id());
 
         if (!F.isEmpty(nodeIds))
