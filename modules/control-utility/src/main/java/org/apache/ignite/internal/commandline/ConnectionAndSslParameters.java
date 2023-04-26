@@ -293,7 +293,7 @@ public class ConnectionAndSslParameters {
     /**
      * @return Predefined SSL Factory config.
      */
-    public String sslFactoryConfigPath(){
+    public String sslFactoryConfigPath() {
         return sslFactoryCfgPath;
     }
 
