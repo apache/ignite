@@ -36,7 +36,6 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
@@ -100,17 +99,12 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 Factory<SSLContext> factory = cfg.getSslFactory();
 
-                // This factory deprecated and will be removed.
-                GridSslContextFactory depFactory = cfg.getSslContextFactory();
-
-                if (factory == null && depFactory == null && igniteFactory == null)
+                if (factory == null && igniteFactory == null)
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
                 if (factory != null)
                     sslCtx = factory.create();
-                else if (depFactory != null)
-                    sslCtx = depFactory.createSslContext();
                 else
                     sslCtx = igniteFactory.create();
             }
