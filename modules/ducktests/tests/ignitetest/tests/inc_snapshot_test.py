@@ -89,7 +89,8 @@ class IncrementalSnapshotTest(IgniteTest):
                 preloaders=loaders_count,
                 index_count=1,
                 transactional=True
-            ))
+            ),
+            timeout=36000)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME, timeout_sec=3600)
 
