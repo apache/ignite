@@ -83,7 +83,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
-        baseCmd = standaloneRegistry.command(name);
+        baseCmd = (org.apache.ignite.internal.management.api.Command<A, ?>)standaloneRegistry.command(name);
 
         assert baseCmd != null;
     }

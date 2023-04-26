@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.api;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
@@ -74,8 +73,8 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public <A extends IgniteDataTransferObject> Command<A, ?> command(String name) {
-        return (Command<A, ?>)commands.get(name);
+    @Override public Command<?, ?> command(String name) {
+        return commands.get(name);
     }
 
     /** {@inheritDoc} */

@@ -220,7 +220,8 @@ public abstract class AbstractCommandInvoker {
                 name = name.substring(PARAMETER_PREFIX.length());
             }
 
-            Command<A, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
+            Command<A, ?> cmd1 =
+                (Command<A, ?>)((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
 
             if (cmd1 == null)
                 break;

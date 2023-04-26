@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Iterator;
 import java.util.Map;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
  * Registry that knows all of its subcommands.
@@ -31,7 +30,7 @@ public interface CommandsRegistry {
      * @param name Name of the command.
      * @return Command instance by name.
      */
-    public <A extends IgniteDataTransferObject> Command<A, ?> command(String name);
+    public Command<?, ?> command(String name);
 
     /**
      * @return Commands iterator.
