@@ -49,7 +49,6 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
     public static void tearDown() {
         System.clearProperty(KEYSTORE_PATH);
         System.clearProperty(KEYSTORE_PASSWORD);
-
     }
 
     /** {@inheritDoc} */
