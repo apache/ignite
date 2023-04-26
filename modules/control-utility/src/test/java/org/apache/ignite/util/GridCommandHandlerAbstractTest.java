@@ -80,7 +80,6 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -395,6 +394,14 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
             if (args.size() < 2 || !args.get(0).equals("--cache") || !args.get(1).equals("help"))
                 addSslParams(args);
         }
+    }
+
+    /** */
+    protected void addSslParams(List<String> params) {
+        params.add("--keystore");
+        params.add(GridTestUtils.keyStorePath("node01"));
+        params.add("--keystore-password");
+        params.add(GridTestUtils.keyStorePassword());
     }
 
     /** */

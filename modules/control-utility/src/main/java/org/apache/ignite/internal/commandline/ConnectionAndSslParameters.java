@@ -74,6 +74,9 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
+    /** SSL factory config. */
+    private String sslFactoryCfgPath;
+
     /** High-level command. */
     private Command command;
 
@@ -96,12 +99,14 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStorePath Truststore.
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
+     * @param sslFactoryCfgPath SSL Factory config.
      */
     public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation, boolean verbose,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType,
+        String sslFactoryCfgPath
     ) {
         this.command = command;
         this.host = host;
@@ -126,6 +131,8 @@ public class ConnectionAndSslParameters {
         this.sslTrustStorePath = sslTrustStorePath;
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
+
+        this.sslFactoryCfgPath = sslFactoryCfgPath;
     }
 
     /**
@@ -281,6 +288,13 @@ public class ConnectionAndSslParameters {
      */
     public void sslTrustStorePassword(char[] sslTrustStorePassword) {
         this.sslTrustStorePassword = sslTrustStorePassword;
+    }
+
+    /**
+     * @return Predefined SSL Factory config.
+     */
+    public String sslFactoryConfigPath(){
+        return sslFactoryCfgPath;
     }
 
     /**

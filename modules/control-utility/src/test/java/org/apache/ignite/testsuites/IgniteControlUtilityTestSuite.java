@@ -36,7 +36,8 @@ import org.apache.ignite.util.GridCommandHandlerInterruptCommandTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerWithSslFactoryTest;
+import org.apache.ignite.util.GridCommandHandlerWithSslTest;
 import org.apache.ignite.util.KillCommandsControlShTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -49,7 +50,8 @@ import org.junit.runners.Suite;
     CommandHandlerParsingTest.class,
 
     GridCommandHandlerTest.class,
-    GridCommandHandlerWithSSLTest.class,
+    GridCommandHandlerWithSslTest.class,
+    GridCommandHandlerWithSslFactoryTest.class,
     GridCommandHandlerClusterByClassTest.class,
     GridCommandHandlerClusterByClassWithSSLTest.class,
     GridCommandHandlerSslTest.class,
