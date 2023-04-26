@@ -541,7 +541,7 @@ public class CommandHandler {
         if (!F.isEmpty(userName))
             clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
-        if (!F.isEmpty(args.sslKeyStorePath()))
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
 
         return clientCfg;
@@ -576,27 +576,18 @@ public class CommandHandler {
      * @return Ssl support factory.
      */
     @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) {
-        SslContextFactory factory;
-
         if (!F.isEmpty(args.sslFactoryConfigPath())) {
             ApplicationContext ctx = new ClassPathXmlApplicationContext(args.sslFactoryConfigPath());
 
-            try {
-                factory = ctx.getBean(SslContextFactory.class);
-            }
-            catch (BeansException e) {
-                throw new IgniteException("Factory MUST extends org.apache.ignite.ssl.SslContextFactory class.", e);
-            }
+            return (Factory<SSLContext>)ctx.getBean(Factory.class);
         }
-        else
-            factory = new SslContextFactory();
+
+        SslContextFactory factory = new SslContextFactory();
 
         String[] sslProtocols = split(args.sslProtocol(), ",");
 
-        if (F.isEmpty(sslProtocols)) {
-            if (F.isEmpty(factory.getProtocol()))
-                factory.setProtocol(DFLT_SSL_PROTOCOL);
-        }
+        if (F.isEmpty(sslProtocols))
+            factory.setProtocol(DFLT_SSL_PROTOCOL);
         else {
             factory.setProtocol(sslProtocols[0]);
 
@@ -604,27 +595,22 @@ public class CommandHandler {
                 factory.setProtocols(sslProtocols);
         }
 
-        if (!F.isEmpty(args.sslKeyAlgorithm()))
-            factory.setKeyAlgorithm(args.sslKeyAlgorithm());
+        factory.setKeyAlgorithm(args.sslKeyAlgorithm());
 
-        if (!F.isEmpty(args.getSslCipherSuites()))
-            factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
+        factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
 
-        if (!F.isEmpty(args.sslKeyStorePath())) {
-            factory.setKeyStoreFilePath(args.sslKeyStorePath());
+        factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
-            if (args.sslKeyStorePassword() != null)
-                factory.setKeyStorePassword(args.sslKeyStorePassword());
-            else {
-                char[] keyStorePwd = requestPasswordFromConsole("SSL keystore password: ");
+        if (args.sslKeyStorePassword() != null)
+            factory.setKeyStorePassword(args.sslKeyStorePassword());
+        else {
+            char[] keyStorePwd = requestPasswordFromConsole("SSL keystore password: ");
 
-                args.sslKeyStorePassword(keyStorePwd);
-                factory.setKeyStorePassword(keyStorePwd);
-            }
+            args.sslKeyStorePassword(keyStorePwd);
+            factory.setKeyStorePassword(keyStorePwd);
         }
 
-        if (!F.isEmpty(args.sslKeyStoreType()))
-            factory.setKeyStoreType(args.sslKeyStoreType());
+        factory.setKeyStoreType(args.sslKeyStoreType());
 
         if (F.isEmpty(args.sslTrustStorePath()))
             factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());

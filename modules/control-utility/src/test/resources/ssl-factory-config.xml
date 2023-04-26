@@ -26,5 +26,11 @@
         http://www.springframework.org/schema/context
         http://www.springframework.org/schema/context/spring-context.xsd">
     <context:property-placeholder/>
-    <bean class="org.apache.ignite.util.GridCommandHandlerWithSslFactoryTest.SslFactory"/>
+    <bean name="mgr" class="org.apache.ignite.ssl.SslContextFactory.DisabledX509TrustManager"/>
+
+    <bean class="org.apache.ignite.util.GridCommandHandlerWithSslFactoryTest.SslFactory">
+        <property name="keyStoreFilePath" value="${KEYSTORE_PATH}"/>
+        <property name="keyStorePassword" value="${KEYSTORE_PASSWORD}"/>
+        <property name="trustManagers" ref="mgr"/>
+    </bean>
 </beans>

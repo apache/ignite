@@ -20,13 +20,37 @@ package org.apache.ignite.util;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.AfterClass;
 
 /**
  *
  */
 public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWithSslTest {
+    /** Keystore path. */
+    private static final String KEYSTORE_PATH = "KEYSTORE_PATH";
+
+    /** Keystore password. */
+    private static final String KEYSTORE_PASSWORD = "KEYSTORE_PASSWORD";
+
     /** Custorm SSL factory used. */
     protected static volatile boolean factoryUsed;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(KEYSTORE_PATH, GridTestUtils.keyStorePath("node01"));
+        System.setProperty(KEYSTORE_PASSWORD, GridTestUtils.keyStorePassword());
+
+        super.beforeTestsStarted();
+    }
+
+    /** */
+    @AfterClass
+    public static void tearDown() {
+        System.clearProperty(KEYSTORE_PATH);
+        System.clearProperty(KEYSTORE_PASSWORD);
+
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -39,8 +63,6 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
 
     /** {@inheritDoc} */
     @Override protected void addSslParams(List<String> params) {
-        super.addSslParams(params);
-
         params.add("--ssl-factory");
         params.add("ssl-factory-config.xml");
     }
