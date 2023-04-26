@@ -2038,7 +2038,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getConnectorConfiguration() != null) {
             objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
-            objs.add(cfg.getConnectorConfiguration().getSslContextFactory());
+            objs.add(cfg.getConnectorConfiguration().getSslFactory());
         }
 
         objs.add(cfg.getMarshaller());
