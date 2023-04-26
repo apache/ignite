@@ -76,14 +76,14 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
 
     /** Root command to start parsing from. */
-    private final org.apache.ignite.internal.management.api.Command<A, ?> baseCmd;
+    private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
     /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
     private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
 
     /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
-        baseCmd = (org.apache.ignite.internal.management.api.Command<A, ?>)standaloneRegistry.command(name);
+        baseCmd = standaloneRegistry.command(name);
 
         assert baseCmd != null;
     }
@@ -94,7 +94,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         org.apache.ignite.internal.management.api.Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
                 ? command((CommandsRegistry)baseCmd, cliArgs, true)
-                : baseCmd;
+                : (org.apache.ignite.internal.management.api.Command<A, ?>)baseCmd;
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();

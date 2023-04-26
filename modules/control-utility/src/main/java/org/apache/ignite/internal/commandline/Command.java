@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
  * Define flow how to work with command.
  *
- * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
+ * @param <T> Generic for {@link #arg()} method which should return command-specific paramters which it would be run with.
  */
 public interface Command<T> {
     /**
