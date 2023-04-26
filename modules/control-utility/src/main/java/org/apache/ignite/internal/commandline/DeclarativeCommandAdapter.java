@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
-import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -170,16 +169,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
                 .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
 
-            Collection<UUID> nodeIds = parsed.get1().nodes(clusterNodes.keySet(), parsed.get2());
-
-            if (nodeIds != null) {
-                for (UUID id : nodeIds) {
-                    if (!clusterNodes.containsKey(id))
-                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
-                }
-            }
-            else
-                nodeIds = singleton(getBalancedNode(compute).nodeId());
+            Collection<UUID> nodeIds = commandNodes(
+                parsed.get1(),
+                parsed.get2(),
+                clusterNodes.keySet(),
+                getBalancedNode(compute).nodeId()
+            );
 
             Collection<GridClientNode> connectable = F.viewReadOnly(
                 nodeIds,

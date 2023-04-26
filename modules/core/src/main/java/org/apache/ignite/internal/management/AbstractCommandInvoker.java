@@ -103,21 +103,7 @@ public abstract class AbstractCommandInvoker {
         Map<UUID, ClusterNode> clusterNodes = grid.cluster().nodes().stream()
             .collect(Collectors.toMap(ClusterNode::id, n -> n));
 
-        Collection<UUID> nodeIds = cmd.nodes(clusterNodes.keySet(), arg);
-
-        for (UUID id : nodeIds) {
-            if (!clusterNodes.containsKey(id))
-                throw new IllegalArgumentException("Node with id=" + id + " not found.");
-        }
-
-        if (nodeIds != null) {
-            for (UUID id : nodeIds) {
-                if (!clusterNodes.containsKey(id))
-                    throw new IllegalArgumentException("Node with id=" + id + " not found.");
-            }
-        }
-        else
-            nodeIds = singleton(grid.localNode().id());
+        Collection<UUID> nodeIds = commandNodes(cmd, arg, clusterNodes.keySet(), grid.localNode().id());
 
         if (!F.isEmpty(nodeIds))
             compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
@@ -125,6 +111,33 @@ public abstract class AbstractCommandInvoker {
         R res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
 
         cmd.printResult(arg, res, printer);
+    }
+
+    /**
+     * @param cmd Command.
+     * @param arg Command argument.
+     * @param nodes Cluster nodes.
+     * @param dflt Default node.
+     * @param <A> Argument type.
+     * @return Nodes to execute command on.
+     */
+    protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
+        Command<A, ?> cmd,
+        A arg,
+        Collection<UUID> nodes,
+        UUID dflt
+    ) {
+        Collection<UUID> nodeIds = cmd.nodes(nodes, arg);
+
+        if (nodeIds == null)
+            return singleton(dflt);
+
+        for (UUID id : nodeIds) {
+            if (!nodes.contains(id))
+                throw new IllegalArgumentException("Node with id=" + id + " not found.");
+        }
+
+        return nodeIds;
     }
 
     /**
