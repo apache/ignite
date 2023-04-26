@@ -21,13 +21,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.commandline.meta.subcommands.VoidDto;
+import org.apache.ignite.internal.management.api.EmptyArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_READ_DISTRIBUTED_PROPERTY;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
@@ -35,12 +34,12 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Task for property operations.
  */
 @GridInternal
-public class PropertiesListTask extends VisorMultiNodeTask<VoidDto, PropertiesListResult, PropertiesListResult> {
+public class PropertiesListTask extends VisorMultiNodeTask<EmptyArg, PropertiesListResult, PropertiesListResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VoidDto, PropertiesListResult> job(VoidDto arg) {
+    @Override protected VisorJob<EmptyArg, PropertiesListResult> job(EmptyArg arg) {
         return new PropertiesListJob(debug);
     }
 
@@ -61,7 +60,7 @@ public class PropertiesListTask extends VisorMultiNodeTask<VoidDto, PropertiesLi
     /**
      * Job for property operations (get/set).
      */
-    private static class PropertiesListJob extends VisorJob<VoidDto, PropertiesListResult> {
+    private static class PropertiesListJob extends VisorJob<EmptyArg, PropertiesListResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -78,7 +77,7 @@ public class PropertiesListTask extends VisorMultiNodeTask<VoidDto, PropertiesLi
         }
 
         /** {@inheritDoc} */
-        @Override protected PropertiesListResult run(@Nullable VoidDto arg) {
+        @Override protected PropertiesListResult run(@Nullable EmptyArg arg) {
             return new PropertiesListResult(
                 ignite.context().distributedConfiguration().properties().stream()
                     .map(pd -> pd.getName())

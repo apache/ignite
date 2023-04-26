@@ -274,6 +274,16 @@ public abstract class AbstractCommandInvoker {
         Consumer<Field> namedParamVisitor,
         BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
     ) {
+        Class<? extends IgniteDataTransferObject> clazz0 = argCls;
+
+        List<Class<? extends IgniteDataTransferObject>> classes = new ArrayList<>();
+
+        while (clazz0 != IgniteDataTransferObject.class) {
+            classes.add(clazz0);
+
+            clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
+        }
+
         List<Field> positionalParams = new ArrayList<>();
         List<Field> namedParams = new ArrayList<>();
 
@@ -285,10 +295,9 @@ public abstract class AbstractCommandInvoker {
 
         List<Field> oneOfFlds = new ArrayList<>();
 
-        Class<? extends IgniteDataTransferObject> clazz0 = argCls;
-
-        while (clazz0 != IgniteDataTransferObject.class) {
-            Field[] flds = clazz0.getDeclaredFields();
+        // Iterates classes from base to derived.
+        for (int i = classes.size() - 1; i >= 0; i--) {
+            Field[] flds = classes.get(i).getDeclaredFields();
 
             for (Field fld : flds) {
                 if (oneOfNames.contains(fld.getName()))
@@ -298,11 +307,6 @@ public abstract class AbstractCommandInvoker {
                 else if (fld.isAnnotationPresent(Argument.class))
                     namedParams.add(fld);
             }
-
-            if (IgniteDataTransferObject.class.isAssignableFrom(clazz0.getSuperclass()))
-                clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
-            else
-                break;
         }
 
         positionalParams.forEach(positionalParamVisitor);

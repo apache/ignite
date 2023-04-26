@@ -27,7 +27,6 @@ import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
-import org.apache.ignite.internal.commandline.property.PropertyCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 
 /**
@@ -86,7 +85,7 @@ public enum CommandList {
     WARM_UP("--warm-up", new WarmUpCommand()),
 
     /** Commands to manage distributed properties. */
-    PROPERTY("--property", new PropertyCommand()),
+    PROPERTY("--property", new DeclarativeCommandAdapter<>("Property")),
 
     /** Command for printing system view content. */
     SYSTEM_VIEW("--system-view", new DeclarativeCommandAdapter<>("SystemView")),
