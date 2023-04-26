@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
-import java.util.Arrays;
-import java.util.List;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.EmptyArg;
@@ -28,9 +25,9 @@ import org.apache.ignite.internal.management.api.EmptyArg;
 /** */
 @CliPositionalSubcommands
 public class PerformanceStatisticsCommand extends CommandRegistryImpl implements ComplexCommand {
-    /** {@inheritDoc} */
-    @Override protected List<Command<?, ?>> subcommands() {
-        return Arrays.asList(
+    /** */
+    public PerformanceStatisticsCommand() {
+        super(
             new PerformanceStatisticsStartCommand(),
             new PerformanceStatisticsStopCommand(),
             new PerformanceStatisticsRotateCommand(),

@@ -222,11 +222,12 @@ public abstract class AbstractCommandInvoker {
 
             Command<A, ?> cmd1 = ((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
 
-            if (cmd1 != null) {
-                cmd0 = cmd1;
+            if (cmd1 == null)
+                break;
 
-                iter.next();
-            }
+            cmd0 = cmd1;
+
+            iter.next();
         }
 
         if (cmd0 instanceof ComplexCommand && !((ComplexCommand<?, ?>)cmd0).canBeExecuted()) {
@@ -234,9 +235,6 @@ public abstract class AbstractCommandInvoker {
                 "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
             );
         }
-
-        if (cmd0 == null)
-            throw new IllegalArgumentException("Unknown command");
 
         return cmd0;
     }

@@ -66,7 +66,7 @@ public class SystemViewCommand implements Command<SystemViewCommandArg, VisorSys
 
         return arg.getNodeId() != null
                 ? Collections.singleton(arg.getNodeId())
-                : Collections.emptyList();
+                : null;
     }
 
     /** {@inheritDoc} */

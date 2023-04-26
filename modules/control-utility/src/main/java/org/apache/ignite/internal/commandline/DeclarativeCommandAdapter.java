@@ -47,6 +47,8 @@ import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -57,6 +59,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNode;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
@@ -67,7 +70,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
 
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
- * TODO: support confirmation for encryption commands!
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** All commands registry. */
@@ -77,7 +79,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private final org.apache.ignite.internal.management.api.Command<A, ?> baseCmd;
 
     /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
-    private IgniteBiTuple<org.apache.ignite.internal.management.api.Command<A, ?>, A> parsed;
+    private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
 
     /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
@@ -88,12 +90,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIterator) {
-        org.apache.ignite.internal.management.api.Command<A, ?> cmd0 =
-            baseCmd instanceof CommandsRegistry
-                ? command(
-                    (CommandsRegistry)baseCmd,
-                    argIterator.raw(),
-                    true)
+        PeekableIterator<String> cliArgs = argIterator.raw();
+
+        org.apache.ignite.internal.management.api.Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
+                ? command((CommandsRegistry)baseCmd, cliArgs, true)
                 : baseCmd;
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
@@ -129,11 +129,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             }
         );
 
-        namedArgs.add(CLIArgument.optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class));
+        namedArgs.add(optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class, () -> false));
 
         CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
 
-        parser.parse(argIterator.raw());
+        parser.parse(cliArgs);
 
         try {
             parsed = F.t(
@@ -142,7 +142,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     cmd0.args(),
                     (fld, pos) -> parser.get(pos),
                     fld -> parser.get(toFormattedFieldName(fld))
-                )
+                ),
+                parser.get(CMD_AUTO_CONFIRMATION)
             );
         }
         catch (InstantiationException | IllegalAccessException e) {
@@ -171,12 +172,13 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
             Collection<UUID> nodeIds = parsed.get1().nodes(clusterNodes.keySet(), parsed.get2());
 
-            for (UUID id : nodeIds) {
-                if (!clusterNodes.containsKey(id))
-                    throw new IllegalArgumentException("Node with id=" + id + " not found.");
+            if (nodeIds != null) {
+                for (UUID id : nodeIds) {
+                    if (!clusterNodes.containsKey(id))
+                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
+                }
             }
-
-            if (nodeIds.isEmpty())
+            else
                 nodeIds = singleton(getBalancedNode(compute).nodeId());
 
             Collection<GridClientNode> connectable = F.viewReadOnly(
@@ -374,11 +376,16 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         return null;
     }
 
+    /** @return {@code True} if command confirmed. */
+    public boolean confirmed() {
+        return parsed.get3();
+    }
+
     /**
      * @param cmd Command.
      * @return {@code True} if command has described parameters.
      */
-    public boolean hasDescribedParameters(org.apache.ignite.internal.management.api.Command<?, ?> cmd) {
+    private boolean hasDescribedParameters(org.apache.ignite.internal.management.api.Command<?, ?> cmd) {
         AtomicBoolean res = new AtomicBoolean();
 
         visitCommandParams(

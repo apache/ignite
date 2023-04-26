@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
@@ -75,9 +74,9 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     /**
      * @param nodes Live nodes.
      * @param arg Argument.
-     * @return nodes to execute command on, empty collection means default node must be used.
+     * @return nodes to execute command on, {@code null} means default node must be used.
      */
     public default Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
-        return Collections.emptyList();
+        return null;
     }
 }

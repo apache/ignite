@@ -246,6 +246,9 @@ public class CommonArgParser {
 
                 cmd.parseArguments(argIter);
 
+                autoConfirmation |=
+                    (cmd instanceof DeclarativeCommandAdapter) && ((DeclarativeCommandAdapter<?>)cmd).confirmed();
+
                 command = cmd;
             }
             else {

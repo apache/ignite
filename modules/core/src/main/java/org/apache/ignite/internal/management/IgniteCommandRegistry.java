@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management;
 
-import java.util.Arrays;
-import java.util.List;
-import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
@@ -29,9 +26,9 @@ import org.apache.ignite.internal.management.performancestatistics.PerformanceSt
  * Root command registry. Contains all known commands.
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl {
-    /** {@inheritDoc} */
-    @Override protected List<Command<?, ?>> subcommands() {
-        return Arrays.asList(
+    /** */
+    public IgniteCommandRegistry() {
+        super(
             new EncryptionCommand(),
             new KillCommand(),
             new SystemViewCommand(),

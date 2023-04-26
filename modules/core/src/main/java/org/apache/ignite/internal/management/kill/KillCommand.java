@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.util.Arrays;
-import java.util.List;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
 public class KillCommand extends CommandRegistryImpl implements ComplexCommand {
-    /** {@inheritDoc} */
-    @Override protected List<Command<?, ?>> subcommands() {
-        return Arrays.asList(
+    /** */
+    public KillCommand() {
+        super(
             new KillComputeCommand(),
             new KillServiceCommand(),
             new KillTransactionCommand(),

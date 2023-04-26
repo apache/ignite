@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
@@ -35,8 +34,9 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
     private final Map<String, Command<?, ?>> commands = new LinkedHashMap<>();
 
     /** */
-    protected CommandRegistryImpl() {
-        subcommands().forEach(this::register);
+    protected CommandRegistryImpl(Command<?, ?>... subcommands) {
+        for (Command<?, ?> cmd : subcommands)
+            register(cmd);
     }
 
     /**
@@ -72,12 +72,6 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
 
         commands.put(name, cmd);
     }
-
-    /**
-     * Note, this method invoked in constructor so some constant or nearly constant list is expected.
-     * @return Subcommands list.
-     */
-    protected abstract List<Command<?, ?>> subcommands();
 
     /** {@inheritDoc} */
     @Override public <A extends IgniteDataTransferObject> Command<A, ?> command(String name) {
