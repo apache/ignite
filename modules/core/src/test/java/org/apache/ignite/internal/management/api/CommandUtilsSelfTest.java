@@ -22,9 +22,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.junit.Assert.assertEquals;
 
-/**
- *
- */
+/** */
 public class CommandUtilsSelfTest {
     /** */
     private static final String CMD_NAME = "SystemView";

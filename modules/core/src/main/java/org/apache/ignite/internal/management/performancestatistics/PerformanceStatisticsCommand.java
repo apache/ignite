@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.performancestatistics;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComplexCommand;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
 @CliPositionalSubcommands
@@ -36,7 +36,7 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsStartCommandArg extends EmptyArg {
+    public static class PerformanceStatisticsStartCommandArg extends NoArg {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -44,7 +44,7 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsStopCommandArg extends EmptyArg {
+    public static class PerformanceStatisticsStopCommandArg extends NoArg {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -52,7 +52,7 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsRotateCommandArg extends EmptyArg {
+    public static class PerformanceStatisticsRotateCommandArg extends NoArg {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -60,7 +60,7 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsStatusCommandArg extends EmptyArg {
+    public static class PerformanceStatisticsStatusCommandArg extends NoArg {
         /** */
         private static final long serialVersionUID = 0;
 

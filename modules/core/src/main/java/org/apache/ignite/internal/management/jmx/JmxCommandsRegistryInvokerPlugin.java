@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
  * Plugin registers each {@link Command} from {@link org.apache.ignite.internal.management.IgniteCommandRegistry}
- * as JMX bean ({@link CommandMBean} which allow to execute management commands via JMX.
+ * as JMX bean ({@link CommandMBean} which allow executing management commands via JMX.
  */
 public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
     /** Bean group name. */
@@ -87,7 +87,7 @@ public class JmxCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
             parents.remove(parents.size() - 1);
 
-            if (!((ComplexCommand<?, ?>)cmd).canBeExecuted())
+            if (cmd.taskClass() == null)
                 return;
         }
 

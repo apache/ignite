@@ -20,28 +20,28 @@ package org.apache.ignite.internal.management.kill;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
 /** */
-public class KillConsistencyCommand implements Command<EmptyArg, Void> {
+public class KillConsistencyCommand implements Command<NoArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill consistency task";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EmptyArg> args() {
-        return EmptyArg.class;
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorConsistencyCancelTask> task() {
+    @Override public Class<VisorConsistencyCancelTask> taskClass() {
         return VisorConsistencyCancelTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, EmptyArg arg) {
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, NoArg arg) {
         return nodes;
     }
 }

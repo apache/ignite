@@ -28,12 +28,12 @@ public class KillContinuousCommand implements Command<KillContinuousCommandArg, 
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillContinuousCommandArg> args() {
+    @Override public Class<KillContinuousCommandArg> argClass() {
         return KillContinuousCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorContinuousQueryCancelTask> task() {
+    @Override public Class<VisorContinuousQueryCancelTask> taskClass() {
         return VisorContinuousQueryCancelTask.class;
     }
 }

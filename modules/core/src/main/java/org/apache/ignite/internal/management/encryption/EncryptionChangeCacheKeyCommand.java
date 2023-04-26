@@ -29,12 +29,12 @@ public class EncryptionChangeCacheKeyCommand implements Command<EncryptionCacheG
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EncryptionCacheGroupArg> args() {
+    @Override public Class<EncryptionCacheGroupArg> argClass() {
         return EncryptionCacheGroupArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorChangeCacheGroupKeyTask> task() {
+    @Override public Class<VisorChangeCacheGroupKeyTask> taskClass() {
         return VisorChangeCacheGroupKeyTask.class;
     }
 

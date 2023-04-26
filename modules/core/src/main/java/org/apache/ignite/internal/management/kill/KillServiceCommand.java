@@ -28,12 +28,12 @@ public class KillServiceCommand implements Command<KillServiceCommandArg, Void> 
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillServiceCommandArg> args() {
+    @Override public Class<KillServiceCommandArg> argClass() {
         return KillServiceCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCancelServiceTask> task() {
+    @Override public Class<VisorCancelServiceTask> taskClass() {
         return VisorCancelServiceTask.class;
     }
 

@@ -31,12 +31,12 @@ public class KillClientCommand implements Command<KillClientCommandArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillClientCommandArg> args() {
+    @Override public Class<KillClientCommandArg> argClass() {
         return KillClientCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorClientConnectionDropTask> task() {
+    @Override public Class<VisorClientConnectionDropTask> taskClass() {
         return VisorClientConnectionDropTask.class;
     }
 

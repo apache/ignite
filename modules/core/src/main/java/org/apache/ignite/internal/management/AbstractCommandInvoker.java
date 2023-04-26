@@ -87,7 +87,7 @@ public abstract class AbstractCommandInvoker {
                 .orElse(null);
 
             arg = argument(
-                cmd.args(),
+                cmd.argClass(),
                 (fld, idx) -> paramProvider.apply(fld),
                 paramProvider
             );
@@ -108,7 +108,7 @@ public abstract class AbstractCommandInvoker {
         if (!F.isEmpty(nodeIds))
             compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
 
-        R res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+        R res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
 
         cmd.printResult(arg, res, printer);
     }
@@ -250,7 +250,7 @@ public abstract class AbstractCommandInvoker {
             iter.next();
         }
 
-        if (cmd0 instanceof ComplexCommand && !((ComplexCommand<?, ?>)cmd0).canBeExecuted()) {
+        if (cmd0.taskClass() == null) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
             );

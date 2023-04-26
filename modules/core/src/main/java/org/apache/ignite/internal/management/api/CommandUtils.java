@@ -81,16 +81,14 @@ public class CommandUtils {
         int i = 1;
 
         while (i < name.length()) {
-            if (Character.isLowerCase(name.charAt(i))) {
+            if (Character.isLowerCase(name.charAt(i)))
                 formatted.append(name.charAt(i));
-
-                i++;
-            }
             else {
                 formatted.append(delim);
                 formatted.append(Character.toLowerCase(name.charAt(i)));
-                i++;
             }
+
+            i++;
         }
 
         return formatted.toString();
@@ -111,16 +109,14 @@ public class CommandUtils {
         int i = 1;
 
         while (i < formatted.length()) {
-            if (formatted.charAt(i) != delim) {
+            if (formatted.charAt(i) != delim)
                 name.append(formatted.charAt(i));
-
-                i++;
-            }
             else {
                 i++;
                 name.append(Character.toUpperCase(formatted.charAt(i)));
-                i++;
             }
+
+            i++;
         }
 
         return name.toString();

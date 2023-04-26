@@ -37,12 +37,12 @@ public class EncryptionReencryptionRateLimitCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EncryptionReencryptionRateLimitCommandArg> args() {
+    @Override public Class<EncryptionReencryptionRateLimitCommandArg> argClass() {
         return EncryptionReencryptionRateLimitCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorReencryptionRateTask> task() {
+    @Override public Class<VisorReencryptionRateTask> taskClass() {
         return VisorReencryptionRateTask.class;
     }
 

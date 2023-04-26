@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.management.property;
 
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class PropertyHelpCommand implements Command<EmptyArg, Void> {
+public class PropertyHelpCommand implements Command<NoArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print property command help";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EmptyArg> args() {
-        return EmptyArg.class;
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class task() {
+    @Override public Class taskClass() {
         return null;
     }
 }

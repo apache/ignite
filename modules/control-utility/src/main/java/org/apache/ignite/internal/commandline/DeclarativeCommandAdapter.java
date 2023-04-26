@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** All commands registry. */
-    private final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
+    private static final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
 
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
@@ -88,8 +88,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /** {@inheritDoc} */
-    @Override public void parseArguments(CommandArgIterator argIterator) {
-        PeekableIterator<String> cliArgs = argIterator.raw();
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        PeekableIterator<String> cliArgs = argIter.raw();
 
         org.apache.ignite.internal.management.api.Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
                 ? command((CommandsRegistry)baseCmd, cliArgs, true)
@@ -108,7 +108,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         );
 
         visitCommandParams(
-            cmd0.args(),
+            cmd0.argClass(),
             fld -> positionalArgs.add(new CLIArgument<>(
                 fld.getName(),
                 null,
@@ -138,7 +138,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             parsed = F.t(
                 cmd0,
                 argument(
-                    cmd0.args(),
+                    cmd0.argClass(),
                     (fld, pos) -> parser.get(pos),
                     fld -> parser.get(toFormattedFieldName(fld))
                 ),
@@ -188,7 +188,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             org.apache.ignite.internal.management.api.Command<A, R> cmd =
                 (org.apache.ignite.internal.management.api.Command<A, R>)parsed.get1();
 
-            R res = compute.execute(cmd.task().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
+            R res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
 
             cmd.printResult(parsed.get2(), res, logger::info);
 
@@ -219,7 +219,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         List<ComplexCommand<?, ?>> parents,
         IgniteLogger logger
     ) {
-        boolean skip = (cmd instanceof ComplexCommand) && !((ComplexCommand<?, ?>)cmd).canBeExecuted();
+        boolean skip = cmd instanceof ComplexCommand && cmd.taskClass() == null;
 
         if (!skip) {
             logger.info("");
@@ -243,7 +243,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     }
                 };
 
-                visitCommandParams(cmd.args(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
+                visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
 
                 Consumer<Field> printer = fld -> {
                     BiConsumer<String, String> logParam = (name, description) -> logger.info(
@@ -267,7 +267,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     }
                 };
 
-                visitCommandParams(cmd.args(), printer, printer, (optional, flds) -> flds.forEach(printer));
+                visitCommandParams(cmd.argClass(), printer, printer, (optional, flds) -> flds.forEach(printer));
             }
         }
 
@@ -333,7 +333,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         };
 
         visitCommandParams(
-            cmd.args(),
+            cmd.argClass(),
             fld -> bldr.append(' ').append(valueExample(fld)),
             fld -> paramPrinter.accept(true, fld),
             (optional, flds) -> {
@@ -384,7 +384,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         AtomicBoolean res = new AtomicBoolean();
 
         visitCommandParams(
-            cmd.args(),
+            cmd.argClass(),
             fld -> res.compareAndSet(false,
                 !fld.getAnnotation(Argument.class).description().isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class)

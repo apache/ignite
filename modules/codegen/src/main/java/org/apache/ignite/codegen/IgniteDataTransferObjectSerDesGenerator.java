@@ -220,7 +220,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         Command<?, ?> cmd = entry.getValue();
 
         if (cmd instanceof ComplexCommand) {
-            generate = ((ComplexCommand<?, ?>)cmd).canBeExecuted();
+            generate = cmd.taskClass() != null;
 
             ((Iterable<Map.Entry<String, Command<?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
         }
@@ -229,7 +229,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
             return;
 
         try {
-            generateAndWrite(cmd.args(), DFLT_SRC_DIR);
+            generateAndWrite(cmd.argClass(), DFLT_SRC_DIR);
         }
         catch (IOException e) {
             throw new RuntimeException(e);

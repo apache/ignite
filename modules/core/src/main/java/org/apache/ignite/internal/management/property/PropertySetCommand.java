@@ -29,12 +29,12 @@ public class PropertySetCommand implements Command<PropertyGetCommandArg, Proper
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PropertySetCommandArg> args() {
+    @Override public Class<PropertySetCommandArg> argClass() {
         return PropertySetCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PropertyTask> task() {
+    @Override public Class<PropertyTask> taskClass() {
         return PropertyTask.class;
     }
 }

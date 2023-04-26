@@ -28,12 +28,12 @@ public class KillScanCommand implements Command<KillScanCommandArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillScanCommandArg> args() {
+    @Override public Class<KillScanCommandArg> argClass() {
         return KillScanCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorScanQueryCancelTask> task() {
+    @Override public Class<VisorScanQueryCancelTask> taskClass() {
         return VisorScanQueryCancelTask.class;
     }
 }

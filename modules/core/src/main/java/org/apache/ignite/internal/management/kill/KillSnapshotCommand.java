@@ -29,12 +29,12 @@ public class KillSnapshotCommand implements Command<KillSnapshotCommandArg, Viso
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillSnapshotCommandArg> args() {
+    @Override public Class<KillSnapshotCommandArg> argClass() {
         return KillSnapshotCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotCancelTask> task() {
+    @Override public Class<VisorSnapshotCancelTask> taskClass() {
         return VisorSnapshotCancelTask.class;
     }
 }

@@ -87,6 +87,9 @@ public class PropertyTask extends VisorMultiNodeTask<PropertyGetCommandArg, Prop
 
         /** {@inheritDoc} */
         @Override protected PropertyOperationResult run(@Nullable PropertyGetCommandArg arg) {
+            if (arg == null)
+                throw new IllegalArgumentException("Argument is null");
+
             DistributedChangeableProperty<Serializable> prop =
                 ignite.context().distributedConfiguration().property(arg.getName());
 

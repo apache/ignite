@@ -47,12 +47,12 @@ public class SystemViewCommand implements Command<SystemViewCommandArg, VisorSys
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SystemViewCommandArg> args() {
+    @Override public Class<SystemViewCommandArg> argClass() {
         return SystemViewCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorSystemViewTask> task() {
+    @Override public Class<VisorSystemViewTask> taskClass() {
         return VisorSystemViewTask.class;
     }
 

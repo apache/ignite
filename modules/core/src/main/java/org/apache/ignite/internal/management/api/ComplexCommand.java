@@ -29,23 +29,18 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
  */
 public interface ComplexCommand<A extends IgniteDataTransferObject, R>
     extends Command<A, R>, CommandsRegistry {
-    /** @return {@code True} if base command represented by this registry can itself be executed. */
-    public default boolean canBeExecuted() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public default String description() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public default Class<A> args() {
+    @Override public default Class<A> argClass() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public default Class task() {
-        throw new UnsupportedOperationException();
+    @Override public default Class taskClass() {
+        return null;
     }
 }

@@ -28,12 +28,12 @@ public class KillComputeCommand implements Command<KillComputeCommandArg, Void> 
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillComputeCommandArg> args() {
+    @Override public Class<KillComputeCommandArg> argClass() {
         return KillComputeCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorComputeCancelSessionTask> task() {
+    @Override public Class<VisorComputeCancelSessionTask> taskClass() {
         return VisorComputeCancelSessionTask.class;
     }
 }

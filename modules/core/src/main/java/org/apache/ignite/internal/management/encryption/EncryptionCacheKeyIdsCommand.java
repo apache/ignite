@@ -25,19 +25,19 @@ import org.apache.ignite.internal.visor.encryption.VisorEncryptionKeyIdsTask;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
-public class EncryptionCacheKeyIdsCommand extends CacheGroupEncryptionCommand<List<Integer>, VisorEncryptionKeyIdsTask> {
+public class EncryptionCacheKeyIdsCommand extends CacheGroupEncryptionCommand<List<Integer>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View encryption key identifiers of the cache group";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EncryptionCacheGroupArg> args() {
+    @Override public Class<EncryptionCacheGroupArg> argClass() {
         return EncryptionCacheGroupArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorEncryptionKeyIdsTask> task() {
+    @Override public Class<VisorEncryptionKeyIdsTask> taskClass() {
         return VisorEncryptionKeyIdsTask.class;
     }
 

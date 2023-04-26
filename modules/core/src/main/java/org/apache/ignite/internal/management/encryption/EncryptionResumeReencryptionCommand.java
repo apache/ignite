@@ -22,19 +22,19 @@ import org.apache.ignite.internal.visor.encryption.VisorReencryptionResumeTask;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 
 /** */
-public class EncryptionResumeReencryptionCommand extends CacheGroupEncryptionCommand<Boolean, VisorReencryptionResumeTask> {
+public class EncryptionResumeReencryptionCommand extends CacheGroupEncryptionCommand<Boolean> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Resume re-encryption of the cache group";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EncryptionCacheGroupArg> args() {
+    @Override public Class<EncryptionCacheGroupArg> argClass() {
         return EncryptionCacheGroupArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorReencryptionResumeTask> task() {
+    @Override public Class<VisorReencryptionResumeTask> taskClass() {
         return VisorReencryptionResumeTask.class;
     }
 

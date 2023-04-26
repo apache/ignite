@@ -21,27 +21,27 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListResult;
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListTask;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class PropertyListCommand implements Command<EmptyArg, PropertiesListResult> {
+public class PropertyListCommand implements Command<NoArg, PropertiesListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of available properties";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EmptyArg> args() {
-        return EmptyArg.class;
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PropertiesListTask> task() {
+    @Override public Class<PropertiesListTask> taskClass() {
         return PropertiesListTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(EmptyArg arg, PropertiesListResult res, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, PropertiesListResult res, Consumer<String> printer) {
         for (String prop : res.properties())
             printer.accept(prop);
     }

@@ -30,12 +30,12 @@ public class PropertyGetCommand implements Command<PropertyGetCommandArg, Proper
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PropertyGetCommandArg> args() {
+    @Override public Class<PropertyGetCommandArg> argClass() {
         return PropertyGetCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PropertyTask> task() {
+    @Override public Class<PropertyTask> taskClass() {
         return PropertyTask.class;
     }
 

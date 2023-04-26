@@ -23,14 +23,15 @@ import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Management command interface.
- * Implementations represents single action to manage Ignite cluster.
+ * Implementations represent single action to manage Ignite cluster.
  *
  * Name of the command that is expected from caller derived from actual command class name.
  * Name format: all words divided by capital letters except "Command" suffix will form hierarchical command name.
- * Example: {@code MyUsefullCommand} is name of command so {@code control.sh --my-usesull param1 param2} expected from user.
+ * Example: {@code MyUsefullCommand} is name of command so {@code control.sh --my-usefull param1 param2} expected from user.
  * Other protocols must expose command similarly. Rest API must expect {@code /api-root/my-usefull?param1=value1&param2=value2} URI.
  *
  * @param <A> Argument type.
@@ -44,10 +45,10 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     public String description();
 
     /** @return Arguments class. */
-    public Class<? extends A> args();
+    public Class<? extends A> argClass();
 
     /** @return Task class. */
-    public Class<? extends ComputeTask<VisorTaskArgument<A>, R>> task();
+    public Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskClass();
 
     /**
      * Prints command result to the user.
@@ -65,9 +66,9 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     }
 
     /**
-     * @return Message text to show user for. If null it means that confirmantion is not needed.
+     * @return Message text to show user for. If {@code null} it means that confirmation is not needed.
      */
-    public default String confirmationPrompt() {
+    public default @Nullable String confirmationPrompt() {
         return null;
     }
 
@@ -76,7 +77,7 @@ public interface Command<A extends IgniteDataTransferObject, R> {
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
-    public default Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
+    public default @Nullable Collection<UUID> nodes(Collection<UUID> nodes, A arg) {
         return null;
     }
 }

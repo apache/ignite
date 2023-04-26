@@ -28,12 +28,12 @@ public class KillSqlCommand implements Command<KillSqlCommandArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillSqlCommandArg> args() {
+    @Override public Class<KillSqlCommandArg> argClass() {
         return KillSqlCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorQueryCancelOnInitiatorTask> task() {
+    @Override public Class<VisorQueryCancelOnInitiatorTask> taskClass() {
         return VisorQueryCancelOnInitiatorTask.class;
     }
 }

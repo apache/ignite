@@ -36,7 +36,7 @@ public @interface Argument {
     /** @return Argument description. */
     public String description() default "";
 
-    /** @return Command example. If empty string returned then example will be generated automatically. */
+    /** @return Argument example. If empty string returned then example will be generated automatically. */
     public String example() default "";
 
     /**

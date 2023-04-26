@@ -29,12 +29,12 @@ public class EncryptionChangeMasterKeyCommand implements Command<EncryptionChang
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EncryptionChangeMasterKeyCommandArg> args() {
+    @Override public Class<EncryptionChangeMasterKeyCommandArg> argClass() {
         return EncryptionChangeMasterKeyCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorChangeMasterKeyTask> task() {
+    @Override public Class<VisorChangeMasterKeyTask> taskClass() {
         return VisorChangeMasterKeyTask.class;
     }
 

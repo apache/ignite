@@ -19,28 +19,28 @@ package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 
 /** */
-public class EncryptionGetMasterKeyNameCommand implements Command<EmptyArg, String> {
+public class EncryptionGetMasterKeyNameCommand implements Command<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print the current master key name";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EmptyArg> args() {
-        return EmptyArg.class;
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorGetMasterKeyNameTask> task() {
+    @Override public Class<VisorGetMasterKeyNameTask> taskClass() {
         return VisorGetMasterKeyNameTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(EmptyArg arg, String res, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, String res, Consumer<String> printer) {
         printer.accept(res);
     }
 }

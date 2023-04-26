@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.performancestatistics;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsRotateCommandArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStartCommandArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
@@ -33,7 +33,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 /** Represents visor task to manage performance statistics. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorPerformanceStatisticsTask extends VisorOneNodeTask<EmptyArg, String> {
+public class VisorPerformanceStatisticsTask extends VisorOneNodeTask<NoArg, String> {
     /** Performance statistics enabled status. */
     public static final String STATUS_ENABLED = "Enabled.";
 
@@ -44,12 +44,12 @@ public class VisorPerformanceStatisticsTask extends VisorOneNodeTask<EmptyArg, S
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<EmptyArg, String> job(EmptyArg arg) {
+    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
         return new VisorPerformanceStatisticsJob(arg, false);
     }
 
     /** */
-    private static class VisorPerformanceStatisticsJob extends VisorJob<EmptyArg, String> {
+    private static class VisorPerformanceStatisticsJob extends VisorJob<NoArg, String> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,12 +59,12 @@ public class VisorPerformanceStatisticsTask extends VisorOneNodeTask<EmptyArg, S
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorPerformanceStatisticsJob(EmptyArg arg, boolean debug) {
+        protected VisorPerformanceStatisticsJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(EmptyArg arg) throws IgniteException {
+        @Override protected String run(NoArg arg) throws IgniteException {
             try {
                 if (arg instanceof PerformanceStatisticsStartCommandArg) {
                     ignite.context().performanceStatistics().startCollectStatistics();

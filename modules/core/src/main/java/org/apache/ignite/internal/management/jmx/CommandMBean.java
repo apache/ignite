@@ -85,7 +85,7 @@ public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCo
             vals.put(fld.getName(), val);
         };
 
-        visitCommandParams(cmd.args(), fillVals, fillVals, (optional, flds) -> flds.forEach(fillVals));
+        visitCommandParams(cmd.argClass(), fillVals, fillVals, (optional, flds) -> flds.forEach(fillVals));
 
         StringBuilder resStr = new StringBuilder();
 
@@ -127,7 +127,7 @@ public class CommandMBean<A extends IgniteDataTransferObject> extends AbstractCo
             args.add(new MBeanParameterInfo(fld.getName(), String.class.getName(), descStr));
         };
 
-        visitCommandParams(cmd.args(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
+        visitCommandParams(cmd.argClass(), fldCnsmr, fldCnsmr, (optional, flds) -> flds.forEach(fldCnsmr));
 
         return new MBeanInfo(
             CommandMBean.class.getName(),

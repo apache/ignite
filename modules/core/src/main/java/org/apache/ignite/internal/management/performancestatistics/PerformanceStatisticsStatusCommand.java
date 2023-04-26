@@ -18,24 +18,24 @@
 package org.apache.ignite.internal.management.performancestatistics;
 
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsStatusCommand implements Command<EmptyArg, String> {
+public class PerformanceStatisticsStatusCommand implements Command<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get status of collecting performance statistics in the cluster";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PerformanceStatisticsStatusCommandArg> args() {
+    @Override public Class<PerformanceStatisticsStatusCommandArg> argClass() {
         return PerformanceStatisticsStatusCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorPerformanceStatisticsTask> task() {
+    @Override public Class<VisorPerformanceStatisticsTask> taskClass() {
         return VisorPerformanceStatisticsTask.class;
     }
 }

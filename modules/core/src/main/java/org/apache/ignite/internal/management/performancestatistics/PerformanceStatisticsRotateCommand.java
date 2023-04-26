@@ -18,24 +18,24 @@
 package org.apache.ignite.internal.management.performancestatistics;
 
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsRotateCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsRotateCommand implements Command<EmptyArg, String> {
+public class PerformanceStatisticsRotateCommand implements Command<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Rotate collecting performance statistics in the cluster";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PerformanceStatisticsRotateCommandArg> args() {
+    @Override public Class<PerformanceStatisticsRotateCommandArg> argClass() {
         return PerformanceStatisticsRotateCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorPerformanceStatisticsTask> task() {
+    @Override public Class<VisorPerformanceStatisticsTask> taskClass() {
         return VisorPerformanceStatisticsTask.class;
     }
 }

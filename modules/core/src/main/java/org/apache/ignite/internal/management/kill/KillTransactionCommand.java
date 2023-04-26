@@ -33,12 +33,12 @@ public class KillTransactionCommand implements Command<KillTransactionCommandArg
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillTransactionCommandArg> args() {
+    @Override public Class<KillTransactionCommandArg> argClass() {
         return KillTransactionCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillTransactionTask> task() {
+    @Override public Class<KillTransactionTask> taskClass() {
         return KillTransactionTask.class;
     }
 

@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.EmptyArg;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PropertyGetCommandArg extends EmptyArg {
+public class PropertyGetCommandArg extends NoArg {
     /** */
     private static final long serialVersionUID = 0;
 
