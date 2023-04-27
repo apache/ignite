@@ -21,7 +21,10 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.meta.MetaDetailsCommandArg;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -32,12 +35,12 @@ import org.jetbrains.annotations.Nullable;
  * Task for MetadataListCommand and MetadataDetailsCommand commands.
  */
 @GridInternal
-public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, MetadataListResult, MetadataListResult> {
+public class MetadataInfoTask extends VisorMultiNodeTask<NoArg, MetadataListResult, MetadataListResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<MetadataTypeArgs, MetadataListResult> job(MetadataTypeArgs arg) {
+    @Override protected VisorJob<NoArg, MetadataListResult> job(NoArg arg) {
         return new MetadataListJob(arg, debug);
     }
 
@@ -58,7 +61,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, Metad
     /**
      * Job for {@link CheckIndexInlineSizes} command.
      */
-    private static class MetadataListJob extends VisorJob<MetadataTypeArgs, MetadataListResult> {
+    private static class MetadataListJob extends VisorJob<NoArg, MetadataListResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -66,20 +69,22 @@ public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, Metad
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected MetadataListJob(@Nullable MetadataTypeArgs arg, boolean debug) {
+        protected MetadataListJob(@Nullable NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected MetadataListResult run(@Nullable MetadataTypeArgs arg) throws IgniteException {
-            if (arg == null) {
+        @Override protected MetadataListResult run(@Nullable NoArg arg0) throws IgniteException {
+            if (!(arg0 instanceof MetaDetailsCommandArg)) {
                 // returns full metadata
                 return new MetadataListResult(
                     ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata());
             }
             else {
+                MetaDetailsCommandArg arg = (MetaDetailsCommandArg)arg0;
+
                 // returns specified metadata
-                int typeId = arg.typeId(ignite.context());
+                int typeId = typeId(ignite.context(), arg.getTypeId(), arg.getTypeName());
 
                 BinaryMetadata binMeta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata(typeId);
 
@@ -89,5 +94,13 @@ public class MetadataInfoTask extends VisorMultiNodeTask<MetadataTypeArgs, Metad
                 return new MetadataListResult(Collections.singleton(binMeta));
             }
         }
+    }
+
+    /** */
+    public static int typeId(GridKernalContext ctx, int typeId, String typeName) {
+        if (typeId != 0)
+            return typeId;
+        else
+            return ctx.cacheObjects().typeId(typeName);
     }
 }

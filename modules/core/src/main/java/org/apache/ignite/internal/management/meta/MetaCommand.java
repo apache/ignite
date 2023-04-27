@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.meta;
 
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.encryption.EncryptionCommand;
-import org.apache.ignite.internal.management.kill.KillCommand;
-import org.apache.ignite.internal.management.meta.MetaCommand;
-import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
-import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 
-/**
- * Root command registry. Contains all known commands.
- */
-public class IgniteCommandRegistry extends CommandRegistryImpl {
+/** */
+@CliPositionalSubcommands
+public class MetaCommand extends CommandRegistryImpl implements ComplexCommand {
     /** */
-    public IgniteCommandRegistry() {
+    public MetaCommand() {
         super(
-            new EncryptionCommand(),
-            new KillCommand(),
-            new MetaCommand(),
-            new PropertyCommand(),
-            new SystemViewCommand(),
-            new PerformanceStatisticsCommand()
+            new MetaHelpCommand(),
+            new MetaListCommand(),
+            new MetaDetailsCommand(),
+            new MetaRemoveCommand(),
+            new MetaUpdateCommand()
         );
     }
 }

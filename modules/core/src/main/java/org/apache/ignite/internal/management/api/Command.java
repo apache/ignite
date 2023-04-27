@@ -68,7 +68,7 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     /**
      * @return Message text to show user for. If {@code null} it means that confirmation is not needed.
      */
-    public default @Nullable String confirmationPrompt() {
+    public default @Nullable String confirmationPrompt(A arg) {
         return null;
     }
 

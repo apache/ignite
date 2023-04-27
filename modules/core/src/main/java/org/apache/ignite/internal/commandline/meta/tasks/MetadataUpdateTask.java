@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.management.meta.MetaUpdateCommandArg;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_METADATA_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
@@ -38,12 +38,12 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Task for update specified binary type.
  */
 @GridInternal
-public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, MetadataMarshalled, MetadataMarshalled> {
+public class MetadataUpdateTask extends VisorMultiNodeTask<MetaUpdateCommandArg, MetadataMarshalled, MetadataMarshalled> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<MetadataMarshalled, MetadataMarshalled> job(MetadataMarshalled arg) {
+    @Override protected VisorJob<MetaUpdateCommandArg, MetadataMarshalled> job(MetaUpdateCommandArg arg) {
         return new MetadataUpdateJob(arg, debug);
     }
 
@@ -61,7 +61,7 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, M
     /**
      * Job for update specified binary type.
      */
-    private static class MetadataUpdateJob extends VisorJob<MetadataMarshalled, MetadataMarshalled> {
+    private static class MetadataUpdateJob extends VisorJob<MetaUpdateCommandArg, MetadataMarshalled> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -69,7 +69,7 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, M
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected MetadataUpdateJob(@Nullable MetadataMarshalled arg, boolean debug) {
+        protected MetadataUpdateJob(@Nullable MetaUpdateCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -79,10 +79,10 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetadataMarshalled, M
         }
 
         /** {@inheritDoc} */
-        @Override protected MetadataMarshalled run(@Nullable MetadataMarshalled arg) throws IgniteException {
+        @Override protected MetadataMarshalled run(@Nullable MetaUpdateCommandArg arg) throws IgniteException {
             assert Objects.nonNull(arg);
 
-            byte[] marshalled = arg.metadataMarshalled();
+            byte[] marshalled = null; //arg.metadataMarshalled();
 
             try {
                 BinaryMetadata meta = U.unmarshal(

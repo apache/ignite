@@ -216,11 +216,11 @@ This utility can do the following commands:
 
   [EXPERIMENTAL]
   Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
-If the file name isn't specified the output file name is: '<typeId>.bin'
+If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
 
   [EXPERIMENTAL]
-  Update cluster metadata from specified file (file name is required)
+  Update cluster metadata from specified file (file name is required):
     control.(sh|bat) --meta update --in <fileName>
 
   Set or display shutdown policy:

@@ -211,7 +211,9 @@ public class CommandUtils {
                 : toFormattedName(fld.getName(), delim);
         }
 
-        return toFormattedName(fld.getName(), delim);
+        return fld.getAnnotation(Argument.class).javaStyleName()
+            ? fld.getName()
+            : toFormattedName(fld.getName(), delim);
     }
 
     /** */
