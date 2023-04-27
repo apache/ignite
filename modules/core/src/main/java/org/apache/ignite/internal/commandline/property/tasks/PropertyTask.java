@@ -91,16 +91,16 @@ public class PropertyTask extends VisorMultiNodeTask<PropertyGetCommandArg, Prop
                 throw new IllegalArgumentException("Argument is null");
 
             DistributedChangeableProperty<Serializable> prop =
-                ignite.context().distributedConfiguration().property(arg.getName());
+                ignite.context().distributedConfiguration().property(arg.name());
 
             if (prop == null)
-                throw new IllegalArgumentException("Property doesn't not exist [name=" + arg.getName() + ']');
+                throw new IllegalArgumentException("Property doesn't not exist [name=" + arg.name() + ']');
 
             if (!(arg instanceof PropertySetCommandArg))
                 return new PropertyOperationResult(Objects.toString(prop.get()));
 
             try {
-                prop.propagate(prop.parse(((PropertySetCommandArg)arg).getVal()));
+                prop.propagate(prop.parse(((PropertySetCommandArg)arg).val()));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

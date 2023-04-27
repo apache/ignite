@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -145,6 +148,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Double.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Double)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(double[].class, F.t(
             fld -> "U.writeDoubleArray(out, " + fld + ");",
             fld -> fld + " = U.readDoubleArray(in);",
@@ -222,7 +231,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         if (cmd instanceof ComplexCommand) {
             generate = cmd.taskClass() != null;
 
-            ((Iterable<Map.Entry<String, Command<?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
+            ((CommandsRegistry)cmd).commands().forEachRemaining(this::generate);
         }
 
         if (!generate)
@@ -240,6 +249,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
     private void generateAndWrite(Class<? extends IgniteDataTransferObject> cls, String srcDir) throws IOException {
         clear();
 
+        if (cls.getName().indexOf('$') != -1) {
+            System.err.println("Inner class not supported: " + cls.getName());
+
+            return;
+        }
+
         File file = new File(srcDir, cls.getName().replace('.', File.separatorChar) + ".java");
 
         if (!file.exists() || !file.isFile())
@@ -249,6 +264,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
             removeExisting(addSerialVersionUID(Files.readAllLines(file.toPath(), StandardCharsets.UTF_8)));
 
         List<List<String>> readWriteMethods = generateMethods(cls);
+        List<List<String>> getersSeters = generateGetSet(cls);
 
         List<String> code = new ArrayList<>();
 
@@ -290,6 +306,11 @@ public class IgniteDataTransferObjectSerDesGenerator {
             code.addAll(readWriteMethods.get(1));
         }
 
+        for (int j = 0; j < getersSeters.size(); j++) {
+            code.add("");
+            code.addAll(getersSeters.get(j));
+        }
+
         for (; i < src.size(); i++)
             code.add(src.get(i));
 
@@ -299,6 +320,43 @@ public class IgniteDataTransferObjectSerDesGenerator {
                 writer.write('\n');
             }
         }
+    }
+
+    /** */
+    private List<List<String>> generateGetSet(Class<? extends IgniteDataTransferObject> cls) {
+        List<Field> flds = fields(cls);
+
+        if (flds.isEmpty())
+            return Collections.emptyList();
+
+        List<List<String>> getSet = new ArrayList<>();
+
+        for (Field fld : flds) {
+            if (!geterExists(cls, fld)) {
+                List<String> geter = new ArrayList<>();
+
+                geter.add(TAB + "/** */");
+                geter.add(TAB + "public " + fld.getType().getSimpleName() + " " + fld.getName() + "() {");
+                geter.add(TAB + TAB + "return " + fld.getName() + ";");
+                geter.add(TAB + "}");
+
+                getSet.add(geter);
+            }
+
+            if (!seterExists(cls, fld)) {
+                List<String> seter = new ArrayList<>();
+
+                seter.add(TAB + "/** */");
+                seter.add(TAB + "public void " + fld.getName() +
+                    "(" + fld.getType().getSimpleName() + " " + fld.getName() + ") {");
+                seter.add(TAB + TAB + "this." + fld.getName() + " = " + fld.getName() + ";");
+                seter.add(TAB + "}");
+
+                getSet.add(seter);
+            }
+        }
+
+        return getSet;
     }
 
     /** */
@@ -330,13 +388,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
     /** */
     private List<List<String>> generateMethods(Class<? extends IgniteDataTransferObject> cls) {
-        List<Field> flds = Arrays.stream(cls.getDeclaredFields())
-            .filter(fld -> {
-                int mod = fld.getModifiers();
-
-                return !isStatic(mod) && !isTransient(mod);
-            })
-            .collect(Collectors.toList());
+        List<Field> flds = fields(cls);
 
         List<String> write = new ArrayList<>();
         List<String> read = new ArrayList<>();
@@ -401,6 +453,18 @@ public class IgniteDataTransferObjectSerDesGenerator {
         read.add(TAB + "}");
 
         return Arrays.asList(write, read);
+    }
+
+    /** */
+    private static List<Field> fields(Class<? extends IgniteDataTransferObject> cls) {
+        List<Field> flds = Arrays.stream(cls.getDeclaredFields())
+            .filter(fld -> {
+                int mod = fld.getModifiers();
+
+                return !isStatic(mod) && !isTransient(mod);
+            })
+            .collect(Collectors.toList());
+        return flds;
     }
 
     /** */
@@ -486,5 +550,29 @@ public class IgniteDataTransferObjectSerDesGenerator {
         methodsStart = Integer.MAX_VALUE;
         imports.clear();
         staticImports.clear();
+    }
+
+    /** */
+    private static boolean geterExists(Class<? extends IgniteDataTransferObject> cls, Field fld) {
+        try {
+            Method geter = cls.getMethod(fld.getName());
+
+            return geter.getReturnType() == fld.getType();
+        }
+        catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    /** */
+    private static boolean seterExists(Class<? extends IgniteDataTransferObject> cls, Field fld) {
+        try {
+            Method seter = cls.getMethod(fld.getName(), fld.getType());
+
+            return seter.getReturnType() == void.class;
+        }
+        catch (NoSuchMethodException e) {
+            return false;
+        }
     }
 }

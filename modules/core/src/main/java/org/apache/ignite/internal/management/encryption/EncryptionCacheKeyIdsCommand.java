@@ -47,7 +47,7 @@ public class EncryptionCacheKeyIdsCommand extends CacheGroupEncryptionCommand<Li
         VisorCacheGroupEncryptionTaskResult<List<Integer>> res,
         Consumer<String> printer
     ) {
-        printer.accept("Encryption key identifiers for cache: " + arg.getCacheGroupName());
+        printer.accept("Encryption key identifiers for cache: " + arg.cacheGroupName());
 
         super.printResult(arg, res, printer);
     }

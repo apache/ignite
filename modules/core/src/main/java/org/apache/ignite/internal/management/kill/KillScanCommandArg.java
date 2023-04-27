@@ -61,32 +61,32 @@ public class KillScanCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public UUID getOriginNodeId() {
+    public UUID originNodeId() {
         return originNodeId;
     }
 
     /** */
-    public void setOriginNodeId(UUID originNodeId) {
+    public void originNodeId(UUID originNodeId) {
         this.originNodeId = originNodeId;
     }
 
     /** */
-    public String getCacheName() {
+    public String cacheName() {
         return cacheName;
     }
 
     /** */
-    public void setCacheName(String cacheName) {
+    public void cacheName(String cacheName) {
         this.cacheName = cacheName;
     }
 
     /** */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
     }
 
     /** */
-    public void setQueryId(long queryId) {
+    public void queryId(long queryId) {
         this.queryId = queryId;
     }
 }

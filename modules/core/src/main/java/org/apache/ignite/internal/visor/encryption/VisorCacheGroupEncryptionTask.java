@@ -101,7 +101,7 @@ public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTas
         /** {@inheritDoc} */
         @Override protected VisorSingleFieldDto<T> run(EncryptionCacheGroupArg arg) throws IgniteException {
             try {
-                String grpName = arg.getCacheGroupName();
+                String grpName = arg.cacheGroupName();
                 CacheGroupContext grp = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
 
                 if (grp == null) {

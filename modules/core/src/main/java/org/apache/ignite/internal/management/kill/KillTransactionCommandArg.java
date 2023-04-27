@@ -46,12 +46,12 @@ public class KillTransactionCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String getXid() {
+    public String xid() {
         return xid;
     }
 
     /** */
-    public void setXid(String xid) {
+    public void xid(String xid) {
         this.xid = xid;
     }
 }

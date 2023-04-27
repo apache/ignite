@@ -68,7 +68,7 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<KillSqlCom
 
         /** {@inheritDoc} */
         @Override protected Void run(KillSqlCommandArg arg) throws IgniteException {
-            T2<UUID, Long> ids = parseGlobalQueryId(arg.getQueryId());
+            T2<UUID, Long> ids = parseGlobalQueryId(arg.queryId());
 
             if (ids == null)
                 throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);

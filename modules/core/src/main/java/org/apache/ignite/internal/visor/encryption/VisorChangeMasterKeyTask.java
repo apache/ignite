@@ -56,7 +56,7 @@ public class VisorChangeMasterKeyTask extends VisorOneNodeTask<EncryptionChangeM
 
         /** {@inheritDoc} */
         @Override protected String run(EncryptionChangeMasterKeyCommandArg arg) throws IgniteException {
-            ignite.encryption().changeMasterKey(arg.getNewMasterKeyName()).get();
+            ignite.encryption().changeMasterKey(arg.newMasterKeyName()).get();
 
             return "The master key changed.";
         }

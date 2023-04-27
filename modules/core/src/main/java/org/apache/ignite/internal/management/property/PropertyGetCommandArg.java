@@ -35,21 +35,25 @@ public class PropertyGetCommandArg extends NoArg {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         U.writeString(out, name);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         name = U.readString(in);
     }
 
     /** */
-    public String getName() {
+    public String name() {
         return name;
     }
 
     /** */
-    public void setName(String name) {
+    public void name(String name) {
         this.name = name;
     }
 }

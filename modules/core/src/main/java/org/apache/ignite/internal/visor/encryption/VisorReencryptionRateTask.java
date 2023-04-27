@@ -90,8 +90,8 @@ public class VisorReencryptionRateTask extends VisorMultiNodeTask<
         @Override protected ReencryptionRateJobResult run(EncryptionReencryptionRateLimitCommandArg arg) throws IgniteException {
             double prevRate = ignite.context().encryption().getReencryptionRate();
 
-            if (arg.getNewLimit() != null)
-                ignite.context().encryption().setReencryptionRate(arg.getNewLimit());
+            if (arg.newLimit() != null)
+                ignite.context().encryption().setReencryptionRate(arg.newLimit());
 
             return new ReencryptionRateJobResult(prevRate);
         }

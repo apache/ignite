@@ -46,12 +46,12 @@ public class KillServiceCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String getName() {
+    public String name() {
         return name;
     }
 
     /** */
-    public void setName(String name) {
+    public void name(String name) {
         this.name = name;
     }
 }

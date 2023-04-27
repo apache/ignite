@@ -42,9 +42,9 @@ public class KillClientCommand implements Command<KillClientCommandArg, Void> {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Collection<UUID> nodes, KillClientCommandArg arg) {
-        if (arg.getNodeId() == null)
+        if (arg.nodeId() == null)
             return nodes;
 
-        return Collections.singleton(arg.getNodeId());
+        return Collections.singleton(arg.nodeId());
     }
 }

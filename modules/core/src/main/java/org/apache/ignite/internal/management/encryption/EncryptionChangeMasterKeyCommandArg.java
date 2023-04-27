@@ -46,12 +46,12 @@ public class EncryptionChangeMasterKeyCommandArg extends IgniteDataTransferObjec
     }
 
     /** */
-    public String getNewMasterKeyName() {
+    public String newMasterKeyName() {
         return newMasterKeyName;
     }
 
     /** */
-    public void setNewMasterKeyName(String newMasterKeyName) {
+    public void newMasterKeyName(String newMasterKeyName) {
         this.newMasterKeyName = newMasterKeyName;
     }
 }

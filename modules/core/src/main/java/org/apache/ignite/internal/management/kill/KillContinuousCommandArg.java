@@ -54,22 +54,22 @@ public class KillContinuousCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public UUID getOriginNodeId() {
+    public UUID originNodeId() {
         return originNodeId;
     }
 
     /** */
-    public void setOriginNodeId(UUID originNodeId) {
+    public void originNodeId(UUID originNodeId) {
         this.originNodeId = originNodeId;
     }
 
     /** */
-    public UUID getRoutineId() {
+    public UUID routineId() {
         return routineId;
     }
 
     /** */
-    public void setRoutineId(UUID routineId) {
+    public void routineId(UUID routineId) {
         this.routineId = routineId;
     }
 }

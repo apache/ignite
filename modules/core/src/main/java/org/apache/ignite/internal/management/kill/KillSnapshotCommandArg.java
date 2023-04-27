@@ -52,22 +52,22 @@ public class KillSnapshotCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public UUID getRequestId() {
+    public UUID requestId() {
         return requestId;
     }
 
     /** */
-    public void setRequestId(UUID requestId) {
+    public void requestId(UUID requestId) {
         this.requestId = requestId;
     }
 
     /** */
-    public String getSnapshotName() {
+    public String snapshotName() {
         return snapshotName;
     }
 
     /** */
-    public void setSnapshotName(String snapshotName) {
+    public void snapshotName(String snapshotName) {
         this.snapshotName = snapshotName;
     }
 }

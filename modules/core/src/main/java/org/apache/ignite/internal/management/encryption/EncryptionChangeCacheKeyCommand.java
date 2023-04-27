@@ -40,7 +40,7 @@ public class EncryptionChangeCacheKeyCommand implements Command<EncryptionCacheG
 
     /** {@inheritDoc} */
     @Override public void printResult(EncryptionCacheGroupArg arg, Void res, Consumer<String> printer) {
-        printer.accept("The encryption key has been changed for the cache group \"" + arg.getCacheGroupName() + "\".");
+        printer.accept("The encryption key has been changed for the cache group \"" + arg.cacheGroupName() + "\".");
     }
 
     /** {@inheritDoc} */

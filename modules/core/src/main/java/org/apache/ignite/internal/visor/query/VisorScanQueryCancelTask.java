@@ -60,7 +60,7 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandAr
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable KillScanCommandArg arg) throws IgniteException {
             new QueryMXBeanImpl(ignite.context())
-                .cancelScan(arg.getOriginNodeId(), arg.getCacheName(), arg.getQueryId());
+                .cancelScan(arg.originNodeId(), arg.cacheName(), arg.queryId());
 
             return null;
         }

@@ -47,12 +47,12 @@ public class PropertySetCommandArg extends PropertyGetCommandArg {
     }
 
     /** */
-    public String getVal() {
+    public String val() {
         return val;
     }
 
     /** */
-    public void setVal(String val) {
+    public void val(String val) {
         this.val = val;
     }
 }
