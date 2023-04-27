@@ -101,7 +101,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public TransactionIsolation txIsolation;
 
-    /** Number of the cache backups. */
+    /** Number of the cache backups. 1 for one-phase commit. */
     @Parameterized.Parameter(4)
     public int backups;
 
@@ -157,7 +157,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        // Clean static singletoned logs.
+        // Clean static singletoned logs for the log listeners.
         ((AtomicReference<IgniteLogger>)U.staticField(IgniteTxAdapter.class, "logRef")).set(null);
         U.findField(IgniteTxAdapter.class, "log").set(null, null);
 
@@ -186,7 +186,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     }
 
     /**
-     * Test not responding nodes logged if backup delays the prepare request.
+     * Test unresponding nodes logged if backup delays the prepare request.
      */
     @Test
     public void testBackupDelaysOnPrepare() throws Exception {
@@ -194,7 +194,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that not responded primary are logged if it delays the prepare request.
+     * Test unresponded primary is logged if it delays the prepare request.
      */
     @Test
     public void testPrimaryDelaysOnPrepare() throws Exception {
@@ -202,13 +202,12 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that not responded nodes are logged or transaction is successful.
+     * Test unresponded nodes are logged or transaction is successful.
      *
-     * @param delayOnPrimary If {@code true}, blocked node is considered as primary node.
+     * @param onPrimary If {@code true}, blocked node is considered as primary node.
      * @param msgToDelay Transaction message to block on the target node {@code txNodeType}.
      */
-    protected void doTest(boolean delayOnPrimary,
-        Class<? extends GridDistributedBaseMessage> msgToDelay) throws Exception {
+    protected void doTest(boolean onPrimary, Class<? extends GridDistributedBaseMessage> msgToDelay) throws Exception {
         IgniteEx delayed = txNode(TxNodeType.SERVER_DELAYED);
 
         blockMessage(delayed, msgToDelay);
@@ -217,11 +216,11 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = putter.cache("cache");
 
-        List<Integer> keys = keys(putter, delayed, delayOnPrimary);
+        List<Integer> keys = keys(putter, delayed, onPrimary);
 
         // Tx initiator node and tode to block response is thesame server node. Nothing expected to stuck. The tx
         // should work normally.
-        if (delayOnPrimary && txNodeType == TxNodeType.SERVER_DELAYED) {
+        if (onPrimary && txNodeType == TxNodeType.SERVER_DELAYED) {
             doTx(putter, keys);
 
             for (int i = 0; i < keys.size(); ++i)
@@ -230,21 +229,21 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
             return;
         }
 
-        Collection<ClusterNode> primaries = awaitedPrimaries(delayed, putter, delayOnPrimary, keys);
+        Collection<ClusterNode> primaries = awaitedPrimaries(delayed, putter, onPrimary, keys);
 
-        Map<UUID, Integer> notRespondedPrimaries = new ConcurrentHashMap<>();
+        Map<UUID, Integer> unespondedPrimaries = new ConcurrentHashMap<>();
 
-        LogListener txNodeLsnr = txNodeLsnr(putter.localNode().id(), notRespondedPrimaries);
+        LogListener txNodeLsnr = txNodeLsnr(putter.localNode().id(), unespondedPrimaries);
 
         // Since we got various singleton static loggers, we check all the loggers for the exact results indicated by
-        // 'nodeId=; for the transaction node.
+        // 'nodeId=' for the transaction node.
         G.allGrids().forEach(ign -> nodesLogs.get(ign.name()).registerListener(txNodeLsnr));
 
-        // One-phase commit (and some other cases, see IGNITE-19336) doesn't wait apply the finish command and doesn't
-        // use prepare timeout on the near/primary node.  Also, we don't need to wait on primry if we block it.
-        List<LogListener> backupsLsnrs = delayOnPrimary || backups < 2
+        // One-phase commit (and some other cases, see IGNITE-19336) doesn't wait apply the finish/prepare command and
+        // doesn't use prepare timeout on the near/primary node. Also, we don't need to wait on primry if we block it.
+        List<LogListener> backupsLsnrs = onPrimary || backups < 2
             ? Collections.emptyList()
-            : primariesLogListeners(primaries, delayed, msgToDelay);
+            : primaryLogListeners(primaries, delayed, msgToDelay);
 
         runAsync(() -> doTx(putter, keys));
 
@@ -257,11 +256,11 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
                 .map(bm -> bm.destinationNode().id()).collect(Collectors.toSet());
 
         assertEquals("Unexpected number of not responded primary nodes.", notRespondedTo.size(),
-            notRespondedPrimaries.size());
+            unespondedPrimaries.size());
 
-        if (!delayOnPrimary) {
+        if (!onPrimary) {
             for (UUID nid : notRespondedTo)
-                assertTrue("Not found not responded primary " + nid, notRespondedPrimaries.containsKey(nid));
+                assertTrue("Not found not responded primary " + nid, unespondedPrimaries.containsKey(nid));
         }
     }
 
@@ -272,10 +271,9 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
         CountDownLatch backupsFlag = new CountDownLatch(1);
 
         lsnrs.forEach(bLsnr -> runAsync(() -> {
-                if (bLsnr.check(TX_TIMEOUT))
-                    backupsFlag.countDown();
-            })
-        );
+            if (bLsnr.check(TX_TIMEOUT))
+                backupsFlag.countDown();
+        }));
 
         backupsFlag.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
     }
@@ -302,9 +300,13 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     }
 
     /**
+     * Log listener storing detected unresponded primary ids to {@code unresponded}.
+     *
+     * @param txNodeId Id of current transaction processing node.
+     * @param unresponded Ids of detected unresponded primaries.
      * @return Log listener for transaction initiator node.
      */
-    private static LogListener txNodeLsnr(UUID txNodeId, Map<UUID, Integer> notResponded) {
+    private static LogListener txNodeLsnr(UUID txNodeId, Map<UUID, Integer> unresponded) {
         return new LogListener() {
             private final AtomicBoolean timeoutDetected = new AtomicBoolean();
 
@@ -315,7 +317,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
             @Override public synchronized void reset() {
                 timeoutDetected.set(false);
 
-                notResponded.clear();
+                unresponded.clear();
             }
 
             @Override public void accept(String m) {
@@ -336,7 +338,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
                         m = m.substring(0, m.length() - 1);
 
                     Stream.of(m.split(","))
-                        .map(UUID::fromString).forEach(nid -> notResponded.compute(nid, (nid0, cnt) -> {
+                        .map(UUID::fromString).forEach(nid -> unresponded.compute(nid, (nid0, cnt) -> {
                             if (cnt == null)
                                 cnt = 0;
 
@@ -347,10 +349,12 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
         };
     }
 
-    /** */
-    private List<LogListener> primariesLogListeners(Collection<ClusterNode> waitingPrimaries, IgniteEx delayed,
+    /**
+     * @return Log listeners on {@code waitingPrimaries} watching unresponded {@code delayed}.
+     */
+    private List<LogListener> primaryLogListeners(Collection<ClusterNode> waitingPrimaries, IgniteEx delayed,
         Class<? extends GridDistributedBaseMessage> msgToDelay) {
-        List<LogListener> nearNodeLsnrs = new ArrayList<>();
+        List<LogListener> res = new ArrayList<>();
 
         waitingPrimaries.forEach(pn -> {
             // Certain message only for current primary/near note indicated by 'nodeId='
@@ -358,17 +362,17 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
                     "]. Not responded backup nodes: " + delayed.localNode().id())
                 .times(msgToDelay == null ? 0 : 1).build();
 
-            nearNodeLsnrs.add(lsnr);
+            res.add(lsnr);
         });
 
         // Since we got various singleton static loggers, we check all the loggers for the exact results.
         grid(0).cluster().forServers().nodes().forEach(n -> {
             ListeningTestLogger serverLog = nodesLogs.get(grid(n).name());
 
-            serverLog.registerAllListeners(nearNodeLsnrs.toArray(new LogListener[nearNodeLsnrs.size()]));
+            serverLog.registerAllListeners(res.toArray(new LogListener[res.size()]));
         });
 
-        return nearNodeLsnrs;
+        return res;
     }
 
     /**
@@ -406,7 +410,7 @@ public class TxTimeoutLogTestOptimistic extends GridCommonAbstractTest {
     }
 
     /**
-     * @return cache keys for current test to use in transaction. At least first key is always for the delayed node.
+     * @return cache keys for current test to use in transaction. At least the first key is always for the delayed node.
      */
     private List<Integer> keys(IgniteEx putter, IgniteEx delayedNode, boolean primary) {
         assert txNodeType != TxNodeType.SERVER_DELAYED ||

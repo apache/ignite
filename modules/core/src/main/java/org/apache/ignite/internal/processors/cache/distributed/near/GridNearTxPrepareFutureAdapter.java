@@ -142,8 +142,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      */
     public abstract void onNearTxLocalTimeout();
 
-    /** {@inheritDoc} */
-    public Collection<UUID> notRespondedNodes() {
+    /**
+     * @return Nodes not responded to the prepare request.
+     */
+    public Collection<UUID> unrespondedNodes() {
         compoundsReadLock();
 
         try {
@@ -301,11 +303,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /**
-     * Future awaiting a response from a node.
+     * Future awaiting response from node.
      */
     protected abstract static class NodeFuture<R> extends GridFutureAdapter<R> {
         /**
-         * @return Node id which is supposed to response for this furure.
+         * @return Node id which is supposed to response for this future.
          */
         protected abstract UUID nodeId();
     }

@@ -5012,14 +5012,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override public void onTimeout() {
         boolean proceed;
 
-        Set<UUID> notRespondedNodes = new HashSet<>();
+        Set<UUID> unrespondedNodes = new HashSet<>();
 
         synchronized (this) {
             if (lockFut instanceof GridDhtColocatedLockFuture)
-                notRespondedNodes.addAll(((GridDhtColocatedLockFuture)lockFut).notRespondedNodes());
+                unrespondedNodes.addAll(((GridDhtColocatedLockFuture)lockFut).unrespondedNodes());
 
-            if (notRespondedNodes.isEmpty() && prepFut != null)
-                notRespondedNodes.addAll(prepFut.notRespondedNodes());
+            if (unrespondedNodes.isEmpty() && prepFut != null)
+                unrespondedNodes.addAll(prepFut.unrespondedNodes());
 
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
         }
@@ -5034,8 +5034,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
                         CU.txString(GridNearTxLocal.this) + ']';
 
-                    if (!F.isEmpty(notRespondedNodes)) {
-                        errMsg += " Not responded primary nodes (or their backups): " + notRespondedNodes.stream()
+                    if (!F.isEmpty(unrespondedNodes)) {
+                        errMsg += " Not responded primary nodes (or their backups): " + unrespondedNodes.stream()
                             .map(UUID::toString).collect(Collectors.joining(",")) + '.';
                     }
 

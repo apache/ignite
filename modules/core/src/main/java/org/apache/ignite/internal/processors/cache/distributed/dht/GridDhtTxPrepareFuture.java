@@ -2074,12 +2074,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 lockKeys.clear();
             }
 
-            String notResponded = futs.stream().filter(f -> isMini(f) && !(f.isDone() || f.isCancelled()))
+            String unresponded = futs.stream().filter(f -> isMini(f) && !(f.isDone() || f.isCancelled()))
                 .map(f -> ((MiniFuture)f).nodeId.toString()).collect(Collectors.joining(","));
 
             U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: [xid=" +
                 tx.xid() + ", xidVersion=" + tx.xidVersion() + ", nodeId=" + tx.nodeId() + ']' +
-                (isEmpty(notResponded) ? "" : ". Not responded backup nodes: " + notResponded));
+                (isEmpty(unresponded) ? "" : ". Not responded backup nodes: " + unresponded));
 
             onError(tx.timeoutException());
         }
