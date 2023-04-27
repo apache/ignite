@@ -336,7 +336,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
             String out = testOut.toString();
 
-            assertContains(log, out, "Failed to execute metadata command='update'");
+            assertContains(log, out, "Failed to perform operation.");
             assertContains(log, out, "Type 'Type0' with typeId 110843958 has a " +
                 "different/incorrect type for field 'fld'.");
             assertContains(log, out, "Expected 'String' but 'int' was provided. " +

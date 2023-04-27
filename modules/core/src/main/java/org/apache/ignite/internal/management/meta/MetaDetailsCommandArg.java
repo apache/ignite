@@ -22,9 +22,12 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
+@OneOf({"typeId", "typeName"})
 public class MetaDetailsCommandArg extends NoArg {
     /** */
     private static final long serialVersionUID = 0;
@@ -71,5 +74,10 @@ public class MetaDetailsCommandArg extends NoArg {
     /** */
     public void typeName(String typeName) {
         this.typeName = typeName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return typeId != 0 ? printInt(typeId) : typeName;
     }
 }

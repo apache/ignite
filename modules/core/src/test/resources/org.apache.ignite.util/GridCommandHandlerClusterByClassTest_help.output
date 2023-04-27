@@ -212,12 +212,12 @@ This utility can do the following commands:
 
   [EXPERIMENTAL]
   Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
-    control.(sh|bat) --meta details [--typeId <typeId>] [--typeName <typeName>]
+    control.(sh|bat) --meta details [--typeId <typeId>]|[--typeName <typeName>]
 
   [EXPERIMENTAL]
   Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
 If the file name isn't specified the output file name is: '<typeId>.bin':
-    control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
+    control.(sh|bat) --meta remove [--out <fileName>] [--typeId <typeId>]|[--typeName <typeName>]
 
   [EXPERIMENTAL]
   Update cluster metadata from specified file (file name is required):
