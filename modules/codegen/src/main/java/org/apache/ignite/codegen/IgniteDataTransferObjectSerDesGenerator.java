@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -145,6 +146,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Double.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Double)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(double[].class, F.t(
             fld -> "U.writeDoubleArray(out, " + fld + ");",
             fld -> fld + " = U.readDoubleArray(in);",
@@ -222,7 +229,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         if (cmd instanceof ComplexCommand) {
             generate = cmd.taskClass() != null;
 
-            ((Iterable<Map.Entry<String, Command<?, ?>>>)cmd).iterator().forEachRemaining(this::generate);
+            ((CommandsRegistry)cmd).commands().forEachRemaining(this::generate);
         }
 
         if (!generate)
@@ -239,6 +246,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
     /** */
     private void generateAndWrite(Class<? extends IgniteDataTransferObject> cls, String srcDir) throws IOException {
         clear();
+
+        if (cls.getName().indexOf('$') != -1) {
+            System.err.println("Inner class not supported: " + cls.getName());
+
+            return;
+        }
 
         File file = new File(srcDir, cls.getName().replace('.', File.separatorChar) + ".java");
 
