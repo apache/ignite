@@ -83,8 +83,8 @@ public class VisorClientConnectionDropTask extends VisorMultiNodeTask<KillClient
 
             ClientProcessorMXBean bean = ignite.context().clientListener().mxBean();
 
-            if (!"ALL".equals(arg.getConnectionId()))
-                return bean.dropConnection(Long.parseLong(arg.getConnectionId()));
+            if (!"ALL".equals(arg.connectionId()))
+                return bean.dropConnection(Long.parseLong(arg.connectionId()));
 
             bean.dropAllConnections();
 

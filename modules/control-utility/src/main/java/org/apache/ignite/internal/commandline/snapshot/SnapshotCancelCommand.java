@@ -44,7 +44,7 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        if (!F.isEmpty(((KillSnapshotCommandArg)cmdArg).getSnapshotName()))
+        if (!F.isEmpty(((KillSnapshotCommandArg)cmdArg).snapshotName()))
             log.warning("'" + NAME.arg() + "' option is deprecated, please use operation request ID to cancel operation.");
 
         return super.execute(clientCfg, log);
@@ -70,8 +70,8 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
 
         KillSnapshotCommandArg cmdArg0 = new KillSnapshotCommandArg();
 
-        cmdArg0.setRequestId(reqId);
-        cmdArg0.setSnapshotName(snpName);
+        cmdArg0.requestId(reqId);
+        cmdArg0.snapshotName(snpName);
 
         cmdArg = cmdArg0;
     }

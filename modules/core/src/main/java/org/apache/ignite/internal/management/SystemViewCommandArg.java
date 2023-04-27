@@ -82,42 +82,42 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String getSystemViewName() {
+    public String systemViewName() {
         return systemViewName;
     }
 
     /** */
-    public void setSystemViewName(String systemViewName) {
+    public void systemViewName(String systemViewName) {
         this.systemViewName = systemViewName;
     }
 
     /** */
-    public UUID getNodeId() {
+    public UUID nodeId() {
         return nodeId;
     }
 
     /** */
-    public void setNodeId(UUID nodeId) {
+    public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
     /** */
-    public UUID[] getNodeIds() {
+    public UUID[] nodeIds() {
         return nodeIds;
     }
 
     /** */
-    public void setNodeIds(UUID[] nodeIds) {
+    public void nodeIds(UUID[] nodeIds) {
         this.nodeIds = nodeIds;
     }
 
     /** */
-    public boolean isAllNodes() {
+    public boolean allNodes() {
         return allNodes;
     }
 
     /** */
-    public void setAllNodes(boolean allNodes) {
+    public void allNodes(boolean allNodes) {
         this.allNodes = allNodes;
     }
 }

@@ -54,7 +54,7 @@ public class VisorChangeCacheGroupKeyTask extends VisorOneNodeTask<EncryptionCac
 
         /** {@inheritDoc} */
         @Override protected Void run(EncryptionCacheGroupArg taskArg) throws IgniteException {
-            ignite.encryption().changeCacheGroupKey(Collections.singleton(taskArg.getCacheGroupName())).get();
+            ignite.encryption().changeCacheGroupKey(Collections.singleton(taskArg.cacheGroupName())).get();
 
             return null;
         }

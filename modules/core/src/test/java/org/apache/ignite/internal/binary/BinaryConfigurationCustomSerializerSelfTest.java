@@ -107,7 +107,7 @@ public class BinaryConfigurationCustomSerializerSelfTest extends GridCommonAbstr
         // Execute some task.
         SystemViewCommandArg arg = new SystemViewCommandArg();
 
-        arg.setSystemViewName(CACHES_VIEW);
+        arg.systemViewName(CACHES_VIEW);
 
         client.compute().execute(VisorSystemViewTask.class.getName(),
             new VisorTaskArgument<>(nid, arg, false));

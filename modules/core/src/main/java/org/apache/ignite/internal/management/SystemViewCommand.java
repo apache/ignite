@@ -58,14 +58,14 @@ public class SystemViewCommand implements Command<SystemViewCommandArg, VisorSys
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Collection<UUID> nodes, SystemViewCommandArg arg) {
-        if (arg.isAllNodes())
+        if (arg.allNodes())
             return nodes;
 
-        if (arg.getNodeIds() != null)
-            return Arrays.asList(arg.getNodeIds());
+        if (arg.nodeIds() != null)
+            return Arrays.asList(arg.nodeIds());
 
-        return arg.getNodeId() != null
-                ? Collections.singleton(arg.getNodeId())
+        return arg.nodeId() != null
+                ? Collections.singleton(arg.nodeId())
                 : null;
     }
 
@@ -82,7 +82,7 @@ public class SystemViewCommand implements Command<SystemViewCommandArg, VisorSys
             });
         }
         else
-            printer.accept("No system view with specified name was found [name=" + arg.getSystemViewName() + "]");
+            printer.accept("No system view with specified name was found [name=" + arg.systemViewName() + "]");
     }
 
     /**

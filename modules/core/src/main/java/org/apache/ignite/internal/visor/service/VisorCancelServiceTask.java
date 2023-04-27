@@ -58,7 +58,7 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<KillServiceCommandA
 
         /** {@inheritDoc} */
         @Override protected Void run(final KillServiceCommandArg arg) {
-            new ServiceMXBeanImpl(ignite.context()).cancel(arg.getName());
+            new ServiceMXBeanImpl(ignite.context()).cancel(arg.name());
 
             return null;
         }

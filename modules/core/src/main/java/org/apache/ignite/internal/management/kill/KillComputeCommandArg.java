@@ -47,12 +47,13 @@ public class KillComputeCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public IgniteUuid getSessionId() {
+    public IgniteUuid sessionId() {
         return sessionId;
     }
 
     /** */
-    public void setSessionId(IgniteUuid sessionId) {
+    public void sessionId(IgniteUuid sessionId) {
         this.sessionId = sessionId;
     }
+
 }

@@ -53,22 +53,22 @@ public class KillClientCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String getConnectionId() {
+    public String connectionId() {
         return connectionId;
     }
 
     /** */
-    public void setConnectionId(String connectionId) {
+    public void connectionId(String connectionId) {
         this.connectionId = connectionId;
     }
 
     /** */
-    public UUID getNodeId() {
+    public UUID nodeId() {
         return nodeId;
     }
 
     /** */
-    public void setNodeId(UUID nodeId) {
+    public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 }

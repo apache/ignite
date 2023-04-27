@@ -65,7 +65,7 @@ public class VisorComputeCancelSessionTask extends VisorOneNodeTask<KillComputeC
 
         /** {@inheritDoc} */
         @Override protected Void run(KillComputeCommandArg arg) {
-            new ComputeMXBeanImpl(ignite.context()).cancel(arg.getSessionId());
+            new ComputeMXBeanImpl(ignite.context()).cancel(arg.sessionId());
 
             return null;
         }

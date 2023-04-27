@@ -45,12 +45,13 @@ public class EncryptionReencryptionRateLimitCommandArg extends IgniteDataTransfe
     }
 
     /** */
-    public Double getNewLimit() {
+    public Double newLimit() {
         return newLimit;
     }
 
     /** */
-    public void setNewLimit(Double newLimit) {
+    public void newLimit(Double newLimit) {
         this.newLimit = newLimit;
     }
+
 }

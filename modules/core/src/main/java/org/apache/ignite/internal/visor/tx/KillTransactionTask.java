@@ -47,7 +47,7 @@ public class KillTransactionTask
     ) throws IgniteException {
         return VisorTxTask.reduce0(
             results,
-            new VisorTxTaskArg(KILL, null, null, null, null, null, null, taskArg.getXid(), null, null, null)
+            new VisorTxTaskArg(KILL, null, null, null, null, null, null, taskArg.xid(), null, null, null)
         );
     }
 
@@ -65,7 +65,7 @@ public class KillTransactionTask
         @Override protected VisorTxTaskResult run(KillTransactionCommandArg arg) throws IgniteException {
             return VisorTxTask.VisorTxJob.run(
                 ignite,
-                new VisorTxTaskArg(KILL, null, null, null, null, null, null, arg.getXid(), null, null, null)
+                new VisorTxTaskArg(KILL, null, null, null, null, null, null, arg.xid(), null, null, null)
             );
         }
     }

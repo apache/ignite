@@ -46,12 +46,12 @@ public class KillSqlCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String getQueryId() {
+    public String queryId() {
         return queryId;
     }
 
     /** */
-    public void setQueryId(String queryId) {
+    public void queryId(String queryId) {
         this.queryId = queryId;
     }
 }

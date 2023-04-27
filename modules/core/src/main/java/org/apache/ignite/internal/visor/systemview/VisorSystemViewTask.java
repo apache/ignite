@@ -100,7 +100,7 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg
             if (arg == null)
                 return null;
 
-            SystemView<?> sysView = systemView(arg.getSystemViewName());
+            SystemView<?> sysView = systemView(arg.systemViewName());
 
             if (sysView == null)
                 return null;

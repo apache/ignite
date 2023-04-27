@@ -41,6 +41,6 @@ public class PropertyGetCommand implements Command<PropertyGetCommandArg, Proper
 
     /** {@inheritDoc} */
     @Override public void printResult(PropertyGetCommandArg arg, PropertyOperationResult res, Consumer<String> printer) {
-        printer.accept(arg.getName() + " = " + res.value());
+        printer.accept(arg.name() + " = " + res.value());
     }
 }

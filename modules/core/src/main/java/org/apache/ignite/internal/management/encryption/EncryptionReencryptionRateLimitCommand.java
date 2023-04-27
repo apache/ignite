@@ -66,12 +66,12 @@ public class EncryptionReencryptionRateLimitCommand
         }
 
         Map<UUID, Double> results = res.results();
-        boolean read = arg.getNewLimit() == null;
+        boolean read = arg.newLimit() == null;
 
         for (Map.Entry<UUID, Double> entry : results.entrySet()) {
             printer.accept(INDENT + "Node " + entry.getKey() + ":");
 
-            Double rateLimit = read ? entry.getValue() : arg.getNewLimit();
+            Double rateLimit = read ? entry.getValue() : arg.newLimit();
 
             if (rateLimit == 0)
                 printer.accept(DOUBLE_INDENT + "re-encryption rate is not limited.");

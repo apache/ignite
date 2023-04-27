@@ -42,7 +42,7 @@ abstract class CacheGroupEncryptionCommand<T>
             printer.accept(INDENT + "Node " + entry.getKey() + ":");
 
             printer.accept(String.format("%sfailed to execute command for the cache group \"%s\": %s.",
-                DOUBLE_INDENT, arg.getCacheGroupName(), entry.getValue().getMessage()));
+                DOUBLE_INDENT, arg.cacheGroupName(), entry.getValue().getMessage()));
         }
 
         Map<UUID, T> results = res.results();
@@ -50,7 +50,7 @@ abstract class CacheGroupEncryptionCommand<T>
         for (Map.Entry<UUID, T> entry : results.entrySet()) {
             printer.accept(INDENT + "Node " + entry.getKey() + ":");
 
-            printNodeResult(entry.getValue(), arg.getCacheGroupName(), printer);
+            printNodeResult(entry.getValue(), arg.cacheGroupName(), printer);
         }
     }
 

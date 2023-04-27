@@ -66,9 +66,9 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<KillContinu
             IgniteLogger log = ignite.log().getLogger(VisorContinuousQueryCancelJob.class);
 
             if (log.isInfoEnabled())
-                log.info("Cancelling continuous query[routineId=" + arg.getRoutineId() + ']');
+                log.info("Cancelling continuous query[routineId=" + arg.routineId() + ']');
 
-            new QueryMXBeanImpl(ignite.context()).cancelContinuous(arg.getOriginNodeId(), arg.getRoutineId());
+            new QueryMXBeanImpl(ignite.context()).cancelContinuous(arg.originNodeId(), arg.routineId());
 
             return null;
         }

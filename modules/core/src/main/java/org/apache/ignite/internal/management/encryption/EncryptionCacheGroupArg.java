@@ -46,12 +46,12 @@ public class EncryptionCacheGroupArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String getCacheGroupName() {
+    public String cacheGroupName() {
         return cacheGroupName;
     }
 
     /** */
-    public void setCacheGroupName(String cacheGroupName) {
+    public void cacheGroupName(String cacheGroupName) {
         this.cacheGroupName = cacheGroupName;
     }
 }
