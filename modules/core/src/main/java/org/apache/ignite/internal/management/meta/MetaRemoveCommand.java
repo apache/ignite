@@ -17,7 +17,14 @@
 
 package org.apache.ignite.internal.management.meta;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataRemoveTask;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
@@ -47,30 +54,29 @@ public class MetaRemoveCommand implements ExperimentalCommand<MetaRemoveCommandA
         if (res.metadata() == null)
             throw new IllegalArgumentException("Failed to remove binary type, type not found: " + arg);
 
-/*
         BinaryMetadata m = res.metadata();
 
-        if (outFile == null)
-            outFile = FS.getPath(BinaryUtils.binaryMetaFileName(m.typeId()));
+        Path outFile = FileSystems.getDefault().getPath(arg.out() != null
+            ? arg.out()
+            : BinaryUtils.binaryMetaFileName(m.typeId())
+        );
 
         try (OutputStream os = Files.newOutputStream(outFile)) {
             os.write(res.metadataMarshalled());
         }
         catch (IOException e) {
             printer.accept("Cannot store removed type '" + m.typeName() + "' to: " + outFile);
-            printer.accept(CommandLogger.errorMessage(e));
+            printer.accept(e.getMessage());
 
             return;
         }
 
         printer.accept("Type '" + m.typeName() + "' is removed. Metadata is stored at: " + outFile);
-*/
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(MetaRemoveCommandArg arg) {
-        //TODO: Fix: argument required!
         return "Warning: the command will remove the binary metadata for a type \""
-            + arg.toString() + "\" from cluster.";
+            + (arg.typeId() != 0 ? arg.typeId() : arg.typeName()) + "\" from cluster.";
     }
 }

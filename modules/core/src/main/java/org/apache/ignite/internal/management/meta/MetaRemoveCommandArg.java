@@ -45,4 +45,14 @@ public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
 
         out = U.readString(in);
     }
+
+    /** */
+    public String out() {
+        return out;
+    }
+
+    /** */
+    public void out(String out) {
+        this.out = out;
+    }
 }

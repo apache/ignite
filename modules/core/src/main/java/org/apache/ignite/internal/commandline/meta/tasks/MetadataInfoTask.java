@@ -84,7 +84,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<NoArg, MetadataListResu
                 MetaDetailsCommandArg arg = (MetaDetailsCommandArg)arg0;
 
                 // returns specified metadata
-                int typeId = typeId(ignite.context(), arg.getTypeId(), arg.getTypeName());
+                int typeId = typeId(ignite.context(), arg.typeId(), arg.typeName());
 
                 BinaryMetadata binMeta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata(typeId);
 

@@ -82,7 +82,7 @@ public class MetadataUpdateTask extends VisorMultiNodeTask<MetaUpdateCommandArg,
         @Override protected MetadataMarshalled run(@Nullable MetaUpdateCommandArg arg) throws IgniteException {
             assert Objects.nonNull(arg);
 
-            byte[] marshalled = null; //arg.metadataMarshalled();
+            byte[] marshalled = arg.metaMarshalled();
 
             try {
                 BinaryMetadata meta = U.unmarshal(

@@ -39,33 +39,37 @@ public class MetaDetailsCommandArg extends NoArg {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         out.writeInt(typeId);
         U.writeString(out, typeName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         typeId = in.readInt();
         typeName = U.readString(in);
     }
 
     /** */
-    public int getTypeId() {
+    public int typeId() {
         return typeId;
     }
 
     /** */
-    public void setTypeId(int typeId) {
+    public void typeId(int typeId) {
         this.typeId = typeId;
     }
 
     /** */
-    public String getTypeName() {
+    public String typeName() {
         return typeName;
     }
 
     /** */
-    public void setTypeName(String typeName) {
+    public void typeName(String typeName) {
         this.typeName = typeName;
     }
 }
