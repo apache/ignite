@@ -25,10 +25,10 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
- * Tests log content of timeouted optimistic transaction.
+ * Tests log content of timeouted pessimistic transaction.
  */
 @RunWith(Parameterized.class)
-public class TxTimeoutLogTestPessimistic extends TxTimeoutLogTestOptimistic {
+public class TxTimeoutLogTestPessimistic extends AbstractTxTimeoutLogTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         txConcurrency = PESSIMISTIC;
@@ -43,4 +43,11 @@ public class TxTimeoutLogTestPessimistic extends TxTimeoutLogTestOptimistic {
     public void testPrimaryDelaysOnLock() throws Exception {
         doTest(true, GridNearLockResponse.class);
     }
+
+    /** Test no 'not responded nodes' message is when primary just leaves on locks phase before prepare phase. */
+    @Test
+    public void testPrimaryLeftOnLocks() throws Exception {
+        doTestPrimaryLeft(GridNearLockResponse.class);
+    }
 }
+

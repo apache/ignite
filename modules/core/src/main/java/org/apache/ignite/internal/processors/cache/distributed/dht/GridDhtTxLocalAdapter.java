@@ -698,16 +698,18 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
+        long timeout = remainingTime();
+
+        if (timeout == -1) {
+            return new GridFinishedFuture<>(timeoutException("Unable to try to acquire lock for transaction because " +
+                "it has already run out of its timeout"));
+        }
+
         if (passedKeys.isEmpty())
             return new GridFinishedFuture<>(ret);
 
         GridDhtTransactionalCacheAdapter<?, ?> dhtCache =
             cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
-
-        long timeout = remainingTime();
-
-        if (timeout == -1)
-            return new GridFinishedFuture<>(timeoutException());
 
         if (isRollbackOnly())
             return new GridFinishedFuture<>(rollbackException());

@@ -125,8 +125,8 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStopTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, TxTimeoutLogTestOptimistic.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxTimeoutLogTestPessimistic.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxTimeoutLogTestOptimistic.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheMultiClientsStartTest.class, ignoredTests);
 
