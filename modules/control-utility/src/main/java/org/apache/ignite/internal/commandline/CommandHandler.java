@@ -256,7 +256,11 @@ public class CommandHandler {
                     logger.info("Arguments: " + argumentsToString(rawArgs));
                     logger.info(DELIM);
 
-                    lastOperationRes = command.execute(clientCfg, logger, args.verbose());
+                    if (command instanceof DeclarativeCommandAdapter && ((DeclarativeCommandAdapter<?>)command).isHelp()) {
+                        command.printUsage(logger);
+                    }
+                    else
+                        lastOperationRes = command.execute(clientCfg, logger, args.verbose());
 
                     break;
                 }

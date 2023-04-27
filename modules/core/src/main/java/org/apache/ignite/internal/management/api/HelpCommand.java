@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.property;
+package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.internal.management.api.HelpCommand;
-
-/** */
-public class PropertyHelpCommand implements HelpCommand {
+/**
+ * Marker interface only for backward compatibility with {@code ./control.sh}.
+ */
+public interface HelpCommand extends Command<NoArg, Void> {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Print property command help";
+    @Override public default Class<NoArg> argClass() {
+        return NoArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public default Class taskClass() {
+        return null;
     }
 }

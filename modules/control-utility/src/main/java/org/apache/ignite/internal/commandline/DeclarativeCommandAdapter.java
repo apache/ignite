@@ -47,6 +47,7 @@ import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -65,6 +66,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 
 /**
@@ -72,7 +74,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
     /** All commands registry. */
-    private static final IgniteCommandRegistry standaloneRegistry = new IgniteCommandRegistry();
+    private static final IgniteCommandRegistry REGISTRY = new IgniteCommandRegistry();
 
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
@@ -82,7 +84,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
-        baseCmd = standaloneRegistry.command(name);
+        baseCmd = REGISTRY.command(name);
 
         assert baseCmd != null;
     }
@@ -94,6 +96,24 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         org.apache.ignite.internal.management.api.Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
                 ? command((CommandsRegistry)baseCmd, cliArgs, true)
                 : (org.apache.ignite.internal.management.api.Command<A, ?>)baseCmd;
+
+        if (cmd0 instanceof HelpCommand) {
+            cliArgs.next();
+
+            parsed = F.t(
+                cmd0,
+                null,
+                true
+            );
+
+            return;
+        }
+
+        if (cmd0.taskClass() == null) {
+            throw new IllegalArgumentException(
+                "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
+            );
+        }
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
@@ -374,6 +394,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** @return {@code True} if command confirmed. */
     public boolean confirmed() {
         return parsed.get3();
+    }
+
+    /** @return {@code True} if help for parsed command must be printer. */
+    public boolean isHelp() {
+        return parsed.get1() instanceof HelpCommand;
     }
 
     /**

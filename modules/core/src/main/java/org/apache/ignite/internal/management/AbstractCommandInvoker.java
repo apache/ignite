@@ -52,13 +52,11 @@ import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import static java.util.Collections.singleton;
-import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedName;
 
 /**
  * Abstract class for management command invokers.
@@ -248,12 +246,6 @@ public abstract class AbstractCommandInvoker {
             cmd0 = cmd1;
 
             iter.next();
-        }
-
-        if (cmd0.taskClass() == null) {
-            throw new IllegalArgumentException(
-                "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
-            );
         }
 
         return cmd0;
