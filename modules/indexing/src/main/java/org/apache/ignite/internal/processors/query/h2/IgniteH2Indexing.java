@@ -124,6 +124,7 @@ import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeLi
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
@@ -1082,6 +1083,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw th;
                 }
             }
+
+            if (res.isEmpty())
+                throw new SqlParseException(qry.getSql(), 0, IgniteQueryErrorCode.PARSING, "Invalid SQL query.");
 
             return res;
         }

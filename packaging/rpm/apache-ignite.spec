@@ -83,7 +83,7 @@ case $1 in
         setPermissions
 
         # Install alternatives
-        # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
+        # Commented out until ignitesqlline is ready to work from any user
         #update-alternatives --install %{_bindir}/ignitesqlline ignitesqlline %{_datadir}/%{name}/bin/sqlline.sh 0
         #update-alternatives --auto ignitesqlline
         #update-alternatives --display ignitesqlline
@@ -131,7 +131,7 @@ case $1 in
         stopIgniteNodes
 
         # Remove alternatives
-        # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
+        # Commented out until ignitesqlline is ready to work from any user
         #update-alternatives --remove ignitesqlline /usr/share/%{name}/bin/sqlline.sh
         #update-alternatives --display ignitesqlline || true
         ;;
@@ -198,7 +198,6 @@ mkdir -p %{buildroot}%{_bindir}
 # Copy nessessary files and remove *.bat files
 cp -rf benchmarks bin platforms %{buildroot}%{_datadir}/%{name}
 cp -rf docs/* examples %{buildroot}%{_datadir}/doc/%{name}-%{version}
-mv -f %{buildroot}%{_datadir}/%{name}/bin/ignitevisorcmd.sh %{buildroot}%{_datadir}/doc/%{name}-%{version}/bin/
 find %{buildroot}%{_datadir}/%{name}/ -name *.bat -exec rm -rf {} \;
 
 # Copy libs to /usr/lib and map them to IGNITE_HOME

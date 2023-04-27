@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.client.integration;
 
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.client.GridClientProtocol;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 
 /**
  * Tests TCP protocol.
@@ -40,7 +41,7 @@ public class ClientTcpSelfTest extends ClientAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
+    @Override protected Factory<SSLContext> sslContextFactory() {
         return null;
     }
 }
