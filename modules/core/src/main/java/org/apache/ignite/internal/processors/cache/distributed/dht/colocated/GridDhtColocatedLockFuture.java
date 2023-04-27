@@ -1499,8 +1499,17 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         return false;
     }
 
-    /** TODO */
+    /**
+     * @return Nodes which not respondedo on the lock response.
+     */
     public Collection<UUID> notRespondedNodes() {
+        LockTimeoutObject tObj = timeoutObj;
+
+        Collection<UUID> res = tObj == null ? null : tObj.notResponded;
+
+        if (res != null)
+            return res;
+
         compoundsReadLock();
 
         try {
@@ -1526,6 +1535,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         /** Requested keys. */
         private Set<IgniteTxKey> requestedKeys;
 
+        /** Not responded nodes left after the transaction timeout. */
+        private volatile Collection<UUID> notResponded;
+
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
@@ -1536,9 +1548,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     synchronized (GridDhtColocatedLockFuture.this) {
                         requestedKeys = requestedKeys0();
 
-                        Collection<UUID> notResponded = notRespondedNodes();
-
-                        log.error("TEST | cleared futures");
+                        notResponded = notRespondedNodes();
 
                         clear(); // Stop response processing.
                     }

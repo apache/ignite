@@ -301,7 +301,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /**
-     * Future awaiting a presponse from a node.
+     * Future awaiting a response from a node.
      */
     protected abstract static class NodeFuture<R> extends GridFutureAdapter<R> {
         /**

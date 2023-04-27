@@ -131,7 +131,6 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxE
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_READ;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_WRITE;
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -5013,20 +5012,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override public void onTimeout() {
         boolean proceed;
 
-        Collection<UUID> notRespondedNodes;
+        Set<UUID> notRespondedNodes = new HashSet<>();
 
         synchronized (this) {
-//            if (state() == ACTIVE) {
-//                notRespondedNodes = lockFut instanceof GridDhtColocatedLockFuture ?
-//                    ((GridDhtColocatedLockFuture)lockFut).notRespondedNodes() : null;
-//            }
-//            else if (state() == PREPARING) {
-//                assert prepFut != null;
-//
-//                notRespondedNodes = prepFut.notRespondedNodes();
-//            }
-//            else
-                notRespondedNodes = null;
+            if (lockFut instanceof GridDhtColocatedLockFuture)
+                notRespondedNodes.addAll(((GridDhtColocatedLockFuture)lockFut).notRespondedNodes());
+
+            if (notRespondedNodes.isEmpty() && prepFut != null)
+                notRespondedNodes.addAll(prepFut.notRespondedNodes());
 
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
         }
@@ -5041,9 +5034,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
                         CU.txString(GridNearTxLocal.this) + ']';
 
-                    if (!mappings.empty()) {
-                        errMsg += " Not responded primary nodes (or its backups): " + mappings.mappings().stream()
-                            .map(m->m.primary().id().toString()).collect(Collectors.joining()) + '.';
+                    if (!F.isEmpty(notRespondedNodes)) {
+                        errMsg += " Not responded primary nodes (or their backups): " + notRespondedNodes.stream()
+                            .map(UUID::toString).collect(Collectors.joining(",")) + '.';
                     }
 
                     U.warn(log, errMsg);
