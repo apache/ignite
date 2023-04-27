@@ -20,10 +20,16 @@ package org.apache.ignite.internal.management.meta;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.OutputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
+@OneOf({"typeId", "typeName"})
 public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     /** */
     private static final long serialVersionUID = 0;
@@ -53,6 +59,18 @@ public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
 
     /** */
     public void out(String out) {
+        Path outFile = FileSystems.getDefault().getPath(out);
+
+        try (OutputStream os = Files.newOutputStream(outFile)) {
+            os.close();
+
+            Files.delete(outFile);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Cannot write to output file " + outFile +
+                ". Error: " + e.toString(), e);
+        }
+
         this.out = out;
     }
 }
