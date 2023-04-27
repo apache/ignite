@@ -119,7 +119,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             // Transaction isolation level.
             F.asList(TransactionIsolation.values()),
             // Number of backups / one phase commit.
-            F.asList(2)
+            F.asList(2, 1)
         );
     }
 
