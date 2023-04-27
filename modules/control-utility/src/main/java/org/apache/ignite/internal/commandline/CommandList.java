@@ -72,7 +72,6 @@ public enum CommandList {
     CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand()),
 
     /** Metadata commands. */
-    //TODO: support --enable-experimental.
     METADATA("--meta", new DeclarativeCommandAdapter<>("Meta")),
 
     /** */
