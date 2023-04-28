@@ -115,6 +115,7 @@ import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.cache.CacheCreate.SPRING_XML_CONFIG;
 import static org.apache.ignite.internal.commandline.cache.CacheDestroy.CACHE_NAMES_ARG;
 import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_ALL_ARG;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
@@ -1214,6 +1215,38 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "--groups"));
 
         assertContains(log, testOut.toString(), "G100");
+    }
+
+    /** */
+    @Test
+    public void testCacheCreate() {
+        injectTestSystemOut();
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                "--cache", CacheSubcommands.CREATE.name()),
+            SPRING_XML_CONFIG + " must be specified.");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG),
+            "Expected path to the Spring XML configuration.");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG, "file1", SPRING_XML_CONFIG, "file2"),
+            SPRING_XML_CONFIG + " argument specified twice.");
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CacheSubcommands.CREATE.name(),
+                SPRING_XML_CONFIG, "src/test/resources/config/cache/cache-create-no-configs.xml"),
+            "Failed to create caches. Make sure that Spring XML contains '" +
+                CacheConfiguration.class.getName() + "' beans.");
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CacheSubcommands.CREATE.name(),
+                SPRING_XML_CONFIG, "src/test/resources/config/cache/unknown.xml"),
+            "Failed to create caches. Spring XML configuration file not found");
+
+        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG,
+            "src/test/resources/config/cache/cache-create-correct.xml"));
+
+        assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
     }
 
     /** */

@@ -29,6 +29,12 @@ Arguments: --cache help --yes
       --groups                    - print information about groups.
       --seq                       - print information about sequences.
 
+  --cache create --springXmlConfig springXmlFilePath
+    Create caches from Spring XML configuration. Note that the 'ignite-spring' module should be enabled.
+
+    Parameters:
+      --springXmlConfig springXmlFilePath  - Path to the Spring XML configuration that contains 'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+
   --cache destroy --caches cache1,...,cacheN|--destroy-all-caches
     Permanently destroy specified caches.
 
