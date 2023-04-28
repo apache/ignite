@@ -24,6 +24,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.meta.MetaDetailsCommandArg;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -75,7 +76,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObjec
 
         /** {@inheritDoc} */
         @Override protected MetadataListResult run(@Nullable IgniteDataTransferObject arg0) throws IgniteException {
-            if (!(arg0 instanceof MetaDetailsCommandArg)) {
+            if (arg0 instanceof NoArg) {
                 // returns full metadata
                 return new MetadataListResult(
                     ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata());

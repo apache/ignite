@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
-import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -39,33 +38,33 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsStartCommandArg extends IgniteDataTransferObject {
+    public static class PerformanceStatisticsStartCommandArg extends PerformanceStatisticsStatusCommandArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PerformanceStatisticsStopCommandArg extends PerformanceStatisticsStatusCommandArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PerformanceStatisticsRotateCommandArg extends PerformanceStatisticsStatusCommandArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PerformanceStatisticsStatusCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
 
         /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        @Override protected void writeExternalData(ObjectOutput out) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) {
             // No-op.
         }
-    }
-
-    /** */
-    public static class PerformanceStatisticsStopCommandArg extends PerformanceStatisticsStartCommandArg {
-        // No-op.
-    }
-
-    /** */
-    public static class PerformanceStatisticsRotateCommandArg extends PerformanceStatisticsStartCommandArg {
-        // No-op.
-    }
-
-    /** */
-    public static class PerformanceStatisticsStatusCommandArg extends PerformanceStatisticsStartCommandArg {
-        // No-op.
     }
 }
