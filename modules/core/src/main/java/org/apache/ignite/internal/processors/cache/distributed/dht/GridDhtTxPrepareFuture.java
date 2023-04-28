@@ -2079,7 +2079,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: [xid=" +
                 tx.xid() + ", xidVersion=" + tx.xidVersion() + ", nodeId=" + tx.nodeId() + ']' +
-                (isEmpty(unresponded) ? "" : ". Not responded backup nodes: " + unresponded));
+                (isEmpty(unresponded) ? "" : ". Not successful responded backup nodes: " + unresponded));
 
             onError(tx.timeoutException());
         }

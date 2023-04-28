@@ -143,13 +143,14 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     public abstract void onNearTxLocalTimeout();
 
     /**
-     * @return Nodes not responded to the prepare request.
+     * @return Nodes not responded of responded with error to the prepare request.
      */
-    public Collection<UUID> unrespondedNodes() {
+    public Collection<UUID> unsucessfulNodes() {
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> !f.isDone() && !f.isCancelled() && f instanceof NodeFuture)
+            return futures().stream()
+                .filter(f -> f instanceof NodeFuture && !f.isCancelled() && (!f.isDone() || f.error() != null))
                 .map(f -> ((NodeFuture<?>)f).nodeId()).collect(Collectors.toList());
         }
         finally {

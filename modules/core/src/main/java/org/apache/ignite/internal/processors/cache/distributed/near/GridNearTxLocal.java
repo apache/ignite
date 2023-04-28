@@ -3362,6 +3362,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param nodeId Undo mapping.
      */
     @Override public boolean removeMapping(UUID nodeId) {
+        log.error("TEST | removeMapping: "+ nodeId);
+
         if (mappings.remove(nodeId) != null) {
             if (log.isDebugEnabled())
                 log.debug("Removed mapping for node [nodeId=" + nodeId + ", tx=" + this + ']');
@@ -3699,6 +3701,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
+        log.error("TEST | localFinish");
+
         if (log.isDebugEnabled())
             log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -3925,6 +3929,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (trackTimeout) {
                 prepFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
+                        log.error("TEST | remove timeout obj 1");
+
                         GridNearTxLocal.this.removeTimeoutHandler();
                     }
                 });
@@ -4076,13 +4082,18 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
+        log.error("TEST | rollbackNearTxLocalAsync . onTimeout: " + onTimeout);
+
         enterSystemSection();
 
         // This value should not be changed after set once.
         commitOrRollbackStartTime.compareAndSet(0, System.nanoTime());
 
-        if (!onTimeout && trackTimeout)
+        if (!onTimeout && trackTimeout) {
+            log.error("TEST | remove timeout obj 2");
+
             removeTimeoutHandler();
+        }
 
         GridNearTxPrepareFutureAdapter prepFut = this.prepFut;
 
@@ -4604,8 +4615,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             boolean rmv = false;
 
-            if (trackTimeout)
+            if (trackTimeout) {
+                log.error("TEST | remove timeout obj 2");
+
                 rmv = removeTimeoutHandler();
+            }
 
             if (state != COMMITTING && state != ROLLING_BACK &&
                 (!trackTimeout || rmv || (prepFut != null && prepFut.isDone())))
@@ -5012,14 +5026,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override public void onTimeout() {
         boolean proceed;
 
-        Set<UUID> unrespondedNodes = new HashSet<>();
+        Set<UUID> unsucessfulNodes = new HashSet<>();
 
         synchronized (this) {
             if (lockFut instanceof GridDhtColocatedLockFuture)
-                unrespondedNodes.addAll(((GridDhtColocatedLockFuture)lockFut).unrespondedNodes());
+                unsucessfulNodes.addAll(((GridDhtColocatedLockFuture)lockFut).unsucessfulNodes());
 
-            if (unrespondedNodes.isEmpty() && prepFut != null)
-                unrespondedNodes.addAll(prepFut.unrespondedNodes());
+            if (unsucessfulNodes.isEmpty() && prepFut != null)
+                unsucessfulNodes.addAll(prepFut.unsucessfulNodes());
 
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
         }
@@ -5034,8 +5048,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
                         CU.txString(GridNearTxLocal.this) + ']';
 
-                    if (!F.isEmpty(unrespondedNodes)) {
-                        errMsg += " Not responded primary nodes (or their backups): " + unrespondedNodes.stream()
+                    if (!F.isEmpty(unsucessfulNodes)) {
+                        errMsg += " Not successful primary nodes (or their backups): " + unsucessfulNodes.stream()
                             .map(UUID::toString).collect(Collectors.joining(",")) + '.';
                     }
 

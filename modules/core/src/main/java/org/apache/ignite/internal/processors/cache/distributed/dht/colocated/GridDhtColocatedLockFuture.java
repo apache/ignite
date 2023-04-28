@@ -1500,9 +1500,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @return Nodes not responded to the lock request.
+     * @return Nodes not responded or responded with a error to the lock request.
      */
-    public Collection<UUID> unrespondedNodes() {
+    public Collection<UUID> unsucessfulNodes() {
         LockTimeoutObject tObj = timeoutObj;
 
         Collection<UUID> res = tObj == null ? null : tObj.unresponded;
@@ -1513,7 +1513,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> !f.isDone() && !f.isCancelled() && isMini(f))
+            return futures().stream().filter(f -> isMini(f) && !f.isCancelled() && (!f.isDone() || f.error() != null))
                 .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
         }
         finally {
@@ -1548,7 +1548,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     synchronized (GridDhtColocatedLockFuture.this) {
                         requestedKeys = requestedKeys0();
 
-                        unresponded = unrespondedNodes();
+                        unresponded = unsucessfulNodes();
 
                         clear(); // Stop response processing.
                     }

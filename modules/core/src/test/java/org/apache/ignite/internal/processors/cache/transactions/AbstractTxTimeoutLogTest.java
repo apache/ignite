@@ -211,7 +211,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         if (putter == gone)
             return;
 
-        LogListener backupLsnr = LogListener.matches("Not responded backup nodes").build();
+        LogListener backupLsnr = LogListener.matches("Not successful responded backup nodes").build();
 
         logs.values().forEach(l -> l.registerListener(backupLsnr));
 
@@ -273,7 +273,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         LogListener txNodeLogLsnr = txNodeLsnr(putter.localNode().id(), null);
 
-        LogListener backupLsnr = LogListener.matches("Not responded backup nodes").build();
+        LogListener backupLsnr = LogListener.matches("Not successful responded backup nodes").build();
 
         logs.values().forEach(l -> l.registerListener(backupLsnr));
 
@@ -357,9 +357,9 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             ? Collections.emptyList()
             : primaryLogListeners(primaries, delayed, msgToDelay);
 
-        runAsync(() -> doTx(putter, keys));
+        runAsync(() -> doTx(putter, keys)).get();
 
-        assertTrue("Transaction timeout message not detected.", txNodeLsnr.check(TX_TIMEOUT * 3));
+        assertTrue("Transaction timeout message not detected.", txNodeLsnr.check());
 
         checkBackupNotRespondedDetected(backupsLsnrs);
 
@@ -442,7 +442,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
                 if (unresponded == null)
                     return;
 
-                String t = "Not responded primary nodes (or their backups): ";
+                String t = "Not successful primary nodes (or their backups): ";
 
                 int idx = m.indexOf(t);
 
@@ -474,7 +474,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         waitingPrimaries.forEach(pn -> {
             // Certain message only for current primary/near note indicated by 'nodeId='
             LogListener lsnr = LogListener.matches(", nodeId=" + pn.id() +
-                    "]. Not responded backup nodes: " + delayed.localNode().id())
+                    "]. Not successful responded backup nodes: " + delayed.localNode().id())
                 .times(msgToDelay == null ? 0 : 1).build();
 
             res.add(lsnr);
