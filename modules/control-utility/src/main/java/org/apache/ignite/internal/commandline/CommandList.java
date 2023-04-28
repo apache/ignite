@@ -53,7 +53,7 @@ public enum CommandList {
     CACHE("--cache", new CacheCommands()),
 
     /** */
-    WAL("--wal", new WalCommands()),
+    WAL("--wal", new DeclarativeCommandAdapter<>("Wal")),
 
     /** */
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),

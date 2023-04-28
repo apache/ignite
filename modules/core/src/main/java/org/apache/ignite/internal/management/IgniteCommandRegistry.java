@@ -24,6 +24,7 @@ import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.wal.WalCommand;
 
 /**
  * Root command registry. Contains all known commands.
@@ -32,6 +33,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
     /** */
     public IgniteCommandRegistry() {
         super(
+            new WalCommand(),
             new EncryptionCommand(),
             new KillCommand(),
             new ChangeTagCommand(),
