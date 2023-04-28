@@ -15,85 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.kill;
+package org.apache.ignite.internal.management;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
-import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
 /** */
-public class KillSqlCommandArg extends IgniteDataTransferObject {
+public class ShutdownPolicyCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
-    @Argument(description = "Query identifier")
-    private String queryId;
-
-    /** */
-    private UUID nodeId;
-
-    /** */
-    private long qryId;
+    @Argument(optional = true)
+    private ShutdownPolicy shutdownPolicy;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, queryId);
-        U.writeUuid(out, nodeId);
-        out.writeLong(qryId);
+        U.writeEnum(out, shutdownPolicy);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        queryId = U.readString(in);
-        nodeId = U.readUuid(in);
-        qryId = in.readLong();
+        shutdownPolicy = U.readEnum(in, ShutdownPolicy.class);
     }
 
     /** */
-    public UUID nodeId() {
-        return nodeId;
+    public ShutdownPolicy shutdownPolicy() {
+        return shutdownPolicy;
     }
 
     /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    /** */
-    public long qryId() {
-        return qryId;
-    }
-
-    /** */
-    public void qryId(long qryId) {
-        this.qryId = qryId;
-    }
-
-    /** */
-    public String queryId() {
-        return queryId;
-    }
-
-    /** */
-    public void queryId(String queryId) {
-        this.queryId = queryId;
-
-        T2<UUID, Long> ids = parseGlobalQueryId(queryId);
-
-        if (ids == null)
-            throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
-
-        this.nodeId = ids.get1();
-        this.qryId = ids.get2();
+    public void shutdownPolicy(ShutdownPolicy shutdownPolicy) {
+        this.shutdownPolicy = shutdownPolicy;
     }
 }

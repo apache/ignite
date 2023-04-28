@@ -194,8 +194,12 @@ public abstract class AbstractCommandInvoker {
             try {
                 argCls.getMethod(fld.getName(), fld.getType()).invoke(arg, val);
             }
-            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            catch (NoSuchMethodException | IllegalAccessException e) {
                 throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
             }
         };
 

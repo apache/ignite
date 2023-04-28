@@ -293,6 +293,9 @@ public class CommandUtils {
         else if (type == IgniteUuid.class) {
             return (T)IgniteUuid.fromString(val);
         }
+        else if (type.isEnum()) {
+            return (T)Enum.valueOf((Class<Enum>)type, val);
+        }
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }

@@ -18,19 +18,15 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.management.kill.KillSqlCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
-import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
-import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
 /**
  * Task to cancel queries on initiator node.
@@ -68,12 +64,7 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<KillSqlCom
 
         /** {@inheritDoc} */
         @Override protected Void run(KillSqlCommandArg arg) throws IgniteException {
-            T2<UUID, Long> ids = parseGlobalQueryId(arg.queryId());
-
-            if (ids == null)
-                throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
-
-            new QueryMXBeanImpl(ignite.context()).cancelSQL(ids.get1(), ids.get2());
+            new QueryMXBeanImpl(ignite.context()).cancelSQL(arg.nodeId(), arg.qryId());
 
             return null;
         }

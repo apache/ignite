@@ -386,7 +386,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return parsed.get1().confirmationPrompt(parsed.get2());
+        return parsed == null ? null : parsed.get1().confirmationPrompt(parsed.get2());
     }
 
     /** {@inheritDoc} */
