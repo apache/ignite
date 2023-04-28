@@ -217,7 +217,7 @@ public class CommandUtils {
     }
 
     /** */
-    static String asOptional(String str, boolean optional) {
+    public static String asOptional(String str, boolean optional) {
         return (optional ? "[" : "") + str + (optional ? "]" : "");
     }
 
