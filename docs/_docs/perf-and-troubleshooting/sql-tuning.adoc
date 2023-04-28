@@ -76,47 +76,6 @@ SELECT name FROM Person WHERE gender='M' and age = 30
 Avoid having too many columns in the result set of a `SELECT` query. Due to limitations of the H2 query parser, queries
 with 100+ columns may perform worse than expected.
 
-== Lazy Loading
-
-By default, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is
-usually your application). This approach provides optimal performance for queries of small or medium result sets.
-However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions.
-
-To minimize memory consumption, at the cost of a moderate performance hit, you can load and process the result sets
-lazily by passing the `lazy` parameter to the JDBC and ODBC connection strings or use a similar method available for Java, .NET, and C++ APIs:
-
-[tabs]
---
-
-tab:Java[]
-[source,java]
-----
-SqlFieldsQuery query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10");
-
-// Result set will be loaded lazily.
-query.setLazy(true);
-----
-tab:JDBC[]
-[source,sql]
-----
-jdbc:ignite:thin://192.168.0.15?lazy=true
-----
-tab:C#/.NET[]
-[source,csharp]
-----
-var query = new SqlFieldsQuery("SELECT * FROM Person WHERE id > 10")
-{
-    // Result set will be loaded lazily.
-    Lazy = true
-};
-----
-tab:C++[]
---
-
-////
-*TODO* Add tabs for ODBC and other programming languages - C# and C++
-////
-
 == Querying Colocated Data
 
 When Ignite executes a distributed query, it sends sub-queries to individual cluster nodes to fetch the data and groups
