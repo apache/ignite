@@ -1027,6 +1027,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                 add(fut); // Append new future.
 
+                                if (true)
+                                    throw new Error("Test error");
+
                                 cctx.io().send(n, req, cctx.ioPolicy());
 
                                 if (msgLog.isDebugEnabled()) {
