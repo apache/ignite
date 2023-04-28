@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.wal;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmParameter;
@@ -36,25 +35,25 @@ public class WalDeleteCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "[consistentId1,consistentId2,....,consistentIdN]")
-    private List<Object> consistentIDs;
+    private String[] consistentIDs;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, consistentIDs);
+        U.writeArray(out, consistentIDs);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentIDs = U.readList(in);
+        consistentIDs = U.readArray(in, String.class);
     }
 
     /** */
-    public List consistentIDs() {
+    public String[] consistentIDs() {
         return consistentIDs;
     }
 
     /** */
-    public void consistentIDs(List consistentIDs) {
+    public void consistentIDs(String[] consistentIDs) {
         this.consistentIDs = consistentIDs;
     }
 }

@@ -17,9 +17,18 @@
 
 package org.apache.ignite.internal.management.wal;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
 public class WalDeleteCommand implements ExperimentalCommand<WalDeleteCommandArg, VisorWalTaskResult> {
@@ -39,7 +48,39 @@ public class WalDeleteCommand implements ExperimentalCommand<WalDeleteCommandArg
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, WalDeleteCommandArg arg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt(WalDeleteCommandArg arg) {
         return "Warning: the command will delete unused WAL segments.";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(WalDeleteCommandArg arg, VisorWalTaskResult taskRes, Consumer<String> printer) {
+        printer.accept("WAL segments deleted for nodes:");
+        printer.accept("");
+
+        Map<String, Collection<String>> res = taskRes.results();
+        Map<String, Exception> errors = taskRes.exceptions();
+        Map<String, VisorClusterNode> nodesInfo = taskRes.getNodesInfo();
+
+        for (Map.Entry<String, Collection<String>> entry : res.entrySet()) {
+            VisorClusterNode node = nodesInfo.get(entry.getKey());
+
+            printer.accept("Node=" + node.getConsistentId());
+            printer.accept(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            printer.accept("");
+        }
+
+        for (Map.Entry<String, Exception> entry : errors.entrySet()) {
+            VisorClusterNode node = nodesInfo.get(entry.getKey());
+
+            printer.accept("Node=" + node.getConsistentId());
+            printer.accept(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            printer.accept(INDENT + "failed with error: " + entry.getValue().getMessage());
+            printer.accept("");
+        }
     }
 }
