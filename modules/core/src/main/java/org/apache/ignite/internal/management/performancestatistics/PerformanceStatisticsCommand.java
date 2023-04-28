@@ -39,17 +39,20 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
 
     /** */
     public static class PerformanceStatisticsStartCommandArg extends PerformanceStatisticsStatusCommandArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
     public static class PerformanceStatisticsStopCommandArg extends PerformanceStatisticsStatusCommandArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
     public static class PerformanceStatisticsRotateCommandArg extends PerformanceStatisticsStatusCommandArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
