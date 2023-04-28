@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.meta.MetaDetailsCommandArg;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -35,12 +36,12 @@ import org.jetbrains.annotations.Nullable;
  * Task for MetadataListCommand and MetadataDetailsCommand commands.
  */
 @GridInternal
-public class MetadataInfoTask extends VisorMultiNodeTask<NoArg, MetadataListResult, MetadataListResult> {
+public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObject, MetadataListResult, MetadataListResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, MetadataListResult> job(NoArg arg) {
+    @Override protected VisorJob<IgniteDataTransferObject, MetadataListResult> job(IgniteDataTransferObject arg) {
         return new MetadataListJob(arg, debug);
     }
 
@@ -61,7 +62,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<NoArg, MetadataListResu
     /**
      * Job for {@link CheckIndexInlineSizes} command.
      */
-    private static class MetadataListJob extends VisorJob<NoArg, MetadataListResult> {
+    private static class MetadataListJob extends VisorJob<IgniteDataTransferObject, MetadataListResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -69,13 +70,13 @@ public class MetadataInfoTask extends VisorMultiNodeTask<NoArg, MetadataListResu
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected MetadataListJob(@Nullable NoArg arg, boolean debug) {
+        protected MetadataListJob(@Nullable IgniteDataTransferObject arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected MetadataListResult run(@Nullable NoArg arg0) throws IgniteException {
-            if (!(arg0 instanceof MetaDetailsCommandArg)) {
+        @Override protected MetadataListResult run(@Nullable IgniteDataTransferObject arg0) throws IgniteException {
+            if (arg0 instanceof NoArg) {
                 // returns full metadata
                 return new MetadataListResult(
                     ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata());

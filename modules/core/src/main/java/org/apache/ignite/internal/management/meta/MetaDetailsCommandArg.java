@@ -20,15 +20,15 @@ package org.apache.ignite.internal.management.meta;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
 @OneOf({"typeId", "typeName"})
-public class MetaDetailsCommandArg extends NoArg {
+public class MetaDetailsCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -42,16 +42,12 @@ public class MetaDetailsCommandArg extends NoArg {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
         out.writeInt(typeId);
         U.writeString(out, typeName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
         typeId = in.readInt();
         typeName = U.readString(in);
     }

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComplexCommand;
-import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
 @CliPositionalSubcommands
@@ -36,34 +38,36 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsStartCommandArg extends NoArg {
+    public static class PerformanceStatisticsStartCommandArg extends PerformanceStatisticsStatusCommandArg {
         /** */
         private static final long serialVersionUID = 0;
-
-        // No-op.
     }
 
     /** */
-    public static class PerformanceStatisticsStopCommandArg extends NoArg {
+    public static class PerformanceStatisticsStopCommandArg extends PerformanceStatisticsStatusCommandArg {
         /** */
         private static final long serialVersionUID = 0;
-
-        // No-op.
     }
 
     /** */
-    public static class PerformanceStatisticsRotateCommandArg extends NoArg {
+    public static class PerformanceStatisticsRotateCommandArg extends PerformanceStatisticsStatusCommandArg {
         /** */
         private static final long serialVersionUID = 0;
-
-        // No-op.
     }
 
     /** */
-    public static class PerformanceStatisticsStatusCommandArg extends NoArg {
+    public static class PerformanceStatisticsStatusCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
 
-        // No-op.
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) {
+            // No-op.
+        }
     }
 }
