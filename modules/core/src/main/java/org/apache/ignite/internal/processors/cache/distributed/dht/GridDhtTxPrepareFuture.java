@@ -2081,7 +2081,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 .map(f -> ((MiniFuture)f).nodeId.toString()).collect(Collectors.joining(","));
 
             if (!F.isEmpty(unsucessed))
-                errMsg += ". Detected unresponded backup nodes or conversation with whom failed: " + unsucessed;
+                errMsg += ". Detected unresponded backup nodes: " + unsucessed;
 
             U.warn(log, errMsg);
 

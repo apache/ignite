@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
@@ -120,6 +119,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -169,9 +169,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Commit future. */
     @GridToStringExclude
     private volatile NearTxFinishFuture finishFut;
-
-    /** If {@code true}, the message of timeout with unresponded nodes is already logged. */
-    private final AtomicBoolean timeoutLogged = new AtomicBoolean();
 
     /** True if transaction contains near cache entries mapped to local node. */
     private boolean nearLocallyMapped;
@@ -3729,10 +3726,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 return false;
             }
-
-            if (commitErr instanceof IgniteTxTimeoutCheckedException &&
-                timeoutLogged.compareAndSet(false, true))
-                logTimeout(collectNotSuccessed());
         }
 
         IgniteCheckedException err = null;
@@ -5025,10 +5018,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         synchronized (this) {
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
 
-            if ((proceed || state() == MARKED_ROLLBACK) && timeoutLogged.compareAndSet(false, true))
-                unrespondedNodes = collectNotSuccessed();
-            else
-                unrespondedNodes = null;
+            unrespondedNodes = proceed || state() == MARKED_ROLLBACK ? collectNotSuccessed() : null;
         }
 
         if (proceed || state() == MARKED_ROLLBACK) {
@@ -5038,10 +5028,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(false, true);
 
-                    // TODO: after IGNITE-19336 should be kept only in one plase like in {@code #localFinish()}.
-                    // Now we can at least log the timeout.
-                    if (unrespondedNodes != null)
-                        logTimeout(unrespondedNodes);
+                    String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
+                        CU.txString(GridNearTxLocal.this) + ']';
+
+                    if (!F.isEmpty(unrespondedNodes)) {
+                        errMsg += ". Detected unresponded primary nodes: " + unrespondedNodes.stream()
+                            .map(UUID::toString).collect(Collectors.joining(",")) + '.';
+                    }
+
+                    U.warn(log, errMsg);
                 }
             });
         }
@@ -5064,23 +5059,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             res.addAll(prepFut.notSuccessedNodes());
 
         return res;
-    }
-
-    /**
-     * Logs the timeout warning indicating unresponded nodes if required.
-     *
-     * @param unrespondedNodes Unresponded nodes ids. If empty, won't be logged.
-     */
-    private void logTimeout(@Nullable Collection<UUID> unrespondedNodes) {
-        String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
-            CU.txString(this) + ']';
-
-        if (!F.isEmpty(unrespondedNodes)) {
-            errMsg += ". Detected unresponded primary nodes or conversation with whom failed: " + unrespondedNodes.stream()
-                .map(UUID::toString).collect(Collectors.joining(",")) + '.';
-        }
-
-        U.warn(log, errMsg);
     }
 
     /** */
