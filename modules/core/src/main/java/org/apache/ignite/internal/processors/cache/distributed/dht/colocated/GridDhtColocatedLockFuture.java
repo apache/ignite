@@ -1500,12 +1500,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @return Nodes not responded or responded with a error to the lock request.
+     * @return Ids of the nodes that not responded to the lock request or if processing of conversation with
+     * these nodes failed.
      */
-    public Collection<UUID> unsucessfulNodes() {
+    public Collection<UUID> notSuccessedNodes() {
         LockTimeoutObject tObj = timeoutObj;
 
-        Collection<UUID> res = tObj == null ? null : tObj.unresponded;
+        Collection<UUID> res = tObj == null ? null : tObj.notSuccessed;
 
         if (res != null)
             return res;
@@ -1513,7 +1514,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> isMini(f) && !f.isCancelled() && (!f.isDone() || f.error() != null))
+            return futures().stream().filter(f -> isMini(f) && (!f.isDone() || f.error() != null))
                 .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
         }
         finally {
@@ -1535,8 +1536,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         /** Requested keys. */
         private Set<IgniteTxKey> requestedKeys;
 
-        /** Not responded nodes kept after the timeout. */
-        private volatile Collection<UUID> unresponded;
+        /** Unresponded after timeout node or nodes failed to process conversation with. */
+        private volatile Collection<UUID> notSuccessed;
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
@@ -1548,7 +1549,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     synchronized (GridDhtColocatedLockFuture.this) {
                         requestedKeys = requestedKeys0();
 
-                        unresponded = unsucessfulNodes();
+                        notSuccessed = notSuccessedNodes();
 
                         clear(); // Stop response processing.
                     }

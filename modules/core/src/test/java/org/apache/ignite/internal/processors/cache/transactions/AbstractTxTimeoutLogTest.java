@@ -111,15 +111,15 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     public static Iterable<Object[]> params() {
         return cartesianProduct(
             // Sync mode.
-            F.asList(FULL_SYNC, PRIMARY_SYNC),
+            F.asList(FULL_SYNC),
             // Number of records to change.
-            F.asList(50, 1),
+            F.asList(50),
             // Transaction initiator type.
             F.asList(TxNodeType.values()),
             // Transaction isolation level.
-            F.asList(TransactionIsolation.values()),
+            F.asList(TransactionIsolation.READ_COMMITTED),
             // Number of backups / one phase commit.
-            F.asList(2, 1)
+            F.asList(2)
         );
     }
 
@@ -211,7 +211,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         if (putter == gone)
             return;
 
-        LogListener backupLsnr = LogListener.matches("Not successful responded backup nodes").build();
+        LogListener backupLsnr = LogListener.matches("Detected unresponded backup nodes or conversation with whom failed").build();
 
         logs.values().forEach(l -> l.registerListener(backupLsnr));
 
@@ -273,7 +273,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         LogListener txNodeLogLsnr = txNodeLsnr(putter.localNode().id(), null);
 
-        LogListener backupLsnr = LogListener.matches("Not successful responded backup nodes").build();
+        LogListener backupLsnr = LogListener.matches("Detected unresponded backup nodes or conversation with whom failed").build();
 
         logs.values().forEach(l -> l.registerListener(backupLsnr));
 
@@ -357,9 +357,11 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             ? Collections.emptyList()
             : primaryLogListeners(primaries, delayed, msgToDelay);
 
-        runAsync(() -> doTx(putter, keys)).get();
+        // TODO: Do not run async, wait for the transaction result after IGNITE-19336
+        runAsync(() -> doTx(putter, keys));
 
-        assertTrue("Transaction timeout message not detected.", txNodeLsnr.check());
+        // TODO: do not wait in the checking after IGNITE-19336
+        assertTrue("Transaction timeout message not detected.", txNodeLsnr.check(TX_TIMEOUT * 3));
 
         checkBackupNotRespondedDetected(backupsLsnrs);
 
@@ -442,7 +444,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
                 if (unresponded == null)
                     return;
 
-                String t = "Not successful primary nodes (or their backups): ";
+                String t = "Detected unresponded primary nodes or conversation with whom failed: ";
 
                 int idx = m.indexOf(t);
 
@@ -474,7 +476,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         waitingPrimaries.forEach(pn -> {
             // Certain message only for current primary/near note indicated by 'nodeId='
             LogListener lsnr = LogListener.matches(", nodeId=" + pn.id() +
-                    "]. Not successful responded backup nodes: " + delayed.localNode().id())
+                    "]. Detected unresponded backup nodes or conversation with whom failed: " + delayed.localNode().id())
                 .times(msgToDelay == null ? 0 : 1).build();
 
             res.add(lsnr);

@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Collectors;
@@ -168,6 +169,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Commit future. */
     @GridToStringExclude
     private volatile NearTxFinishFuture finishFut;
+
+    /** If {@code true}, the message of timeout with unresponded nodes is already logged. */
+    private final AtomicBoolean timeoutLogged = new AtomicBoolean();
 
     /** True if transaction contains near cache entries mapped to local node. */
     private boolean nearLocallyMapped;
@@ -3362,8 +3366,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param nodeId Undo mapping.
      */
     @Override public boolean removeMapping(UUID nodeId) {
-        log.error("TEST | removeMapping: "+ nodeId);
-
         if (mappings.remove(nodeId) != null) {
             if (log.isDebugEnabled())
                 log.debug("Removed mapping for node [nodeId=" + nodeId + ", tx=" + this + ']');
@@ -3701,8 +3703,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
-        log.error("TEST | localFinish");
-
         if (log.isDebugEnabled())
             log.debug("Finishing near local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -3729,6 +3729,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 return false;
             }
+
+            if (commitErr instanceof IgniteTxTimeoutCheckedException &&
+                timeoutLogged.compareAndSet(false, true))
+                logTimeout(collectNotSuccessed());
         }
 
         IgniteCheckedException err = null;
@@ -3929,8 +3933,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (trackTimeout) {
                 prepFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
-                        log.error("TEST | remove timeout obj 1");
-
                         GridNearTxLocal.this.removeTimeoutHandler();
                     }
                 });
@@ -4082,18 +4084,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        log.error("TEST | rollbackNearTxLocalAsync . onTimeout: " + onTimeout);
-
         enterSystemSection();
 
         // This value should not be changed after set once.
         commitOrRollbackStartTime.compareAndSet(0, System.nanoTime());
 
-        if (!onTimeout && trackTimeout) {
-            log.error("TEST | remove timeout obj 2");
-
+        if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
-        }
 
         GridNearTxPrepareFutureAdapter prepFut = this.prepFut;
 
@@ -4615,11 +4612,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             boolean rmv = false;
 
-            if (trackTimeout) {
-                log.error("TEST | remove timeout obj 2");
-
+            if (trackTimeout)
                 rmv = removeTimeoutHandler();
-            }
 
             if (state != COMMITTING && state != ROLLING_BACK &&
                 (!trackTimeout || rmv || (prepFut != null && prepFut.isDone())))
@@ -5026,34 +5020,28 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override public void onTimeout() {
         boolean proceed;
 
-        Set<UUID> unsucessfulNodes = new HashSet<>();
+        Collection<UUID> unrespondedNodes;
 
         synchronized (this) {
-            if (lockFut instanceof GridDhtColocatedLockFuture)
-                unsucessfulNodes.addAll(((GridDhtColocatedLockFuture)lockFut).unsucessfulNodes());
-
-            if (unsucessfulNodes.isEmpty() && prepFut != null)
-                unsucessfulNodes.addAll(prepFut.unsucessfulNodes());
-
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
+
+            if ((proceed || state() == MARKED_ROLLBACK) && timeoutLogged.compareAndSet(false, true))
+                unrespondedNodes = collectNotSuccessed();
+            else
+                unrespondedNodes = null;
         }
 
-        if (proceed || (state() == MARKED_ROLLBACK)) {
+        if (proceed || state() == MARKED_ROLLBACK) {
             cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     // Note: if rollback asynchronously on timeout should not clear thread map
                     // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(false, true);
 
-                    String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
-                        CU.txString(GridNearTxLocal.this) + ']';
-
-                    if (!F.isEmpty(unsucessfulNodes)) {
-                        errMsg += " Not successful primary nodes (or their backups): " + unsucessfulNodes.stream()
-                            .map(UUID::toString).collect(Collectors.joining(",")) + '.';
-                    }
-
-                    U.warn(log, errMsg);
+                    // TODO: after IGNITE-19336 should be kept only in one plase like in {@code #localFinish()}.
+                    // Now we can at least log the timeout.
+                    if (unrespondedNodes != null)
+                        logTimeout(unrespondedNodes);
                 }
             });
         }
@@ -5061,6 +5049,38 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (log.isDebugEnabled())
                 log.debug("Skip rollback tx on timeout: " + this);
         }
+    }
+
+    /**
+     * @return Collection of not successed nodes.
+     */
+    private Collection<UUID> collectNotSuccessed() {
+        Set<UUID> res = new HashSet<>();
+
+        if (lockFut instanceof GridDhtColocatedLockFuture)
+            res.addAll(((GridDhtColocatedLockFuture)lockFut).notSuccessedNodes());
+
+        if (res.isEmpty() && prepFut != null)
+            res.addAll(prepFut.notSuccessedNodes());
+
+        return res;
+    }
+
+    /**
+     * Logs the timeout warning indicating unresponded nodes if required.
+     *
+     * @param unrespondedNodes Unresponded nodes ids. If empty, won't be logged.
+     */
+    private void logTimeout(@Nullable Collection<UUID> unrespondedNodes) {
+        String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
+            CU.txString(this) + ']';
+
+        if (!F.isEmpty(unrespondedNodes)) {
+            errMsg += ". Detected unresponded primary nodes or conversation with whom failed: " + unrespondedNodes.stream()
+                .map(UUID::toString).collect(Collectors.joining(",")) + '.';
+        }
+
+        U.warn(log, errMsg);
     }
 
     /** */
