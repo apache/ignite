@@ -17,23 +17,14 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-/** Utility class for commands without any specific arguments. */
-public final class NoArg extends IgniteDataTransferObject {
-    /** */
-    private static final long serialVersionUID = 0;
-
+/**
+ * Marker interface for experimental commands.
+ */
+public interface ExperimentalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        //No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        //No-op.
+    @Override default boolean experimental() {
+        return true;
     }
 }

@@ -44,7 +44,7 @@ public class EncryptionChangeMasterKeyCommand implements Command<EncryptionChang
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt() {
+    @Override public String confirmationPrompt(EncryptionChangeMasterKeyCommandArg arg) {
         return "Warning: the command will change the master key. Cache start and node join during the key change " +
             "process is prohibited and will be rejected.";
     }

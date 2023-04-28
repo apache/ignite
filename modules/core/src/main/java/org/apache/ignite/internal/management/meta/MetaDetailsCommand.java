@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,42 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.meta.subcommands;
+package org.apache.ignite.internal.management.meta;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.meta.MetadataCommand;
-import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
-import org.apache.ignite.internal.commandline.meta.tasks.MetadataTypeArgs;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.F;
-
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
-public class MetadataDetailsCommand
-    extends MetadataAbstractSubCommand<MetadataTypeArgs, MetadataListResult> {
+public class MetaDetailsCommand implements ExperimentalCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
-    @Override protected String taskName() {
-        return MetadataInfoTask.class.getName();
+    @Override public String description() {
+        return "Print detailed info about specified binary type " +
+            "(the type must be specified by type name or by type identifier)";
     }
 
     /** {@inheritDoc} */
-    @Override public MetadataTypeArgs parseArguments0(CommandArgIterator argIter) {
-        return MetadataCommand.parseArgs(argIter);
+    @Override public Class<MetaDetailsCommandArg> argClass() {
+        return MetaDetailsCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(MetadataListResult res, IgniteLogger log) {
+    @Override public Class<MetadataInfoTask> taskClass() {
+        return MetadataInfoTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(IgniteDataTransferObject arg, MetadataListResult res, Consumer<String> printer) {
         if (res.metadata() == null) {
-            log.info("Type not found");
+            printer.accept("Type not found");
 
             return;
         }
@@ -59,13 +62,13 @@ public class MetadataDetailsCommand
 
         BinaryMetadata m = F.first(res.metadata());
 
-        log.info("typeId=" + printInt(m.typeId()));
-        log.info("typeName=" + m.typeName());
-        log.info("Fields:");
+        printer.accept("typeId=" + printInt(m.typeId()));
+        printer.accept("typeName=" + m.typeName());
+        printer.accept("Fields:");
 
         final Map<Integer, String> fldMap = new HashMap<>();
         m.fieldsMap().forEach((name, fldMeta) -> {
-            log.info(INDENT +
+            printer.accept(INDENT +
                 "name=" + name +
                 ", type=" + BinaryUtils.fieldTypeName(fldMeta.typeId()) +
                 ", fieldId=" + printInt(fldMeta.fieldId()));
@@ -73,18 +76,13 @@ public class MetadataDetailsCommand
             fldMap.put(fldMeta.fieldId(), name);
         });
 
-        log.info("Schemas:");
+        printer.accept("Schemas:");
 
         m.schemas().forEach(s ->
-            log.info(INDENT +
+            printer.accept(INDENT +
                 "schemaId=" + printInt(s.schemaId()) +
                 ", fields=" + Arrays.stream(s.fieldIds())
-                    .mapToObj(fldMap::get)
-                    .collect(Collectors.toList())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return MetadataSubCommandsList.LIST.text();
+                .mapToObj(fldMap::get)
+                .collect(Collectors.toList())));
     }
 }

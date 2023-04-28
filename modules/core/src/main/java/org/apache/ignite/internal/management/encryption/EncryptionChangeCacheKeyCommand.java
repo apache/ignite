@@ -44,7 +44,7 @@ public class EncryptionChangeCacheKeyCommand implements Command<EncryptionCacheG
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt() {
+    @Override public String confirmationPrompt(EncryptionCacheGroupArg arg) {
         return "Warning: the command will change the encryption key of the cache group. Joining a node during " +
             "the key change process is prohibited and will be rejected.";
     }

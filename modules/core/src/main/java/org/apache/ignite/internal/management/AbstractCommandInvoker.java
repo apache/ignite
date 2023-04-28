@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -182,11 +183,10 @@ public abstract class AbstractCommandInvoker {
             }
 
             try {
-                fld.setAccessible(true);
-                fld.set(arg, val);
+                argCls.getMethod(fld.getName(), fld.getType()).invoke(arg, val);
             }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new IgniteException(e);
             }
         };
 
@@ -287,7 +287,7 @@ public abstract class AbstractCommandInvoker {
 
         List<Field> oneOfFlds = new ArrayList<>();
 
-        // Iterates classes from base to derived.
+        // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
             Field[] flds = classes.get(i).getDeclaredFields();
 

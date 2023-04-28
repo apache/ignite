@@ -15,25 +15,62 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.management.meta;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import java.io.OutputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.OneOf;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** Utility class for commands without any specific arguments. */
-public final class NoArg extends IgniteDataTransferObject {
+/** */
+@OneOf({"typeId", "typeName"})
+public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     /** */
     private static final long serialVersionUID = 0;
 
+    /** */
+    @Argument(optional = true, example = "<fileName>")
+    private String out;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        //No-op.
+        super.writeExternalData(out);
+
+        U.writeString(out, this.out);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        //No-op.
+        super.readExternalData(protoVer, in);
+
+        out = U.readString(in);
+    }
+
+    /** */
+    public String out() {
+        return out;
+    }
+
+    /** */
+    public void out(String out) {
+        Path outFile = FileSystems.getDefault().getPath(out);
+
+        try (OutputStream os = Files.newOutputStream(outFile)) {
+            os.close();
+
+            Files.delete(outFile);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Cannot write to output file " + outFile +
+                ". Error: " + e.toString(), e);
+        }
+
+        this.out = out;
     }
 }

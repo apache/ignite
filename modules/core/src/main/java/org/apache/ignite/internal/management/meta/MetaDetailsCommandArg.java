@@ -15,25 +15,65 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.management.meta;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.OneOf;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
-/** Utility class for commands without any specific arguments. */
-public final class NoArg extends IgniteDataTransferObject {
+/** */
+@OneOf({"typeId", "typeName"})
+public class MetaDetailsCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
+    /** */
+    @Argument(optional = true, example = "<typeId>", javaStyleName = true)
+    private int typeId;
+
+    /** */
+    @Argument(optional = true, example = "<typeName>", javaStyleName = true)
+    private String typeName;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        //No-op.
+        out.writeInt(typeId);
+        U.writeString(out, typeName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        //No-op.
+        typeId = in.readInt();
+        typeName = U.readString(in);
+    }
+
+    /** */
+    public int typeId() {
+        return typeId;
+    }
+
+    /** */
+    public void typeId(int typeId) {
+        this.typeId = typeId;
+    }
+
+    /** */
+    public String typeName() {
+        return typeName;
+    }
+
+    /** */
+    public void typeName(String typeName) {
+        this.typeName = typeName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return typeId != 0 ? printInt(typeId) : typeName;
     }
 }

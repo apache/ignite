@@ -26,6 +26,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.management.meta.MetaRemoveCommandArg;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,8 +38,8 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
+import static org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask.typeId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_METADATA_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
@@ -47,12 +48,12 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * Task for remove specified binary type.
  */
 @GridInternal
-public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, MetadataMarshalled, MetadataMarshalled> {
+public class MetadataRemoveTask extends VisorMultiNodeTask<MetaRemoveCommandArg, MetadataMarshalled, MetadataMarshalled> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<MetadataTypeArgs, MetadataMarshalled> job(MetadataTypeArgs arg) {
+    @Override protected VisorJob<MetaRemoveCommandArg, MetadataMarshalled> job(MetaRemoveCommandArg arg) {
         return new MetadataRemoveJob(arg, debug);
     }
 
@@ -70,7 +71,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
     /**
      * Job for remove specified binary type from.
      */
-    private static class MetadataRemoveJob extends VisorJob<MetadataTypeArgs, MetadataMarshalled> {
+    private static class MetadataRemoveJob extends VisorJob<MetaRemoveCommandArg, MetadataMarshalled> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -88,7 +89,7 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected MetadataRemoveJob(@Nullable MetadataTypeArgs arg, boolean debug) {
+        protected MetadataRemoveJob(@Nullable MetaRemoveCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -98,12 +99,12 @@ public class MetadataRemoveTask extends VisorMultiNodeTask<MetadataTypeArgs, Met
         }
 
         /** {@inheritDoc} */
-        @Override protected MetadataMarshalled run(@Nullable MetadataTypeArgs arg) throws IgniteException {
+        @Override protected MetadataMarshalled run(@Nullable MetaRemoveCommandArg arg) throws IgniteException {
             try {
                 if (future == null) {
                     assert Objects.nonNull(arg);
 
-                    int typeId = arg.typeId(ignite.context());
+                    int typeId = typeId(ignite.context(), arg.typeId(), arg.typeName());
 
                     BinaryMetadata meta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects())
                         .binaryMetadata(typeId);

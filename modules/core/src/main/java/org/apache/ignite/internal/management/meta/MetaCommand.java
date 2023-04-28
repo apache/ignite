@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.management.meta;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 
-/** Utility class for commands without any specific arguments. */
-public final class NoArg extends IgniteDataTransferObject {
+/** */
+@CliPositionalSubcommands
+public class MetaCommand extends CommandRegistryImpl implements ComplexCommand {
     /** */
-    private static final long serialVersionUID = 0;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        //No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        //No-op.
+    public MetaCommand() {
+        super(
+            new MetaHelpCommand(),
+            new MetaListCommand(),
+            new MetaDetailsCommand(),
+            new MetaRemoveCommand(),
+            new MetaUpdateCommand()
+        );
     }
 }

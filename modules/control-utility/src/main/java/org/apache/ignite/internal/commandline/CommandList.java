@@ -25,7 +25,6 @@ import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cdc.CdcCommand;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
-import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 
@@ -73,7 +72,7 @@ public enum CommandList {
     CLUSTER_CHANGE_TAG("--change-tag", new ClusterChangeTagCommand()),
 
     /** Metadata commands. */
-    METADATA("--meta", new MetadataCommand()),
+    METADATA("--meta", new DeclarativeCommandAdapter<>("Meta")),
 
     /** */
     SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),

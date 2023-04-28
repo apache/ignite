@@ -269,9 +269,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove"));
         out = testOut.toString();
-        assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Type to remove is not specified");
-        assertContains(log, out, "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
+        assertContains(log, out, "Check arguments. One of [typeName, typeId] required");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", outDirName));
         out = testOut.toString();
@@ -338,7 +336,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
             String out = testOut.toString();
 
-            assertContains(log, out, "Failed to execute metadata command='update'");
+            assertContains(log, out, "Failed to perform operation.");
             assertContains(log, out, "Type 'Type0' with typeId 110843958 has a " +
                 "different/incorrect type for field 'fld'.");
             assertContains(log, out, "Expected 'String' but 'int' was provided. " +

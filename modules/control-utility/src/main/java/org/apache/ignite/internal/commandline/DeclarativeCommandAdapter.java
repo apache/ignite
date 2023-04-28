@@ -244,6 +244,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         if (!skip) {
             logger.info("");
 
+            if (cmd.experimental())
+                logger.info(INDENT + "[EXPERIMENTAL]");
+
             printExample(cmd, parents, logger);
 
             if (hasDescribedParameters(cmd)) {
@@ -373,7 +376,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return parsed.get1().confirmationPrompt();
+        return parsed.get1().confirmationPrompt(parsed.get2());
     }
 
     /** {@inheritDoc} */

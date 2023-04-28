@@ -211,7 +211,9 @@ public class CommandUtils {
                 : toFormattedName(fld.getName(), delim);
         }
 
-        return toFormattedName(fld.getName(), delim);
+        return fld.getAnnotation(Argument.class).javaStyleName()
+            ? fld.getName()
+            : toFormattedName(fld.getName(), delim);
     }
 
     /** */
@@ -258,10 +260,23 @@ public class CommandUtils {
             return (T)Boolean.TRUE;
         if (type == String.class)
             return (T)val;
-        else if (type == Integer.class || type == int.class)
-            return (T)wrapNumberFormatException(() -> Integer.parseInt(val), val, Integer.class);
-        else if (type == Long.class || type == long.class)
-            return (T)wrapNumberFormatException(() -> Long.parseLong(val), val, Long.class);
+        else if (type == Integer.class || type == int.class) {
+            int radix = radix(val);
+            return (T)wrapNumberFormatException(
+                () -> Integer.parseInt(radix == 10 ? val : val.substring(2), radix),
+                val,
+                Integer.class
+            );
+        }
+        else if (type == Long.class || type == long.class) {
+            int radix = radix(val);
+
+            return (T)wrapNumberFormatException(
+                () -> Long.parseLong(radix == 10 ? val : val.substring(2), radix),
+                val,
+                Long.class
+            );
+        }
         else if (type == Float.class || type == float.class)
             return (T)wrapNumberFormatException(() -> Float.parseFloat(val), val, Float.class);
         else if (type == Double.class || type == double.class)
@@ -280,6 +295,11 @@ public class CommandUtils {
         }
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
+    }
+
+    /** */
+    private static int radix(String val) {
+        return val.startsWith("0x") ? 16 : 10;
     }
 
     /**

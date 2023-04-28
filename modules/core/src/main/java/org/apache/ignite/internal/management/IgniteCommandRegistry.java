@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
+import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 
@@ -32,6 +33,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
         super(
             new EncryptionCommand(),
             new KillCommand(),
+            new MetaCommand(),
             new PropertyCommand(),
             new SystemViewCommand(),
             new PerformanceStatisticsCommand()
