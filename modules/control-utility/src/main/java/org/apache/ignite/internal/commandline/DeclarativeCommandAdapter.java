@@ -68,7 +68,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 
 /**
@@ -113,7 +112,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         if (cmd0.taskClass() == null) {
             throw new IllegalArgumentException(
-                "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
+                "Command " + toFormattedCommandName(cmd0.getClass(), CMD_WORDS_DELIM) + " can't be executed"
             );
         }
 
@@ -152,11 +151,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         namedArgs.add(optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class, () -> false));
 
-        CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
-
-        parser.parse(cliArgs);
-
         try {
+            CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
+
+            parser.parse(cliArgs);
+
             parsed = F.t(
                 cmd0,
                 argument(
@@ -169,6 +168,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
         catch (InstantiationException | IllegalAccessException e) {
             throw new IgniteException(e);
+        }
+        catch (IllegalArgumentException e) {
+            parsed = F.t(cmd0, null, false);
+
+            throw e;
         }
     }
 
@@ -195,7 +199,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 parsed.get1(),
                 parsed.get2(),
                 clusterNodes.keySet(),
-                getBalancedNode(compute).nodeId()
+                getBalancedNode(compute).nodeId(),
+                id -> clusterNodes.get(id).isClient()
             );
 
             Collection<GridClientNode> connectable = F.viewReadOnly(

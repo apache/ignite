@@ -25,14 +25,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.junit.Test;
-
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.cdc.ResendCommand.CACHES;
-import static org.apache.ignite.internal.commandline.cdc.ResendCommand.RESEND;
+import static org.apache.ignite.internal.commandline.cache.CacheClear.CACHES;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
+import static org.apache.ignite.util.CdcCommandTest.RESEND;
 import static org.apache.ignite.util.CdcCommandTest.runCdc;
 import static org.apache.ignite.util.CdcCommandTest.waitForSize;
 

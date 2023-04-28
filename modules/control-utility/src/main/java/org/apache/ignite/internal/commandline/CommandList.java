@@ -22,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commandline.cdc.CdcCommand;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
@@ -105,7 +104,7 @@ public enum CommandList {
     CONSISTENCY("--consistency", new ConsistencyCommand()),
 
     /** Cdc commands. */
-    CDC("--cdc", new CdcCommand());
+    CDC("--cdc", new DeclarativeCommandAdapter<>("Cdc"));
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

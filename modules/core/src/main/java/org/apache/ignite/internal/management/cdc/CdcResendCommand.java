@@ -15,36 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.kill;
+package org.apache.ignite.internal.management.cdc;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Predicate;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.visor.tx.KillTransactionTask;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.internal.visor.cdc.VisorCdcCacheDataResendTask;
 
 /** */
-public class KillTransactionCommand implements Command<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
+public class CdcResendCommand implements ExperimentalCommand<CdcResendCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill transaction by xid";
+        return "Forcefully resend all cache data to CDC. " +
+            "Iterates over caches and writes primary copies of data entries to the WAL to get captured by CDC";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillTransactionCommandArg> argClass() {
-        return KillTransactionCommandArg.class;
+    @Override public Class<CdcResendCommandArg> argClass() {
+        return CdcResendCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<KillTransactionTask> taskClass() {
-        return KillTransactionTask.class;
+    @Override public Class<VisorCdcCacheDataResendTask> taskClass() {
+        return VisorCdcCacheDataResendTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, KillTransactionCommandArg arg) {
-        return nodes;
+    @Override public void printResult(CdcResendCommandArg arg, Void res, Consumer<String> printer) {
+        printer.accept("Successfully resent all cache data to CDC.");
     }
 }

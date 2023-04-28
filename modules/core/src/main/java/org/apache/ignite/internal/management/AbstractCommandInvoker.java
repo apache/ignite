@@ -35,6 +35,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -102,7 +103,13 @@ public abstract class AbstractCommandInvoker {
         Map<UUID, ClusterNode> clusterNodes = grid.cluster().nodes().stream()
             .collect(Collectors.toMap(ClusterNode::id, n -> n));
 
-        Collection<UUID> nodeIds = commandNodes(cmd, arg, clusterNodes.keySet(), grid.localNode().id());
+        Collection<UUID> nodeIds = commandNodes(
+            cmd,
+            arg,
+            clusterNodes.keySet(),
+            grid.localNode().id(),
+            id -> clusterNodes.get(id).isClient()
+        );
 
         if (!F.isEmpty(nodeIds))
             compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
@@ -117,6 +124,7 @@ public abstract class AbstractCommandInvoker {
      * @param arg Command argument.
      * @param nodes Cluster nodes.
      * @param dflt Default node.
+     * @param isClient Predicate to distinguish client nodes.
      * @param <A> Argument type.
      * @return Nodes to execute command on.
      */
@@ -124,9 +132,10 @@ public abstract class AbstractCommandInvoker {
         Command<A, ?> cmd,
         A arg,
         Collection<UUID> nodes,
-        UUID dflt
+        UUID dflt,
+        Predicate<UUID> isClient
     ) {
-        Collection<UUID> nodeIds = cmd.nodes(nodes, arg);
+        Collection<UUID> nodeIds = cmd.nodes(nodes, isClient, arg);
 
         if (nodeIds == null)
             return singleton(dflt);

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.kill;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
@@ -41,7 +42,7 @@ public class KillClientCommand implements Command<KillClientCommandArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, KillClientCommandArg arg) {
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, KillClientCommandArg arg) {
         if (arg.nodeId() == null)
             return nodes;
 

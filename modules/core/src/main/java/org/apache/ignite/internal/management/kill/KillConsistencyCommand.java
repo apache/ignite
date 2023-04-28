@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
@@ -41,7 +42,7 @@ public class KillConsistencyCommand implements Command<NoArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, NoArg arg) {
+    @Override public Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, NoArg arg) {
         return nodes;
     }
 }
