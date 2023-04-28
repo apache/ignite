@@ -26,14 +26,14 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
-public class MetaDetailsCommand implements ExperimentalCommand<NoArg, MetadataListResult> {
+public class MetaDetailsCommand implements ExperimentalCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print detailed info about specified binary type " +
@@ -51,7 +51,7 @@ public class MetaDetailsCommand implements ExperimentalCommand<NoArg, MetadataLi
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, MetadataListResult res, Consumer<String> printer) {
+    @Override public void printResult(IgniteDataTransferObject arg, MetadataListResult res, Consumer<String> printer) {
         if (res.metadata() == null) {
             printer.accept("Type not found");
 
