@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComplexCommand;
-import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
 @CliPositionalSubcommands
@@ -36,34 +39,33 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl implements
     }
 
     /** */
-    public static class PerformanceStatisticsStartCommandArg extends NoArg {
+    public static class PerformanceStatisticsStartCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
 
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            // No-op.
+        }
+    }
+
+    /** */
+    public static class PerformanceStatisticsStopCommandArg extends PerformanceStatisticsStartCommandArg {
         // No-op.
     }
 
     /** */
-    public static class PerformanceStatisticsStopCommandArg extends NoArg {
-        /** */
-        private static final long serialVersionUID = 0;
-
+    public static class PerformanceStatisticsRotateCommandArg extends PerformanceStatisticsStartCommandArg {
         // No-op.
     }
 
     /** */
-    public static class PerformanceStatisticsRotateCommandArg extends NoArg {
-        /** */
-        private static final long serialVersionUID = 0;
-
-        // No-op.
-    }
-
-    /** */
-    public static class PerformanceStatisticsStatusCommandArg extends NoArg {
-        /** */
-        private static final long serialVersionUID = 0;
-
+    public static class PerformanceStatisticsStatusCommandArg extends PerformanceStatisticsStartCommandArg {
         // No-op.
     }
 }

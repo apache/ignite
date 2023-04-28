@@ -20,12 +20,12 @@ package org.apache.ignite.internal.management.property;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PropertyGetCommandArg extends NoArg {
+public class PropertyGetCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -35,15 +35,11 @@ public class PropertyGetCommandArg extends NoArg {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
         U.writeString(out, name);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
         name = U.readString(in);
     }
 
