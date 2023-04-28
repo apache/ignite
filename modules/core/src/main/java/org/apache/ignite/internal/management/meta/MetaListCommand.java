@@ -21,11 +21,12 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class MetaListCommand implements ExperimentalCommand<NoArg, MetadataListResult> {
+public class MetaListCommand implements ExperimentalCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of binary metadata types";
@@ -42,7 +43,7 @@ public class MetaListCommand implements ExperimentalCommand<NoArg, MetadataListR
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, MetadataListResult res, Consumer<String> printer) {
+    @Override public void printResult(IgniteDataTransferObject arg, MetadataListResult res, Consumer<String> printer) {
         for (BinaryMetadata m : res.metadata()) {
             printer.accept("typeId=" + printInt(m.typeId()) +
                 ", typeName=" + m.typeName() +

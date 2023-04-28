@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.management.performancestatistics;
 
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStopCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsStopCommand implements Command<NoArg, String> {
+public class PerformanceStatisticsStopCommand implements Command<IgniteDataTransferObject, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Stop collecting performance statistics in the cluster";

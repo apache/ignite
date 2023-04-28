@@ -42,7 +42,7 @@ public @interface Argument {
     /**
      * Required to keep compatibility with existing {@code control.sh} output.
      *
-     * @return {@code True} if paramter example printed in help message must be formatted in java style.
+     * @return {@code True} if parameter example printed in help message must be formatted in java style.
      */
     public boolean javaStyleExample() default false;
 
