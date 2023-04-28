@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1026,6 +1027,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     tx.addLockTransactionNode(n);
 
                                 add(fut); // Append new future.
+
+                                if (true)
+                                    throw new IgniteCheckedException("Test exception");
 
                                 cctx.io().send(n, req, cctx.ioPolicy());
 
