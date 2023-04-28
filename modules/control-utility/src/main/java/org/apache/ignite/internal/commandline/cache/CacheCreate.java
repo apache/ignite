@@ -108,7 +108,7 @@ public class CacheCreate extends AbstractCommand<String> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
-        String springXmlPathArgDesc = SPRING_XML_CONFIG + " springXmlFilePath";
+        String springXmlPathArgDesc = SPRING_XML_CONFIG + " springXmlConfigPath";
 
         usageCache(log, CacheSubcommands.CREATE, "Create caches from Spring XML configuration. Note that the '" +
                 SPRING.module() + "' module should be enabled.",
