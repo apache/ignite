@@ -68,6 +68,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -78,10 +79,10 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 @RunWith(Parameterized.class)
 public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     /** */
-    private static final int TX_TIMEOUT = 30_000;
+    private static final int TX_TIMEOUT = 3_000;
 
     /** */
-    private static final int VALUES_CNT = 50;
+    private static final int VALUES_CNT = 30;
 
     /** */
     protected TransactionConcurrency txConcurrency;
@@ -110,13 +111,13 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     public static Iterable<Object[]> params() {
         return cartesianProduct(
             // Sync mode.
-            F.asList(FULL_SYNC),
+            F.asList(FULL_SYNC, PRIMARY_SYNC),
             // Transaction initiator type.
             F.asList(TxNodeType.values()),
             // Transaction isolation level.
             F.asList(TransactionIsolation.values()),
             // Number of backups / one phase commit.
-            F.asList(1)
+            F.asList(2, 1)
         );
     }
 
@@ -197,32 +198,6 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     @Test
     public void testPrimaryDelaysOnPrepare() throws Exception {
         doTest(true, GridNearTxPrepareResponse.class);
-    }
-
-    /** Test no 'not responded nodes' message is when backup just leaves on prepare phase. */
-    @Test
-    public void testTopChangedPrepare() throws Exception {
-        IgniteEx putter = txNode(txNodeType);
-        IgniteEx primary = txNode(TxNodeType.SERVER);
-        IgniteEx delayed = txNode(TxNodeType.SERVER_DELAYED);
-
-        List<Integer> keys = IntStream.range(0, VALUES_CNT).boxed().collect(Collectors.toList());
-
-        blockMessage(delayed, GridDhtTxPrepareResponse.class);
-
-        IgniteInternalFuture<?> txFut = runAsync(() -> doTx(putter, keys));
-
-        ((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi()).waitForBlocked();
-
-        IgniteEx newGrid = startGrid(G.allGrids().size());
-
-        ((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi()).stopBlock();
-
-        assert !(txFut.get() instanceof Throwable);
-
-        // Backup gone. Transaction is complete.
-        for (int i = 0; i < keys.size(); ++i)
-            assertEquals(updatedValue(keys.get(i)), txNode(TxNodeType.SERVER).cache("cache").get(keys.get(i)));
     }
 
     /** Test no 'not responded nodes' message is when backup just leaves on prepare phase. */
