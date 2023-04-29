@@ -31,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -89,9 +88,6 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     protected TransactionConcurrency txConcurrency;
 
     /** */
-    protected boolean explicitLocks = true;
-
-    /** */
     protected final Map<String, ListeningTestLogger> logs = new HashMap<>();
 
     /** Cache sync mode. */
@@ -110,12 +106,8 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public int backups;
 
-    /** Do plreload. */
-    @Parameterized.Parameter(4)
-    public boolean preload;
-
     /** Run params set. */
-    @Parameterized.Parameters(name = "syncMode={0},txNode={1},isolation={2},backups={3},preload={4}")
+    @Parameterized.Parameters(name = "syncMode={0},txNode={1},isolation={2},backups={3}")
     public static Iterable<Object[]> params() {
         return cartesianProduct(
             // Sync mode.
@@ -125,9 +117,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             // Transaction isolation level.
             F.asList(TransactionIsolation.values()),
             // Number of backups / one phase commit.
-            F.asList(2, 1),
-            // Preload.
-            F.asList(true, false)
+            F.asList(2, 1)
         );
     }
 
@@ -183,11 +173,9 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             .setBackups(backups)
         );
 
-        if (preload) {
-            try (IgniteDataStreamer<Object, Object> s = grid(1).dataStreamer("cache")) {
-                for (int i = 0; i < 1_000; ++i)
-                    s.addData(i, i);
-            }
+        try (IgniteDataStreamer<Object, Object> s = grid(1).dataStreamer("cache")) {
+            for (int i = 0; i < 1_000; ++i)
+                s.addData(i, i);
         }
     }
 
@@ -305,12 +293,13 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         stopGrid(gone.name(), true);
 
         try {
-            txFut.get();
+            assertTrue(txFut.get() instanceof Exception);
 
             IgniteCache<Integer, Integer> c0 = txNode(TxNodeType.SERVER).cache("cache");
 
+            // A primary gone. Pessimistic transaction is not complete when a primary leaves.
             for (int i = 0; i < keys.size(); ++i)
-                assertEquals(keys.get(i), preload ? c0.get(keys.get(i)) : null);
+                assertEquals(keys.get(i), c0.get(keys.get(i)));
 
             // But has no 'not responded nodes' in the log.
             assertFalse(txNodeLogLsnr.check());
@@ -523,18 +512,13 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
      * Performs ransaction.
      */
     protected Exception doTx(Ignite putter, Collection<Integer> keys) {
-        IgniteCache<Integer, Integer> cache = putter.cache("cache");
-
         Map<Integer, Integer> data = new TreeMap<>();
 
         keys.forEach(k -> data.put(k, updatedValue(k)));
 
-        Collection<Lock> locks = explicitLocks ? new ArrayList<>(data.size()) : Collections.emptyList();
+        IgniteCache<Integer, Integer> cache = putter.cache("cache");
 
         try (Transaction tx = putter.transactions().txStart()) {
-            if (explicitLocks)
-                data.keySet().forEach(k -> locks.add(cache.lock(k)));
-
             cache.putAll(data);
 
             tx.commit();
@@ -543,16 +527,6 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             log.warning("Unable to commit transaction.", e);
 
             return e;
-        }
-        finally {
-            locks.forEach(l -> {
-                try {
-                    l.unlock();
-                }
-                catch (Exception e) {
-                    // No-op.
-                }
-            });
         }
 
         return null;

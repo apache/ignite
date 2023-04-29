@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -2067,7 +2068,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             Collection<? extends IgniteInternalFuture<?>> futs;
 
             synchronized (GridDhtTxPrepareFuture.this) {
-                futs = futures();
+                futs = mapped != 0 ? futures() : Collections.emptyList();
 
                 clear();
 
@@ -2077,11 +2078,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             String errMsg = "The transaction was forcibly rolled back because a timeout is reached: [xid=" +
                 tx.xid() + ", xidVersion=" + tx.xidVersion() + ", nodeId=" + tx.nodeId() + ']';
 
-            String unsucessed = futs.stream().filter(f -> isMini(f) && (!f.isDone() || f.error() != null))
+            String unresponded = futs.stream().filter(f -> isMini(f) && !f.isDone())
                 .map(f -> ((MiniFuture)f).nodeId.toString()).collect(Collectors.joining(","));
 
-            if (!F.isEmpty(unsucessed))
-                errMsg += ". Detected unresponded backup nodes: " + unsucessed;
+            if (!F.isEmpty(unresponded))
+                errMsg += ". Detected unresponded backup nodes: " + unresponded;
 
             U.warn(log, errMsg);
 

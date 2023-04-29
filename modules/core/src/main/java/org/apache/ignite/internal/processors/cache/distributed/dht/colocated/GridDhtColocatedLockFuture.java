@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1500,21 +1501,23 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @return Ids of the nodes that not responded to the lock request or if processing of conversation with
-     * these nodes failed.
+     * @return Ids of the nodes that not responded to the lock request.
      */
-    public Collection<UUID> notSuccessedNodes() {
+    public Collection<UUID> unrespondedNodes() {
         LockTimeoutObject tObj = timeoutObj;
 
-        Collection<UUID> res = tObj == null ? null : tObj.notSuccessed;
+        Collection<UUID> res = tObj == null ? null : tObj.unrespondedNodes;
 
         if (res != null)
             return res;
 
+        if (isCancelled())
+            return Collections.emptyList();
+
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> isMini(f) && (!f.isDone() || f.error() != null))
+            return futures().stream().filter(f -> isMini(f) && !f.isDone() && !f.isCancelled())
                 .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
         }
         finally {
@@ -1536,8 +1539,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         /** Requested keys. */
         private Set<IgniteTxKey> requestedKeys;
 
-        /** Unresponded after timeout node or nodes failed to process conversation with. */
-        private volatile Collection<UUID> notSuccessed;
+        /** Unresponded after timeout nodes. */
+        private volatile Collection<UUID> unrespondedNodes;
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
@@ -1549,7 +1552,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     synchronized (GridDhtColocatedLockFuture.this) {
                         requestedKeys = requestedKeys0();
 
-                        notSuccessed = notSuccessedNodes();
+                        unrespondedNodes = unrespondedNodes();
 
                         clear(); // Stop response processing.
                     }

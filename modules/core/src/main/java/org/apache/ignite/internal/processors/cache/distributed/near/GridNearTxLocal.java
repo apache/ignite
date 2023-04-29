@@ -5018,7 +5018,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         synchronized (this) {
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
 
-            unrespondedNodes = proceed || state() == MARKED_ROLLBACK ? collectNotSuccessed() : null;
+            unrespondedNodes = proceed || state() == MARKED_ROLLBACK ? collectUnresponded() : null;
         }
 
         if (proceed || state() == MARKED_ROLLBACK) {
@@ -5049,14 +5049,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @return Collection of not successed nodes.
      */
-    private Collection<UUID> collectNotSuccessed() {
+    private Collection<UUID> collectUnresponded() {
+        if (!mapped)
+            return Collections.emptyList();
+
         Set<UUID> res = new HashSet<>();
 
         if (lockFut instanceof GridDhtColocatedLockFuture)
-            res.addAll(((GridDhtColocatedLockFuture)lockFut).notSuccessedNodes());
+            res.addAll(((GridDhtColocatedLockFuture)lockFut).unrespondedNodes());
 
         if (res.isEmpty() && prepFut != null)
-            res.addAll(prepFut.notSuccessedNodes());
+            res.addAll(prepFut.unrespondedNodes());
 
         return res;
     }
