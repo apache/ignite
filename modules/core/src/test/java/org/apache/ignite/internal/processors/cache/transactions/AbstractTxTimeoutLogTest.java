@@ -88,7 +88,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     protected TransactionConcurrency txConcurrency;
 
     /** */
-    protected Map<String, ListeningTestLogger> logs = new HashMap<>();
+    protected final Map<String, ListeningTestLogger> logs = new HashMap<>();
 
     /** Cache sync mode. */
     @Parameterized.Parameter(0)
@@ -163,12 +163,12 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         ((AtomicReference<IgniteLogger>)U.staticField(GridDhtTxPrepareFuture.class, "logRef")).set(null);
         U.findField(GridDhtTxPrepareFuture.class, "log").set(null, null);
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(backups + 2);
 
         grid(0).createCache(new CacheConfiguration<>()
             .setName("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(FULL_SYNC)
+            .setWriteSynchronizationMode(cacheSyncMode)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups)
         );
@@ -293,11 +293,13 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         stopGrid(gone.name(), true);
 
         try {
-            txFut.get();
+            assertTrue(txFut.get() instanceof Exception);
+
+            IgniteCache<Integer, Integer> c0 = txNode(TxNodeType.SERVER).cache("cache");
 
             // A primary gone. Pessimistic transaction is not complete when a primary leaves.
             for (int i = 0; i < keys.size(); ++i)
-                assertEquals(keys.get(i), txNode(TxNodeType.SERVER).cache("cache").get(keys.get(i)));
+                assertEquals(keys.get(i), c0.get(keys.get(i)));
 
             // But has no 'not responded nodes' in the log.
             assertFalse(txNodeLogLsnr.check());
@@ -322,17 +324,15 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         IgniteEx putter = txNode(txNodeType);
 
-        IgniteCache<Integer, Integer> cache = putter.cache("cache");
-
         List<Integer> keys = keys(putter, delayed, onPrimary);
 
-        // Tx initiator node and tode to block response is thesame server node. Nothing expected to stuck. The tx
-        // should work normally.
+        // Tx initiator node and delayed node are the same then nothing expected to stuck. The tx should is to just
+        // finish normally.
         if (onPrimary && txNodeType == TxNodeType.SERVER_DELAYED) {
-            doTx(putter, keys);
+            assertNull("Unexpected exception", doTx(putter, keys));
 
-            for (int i = 0; i < keys.size(); ++i)
-                assertEquals(updatedValue(keys.get(i)), cache.get(keys.get(i)));
+            assertFalse(((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi())
+                .hasBlockedMessages());
 
             return;
         }
@@ -355,6 +355,8 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Exception> txFut = runAsync(() -> doTx(putter, keys));
 
+        ((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi()).waitForBlocked();
+
         // If {@code true} the timeout is raised by local timer or received as a tx error from certain remote node.
         boolean localTimeout = true;
 
@@ -373,23 +375,22 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
                 ((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi()).blockedMessages().stream()
                     .map(bm -> bm.destinationNode().id()).collect(Collectors.toSet());
 
-            assertEquals("Unexpected number of unresponded primary nodes.", notRespondedTo.size(),
-                unespondedPrimaries.size());
+            // At least one primary sould not respond yet if we detect timeout locally.
+            assertTrue("Unresponded primary not detected.", !unespondedPrimaries.isEmpty());
 
+            // If we block on a primary, not backups, only this primary must not respond.
             if (onPrimary) {
                 assertTrue("Not found unresponded primary.", unespondedPrimaries.size() == 1 &&
                     unespondedPrimaries.containsKey(delayed.cluster().localNode().id()));
             }
             else {
-                for (UUID nid : notRespondedTo) {
-                    assertTrue("Not found unresponded primary delayed by backup.",
-                        unespondedPrimaries.containsKey(nid));
-                }
+                for (UUID nid : unespondedPrimaries.keySet())
+                    assertTrue("Unexpected notresponded primary node.", notRespondedTo.contains(nid));
             }
         }
 
-        // In any case we sould see unresponded backups if any.
-        checkBackupNotRespondedDetected(backupsLsnrs);
+        if (cacheSyncMode == PRIMARY_SYNC)
+            checkBackupNotRespondedDetected(backupsLsnrs);
     }
 
     /**
@@ -510,11 +511,11 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
      * Performs ransaction.
      */
     protected Exception doTx(Ignite putter, Collection<Integer> keys) {
-        IgniteCache<Integer, Integer> cache = putter.cache("cache");
-
         Map<Integer, Integer> data = new TreeMap<>();
 
         keys.forEach(k -> data.put(k, updatedValue(k)));
+
+        IgniteCache<Integer, Integer> cache = putter.cache("cache");
 
         try (Transaction tx = putter.transactions().txStart()) {
             cache.putAll(data);

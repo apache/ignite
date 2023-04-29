@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -143,14 +144,16 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     public abstract void onNearTxLocalTimeout();
 
     /**
-     * @return Ids of the nodes that not responded to the prepare request or if processing of conversation with
-     * these nodes failed.
+     * @return Ids of the nodes that not responded to the prepare request.
      */
-    public Collection<UUID> notSuccessedNodes() {
+    public Collection<UUID> unrespondedNodes() {
+        if (isCancelled())
+            return Collections.emptyList();
+
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> f instanceof NodeFuture && (!f.isDone() || f.error() != null))
+            return futures().stream().filter(f -> f instanceof NodeFuture && !f.isDone() && !f.isCancelled())
                 .map(f -> ((NodeFuture<?>)f).nodeId()).collect(Collectors.toList());
         }
         finally {
