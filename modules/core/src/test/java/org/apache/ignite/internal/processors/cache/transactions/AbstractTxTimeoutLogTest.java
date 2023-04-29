@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -88,7 +89,10 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     protected TransactionConcurrency txConcurrency;
 
     /** */
-    protected Map<String, ListeningTestLogger> logs = new HashMap<>();
+    protected boolean explicitLocks = true;
+
+    /** */
+    protected final Map<String, ListeningTestLogger> logs = new HashMap<>();
 
     /** Cache sync mode. */
     @Parameterized.Parameter(0)
@@ -106,8 +110,12 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(3)
     public int backups;
 
+    /** Do plreload. */
+    @Parameterized.Parameter(4)
+    public boolean preload;
+
     /** Run params set. */
-    @Parameterized.Parameters(name = "syncMode={0},txNode={1},isolation={2},backups={3}")
+    @Parameterized.Parameters(name = "syncMode={0},txNode={1},isolation={2},backups={3},preload={4}")
     public static Iterable<Object[]> params() {
         return cartesianProduct(
             // Sync mode.
@@ -117,7 +125,9 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             // Transaction isolation level.
             F.asList(TransactionIsolation.values()),
             // Number of backups / one phase commit.
-            F.asList(2, 1)
+            F.asList(2, 1),
+            // Preload.
+            F.asList(true, false)
         );
     }
 
@@ -163,7 +173,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         ((AtomicReference<IgniteLogger>)U.staticField(GridDhtTxPrepareFuture.class, "logRef")).set(null);
         U.findField(GridDhtTxPrepareFuture.class, "log").set(null, null);
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(backups + 2);
 
         grid(0).createCache(new CacheConfiguration<>()
             .setName("cache")
@@ -173,9 +183,11 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             .setBackups(backups)
         );
 
-        try (IgniteDataStreamer<Object, Object> s = grid(1).dataStreamer("cache")) {
-            for (int i = 0; i < 1_000; ++i)
-                s.addData(i, i);
+        if (preload) {
+            try (IgniteDataStreamer<Object, Object> s = grid(1).dataStreamer("cache")) {
+                for (int i = 0; i < 1_000; ++i)
+                    s.addData(i, i);
+            }
         }
     }
 
@@ -295,9 +307,10 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         try {
             txFut.get();
 
-            // A primary gone. Pessimistic transaction is not complete when a primary leaves.
+            IgniteCache<Integer, Integer> c0 = txNode(TxNodeType.SERVER).cache("cache");
+
             for (int i = 0; i < keys.size(); ++i)
-                assertEquals(keys.get(i), txNode(TxNodeType.SERVER).cache("cache").get(keys.get(i)));
+                assertEquals(keys.get(i), preload ? c0.get(keys.get(i)) : null);
 
             // But has no 'not responded nodes' in the log.
             assertFalse(txNodeLogLsnr.check());
@@ -516,7 +529,12 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         keys.forEach(k -> data.put(k, updatedValue(k)));
 
+        Collection<Lock> locks = explicitLocks ? new ArrayList<>(data.size()) : Collections.emptyList();
+
         try (Transaction tx = putter.transactions().txStart()) {
+            if (explicitLocks)
+                data.keySet().forEach(k -> locks.add(cache.lock(k)));
+
             cache.putAll(data);
 
             tx.commit();
@@ -525,6 +543,16 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             log.warning("Unable to commit transaction.", e);
 
             return e;
+        }
+        finally {
+            locks.forEach(l -> {
+                try {
+                    l.unlock();
+                }
+                catch (Exception e) {
+                    // No-op.
+                }
+            });
         }
 
         return null;
