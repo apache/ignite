@@ -329,7 +329,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         // Tx initiator node and delayed node are the same then nothing expected to stuck. The tx should is to just
         // finish normally.
         if (onPrimary && txNodeType == TxNodeType.SERVER_DELAYED) {
-            assertNotNull(doTx(putter, keys));
+            assertNull("Unexpected exception", doTx(putter, keys));
 
             assertFalse(((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi())
                 .hasBlockedMessages());
