@@ -375,18 +375,16 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
                 ((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi()).blockedMessages().stream()
                     .map(bm -> bm.destinationNode().id()).collect(Collectors.toSet());
 
-            assertEquals("Unexpected number of unresponded primary nodes.", notRespondedTo.size(),
-                unespondedPrimaries.size());
+            // At least one primary sould not respond yet if we detect timeout locally.
+            assertTrue("Unresponded primary not detected.", !unespondedPrimaries.isEmpty());
 
             if (onPrimary) {
                 assertTrue("Not found unresponded primary.", unespondedPrimaries.size() == 1 &&
                     unespondedPrimaries.containsKey(delayed.cluster().localNode().id()));
             }
             else {
-                for (UUID nid : notRespondedTo) {
-                    assertTrue("Not found unresponded primary delayed by backup.",
-                        unespondedPrimaries.containsKey(nid));
-                }
+                for (UUID nid : unespondedPrimaries.keySet())
+                    assertTrue("Unexpected notresponded primary node.", notRespondedTo.contains(nid));
             }
         }
 
