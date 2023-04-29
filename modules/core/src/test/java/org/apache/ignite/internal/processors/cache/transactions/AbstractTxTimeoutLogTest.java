@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -168,7 +169,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         grid(0).createCache(new CacheConfiguration<>()
             .setName("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(FULL_SYNC)
+            .setWriteSynchronizationMode(cacheSyncMode)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups)
         );
@@ -324,17 +325,15 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         IgniteEx putter = txNode(txNodeType);
 
-        IgniteCache<Integer, Integer> cache = putter.cache("cache");
-
         List<Integer> keys = keys(putter, delayed, onPrimary);
 
-        // Tx initiator node and tode to block response is thesame server node. Nothing expected to stuck. The tx
-        // should work normally.
+        // Tx initiator node and delayed node are the same then nothing expected to stuck. The tx should is to just
+        // finish normally.
         if (onPrimary && txNodeType == TxNodeType.SERVER_DELAYED) {
-            doTx(putter, keys);
+            assertNotNull(doTx(putter, keys));
 
-            for (int i = 0; i < keys.size(); ++i)
-                assertEquals(updatedValue(keys.get(i)), cache.get(keys.get(i)));
+            assertFalse(((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi())
+                .hasBlockedMessages());
 
             return;
         }
@@ -356,6 +355,8 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             : primaryLogListeners(primaries, delayed, msgToDelay);
 
         IgniteInternalFuture<Exception> txFut = runAsync(() -> doTx(putter, keys));
+
+        ((TestRecordingCommunicationSpi)delayed.configuration().getCommunicationSpi()).waitForBlocked();
 
         // If {@code true} the timeout is raised by local timer or received as a tx error from certain remote node.
         boolean localTimeout = true;
@@ -388,8 +389,8 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             }
         }
 
-        // In any case we sould see unresponded backups if any.
-        checkBackupNotRespondedDetected(backupsLsnrs);
+        if (cacheSyncMode == PRIMARY_SYNC)
+            checkBackupNotRespondedDetected(backupsLsnrs);
     }
 
     /**

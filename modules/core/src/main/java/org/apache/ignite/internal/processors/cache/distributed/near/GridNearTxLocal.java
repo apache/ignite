@@ -5050,9 +5050,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return Collection of not successed nodes.
      */
     private Collection<UUID> collectUnresponded() {
-        if (!mapped)
-            return Collections.emptyList();
-
         Set<UUID> res = new HashSet<>();
 
         if (lockFut instanceof GridDhtColocatedLockFuture)
