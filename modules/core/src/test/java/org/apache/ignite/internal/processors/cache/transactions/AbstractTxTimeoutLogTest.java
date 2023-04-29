@@ -31,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -379,6 +378,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             // At least one primary sould not respond yet if we detect timeout locally.
             assertTrue("Unresponded primary not detected.", !unespondedPrimaries.isEmpty());
 
+            // If we block on a primary, not backups, only this primary must not respond.
             if (onPrimary) {
                 assertTrue("Not found unresponded primary.", unespondedPrimaries.size() == 1 &&
                     unespondedPrimaries.containsKey(delayed.cluster().localNode().id()));
