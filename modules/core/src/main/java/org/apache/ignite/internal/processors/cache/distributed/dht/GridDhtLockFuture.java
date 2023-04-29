@@ -1027,8 +1027,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                 add(fut); // Append new future.
 
-                                if (true)
-                                    throw new Error("Test error");
+                                if (true) {
+                                    throw new IgniteCheckedException("Test error on send DHT lock request. " +
+                                        "Find a test case.");
+                                }
 
                                 cctx.io().send(n, req, cctx.ioPolicy());
 
