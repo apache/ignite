@@ -509,6 +509,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert req != null;
         assert !nodeId.equals(locNodeId);
 
+        log.warning("Simulating error of processing DHT lock request " + req);
+
+        if (true) {
+            throw new IgniteException("Test exception. Simulate failure of " +
+                "processin of remote DHT lock request " + req);
+        }
+
         int cnt = F.size(req.keys());
 
         GridDhtLockResponse res;
@@ -580,13 +587,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (res != null) {
             try {
-                if (res.error() == null) {
-                    log.warning("Simulating error for DHT lock request " + req);
-
-                    res.error(new IgniteCheckedException("Test exception. Simulate failure of " +
-                        "remote DHT lock request within"));
-                }
-
                 // Reply back to sender.
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
 
