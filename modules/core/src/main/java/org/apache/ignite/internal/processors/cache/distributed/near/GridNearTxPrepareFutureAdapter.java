@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -147,9 +146,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @return Ids of the nodes that not responded to the prepare request.
      */
     public Collection<UUID> unrespondedNodes() {
-        if (isCancelled())
-            return Collections.emptyList();
-
         compoundsReadLock();
 
         try {

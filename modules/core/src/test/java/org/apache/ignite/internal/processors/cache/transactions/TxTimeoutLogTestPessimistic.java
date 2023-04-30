@@ -25,7 +25,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
- * Tests log content of timeouted pessimistic transaction.
+ * Tests timeout log content of pessimistic transaction.
  */
 @RunWith(Parameterized.class)
 public class TxTimeoutLogTestPessimistic extends AbstractTxTimeoutLogTest {
