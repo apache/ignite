@@ -580,12 +580,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (res != null) {
             try {
-                if (res.error() == null) {
-                    log.warning("Simulating error for DHT lock request " + req);
+                log.warning("Simulating error for DHT lock request " + req);
 
-                    res.error(new IgniteCheckedException("Test exception. Simulate failure of " +
-                        "remote DHT lock request within"));
-                }
+                res.error(new IgniteCheckedException("Test exception. Simulate failure to get locks for remote DHT " +
+                    "lock request " + req));
 
                 // Reply back to sender.
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
