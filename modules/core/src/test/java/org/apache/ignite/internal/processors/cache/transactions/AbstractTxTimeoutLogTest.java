@@ -28,7 +28,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -36,11 +35,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -67,8 +64,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -87,28 +82,22 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     /** Grid logs to watch. */
     protected final Map<String, ListeningTestLogger> nodesLogs = new HashMap<>();
 
-    /** Cache sync mode. */
-    @Parameterized.Parameter(0)
-    public CacheWriteSynchronizationMode cacheSyncMode;
-
     /** Transaction node type (initiator). */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter
     public TxNodeType txNodeType;
 
     /** Transaction isolation. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(1)
     public TransactionIsolation txIsolation;
 
     /** Number of the cache backups. 1 for one-phase commit. */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(2)
     public int backups;
 
     /** Run params set. */
-    @Parameterized.Parameters(name = "syncMode={0},txNode={1},isolation={2},backups={3}")
+    @Parameterized.Parameters(name = "txNode={0},isolation={1},backups={2}")
     public static Iterable<Object[]> params() {
         return cartesianProduct(
-            // Sync mode.
-            F.asList(FULL_SYNC, PRIMARY_SYNC),
             // Transaction initiator type.
             F.asList(TxNodeType.values()),
             // Transaction isolation level.
@@ -162,15 +151,9 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         grid(0).createCache(new CacheConfiguration<>()
             .setName("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(cacheSyncMode)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups)
         );
-
-        try (IgniteDataStreamer<Object, Object> s = grid(1).dataStreamer("cache")) {
-            for (int i = 0; i < 1_000; ++i)
-                s.addData(i, i);
-        }
     }
 
     /** {@inheritDoc} */
@@ -337,7 +320,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         // doesn't use prepare timeout on the near/primary node. Also, we don't need to wait on primry if we block it.
         List<LogListener> backupsLsnrs = onPrimary || backups < 2
             ? Collections.emptyList()
-            : primaryLogListeners(primaries, delayed, msgToDelay);
+            : forBackupListeners(primaries, delayed, msgToDelay);
 
         IgniteInternalFuture<Exception> txFut = runAsync(() -> doTx(putter, keys));
 
@@ -375,22 +358,21 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             }
         }
 
-        if (cacheSyncMode == PRIMARY_SYNC)
-            checkBackupNotRespondedDetected(backupsLsnrs);
+        checkBackupNotRespondedDetected(backupsLsnrs);
     }
 
     /**
      * Checks if a unresponded backup is detected.
      */
-    private void checkBackupNotRespondedDetected(Collection<LogListener> lsnrs) throws InterruptedException {
+    private void checkBackupNotRespondedDetected(Collection<LogListener> lsnrs) {
         CountDownLatch backupsFlag = new CountDownLatch(1);
 
         lsnrs.forEach(bLsnr -> runAsync(() -> {
-            if (bLsnr.check(TX_TIMEOUT))
+            if (backupsFlag.getCount() > 0 && bLsnr.check(TX_TIMEOUT * 3))
                 backupsFlag.countDown();
         }));
 
-        backupsFlag.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertEquals("Backup message not found.", 0, backupsFlag.getCount(), TX_TIMEOUT * 3);
     }
 
     /**
@@ -468,17 +450,17 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Log listeners on {@code waitingPrimaries} nodes watching for unresponded {@code delayed} node.
+     * @return Log listeners on {@code nodes} nodes watching for unresponded {@code delayed} node.
      */
-    private List<LogListener> primaryLogListeners(Collection<ClusterNode> waitingPrimaries, IgniteEx delayed,
+    private List<LogListener> forBackupListeners(Collection<ClusterNode> nodes, IgniteEx delayed,
         Class<? extends GridDistributedBaseMessage> msgToDelay) {
         List<LogListener> res = new ArrayList<>();
 
-        waitingPrimaries.forEach(pn -> {
+        nodes.forEach(pn -> {
             // Certain message only for current primary/near note indicated by 'nodeId='
-            LogListener lsnr = LogListener.matches(", nodeId=" + pn.id() +
-                    "]. Detected unresponded backup nodes: " + delayed.localNode().id())
-                .times(msgToDelay == null ? 0 : 1).build();
+            LogListener lsnr = LogListener.matches("Detected unresponded backup nodes: " +
+                    delayed.localNode().id()).andMatches("nodeId=" + pn.id()).times(msgToDelay == null ? 0 : 1)
+                .build();
 
             res.add(lsnr);
         });
