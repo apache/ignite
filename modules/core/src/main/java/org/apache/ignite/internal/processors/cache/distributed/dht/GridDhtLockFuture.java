@@ -1022,8 +1022,15 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             }
 
                             if (!F.isEmpty(req.keys())) {
-                                if (tx != null)
+                                if (tx != null) {
+                                    if (true) {
+                                        throw new IgniteCheckedException("Test exception. Simulating failure of " +
+                                            "remote DHT lock request sending within an " + (tx.implicit() ?
+                                            "implicit" : "explicit") + " transaction " + tx);
+                                    }
+
                                     tx.addLockTransactionNode(n);
+                                }
 
                                 add(fut); // Append new future.
 

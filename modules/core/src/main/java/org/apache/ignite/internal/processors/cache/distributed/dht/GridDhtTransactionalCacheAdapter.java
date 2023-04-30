@@ -523,9 +523,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
                 ctx.deploymentEnabled());
 
-            if (tx() != null)
-                throw new IgniteCheckedException("Test exception. " + tx().implicit() + "ImplicitTx." + "ExplicitTx.");
-
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
 
