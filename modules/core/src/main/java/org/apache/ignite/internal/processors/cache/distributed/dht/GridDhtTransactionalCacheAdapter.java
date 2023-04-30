@@ -523,9 +523,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             res = new GridDhtLockResponse(ctx.cacheId(), req.version(), req.futureId(), req.miniId(), cnt,
                 ctx.deploymentEnabled());
 
-            if (tx() != null)
-                throw new IgniteCheckedException("Test exception. " + tx().implicit() + "ImplicitTx." + "ExplicitTx.");
-
             dhtTx = startRemoteTx(nodeId, req, res);
             nearTx = isNearEnabled(cacheCfg) ? near().startRemoteTx(nodeId, req) : null;
 
@@ -583,6 +580,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (res != null) {
             try {
+                if (res.error() == null) {
+                    log.warning("Simulating error for DHT lock request " + req);
+
+                    res.error(new IgniteCheckedException("Test exception. Simulate failure of " +
+                        "remote DHT lock request within"));
+                }
+
                 // Reply back to sender.
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
 
