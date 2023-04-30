@@ -1511,7 +1511,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> isMini(f) && ((MiniFuture)f).rcvRes)
+            return futures().stream().filter(f -> isMini(f) && !((MiniFuture)f).rcvRes)
                 .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
         }
         finally {
