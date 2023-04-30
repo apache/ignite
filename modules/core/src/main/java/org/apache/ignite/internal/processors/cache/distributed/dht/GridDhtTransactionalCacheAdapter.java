@@ -509,9 +509,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert req != null;
         assert !nodeId.equals(locNodeId);
 
-        log.warning("Simulating error of processing DHT lock request " + req);
+        if (req.inTx()) {
+            log.warning("Simulating error of processing DHT lock request " + req);
 
-        if (true) {
             throw new IgniteException("Test exception. Simulate failure of " +
                 "processin of remote DHT lock request " + req);
         }
