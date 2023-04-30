@@ -5016,9 +5016,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Collection<UUID> unrespondedNodes;
 
         synchronized (this) {
-            proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
+            unrespondedNodes = collectUnresponded();
 
-            unrespondedNodes = proceed || state() == MARKED_ROLLBACK ? collectUnresponded() : null;
+            proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
         }
 
         if (proceed || state() == MARKED_ROLLBACK) {
