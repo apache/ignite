@@ -23,7 +23,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
- * Tests log content of timeouted optimistic transaction.
+ * Tests timeout log content of optimistic transaction.
  */
 @RunWith(Parameterized.class)
 public class TxTimeoutLogTestOptimistic extends AbstractTxTimeoutLogTest {

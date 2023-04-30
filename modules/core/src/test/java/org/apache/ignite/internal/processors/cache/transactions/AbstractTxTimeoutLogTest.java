@@ -28,7 +28,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -36,11 +35,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -67,8 +64,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -81,37 +76,28 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     /** */
     private static final int TX_TIMEOUT = 3_000;
 
-    /** */
-    private static final int VALUES_CNT = 30;
-
-    /** */
+    /** Transaction concurrency. */
     protected TransactionConcurrency txConcurrency;
 
-    /** */
-    protected final Map<String, ListeningTestLogger> logs = new HashMap<>();
-
-    /** Cache sync mode. */
-    @Parameterized.Parameter(0)
-    public CacheWriteSynchronizationMode cacheSyncMode;
+    /** Grid logs to watch. */
+    protected final Map<String, ListeningTestLogger> nodesLogs = new HashMap<>();
 
     /** Transaction node type (initiator). */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter
     public TxNodeType txNodeType;
 
     /** Transaction isolation. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(1)
     public TransactionIsolation txIsolation;
 
     /** Number of the cache backups. 1 for one-phase commit. */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(2)
     public int backups;
 
     /** Run params set. */
-    @Parameterized.Parameters(name = "syncMode={0},txNode={1},isolation={2},backups={3}")
+    @Parameterized.Parameters(name = "txNode={0},isolation={1},backups={2}")
     public static Iterable<Object[]> params() {
         return cartesianProduct(
-            // Sync mode.
-            F.asList(FULL_SYNC, PRIMARY_SYNC),
             // Transaction initiator type.
             F.asList(TxNodeType.values()),
             // Transaction isolation level.
@@ -124,9 +110,6 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        ((TestRecordingCommunicationSpi)txNode(TxNodeType.SERVER_DELAYED).configuration().getCommunicationSpi())
-            .stopBlock();
 
         stopAllGrids();
     }
@@ -145,7 +128,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         ListeningTestLogger ll = new ListeningTestLogger(cfg.getGridLogger());
 
-        logs.put(igniteInstanceName, ll);
+        nodesLogs.put(igniteInstanceName, ll);
 
         cfg.setGridLogger(ll);
 
@@ -168,15 +151,9 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         grid(0).createCache(new CacheConfiguration<>()
             .setName("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setWriteSynchronizationMode(cacheSyncMode)
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(backups)
         );
-
-        try (IgniteDataStreamer<Object, Object> s = grid(1).dataStreamer("cache")) {
-            for (int i = 0; i < 1_000; ++i)
-                s.addData(i, i);
-        }
     }
 
     /** {@inheritDoc} */
@@ -211,7 +188,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         LogListener backupLsnr = LogListener.matches("Detected unresponded backup nodes").build();
 
-        logs.values().forEach(l -> l.registerListener(backupLsnr));
+        nodesLogs.values().forEach(l -> l.registerListener(backupLsnr));
 
         LogListener txNodeLogLsnr = txNodeLsnr(putter.localNode().id(), null);
 
@@ -222,9 +199,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             List<Ignite> backs = backupNodes(key, "cache");
 
             return prim.equals(primary) && backs.contains(gone);
-        }).limit(VALUES_CNT).collect(Collectors.toList());
-
-        assert keys.size() == VALUES_CNT;
+        }).limit(30).collect(Collectors.toList());
 
         blockMessage(gone, GridDhtTxPrepareResponse.class);
 
@@ -251,7 +226,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test no 'not responded nodes' messages are not when some primary node just leaves at prephare phase.
+     * Test that no 'not responded nodes' messages are not met when some primary node leaves at prephare phase.
      */
     @Test
     public void testPrimaryLeftOnNearPrepare() throws Exception {
@@ -259,7 +234,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Does test that no 'not responded nodes' messages are not when some primary node just leaves at prephare phase.
+     * Perform test that no 'not responded nodes' messages are not when some primary node just leaves at prephare phase.
      */
     protected void doTestPrimaryLeft(Class<? extends GridDistributedBaseMessage> msgToBlock) throws Exception {
         IgniteEx putter = txNode(txNodeType);
@@ -273,15 +248,13 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         LogListener backupLsnr = LogListener.matches("Detected unresponded backup nodes").build();
 
-        logs.values().forEach(l -> l.registerListener(backupLsnr));
+        nodesLogs.values().forEach(l -> l.registerListener(backupLsnr));
 
         List<Integer> keys = keys(putter, gone, true);
 
-        assert keys.size() == VALUES_CNT;
-
-        // Ensure single key is for the gone primary node.
+        // If key is single, ensure it is for the primary to check if only whis node logged.
         assert keys.size() != 1 || primaryNode(keys.get(0), "cache").equals(gone);
-        // If several keys, ensure they are for several primaries, not for just one.
+        // If several keys, ensure they are for several primaries, not for just one. To check only target node logged.
         assert keys.size() < 2 || keys.stream().anyMatch(key -> !primaryNode(key, "cache").equals(gone));
 
         blockMessage(gone, msgToBlock);
@@ -296,10 +269,6 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             assertTrue(txFut.get() instanceof Exception);
 
             IgniteCache<Integer, Integer> c0 = txNode(TxNodeType.SERVER).cache("cache");
-
-            // A primary gone. Pessimistic transaction is not complete when a primary leaves.
-            for (int i = 0; i < keys.size(); ++i)
-                assertEquals(keys.get(i), c0.get(keys.get(i)));
 
             // But has no 'not responded nodes' in the log.
             assertFalse(txNodeLogLsnr.check());
@@ -345,13 +314,13 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
 
         // Since we got various singleton static loggers, we check all the loggers for the exact results indicated by
         // 'nodeId=' for the transaction node.
-        G.allGrids().forEach(ign -> logs.get(ign.name()).registerListener(txNodeLsnr));
+        G.allGrids().forEach(ign -> nodesLogs.get(ign.name()).registerListener(txNodeLsnr));
 
         // One-phase commit (and some other cases, see IGNITE-19336) doesn't wait apply the finish/prepare command and
         // doesn't use prepare timeout on the near/primary node. Also, we don't need to wait on primry if we block it.
         List<LogListener> backupsLsnrs = onPrimary || backups < 2
             ? Collections.emptyList()
-            : primaryLogListeners(primaries, delayed, msgToDelay);
+            : forBackupListeners(primaries, delayed, msgToDelay);
 
         IgniteInternalFuture<Exception> txFut = runAsync(() -> doTx(putter, keys));
 
@@ -389,26 +358,25 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             }
         }
 
-        if (cacheSyncMode == PRIMARY_SYNC)
-            checkBackupNotRespondedDetected(backupsLsnrs);
+        checkBackupNotRespondedDetected(backupsLsnrs);
     }
 
     /**
-     * if required, checks if delayed backup is detected.
+     * Checks if a unresponded backup is detected.
      */
-    private void checkBackupNotRespondedDetected(Collection<LogListener> lsnrs) throws InterruptedException {
+    private void checkBackupNotRespondedDetected(Collection<LogListener> lsnrs) {
         CountDownLatch backupsFlag = new CountDownLatch(1);
 
         lsnrs.forEach(bLsnr -> runAsync(() -> {
-            if (bLsnr.check(TX_TIMEOUT))
+            if (backupsFlag.getCount() > 0 && bLsnr.check(TX_TIMEOUT * 3))
                 backupsFlag.countDown();
         }));
 
-        backupsFlag.await(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertEquals("Backup message not found.", 0, backupsFlag.getCount(), TX_TIMEOUT * 3);
     }
 
     /**
-     * Extracts primary nodes to watch for 'not responded primary...' on the transaction timeout.
+     * Extracts primary nodes to watch for 'not responded primary...'.
      */
     private Collection<ClusterNode> awaitedPrimaries(IgniteEx delayed, IgniteEx putter, boolean delayOnPrimary,
         Collection<Integer> keys) {
@@ -433,7 +401,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
      *
      * @param txNodeId Id of current transaction processing node.
      * @param unresponded Ids of detected unresponded primaries.
-     * @return Log listener for transaction initiator node.
+     * @return Log listener.
      */
     protected static LogListener txNodeLsnr(UUID txNodeId, @Nullable Map<UUID, Integer> unresponded) {
         return new LogListener() {
@@ -482,24 +450,24 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Log listeners on {@code waitingPrimaries} watching unresponded {@code delayed}.
+     * @return Log listeners on {@code nodes} nodes watching for unresponded {@code delayed} node.
      */
-    private List<LogListener> primaryLogListeners(Collection<ClusterNode> waitingPrimaries, IgniteEx delayed,
+    private List<LogListener> forBackupListeners(Collection<ClusterNode> nodes, IgniteEx delayed,
         Class<? extends GridDistributedBaseMessage> msgToDelay) {
         List<LogListener> res = new ArrayList<>();
 
-        waitingPrimaries.forEach(pn -> {
+        nodes.forEach(pn -> {
             // Certain message only for current primary/near note indicated by 'nodeId='
-            LogListener lsnr = LogListener.matches(", nodeId=" + pn.id() +
-                    "]. Detected unresponded backup nodes: " + delayed.localNode().id())
-                .times(msgToDelay == null ? 0 : 1).build();
+            LogListener lsnr = LogListener.matches("Detected unresponded backup nodes: " +
+                    delayed.localNode().id()).andMatches("nodeId=" + pn.id()).times(msgToDelay == null ? 0 : 1)
+                .build();
 
             res.add(lsnr);
         });
 
-        // Since we got various singleton static loggers, we check all the loggers for the exact results.
+        // Since we got various singleton static loggers, we check all the grid loggers for the exact results.
         grid(0).cluster().forServers().nodes().forEach(n -> {
-            ListeningTestLogger serverLog = logs.get(grid(n).name());
+            ListeningTestLogger serverLog = nodesLogs.get(grid(n).name());
 
             serverLog.registerAllListeners(res.toArray(new LogListener[res.size()]));
         });
@@ -559,7 +527,9 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
         assert txNodeType != TxNodeType.SERVER_DELAYED ||
             (putter.equals(delayedNode) && !putter.cluster().localNode().isClient());
 
-        List<Integer> keys = new ArrayList<>(VALUES_CNT);
+        int cnt = 30;
+
+        List<Integer> keys = new ArrayList<>(cnt);
 
         int key = 0;
 
@@ -570,7 +540,7 @@ public abstract class AbstractTxTimeoutLogTest extends GridCommonAbstractTest {
             ++key;
         }
 
-        keys.addAll(IntStream.range(key + 1, key + VALUES_CNT).boxed().collect(Collectors.toList()));
+        keys.addAll(IntStream.range(key + 1, key + cnt).boxed().collect(Collectors.toList()));
 
         return keys;
     }

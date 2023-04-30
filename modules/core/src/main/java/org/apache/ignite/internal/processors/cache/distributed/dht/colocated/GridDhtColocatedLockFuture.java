@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1504,20 +1503,15 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return Ids of the nodes that not responded to the lock request.
      */
     public synchronized Collection<UUID> unrespondedNodes() {
-        LockTimeoutObject tObj = timeoutObj;
-
-        Collection<UUID> res = tObj == null ? null : tObj.unrespondedNodes;
+        Collection<UUID> res = timeoutObj == null ? null : timeoutObj.unrespondedNodes;
 
         if (res != null)
             return res;
 
-        if (isCancelled())
-            return Collections.emptyList();
-
         compoundsReadLock();
 
         try {
-            return futures().stream().filter(f -> isMini(f) && ((MiniFuture)f).rcvRes)
+            return futures().stream().filter(f -> isMini(f) && !((MiniFuture)f).rcvRes)
                 .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
         }
         finally {
@@ -1589,11 +1583,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     });
                 }
                 else {
+                    err = tx.timeoutException();
+
                     synchronized (GridDhtColocatedLockFuture.this) {
                         unrespondedNodes = unrespondedNodes();
                     }
-
-                    err = tx.timeoutException();
                 }
             }
             else {

@@ -119,7 +119,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -5016,7 +5015,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Collection<UUID> unrespondedNodes;
 
         synchronized (this) {
-            unrespondedNodes = collectUnresponded();
+            unrespondedNodes = new HashSet<>();
+
+            if (lockFut instanceof GridDhtColocatedLockFuture)
+                unrespondedNodes.addAll(((GridDhtColocatedLockFuture)lockFut).unrespondedNodes());
+
+            if (unrespondedNodes.isEmpty() && prepFut != null)
+                unrespondedNodes.addAll(prepFut.unrespondedNodes());
 
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
         }
@@ -5044,21 +5049,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (log.isDebugEnabled())
                 log.debug("Skip rollback tx on timeout: " + this);
         }
-    }
-
-    /**
-     * @return Collection of not successed nodes.
-     */
-    private Collection<UUID> collectUnresponded() {
-        Set<UUID> res = new HashSet<>();
-
-        if (lockFut instanceof GridDhtColocatedLockFuture)
-            res.addAll(((GridDhtColocatedLockFuture)lockFut).unrespondedNodes());
-
-        if (res.isEmpty() && prepFut != null)
-            res.addAll(prepFut.unrespondedNodes());
-
-        return res;
     }
 
     /** */
