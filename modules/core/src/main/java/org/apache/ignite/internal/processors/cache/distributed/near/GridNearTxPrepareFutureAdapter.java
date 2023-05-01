@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Collectors;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundFuture;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -141,21 +139,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * Called when related {@link GridNearTxLocal} is completed asynchronously on timeout,
      */
     public abstract void onNearTxLocalTimeout();
-
-    /**
-     * @return Ids of the nodes that not responded to the prepare request.
-     */
-    public Collection<UUID> unrespondedNodes() {
-        compoundsReadLock();
-
-        try {
-            return futures().stream().filter(f -> f instanceof NodeFuture && !f.isDone() && !f.isCancelled())
-                .map(f -> ((NodeFuture<?>)f).nodeId()).collect(Collectors.toList());
-        }
-        finally {
-            compoundsReadUnlock();
-        }
-    }
 
     /**
      * @return Transaction.
@@ -300,15 +283,5 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
             }
         }
-    }
-
-    /**
-     * Future awaiting response from node.
-     */
-    protected abstract static class NodeFuture<R> extends GridFutureAdapter<R> {
-        /**
-         * @return Node id which is supposed to response for this future.
-         */
-        protected abstract UUID nodeId();
     }
 }

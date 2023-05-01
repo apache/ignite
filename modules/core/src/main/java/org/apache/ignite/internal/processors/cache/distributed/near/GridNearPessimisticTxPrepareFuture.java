@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -482,7 +483,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** */
-    private class MiniFuture extends NodeFuture<GridNearTxPrepareResponse> {
+    private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         private final int futId;
 
@@ -510,11 +511,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          */
         public ClusterNode primary() {
             return m.primary();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected UUID nodeId() {
-            return primary().id();
         }
 
         /**

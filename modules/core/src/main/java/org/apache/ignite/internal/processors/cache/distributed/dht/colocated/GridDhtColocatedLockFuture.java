@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -1500,26 +1499,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @return Ids of the nodes that not responded to the lock request.
-     */
-    public synchronized Collection<UUID> unrespondedNodes() {
-        Collection<UUID> res = timeoutObj == null ? null : timeoutObj.unrespondedNodes;
-
-        if (res != null)
-            return res;
-
-        compoundsReadLock();
-
-        try {
-            return futures().stream().filter(f -> isMini(f) && !((MiniFuture)f).rcvRes)
-                .map(f -> ((MiniFuture)f).node().id()).collect(Collectors.toList());
-        }
-        finally {
-            compoundsReadUnlock();
-        }
-    }
-
-    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1533,9 +1512,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         /** Requested keys. */
         private Set<IgniteTxKey> requestedKeys;
 
-        /** Unresponded after timeout nodes. */
-        private volatile Collection<UUID> unrespondedNodes;
-
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
@@ -1545,8 +1521,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 if (cctx.tm().deadlockDetectionEnabled()) {
                     synchronized (GridDhtColocatedLockFuture.this) {
                         requestedKeys = requestedKeys0();
-
-                        unrespondedNodes = unrespondedNodes();
 
                         clear(); // Stop response processing.
                     }
@@ -1582,13 +1556,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         }
                     });
                 }
-                else {
+                else
                     err = tx.timeoutException();
-
-                    synchronized (GridDhtColocatedLockFuture.this) {
-                        unrespondedNodes = unrespondedNodes();
-                    }
-                }
             }
             else {
                 synchronized (this) {

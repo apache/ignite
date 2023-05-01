@@ -192,15 +192,6 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
-     * @return Blocked messages.
-     */
-    public List<BlockedMessageDescriptor> blockedMessages() {
-        synchronized (this) {
-            return Collections.unmodifiableList(blockedMsgs);
-        }
-    }
-
-    /**
      * @param cls Message class.
      * @param nodeName Node name.
      * @throws InterruptedException If interrupted.
@@ -451,7 +442,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         /**
          *
          */
-        private BlockedMessageDescriptor(ClusterNode destNode, GridIoMessage msg, Span span) {
+        public BlockedMessageDescriptor(ClusterNode destNode, GridIoMessage msg, Span span) {
             this.destNode = destNode;
             this.msg = msg;
             this.span = span;
@@ -474,7 +465,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         /**
          * @return Span in which context sending must be done.
          */
-        private Span span() {
+        public Span span() {
             return span;
         }
 

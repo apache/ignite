@@ -45,6 +45,7 @@ import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedExceptio
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -742,7 +743,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     /**
      *
      */
-    private static class MiniFuture extends NodeFuture<GridNearTxPrepareResponse> {
+    private static class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** Receive result flag updater. */
         private static final AtomicIntegerFieldUpdater<MiniFuture> RCV_RES_UPD =
             AtomicIntegerFieldUpdater.newUpdater(MiniFuture.class, "rcvRes");
@@ -783,11 +784,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          */
         public ClusterNode primary() {
             return m.primary();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected UUID nodeId() {
-            return primary().id();
         }
 
         /**

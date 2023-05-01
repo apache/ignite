@@ -70,8 +70,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxTimeoutLogTestOptimistic;
-import org.apache.ignite.internal.processors.cache.transactions.TxTimeoutLogTestPessimistic;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -124,9 +122,6 @@ public class IgniteCacheTestSuite6 {
 
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxOnCachesStopTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, TxTimeoutLogTestPessimistic.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, TxTimeoutLogTestOptimistic.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheMultiClientsStartTest.class, ignoredTests);
 

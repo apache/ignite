@@ -797,7 +797,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /**
      * @param err Certain cause of the timeout.
-     * @return Transaction timeout exception with the indicated error.
+     * @return Transaction timeout exception with the indicated error cause.
      */
     public final IgniteCheckedException timeoutException(String err) {
         return new IgniteTxTimeoutCheckedException(err + " [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
