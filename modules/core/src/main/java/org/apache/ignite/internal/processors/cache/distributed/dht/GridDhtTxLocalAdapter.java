@@ -708,7 +708,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         if (timeout == -1) {
             return new GridFinishedFuture<>(timeoutException("Unable to try to acquire lock. Transaction timeout is " +
-                " reached "));
+                " already reached "));
         }
 
         if (isRollbackOnly())
