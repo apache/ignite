@@ -95,7 +95,7 @@ public enum CommandList {
     PERSISTENCE("--persistence", new PersistenceCommand()),
 
     /** Command to manage PDS defragmentation. */
-    DEFRAGMENTATION("--defragmentation", new DefragmentationCommand()),
+    DEFRAGMENTATION("--defragmentation", new DeclarativeCommandAdapter<>("Defragmentation")),
 
     /** Command to manage performance statistics. */
     PERFORMANCE_STATISTICS("--performance-statistics", new DeclarativeCommandAdapter<>("PerformanceStatistics")),

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.visor.defragmentation;
 
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationCancelCommandArg;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationScheduleCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -32,20 +36,20 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 @GridVisorManagementTask
 public class VisorDefragmentationTask extends VisorMultiNodeTask
-    <VisorDefragmentationTaskArg, VisorDefragmentationTaskResult, VisorDefragmentationTaskResult> {
+    <DefragmentationStatusCommandArg, VisorDefragmentationTaskResult, VisorDefragmentationTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorDefragmentationTaskArg, VisorDefragmentationTaskResult> job(
-        VisorDefragmentationTaskArg arg
+    @Override protected VisorJob<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> job(
+        DefragmentationStatusCommandArg arg
     ) {
         return new VisorDefragmentationJob(arg, debug);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override protected VisorDefragmentationTaskResult reduce0(List<ComputeJobResult> results) {
-        if (taskArg.operation() == VisorDefragmentationOperation.SCHEDULE) {
+        if (taskArg instanceof DefragmentationScheduleCommandArg) {
             StringBuilder msg = new StringBuilder();
 
             for (ComputeJobResult res : results) {
@@ -75,7 +79,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
     }
 
     /** */
-    private static class VisorDefragmentationJob extends VisorJob<VisorDefragmentationTaskArg, VisorDefragmentationTaskResult> {
+    private static class VisorDefragmentationJob extends VisorJob<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -85,36 +89,34 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorDefragmentationJob(@Nullable VisorDefragmentationTaskArg arg, boolean debug) {
+        protected VisorDefragmentationJob(@Nullable DefragmentationStatusCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected VisorDefragmentationTaskResult run(
-            @Nullable VisorDefragmentationTaskArg arg
+            @Nullable DefragmentationStatusCommandArg arg
         ) throws IgniteException {
-            switch (arg.operation()) {
-                case SCHEDULE:
-                    return runSchedule(arg);
+            if (arg instanceof DefragmentationScheduleCommandArg)
+                return runSchedule((DefragmentationScheduleCommandArg)arg);
 
-                case STATUS:
-                    return runStatus(arg);
+            if (arg instanceof DefragmentationCancelCommandArg)
+                return runCancel();
 
-                case CANCEL:
-                    return runCancel(arg);
-            }
+            if (arg instanceof DefragmentationStatusCommandArg)
+                return runStatus();
 
-            throw new IllegalArgumentException("Operation: " + arg.operation());
+            throw new IllegalArgumentException("Operation: " + arg);
         }
 
         /** */
-        private VisorDefragmentationTaskResult runSchedule(VisorDefragmentationTaskArg arg) {
+        private VisorDefragmentationTaskResult runSchedule(DefragmentationScheduleCommandArg arg) {
             final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
             final IgniteDefragmentation.ScheduleResult scheduleResult;
 
             try {
-                scheduleResult = defragmentation.schedule(arg.cacheNames());
+                scheduleResult = defragmentation.schedule(Arrays.asList(arg.caches()));
             }
             catch (IgniteCheckedException e) {
                 return new VisorDefragmentationTaskResult(false, e.getMessage());
@@ -136,7 +138,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
         }
 
         /** */
-        private VisorDefragmentationTaskResult runStatus(VisorDefragmentationTaskArg arg) {
+        private VisorDefragmentationTaskResult runStatus() {
             final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
             try {
@@ -148,7 +150,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
         }
 
         /** */
-        private VisorDefragmentationTaskResult runCancel(VisorDefragmentationTaskArg arg) {
+        private VisorDefragmentationTaskResult runCancel() {
             final IgniteDefragmentation defragmentation = ignite.context().defragmentation();
 
             try {

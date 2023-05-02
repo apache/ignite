@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
@@ -45,6 +46,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
             new ShutdownPolicyCommand(),
             new PropertyCommand(),
             new SystemViewCommand(),
+            new DefragmentationCommand(),
             new PerformanceStatisticsCommand(),
             new CdcCommand()
         );

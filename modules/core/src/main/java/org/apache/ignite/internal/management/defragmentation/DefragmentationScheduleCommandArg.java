@@ -15,45 +15,61 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.cdc;
+package org.apache.ignite.internal.management.defragmentation;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@WithCliConfirmParameter
-public class CdcDeleteLostSegmentLinksCommandArg extends IgniteDataTransferObject {
+public class DefragmentationScheduleCommandArg extends DefragmentationStatusCommandArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(optional = true, description = "ID of the node to delete lost segment links from. " +
-        "If not set, the command will affect all server nodes")
-    private UUID nodeId;
+    @Argument(example = "consistentId0,consistentId1")
+    private String[] nodes;
+
+    /** */
+    @Argument(example = "cache1,cache2,cache3", optional = true)
+    private String[] caches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
+        super.writeExternalData(out);
+
+        U.writeArray(out, nodes);
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
+        super.readExternalData(protoVer, in);
+
+        nodes = U.readArray(in, String.class);
+        caches = U.readArray(in, String.class);
     }
 
     /** */
-    public UUID nodeId() {
-        return nodeId;
+    public String[] nodes() {
+        return nodes;
     }
 
     /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
+    public void nodes(String[] nodes) {
+        this.nodes = nodes;
+    }
+
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 }
