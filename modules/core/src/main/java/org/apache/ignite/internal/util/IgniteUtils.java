@@ -572,6 +572,9 @@ public abstract class IgniteUtils {
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
 
+    /** */
+    public static final String DELIM = "--------------------------------------------------------------------------------";
+
     /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
 

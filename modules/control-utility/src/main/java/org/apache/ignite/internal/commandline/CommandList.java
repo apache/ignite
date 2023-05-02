@@ -32,16 +32,16 @@ import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
  */
 public enum CommandList {
     /** */
-    ACTIVATE("--activate", new ActivateCommand()),
+    ACTIVATE("--activate", new DeclarativeCommandAdapter<>("Activate")),
 
     /** */
-    DEACTIVATE("--deactivate", new DeactivateCommand()),
+    DEACTIVATE("--deactivate", new DeclarativeCommandAdapter<>("Deactivate")),
 
     /** */
-    STATE("--state", new StateCommand()),
+    STATE("--state", new DeclarativeCommandAdapter<>("State")),
 
     /** */
-    SET_STATE("--set-state", new ClusterStateChangeCommand()),
+    SET_STATE("--set-state", new DeclarativeCommandAdapter<>("SetState")),
 
     /** */
     BASELINE("--baseline", new BaselineCommand()),

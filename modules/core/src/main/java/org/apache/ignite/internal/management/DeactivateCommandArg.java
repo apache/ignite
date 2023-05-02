@@ -15,24 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.wal;
+package org.apache.ignite.internal.management;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliConfirmParameter;
 
 /** */
-public class WalPrintCommandArg extends WalDeleteCommandArg {
+@CliConfirmParameter
+public class DeactivateCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
+    /** */
+    @Argument(optional = true)
+    private boolean force;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        //No-op.
+        out.writeBoolean(force);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        //No-op.
+        force = in.readBoolean();
+    }
+
+    /** */
+    public boolean force() {
+        return force;
+    }
+
+    /** */
+    public void force(boolean force) {
+        this.force = force;
     }
 }

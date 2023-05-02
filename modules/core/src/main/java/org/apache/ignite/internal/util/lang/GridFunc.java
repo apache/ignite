@@ -134,6 +134,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings("unchecked")
 public class GridFunc {
+
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 

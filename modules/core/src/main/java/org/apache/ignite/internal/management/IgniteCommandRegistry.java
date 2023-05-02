@@ -33,6 +33,10 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
     /** */
     public IgniteCommandRegistry() {
         super(
+            new ActivateCommand(),
+            new DeactivateCommand(),
+            new StateCommand(),
+            new SetStateCommand(),
             new WalCommand(),
             new EncryptionCommand(),
             new KillCommand(),

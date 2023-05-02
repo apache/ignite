@@ -46,13 +46,13 @@ import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.singletonMap;
-import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
+import static org.apache.ignite.internal.util.typedef.internal.U.DELIM;
 
 /**
  * Commands associated with baseline functionality.

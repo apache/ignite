@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
@@ -67,9 +68,16 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     }
 
     /**
+     * @param cli Grid client to get required information from cluster.
+     * @param arg Command argument.
      * @return Message text to show user for. If {@code null} it means that confirmation is not needed.
      */
-    public default @Nullable String confirmationPrompt(A arg) {
+    public default @Nullable String confirmationPrompt(GridClient cli, A arg) throws Exception {
+        return null;
+    }
+
+    /** @return Deprecation message if command on the way to be decomissioned. */
+    public default @Nullable String deprecationMessage() {
         return null;
     }
 

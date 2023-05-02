@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskResult;
@@ -53,7 +54,7 @@ public class ChangeTagCommand implements Command<ChangeTagCommandArg, VisorClust
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String confirmationPrompt(ChangeTagCommandArg arg) {
+    @Override public @Nullable String confirmationPrompt(GridClient cli, ChangeTagCommandArg arg) {
         return "Warning: the command will change cluster tag.";
     }
 }

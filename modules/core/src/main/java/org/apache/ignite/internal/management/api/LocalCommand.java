@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.wal;
+package org.apache.ignite.internal.management.api;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
-/** */
-public class WalPrintCommandArg extends WalDeleteCommandArg {
-    /** */
-    private static final long serialVersionUID = 0;
+/**
+ * Command that can be executed without ant compute task, locally.
+ */
+public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
+    /**
+     * @param cli Grid client instance.
+     * @param arg Command argument.
+     * @return Command result.
+     */
+    public R execute(GridClient cli, A arg) throws Exception;
 
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        //No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        //No-op.
+    @Override public default Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskClass() {
+        return null;
     }
 }

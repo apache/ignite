@@ -50,7 +50,8 @@ import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
-import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.util.lang.GridTuple4;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,7 +82,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
     /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
-    private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
+    private GridTuple4<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean, String> parsed;
 
     /** @param name Root command name. */
     public DeclarativeCommandAdapter(String name) {
@@ -104,13 +105,14 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             parsed = F.t(
                 cmd0,
                 null,
-                true
+                true,
+                null
             );
 
             return;
         }
 
-        if (cmd0.taskClass() == null) {
+        if (cmd0.taskClass() == null && !(cmd0 instanceof LocalCommand)) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedCommandName(cmd0.getClass(), CMD_WORDS_DELIM) + " can't be executed"
             );
@@ -163,14 +165,15 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     (fld, pos) -> parser.get(pos),
                     fld -> parser.get(toFormattedFieldName(fld))
                 ),
-                parser.get(CMD_AUTO_CONFIRMATION)
+                parser.get(CMD_AUTO_CONFIRMATION),
+                null
             );
         }
         catch (InstantiationException | IllegalAccessException e) {
             throw new IgniteException(e);
         }
         catch (IllegalArgumentException e) {
-            parsed = F.t(cmd0, null, false);
+            parsed = F.t(cmd0, null, false, null);
 
             throw e;
         }
@@ -190,32 +193,43 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            GridClientCompute compute = client.compute();
-
-            Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
-                .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
-
-            Collection<UUID> nodeIds = commandNodes(
-                parsed.get1(),
-                parsed.get2(),
-                clusterNodes.keySet(),
-                getBalancedNode(compute).nodeId(),
-                id -> clusterNodes.get(id).isClient()
-            );
-
-            Collection<GridClientNode> connectable = F.viewReadOnly(
-                nodeIds,
-                clusterNodes::get,
-                id -> clusterNodes.get(id).connectable()
-            );
-
-            if (!F.isEmpty(connectable))
-                compute = compute.projection(connectable);
+            if (parsed.get1().getClass().isAnnotationPresent(Deprecated.class) &&
+                parsed.get1().deprecationMessage() != null) {
+                logger.warning(parsed.get1().deprecationMessage());
+            }
 
             org.apache.ignite.internal.management.api.Command<A, R> cmd =
                 (org.apache.ignite.internal.management.api.Command<A, R>)parsed.get1();
 
-            R res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
+            R res;
+
+            if (cmd instanceof LocalCommand)
+                res = ((LocalCommand<A, R>)parsed.get1()).execute(client, parsed.get2());
+            else {
+                GridClientCompute compute = client.compute();
+
+                Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
+                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
+
+                Collection<UUID> nodeIds = commandNodes(
+                    parsed.get1(),
+                    parsed.get2(),
+                    clusterNodes.keySet(),
+                    getBalancedNode(compute).nodeId(),
+                    id -> clusterNodes.get(id).isClient()
+                );
+
+                Collection<GridClientNode> connectable = F.viewReadOnly(
+                    nodeIds,
+                    clusterNodes::get,
+                    id -> clusterNodes.get(id).connectable()
+                );
+
+                if (!F.isEmpty(connectable))
+                    compute = compute.projection(connectable);
+
+                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
+            }
 
             cmd.printResult(parsed.get2(), res, logger::info);
 
@@ -385,8 +399,18 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+        if (parsed == null)
+            return;
+
+        try (GridClient client = Command.startClient(clientCfg)) {
+            parsed.set4(parsed.get1().confirmationPrompt(client, parsed.get2()));
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return parsed == null ? null : parsed.get1().confirmationPrompt(parsed.get2());
+        return parsed == null ? null : parsed.get4();
     }
 
     /** {@inheritDoc} */

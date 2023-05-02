@@ -15,38 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.encryption;
+package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.visor.encryption.VisorChangeMasterKeyTask;
+import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NoArg;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /** */
-public class EncryptionChangeMasterKeyCommand implements Command<EncryptionChangeMasterKeyCommandArg, String> {
+@Deprecated
+public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Change the master key";
+        return "Activate cluster (deprecated. Use --set-state instead)";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<EncryptionChangeMasterKeyCommandArg> argClass() {
-        return EncryptionChangeMasterKeyCommandArg.class;
+    @Override public String deprecationMessage() {
+        return "Command deprecated. Use --set-state instead.";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorChangeMasterKeyTask> taskClass() {
-        return VisorChangeMasterKeyTask.class;
+    @Override public NoArg execute(GridClient cli, NoArg arg) throws Exception {
+        GridClientClusterState state = cli.state();
+
+        state.state(ACTIVE, false);
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(EncryptionChangeMasterKeyCommandArg arg, String res, Consumer<String> printer) {
-        printer.accept(res);
+    @Override public void printResult(NoArg arg, NoArg res, Consumer<String> printer) {
+        printer.accept("Cluster activated");
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, EncryptionChangeMasterKeyCommandArg arg) {
-        return "Warning: the command will change the master key. Cache start and node join during the key change " +
-            "process is prohibited and will be rejected.";
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 }
