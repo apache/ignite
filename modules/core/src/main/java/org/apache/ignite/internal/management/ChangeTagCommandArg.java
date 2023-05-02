@@ -15,24 +15,47 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/cdc/CdcResendCommandArg.java
+package org.apache.ignite.internal.management.cdc;
+========
 package org.apache.ignite.internal.management;
+>>>>>>>> IGNITE-15629:modules/core/src/main/java/org/apache/ignite/internal/management/ChangeTagCommandArg.java
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliConfirmParameter;
-import org.apache.ignite.internal.management.api.Positional;
+<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/cdc/CdcResendCommandArg.java
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@CliConfirmParameter
+public class CdcResendCommandArg extends IgniteDataTransferObject {
+========
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+/** */
+@WithCliConfirmParameter
 public class ChangeTagCommandArg extends IgniteDataTransferObject {
+>>>>>>>> IGNITE-15629:modules/core/src/main/java/org/apache/ignite/internal/management/ChangeTagCommandArg.java
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
+<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/cdc/CdcResendCommandArg.java
+    @Argument(
+        description = "specifies a comma-separated list of cache names",
+        example = "cache1,...,cacheN"
+    )
+    private String[] caches;
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeArray(out, caches);
+========
     @Positional
     @Argument(javaStyleExample = true)
     private String newTagValue;
@@ -40,10 +63,24 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, newTagValue);
+>>>>>>>> IGNITE-15629:modules/core/src/main/java/org/apache/ignite/internal/management/ChangeTagCommandArg.java
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/cdc/CdcResendCommandArg.java
+        caches = U.readArray(in, String.class);
+    }
+
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
+========
         newTagValue = U.readString(in);
     }
 
@@ -54,9 +91,10 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
 
     /** */
     public void newTagValue(String newTagValue) {
-        if (newTagValue.isEmpty())
+        if (F.isEmpty(newTagValue))
             throw new IllegalArgumentException("newTagValue is empty.");
 
         this.newTagValue = newTagValue;
+>>>>>>>> IGNITE-15629:modules/core/src/main/java/org/apache/ignite/internal/management/ChangeTagCommandArg.java
     }
 }
