@@ -23,11 +23,9 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliConfirmParameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@CliConfirmParameter
 public class CdcDeleteLostSegmentLinksCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
