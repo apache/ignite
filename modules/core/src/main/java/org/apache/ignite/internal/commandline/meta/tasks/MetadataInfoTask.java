@@ -59,9 +59,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObjec
             return results.get(0).getData();
     }
 
-    /**
-     * Job for {@link CheckIndexInlineSizes} command.
-     */
+    /** */
     private static class MetadataListJob extends VisorJob<IgniteDataTransferObject, MetadataListResult> {
         /** */
         private static final long serialVersionUID = 0L;
