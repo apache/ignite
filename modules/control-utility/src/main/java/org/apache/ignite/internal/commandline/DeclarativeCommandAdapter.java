@@ -44,10 +44,12 @@ import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -370,6 +372,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 }
             }
         );
+
+        if (cmd.argClass().isAnnotationPresent(WithCliConfirmParameter.class))
+            bldr.append(' ').append(CommandUtils.asOptional(CMD_AUTO_CONFIRMATION, true));
 
         logger.info(bldr.toString());
     }

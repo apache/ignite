@@ -33,6 +33,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
         super(
             new EncryptionCommand(),
             new KillCommand(),
+            new ChangeTagCommand(),
             new MetaCommand(),
             new PropertyCommand(),
             new SystemViewCommand(),
