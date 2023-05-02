@@ -28,7 +28,9 @@ import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 
-/** */
+/**
+ * Command to delete lost segment links.
+ */
 public class CdcDeleteLostSegmentLinksCommand implements ExperimentalCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {

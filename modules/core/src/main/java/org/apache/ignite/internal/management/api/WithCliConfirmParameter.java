@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.ssl;
+package org.apache.ignite.internal.management.api;
 
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * This interface provides creation of SSL context both for server and client use.
- * @deprecated Use {@link Factory} instead.
+ * Marks commands that must output example of optional {@code --yes} parameter.
+ * Only for compatibility with existing {@code ./control.sh} output.
  */
-@Deprecated
-public interface GridSslContextFactory {
-    /**
-     * Creates SSL context based on factory settings.
-     *
-     * @return Initialized SSL context.
-     * @throws SSLException If SSL context could not be created.
-     */
-    public SSLContext createSslContext() throws SSLException;
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface WithCliConfirmParameter {
+    // No-op.
 }

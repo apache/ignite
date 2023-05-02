@@ -21,7 +21,10 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.visor.cdc.VisorCdcCacheDataResendTask;
 
-/** */
+/**
+ * The command to forcefully resend all cache data to CDC.
+ * Iterates over given caches and writes data entries to the WAL to get captured by CDC.
+ */
 public class CdcResendCommand implements ExperimentalCommand<CdcResendCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
