@@ -124,8 +124,6 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEA
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
-import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.DELETE_LOST_SEGMENT_LINKS;
-import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.NODE_ID;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
@@ -137,6 +135,8 @@ import static org.apache.ignite.testframework.GridTestUtils.readResource;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 
 /**
