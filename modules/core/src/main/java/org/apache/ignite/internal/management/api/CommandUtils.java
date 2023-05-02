@@ -55,8 +55,6 @@ public class CommandUtils {
     public static String toFormattedCommandName(Class<?> cls, char delim) {
         String name = cls.getSimpleName();
 
-        assert name.endsWith(CMD_NAME_POSTFIX);
-
         return toFormattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
     }
 
