@@ -22,15 +22,16 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliConfirmParameter;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@CliConfirmParameter
+@WithCliConfirmParameter
 public class ChangeTagCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0;
+    private static final long serialVersionUID = 0L;
 
     /** */
     @Positional
@@ -54,7 +55,7 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
 
     /** */
     public void newTagValue(String newTagValue) {
-        if (newTagValue.isEmpty())
+        if (F.isEmpty(newTagValue))
             throw new IllegalArgumentException("newTagValue is empty.");
 
         this.newTagValue = newTagValue;
