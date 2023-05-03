@@ -56,6 +56,6 @@ public class CommandUtilsSelfTest {
     /** */
     @Test
     public void testCommandName() {
-        assertEquals(FORMATTED_CMD_NAME, CommandUtils.toFormattedCommandName(SystemViewCommand.class, CMD_WORDS_DELIM));
+        assertEquals(FORMATTED_CMD_NAME, CommandUtils.toFormattedCommandName(SystemViewCommand.class));
     }
 }

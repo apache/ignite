@@ -26,6 +26,18 @@ import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.ChangeTagCommand;
+import org.apache.ignite.internal.management.ShutdownPolicyCommand;
+import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionCommand;
+import org.apache.ignite.internal.management.kill.KillCommand;
+import org.apache.ignite.internal.management.meta.MetaCommand;
+import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.wal.WalCommand;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 
 /**
  * High-level commands.
@@ -53,28 +65,28 @@ public enum CommandList {
     CACHE("--cache", new CacheCommands()),
 
     /** */
-    WAL("--wal", new DeclarativeCommandAdapter<>("Wal")),
+    WAL(new WalCommand()),
 
     /** */
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
     /** Encryption features command. */
-    ENCRYPTION("--encryption", new DeclarativeCommandAdapter<>("Encryption")),
+    ENCRYPTION(new EncryptionCommand()),
 
     /** Kill command. */
-    KILL("--kill", new DeclarativeCommandAdapter<>("Kill")),
+    KILL(new KillCommand()),
 
     /** Snapshot commands. */
     SNAPSHOT("--snapshot", new SnapshotCommand()),
 
     /** Change Cluster tag command. */
-    CLUSTER_CHANGE_TAG("--change-tag", new DeclarativeCommandAdapter<>("ChangeTag")),
+    CLUSTER_CHANGE_TAG(new ChangeTagCommand()),
 
     /** Metadata commands. */
-    METADATA("--meta", new DeclarativeCommandAdapter<>("Meta")),
+    METADATA(new MetaCommand()),
 
     /** */
-    SHUTDOWN_POLICY("--shutdown-policy", new DeclarativeCommandAdapter<>("ShutdownPolicy")),
+    SHUTDOWN_POLICY(new ShutdownPolicyCommand()),
 
     /** */
     TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
@@ -83,10 +95,10 @@ public enum CommandList {
     WARM_UP("--warm-up", new WarmUpCommand()),
 
     /** Commands to manage distributed properties. */
-    PROPERTY("--property", new DeclarativeCommandAdapter<>("Property")),
+    PROPERTY(new PropertyCommand()),
 
     /** Command for printing system view content. */
-    SYSTEM_VIEW("--system-view", new DeclarativeCommandAdapter<>("SystemView")),
+    SYSTEM_VIEW(new SystemViewCommand()),
 
     /** Command for printing metric values. */
     METRIC("--metric", new MetricCommand()),
@@ -98,13 +110,13 @@ public enum CommandList {
     DEFRAGMENTATION("--defragmentation", new DefragmentationCommand()),
 
     /** Command to manage performance statistics. */
-    PERFORMANCE_STATISTICS("--performance-statistics", new DeclarativeCommandAdapter<>("PerformanceStatistics")),
+    PERFORMANCE_STATISTICS(new PerformanceStatisticsCommand()),
 
     /** Command to check/repair consistency. */
     CONSISTENCY("--consistency", new ConsistencyCommand()),
 
     /** Cdc commands. */
-    CDC("--cdc", new DeclarativeCommandAdapter<>("Cdc"));
+    CDC(new CdcCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
@@ -122,6 +134,12 @@ public enum CommandList {
     CommandList(String text, Command<?> command) {
         this.text = text;
         this.command = command;
+    }
+
+    /** @param command Management API command. */
+    CommandList(org.apache.ignite.internal.management.api.Command<?, ?> command) {
+        this.text = PARAMETER_PREFIX + toFormattedCommandName(command.getClass());
+        this.command = new DeclarativeCommandAdapter<>(command);
     }
 
     /**
