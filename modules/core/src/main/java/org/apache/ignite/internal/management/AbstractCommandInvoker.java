@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,7 +34,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -45,7 +45,7 @@ import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
-import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T2;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
@@ -68,22 +68,20 @@ public abstract class AbstractCommandInvoker {
     protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
         Command<A, ?> cmd,
         A arg,
-        Collection<T3<UUID, Boolean, Object>> nodes,
+        Map<UUID, T2<Boolean, Object>> nodes,
         UUID dflt
     ) {
-        Collection<UUID> cmdNodes = cmd.nodes(nodes, arg);
+        Collection<UUID> nodeIds = cmd.nodes(nodes, arg);
 
-        if (cmdNodes == null)
+        if (nodeIds == null)
             return singleton(dflt);
 
-        Set<UUID> nodeIds = nodes.stream().map(T3::get1).collect(Collectors.toSet());
-
-        for (UUID id : cmdNodes) {
-            if (!nodeIds.contains(id))
+        for (UUID id : nodeIds) {
+            if (!nodes.containsKey(id))
                 throw new IllegalArgumentException("Node with id=" + id + " not found.");
         }
 
-        return cmdNodes;
+        return nodeIds;
     }
 
     /**

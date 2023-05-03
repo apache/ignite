@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
 /** */
@@ -43,7 +43,7 @@ public class KillConsistencyCommand implements Command<NoArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<T3<UUID, Boolean, Object>> nodes, NoArg arg) {
-        return nodes.stream().map(T3::get1).collect(Collectors.toList());
+    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, NoArg arg) {
+        return nodes.keySet();
     }
 }

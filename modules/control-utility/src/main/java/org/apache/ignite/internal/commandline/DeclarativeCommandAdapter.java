@@ -53,7 +53,7 @@ import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -194,9 +194,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             Collection<UUID> nodeIds = commandNodes(
                 parsed.get1(),
                 parsed.get2(),
-                clusterNodes.values().stream()
-                    .map(n -> new T3<>(n.nodeId(), n.isClient(), n.consistentId()))
-                    .collect(Collectors.toList()),
+                clusterNodes.values()
+                    .stream()
+                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
                 getBalancedNode(compute).nodeId()
             );
 
