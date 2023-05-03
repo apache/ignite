@@ -292,7 +292,7 @@ public class CommandUtils {
             return (T)IgniteUuid.fromString(val);
         }
         else if (type.isEnum())
-            return (T)Enum.valueOf((Class<Enum>)type, val);
+            return (T)Enum.valueOf((Class<Enum>)type, val.toUpperCase());
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }
