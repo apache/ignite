@@ -450,7 +450,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         }
 
         if (minVer.compareTo(VER_2_15_0) >= 0)
-            testDataReplicationOperations(serverVer.compareTo(VER_2_15_0) >= 0);
+            testDataReplicationOperations();
 
         if (clientVer.compareTo(VER_2_14_0) >= 0)
             new JavaThinIndexQueryCompatibilityTest().testIndexQueries(ADDR, serverVer.compareTo(VER_2_14_0) >= 0);
@@ -508,8 +508,8 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         }
     }
 
-    /** @param supported {@code True} if feature supported. */
-    private void testDataReplicationOperations(boolean supported) {
+    /** */
+    private void testDataReplicationOperations() {
         X.println(">>>> Testing cache replication");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -521,20 +521,13 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
             Map<Object, GridCacheVersion> rmvs = F.asMap(1, new GridCacheVersion(1, 1, 1, 2));
 
-            if (supported) {
-                cache.putAllConflict(puts);
+            cache.putAllConflict(puts);
 
-                assertEquals(1, cache.get(1));
+            assertEquals(1, cache.get(1));
 
-                cache.removeAllConflict(rmvs);
+            cache.removeAllConflict(rmvs);
 
-                assertFalse(cache.containsKey(1));
-            }
-            else {
-                assertThrowsWithCause(() -> cache.putAllConflict(puts), ClientFeatureNotSupportedByServerException.class);
-
-                assertThrowsWithCause(() -> cache.removeAllConflict(rmvs), ClientFeatureNotSupportedByServerException.class);
-            }
+            assertFalse(cache.containsKey(1));
         }
     }
 
