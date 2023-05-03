@@ -28,6 +28,7 @@ import org.apache.ignite.internal.management.defragmentation.DefragmentationSche
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -116,7 +117,7 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
             final IgniteDefragmentation.ScheduleResult scheduleResult;
 
             try {
-                scheduleResult = defragmentation.schedule(Arrays.asList(arg.caches()));
+                scheduleResult = defragmentation.schedule(F.isEmpty(arg.caches()) ? null : Arrays.asList(arg.caches()));
             }
             catch (IgniteCheckedException e) {
                 return new VisorDefragmentationTaskResult(false, e.getMessage());
