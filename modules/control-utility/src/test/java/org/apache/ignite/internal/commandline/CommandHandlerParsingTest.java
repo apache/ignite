@@ -611,48 +611,48 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testKillArguments() {
-        assertParseArgsThrows("Expected type of resource to kill.", "--kill");
+        assertParseArgsThrows("Command kill can't be executed", "--kill");
 
         String uuid = UUID.randomUUID().toString();
 
         // Scan command format errors.
-        assertParseArgsThrows("Expected query originating node id.", "--kill", "scan");
-        assertParseArgsThrows("Expected cache name.", "--kill", "scan", uuid);
-        assertParseArgsThrows("Expected query identifier.", "--kill", "scan", uuid, "cache");
+        assertParseArgsThrows("Argument origin_node_id required.", "--kill", "scan");
+        assertParseArgsThrows("Argument cache_name required.", "--kill", "scan", uuid);
+        assertParseArgsThrows("Argument query_id required.", "--kill", "scan", uuid, "cache");
 
-        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+        assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "scan", "not_a_uuid");
 
-        assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
+        assertParseArgsThrows("Can't parse number 'not_a_number'", NumberFormatException.class,
             "--kill", "scan", uuid, "my-cache", "not_a_number");
 
         // Compute command format errors.
-        assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
+        assertParseArgsThrows("Argument session_id required.", "--kill", "compute");
 
         assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
             "--kill", "compute", "not_a_uuid");
 
         // Service command format errors.
-        assertParseArgsThrows("Expected service name.", "--kill", "service");
+        assertParseArgsThrows("Argument name required.", "--kill", "service");
 
         // Transaction command format errors.
-        assertParseArgsThrows("Expected transaction id.", "--kill", "transaction");
+        assertParseArgsThrows("Argument xid required.", "--kill", "transaction");
 
         // SQL command format errors.
-        assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
+        assertParseArgsThrows("Argument query_id required.", "--kill", "sql");
 
         assertParseArgsThrows("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT,
             "--kill", "sql", "not_sql_id");
 
         // Continuous command format errors.
-        assertParseArgsThrows("Expected query originating node id.", "--kill", "continuous");
+        assertParseArgsThrows("Argument origin_node_id required.", "--kill", "continuous");
 
-        assertParseArgsThrows("Expected continuous query id.", "--kill", "continuous", UUID.randomUUID().toString());
+        assertParseArgsThrows("Argument routine_id required.", "--kill", "continuous", UUID.randomUUID().toString());
 
-        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+        assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "continuous", "not_a_uuid");
 
-        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+        assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "continuous", UUID.randomUUID().toString(), "not_a_uuid");
     }
 
