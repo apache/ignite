@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.internal.management.wal.WalCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
