@@ -75,4 +75,10 @@ public class WalPrintCommand implements ExperimentalCommand<WalDeleteCommandArg,
             printer.accept("");
         }
     }
+
+    /** */
+    public static class WalPrintCommandArg extends WalDeleteCommandArg {
+        /** */
+        private static final long serialVersionUID = 0;
+    }
 }

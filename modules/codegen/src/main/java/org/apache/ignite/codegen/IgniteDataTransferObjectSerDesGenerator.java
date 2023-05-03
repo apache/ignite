@@ -38,8 +38,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
@@ -219,19 +220,19 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static void main(String[] args) {
         IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
 
-        new IgniteCommandRegistry().commands().forEachRemaining(gen::generate);
+        Arrays.stream(CommandList.values())
+            .filter(cmd -> cmd.command() instanceof DeclarativeCommandAdapter)
+            .forEach(cmd -> gen.generate(((DeclarativeCommandAdapter<?>)cmd.command()).command()));
     }
 
     /** */
-    private void generate(Map.Entry<String, Command<?, ?>> entry) {
+    private void generate(Command<?, ?> cmd) {
         boolean generate = true;
-
-        Command<?, ?> cmd = entry.getValue();
 
         if (cmd instanceof ComplexCommand) {
             generate = cmd.taskClass() != null;
 
-            ((CommandsRegistry)cmd).commands().forEachRemaining(this::generate);
+            ((CommandsRegistry)cmd).commands().forEachRemaining(entry -> generate(entry.getValue()));
         }
 
         if (!generate)
