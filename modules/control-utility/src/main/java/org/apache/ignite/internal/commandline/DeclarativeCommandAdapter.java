@@ -41,7 +41,6 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.AbstractCommandInvoker;
-import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -75,18 +74,15 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
 public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
-    /** All commands registry. */
-    private static final IgniteCommandRegistry REGISTRY = new IgniteCommandRegistry();
-
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
     /** State of adapter after {@link #parseArguments(CommandArgIterator)} invocation. */
     private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
 
-    /** @param name Root command name. */
-    public DeclarativeCommandAdapter(String name) {
-        baseCmd = REGISTRY.command(name);
+    /** @param baseCmd Base command. */
+    public DeclarativeCommandAdapter(org.apache.ignite.internal.management.api.Command<?, ?> baseCmd) {
+        this.baseCmd = baseCmd;
 
         assert baseCmd != null;
     }
@@ -113,7 +109,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         if (cmd0.taskClass() == null) {
             throw new IllegalArgumentException(
-                "Command " + toFormattedCommandName(cmd0.getClass(), CMD_WORDS_DELIM) + " can't be executed"
+                "Command " + toFormattedCommandName(cmd0.getClass()) + " can't be executed"
             );
         }
 
@@ -332,7 +328,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             if (prefixInclude.get())
                 bldr.append(PARAMETER_PREFIX);
 
-            String cmdName = toFormattedCommandName(cmd0.getClass(), CMD_WORDS_DELIM);
+            String cmdName = toFormattedCommandName(cmd0.getClass());
 
             if (parentPrefix.length() > 0) {
                 cmdName = cmdName.replaceFirst(parentPrefix.toString(), "");
@@ -393,7 +389,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return toFormattedCommandName(baseCmd.getClass(), CMD_WORDS_DELIM).toUpperCase();
+        return toFormattedCommandName(baseCmd.getClass()).toUpperCase();
     }
 
     /** {@inheritDoc} */
@@ -435,5 +431,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         );
 
         return res.get();
+    }
+
+    /** */
+    public org.apache.ignite.internal.management.api.Command<?, ?> command() {
+        return baseCmd;
     }
 }
