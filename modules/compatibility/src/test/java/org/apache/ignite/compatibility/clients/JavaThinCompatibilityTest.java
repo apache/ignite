@@ -449,7 +449,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             }
         }
 
-        if (clientVer.compareTo(VER_2_15_0) >= 0)
+        if (minVer.compareTo(VER_2_15_0) >= 0)
             testDataReplicationOperations(serverVer.compareTo(VER_2_15_0) >= 0);
 
         if (clientVer.compareTo(VER_2_14_0) >= 0)
