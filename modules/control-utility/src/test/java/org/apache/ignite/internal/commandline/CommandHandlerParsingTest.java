@@ -42,6 +42,7 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -384,14 +385,14 @@ public class CommandHandlerParsingTest {
 
         assertEquals(SHUTDOWN_POLICY.command(), args.command());
 
-        assertNull(((ShutdownPolicyCommand)args.command()).arg().getShutdown());
+        assertNull(((DeclarativeCommandAdapter<ShutdownPolicyCommandArg>)args.command()).arg().shutdownPolicy());
 
         for (ShutdownPolicy policy : ShutdownPolicy.values()) {
             args = parseArgs(asList(SHUTDOWN_POLICY.text(), String.valueOf(policy)));
 
             assertEquals(SHUTDOWN_POLICY.command(), args.command());
 
-            assertSame(policy, ((ShutdownPolicyCommand)args.command()).arg().getShutdown());
+            assertSame(policy, ((DeclarativeCommandAdapter<ShutdownPolicyCommandArg>)args.command()).arg().shutdownPolicy());
         }
     }
 

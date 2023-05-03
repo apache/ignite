@@ -74,7 +74,7 @@ public enum CommandList {
     METADATA("--meta", new DeclarativeCommandAdapter<>("Meta")),
 
     /** */
-    SHUTDOWN_POLICY("--shutdown-policy", new ShutdownPolicyCommand()),
+    SHUTDOWN_POLICY("--shutdown-policy", new DeclarativeCommandAdapter<>("ShutdownPolicy")),
 
     /** */
     TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
