@@ -71,7 +71,7 @@ public class CommandUtils {
      * @param delim Words delimeter.
      * @return Formatted name.
      */
-    public static String toFormattedName(String name, char delim) {
+    static String toFormattedName(String name, char delim) {
         StringBuilder formatted = new StringBuilder();
 
         formatted.append(Character.toLowerCase(name.charAt(0)));
