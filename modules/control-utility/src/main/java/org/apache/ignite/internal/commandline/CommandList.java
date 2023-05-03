@@ -26,8 +26,12 @@ import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.ActivateCommand;
 import org.apache.ignite.internal.management.ChangeTagCommand;
+import org.apache.ignite.internal.management.DeactivateCommand;
+import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommand;
+import org.apache.ignite.internal.management.StateCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
@@ -44,16 +48,16 @@ import static org.apache.ignite.internal.management.api.CommandUtils.toFormatted
  */
 public enum CommandList {
     /** */
-    ACTIVATE("--activate", new DeclarativeCommandAdapter<>("Activate")),
+    ACTIVATE(new ActivateCommand()),
 
     /** */
-    DEACTIVATE("--deactivate", new DeclarativeCommandAdapter<>("Deactivate")),
+    DEACTIVATE(new DeactivateCommand()),
 
     /** */
-    STATE("--state", new DeclarativeCommandAdapter<>("State")),
+    STATE(new StateCommand()),
 
     /** */
-    SET_STATE("--set-state", new DeclarativeCommandAdapter<>("SetState")),
+    SET_STATE(new SetStateCommand()),
 
     /** */
     BASELINE("--baseline", new BaselineCommand()),
