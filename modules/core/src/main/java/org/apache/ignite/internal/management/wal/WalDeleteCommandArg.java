@@ -35,25 +35,25 @@ public class WalDeleteCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "[consistentId1,consistentId2,....,consistentIdN]")
-    private String[] consistentIDs;
+    private String[] consistentIds;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, consistentIDs);
+        U.writeArray(out, consistentIds);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentIDs = U.readArray(in, String.class);
+        consistentIds = U.readArray(in, String.class);
     }
 
     /** */
-    public String[] consistentIDs() {
-        return consistentIDs;
+    public String[] consistentIds() {
+        return consistentIds;
     }
 
     /** */
-    public void consistentIDs(String[] consistentIDs) {
-        this.consistentIDs = consistentIDs;
+    public void consistentIds(String[] consistentIDs) {
+        this.consistentIds = consistentIDs;
     }
 }
