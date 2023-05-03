@@ -80,7 +80,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
-    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
+    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invocation. */
     private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
 
     /** @param name Root command name. */
@@ -151,11 +151,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         namedArgs.add(optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class, () -> false));
 
+        CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
+
+        parser.parse(cliArgs);
+
         try {
-            CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
-
-            parser.parse(cliArgs);
-
             parsed = F.t(
                 cmd0,
                 argument(
@@ -168,11 +168,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
         catch (InstantiationException | IllegalAccessException e) {
             throw new IgniteException(e);
-        }
-        catch (IllegalArgumentException e) {
-            parsed = F.t(cmd0, null, false);
-
-            throw e;
         }
     }
 
