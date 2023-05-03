@@ -45,7 +45,7 @@ import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbag
 import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
-import org.apache.ignite.internal.management.wal.WalPrintCommandArg;
+import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;

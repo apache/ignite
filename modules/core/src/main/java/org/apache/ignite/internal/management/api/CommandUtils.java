@@ -49,13 +49,12 @@ public class CommandUtils {
      * Example: {@code "SystemView" -> "system-view"}.
      *
      * @param cls Command name class.
-     * @param delim Words delimeter.
      * @return Formatted command name.
      */
-    public static String toFormattedCommandName(Class<?> cls, char delim) {
+    public static String toFormattedCommandName(Class<?> cls) {
         String name = cls.getSimpleName();
 
-        return toFormattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
+        return toFormattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), CMD_WORDS_DELIM);
     }
 
     /**
