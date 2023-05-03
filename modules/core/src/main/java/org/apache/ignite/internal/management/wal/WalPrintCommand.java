@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.wal.WalCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
@@ -75,5 +74,11 @@ public class WalPrintCommand implements ExperimentalCommand<WalDeleteCommandArg,
             printer.accept(INDENT + "failed with error: " + entry.getValue().getMessage());
             printer.accept("");
         }
+    }
+
+    /** */
+    public static class WalPrintCommandArg extends WalDeleteCommandArg {
+        /** */
+        private static final long serialVersionUID = 0;
     }
 }

@@ -31,10 +31,4 @@ public class WalCommand extends CommandRegistryImpl implements ComplexCommand {
             new WalDeleteCommand()
         );
     }
-
-    /** */
-    public static class WalPrintCommandArg extends WalDeleteCommandArg {
-        /** */
-        private static final long serialVersionUID = 0;
-    }
 }
