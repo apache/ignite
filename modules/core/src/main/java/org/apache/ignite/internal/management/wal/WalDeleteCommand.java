@@ -19,9 +19,7 @@ package org.apache.ignite.internal.management.wal;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
@@ -45,11 +43,6 @@ public class WalDeleteCommand implements ExperimentalCommand<WalDeleteCommandArg
     /** {@inheritDoc} */
     @Override public Class<VisorWalTask> taskClass() {
         return VisorWalTask.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, WalDeleteCommandArg arg) {
-        return null;
     }
 
     /** {@inheritDoc} */
