@@ -53,6 +53,7 @@ import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -68,7 +69,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 
 /**
@@ -81,7 +81,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
-    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
+    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invocation. */
     private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
 
     /** @param name Root command name. */
@@ -113,7 +113,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         if (cmd0.taskClass() == null) {
             throw new IllegalArgumentException(
-                "Command " + toFormattedName(cmd0.getClass().getSimpleName(), CMD_WORDS_DELIM) + " can't be executed"
+                "Command " + toFormattedCommandName(cmd0.getClass(), CMD_WORDS_DELIM) + " can't be executed"
             );
         }
 
@@ -194,7 +194,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             Collection<UUID> nodeIds = commandNodes(
                 parsed.get1(),
                 parsed.get2(),
-                clusterNodes.keySet(),
+                clusterNodes.values()
+                    .stream()
+                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
                 getBalancedNode(compute).nodeId()
             );
 

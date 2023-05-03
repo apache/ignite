@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,23 +34,18 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComplexCommand;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.util.typedef.T2;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
@@ -64,55 +58,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.toFormatted
  */
 public abstract class AbstractCommandInvoker {
     /**
-     * Executes command with given arguments.
-     *
-     * @param cmd Command.
-     * @param args String arguments.
-     * @param printer Result printer.
-     * @param <A> Argument type.
-     * @param <R> Result type.
-     */
-    protected <A extends IgniteDataTransferObject, R> void execute(
-        Command<A, R> cmd,
-        Map<String, String> args,
-        Consumer<String> printer
-    ) {
-        A arg;
-
-        try {
-            Function<Field, Object> paramProvider = fld -> Optional
-                .ofNullable(args.get(fld.getName()))
-                .map(v -> CommandUtils.parseVal(v, fld.getType()))
-                .orElse(null);
-
-            arg = argument(
-                cmd.argClass(),
-                (fld, idx) -> paramProvider.apply(fld),
-                paramProvider
-            );
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
-
-        IgniteEx grid = grid();
-
-        IgniteCompute compute = grid.compute();
-
-        Map<UUID, ClusterNode> clusterNodes = grid.cluster().nodes().stream()
-            .collect(Collectors.toMap(ClusterNode::id, n -> n));
-
-        Collection<UUID> nodeIds = commandNodes(cmd, arg, clusterNodes.keySet(), grid.localNode().id());
-
-        if (!F.isEmpty(nodeIds))
-            compute = grid.compute(grid.cluster().forNodeIds(nodeIds));
-
-        R res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
-
-        cmd.printResult(arg, res, printer);
-    }
-
-    /**
      * @param cmd Command.
      * @param arg Command argument.
      * @param nodes Cluster nodes.
@@ -123,7 +68,7 @@ public abstract class AbstractCommandInvoker {
     protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
         Command<A, ?> cmd,
         A arg,
-        Collection<UUID> nodes,
+        Map<UUID, T2<Boolean, Object>> nodes,
         UUID dflt
     ) {
         Collection<UUID> nodeIds = cmd.nodes(nodes, arg);
@@ -132,7 +77,7 @@ public abstract class AbstractCommandInvoker {
             return singleton(dflt);
 
         for (UUID id : nodeIds) {
-            if (!nodes.contains(id))
+            if (!nodes.containsKey(id))
                 throw new IllegalArgumentException("Node with id=" + id + " not found.");
         }
 

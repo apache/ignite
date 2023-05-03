@@ -40,7 +40,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.cdc.CdcSubcommands;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -59,7 +58,6 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
@@ -67,14 +65,12 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.DELETE_LOST_SEGMENT_LINKS;
-import static org.apache.ignite.internal.commandline.cdc.DeleteLostSegmentLinksCommand.NODE_ID;
-import static org.apache.ignite.internal.commandline.cdc.ResendCommand.CACHES;
-import static org.apache.ignite.internal.commandline.cdc.ResendCommand.RESEND;
+import static org.apache.ignite.internal.commandline.cache.CacheClear.CACHES;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 
 /**
  * CDC command tests.
@@ -82,6 +78,12 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     private static final String CDC_DISABLED_DATA_REGION = "cdc_disabled_data_region";
+
+    /** */
+    public static final String DELETE_LOST_SEGMENT_LINKS = "delete_lost_segment_links";
+
+    /** */
+    public static final String RESEND = "resend";
 
     /** */
     private IgniteEx srv0;
@@ -167,11 +169,11 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), "unexpected_command"),
-            "Invalid argument: unexpected_command. One of " + F.asList(CdcSubcommands.values()) + " is expected.");
+            "Command cdc can't be executed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID),
-            "Failed to parse " + NODE_ID + " command argument.");
+            "Unexpected value: --yes");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
@@ -284,15 +286,15 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), "unexpected_command"),
-            "Invalid argument: unexpected_command. One of " + F.asList(CdcSubcommands.values()) + " is expected.");
+            "Command cdc can't be executed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), RESEND),
-            "At least one cache name should be specified.");
+            "Mandatory argument(s) missing: [--caches]");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CommandList.CDC.text(), RESEND, CACHES),
-            "At least one cache name should be specified.");
+            "Unexpected value: --yes");
     }
 
     /** */

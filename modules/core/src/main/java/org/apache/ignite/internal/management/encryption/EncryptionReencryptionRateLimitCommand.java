@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTask;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -47,8 +48,11 @@ public class EncryptionReencryptionRateLimitCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, EncryptionReencryptionRateLimitCommandArg arg) {
-        return nodes;
+    @Override public Collection<UUID> nodes(
+        Map<UUID, T2<Boolean, Object>> nodes,
+        EncryptionReencryptionRateLimitCommandArg arg
+    ) {
+        return nodes.keySet();
     }
 
     /** {@inheritDoc} */

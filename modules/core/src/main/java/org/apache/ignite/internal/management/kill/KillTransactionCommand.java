@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.KillTransactionTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
@@ -43,7 +44,7 @@ public class KillTransactionCommand implements Command<KillTransactionCommandArg
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, KillTransactionCommandArg arg) {
-        return nodes;
+    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, KillTransactionCommandArg arg) {
+        return nodes.keySet();
     }
 }

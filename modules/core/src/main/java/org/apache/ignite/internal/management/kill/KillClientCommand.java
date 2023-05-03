@@ -19,8 +19,10 @@ package org.apache.ignite.internal.management.kill;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
 /** */
@@ -41,9 +43,9 @@ public class KillClientCommand implements Command<KillClientCommandArg, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, KillClientCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, KillClientCommandArg arg) {
         if (arg.nodeId() == null)
-            return nodes;
+            return nodes.keySet();
 
         return Collections.singleton(arg.nodeId());
     }

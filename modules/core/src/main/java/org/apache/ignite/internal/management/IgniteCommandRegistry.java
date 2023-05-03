@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
@@ -37,7 +38,8 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
             new MetaCommand(),
             new PropertyCommand(),
             new SystemViewCommand(),
-            new PerformanceStatisticsCommand()
+            new PerformanceStatisticsCommand(),
+            new CdcCommand()
         );
     }
 }

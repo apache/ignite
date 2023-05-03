@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 
 /**
@@ -102,6 +103,9 @@ public class CLIArgumentParser {
 
             String strVal = bool ? null : argsIter.next();
 
+            if (strVal != null && strVal.startsWith(PARAMETER_PREFIX))
+                throw new IllegalArgumentException("Unexpected value: " + strVal);
+
             try {
                 parsedArgs.put(cliArg.name(), parseVal(strVal, cliArg.type()));
             }
@@ -114,7 +118,7 @@ public class CLIArgumentParser {
         }
 
         if (!obligatoryArgs.isEmpty())
-            throw new IgniteException("Mandatory argument(s) missing: " + obligatoryArgs);
+            throw new IllegalArgumentException("Mandatory argument(s) missing: " + obligatoryArgs);
     }
 
     /**
