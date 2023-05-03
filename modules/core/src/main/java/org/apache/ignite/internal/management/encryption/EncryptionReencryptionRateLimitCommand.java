@@ -21,9 +21,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import org.apache.ignite.internal.visor.encryption.VisorReencryptionRateTask;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -49,11 +50,10 @@ public class EncryptionReencryptionRateLimitCommand
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(
-        Collection<UUID> nodes,
-        Predicate<UUID> isClient,
+        Collection<T3<UUID, Boolean, Object>> nodes,
         EncryptionReencryptionRateLimitCommandArg arg
     ) {
-        return nodes;
+        return nodes.stream().map(T3::get1).collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
