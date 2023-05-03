@@ -36,7 +36,6 @@ public class IgniteCommandRegistry extends CommandRegistryImpl {
             new KillCommand(),
             new ChangeTagCommand(),
             new MetaCommand(),
-            new ShutdownPolicyCommand(),
             new PropertyCommand(),
             new SystemViewCommand(),
             new PerformanceStatisticsCommand(),

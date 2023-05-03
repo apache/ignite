@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.shutdown;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -31,20 +30,20 @@ import org.apache.ignite.resources.LoggerResource;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorShutdownPolicyTask extends VisorOneNodeTask<ShutdownPolicyCommandArg, VisorShutdownPolicyTaskResult> {
+public class VisorShutdownPolicyTask extends VisorOneNodeTask<VisorShutdownPolicyTaskArg, VisorShutdownPolicyTaskResult> {
     /** Serial version id. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<ShutdownPolicyCommandArg, VisorShutdownPolicyTaskResult> job(
-        ShutdownPolicyCommandArg arg) {
+    @Override protected VisorJob<VisorShutdownPolicyTaskArg, VisorShutdownPolicyTaskResult> job(
+        VisorShutdownPolicyTaskArg arg) {
         return new VisorShutdownPolicyJob(arg, debug);
     }
 
     /**
      * Visor job of shutdown policy task.
      */
-    private static class VisorShutdownPolicyJob extends VisorJob<ShutdownPolicyCommandArg, VisorShutdownPolicyTaskResult> {
+    private static class VisorShutdownPolicyJob extends VisorJob<VisorShutdownPolicyTaskArg, VisorShutdownPolicyTaskResult> {
         /** Serial version id. */
         private static final long serialVersionUID = 0L;
 
@@ -58,16 +57,16 @@ public class VisorShutdownPolicyTask extends VisorOneNodeTask<ShutdownPolicyComm
          * @param arg Argumants.
          * @param debug True if debug mode enable.
          */
-        protected VisorShutdownPolicyJob(ShutdownPolicyCommandArg arg, boolean debug) {
+        protected VisorShutdownPolicyJob(VisorShutdownPolicyTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorShutdownPolicyTaskResult run(ShutdownPolicyCommandArg arg) throws IgniteException {
+        @Override protected VisorShutdownPolicyTaskResult run(VisorShutdownPolicyTaskArg arg) throws IgniteException {
             VisorShutdownPolicyTaskResult res = new VisorShutdownPolicyTaskResult();
 
-            if (arg.shutdownPolicy() != null)
-                ignite.cluster().shutdownPolicy(arg.shutdownPolicy());
+            if (arg.getShutdown() != null)
+                ignite.cluster().shutdownPolicy(arg.getShutdown());
 
             res.setShutdown(ignite.cluster().shutdownPolicy());
 
