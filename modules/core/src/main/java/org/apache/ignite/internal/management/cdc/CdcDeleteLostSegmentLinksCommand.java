@@ -19,12 +19,13 @@ package org.apache.ignite.internal.management.cdc;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 
@@ -49,13 +50,15 @@ public class CdcDeleteLostSegmentLinksCommand implements ExperimentalCommand<Cdc
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(
-        Collection<UUID> nodes,
-        Predicate<UUID> isClient,
+        Map<UUID, T2<Boolean, Object>> nodes,
         CdcDeleteLostSegmentLinksCommandArg arg
     ) {
         return arg.nodeId() != null
             ? Collections.singleton(arg.nodeId())
-            : nodes.stream().filter(isClient.negate()).collect(Collectors.toList());
+            : nodes.entrySet().stream()
+                .filter(n -> !n.getValue().get1())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */

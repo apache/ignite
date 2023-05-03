@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.management.api;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,12 +83,11 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     }
 
     /**
-     * @param nodes Live nodes.
-     * @param isClient Predicate to distinguish client nodes.
+     * @param nodes Live nodes. Key is node ID, Boolean is client flag, Object is consistent id.
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
-    public default @Nullable Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, A arg) {
+    public default @Nullable Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, A arg) {
         return null;
     }
 }
