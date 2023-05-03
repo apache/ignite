@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.management.defragmentation;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
@@ -53,7 +54,7 @@ public class DefragmentationScheduleCommand implements Command<DefragmentationSt
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Collection<UUID> nodes, Predicate<UUID> isClient, DefragmentationStatusCommandArg arg0) {
+    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, DefragmentationStatusCommandArg arg) {
         //TODO: implement filter node based on consistent id.
         return null;
     }
