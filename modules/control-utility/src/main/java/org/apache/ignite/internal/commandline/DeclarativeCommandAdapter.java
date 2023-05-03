@@ -54,6 +54,7 @@ import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.lang.GridTuple4;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -153,11 +154,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         namedArgs.add(optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class, () -> false));
 
+        CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
+
+        parser.parse(cliArgs);
+
         try {
-            CLIArgumentParser parser = new CLIArgumentParser(positionalArgs, namedArgs);
-
-            parser.parse(cliArgs);
-
             parsed = F.t(
                 cmd0,
                 argument(
@@ -214,9 +215,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 Collection<UUID> nodeIds = commandNodes(
                     parsed.get1(),
                     parsed.get2(),
-                    clusterNodes.keySet(),
-                    getBalancedNode(compute).nodeId(),
-                    id -> clusterNodes.get(id).isClient()
+                    clusterNodes.values()
+                        .stream()
+                        .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
+                    getBalancedNode(compute).nodeId()
                 );
 
                 Collection<GridClientNode> connectable = F.viewReadOnly(

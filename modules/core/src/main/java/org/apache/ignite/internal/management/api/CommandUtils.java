@@ -55,8 +55,6 @@ public class CommandUtils {
     public static String toFormattedCommandName(Class<?> cls, char delim) {
         String name = cls.getSimpleName();
 
-        assert name.endsWith(CMD_NAME_POSTFIX);
-
         return toFormattedName(name.substring(0, name.length() - CMD_NAME_POSTFIX.length()), delim);
     }
 
@@ -73,7 +71,7 @@ public class CommandUtils {
      * @param delim Words delimeter.
      * @return Formatted name.
      */
-    public static String toFormattedName(String name, char delim) {
+    static String toFormattedName(String name, char delim) {
         StringBuilder formatted = new StringBuilder();
 
         formatted.append(Character.toLowerCase(name.charAt(0)));
@@ -293,9 +291,8 @@ public class CommandUtils {
         else if (type == IgniteUuid.class) {
             return (T)IgniteUuid.fromString(val);
         }
-        else if (type.isEnum()) {
-            return (T)Enum.valueOf((Class<Enum>)type, val.toUpperCase());
-        }
+        else if (type.isEnum())
+            return (T)Enum.valueOf((Class<Enum>)type, val);
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }

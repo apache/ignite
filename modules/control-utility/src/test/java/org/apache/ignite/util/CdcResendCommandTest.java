@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.junit.Test;
+
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
