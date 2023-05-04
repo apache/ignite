@@ -2678,6 +2678,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return node;
         }
 
+        for (Collection<ClusterNode> top : topHist.values()) {
+            for (ClusterNode node : top) {
+                if (F.eq(node.id(), nodeId))
+                    return node;
+            }
+        }
+
         return null;
     }
 
