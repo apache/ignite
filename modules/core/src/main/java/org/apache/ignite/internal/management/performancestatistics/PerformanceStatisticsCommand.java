@@ -22,11 +22,10 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
-public class PerformanceStatisticsCommand extends CommandRegistryImpl implements ComplexCommand {
+public class PerformanceStatisticsCommand extends CommandRegistryImpl {
     /** */
     public PerformanceStatisticsCommand() {
         super(

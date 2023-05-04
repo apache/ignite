@@ -45,7 +45,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComplexCommand;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
@@ -112,7 +112,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             return;
         }
 
-        if (cmd0.taskClass() == null && !(cmd0 instanceof LocalCommand)) {
+        if (!(cmd0 instanceof ComputeCommand) && !(cmd0 instanceof LocalCommand)) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedCommandName(cmd0.getClass()) + " can't be executed"
             );
@@ -193,21 +193,20 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 logger.warning(parsed.get1().deprecationMessage());
             }
 
-            org.apache.ignite.internal.management.api.Command<A, R> cmd =
-                (org.apache.ignite.internal.management.api.Command<A, R>)parsed.get1();
-
             R res;
 
-            if (cmd instanceof LocalCommand)
+            if (parsed.get1() instanceof LocalCommand)
                 res = ((LocalCommand<A, R>)parsed.get1()).execute(client, parsed.get2());
-            else {
+            else if (parsed.get1() instanceof ComputeCommand) {
                 GridClientCompute compute = client.compute();
 
                 Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
                     .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
 
+                ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)parsed.get1();
+
                 Collection<UUID> nodeIds = commandNodes(
-                    parsed.get1(),
+                    cmd,
                     parsed.get2(),
                     clusterNodes.values()
                         .stream()
@@ -226,8 +225,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
                 res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
             }
+            else
+                throw new IllegalArgumentException("Unknown command type: " + parsed.get1());
 
-            cmd.printResult(parsed.get2(), res, logger::info);
+            ((org.apache.ignite.internal.management.api.Command<A, R>)parsed.get1())
+                .printResult(parsed.get2(), res, logger::info);
 
             return res;
         }
@@ -253,12 +255,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private void usage(
         org.apache.ignite.internal.management.api.Command<?, ?> cmd,
-        List<ComplexCommand<?, ?>> parents,
+        List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
-        boolean skip = cmd instanceof ComplexCommand && cmd.taskClass() == null;
-
-        if (!skip) {
+        if (cmd instanceof LocalCommand || cmd instanceof ComputeCommand || cmd instanceof HelpCommand) {
             logger.info("");
 
             if (cmd.experimental())
@@ -311,10 +311,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             }
         }
 
-        if (cmd instanceof ComplexCommand) {
-            List<ComplexCommand<?, ?>> parents0 = new ArrayList<>(parents);
+        if (cmd instanceof CommandsRegistry) {
+            List<org.apache.ignite.internal.management.api.Command<?, ?>> parents0 = new ArrayList<>(parents);
 
-            parents0.add((ComplexCommand<?, ?>)cmd);
+            parents0.add(cmd);
 
             ((CommandsRegistry)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
@@ -329,7 +329,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private void printExample(
         org.apache.ignite.internal.management.api.Command<?, ?> cmd,
-        List<ComplexCommand<?, ?>> parents,
+        List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
         logger.info(INDENT + cmd.description() + ":");

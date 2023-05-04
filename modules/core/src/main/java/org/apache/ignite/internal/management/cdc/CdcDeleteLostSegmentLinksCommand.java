@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,7 +33,9 @@ import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 /**
  * Command to delete lost segment links.
  */
-public class CdcDeleteLostSegmentLinksCommand implements ExperimentalCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
+public class CdcDeleteLostSegmentLinksCommand implements
+    ExperimentalCommand<CdcDeleteLostSegmentLinksCommandArg, Void>,
+    ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Delete lost segment CDC links";

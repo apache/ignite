@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTask;
 import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTaskResult;
 
 /** */
-public class ShutdownPolicyCommand implements Command<ShutdownPolicyCommandArg, VisorShutdownPolicyTaskResult> {
+public class ShutdownPolicyCommand implements ComputeCommand<ShutdownPolicyCommandArg, VisorShutdownPolicyTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set or display shutdown policy";

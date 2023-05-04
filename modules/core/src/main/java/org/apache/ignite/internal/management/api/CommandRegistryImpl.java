@@ -43,8 +43,8 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
      * @param cmd Command to register.
      */
     void register(Command<?, ?> cmd) {
-        Class<? extends ComplexCommand<?, ?>> parent = ComplexCommand.class.isAssignableFrom(getClass())
-            ? (Class<? extends ComplexCommand<?, ?>>)getClass()
+        Class<? extends CommandsRegistry> parent = CommandsRegistry.class.isAssignableFrom(getClass())
+            ? getClass()
             : null;
 
         String name = cmd.getClass().getSimpleName();

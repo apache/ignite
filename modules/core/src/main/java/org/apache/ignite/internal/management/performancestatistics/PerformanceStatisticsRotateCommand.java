@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.management.performancestatistics;
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsRotateCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsRotateCommand implements Command<IgniteDataTransferObject, String> {
+public class PerformanceStatisticsRotateCommand implements ComputeCommand<IgniteDataTransferObject, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Rotate collecting performance statistics in the cluster";

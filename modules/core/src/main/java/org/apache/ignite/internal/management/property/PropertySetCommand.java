@@ -19,10 +19,10 @@ package org.apache.ignite.internal.management.property;
 
 import org.apache.ignite.internal.commandline.property.tasks.PropertyOperationResult;
 import org.apache.ignite.internal.commandline.property.tasks.PropertyTask;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** */
-public class PropertySetCommand implements Command<PropertyGetCommandArg, PropertyOperationResult> {
+public class PropertySetCommand implements ComputeCommand<PropertyGetCommandArg, PropertyOperationResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set the property value";

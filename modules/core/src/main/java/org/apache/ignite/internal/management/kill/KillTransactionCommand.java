@@ -21,13 +21,14 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.KillTransactionTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 /** */
-public class KillTransactionCommand implements Command<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
+public class KillTransactionCommand
+    implements ComputeCommand<KillTransactionCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill transaction by xid";

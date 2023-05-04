@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.wal;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
@@ -29,7 +30,9 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** */
-public class WalPrintCommand implements ExperimentalCommand<WalDeleteCommandArg, VisorWalTaskResult> {
+public class WalPrintCommand implements
+    ExperimentalCommand<WalDeleteCommandArg, VisorWalTaskResult>,
+    ComputeCommand<WalDeleteCommandArg, VisorWalTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print absolute paths of unused archived wal segments on each node";

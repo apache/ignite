@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
 
 /** */
-public class KillScanCommand implements Command<KillScanCommandArg, Void> {
+public class KillScanCommand implements ComputeCommand<KillScanCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill scan query by node id, cache name and query id";

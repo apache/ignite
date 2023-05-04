@@ -19,11 +19,11 @@ package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
 
 /** */
-public class EncryptionChangeCacheKeyCommand implements Command<EncryptionCacheGroupArg, Void> {
+public class EncryptionChangeCacheKeyCommand implements ComputeCommand<EncryptionCacheGroupArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change the encryption key of the cache group";
