@@ -49,6 +49,8 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
+
 /**
  * Client message listener.
  */
@@ -196,10 +198,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         try {
             long startTime = 0;
 
-            if (log.isDebugEnabled()) {
+            if (log.isTraceEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("Client request received [reqId=" + req.requestId() + ", addr=" +
+                log.trace("Client request received [reqId=" + req.requestId() + ", addr=" +
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
@@ -210,10 +212,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             }
 
             if (resp != null) {
-                if (log.isDebugEnabled()) {
+                if (log.isTraceEnabled()) {
                     long dur = (System.nanoTime() - startTime) / 1000;
 
-                    log.debug("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
+                    log.trace("Client request processed [reqId=" + req.requestId() + ", dur(mcs)=" + dur +
                         ", resp=" + resp.status() + ']');
                 }
 
@@ -347,9 +349,21 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             connCtx.handler().writeHandshake(writer);
 
             metrics.onHandshakeAccept(clientType);
+
+            if (log.isDebugEnabled()) {
+                String login = connCtx.securityContext() == null ? null :
+                    connCtx.securityContext().subject().login().toString();
+
+                log.debug("Client handshake accepted [rmtAddr=" + ses.remoteAddress() +
+                    ", type=" + clientTypeLabel(connCtx.clientType()) + ", ver=" + ver.asString() +
+                    ", login=" + login + ", connId=" + connCtx.connectionId() + ']');
+            }
         }
         catch (IgniteAccessControlException authEx) {
             metrics.onFailedAuth();
+
+            if (log.isDebugEnabled())
+                log.debug("Client authentication failed [rmtAddr=" + ses.remoteAddress() + ", err=" + authEx + ']');
 
             writer.writeBoolean(false);
 
