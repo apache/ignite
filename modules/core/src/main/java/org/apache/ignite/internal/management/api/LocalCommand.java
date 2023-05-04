@@ -23,7 +23,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
- * Command that can be executed without ant compute task, locally.
+ * Command that can be executed without any compute task, locally.
  */
 public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
