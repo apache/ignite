@@ -43,6 +43,8 @@ import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
+import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
+import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -58,7 +60,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -74,8 +75,6 @@ import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
-import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
@@ -102,6 +101,12 @@ public class CommandHandlerParsingTest {
 
     /** */
     private static final String INVALID_REGEX = "[]";
+
+    /** */
+    public static final String WAL_PRINT = "print";
+
+    /** */
+    public static final String WAL_DELETE = "delete";
 
     /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();
@@ -355,25 +360,25 @@ public class CommandHandlerParsingTest {
 
         assertEquals(WAL.command(), args.command());
 
-        T2<String, String> arg = ((WalCommands)args.command()).arg();
+        WalDeleteCommandArg arg = (WalDeleteCommandArg)((DeclarativeCommandAdapter)args.command()).arg();
 
-        assertEquals(WAL_PRINT, arg.get1());
+        assertTrue(arg instanceof WalPrintCommandArg);
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
         args = parseArgs(asList(WAL.text(), WAL_DELETE, nodes));
 
-        arg = ((WalCommands)args.command()).arg();
+        arg = (WalDeleteCommandArg)((DeclarativeCommandAdapter)args.command()).arg();
 
-        assertEquals(WAL_DELETE, arg.get1());
+        assertFalse(arg instanceof WalPrintCommandArg);
 
-        assertEquals(nodes, arg.get2());
+        assertEquals(nodes, String.join(",", arg.consistentIds()));
 
-        assertParseArgsThrows("Expected arguments for " + WAL.text(), WAL.text());
+        assertParseArgsThrows("Command wal can't be executed", WAL.text());
 
         String rnd = UUID.randomUUID().toString();
 
-        assertParseArgsThrows("Unexpected action " + rnd + " for " + WAL.text(), WAL.text(), rnd);
+        assertParseArgsThrows("Command wal can't be executed", WAL.text(), rnd);
     }
 
     /**

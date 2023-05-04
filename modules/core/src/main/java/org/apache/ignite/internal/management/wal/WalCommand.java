@@ -15,30 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.misc;
+package org.apache.ignite.internal.management.wal;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.ComplexCommand;
 
-/**
- *  WAL Task operation types.
- */
-public enum VisorWalTaskOperation {
-    /** Print unused wal segments. */
-    PRINT_UNUSED_WAL_SEGMENTS,
-
-    /** Delete unused wal segments. */
-    DELETE_UNUSED_WAL_SEGMENTS;
-
-    /** Enumerated values. */
-    private static final VisorWalTaskOperation[] VALS = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     */
-    @Nullable public static VisorWalTaskOperation fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+/** */
+@CliPositionalSubcommands
+public class WalCommand extends CommandRegistryImpl implements ComplexCommand {
+    /** */
+    public WalCommand() {
+        super(
+            new WalPrintCommand(),
+            new WalDeleteCommand()
+        );
     }
 }

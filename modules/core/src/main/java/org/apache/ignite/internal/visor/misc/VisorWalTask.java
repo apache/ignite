@@ -38,6 +38,8 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
+import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -54,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * Performs WAL cleanup clusterwide.
  */
 @GridInternal
-public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTaskResult, Collection<String>> {
+public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorWalTaskResult, Collection<String>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,19 +75,20 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
     };
 
     /** {@inheritDoc} */
-    @Override protected VisorWalJob job(VisorWalTaskArg arg) {
+    @Override protected VisorWalJob job(WalDeleteCommandArg arg) {
         return new VisorWalJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorWalTaskArg> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<WalDeleteCommandArg> arg) {
         Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
         Collection<UUID> ret = new ArrayList<>(srvNodes.size());
 
-        VisorWalTaskArg taskArg = arg.getArgument();
+        WalDeleteCommandArg taskArg = arg.getArgument();
 
-        Set<String> nodeIds = taskArg.getConsistentIds() != null ? new HashSet<>(arg.getArgument().getConsistentIds())
-                                : null;
+        Set<String> nodeIds = taskArg.consistentIds() != null
+            ? new HashSet<>(Arrays.asList(arg.getArgument().consistentIds()))
+            : null;
 
         if (nodeIds == null) {
             for (ClusterNode node : srvNodes)
@@ -130,7 +133,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
     /**
      * Performs WAL cleanup per node.
      */
-    private static class VisorWalJob extends VisorJob<VisorWalTaskArg, Collection<String>> {
+    private static class VisorWalJob extends VisorJob<WalDeleteCommandArg, Collection<String>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -142,12 +145,12 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          *  @param arg WAL task argument.
          *  @param debug Debug flag.
          */
-        public VisorWalJob(VisorWalTaskArg arg, boolean debug) {
+        public VisorWalJob(WalDeleteCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<String> run(@Nullable VisorWalTaskArg arg) throws IgniteException {
+        @Nullable @Override protected Collection<String> run(@Nullable WalDeleteCommandArg arg) throws IgniteException {
             try {
                 GridKernalContext cctx = ignite.context();
 
@@ -157,15 +160,10 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
                 if (dbMgr == null || arg == null || wal == null)
                     return null;
 
-                switch (arg.getOperation()) {
-                    case DELETE_UNUSED_WAL_SEGMENTS:
-                        return deleteUnusedWalSegments(dbMgr, wal);
-
-                    case PRINT_UNUSED_WAL_SEGMENTS:
-                    default:
-                        return getUnusedWalSegments(dbMgr, wal);
-
-                }
+                if (arg instanceof WalPrintCommandArg)
+                    return getUnusedWalSegments(dbMgr, wal);
+                else
+                    return deleteUnusedWalSegments(dbMgr, wal);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to perform WAL task", e);

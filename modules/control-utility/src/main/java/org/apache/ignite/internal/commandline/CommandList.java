@@ -35,6 +35,7 @@ import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.wal.WalCommand;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 
@@ -64,7 +65,7 @@ public enum CommandList {
     CACHE("--cache", new CacheCommands()),
 
     /** */
-    WAL("--wal", new WalCommands()),
+    WAL(new WalCommand()),
 
     /** */
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
