@@ -78,7 +78,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
-    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invokation. */
+    /**
+     * State of adapter after {@link #parseArguments(CommandArgIterator)} invocation.
+     * (command, argument, autoConfirmed, confirmationMessage)
+     */
     private GridTuple4<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean, String> parsed;
 
     /** @param baseCmd Base command. */
@@ -168,11 +171,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
         catch (InstantiationException | IllegalAccessException e) {
             throw new IgniteException(e);
-        }
-        catch (IllegalArgumentException e) {
-            parsed = F.t(cmd0, null, false, null);
-
-            throw e;
         }
     }
 
@@ -398,7 +396,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
-        if (parsed == null)
+        if (parsed == null || parsed.get3())
             return;
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -424,11 +422,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** {@inheritDoc} */
     @Override public IgniteEx grid() {
         return null;
-    }
-
-    /** @return {@code True} if command confirmed. */
-    public boolean confirmed() {
-        return parsed.get3();
     }
 
     /** @return {@code True} if help for parsed command must be printer. */
