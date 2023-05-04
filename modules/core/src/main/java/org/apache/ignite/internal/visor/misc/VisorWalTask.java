@@ -86,8 +86,8 @@ public class VisorWalTask extends VisorMultiNodeTask<WalDeleteCommandArg, VisorW
 
         WalDeleteCommandArg taskArg = arg.getArgument();
 
-        Set<String> nodeIds = taskArg.consistentIDs() != null
-            ? new HashSet<>(Arrays.asList(arg.getArgument().consistentIDs()))
+        Set<String> nodeIds = taskArg.consistentIds() != null
+            ? new HashSet<>(Arrays.asList(arg.getArgument().consistentIds()))
             : null;
 
         if (nodeIds == null) {

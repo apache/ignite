@@ -47,7 +47,7 @@ public class WalDeleteCommand implements ExperimentalCommand<WalDeleteCommandArg
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, WalDeleteCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(GridClient cli, WalDeleteCommandArg arg) {
         return "Warning: the command will delete unused WAL segments.";
     }
 
