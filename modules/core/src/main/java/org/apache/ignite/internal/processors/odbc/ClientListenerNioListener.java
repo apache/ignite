@@ -362,8 +362,10 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
         catch (IgniteAccessControlException authEx) {
             metrics.onFailedAuth();
 
-            if (log.isDebugEnabled())
-                log.debug("Client authentication failed [rmtAddr=" + ses.remoteAddress() + ", err=" + authEx + ']');
+            if (log.isDebugEnabled()) {
+                log.debug("Client authentication failed [rmtAddr=" + ses.remoteAddress() +
+                    ", err=" + authEx.getMessage() + ']');
+            }
 
             writer.writeBoolean(false);
 
