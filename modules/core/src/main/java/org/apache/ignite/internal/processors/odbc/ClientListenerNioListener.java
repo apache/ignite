@@ -380,7 +380,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                 writer.writeInt(ClientStatus.AUTH_FAILED);
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
+            U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() +
+                ", type=" + clientTypeLabel(clientType) + ", ver=" + ver.asString() + ", msg=" + e.getMessage() + ']');
 
             metrics.onGeneralReject();
 
