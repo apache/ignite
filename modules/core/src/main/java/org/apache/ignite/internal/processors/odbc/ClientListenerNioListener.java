@@ -355,7 +355,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                     connCtx.securityContext().subject().login().toString();
 
                 log.debug("Client handshake accepted [rmtAddr=" + ses.remoteAddress() +
-                    ", type=" + clientTypeLabel(connCtx.clientType()) + ", ver=" + ver.asString() +
+                    ", type=" + clientTypeLabel(clientType) + ", ver=" + ver.asString() +
                     ", login=" + login + ", connId=" + connCtx.connectionId() + ']');
             }
         }
@@ -364,6 +364,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             if (log.isDebugEnabled()) {
                 log.debug("Client authentication failed [rmtAddr=" + ses.remoteAddress() +
+                    ", type=" + clientTypeLabel(clientType) + ", ver=" + ver.asString() +
                     ", err=" + authEx.getMessage() + ']');
             }
 
