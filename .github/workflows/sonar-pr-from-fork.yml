@@ -68,7 +68,7 @@ jobs:
 
       - name: Sonar Analyze Upload
         run: >
-          ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
           -P all-java,lgpl,examples,skip-docs
           -Dsonar.pullrequest.branch=${{ github.head_ref }}
           -Dsonar.pullrequest.base=${{ github.base_ref }}
@@ -77,7 +77,6 @@ jobs:
           -Dsonar.pullrequest.provider=GitHub 
           -Dsonar.pullrequest.github.summary_comment=true
           -Dsonar.projectKey=apache_ignite
-          -Dsonar.login=${SONARCLOUD_TOKEN}
           -B -V
         env:
           MAVEN_OPTS: "-XX:+UseG1GC -XX:InitialHeapSize=2g -XX:MaxHeapSize=6g -XX:+UseStringDeduplication"
