@@ -77,11 +77,17 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
-    /**
-     * State of adapter after {@link #parseArguments(CommandArgIterator)} invocation.
-     * (command, argument, autoConfirmed, confirmationMessage)
-     */
-    private ParsedState<A> state;
+    /** Command to execute. */
+    private org.apache.ignite.internal.management.api.Command<A, ?> cmd;
+
+    /** Parsed argument. */
+    private A arg;
+
+    /** Confirmed flag value. */
+    private boolean confirmed = true;
+
+    /** Message. */
+    private String confirmMsg;
 
     /** @param baseCmd Base command. */
     public DeclarativeCommandAdapter(org.apache.ignite.internal.management.api.Command<?, ?> baseCmd) {
@@ -101,7 +107,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         if (cmd0 instanceof HelpCommand) {
             cliArgs.next();
 
-            state = new ParsedState<>(cmd0, null, true, null);
+            state(cmd0, null, true, null);
 
             return;
         }
@@ -152,7 +158,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         parser.parse(cliArgs);
 
         try {
-            state = new ParsedState<>(
+            state(
                 cmd0,
                 argument(
                     cmd0.argClass(),
@@ -182,26 +188,26 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            if (state.cmd.getClass().isAnnotationPresent(Deprecated.class) &&
-                state.cmd.deprecationMessage() != null) {
-                logger.warning(state.cmd.deprecationMessage());
+            if (cmd.getClass().isAnnotationPresent(Deprecated.class) &&
+                cmd.deprecationMessage() != null) {
+                logger.warning(cmd.deprecationMessage());
             }
 
             R res;
 
-            if (state.cmd instanceof LocalCommand)
-                res = ((LocalCommand<A, R>)state.cmd).execute(client, state.arg);
-            else if (state.cmd instanceof ComputeCommand) {
+            if (cmd instanceof LocalCommand)
+                res = ((LocalCommand<A, R>)cmd).execute(client, arg);
+            else if (cmd instanceof ComputeCommand) {
                 GridClientCompute compute = client.compute();
 
                 Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
                     .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
 
-                ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)state.cmd;
+                ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)this.cmd;
 
                 Collection<UUID> nodeIds = commandNodes(
                     cmd,
-                    state.arg,
+                    arg,
                     clusterNodes.values()
                         .stream()
                         .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
@@ -217,13 +223,13 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 if (!F.isEmpty(connectable))
                     compute = compute.projection(connectable);
 
-                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, state.arg, false));
+                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
             }
             else
-                throw new IllegalArgumentException("Unknown command type: " + state.cmd);
+                throw new IllegalArgumentException("Unknown command type: " + cmd);
 
-            ((org.apache.ignite.internal.management.api.Command<A, R>)state.cmd)
-                .printResult(state.arg, res, logger::info);
+            ((org.apache.ignite.internal.management.api.Command<A, R>)cmd)
+                .printResult(arg, res, logger::info);
 
             return res;
         }
@@ -232,6 +238,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             logger.error(CommandLogger.errorMessage(e));
 
             throw e;
+        }
+        finally {
+            state(null, null, true, null);
         }
     }
 
@@ -390,22 +399,35 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
-        if (state == null || state.confirmed)
+        if (confirmed)
             return;
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            state.confirmMsg = state.cmd.confirmationPrompt(client, state.arg);
+            confirmMsg = cmd.confirmationPrompt(client, arg);
         }
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return state == null ? null : state.confirmMsg;
+        return confirmMsg;
     }
 
     /** {@inheritDoc} */
     @Override public A arg() {
-        return state.arg;
+        return arg;
+    }
+
+    /** */
+    private void state(
+        org.apache.ignite.internal.management.api.Command<A, ?> cmd,
+        A arg,
+        boolean confirmed,
+        String confirmMsg
+    ) {
+        this.cmd = cmd;
+        this.arg = arg;
+        this.confirmed = confirmed;
+        this.confirmMsg = confirmMsg;
     }
 
     /** {@inheritDoc} */
@@ -420,7 +442,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** @return {@code True} if help for parsed command must be printer. */
     public boolean isHelp() {
-        return state.cmd instanceof HelpCommand;
+        return cmd instanceof HelpCommand;
     }
 
     /**
@@ -452,33 +474,5 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** */
     public org.apache.ignite.internal.management.api.Command<?, ?> command() {
         return baseCmd;
-    }
-
-    /** */
-    private static class ParsedState<A extends IgniteDataTransferObject> {
-        /** */
-        private final org.apache.ignite.internal.management.api.Command<A, ?> cmd;
-
-        /** */
-        private final A arg;
-
-        /** */
-        private boolean confirmed;
-
-        /** */
-        private String confirmMsg;
-
-        /** */
-        public ParsedState(
-            org.apache.ignite.internal.management.api.Command<A, ?> cmd,
-            A arg,
-            boolean confirmed,
-            String confirmMsg
-        ) {
-            this.cmd = cmd;
-            this.arg = arg;
-            this.confirmed = confirmed;
-            this.confirmMsg = confirmMsg;
-        }
     }
 }
