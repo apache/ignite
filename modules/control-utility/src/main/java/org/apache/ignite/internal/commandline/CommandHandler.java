@@ -77,9 +77,6 @@ public class CommandHandler {
     public static final String CONFIRM_MSG = "y";
 
     /** */
-    static final String DELIM = "--------------------------------------------------------------------------------";
-
-    /** */
     public static final int EXIT_CODE_OK = 0;
 
     /** */
@@ -254,7 +251,7 @@ public class CommandHandler {
 
                     logger.info("Command [" + commandName + "] started");
                     logger.info("Arguments: " + argumentsToString(rawArgs));
-                    logger.info(DELIM);
+                    logger.info(U.DELIM);
 
                     if (command instanceof DeclarativeCommandAdapter && ((DeclarativeCommandAdapter<?>)command).isHelp()) {
                         command.printUsage(logger);

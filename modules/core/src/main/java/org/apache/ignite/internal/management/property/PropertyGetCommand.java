@@ -20,10 +20,10 @@ package org.apache.ignite.internal.management.property;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.commandline.property.tasks.PropertyOperationResult;
 import org.apache.ignite.internal.commandline.property.tasks.PropertyTask;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** */
-public class PropertyGetCommand implements Command<PropertyGetCommandArg, PropertyOperationResult> {
+public class PropertyGetCommand implements ComputeCommand<PropertyGetCommandArg, PropertyOperationResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get the property value";

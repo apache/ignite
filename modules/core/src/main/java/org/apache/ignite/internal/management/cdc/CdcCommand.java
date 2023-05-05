@@ -19,11 +19,10 @@ package org.apache.ignite.internal.management.cdc;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
-public class CdcCommand extends CommandRegistryImpl implements ComplexCommand {
+public class CdcCommand extends CommandRegistryImpl {
     /** */
     public CdcCommand() {
         super(

@@ -19,11 +19,10 @@ package org.apache.ignite.internal.management.encryption;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
-public class EncryptionCommand extends CommandRegistryImpl implements ComplexCommand {
+public class EncryptionCommand extends CommandRegistryImpl {
     /** */
     public EncryptionCommand() {
         super(

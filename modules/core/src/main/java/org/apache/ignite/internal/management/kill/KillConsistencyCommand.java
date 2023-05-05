@@ -20,13 +20,13 @@ package org.apache.ignite.internal.management.kill;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
 
 /** */
-public class KillConsistencyCommand implements Command<NoArg, Void> {
+public class KillConsistencyCommand implements ComputeCommand<NoArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill consistency task";

@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,7 +33,9 @@ import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 /**
  * Command to delete lost segment links.
  */
-public class CdcDeleteLostSegmentLinksCommand implements ExperimentalCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
+public class CdcDeleteLostSegmentLinksCommand implements
+    ExperimentalCommand<CdcDeleteLostSegmentLinksCommandArg, Void>,
+    ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Delete lost segment CDC links";
@@ -66,7 +70,7 @@ public class CdcDeleteLostSegmentLinksCommand implements ExperimentalCommand<Cdc
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(CdcDeleteLostSegmentLinksCommandArg arg) {
+    @Override public String confirmationPrompt(GridClient cli, CdcDeleteLostSegmentLinksCommandArg arg) {
         return "Warning: The command will fix WAL segments gap in case CDC link creation was stopped by distributed " +
             "property or excess of maximum CDC directory size. Gap will be fixed by deletion of WAL segment links" +
             "previous to the last gap." + U.nl() +

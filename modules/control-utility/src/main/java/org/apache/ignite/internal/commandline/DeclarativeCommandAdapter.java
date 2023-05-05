@@ -45,11 +45,11 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComplexCommand;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -77,8 +77,17 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** Root command to start parsing from. */
     private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
 
-    /** State of adapter after {@link #parseArguments(CommandArgIterator)} invocation. */
-    private GridTuple3<org.apache.ignite.internal.management.api.Command<A, ?>, A, Boolean> parsed;
+    /** Command to execute. */
+    private org.apache.ignite.internal.management.api.Command<A, ?> cmd;
+
+    /** Parsed argument. */
+    private A arg;
+
+    /** Confirmed flag value. */
+    private boolean confirmed = true;
+
+    /** Message. */
+    private String confirmMsg;
 
     /** @param baseCmd Base command. */
     public DeclarativeCommandAdapter(org.apache.ignite.internal.management.api.Command<?, ?> baseCmd) {
@@ -98,16 +107,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         if (cmd0 instanceof HelpCommand) {
             cliArgs.next();
 
-            parsed = F.t(
-                cmd0,
-                null,
-                true
-            );
+            state(cmd0, null, true);
 
             return;
         }
 
-        if (cmd0.taskClass() == null) {
+        if (!(cmd0 instanceof ComputeCommand) && !(cmd0 instanceof LocalCommand)) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedCommandName(cmd0.getClass()) + " can't be executed"
             );
@@ -153,7 +158,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         parser.parse(cliArgs);
 
         try {
-            parsed = F.t(
+            state(
                 cmd0,
                 argument(
                     cmd0.argClass(),
@@ -182,35 +187,48 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            GridClientCompute compute = client.compute();
+            if (cmd.getClass().isAnnotationPresent(Deprecated.class) &&
+                cmd.deprecationMessage() != null) {
+                logger.warning(cmd.deprecationMessage());
+            }
 
-            Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
-                .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
+            R res;
 
-            Collection<UUID> nodeIds = commandNodes(
-                parsed.get1(),
-                parsed.get2(),
-                clusterNodes.values()
-                    .stream()
-                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
-                getBalancedNode(compute).nodeId()
-            );
+            if (cmd instanceof LocalCommand)
+                res = ((LocalCommand<A, R>)cmd).execute(client, arg);
+            else if (cmd instanceof ComputeCommand) {
+                GridClientCompute compute = client.compute();
 
-            Collection<GridClientNode> connectable = F.viewReadOnly(
-                nodeIds,
-                clusterNodes::get,
-                id -> clusterNodes.get(id).connectable()
-            );
+                Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
+                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
 
-            if (!F.isEmpty(connectable))
-                compute = compute.projection(connectable);
+                ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)this.cmd;
 
-            org.apache.ignite.internal.management.api.Command<A, R> cmd =
-                (org.apache.ignite.internal.management.api.Command<A, R>)parsed.get1();
+                Collection<UUID> nodeIds = commandNodes(
+                    cmd,
+                    arg,
+                    clusterNodes.values()
+                        .stream()
+                        .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
+                    getBalancedNode(compute).nodeId()
+                );
 
-            R res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, parsed.get2(), false));
+                Collection<GridClientNode> connectable = F.viewReadOnly(
+                    nodeIds,
+                    clusterNodes::get,
+                    id -> clusterNodes.get(id).connectable()
+                );
 
-            cmd.printResult(parsed.get2(), res, logger::info);
+                if (!F.isEmpty(connectable))
+                    compute = compute.projection(connectable);
+
+                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+            }
+            else
+                throw new IllegalArgumentException("Unknown command type: " + cmd);
+
+            ((org.apache.ignite.internal.management.api.Command<A, R>)cmd)
+                .printResult(arg, res, logger::info);
 
             return res;
         }
@@ -219,6 +237,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             logger.error(CommandLogger.errorMessage(e));
 
             throw e;
+        }
+        finally {
+            state(null, null, true);
         }
     }
 
@@ -236,12 +257,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private void usage(
         org.apache.ignite.internal.management.api.Command<?, ?> cmd,
-        List<ComplexCommand<?, ?>> parents,
+        List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
-        boolean skip = cmd instanceof ComplexCommand && cmd.taskClass() == null;
-
-        if (!skip) {
+        if (cmd instanceof LocalCommand || cmd instanceof ComputeCommand || cmd instanceof HelpCommand) {
             logger.info("");
 
             if (cmd.experimental())
@@ -294,10 +313,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             }
         }
 
-        if (cmd instanceof ComplexCommand) {
-            List<ComplexCommand<?, ?>> parents0 = new ArrayList<>(parents);
+        if (cmd instanceof CommandsRegistry) {
+            List<org.apache.ignite.internal.management.api.Command<?, ?>> parents0 = new ArrayList<>(parents);
 
-            parents0.add((ComplexCommand<?, ?>)cmd);
+            parents0.add(cmd);
 
             ((CommandsRegistry)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
@@ -312,7 +331,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private void printExample(
         org.apache.ignite.internal.management.api.Command<?, ?> cmd,
-        List<ComplexCommand<?, ?>> parents,
+        List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
         logger.info(INDENT + cmd.description() + ":");
@@ -378,13 +397,35 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /** {@inheritDoc} */
+    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+        if (confirmed)
+            return;
+
+        try (GridClient client = Command.startClient(clientCfg)) {
+            confirmMsg = cmd.confirmationPrompt(client, arg);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return parsed == null ? null : parsed.get1().confirmationPrompt(parsed.get2());
+        return confirmMsg;
     }
 
     /** {@inheritDoc} */
     @Override public A arg() {
-        return parsed.get2();
+        return arg;
+    }
+
+    /** */
+    private void state(
+        org.apache.ignite.internal.management.api.Command<A, ?> cmd,
+        A arg,
+        boolean confirmed
+    ) {
+        this.cmd = cmd;
+        this.arg = arg;
+        this.confirmed = confirmed;
+        this.confirmMsg = null;
     }
 
     /** {@inheritDoc} */
@@ -397,14 +438,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         return null;
     }
 
-    /** @return {@code True} if command confirmed. */
-    public boolean confirmed() {
-        return parsed.get3();
-    }
-
     /** @return {@code True} if help for parsed command must be printer. */
     public boolean isHelp() {
-        return parsed.get1() instanceof HelpCommand;
+        return cmd instanceof HelpCommand;
     }
 
     /**

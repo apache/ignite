@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.wal;
+package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-/** */
-@CliPositionalSubcommands
-public class WalCommand extends CommandRegistryImpl {
-    /** */
-    public WalCommand() {
-        super(
-            new WalPrintCommand(),
-            new WalDeleteCommand()
-        );
-    }
+/**
+ * Command that can be executed without any compute task, locally.
+ */
+public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
+    /**
+     * @param cli Grid client instance.
+     * @param arg Command argument.
+     * @return Command result.
+     */
+    public R execute(GridClient cli, A arg) throws Exception;
 }

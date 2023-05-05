@@ -19,13 +19,17 @@ package org.apache.ignite.internal.management.meta;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataUpdateTask;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class MetaUpdateCommand implements ExperimentalCommand<MetaUpdateCommandArg, MetadataMarshalled> {
+public class MetaUpdateCommand implements
+    ExperimentalCommand<MetaUpdateCommandArg, MetadataMarshalled>,
+    ComputeCommand<MetaUpdateCommandArg, MetadataMarshalled> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Update cluster metadata from specified file (file name is required)";
@@ -55,7 +59,7 @@ public class MetaUpdateCommand implements ExperimentalCommand<MetaUpdateCommandA
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String confirmationPrompt(MetaUpdateCommandArg arg) {
+    @Override public @Nullable String confirmationPrompt(GridClient cli, MetaUpdateCommandArg arg) {
         return "Warning: the command will update the binary metadata at the cluster.";
     }
 }

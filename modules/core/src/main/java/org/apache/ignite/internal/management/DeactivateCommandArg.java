@@ -15,27 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.performancestatistics;
+package org.apache.ignite.internal.management;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsRotateCommandArg;
-import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 
 /** */
-public class PerformanceStatisticsRotateCommand implements ComputeCommand<IgniteDataTransferObject, String> {
+@WithCliConfirmParameter
+public class DeactivateCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
+    @Argument(optional = true)
+    private boolean force;
+
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Rotate collecting performance statistics in the cluster";
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeBoolean(force);
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PerformanceStatisticsRotateCommandArg> argClass() {
-        return PerformanceStatisticsRotateCommandArg.class;
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        force = in.readBoolean();
     }
 
-    /** {@inheritDoc} */
-    @Override public Class<VisorPerformanceStatisticsTask> taskClass() {
-        return VisorPerformanceStatisticsTask.class;
+    /** */
+    public boolean force() {
+        return force;
+    }
+
+    /** */
+    public void force(boolean force) {
+        this.force = force;
     }
 }

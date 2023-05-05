@@ -42,6 +42,7 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
@@ -446,7 +447,8 @@ public class CommandHandlerParsingTest {
 
                         checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+                        ClusterState argState =
+                            (((DeclarativeCommandAdapter<SetStateCommandArg>)args.command()).arg()).state();
 
                         assertEquals(newState, argState.toString());
                     }
@@ -456,7 +458,8 @@ public class CommandHandlerParsingTest {
 
                         checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+                        ClusterState argState =
+                            (((DeclarativeCommandAdapter<SetStateCommandArg>)args.command()).arg()).state();
 
                         assertEquals(newState, argState.toString());
                     }

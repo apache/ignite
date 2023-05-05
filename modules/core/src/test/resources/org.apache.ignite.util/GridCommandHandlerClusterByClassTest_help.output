@@ -25,6 +25,7 @@ This utility can do the following commands:
       ACTIVE            - Activate cluster. Cache updates are allowed.
       INACTIVE          - Deactivate cluster.
       ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
+      --force           - If true, cluster deactivation will be forced.
 
   Print cluster baseline topology:
     control.(sh|bat) --baseline [--verbose]

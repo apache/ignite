@@ -15,32 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.encryption;
+package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /** */
-public class EncryptionGetMasterKeyNameCommand implements ComputeCommand<NoArg, String> {
+@Deprecated
+public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Print the current master key name";
+        return "Activate cluster (deprecated. Use --set-state instead)";
+    }
+
+    /** {@inheritDoc} */
+    @Override public String deprecationMessage() {
+        return "Command deprecated. Use --set-state instead.";
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoArg execute(GridClient cli, NoArg arg) throws Exception {
+        GridClientClusterState state = cli.state();
+
+        state.state(ACTIVE, false);
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(NoArg arg, NoArg res, Consumer<String> printer) {
+        printer.accept("Cluster activated");
     }
 
     /** {@inheritDoc} */
     @Override public Class<NoArg> argClass() {
         return NoArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<VisorGetMasterKeyNameTask> taskClass() {
-        return VisorGetMasterKeyNameTask.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, String res, Consumer<String> printer) {
-        printer.accept(res);
     }
 }

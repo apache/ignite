@@ -37,16 +37,15 @@ import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.baseline.BaselineSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
-
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.singletonMap;
-import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -228,7 +227,7 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
                     extractFormattedAddrs.apply(srvNode) + state + order);
             }
 
-            logger.info(DELIM);
+            logger.info(U.DELIM);
             logger.info("Number of baseline nodes: " + baseline.size());
 
             logger.info("");
