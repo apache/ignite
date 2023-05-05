@@ -107,7 +107,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         if (cmd0 instanceof HelpCommand) {
             cliArgs.next();
 
-            state(cmd0, null, true, null);
+            state(cmd0, null, true);
 
             return;
         }
@@ -165,8 +165,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     (fld, pos) -> parser.get(pos),
                     fld -> parser.get(toFormattedFieldName(fld))
                 ),
-                parser.get(CMD_AUTO_CONFIRMATION),
-                null
+                parser.get(CMD_AUTO_CONFIRMATION)
             );
         }
         catch (InstantiationException | IllegalAccessException e) {
@@ -240,7 +239,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             throw e;
         }
         finally {
-            state(null, null, true, null);
+            state(null, null, true);
         }
     }
 
@@ -421,13 +420,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private void state(
         org.apache.ignite.internal.management.api.Command<A, ?> cmd,
         A arg,
-        boolean confirmed,
-        String confirmMsg
+        boolean confirmed
     ) {
         this.cmd = cmd;
         this.arg = arg;
         this.confirmed = confirmed;
-        this.confirmMsg = confirmMsg;
+        this.confirmMsg = null;
     }
 
     /** {@inheritDoc} */
