@@ -151,7 +151,7 @@ Ignite ships with a number of modules and have a lot of extensions that provide 
 You can enable modules or extensions one by one, as required.
 
 All modules are included in the binary distribution, but by default they
-are disabled (except for the `ignite-core`, `ignite-spring`, and
+are disabled (except for the `ignite-core`, `ignite-spring`, `ignite-control-utility` and
 `ignite-indexing` modules). Modules can be found in the `lib/optional`
 directory of the distribution package (each module is located in a
 separate sub-directory).
