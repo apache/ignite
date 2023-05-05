@@ -194,7 +194,6 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             "cancel"
         ));
 
-        // TODO: FIXME.
         assertTrue(logLsnr.check());
 
         testLog.clearListeners();
