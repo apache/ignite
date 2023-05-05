@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.management.defragmentation;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationCancelCommandArg;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 /** */
-public class DefragmentationCancelCommand implements Command<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+public class DefragmentationCancelCommand
+    implements ComputeCommand<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cancel scheduled or active PDS defragmentation on underlying node";

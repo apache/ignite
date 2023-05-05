@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.management.defragmentation;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 /** */
-public class DefragmentationStatusCommand implements Command<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+public class DefragmentationStatusCommand
+    implements ComputeCommand<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Prints status of running defragmentation operation";

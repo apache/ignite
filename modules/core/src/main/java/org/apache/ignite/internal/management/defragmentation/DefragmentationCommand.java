@@ -23,11 +23,10 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
-public class DefragmentationCommand extends CommandRegistryImpl implements ComplexCommand {
+public class DefragmentationCommand extends CommandRegistryImpl {
     /** */
     public DefragmentationCommand() {
         super(

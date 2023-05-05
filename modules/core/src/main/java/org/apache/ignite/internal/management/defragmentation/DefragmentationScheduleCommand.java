@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -34,7 +34,8 @@ import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
 /** */
-public class DefragmentationScheduleCommand implements Command<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
+public class DefragmentationScheduleCommand
+    implements ComputeCommand<DefragmentationStatusCommandArg, VisorDefragmentationTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Schedule PDS defragmentation";
