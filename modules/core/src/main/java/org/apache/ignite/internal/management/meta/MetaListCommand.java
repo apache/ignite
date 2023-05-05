@@ -22,11 +22,14 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class MetaListCommand implements ExperimentalCommand<IgniteDataTransferObject, MetadataListResult> {
+public class MetaListCommand implements
+    ExperimentalCommand<IgniteDataTransferObject, MetadataListResult>,
+    ComputeCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of binary metadata types";

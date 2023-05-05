@@ -19,11 +19,10 @@ package org.apache.ignite.internal.management.property;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.ComplexCommand;
 
 /** */
 @CliPositionalSubcommands
-public class PropertyCommand extends CommandRegistryImpl implements ComplexCommand {
+public class PropertyCommand extends CommandRegistryImpl {
     /** */
     public PropertyCommand() {
         super(

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 
 /** */
-public class KillServiceCommand implements Command<KillServiceCommandArg, Void> {
+public class KillServiceCommand implements ComputeCommand<KillServiceCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Kill service by name";

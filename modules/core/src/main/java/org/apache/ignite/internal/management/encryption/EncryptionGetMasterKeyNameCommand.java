@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 
 /** */
-public class EncryptionGetMasterKeyNameCommand implements Command<NoArg, String> {
+public class EncryptionGetMasterKeyNameCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print the current master key name";

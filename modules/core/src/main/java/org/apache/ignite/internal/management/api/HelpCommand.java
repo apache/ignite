@@ -25,9 +25,4 @@ public interface HelpCommand extends Command<NoArg, Void> {
     @Override public default Class<NoArg> argClass() {
         return NoArg.class;
     }
-
-    /** {@inheritDoc} */
-    @Override public default Class taskClass() {
-        return null;
-    }
 }

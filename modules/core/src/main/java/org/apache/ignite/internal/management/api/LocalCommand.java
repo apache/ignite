@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
- * Command that can be executed without ant compute task, locally.
+ * Command that can be executed without any compute task, locally.
  */
 public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
@@ -32,9 +30,4 @@ public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Com
      * @return Command result.
      */
     public R execute(GridClient cli, A arg) throws Exception;
-
-    /** {@inheritDoc} */
-    @Override public default Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskClass() {
-        return null;
-    }
 }

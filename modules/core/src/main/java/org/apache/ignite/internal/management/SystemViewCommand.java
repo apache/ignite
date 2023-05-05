@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** */
-public class SystemViewCommand implements Command<SystemViewCommandArg, VisorSystemViewTaskResult> {
+public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, VisorSystemViewTaskResult> {
     /** Column separator. */
     public static final String COLUMN_SEPARATOR = "    ";
 

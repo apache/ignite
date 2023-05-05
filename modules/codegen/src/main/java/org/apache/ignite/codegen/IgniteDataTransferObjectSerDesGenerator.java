@@ -43,7 +43,8 @@ import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComplexCommand;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -229,8 +230,8 @@ public class IgniteDataTransferObjectSerDesGenerator {
     private void generate(Command<?, ?> cmd) {
         boolean generate = true;
 
-        if (cmd instanceof ComplexCommand) {
-            generate = cmd.taskClass() != null;
+        if (cmd instanceof CommandsRegistry) {
+            generate = cmd instanceof ComputeCommand || cmd instanceof LocalCommand;
 
             ((CommandsRegistry)cmd).commands().forEachRemaining(entry -> generate(entry.getValue()));
         }

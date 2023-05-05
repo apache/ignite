@@ -19,11 +19,11 @@ package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.encryption.VisorChangeMasterKeyTask;
 
 /** */
-public class EncryptionChangeMasterKeyCommand implements Command<EncryptionChangeMasterKeyCommandArg, String> {
+public class EncryptionChangeMasterKeyCommand implements ComputeCommand<EncryptionChangeMasterKeyCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change the master key";

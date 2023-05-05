@@ -373,13 +373,13 @@ public class CommandHandlerParsingTest {
 
         assertFalse(arg instanceof WalPrintCommandArg);
 
-        assertEquals(nodes, arg.consistentIDs());
+        assertEquals(nodes, String.join(",", arg.consistentIds()));
 
-        assertParseArgsThrows("Expected arguments for " + WAL.text(), WAL.text());
+        assertParseArgsThrows("Command wal can't be executed", WAL.text());
 
         String rnd = UUID.randomUUID().toString();
 
-        assertParseArgsThrows("Unexpected action " + rnd + " for " + WAL.text(), WAL.text(), rnd);
+        assertParseArgsThrows("Command wal can't be executed", WAL.text(), rnd);
     }
 
     /**

@@ -22,18 +22,24 @@ import java.util.Map;
 
 /**
  * Registry that knows all of its subcommands.
- *
- * @see org.apache.ignite.internal.management.IgniteCommandRegistry
  */
-public interface CommandsRegistry {
+public interface CommandsRegistry extends Command {
     /**
      * @param name Name of the command.
      * @return Command instance by name.
      */
     public Command<?, ?> command(String name);
 
-    /**
-     * @return Commands iterator.
-     */
+    /** @return Commands iterator. */
     public Iterator<Map.Entry<String, Command<?, ?>>> commands();
+
+    /** {@inheritDoc} */
+    @Override public default String description() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public default Class argClass() {
+        throw new UnsupportedOperationException();
+    }
 }

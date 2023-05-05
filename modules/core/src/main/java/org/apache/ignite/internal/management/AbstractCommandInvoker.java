@@ -41,7 +41,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.ComplexCommand;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
@@ -66,7 +66,7 @@ public abstract class AbstractCommandInvoker {
      * @return Nodes to execute command on.
      */
     protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
-        Command<A, ?> cmd,
+        ComputeCommand<A, ?> cmd,
         A arg,
         Map<UUID, T2<Boolean, Object>> nodes,
         UUID dflt
@@ -176,7 +176,7 @@ public abstract class AbstractCommandInvoker {
 
         Command<A, ?> cmd0 = (Command<A, ?>)root;
 
-        while (cmd0 instanceof ComplexCommand && iter.hasNext()) {
+        while (cmd0 instanceof CommandsRegistry && iter.hasNext()) {
             String name = iter.peek();
 
             if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class) && isCli) {

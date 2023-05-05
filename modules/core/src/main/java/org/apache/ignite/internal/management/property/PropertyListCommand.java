@@ -20,11 +20,11 @@ package org.apache.ignite.internal.management.property;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListResult;
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListTask;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class PropertyListCommand implements Command<NoArg, PropertiesListResult> {
+public class PropertyListCommand implements ComputeCommand<NoArg, PropertiesListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print list of available properties";

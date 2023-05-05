@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.management.performancestatistics;
 
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand.PerformanceStatisticsStatusCommandArg;
 import org.apache.ignite.internal.visor.performancestatistics.VisorPerformanceStatisticsTask;
 
 /** */
-public class PerformanceStatisticsStatusCommand implements Command<IgniteDataTransferObject, String> {
+public class PerformanceStatisticsStatusCommand implements ComputeCommand<IgniteDataTransferObject, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get status of collecting performance statistics in the cluster";

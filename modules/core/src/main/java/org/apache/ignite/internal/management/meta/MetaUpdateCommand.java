@@ -22,11 +22,14 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataUpdateTask;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class MetaUpdateCommand implements ExperimentalCommand<MetaUpdateCommandArg, MetadataMarshalled> {
+public class MetaUpdateCommand implements
+    ExperimentalCommand<MetaUpdateCommandArg, MetadataMarshalled>,
+    ComputeCommand<MetaUpdateCommandArg, MetadataMarshalled> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Update cluster metadata from specified file (file name is required)";

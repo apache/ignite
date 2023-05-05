@@ -27,13 +27,16 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataInfoTask;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataListResult;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
-public class MetaDetailsCommand implements ExperimentalCommand<IgniteDataTransferObject, MetadataListResult> {
+public class MetaDetailsCommand implements
+    ExperimentalCommand<IgniteDataTransferObject, MetadataListResult>,
+    ComputeCommand<IgniteDataTransferObject, MetadataListResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print detailed info about specified binary type " +
