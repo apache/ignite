@@ -407,7 +407,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     }
 
     /** Custom SSL factory. */
-    protected Factory<SSLContext> sslFactory(){
+    protected Factory<SSLContext> sslFactory() {
         return GridTestUtils.sslFactory();
     }
 
