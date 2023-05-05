@@ -85,7 +85,7 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         List<String> params = new ArrayList<>();
 
-        addSslParams(params);
+        extendSslParams(params);
 
         if (!F.isEmpty(utilityCipherSuite)) {
             params.add("--ssl-cipher-suites");
