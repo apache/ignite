@@ -402,9 +402,9 @@ public class IgniteDataTransferObjectSerDesGenerator {
         read.add(TAB + "@Override protected void readExternalData(byte protoVer, ObjectInput in) " +
             "throws IOException, ClassNotFoundException {");
 
-        imports.add(IOException.class.getName() + ';');
-        imports.add(ObjectOutput.class.getName() + ';');
-        imports.add(ObjectInput.class.getName() + ';');
+        addImport(IOException.class);
+        addImport(ObjectOutput.class);
+        addImport(ObjectInput.class);
 
         if (flds.isEmpty()) {
             write.add(TAB + TAB + "//No-op.");
@@ -422,15 +422,15 @@ public class IgniteDataTransferObjectSerDesGenerator {
             String name = fld.getName();
 
             if (Enum.class.isAssignableFrom(fld.getType())) {
-                imports.add(U.class.getName() + ';');
+                addImport(U.class);
 
                 write.add(TAB + TAB + "U.writeEnum(out, " + (name.equals("out") ? "this.out." : "") + name + ");");
                 read.add(TAB + TAB + (name.equals("in") ? "this." : "") + name +
                     " = U.readEnum(in, " + fld.getType().getSimpleName() + ".class);");
             }
             else if (fld.getType().isArray() && !fld.getType().getComponentType().isPrimitive()) {
-                imports.add(U.class.getName() + ';');
-                imports.add(fld.getType().getComponentType().getName() + ';');
+                addImport(U.class);
+                addImport(fld.getType().getComponentType());
 
                 write.add(TAB + TAB + "U.writeArray(out, " + (name.equals("out") ? "this.out." : "") + name + ");");
                 read.add(TAB + TAB + (name.equals("in") ? "this." : "") + name +
@@ -444,7 +444,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
                     throw new IllegalArgumentException(fld.getType() + " not supported[cls=" + cls.getName() + ']');
 
                 if (gen.get3())
-                    imports.add(U.class.getName() + ';');
+                    addImport(U.class);
 
                 write.add(TAB + TAB + gen.get1().apply((name.equals("out") ? "this." : "") + name));
                 read.add(TAB + TAB + gen.get2().apply((name.equals("in") ? "this." : "") + name));
@@ -545,6 +545,14 @@ public class IgniteDataTransferObjectSerDesGenerator {
         }
 
         return cnt;
+    }
+
+    /** */
+    private void addImport(Class<?> cls) {
+        if ("java.lang".equals(cls.getPackage().getName()))
+            return;
+
+        imports.add(cls.getName() + ';');
     }
 
     /** */
