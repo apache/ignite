@@ -137,10 +137,8 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 |`true`
 
 |`lazy`
-|Lazy query execution.
-By default, Ignite attempts to get and load the whole query result set into memory and then send it to the client. For small and medium result sets, this provides optimal performance and minimizes the duration of internal database locks, thus increasing concurrency.
-However, if the result set is too big to fit in the available memory, then it can lead to excessive GC pauses and even 'OutOfMemoryError's. Use this flag to tell Ignite to fetch the result set lazily, thus minimizing memory consumption at the cost of a moderate performance hit.
-|`false`
+|Lazy query execution. If set to `false`, Ignite attempts to load the whole result set to memory and send it back to the query initiator. However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions. Default is `true`, this will minimize memory consumption at the cost of moderate performance degradation.
+|`true`
 
 |`skipReducerOnUpdate`
 |Enables server side updates.

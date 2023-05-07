@@ -141,13 +141,8 @@ However, in cases when you need transactional syntax to work (even without trans
 
 |`lazy`
 
-|Lazy query execution.
-
-By default, Ignite attempts to fetch the whole query result set to memory and send it to the client. For small and medium result sets, this provides optimal performance and minimizes the duration of internal database locks, thus increasing concurrency.
-
-However, if the result set is too big to fit in the available memory, it can lead to excessive GC pauses and even `OutOfMemoryError` errors. Use this flag to tell Ignite to fetch the result set lazily, thus minimizing memory consumption at the cost of a moderate performance hit.
-
-|`false`
+|Lazy query execution. If set to `false`, Ignite attempts to load the whole result set to memory and send it back to the query initiator. However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions. Default is `true`, this will minimize memory consumption at the cost of moderate performance degradation.
+|`true`
 
 |`skipReducerOnUpdate`
 

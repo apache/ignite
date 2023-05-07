@@ -76,6 +76,14 @@ SELECT name FROM Person WHERE gender='M' and age = 30
 Avoid having too many columns in the result set of a `SELECT` query. Due to limitations of the H2 query parser, queries
 with 100+ columns may perform worse than expected.
 
+== Lazy Loading
+
+If set to `false`, Ignite attempts to load the whole result set to memory and send it back to the query initiator (which is usually your application). This approach provides optimal performance for queries of small or medium result sets, and minimizes the duration of internal database locks, thus increasing concurrency. 
+
+However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions.
+
+Default is `true`, this will minimize memory consumption at the cost of moderate performance degradation.
+
 == Querying Colocated Data
 
 When Ignite executes a distributed query, it sends sub-queries to individual cluster nodes to fetch the data and groups
