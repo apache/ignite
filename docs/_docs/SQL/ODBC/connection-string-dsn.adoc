@@ -99,10 +99,6 @@ a primary or affinity key, then Ignite makes significant performance and network
  on each node participating in the query.
 |`false`
 
-|`LAZY`
-|Lazy query execution. If set to `false`, Ignite attempts to load the whole result set to memory and send it back to the query initiator. However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions. Default is `true`, this will minimize memory consumption at the cost of moderate performance degradation.
-|`true`
-
 |`SKIP_REDUCER_ON_UPDATE`
 |Enables server side update feature.
 When Ignite executes a DML operation, first, it fetches all the affected intermediate rows for analysis to the query initiator (also known as reducer), and only then prepares batches of updated values that will be sent to remote nodes.

@@ -139,11 +139,6 @@ However, in cases when you need transactional syntax to work (even without trans
 
 |`false`
 
-|`lazy`
-
-|Lazy query execution. If set to `false`, Ignite attempts to load the whole result set to memory and send it back to the query initiator. However, if the result set is too big to fit in the available memory, it can lead to prolonged GC pauses and even `OutOfMemoryError` exceptions. Default is `true`, this will minimize memory consumption at the cost of moderate performance degradation.
-|`true`
-
 |`skipReducerOnUpdate`
 
 |Enables server side update feature.
