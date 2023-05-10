@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +42,8 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -51,7 +54,6 @@ import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
@@ -574,9 +576,11 @@ public class CommandHandler {
      * @param args Commond args.
      * @return Ssl support factory.
      */
-    @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) {
+    @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) throws IgniteCheckedException {
         if (!F.isEmpty(args.sslFactoryConfigPath())) {
-            ApplicationContext ctx = new ClassPathXmlApplicationContext(args.sslFactoryConfigPath());
+            URL springCfg = IgniteUtils.resolveSpringUrl(args.sslFactoryConfigPath());
+
+            ApplicationContext ctx = IgniteSpringHelperImpl.applicationContext(springCfg);
 
             return (Factory<SSLContext>)ctx.getBean(Factory.class);
         }
