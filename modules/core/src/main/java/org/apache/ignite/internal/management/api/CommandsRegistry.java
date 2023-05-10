@@ -19,11 +19,12 @@ package org.apache.ignite.internal.management.api;
 
 import java.util.Iterator;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
  * Registry that knows all of its subcommands.
  */
-public interface CommandsRegistry extends Command {
+public interface CommandsRegistry<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /**
      * @param name Name of the command.
      * @return Command instance by name.
@@ -39,7 +40,7 @@ public interface CommandsRegistry extends Command {
     }
 
     /** {@inheritDoc} */
-    @Override public default Class argClass() {
+    @Override public default Class<? extends A> argClass() {
         throw new UnsupportedOperationException();
     }
 }

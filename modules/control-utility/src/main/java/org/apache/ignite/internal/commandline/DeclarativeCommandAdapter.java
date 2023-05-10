@@ -317,7 +317,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
             parents0.add(cmd);
 
-            ((CommandsRegistry)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
     }
 

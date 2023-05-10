@@ -17,16 +17,23 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import org.apache.ignite.compute.ComputeTask;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceTaskArg;
+import org.apache.ignite.internal.visor.persistence.PersistenceTask;
+import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 
 /** */
 @CliPositionalSubcommands
-public class PersistenceCommand extends CommandRegistryImpl implements ComputeCommand {
+public class PersistenceCommand
+    extends CommandRegistryImpl<PersistenceTaskArg, PersistenceTaskResult>
+    implements ComputeCommand<PersistenceTaskArg, PersistenceTaskResult> {
     /** */
     public PersistenceCommand() {
         super(
@@ -42,12 +49,59 @@ public class PersistenceCommand extends CommandRegistryImpl implements ComputeCo
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public Class<PersistenceInfoTaskArg> argClass() {
+        return PersistenceInfoTaskArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<? extends ComputeTask<VisorTaskArgument<NoArg>, NoArg>> taskClass() {
-        return null;
+    @Override public Class<PersistenceTask> taskClass() {
+        return PersistenceTask.class;
     }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(PersistenceTaskArg arg, PersistenceTaskResult res, Consumer<String> printer) {
+        new PersistenceInfoCommand().printResult(arg, res, printer);
+    }
+
+    /** */
+    public abstract static class PersistenceTaskArg extends IgniteDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            // No-op.
+        }
+    }
+
+    /** */
+    public static class PersistenceInfoTaskArg extends PersistenceTaskArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PersistenceCleanCorruptedTaskArg extends PersistenceTaskArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PersistenceCleanAllTaskArg extends PersistenceTaskArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PersistenceBackupCorruptedTaskArg extends PersistenceTaskArg {
+        // No-op.
+    }
+
+    /** */
+    public static class PersistenceBackupAllTaskArg extends PersistenceTaskArg {
+        // No-op.
+    }
+
 }

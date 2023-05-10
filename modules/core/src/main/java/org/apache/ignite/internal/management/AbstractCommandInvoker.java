@@ -167,7 +167,7 @@ public abstract class AbstractCommandInvoker {
      * @param <A> Argument type.
      */
     protected <A extends IgniteDataTransferObject> Command<A, ?> command(
-        CommandsRegistry root,
+        CommandsRegistry<?, ?> root,
         PeekableIterator<String> iter,
         boolean isCli
     ) {
@@ -187,7 +187,7 @@ public abstract class AbstractCommandInvoker {
             }
 
             Command<A, ?> cmd1 =
-                (Command<A, ?>)((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
+                (Command<A, ?>)((CommandsRegistry<?, ?>)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
 
             if (cmd1 == null)
                 break;

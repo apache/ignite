@@ -17,25 +17,15 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-
 /** */
-public class PersistenceCleanCachesCommand implements ComputeCommand<PersistenceCleanCachesCommandArg, NoArg> {
+public class PersistenceCleanCachesCommand extends PersistenceAbstractCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Clean directories of only given caches";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<PersistenceCleanCachesCommandArg> argClass() {
-        return PersistenceCleanCachesCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<? extends ComputeTask<VisorTaskArgument<PersistenceCleanCachesCommandArg>, NoArg>> taskClass() {
-        return null;
+    @Override public Class<PersistenceCleanCachesTaskArg> argClass() {
+        return PersistenceCleanCachesTaskArg.class;
     }
 }

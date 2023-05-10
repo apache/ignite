@@ -17,25 +17,17 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanCorruptedTaskArg;
 
 /** */
-public class PersistenceCleanCorruptedCommand implements ComputeCommand<NoArg, NoArg> {
+public class PersistenceCleanCorruptedCommand extends PersistenceAbstractCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Clean directories of caches with corrupted data files";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<? extends ComputeTask<VisorTaskArgument<NoArg>, NoArg>> taskClass() {
-        return null;
+    @Override public Class<PersistenceCleanCorruptedTaskArg> argClass() {
+        return PersistenceCleanCorruptedTaskArg.class;
     }
 }

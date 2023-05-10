@@ -17,25 +17,17 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceBackupAllTaskArg;
 
 /** */
-public class PersistenceBackupAllCommand implements ComputeCommand<NoArg, NoArg> {
+public class PersistenceBackupAllCommand extends PersistenceAbstractCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Backup data files of all caches";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<? extends ComputeTask<VisorTaskArgument<NoArg>, NoArg>> taskClass() {
-        return null;
+    @Override public Class<PersistenceBackupAllTaskArg> argClass() {
+        return PersistenceBackupAllTaskArg.class;
     }
 }

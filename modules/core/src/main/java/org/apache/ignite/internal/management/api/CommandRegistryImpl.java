@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.api;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /**
  * All commands class names stored in registry must ends with {@link Command#CMD_NAME_POSTFIX}.
@@ -27,7 +28,7 @@ import java.util.Map;
  * @see org.apache.ignite.internal.management.kill.KillCommand
  * @see org.apache.ignite.internal.management.kill.KillComputeCommand
  */
-public abstract class CommandRegistryImpl implements CommandsRegistry {
+public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R> implements CommandsRegistry<A, R> {
     /** Subcommands. */
     private final Map<String, Command<?, ?>> commands = new LinkedHashMap<>();
 
@@ -42,8 +43,8 @@ public abstract class CommandRegistryImpl implements CommandsRegistry {
      * @param cmd Command to register.
      */
     void register(Command<?, ?> cmd) {
-        Class<? extends CommandsRegistry> parent = CommandsRegistry.class.isAssignableFrom(getClass())
-            ? getClass()
+        Class<? extends CommandsRegistry<?, ?>> parent = CommandsRegistry.class.isAssignableFrom(getClass())
+            ? (Class<? extends CommandsRegistry<?, ?>>)getClass()
             : null;
 
         String name = cmd.getClass().getSimpleName();
