@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.api;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
  * All commands class names stored in registry must ends with {@link Command#CMD_NAME_POSTFIX}.

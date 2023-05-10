@@ -39,6 +39,7 @@ import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
@@ -109,7 +110,7 @@ public enum CommandList {
     METRIC("--metric", new MetricCommand()),
 
     /** */
-    PERSISTENCE("--persistence", new PersistenceCommand()),
+    PERSISTENCE(new PersistenceCommand()),
 
     /** Command to manage PDS defragmentation. */
     DEFRAGMENTATION(new DefragmentationCommand()),
