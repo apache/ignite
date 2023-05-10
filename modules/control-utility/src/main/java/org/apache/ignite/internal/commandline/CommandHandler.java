@@ -542,8 +542,13 @@ public class CommandHandler {
         if (!F.isEmpty(userName))
             clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
-        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath()))
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
+                throw new IgniteCheckedException("Incorrect SSL configuration. " +
+                    "SSL factory config path should not be specified simultaneously with other SSL options like keystore path.");
+
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
+        }
 
         return clientCfg;
     }
