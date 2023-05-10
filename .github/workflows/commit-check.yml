@@ -58,7 +58,7 @@ jobs:
 
       - name: Run codestyle and licenses checks
         run: |
-          ./mvnw clean test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+          ./mvnw test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
 
       - name: Run abandoned tests checks.
         if: ${{ matrix.java == '8' }}
