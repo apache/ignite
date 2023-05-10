@@ -15,46 +15,70 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.persistence;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PersistenceBackupCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
+@WithCliConfirmParameter
+public class BaselineAutoAdjustCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
-    @Argument(example = "cache1,cache2,cache3")
-    private String[] caches;
+    @Argument(optional = true)
+    private Enabled enabled;
+
+    /** */
+    @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
+    private long timeout;
+
+    /** */
+    public enum Enabled {
+        /** */
+        disable,
+
+        /** */
+        enable
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, caches);
+        U.writeEnum(out, enabled);
+        out.writeLong(timeout);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        caches = U.readArray(in, String.class);
+        enabled = U.readEnum(in, Enabled.class);
+        timeout = in.readLong();
     }
 
     /** */
-    public String[] caches() {
-        return caches;
+    public Enabled enabled() {
+        return enabled;
     }
 
     /** */
-    public void caches(String[] caches) {
-        this.caches = caches;
+    public void enabled(Enabled enabled) {
+        this.enabled = enabled;
+    }
+
+    /** */
+    public long timeout() {
+        return timeout;
+    }
+
+    /** */
+    public void timeout(long timeout) {
+        this.timeout = timeout;
     }
 }

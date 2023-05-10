@@ -62,7 +62,8 @@ public class CommandUtils {
      * @return Formatted name of parameter for this field.
      */
     public static String toFormattedFieldName(Field fld) {
-        return PARAMETER_PREFIX + toFormattedFieldName(fld, CMD_WORDS_DELIM);
+        return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
+            + toFormattedFieldName(fld, CMD_WORDS_DELIM);
     }
 
     /**

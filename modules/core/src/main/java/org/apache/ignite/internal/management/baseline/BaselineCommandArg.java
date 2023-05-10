@@ -15,46 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.persistence;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PersistenceBackupCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
+public class BaselineCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Positional
-    @Argument(example = "cache1,cache2,cache3")
-    private String[] caches;
+    @Argument(optional = true, description = "Show the full list of node ips")
+    private boolean verbose;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, caches);
+        out.writeBoolean(verbose);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        caches = U.readArray(in, String.class);
+        verbose = in.readBoolean();
     }
 
     /** */
-    public String[] caches() {
-        return caches;
+    public boolean verbose() {
+        return verbose;
     }
 
     /** */
-    public void caches(String[] caches) {
-        this.caches = caches;
+    public void verbose(boolean verbose) {
+        this.verbose = verbose;
     }
 }

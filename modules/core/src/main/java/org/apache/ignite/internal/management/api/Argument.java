@@ -52,4 +52,11 @@ public @interface Argument {
      * @return {@code True} if paramter name in java style.
      */
     public boolean javaStyleName() default false;
+
+    /**
+     * Required to keep compatibility with existing {@code control.sh}.
+     *
+     * @return {@code True} if parameter name expected without "--" prefix.
+     */
+    public boolean withoutPrefix() default false;
 }

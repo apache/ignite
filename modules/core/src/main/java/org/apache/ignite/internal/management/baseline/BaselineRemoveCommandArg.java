@@ -15,46 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.persistence;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PersistenceBackupCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
+@WithCliConfirmParameter
+public class BaselineRemoveCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
-    @Argument(example = "cache1,cache2,cache3")
-    private String[] caches;
+    @Argument(javaStyleExample = true)
+    private List<Object> consistentIDs;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, caches);
+        U.writeCollection(out, consistentIDs);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        caches = U.readArray(in, String.class);
+        consistentIDs = U.readList(in);
     }
 
     /** */
-    public String[] caches() {
-        return caches;
+    public List consistentIDs() {
+        return consistentIDs;
     }
 
     /** */
-    public void caches(String[] caches) {
-        this.caches = caches;
+    public void consistentIDs(List consistentIDs) {
+        this.consistentIDs = consistentIDs;
     }
 }

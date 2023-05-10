@@ -27,17 +27,24 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** */
 public class PersistenceCleanCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
     @Positional
     @Argument(example = "cache1,cache2,cache3")
     private String[] caches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         caches = U.readArray(in, String.class);
     }
 

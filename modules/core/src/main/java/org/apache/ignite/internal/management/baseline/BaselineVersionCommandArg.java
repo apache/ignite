@@ -15,46 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.persistence;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 
 /** */
-public class PersistenceBackupCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
+@WithCliConfirmParameter
+public class BaselineVersionCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
-    @Argument(example = "cache1,cache2,cache3")
-    private String[] caches;
+    @Argument(javaStyleExample = true)
+    private long topologyVersion;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, caches);
+        out.writeLong(topologyVersion);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-
-        caches = U.readArray(in, String.class);
+        topologyVersion = in.readLong();
     }
 
     /** */
-    public String[] caches() {
-        return caches;
+    public long topologyVersion() {
+        return topologyVersion;
     }
 
     /** */
-    public void caches(String[] caches) {
-        this.caches = caches;
+    public void topologyVersion(long topologyVersion) {
+        this.topologyVersion = topologyVersion;
     }
 }
