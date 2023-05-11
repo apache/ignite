@@ -898,11 +898,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
-        if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
-            throw new IgniteException("Create snapshot request has been rejected. Snapshots on an in-memory " +
-                "clusters are not allowed.");
-        }
-
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             F.node2id()));
@@ -2157,6 +2152,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         new CreateSnapshotCallable(name, incremental, onlyPrimary),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
+            }
+
+            if (!CU.isPersistenceEnabled(cctx.gridConfig())) {
+                throw new IgniteException("Create snapshot request has been rejected. " +
+                    "Snapshots on an in-memory clusters are not allowed.");
             }
 
             ClusterSnapshotFuture snpFut0;
