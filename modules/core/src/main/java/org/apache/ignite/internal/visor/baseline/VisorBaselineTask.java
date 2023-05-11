@@ -248,25 +248,18 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
         /** {@inheritDoc} */
         @Override protected VisorBaselineTaskResult run(@Nullable VisorBaselineTaskArg arg) throws IgniteException {
-            switch (arg.operation()) {
-                case ADD:
-                    return add(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
-
-                case REMOVE:
-                    return remove(F.asList(((BaselineRemoveCommandArg)arg).consistentIDs()));
-
-                case SET:
-                    return set(F.asList(((BaselineSetCommandArg)arg).consistentIDs()));
-
-                case VERSION:
-                    return version(((BaselineVersionCommandArg)arg).topologyVersion());
-
-                case AUTOADJUST:
-                    return updateAutoAdjustmentSettings((BaselineAutoAdjustCommandArg)arg);
-
-                default:
-                    return collect();
-            }
+            if (arg instanceof BaselineRemoveCommandArg)
+                return remove(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
+            else if (arg instanceof BaselineSetCommandArg)
+                return set(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
+            else if (arg instanceof BaselineAddCommandArg)
+                return add(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
+            else if (arg instanceof BaselineVersionCommandArg)
+                return version(((BaselineVersionCommandArg)arg).topologyVersion());
+            else if (arg instanceof BaselineAutoAdjustCommandArg)
+                return updateAutoAdjustmentSettings((BaselineAutoAdjustCommandArg)arg);
+            else
+                return collect();
         }
 
         /** {@inheritDoc} */

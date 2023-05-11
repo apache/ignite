@@ -26,8 +26,6 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.AUTOADJUST;
 
 /** */
 @WithCliConfirmParameter
@@ -44,11 +42,6 @@ public class BaselineAutoAdjustCommandArg extends VisorBaselineTaskArg {
     /** */
     @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
     private Long timeout;
-
-    /** {@inheritDoc} */
-    @Override public VisorBaselineOperation operation() {
-        return AUTOADJUST;
-    }
 
     /** */
     public enum Enabled {

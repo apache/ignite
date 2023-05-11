@@ -27,7 +27,6 @@ import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 
@@ -99,8 +98,5 @@ public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, V
         public void verbose(boolean verbose) {
             this.verbose = verbose;
         }
-
-        /** */
-        public abstract VisorBaselineOperation operation();
     }
 }

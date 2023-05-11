@@ -25,8 +25,6 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 
 /** */
 @WithCliConfirmParameter
@@ -61,10 +59,5 @@ public class BaselineAddCommandArg extends VisorBaselineTaskArg {
     /** */
     public void consistentIDs(String[] consistentIDs) {
         this.consistentIDs = consistentIDs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public VisorBaselineOperation operation() {
-        return ADD;
     }
 }

@@ -24,8 +24,6 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
 
 /** */
 @WithCliConfirmParameter
@@ -60,10 +58,5 @@ public class BaselineVersionCommandArg extends VisorBaselineTaskArg {
     /** */
     public void topologyVersion(long topologyVersion) {
         this.topologyVersion = topologyVersion;
-    }
-
-    /** {@inheritDoc} */
-    @Override public VisorBaselineOperation operation() {
-        return VERSION;
     }
 }

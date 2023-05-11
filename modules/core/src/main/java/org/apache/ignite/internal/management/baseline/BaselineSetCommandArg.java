@@ -18,17 +18,10 @@
 package org.apache.ignite.internal.management.baseline;
 
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
 
 /** */
 @WithCliConfirmParameter
 public class BaselineSetCommandArg extends BaselineAddCommandArg {
     /** */
     private static final long serialVersionUID = 0;
-
-    /** {@inheritDoc} */
-    @Override public VisorBaselineOperation operation() {
-        return SET;
-    }
 }

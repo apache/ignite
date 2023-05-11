@@ -18,16 +18,9 @@
 package org.apache.ignite.internal.management.baseline;
 
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 
 /** */
 public class BaselineCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
-
-    /** {@inheritDoc} */
-    @Override public VisorBaselineOperation operation() {
-        return COLLECT;
-    }
 }
