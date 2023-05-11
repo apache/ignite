@@ -1071,7 +1071,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
 
         { // verbose mode
-            assertEquals(EXIT_CODE_OK, execute("--verbose", "--baseline"));
+            assertEquals(EXIT_CODE_OK, execute("--baseline", "--verbose"));
 
             List<String> nodesInfo = findBaselineNodesInfo();
             assertEquals(1, nodesInfo.size());
@@ -1112,7 +1112,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--baseline"));
 
         String crdStr = findCrdInfo();
 
@@ -1121,7 +1121,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(0);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--baseline"));
 
         crdStr = findCrdInfo();
 
@@ -1130,7 +1130,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrid(0);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--baseline"));
 
         crdStr = findCrdInfo();
 
@@ -1139,7 +1139,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(1);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11211"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11211", "--baseline"));
 
         crdStr = findCrdInfo();
 
@@ -1197,7 +1197,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             String consistentId = ignite.cluster().localNode().consistentId().toString();
 
             if (res.length() != 0)
-                res.append(", ");
+                res.append(",");
 
             res.append(consistentId);
         }

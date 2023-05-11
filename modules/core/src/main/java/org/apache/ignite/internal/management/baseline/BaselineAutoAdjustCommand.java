@@ -18,28 +18,22 @@
 package org.apache.ignite.internal.management.baseline;
 
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
 /** */
-public class BaselineAutoAdjustCommand implements ComputeCommand<BaselineAutoAdjustCommandArg, VisorBaselineTaskResult> {
+public class BaselineAutoAdjustCommand extends AbstractBaselineCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set baseline autoadjustment settings";
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, BaselineAutoAdjustCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(GridClient cli, VisorBaselineTaskArg arg) throws Exception {
         return "Warning: the command will perform changes in baseline.";
     }
 
     /** {@inheritDoc} */
     @Override public Class<BaselineAutoAdjustCommandArg> argClass() {
         return BaselineAutoAdjustCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
     }
 }

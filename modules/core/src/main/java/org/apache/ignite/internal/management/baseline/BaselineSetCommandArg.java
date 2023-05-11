@@ -17,44 +17,18 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.List;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
 
 /** */
 @WithCliConfirmParameter
-public class BaselineSetCommandArg extends IgniteDataTransferObject {
+public class BaselineSetCommandArg extends BaselineAddCommandArg {
     /** */
     private static final long serialVersionUID = 0;
 
-    /** */
-    @Positional
-    @Argument(javaStyleExample = true)
-    private List<Object> consistentIDs;
-
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, consistentIDs);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentIDs = U.readList(in);
-    }
-
-    /** */
-    public List consistentIDs() {
-        return consistentIDs;
-    }
-
-    /** */
-    public void consistentIDs(List consistentIDs) {
-        this.consistentIDs = consistentIDs;
+    @Override public VisorBaselineOperation operation() {
+        return SET;
     }
 }

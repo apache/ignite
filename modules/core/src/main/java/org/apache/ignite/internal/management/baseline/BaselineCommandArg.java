@@ -17,38 +17,17 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 
 /** */
-public class BaselineCommandArg extends IgniteDataTransferObject {
+public class BaselineCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
-    /** */
-    @Argument(optional = true, description = "Show the full list of node ips")
-    private boolean verbose;
-
     /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(verbose);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        verbose = in.readBoolean();
-    }
-
-    /** */
-    public boolean verbose() {
-        return verbose;
-    }
-
-    /** */
-    public void verbose(boolean verbose) {
-        this.verbose = verbose;
+    @Override public VisorBaselineOperation operation() {
+        return COLLECT;
     }
 }

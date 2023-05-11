@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -38,11 +39,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -102,11 +103,20 @@ public abstract class AbstractCommandInvoker {
     ) throws InstantiationException, IllegalAccessException {
         A arg = argCls.newInstance();
 
-        AtomicBoolean oneOfSet = new AtomicBoolean(false);
+        AtomicBoolean onlyOneOfGrp = new AtomicBoolean();
+        AtomicBoolean optionalGrp = new AtomicBoolean(true);
 
-        Set<String> oneOfFields = arg.getClass().isAnnotationPresent(OneOf.class)
-            ? new HashSet<>(Arrays.asList(arg.getClass().getAnnotation(OneOf.class).value()))
-            : Collections.emptySet();
+        AtomicReference<Set<String>> oneOfFlds = new AtomicReference<>(Collections.emptySet());
+
+        if (arg.getClass().isAnnotationPresent(ArgumentGroup.class)) {
+            ArgumentGroup argGrp = arg.getClass().getAnnotation(ArgumentGroup.class);
+
+            onlyOneOfGrp.set(argGrp.onlyOneOf());
+            optionalGrp.set(argGrp.optional());
+            oneOfFlds.set(new HashSet<>(Arrays.asList(argGrp.value())));
+        }
+
+        AtomicBoolean grpExists = new AtomicBoolean(false);
 
         BiConsumer<Field, Object> fldSetter = (fld, val) -> {
             if (val == null) {
@@ -120,11 +130,11 @@ public abstract class AbstractCommandInvoker {
                 throw new IllegalArgumentException("Argument " + name + " required.");
             }
 
-            if (oneOfFields.contains(fld.getName())) {
-                if (oneOfSet.get())
-                    throw new IllegalArgumentException("Only one of " + oneOfFields + " allowed");
+            if (oneOfFlds.get().contains(fld.getName())) {
+                if (grpExists.get() && onlyOneOfGrp.get())
+                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
 
-                oneOfSet.set(true);
+                grpExists.set(true);
             }
 
             try {
@@ -145,14 +155,16 @@ public abstract class AbstractCommandInvoker {
             arg.getClass(),
             fld -> fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement())),
             fld -> fldSetter.accept(fld, paramProvider.apply(fld)),
-            (optionals, flds) -> flds.forEach(fld -> fldSetter.accept(fld, paramProvider.apply(fld)))
+            (argGrp, flds) -> flds.forEach(fld -> {
+                if (fld.isAnnotationPresent(Positional.class))
+                    fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement()));
+                else
+                    fldSetter.accept(fld, paramProvider.apply(fld));
+            })
         );
 
-        boolean oneOfRequired = arg.getClass().isAnnotationPresent(OneOf.class)
-            && !arg.getClass().getAnnotation(OneOf.class).optional();
-
-        if (oneOfRequired && !oneOfSet.get())
-            throw new IllegalArgumentException("One of " + oneOfFields + " required");
+        if (!optionalGrp.get() && !grpExists.get())
+            throw new IllegalArgumentException("One of " + oneOfFlds + " required");
 
         return arg;
     }
@@ -206,14 +218,14 @@ public abstract class AbstractCommandInvoker {
      * @param argCls Argument class.
      * @param positionalParamVisitor Visitor of positional parameters.
      * @param namedParamVisitor Visitor of named parameters.
-     * @param oneOfNamedParamVisitor Visitor of "one of" parameters.
+     * @param argumentGroupVisitor Visitor of "one of" parameters.
      * @param <A> Argument type.
      */
     protected <A extends IgniteDataTransferObject> void visitCommandParams(
         Class<A> argCls,
         Consumer<Field> positionalParamVisitor,
         Consumer<Field> namedParamVisitor,
-        BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
+        BiConsumer<ArgumentGroup, List<Field>> argumentGroupVisitor
     ) {
         Class<? extends IgniteDataTransferObject> clazz0 = argCls;
 
@@ -228,21 +240,21 @@ public abstract class AbstractCommandInvoker {
         List<Field> positionalParams = new ArrayList<>();
         List<Field> namedParams = new ArrayList<>();
 
-        OneOf oneOf = argCls.getAnnotation(OneOf.class);
+        ArgumentGroup argGrp = argCls.getAnnotation(ArgumentGroup.class);
 
-        Set<String> oneOfNames = oneOf != null
-            ? new HashSet<>(Arrays.asList(oneOf.value()))
+        Set<String> grpNames = argGrp != null
+            ? new HashSet<>(Arrays.asList(argGrp.value()))
             : Collections.emptySet();
 
-        List<Field> oneOfFlds = new ArrayList<>();
+        List<Field> grpFlds = new ArrayList<>();
 
         // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
             Field[] flds = classes.get(i).getDeclaredFields();
 
             for (Field fld : flds) {
-                if (oneOfNames.contains(fld.getName()))
-                    oneOfFlds.add(fld);
+                if (grpNames.contains(fld.getName()))
+                    grpFlds.add(fld);
                 else if (fld.isAnnotationPresent(Positional.class))
                     positionalParams.add(fld);
                 else if (fld.isAnnotationPresent(Argument.class))
@@ -254,8 +266,8 @@ public abstract class AbstractCommandInvoker {
 
         namedParams.forEach(namedParamVisitor);
 
-        if (oneOf != null)
-            oneOfNamedParamVisitor.accept(oneOf.optional(), oneOfFlds);
+        if (argGrp != null)
+            argumentGroupVisitor.accept(argGrp, grpFlds);
     }
 
     /** @return Local node. */

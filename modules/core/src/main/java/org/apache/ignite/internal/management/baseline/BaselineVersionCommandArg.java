@@ -20,14 +20,16 @@ package org.apache.ignite.internal.management.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
 
 /** */
 @WithCliConfirmParameter
-public class BaselineVersionCommandArg extends IgniteDataTransferObject {
+public class BaselineVersionCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -38,11 +40,15 @@ public class BaselineVersionCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         out.writeLong(topologyVersion);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         topologyVersion = in.readLong();
     }
 
@@ -54,5 +60,10 @@ public class BaselineVersionCommandArg extends IgniteDataTransferObject {
     /** */
     public void topologyVersion(long topologyVersion) {
         this.topologyVersion = topologyVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override public VisorBaselineOperation operation() {
+        return VERSION;
     }
 }

@@ -22,12 +22,12 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.OneOf;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
-@OneOf({"typeId", "typeName"})
+@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true)
 public class MetaDetailsCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

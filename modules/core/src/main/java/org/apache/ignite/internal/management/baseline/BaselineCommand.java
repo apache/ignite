@@ -17,15 +17,24 @@
 
 package org.apache.ignite.internal.management.baseline;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 
 /** */
 @CliPositionalSubcommands
-public class BaselineCommand extends CommandRegistryImpl<BaselineCommandArg, VisorBaselineTaskResult>
-    implements ComputeCommand<BaselineCommandArg, VisorBaselineTaskResult> {
+public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, VisorBaselineTaskResult>
+    implements ComputeCommand<VisorBaselineTaskArg, VisorBaselineTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print cluster baseline topology";
@@ -48,7 +57,50 @@ public class BaselineCommand extends CommandRegistryImpl<BaselineCommandArg, Vis
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
+    @Override public Class<VisorBaselineTask> taskClass() {
+        return VisorBaselineTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(VisorBaselineTaskArg arg, VisorBaselineTaskResult res, Consumer<String> printer) {
+        new AbstractBaselineCommand() {
+            @Override public String description() {
+                return null;
+            }
+
+            @Override public Class<? extends VisorBaselineTaskArg> argClass() {
+                return null;
+            }
+        }.printResult(arg, res, printer);
+    }
+
+    /** */
+    public abstract static class VisorBaselineTaskArg extends IgniteDataTransferObject {
+        /** */
+        @Argument(optional = true, description = "Show the full list of node ips")
+        private boolean verbose;
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            out.writeBoolean(verbose);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            verbose = in.readBoolean();
+        }
+
+        /** */
+        public boolean verbose() {
+            return verbose;
+        }
+
+        /** */
+        public void verbose(boolean verbose) {
+            this.verbose = verbose;
+        }
+
+        /** */
+        public abstract VisorBaselineOperation operation();
     }
 }

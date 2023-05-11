@@ -18,28 +18,22 @@
 package org.apache.ignite.internal.management.baseline;
 
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
 /** */
-public class BaselineVersionCommand implements ComputeCommand<BaselineVersionCommandArg, VisorBaselineTaskResult> {
+public class BaselineVersionCommand extends AbstractBaselineCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Set baseline topology based on version";
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, BaselineVersionCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(GridClient cli, VisorBaselineTaskArg arg) throws Exception {
         return "Warning: the command will perform changes in baseline.";
     }
 
     /** {@inheritDoc} */
     @Override public Class<BaselineVersionCommandArg> argClass() {
         return BaselineVersionCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
     }
 }

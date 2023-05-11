@@ -20,41 +20,51 @@ package org.apache.ignite.internal.management.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 
 /** */
 @WithCliConfirmParameter
-public class BaselineAddCommandArg extends IgniteDataTransferObject {
+public class BaselineAddCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
     @Argument(javaStyleExample = true)
-    private List<Object> consistentIDs;
+    private String[] consistentIDs;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, consistentIDs);
+        super.writeExternalData(out);
+
+        U.writeArray(out, consistentIDs);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentIDs = U.readList(in);
+        super.readExternalData(protoVer, in);
+
+        consistentIDs = U.readArray(in, String.class);
     }
 
     /** */
-    public List consistentIDs() {
+    public String[] consistentIDs() {
         return consistentIDs;
     }
 
     /** */
-    public void consistentIDs(List consistentIDs) {
+    public void consistentIDs(String[] consistentIDs) {
         this.consistentIDs = consistentIDs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public VisorBaselineOperation operation() {
+        return ADD;
     }
 }

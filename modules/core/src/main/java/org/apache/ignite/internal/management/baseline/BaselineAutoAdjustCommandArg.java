@@ -20,15 +20,19 @@ package org.apache.ignite.internal.management.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
+import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.AUTOADJUST;
 
 /** */
 @WithCliConfirmParameter
-public class BaselineAutoAdjustCommandArg extends IgniteDataTransferObject {
+@ArgumentGroup(value = {"enabled", "timeout"})
+public class BaselineAutoAdjustCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -39,27 +43,36 @@ public class BaselineAutoAdjustCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
-    private long timeout;
+    private Long timeout;
+
+    /** {@inheritDoc} */
+    @Override public VisorBaselineOperation operation() {
+        return AUTOADJUST;
+    }
 
     /** */
     public enum Enabled {
         /** */
-        disable,
+        DISABLE,
 
         /** */
-        enable
+        ENABLE
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         U.writeEnum(out, enabled);
-        out.writeLong(timeout);
+        out.writeObject(timeout);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         enabled = U.readEnum(in, Enabled.class);
-        timeout = in.readLong();
+        timeout = (Long)in.readObject();
     }
 
     /** */
@@ -73,12 +86,12 @@ public class BaselineAutoAdjustCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public long timeout() {
+    public Long timeout() {
         return timeout;
     }
 
     /** */
-    public void timeout(long timeout) {
+    public void timeout(Long timeout) {
         this.timeout = timeout;
     }
 }
