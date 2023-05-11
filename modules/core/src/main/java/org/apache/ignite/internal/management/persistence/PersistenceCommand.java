@@ -81,27 +81,31 @@ public class PersistenceCommand
 
     /** */
     public static class PersistenceInfoTaskArg extends PersistenceTaskArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
     public static class PersistenceCleanCorruptedTaskArg extends PersistenceTaskArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
     public static class PersistenceCleanAllTaskArg extends PersistenceTaskArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
     public static class PersistenceBackupCorruptedTaskArg extends PersistenceTaskArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
 
     /** */
     public static class PersistenceBackupAllTaskArg extends PersistenceTaskArg {
-        // No-op.
+        /** */
+        private static final long serialVersionUID = 0;
     }
-
 }
