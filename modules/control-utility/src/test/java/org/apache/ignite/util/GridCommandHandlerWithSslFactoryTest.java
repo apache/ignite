@@ -64,7 +64,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
     /** {@inheritDoc} */
     @Override protected void extendSslParams(List<String> params) {
         params.add("--ssl-factory");
-        params.add("ssl-factory-config.xml");
+        params.add("src/test/resources/ssl-factory-config.xml");
     }
 
     /** {@inheritDoc} */
