@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -34,6 +36,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -47,9 +50,11 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests snapshot is consistent or snapshot process produces proper warning with concurrent streaming.
@@ -63,6 +68,12 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
     /** Non-baseline.*/
     private IgniteEx nonBaseline;
+
+    /** Node log listeners. */
+    private final Map<String, ListeningTestLogger> logLsnrs = new HashMap<>();
+
+    /** */
+    private final List<SnapshotEvent> snpEvts = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void beforeTestSnapshot() throws Exception {
@@ -95,6 +106,12 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         if (cfg.isClientMode())
             return cfg;
+
+        ListeningTestLogger logLsnr = new ListeningTestLogger(cfg.getGridLogger());
+
+        logLsnrs.put(igniteInstanceName, logLsnr);
+
+        cfg.setGridLogger(logLsnr);
 
         // In-memory data region.
         DataRegionConfiguration inMemDr = new DataRegionConfiguration();
@@ -155,6 +172,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         nonBaseline.createCache(dfltCacheCfg);
 
         assert U.isLocalNodeCoordinator(nonBaseline.context().discovery());
+
+        nonBaseline.events().localListen(e -> snpEvts.add((SnapshotEvent)e), EVT_CLUSTER_SNAPSHOT_FAILED);
 
         doTestDataStreamerWhileSnapshot(nonBaseline, false);
     }
@@ -435,6 +454,18 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             if (expWrn == null)
                 snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
             else {
+                String snpOpWrnMsg = U.field(IgniteSnapshotManager.class, "SNAPSHOT_FINISHED_WRN_MSG");
+
+                LogListener logLsnr = LogListener.matches(snpOpWrnMsg).andMatches(expWrn).times(1).build();
+
+                Ignite realOpNode = snpHnd.localNode().isClient() ? G.allGrids().stream()
+                    .filter(g -> U.isLocalNodeCoordinator(((IgniteEx)g).context().discovery()))
+                    .findFirst().get() : snpHnd;
+
+                realOpNode.events().localListen(e -> snpEvts.add((SnapshotEvent)e), EVT_CLUSTER_SNAPSHOT_FAILED);
+
+                logLsnrs.get(realOpNode.name()).registerListener(logLsnr);
+
                 Throwable snpWrn = assertThrows(
                     null,
                     () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
@@ -444,6 +475,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
                 if (notExpWrn != null)
                     assertTrue(!snpWrn.getMessage().contains(notExpWrn));
+
+                logLsnr.check(getTestTimeout());
+
+                waitForCondition(() -> snpEvts.removeIf(e -> e.snapshotName().equals(SNAPSHOT_NAME) &&
+                    e.message().contains(snpOpWrnMsg)), getTestTimeout(), 333);
             }
         }
 
