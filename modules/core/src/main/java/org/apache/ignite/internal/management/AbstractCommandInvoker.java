@@ -46,7 +46,7 @@ import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
@@ -69,7 +69,7 @@ public abstract class AbstractCommandInvoker {
     protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
         ComputeCommand<A, ?> cmd,
         A arg,
-        Map<UUID, T2<Boolean, Object>> nodes,
+        Map<UUID, T3<Boolean, Object, Long>> nodes,
         UUID dflt
     ) {
         Collection<UUID> nodeIds = cmd.nodes(nodes, arg);

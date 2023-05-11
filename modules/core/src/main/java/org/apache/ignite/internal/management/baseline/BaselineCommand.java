@@ -20,6 +20,9 @@ package org.apache.ignite.internal.management.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
@@ -27,8 +30,10 @@ import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
 @CliPositionalSubcommands
@@ -58,6 +63,11 @@ public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, V
     /** {@inheritDoc} */
     @Override public Class<VisorBaselineTask> taskClass() {
         return VisorBaselineTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, VisorBaselineTaskArg arg) {
+        return coordinatorOrNull(nodes);
     }
 
     /** {@inheritDoc} */

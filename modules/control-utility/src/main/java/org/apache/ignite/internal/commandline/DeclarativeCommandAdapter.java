@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
@@ -53,9 +52,10 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -200,7 +200,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 GridClientCompute compute = client.compute();
 
                 Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
-                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
+                    .collect(toMap(GridClientNode::nodeId, n -> n));
 
                 ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)this.cmd;
 
@@ -209,7 +209,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     arg,
                     clusterNodes.values()
                         .stream()
-                        .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
+                        .collect(toMap(GridClientNode::nodeId, n -> new T3<>(n.isClient(), n.consistentId(), n.order()))),
                     TaskExecutor.defaultNode(client, clientCfg).nodeId()
                 );
 
