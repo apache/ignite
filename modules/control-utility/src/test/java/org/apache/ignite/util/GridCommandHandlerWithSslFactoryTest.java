@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.List;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
@@ -64,7 +65,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
     /** {@inheritDoc} */
     @Override protected void extendSslParams(List<String> params) {
         params.add("--ssl-factory");
-        params.add("src/test/resources/ssl-factory-config.xml");
+        params.add(U.resolveIgnitePath("modules/control-utility/src/test/resources/ssl-factory-config.xml").getPath());
     }
 
     /** {@inheritDoc} */
