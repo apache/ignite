@@ -50,6 +50,11 @@ public enum CacheSubcommands {
     LIST("list", ListCommandArg.class, new CacheViewer()),
 
     /**
+     * Create caches.
+     */
+    CREATE("create", null, new CacheCreate()),
+
+    /**
      * Destroy caches.
      */
     DESTROY("destroy", null, new CacheDestroy()),
