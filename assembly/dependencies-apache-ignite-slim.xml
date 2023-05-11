@@ -34,6 +34,7 @@
             <includes>
                 <include>${project.groupId}:ignite-spring</include>
                 <include>${project.groupId}:ignite-indexing</include>
+                <include>${project.groupId}:ignite-control-utility</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -146,6 +147,7 @@
                 <exclude>${project.groupId}:ignite-ml-catboost-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-web</exclude>
                 <exclude>${project.groupId}:ignite-zookeeper</exclude>
+                <exclude>${project.groupId}:ignite-control-utility</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
