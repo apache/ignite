@@ -60,6 +60,7 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
 | --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
 

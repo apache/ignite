@@ -20,7 +20,7 @@ package org.apache.ignite.util;
 /**
  *
  */
-public class GridCommandHandlerWithSSLTest extends GridCommandHandlerTest {
+public class GridCommandHandlerWithSslTest extends GridCommandHandlerTest {
     /** {@inheritDoc} */
     @Override protected boolean sslEnabled() {
         return true;
