@@ -118,6 +118,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Integer.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Integer)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(int[].class, F.t(
             fld -> "U.writeIntArray(out, " + fld + ");",
             fld -> fld + " = U.readIntArray(in);",

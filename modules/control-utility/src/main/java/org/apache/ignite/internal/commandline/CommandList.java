@@ -42,6 +42,7 @@ import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -66,7 +67,7 @@ public enum CommandList {
     BASELINE(new BaselineCommand()),
 
     /** */
-    TX("--tx", new TxCommands()),
+    TX(new TxCommand()),
 
     /** */
     CACHE("--cache", new CacheCommands()),

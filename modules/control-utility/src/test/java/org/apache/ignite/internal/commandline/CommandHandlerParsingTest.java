@@ -47,14 +47,12 @@ import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
-import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
@@ -498,11 +496,11 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    VisorTxTaskArg txTaskArg = ((TxCommands)args.command()).arg();
+                    TxCommandArg txTaskArg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-                    assertEquals("xid1", txTaskArg.getXid());
-                    assertEquals(10_000, txTaskArg.getMinDuration().longValue());
-                    assertEquals(VisorTxOperation.KILL, txTaskArg.getOperation());
+                    assertEquals("xid1", txTaskArg.xid());
+                    assertEquals(10_000, txTaskArg.minDuration().longValue());
+                    assertTrue(txTaskArg.kill());
 
                     break;
                 }
@@ -590,41 +588,44 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tx"));
 
-        assertParseArgsThrows("Expecting --min-duration", "--tx", "--min-duration");
-        assertParseArgsThrows("Invalid value for --min-duration: -1", "--tx", "--min-duration", "-1");
-        assertParseArgsThrows("Expecting --min-size", "--tx", "--min-size");
-        assertParseArgsThrows("Invalid value for --min-size: -1", "--tx", "--min-size", "-1");
+        assertParseArgsThrows("Please specify a value for argument: --min-duration", "--tx", "--min-duration");
+        assertParseArgsThrows("Ouch! Argument is invalid: --min-duration", "--tx", "--min-duration", "-1");
+        assertParseArgsThrows("Please specify a value for argument: --min-size", "--tx", "--min-size");
+        assertParseArgsThrows("Ouch! Argument is invalid: --min-size", "--tx", "--min-size", "-1");
         assertParseArgsThrows("--label", "--tx", "--label");
         assertParseArgsThrows("Illegal regex syntax", "--tx", "--label", "tx123[");
-        assertParseArgsThrows("Projection can't be used together with list of consistent ids.", "--tx", "--servers", "--nodes", "1,2,3");
+        assertParseArgsThrows("Only one of [servers, clients, nodes] allowed", "--tx", "--servers", "--nodes", "1,2,3");
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
-        VisorTxTaskArg arg = ((TxCommands)args.command()).arg();
+        TxCommandArg arg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-        assertEquals(Long.valueOf(120 * 1000L), arg.getMinDuration());
-        assertEquals(Integer.valueOf(10), arg.getMinSize());
-        assertEquals(Integer.valueOf(100), arg.getLimit());
-        assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
-        assertEquals(VisorTxProjection.SERVER, arg.getProjection());
+        assertEquals(Long.valueOf(120 * 1000L), arg.minDuration());
+        assertEquals(Integer.valueOf(10), arg.minSize());
+        assertEquals(Integer.valueOf(100), arg.limit());
+        assertEquals(VisorTxSortOrder.SIZE, arg.order());
+        assertTrue(arg.servers());
+        assertFalse(arg.clients());
 
         args = parseArgs(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
             "--clients"));
 
-        arg = ((TxCommands)args.command()).arg();
+        arg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-        assertEquals(Long.valueOf(130 * 1000L), arg.getMinDuration());
-        assertEquals(Integer.valueOf(1), arg.getMinSize());
-        assertEquals(Integer.valueOf(60), arg.getLimit());
-        assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
-        assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
+        assertEquals(Long.valueOf(130 * 1000L), arg.minDuration());
+        assertEquals(Integer.valueOf(1), arg.minSize());
+        assertEquals(Integer.valueOf(60), arg.limit());
+        assertEquals(VisorTxSortOrder.DURATION, arg.order());
+        assertFalse(arg.servers());
+        assertTrue(arg.clients());
 
         args = parseArgs(asList("--tx", "--nodes", "1,2,3"));
 
-        arg = ((TxCommands)args.command()).arg();
+        arg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-        assertNull(arg.getProjection());
-        assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
+        assertFalse(arg.servers());
+        assertFalse(arg.clients());
+        assertArrayEquals(new String[] {"1", "2", "3"}, arg.nodes());
     }
 
     /**
