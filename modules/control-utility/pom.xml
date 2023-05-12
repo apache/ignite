@@ -43,6 +43,11 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-spring</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
             <scope>test</scope>
         </dependency>
@@ -75,20 +80,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-tools</artifactId>
             <scope>test</scope>
@@ -104,12 +95,6 @@
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
             <version>1.4.8</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-spring</artifactId>
             <scope>test</scope>
         </dependency>
 
