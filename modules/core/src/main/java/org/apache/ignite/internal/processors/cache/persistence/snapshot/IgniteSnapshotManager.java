@@ -329,7 +329,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
 
     /** Snapshot operation finish with warnings log message. */
-    private static final String SNAPSHOT_FINISHED_WRN_MSG = "Cluster-wide snapshot operation finished with warnings: ";
+    public static final String SNAPSHOT_FINISHED_WRN_MSG = "Cluster-wide snapshot operation finished with warnings: ";
 
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";

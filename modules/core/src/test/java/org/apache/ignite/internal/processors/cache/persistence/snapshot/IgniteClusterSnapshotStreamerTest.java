@@ -454,9 +454,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             if (expWrn == null)
                 snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
             else {
-                String snpOpWrnMsg = U.field(IgniteSnapshotManager.class, "SNAPSHOT_FINISHED_WRN_MSG");
-
-                LogListener logLsnr = LogListener.matches(snpOpWrnMsg).andMatches(expWrn).times(1).build();
+                LogListener logLsnr = LogListener.matches(IgniteSnapshotManager.SNAPSHOT_FINISHED_WRN_MSG)
+                    .andMatches(expWrn).times(1).build();
 
                 Ignite realOpNode = snpHnd.localNode().isClient() ? G.allGrids().stream()
                     .filter(g -> U.isLocalNodeCoordinator(((IgniteEx)g).context().discovery()))
@@ -479,7 +478,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                 logLsnr.check(getTestTimeout());
 
                 waitForCondition(() -> snpEvts.removeIf(e -> e.snapshotName().equals(SNAPSHOT_NAME) &&
-                    e.message().contains(snpOpWrnMsg)), getTestTimeout(), 333);
+                    e.message().contains(IgniteSnapshotManager.SNAPSHOT_FINISHED_WRN_MSG)), getTestTimeout(), 333);
             }
         }
 
