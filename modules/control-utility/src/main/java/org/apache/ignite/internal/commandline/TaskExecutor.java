@@ -83,38 +83,7 @@ public class TaskExecutor {
         GridClientNode node = null;
 
         if (nodeId == null) {
-            // Prefer node from connect string.
-            final String cfgAddr = clientCfg.getServers().iterator().next();
-
-            String[] parts = cfgAddr.split(":");
-
-            if (DFLT_HOST.equals(parts[0])) {
-                InetAddress addr;
-
-                try {
-                    addr = IgniteUtils.getLocalHost();
-                }
-                catch (IOException e) {
-                    throw new GridClientException("Can't get localhost name.", e);
-                }
-
-                if (addr.isLoopbackAddress())
-                    throw new GridClientException("Can't find localhost name.");
-
-                String origAddr = addr.getHostName() + ":" + parts[1];
-
-                node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
-
-                if (node == null)
-                    node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
-                        findFirst().map(IgniteBiTuple::get1).orElse(null);
-            }
-            else
-                node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
-
-            // Otherwise choose random node.
-            if (node == null)
-                node = getBalancedNode(compute);
+            node = defaultNode(client, clientCfg);
         }
         else {
             for (GridClientNode n : compute.nodes()) {
@@ -130,6 +99,46 @@ public class TaskExecutor {
         }
 
         return compute.projection(node).execute(taskClsName, new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
+    }
+
+    /** */
+    public static GridClientNode defaultNode(GridClient client, GridClientConfiguration clientCfg) throws GridClientException {
+        GridClientNode node;
+
+        // Prefer node from connect string.
+        final String cfgAddr = clientCfg.getServers().iterator().next();
+
+        String[] parts = cfgAddr.split(":");
+
+        if (DFLT_HOST.equals(parts[0])) {
+            InetAddress addr;
+
+            try {
+                addr = IgniteUtils.getLocalHost();
+            }
+            catch (IOException e) {
+                throw new GridClientException("Can't get localhost name.", e);
+            }
+
+            if (addr.isLoopbackAddress())
+                throw new GridClientException("Can't find localhost name.");
+
+            String origAddr = addr.getHostName() + ":" + parts[1];
+
+            node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+            if (node == null)
+                node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
+                    findFirst().map(IgniteBiTuple::get1).orElse(null);
+        }
+        else
+            node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+        // Otherwise choose random node.
+        if (node == null)
+            node = getBalancedNode(client.compute());
+
+        return node;
     }
 
     /**

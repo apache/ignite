@@ -60,7 +60,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNode;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
@@ -210,7 +209,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     clusterNodes.values()
                         .stream()
                         .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
-                    getBalancedNode(compute).nodeId()
+                    TaskExecutor.defaultNode(client, clientCfg).nodeId()
                 );
 
                 Collection<GridClientNode> connectable = F.viewReadOnly(

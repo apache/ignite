@@ -34,6 +34,7 @@ import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.StateCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
@@ -111,7 +112,7 @@ public enum CommandList {
     PERSISTENCE("--persistence", new PersistenceCommand()),
 
     /** Command to manage PDS defragmentation. */
-    DEFRAGMENTATION("--defragmentation", new DefragmentationCommand()),
+    DEFRAGMENTATION(new DefragmentationCommand()),
 
     /** Command to manage performance statistics. */
     PERFORMANCE_STATISTICS(new PerformanceStatisticsCommand()),

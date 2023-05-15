@@ -314,11 +314,11 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Backup data files of only given caches:
     control.(sh|bat) --persistence backup caches cache1,cache2,cache3
 
-  Schedule PDS defragmentation on given nodes for all caches:
-    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1
+  Schedule PDS defragmentation:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 [--caches cache1,cache2,cache3]
 
-  Schedule PDS defragmentation on given nodes but only for given caches:
-    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 --caches cache1,cache2,cache3
+  Prints status of running defragmentation operation:
+    control.(sh|bat) --defragmentation status
 
   Cancel scheduled or active PDS defragmentation on underlying node:
     control.(sh|bat) --defragmentation cancel
