@@ -33,6 +33,7 @@ import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.StateCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.WarmUpCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
@@ -100,7 +101,7 @@ public enum CommandList {
     TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
 
     /** Warm-up command. */
-    WARM_UP("--warm-up", new WarmUpCommand()),
+    WARM_UP(new WarmUpCommand()),
 
     /** Commands to manage distributed properties. */
     PROPERTY(new PropertyCommand()),
