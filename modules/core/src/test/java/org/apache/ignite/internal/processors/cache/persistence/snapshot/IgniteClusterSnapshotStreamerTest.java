@@ -478,7 +478,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                 logLsnr.check(getTestTimeout());
 
                 waitForCondition(() -> snpEvts.removeIf(e -> e.snapshotName().equals(SNAPSHOT_NAME) &&
-                    e.message().contains(IgniteSnapshotManager.SNAPSHOT_FINISHED_WRN_MSG)), getTestTimeout(), 333);
+                    e.message().contains(IgniteSnapshotManager.SNAPSHOT_FINISHED_WRN_MSG)), getTestTimeout());
             }
         }
 
