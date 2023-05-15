@@ -44,20 +44,20 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     private IgniteUuid uuid;
 
     /** */
-    private GridCacheVersion gridCacheVer;
+    private GridCacheVersion gridCacheVersion;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, value);
         U.writeIgniteUuid(out, uuid);
-        out.writeObject(gridCacheVer);
+        out.writeObject(gridCacheVersion);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         value = U.readString(in);
         uuid = U.readIgniteUuid(in);
-        gridCacheVer = (GridCacheVersion)in.readObject();
+        gridCacheVersion = (GridCacheVersion)in.readObject();
     }
 
     /** */
@@ -100,7 +100,7 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
         assert m.groupCount() == 4 : "Unexpected group count [cnt=" + m.groupCount() + ", pattern=" + regexPtrn + ']';
 
         try {
-            gridCacheVer = new GridCacheVersion(
+            gridCacheVersion = new GridCacheVersion(
                 Integer.parseInt(m.group(1)),
                 Integer.parseInt(m.group(3)),
                 Long.parseLong(m.group(2))
@@ -113,13 +113,13 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     }
 
     /** */
-    public GridCacheVersion gridCacheVer() {
-        return gridCacheVer;
+    public GridCacheVersion gridCacheVersion() {
+        return gridCacheVersion;
     }
 
     /** */
-    public void gridCacheVer(GridCacheVersion gridCacheVer) {
-        this.gridCacheVer = gridCacheVer;
+    public void gridCacheVersion(GridCacheVersion gridCacheVer) {
+        this.gridCacheVersion = gridCacheVer;
     }
 
     /** */

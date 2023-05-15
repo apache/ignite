@@ -30,6 +30,7 @@ import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.tx.FetchNearXidVersionTask;
 import org.apache.ignite.internal.visor.tx.TxKeyLockType;
 import org.apache.ignite.internal.visor.tx.TxMappingType;
@@ -62,13 +63,16 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     ) throws Exception {
         TxInfoCommandArg arg = (TxInfoCommandArg)arg0;
 
-        Optional<GridClientNode> node = cli.compute().nodes().stream().filter(GridClientNode::connectable).findFirst();
+        Optional<GridClientNode> node = cli.compute().nodes().stream()
+            .filter(n -> !n.isClient())
+            .filter(GridClientNode::connectable)
+            .findFirst();
 
         if (!node.isPresent())
             throw new IllegalStateException("No nodes to connect");
 
-        GridCacheVersion nearXidVer =
-            cli.compute().projection(node.get()).execute(FetchNearXidVersionTask.class.getName(), arg);
+        GridCacheVersion nearXidVer = cli.compute().projection(node.get())
+            .execute(FetchNearXidVersionTask.class.getName(), new VisorTaskArgument<>(node.get().nodeId(), arg, false));
 
         boolean histMode = false;
 
@@ -77,12 +81,12 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
 
             arg = new TxInfoCommandArg();
 
-            arg.gridCacheVer(nearXidVer);
+            arg.gridCacheVersion(nearXidVer);
         }
         else {
             printer.accept("Active transactions not found.");
 
-            if (arg.gridCacheVer() != null) {
+            if (arg.gridCacheVersion() != null) {
                 printer.accept("Will try to peek history to find out whether transaction was committed / rolled back.");
 
                 histMode = true;
@@ -95,7 +99,8 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
             }
         }
 
-        Map<ClusterNode, VisorTxTaskResult> res = cli.compute().projection(node.get()).execute(VisorTxTask.class.getName(), arg);
+        Map<ClusterNode, VisorTxTaskResult> res = cli.compute().projection(node.get())
+            .execute(VisorTxTask.class.getName(), new VisorTaskArgument<>(node.get().nodeId(), arg, false));
 
         if (histMode)
             printTxInfoHistoricalResult(res, printer);

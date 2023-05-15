@@ -258,7 +258,7 @@ public class VisorTxTask
             }
 
             for (IgniteInternalTx locTx : transactions) {
-                if (infoArg != null && !Objects.equals(infoArg.gridCacheVer(), locTx.nearXidVersion()))
+                if (infoArg != null && !Objects.equals(infoArg.gridCacheVersion(), locTx.nearXidVersion()))
                     continue;
 
                 if (arg.xid() != null && !locTx.xid().toString().equals(arg.xid()))
@@ -363,13 +363,13 @@ public class VisorTxTask
 
             // If transaction was not found in verbose --tx --info mode, try to fetch it from history.
             if (infoArg != null && infos.isEmpty()) {
-                Object completed = infoArg == null ? null : tm.peekCompletedVersionsHistory(infoArg.gridCacheVer());
+                Object completed = infoArg == null ? null : tm.peekCompletedVersionsHistory(infoArg.gridCacheVersion());
 
                 if (completed != null) {
                     if (Boolean.TRUE.equals(completed))
-                        infos.add(new VisorTxInfo(infoArg.gridCacheVer().asIgniteUuid(), COMMITTED));
+                        infos.add(new VisorTxInfo(infoArg.gridCacheVersion().asIgniteUuid(), COMMITTED));
                     else if (Boolean.FALSE.equals(completed))
-                        infos.add(new VisorTxInfo(infoArg.gridCacheVer().asIgniteUuid(), ROLLED_BACK));
+                        infos.add(new VisorTxInfo(infoArg.gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
                 }
             }
 
