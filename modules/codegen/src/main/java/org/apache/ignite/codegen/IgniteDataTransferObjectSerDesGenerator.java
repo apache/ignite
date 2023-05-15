@@ -233,7 +233,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         if (cmd instanceof CommandsRegistry) {
             generate = cmd instanceof ComputeCommand || cmd instanceof LocalCommand;
 
-            ((CommandsRegistry)cmd).commands().forEachRemaining(entry -> generate(entry.getValue()));
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(entry -> generate(entry.getValue()));
         }
 
         if (!generate)
