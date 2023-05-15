@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -39,6 +42,8 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -48,6 +53,7 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.context.ApplicationContext;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
@@ -537,8 +543,13 @@ public class CommandHandler {
         if (!F.isEmpty(userName))
             clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
-        if (!F.isEmpty(args.sslKeyStorePath()))
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
+                throw new IgniteCheckedException("Incorrect SSL configuration. " +
+                    "SSL factory config path should not be specified simultaneously with other SSL options like keystore path.");
+
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
+        }
 
         return clientCfg;
     }
@@ -571,7 +582,15 @@ public class CommandHandler {
      * @param args Commond args.
      * @return Ssl support factory.
      */
-    @NotNull private SslContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
+    @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) throws IgniteCheckedException {
+        if (!F.isEmpty(args.sslFactoryConfigPath())) {
+            URL springCfg = IgniteUtils.resolveSpringUrl(args.sslFactoryConfigPath());
+
+            ApplicationContext ctx = IgniteSpringHelperImpl.applicationContext(springCfg);
+
+            return (Factory<SSLContext>)ctx.getBean(Factory.class);
+        }
+
         SslContextFactory factory = new SslContextFactory();
 
         String[] sslProtocols = split(args.sslProtocol(), ",");
