@@ -49,15 +49,20 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, value);
-        out.writeObject(gridCacheVer);
         U.writeIgniteUuid(out, uuid);
+        out.writeObject(gridCacheVer);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         value = U.readString(in);
-        gridCacheVer = (GridCacheVersion)in.readObject();
         uuid = U.readIgniteUuid(in);
+        gridCacheVer = (GridCacheVersion)in.readObject();
+    }
+
+    /** */
+    public void uuid(IgniteUuid uuid) {
+        this.uuid = uuid;
     }
 
     /** */
@@ -110,6 +115,11 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     /** */
     public GridCacheVersion gridCacheVer() {
         return gridCacheVer;
+    }
+
+    /** */
+    public void gridCacheVer(GridCacheVersion gridCacheVer) {
+        this.gridCacheVer = gridCacheVer;
     }
 
     /** */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.api;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -32,6 +33,16 @@ import org.jetbrains.annotations.Nullable;
 public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
     /** @return Task class. */
     public Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskClass();
+
+    /**
+     * Prints command result to the user.
+     * @param arg Argument.
+     * @param res Result.
+     * @param printer Implementation specific printer.
+     */
+    public default void printResult(A arg, R res, Consumer<String> printer) {
+        // No-op.
+    }
 
     /**
      * @param nodes Live nodes. Key is node ID, Boolean is client flag, Object is consistent id, Long is node order.

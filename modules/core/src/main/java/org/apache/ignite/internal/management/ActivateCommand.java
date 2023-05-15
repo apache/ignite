@@ -38,17 +38,14 @@ public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public NoArg execute(GridClient cli, NoArg arg) throws Exception {
+    @Override public NoArg execute(GridClient cli, NoArg arg, Consumer<String> printer) throws Exception {
         GridClientClusterState state = cli.state();
 
         state.state(ACTIVE, false);
 
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, NoArg res, Consumer<String> printer) {
         printer.accept("Cluster activated");
+
+        return null;
     }
 
     /** {@inheritDoc} */

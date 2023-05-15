@@ -195,14 +195,14 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             R res;
 
             if (cmd instanceof LocalCommand)
-                res = ((LocalCommand<A, R>)cmd).execute(client, arg);
+                res = ((LocalCommand<A, R>)cmd).execute(client, arg, logger::info);
             else if (cmd instanceof ComputeCommand) {
                 GridClientCompute compute = client.compute();
 
                 Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
                     .collect(toMap(GridClientNode::nodeId, n -> n));
 
-                ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)this.cmd;
+                ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
                 Collection<UUID> nodeIds = commandNodes(
                     cmd,
@@ -223,12 +223,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     compute = compute.projection(connectable);
 
                 res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+
+                cmd.printResult(arg, res, logger::info);
             }
             else
                 throw new IllegalArgumentException("Unknown command type: " + cmd);
-
-            ((org.apache.ignite.internal.management.api.Command<A, R>)cmd)
-                .printResult(arg, res, logger::info);
 
             return res;
         }

@@ -67,15 +67,7 @@ public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<Clu
             if (entry.getValue().getInfos().isEmpty())
                 continue;
 
-            ClusterNode key = entry.getKey();
-
-            printer.accept(key.getClass().getSimpleName() + " [id=" + key.id() +
-                ", addrs=" + key.addresses() +
-                ", order=" + key.order() +
-                ", ver=" + key.version() +
-                ", isClient=" + key.isClient() +
-                ", consistentId=" + key.consistentId() +
-                "]");
+            printer.accept(nodeDescription(entry.getKey()));
 
             for (VisorTxInfo info : entry.getValue().getInfos())
                 printer.accept(info.toUserString());
@@ -93,5 +85,20 @@ public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<Clu
     /** */
     public abstract static class AbstractTxCommandArg extends IgniteDataTransferObject {
         // No-op.
+    }
+
+    /**
+     * Provides text descrition of a cluster node.
+     *
+     * @param node Node.
+     */
+    static String nodeDescription(ClusterNode node) {
+        return node.getClass().getSimpleName() + " [id=" + node.id() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", ver=" + node.version() +
+            ", isClient=" + node.isClient() +
+            ", consistentId=" + node.consistentId() +
+            "]";
     }
 }
