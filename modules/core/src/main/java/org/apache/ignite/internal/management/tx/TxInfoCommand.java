@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.tx;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,10 +62,13 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     ) throws Exception {
         TxInfoCommandArg arg = (TxInfoCommandArg)arg0;
 
-        GridClientNode node = cli.compute().nodes().iterator().next();
+        Optional<GridClientNode> node = cli.compute().nodes().stream().filter(GridClientNode::connectable).findFirst();
+
+        if (!node.isPresent())
+            throw new IllegalStateException("No nodes to connect");
 
         GridCacheVersion nearXidVer =
-            cli.compute().projection(node).execute(FetchNearXidVersionTask.class.getName(), arg);
+            cli.compute().projection(node.get()).execute(FetchNearXidVersionTask.class.getName(), arg);
 
         boolean histMode = false;
 
@@ -91,7 +95,7 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
             }
         }
 
-        Map<ClusterNode, VisorTxTaskResult> res = cli.compute().projection(node).execute(VisorTxTask.class.getName(), arg);
+        Map<ClusterNode, VisorTxTaskResult> res = cli.compute().projection(node.get()).execute(VisorTxTask.class.getName(), arg);
 
         if (histMode)
             printTxInfoHistoricalResult(res, printer);
