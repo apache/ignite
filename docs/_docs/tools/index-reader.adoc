@@ -1,0 +1,39 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Index-reader utility
+
+Ignite provides a command line script — index-reader.sh|bat that you can use to check cache data tree in partition files and its consistency with indexes. The script is located under the /bin/ folder of the installation directory.
+
+THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRID!
+
+== Run
+
+Run `index-reader.sh|bat` script from Ignite bin directory:
+
+[cols="1,6",opts="header"]
+|===
+|Parameter | Description
+| --dir | Partition directory where index.bin and (optionally) partition files are located.
+| --part-cnt | Full partitions count in cache group. Default value: 0.
+| --page-size | Page size. Default value: 4096.
+| --page-store-ver | Page store version. Default value: 2.
+| --indexes | You can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. Default value: []
+| --check-parts |  Check cache data tree in partition files and its consistency with indexes. Default value: false.
+|===
+
+== Usage
+
+`--dir [--part-cnt] [--page-size] [--page-store-ver] [--indexes] [--check-parts]`
+
