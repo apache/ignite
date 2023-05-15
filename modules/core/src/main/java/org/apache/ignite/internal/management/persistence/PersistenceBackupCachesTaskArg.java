@@ -36,11 +36,15 @@ public class PersistenceBackupCachesTaskArg extends PersistenceCommand.Persisten
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         caches = U.readArray(in, String.class);
     }
 
