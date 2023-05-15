@@ -279,7 +279,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
-        if (cmd instanceof LocalCommand || cmd instanceof ComputeCommand || cmd instanceof HelpCommand) {
+        if (cmd instanceof LocalCommand
+            || cmd instanceof ComputeCommand
+            || cmd instanceof HelpCommand
+            || cmd instanceof BeforeNodeStartCommand) {
             logger.info("");
 
             if (cmd.experimental())
