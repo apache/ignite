@@ -464,6 +464,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "NODE_ATTRIBUTES",
             "TABLES",
             "CLIENT_CONNECTIONS",
+            "CLIENT_CONNECTION_ATTRIBUTES",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
             "TRANSACTIONS",

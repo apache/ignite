@@ -40,6 +40,7 @@ import javax.cache.configuration.Factory;
 import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -52,10 +53,13 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1046,6 +1050,43 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals("node0", res.get(0).get(0));
         assertEquals(customAttr, res.get(0).get(1));
         assertEquals("val0", res.get(0).get(2));
+    }
+
+    /**
+     * Test client connections system view.
+     */
+    @Test
+    public void testClientConnectionViews() throws Exception {
+        startGrid(getConfiguration());
+
+        try (
+            IgniteClient cl1 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setUserAttributes(F.asMap("attr1", "val1", "attr2", "val2")));
+            IgniteClient cl2 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                .setUserAttributes(F.asMap("attr1", "val2")));
+            IgniteClient cl3 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+
+            List<List<?>> res = execSql("SELECT CONNECTION_ID FROM " + systemSchemaName() + ".CLIENT_CONNECTIONS");
+
+            assertEquals(3, res.size());
+
+            // Check join.
+            res = execSql("SELECT C.CONNECTION_ID, CA.NAME, CA.VALUE FROM " + systemSchemaName() +
+                ".CLIENT_CONNECTIONS C JOIN " + systemSchemaName() + ".CLIENT_CONNECTION_ATTRIBUTES CA " +
+                "ON (C.CONNECTION_ID = CA.CONNECTION_ID)");
+
+            assertEquals(3, res.size());
+
+            // Check join and filtering.
+            res = execSql("SELECT C.CONNECTION_ID, CA.NAME, CA.VALUE FROM " + systemSchemaName() +
+                ".CLIENT_CONNECTIONS C JOIN " + systemSchemaName() + ".CLIENT_CONNECTION_ATTRIBUTES CA " +
+                "ON (C.CONNECTION_ID = CA.CONNECTION_ID) WHERE CA.NAME = ?", "attr2");
+
+            assertEquals(1, res.size());
+            assertEquals("attr2", res.get(0).get(1));
+            assertEquals("val2", res.get(0).get(2));
+        }
     }
 
     /**
