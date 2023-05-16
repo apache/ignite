@@ -15,65 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.meta;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
 /** */
-@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true, optional = false)
-public class MetaDetailsCommandArg extends IgniteDataTransferObject {
+@WithCliConfirmParameter
+public class BaselineVersionCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(optional = true, example = "<typeId>", javaStyleName = true)
-    private int typeId;
-
-    /** */
-    @Argument(optional = true, example = "<typeName>", javaStyleName = true)
-    private String typeName;
+    @Positional
+    @Argument(javaStyleExample = true)
+    private long topologyVersion;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(typeId);
-        U.writeString(out, typeName);
+        super.writeExternalData(out);
+
+        out.writeLong(topologyVersion);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        typeId = in.readInt();
-        typeName = U.readString(in);
+        super.readExternalData(protoVer, in);
+
+        topologyVersion = in.readLong();
     }
 
     /** */
-    public int typeId() {
-        return typeId;
+    public long topologyVersion() {
+        return topologyVersion;
     }
 
     /** */
-    public void typeId(int typeId) {
-        this.typeId = typeId;
-    }
-
-    /** */
-    public String typeName() {
-        return typeName;
-    }
-
-    /** */
-    public void typeName(String typeName) {
-        this.typeName = typeName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return typeId != 0 ? printInt(typeId) : typeName;
+    public void topologyVersion(long topologyVersion) {
+        this.topologyVersion = topologyVersion;
     }
 }

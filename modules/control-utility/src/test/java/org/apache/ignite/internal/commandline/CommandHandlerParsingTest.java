@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild;
 import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild.Arguments;
@@ -44,6 +43,10 @@ import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
+import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
+import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -472,10 +475,18 @@ public class CommandHandlerParsingTest {
 
                         checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                        BaselineArguments arg = ((BaselineCommand)args.command()).arg();
+                        BaselineAddCommandArg arg = ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).arg();
+                        org.apache.ignite.internal.management.api.Command<?, ?> cmd0 =
+                            ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).command();
 
-                        assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        if (baselineAct.equals("add"))
+                            assertEquals(BaselineAddCommand.class, cmd0.getClass());
+                        else if (baselineAct.equals("remove"))
+                            assertEquals(BaselineRemoveCommand.class, cmd0.getClass());
+                        else if (baselineAct.equals("set"))
+                            assertEquals(BaselineSetCommand.class, cmd0.getClass());
+
+                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
                     }
 
                     break;

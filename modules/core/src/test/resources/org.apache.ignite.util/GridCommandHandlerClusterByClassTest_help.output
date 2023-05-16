@@ -31,22 +31,37 @@ This utility can do the following commands:
     control.(sh|bat) --baseline [--verbose]
 
     Parameters:
-      verbose  - Show the full list of node ips.
+      --verbose  - Show the full list of node ips.
 
   Add nodes into baseline topology:
-    control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
+    control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Remove nodes from baseline topology:
-    control.(sh|bat) --baseline remove consistentId1[,consistentId2,....,consistentIdN] [--yes]
+    control.(sh|bat) --baseline remove consistentId1[,consistentId2,....,consistentIdN] [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Set baseline topology:
-    control.(sh|bat) --baseline set consistentId1[,consistentId2,....,consistentIdN] [--yes]
+    control.(sh|bat) --baseline set consistentId1[,consistentId2,....,consistentIdN] [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Set baseline topology based on version:
-    control.(sh|bat) --baseline version topologyVersion [--yes]
+    control.(sh|bat) --baseline version topologyVersion [--verbose] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   Set baseline autoadjustment settings:
-    control.(sh|bat) --baseline auto_adjust [disable|enable] [timeout <timeoutMillis>] [--yes]
+    control.(sh|bat) --baseline auto_adjust [--verbose] [DISABLE|ENABLE] [timeout <timeoutMillis>] [--yes]
+
+    Parameters:
+      --verbose  - Show the full list of node ips.
 
   List or kill transactions:
     control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--servers|--clients] [--nodes consistentId1[,consistentId2,....,consistentIdN]] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--info] [--yes]

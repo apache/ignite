@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
 
@@ -53,7 +53,7 @@ public class CdcDeleteLostSegmentLinksCommand implements
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(
-        Map<UUID, T2<Boolean, Object>> nodes,
+        Map<UUID, T3<Boolean, Object, Long>> nodes,
         CdcDeleteLostSegmentLinksCommandArg arg
     ) {
         return arg.nodeId() != null

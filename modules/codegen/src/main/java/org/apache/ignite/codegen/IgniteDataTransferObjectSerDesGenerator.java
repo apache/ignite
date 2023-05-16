@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -71,6 +72,9 @@ public class IgniteDataTransferObjectSerDesGenerator {
     public static final String IMPORT_STATIC_TOKEN = "import static ";
 
     /** */
+    public static final String WRITE_MTD = "writeExternalData";
+
+    /** */
     private int methodsStart = Integer.MAX_VALUE;
 
     /** */
@@ -90,6 +94,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Byte.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Byte)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(byte[].class, F.t(
             fld -> "U.writeByteArray(out, " + fld + ");",
             fld -> fld + " = U.readByteArray(in);",
@@ -99,6 +109,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
         TYPE_GENS.put(short.class, F.t(
             fld -> "out.writeShort(" + fld + ");",
             fld -> fld + " = in.readShort();",
+            false
+        ));
+
+        TYPE_GENS.put(Short.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Short)in.readObject();",
             false
         ));
 
@@ -114,6 +130,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Integer.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Integer)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(int[].class, F.t(
             fld -> "U.writeIntArray(out, " + fld + ");",
             fld -> fld + " = U.readIntArray(in);",
@@ -126,6 +148,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Long.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Long)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(long[].class, F.t(
             fld -> "U.writeLongArray(out, " + fld + ");",
             fld -> fld + " = U.readLongArray(in);",
@@ -135,6 +163,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
         TYPE_GENS.put(float.class, F.t(
             fld -> "out.writeFloat(" + fld + ");",
             fld -> fld + " = in.readFloat();",
+            false
+        ));
+
+        TYPE_GENS.put(Float.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Float)in.readObject();",
             false
         ));
 
@@ -165,6 +199,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
         TYPE_GENS.put(boolean.class, F.t(
             fld -> "out.writeBoolean(" + fld + ");",
             fld -> fld + " = in.readBoolean();",
+            false
+        ));
+
+        TYPE_GENS.put(Boolean.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Boolean)in.readObject();",
             false
         ));
 
@@ -392,11 +432,14 @@ public class IgniteDataTransferObjectSerDesGenerator {
     private List<List<String>> generateMethods(Class<? extends IgniteDataTransferObject> cls) {
         List<Field> flds = fields(cls);
 
+        if (flds.isEmpty() && writeExternalDataMethodExists(cls.getSuperclass()))
+            return Arrays.asList(Collections.emptyList(), Collections.emptyList());
+
         List<String> write = new ArrayList<>();
         List<String> read = new ArrayList<>();
 
         write.add(METHOD_JAVADOC);
-        write.add(TAB + "@Override protected void writeExternalData(ObjectOutput out) throws IOException {");
+        write.add(TAB + "@Override protected void " + WRITE_MTD + "(ObjectOutput out) throws IOException {");
 
         read.add(METHOD_JAVADOC);
         read.add(TAB + "@Override protected void readExternalData(byte protoVer, ObjectInput in) " +
@@ -410,8 +453,8 @@ public class IgniteDataTransferObjectSerDesGenerator {
             write.add(TAB + TAB + "//No-op.");
             read.add(TAB + TAB + "//No-op.");
         }
-        else if (cls.getSuperclass() != IgniteDataTransferObject.class) {
-            write.add(TAB + TAB + "super.writeExternalData(out);");
+        else if (writeExternalDataMethodExists(cls.getSuperclass())) {
+            write.add(TAB + TAB + "super." + WRITE_MTD + "(out);");
             write.add("");
 
             read.add(TAB + TAB + "super.readExternalData(protoVer, in);");
@@ -474,7 +517,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
         return removeMethod(
             removeMethod(
                 collectAndRemoveImports(src),
-                "writeExternalData"
+                WRITE_MTD
             ),
             "readExternalData"
         );
@@ -565,9 +608,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
     /** */
     private static boolean geterExists(Class<? extends IgniteDataTransferObject> cls, Field fld) {
         try {
-            Method geter = cls.getMethod(fld.getName());
-
-            return geter.getReturnType() == fld.getType();
+            return cls.getMethod(fld.getName()).getReturnType() == fld.getType();
         }
         catch (NoSuchMethodException e) {
             return false;
@@ -577,12 +618,26 @@ public class IgniteDataTransferObjectSerDesGenerator {
     /** */
     private static boolean seterExists(Class<? extends IgniteDataTransferObject> cls, Field fld) {
         try {
-            Method seter = cls.getMethod(fld.getName(), fld.getType());
-
-            return seter.getReturnType() == void.class;
+            return cls.getMethod(fld.getName(), fld.getType()).getReturnType() == void.class;
         }
         catch (NoSuchMethodException e) {
             return false;
         }
+    }
+
+    /** */
+    private static boolean writeExternalDataMethodExists(Class<?> cls) {
+        while (cls != IgniteDataTransferObject.class) {
+            try {
+                Method mtd = cls.getDeclaredMethod(WRITE_MTD, ObjectOutput.class);
+
+                return !Modifier.isAbstract(mtd.getModifiers());
+            }
+            catch (NoSuchMethodException e) {
+                cls = cls.getSuperclass();
+            }
+        }
+
+        return false;
     }
 }

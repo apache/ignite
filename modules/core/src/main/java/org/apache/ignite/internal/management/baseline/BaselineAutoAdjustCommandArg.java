@@ -15,65 +15,76 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.meta;
+package org.apache.ignite.internal.management.baseline;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
-@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true, optional = false)
-public class MetaDetailsCommandArg extends IgniteDataTransferObject {
+@WithCliConfirmParameter
+@ArgumentGroup(value = {"enabled", "timeout"}, optional = false)
+public class BaselineAutoAdjustCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(optional = true, example = "<typeId>", javaStyleName = true)
-    private int typeId;
+    @Positional
+    @Argument(optional = true)
+    private Enabled enabled;
 
     /** */
-    @Argument(optional = true, example = "<typeName>", javaStyleName = true)
-    private String typeName;
+    @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
+    private Long timeout;
+
+    /** */
+    public enum Enabled {
+        /** */
+        DISABLE,
+
+        /** */
+        ENABLE
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(typeId);
-        U.writeString(out, typeName);
+        super.writeExternalData(out);
+
+        U.writeEnum(out, enabled);
+        out.writeObject(timeout);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        typeId = in.readInt();
-        typeName = U.readString(in);
+        super.readExternalData(protoVer, in);
+
+        enabled = U.readEnum(in, Enabled.class);
+        timeout = (Long)in.readObject();
     }
 
     /** */
-    public int typeId() {
-        return typeId;
+    public Enabled enabled() {
+        return enabled;
     }
 
     /** */
-    public void typeId(int typeId) {
-        this.typeId = typeId;
+    public void enabled(Enabled enabled) {
+        this.enabled = enabled;
     }
 
     /** */
-    public String typeName() {
-        return typeName;
+    public Long timeout() {
+        return timeout;
     }
 
     /** */
-    public void typeName(String typeName) {
-        this.typeName = typeName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return typeId != 0 ? printInt(typeId) : typeName;
+    public void timeout(Long timeout) {
+        this.timeout = timeout;
     }
 }

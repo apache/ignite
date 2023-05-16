@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.encryption.VisorCacheGroupEncryptionTaskResult;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
@@ -56,7 +56,7 @@ abstract class CacheGroupEncryptionCommand<T>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, EncryptionCacheGroupArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, EncryptionCacheGroupArg arg) {
         return nodes.keySet();
     }
 

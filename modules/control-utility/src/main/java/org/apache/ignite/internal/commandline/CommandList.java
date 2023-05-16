@@ -33,6 +33,7 @@ import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.StateCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
@@ -62,7 +63,7 @@ public enum CommandList {
     SET_STATE(new SetStateCommand()),
 
     /** */
-    BASELINE("--baseline", new BaselineCommand()),
+    BASELINE(new BaselineCommand()),
 
     /** */
     TX("--tx", new TxCommands()),

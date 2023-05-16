@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
@@ -61,7 +61,7 @@ public class DefragmentationScheduleCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, DefragmentationStatusCommandArg arg0) {
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, DefragmentationStatusCommandArg arg0) {
         DefragmentationScheduleCommandArg arg = (DefragmentationScheduleCommandArg)arg0;
 
         if (F.isEmpty(arg.nodes()))

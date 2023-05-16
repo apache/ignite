@@ -15,36 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.baseline;
+package org.apache.ignite.internal.management.baseline;
 
-import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
-/**
- * {@link BaselineSubcommands#AUTO_ADJUST} command arguments.
- */
-public enum AutoAdjustCommandArg implements CommandArg {
-    /** Enable auto-adjust. */
-    ENABLE("enable"),
-    /** Disable auto-adjust. */
-    DISABLE("disable"),
-    /** Set soft timeout. */
-    TIMEOUT("timeout");
-
-    /** Option name. */
-    private final String name;
-
-    /** */
-    AutoAdjustCommandArg(String name) {
-        this.name = name;
+/** */
+public class BaselineVersionCommand extends AbstractBaselineCommand {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Set baseline topology based on version";
     }
 
     /** {@inheritDoc} */
-    @Override public String argName() {
-        return name;
+    @Override public String confirmationPrompt(GridClient cli, VisorBaselineTaskArg arg) throws Exception {
+        return "Warning: the command will perform changes in baseline.";
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return name;
+    @Override public Class<BaselineVersionCommandArg> argClass() {
+        return BaselineVersionCommandArg.class;
     }
 }

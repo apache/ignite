@@ -15,35 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.kill;
+package org.apache.ignite.internal.management.baseline;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
 /** */
-public class KillConsistencyCommand implements ComputeCommand<NoArg, Void> {
+public class BaselineRemoveCommand extends AbstractBaselineCommand {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Kill consistency task";
+        return "Remove nodes from baseline topology";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public String confirmationPrompt(GridClient cli, VisorBaselineTaskArg arg) throws Exception {
+        return "Warning: the command will perform changes in baseline.";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorConsistencyCancelTask> taskClass() {
-        return VisorConsistencyCancelTask.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
-        return nodes.keySet();
+    @Override public Class<BaselineRemoveCommandArg> argClass() {
+        return BaselineRemoveCommandArg.class;
     }
 }

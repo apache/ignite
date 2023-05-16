@@ -20,10 +20,15 @@ package org.apache.ignite.internal.management.api;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
@@ -62,7 +67,8 @@ public class CommandUtils {
      * @return Formatted name of parameter for this field.
      */
     public static String toFormattedFieldName(Field fld) {
-        return PARAMETER_PREFIX + toFormattedFieldName(fld, CMD_WORDS_DELIM);
+        return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
+            + toFormattedFieldName(fld, CMD_WORDS_DELIM);
     }
 
     /**
@@ -242,6 +248,18 @@ public class CommandUtils {
         }
 
         return parseSingleVal(val, type);
+    }
+
+    /**
+     * @param nodes Nodes
+     * @return Coordinator ID or null is {@code nodes} are empty.
+     */
+    public static @Nullable Collection<UUID> coordinatorOrNull(Map<UUID, T3<Boolean, Object, Long>> nodes) {
+        return nodes.entrySet().stream()
+            .filter(e -> !e.getValue().get1())
+            .min(Comparator.comparingLong(e -> e.getValue().get3()))
+            .map(e -> Collections.singleton(e.getKey()))
+            .orElse(null);
     }
 
     /**
