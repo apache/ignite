@@ -2456,12 +2456,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().state(ACTIVE);
 
-/*
         assertEquals(
             EXIT_CODE_OK,
             execute("--diagnostic")
         );
-*/
 
         assertEquals(
             EXIT_CODE_OK,

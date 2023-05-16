@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
@@ -53,7 +54,10 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
         if (arg.all())
             return nodes.keySet();
 
-        Set<String> argNodes = new HashSet<>(Arrays.asList(arg.nodeIds()));
+        if (F.isEmpty(arg.nodes()))
+            return null;
+
+        Set<String> argNodes = new HashSet<>(Arrays.asList(arg.nodes()));
 
         return nodes.entrySet().stream()
             .filter(entry -> argNodes.contains(entry.getKey().toString())

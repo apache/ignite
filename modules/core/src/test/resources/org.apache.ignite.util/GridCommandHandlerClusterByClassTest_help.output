@@ -84,13 +84,13 @@ This utility can do the following commands:
     control.(sh|bat) --diagnostic help
 
   View pages locks state information on the node or nodes:
-    control.(sh|bat) --diagnostic pagelocks [DUMP|DUMP_LOG] [--path path] [--node-ids node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]] [--all]
+    control.(sh|bat) --diagnostic pagelocks [DUMP|DUMP_LOG] [--path path]  [--all]|[--nodes node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]]
 
     Parameters:
-      DUMP                                                                                            - Save page locks dump to file generated in IGNITE_HOME/work/diagnostic directory.
-      DUMP_LOG                                                                                        - Print page locks dump to console.
-      --node-ids node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]  - Comma separated list of node ids or consistent ids.
-      --all                                                                                           - Run for all nodes.
+      DUMP                                                                                         - Save page locks dump to file generated in IGNITE_HOME/work/diagnostic directory.
+      DUMP_LOG                                                                                     - Print page locks dump to console.
+      --all                                                                                        - Run for all nodes.
+      --nodes node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]  - Comma separated list of node ids or consistent ids.
 
   View connectvity state of all nodes in cluster:
     control.(sh|bat) --diagnostic connectivity

@@ -19,10 +19,12 @@ package org.apache.ignite.internal.management.diagnostic;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
 @CliPositionalSubcommands
-public class DiagnosticCommand extends CommandRegistryImpl {
+public class DiagnosticCommand extends CommandRegistryImpl<NoArg, Void> implements HelpCommand {
     /** */
     public DiagnosticCommand() {
         super(
@@ -30,5 +32,15 @@ public class DiagnosticCommand extends CommandRegistryImpl {
             new DiagnosticPagelocksCommand(),
             new DiagnosticConnectivityCommand()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return new DiagnosticHelpCommand().description();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<NoArg> argClass() {
+        return HelpCommand.super.argClass();
     }
 }

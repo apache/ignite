@@ -30,7 +30,7 @@ import org.apache.ignite.internal.visor.diagnostic.Operation;
 import static org.apache.ignite.internal.visor.diagnostic.Operation.DUMP_LOG;
 
 /** */
-@ArgumentGroup(value = {"all", "nodes"}, onlyOneOf = true)
+@ArgumentGroup(value = {"all", "nodes"}, onlyOneOf = true, optional = true)
 public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
@@ -67,9 +67,7 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
         description = "Comma separated list of node ids or consistent ids",
         example = "node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]"
     )
-    private String[] nodeIds;
-
-    //TODO: run tests for diagnostic command.
+    private String[] nodes;
 
     /** */
     private void ensureOperationAndPath(Operation op, String path) {
@@ -82,7 +80,7 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
         U.writeEnum(out, operation);
         U.writeString(out, path);
         out.writeBoolean(all);
-        U.writeArray(out, nodeIds);
+        U.writeArray(out, nodes);
     }
 
     /** {@inheritDoc} */
@@ -90,17 +88,17 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
         operation = U.readEnum(in, Operation.class);
         path = U.readString(in);
         all = in.readBoolean();
-        nodeIds = U.readArray(in, String.class);
+        nodes = U.readArray(in, String.class);
     }
 
     /** */
-    public String[] nodeIds() {
-        return nodeIds;
+    public String[] nodes() {
+        return nodes;
     }
 
     /** */
-    public void nodeIds(String[] nodeIds) {
-        this.nodeIds = nodeIds;
+    public void nodes(String[] nodeIds) {
+        this.nodes = nodeIds;
     }
 
     /** */
