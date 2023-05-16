@@ -118,79 +118,6 @@ public abstract class AbstractCommandInvoker {
         return arg.res;
     }
 
-    /** */
-    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
-        /** */
-        final A res;
-
-        /** */
-        final ArgumentGroup argGrp;
-
-        /** */
-        boolean grpFldExists;
-
-        /** */
-        int idx;
-
-        /** */
-        final Set<String> oneOfFlds;
-
-        /** */
-        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
-            res = argCls.newInstance();
-            argGrp = argCls.getAnnotation(ArgumentGroup.class);
-            oneOfFlds = argGrp == null
-                ? Collections.emptySet()
-                : new HashSet<>(Arrays.asList(argGrp.value()));
-        }
-
-        /** */
-        public boolean grpOptional() {
-            return argGrp != null && argGrp.optional();
-        }
-
-        /** */
-        private int nextIdx() {
-            int idx0 = idx;
-
-            idx++;
-
-            return idx0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void accept(Field fld, Object val) {
-            if (val == null) {
-                if (fld.getAnnotation(Argument.class).optional())
-                    return;
-
-                String name = fld.isAnnotationPresent(Positional.class)
-                    ? parameterExample(fld, false)
-                    : toFormattedFieldName(fld);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (oneOfFlds.contains(fld.getName())) {
-                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
-                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
-
-                grpFldExists = true;
-            }
-
-            try {
-                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
-            }
-            catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new IgniteException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
-                    throw (RuntimeException)e.getTargetException();
-            }
-        }
-    }
-
     /**
      * Get command from hierarchical root.
      *
@@ -294,4 +221,77 @@ public abstract class AbstractCommandInvoker {
 
     /** @return Local node. */
     public abstract IgniteEx grid();
+
+    /** */
+    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
+        /** */
+        final A res;
+
+        /** */
+        final ArgumentGroup argGrp;
+
+        /** */
+        boolean grpFldExists;
+
+        /** */
+        int idx;
+
+        /** */
+        final Set<String> oneOfFlds;
+
+        /** */
+        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
+            res = argCls.newInstance();
+            argGrp = argCls.getAnnotation(ArgumentGroup.class);
+            oneOfFlds = argGrp == null
+                ? Collections.emptySet()
+                : new HashSet<>(Arrays.asList(argGrp.value()));
+        }
+
+        /** */
+        public boolean grpOptional() {
+            return argGrp != null && argGrp.optional();
+        }
+
+        /** */
+        private int nextIdx() {
+            int idx0 = idx;
+
+            idx++;
+
+            return idx0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld, Object val) {
+            if (val == null) {
+                if (fld.getAnnotation(Argument.class).optional())
+                    return;
+
+                String name = fld.isAnnotationPresent(Positional.class)
+                    ? parameterExample(fld, false)
+                    : toFormattedFieldName(fld);
+
+                throw new IllegalArgumentException("Argument " + name + " required.");
+            }
+
+            if (oneOfFlds.contains(fld.getName())) {
+                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
+                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
+
+                grpFldExists = true;
+            }
+
+            try {
+                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+            }
+        }
+    }
 }
