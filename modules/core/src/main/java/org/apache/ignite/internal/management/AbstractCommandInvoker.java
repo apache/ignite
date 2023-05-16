@@ -98,24 +98,24 @@ public abstract class AbstractCommandInvoker {
         BiFunction<Field, Integer, Object> positionalParamProvider,
         Function<Field, Object> paramProvider
     ) throws InstantiationException, IllegalAccessException {
-        ArgumentState<A> state = new ArgumentState<>(argCls);
+        ArgumentState<A> arg = new ArgumentState<>(argCls);
 
         visitCommandParams(
             argCls,
-            fld -> state.accept(fld, positionalParamProvider.apply(fld, state.nextIdx())),
-            fld -> state.accept(fld, paramProvider.apply(fld)),
+            fld -> arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx())),
+            fld -> arg.accept(fld, paramProvider.apply(fld)),
             (argGrp, flds) -> flds.forEach(fld -> {
                 if (fld.isAnnotationPresent(Positional.class))
-                    state.accept(fld, positionalParamProvider.apply(fld, state.nextIdx()));
+                    arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx()));
                 else
-                    state.accept(fld, paramProvider.apply(fld));
+                    arg.accept(fld, paramProvider.apply(fld));
             })
         );
 
-        if (!state.optional() && !state.grpFldExists)
-            throw new IllegalArgumentException("One of " + state.oneOfFlds + " required");
+        if (!arg.optional() && !arg.grpFldExists)
+            throw new IllegalArgumentException("One of " + arg.oneOfFlds + " required");
 
-        return state.res;
+        return arg.res;
     }
 
     /** */
