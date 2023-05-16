@@ -69,6 +69,8 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
     )
     private String[] nodeIds;
 
+    //TODO: run tests for diagnostic command.
+
     /** */
     private void ensureOperationAndPath(Operation op, String path) {
         if (path != null && op == DUMP_LOG)
