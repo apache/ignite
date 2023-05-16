@@ -35,6 +35,8 @@ jobs:
     name: Check java code on JDK ${{ matrix.java }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup java
         uses: actions/setup-java@v3
@@ -70,6 +72,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
@@ -93,6 +97,8 @@ jobs:
           - { python: "3.8", toxenv: "codestyle" }
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4

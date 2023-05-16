@@ -31,8 +31,7 @@ import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 
 /** */
 @CliPositionalSubcommands
-public class PersistenceCommand
-    extends CommandRegistryImpl<PersistenceTaskArg, PersistenceTaskResult>
+public class PersistenceCommand extends CommandRegistryImpl<PersistenceTaskArg, PersistenceTaskResult>
     implements ComputeCommand<PersistenceTaskArg, PersistenceTaskResult> {
     /** */
     public PersistenceCommand() {
