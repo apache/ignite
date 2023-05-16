@@ -29,7 +29,7 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true)
+@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true, optional = false)
 public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     /** */
     private static final long serialVersionUID = 0;
