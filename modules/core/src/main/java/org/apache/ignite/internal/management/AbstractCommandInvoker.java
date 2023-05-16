@@ -98,7 +98,7 @@ public abstract class AbstractCommandInvoker {
         BiFunction<Field, Integer, Object> positionalParamProvider,
         Function<Field, Object> paramProvider
     ) throws InstantiationException, IllegalAccessException {
-        ArgumentParseState<A> state = new ArgumentParseState<>(argCls);
+        ArgumentState<A> state = new ArgumentState<>(argCls);
 
         visitCommandParams(
             argCls,
@@ -119,7 +119,7 @@ public abstract class AbstractCommandInvoker {
     }
 
     /** */
-    private static class ArgumentParseState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
+    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
         /** */
         final A res;
 
@@ -136,7 +136,7 @@ public abstract class AbstractCommandInvoker {
         final Set<String> oneOfFlds;
 
         /** */
-        public ArgumentParseState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
+        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
             res = argCls.newInstance();
             argGrp = argCls.getAnnotation(ArgumentGroup.class);
             oneOfFlds = argGrp == null
