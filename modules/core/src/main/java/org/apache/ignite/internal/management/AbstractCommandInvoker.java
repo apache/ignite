@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -101,22 +98,7 @@ public abstract class AbstractCommandInvoker {
         BiFunction<Field, Integer, Object> positionalParamProvider,
         Function<Field, Object> paramProvider
     ) throws InstantiationException, IllegalAccessException {
-        A arg = argCls.newInstance();
-
-        AtomicBoolean onlyOneOfGrp = new AtomicBoolean();
-        AtomicBoolean optionalGrp = new AtomicBoolean(true);
-
-        AtomicReference<Set<String>> oneOfFlds = new AtomicReference<>(Collections.emptySet());
-
-        if (arg.getClass().isAnnotationPresent(ArgumentGroup.class)) {
-            ArgumentGroup argGrp = arg.getClass().getAnnotation(ArgumentGroup.class);
-
-            onlyOneOfGrp.set(argGrp.onlyOneOf());
-            optionalGrp.set(argGrp.optional());
-            oneOfFlds.set(new HashSet<>(Arrays.asList(argGrp.value())));
-        }
-
-        AtomicBoolean grpExists = new AtomicBoolean(false);
+        ArgumentParseState<A> state = new ArgumentParseState<>(argCls);
 
         BiConsumer<Field, Object> fldSetter = (fld, val) -> {
             if (val == null) {
@@ -130,15 +112,15 @@ public abstract class AbstractCommandInvoker {
                 throw new IllegalArgumentException("Argument " + name + " required.");
             }
 
-            if (oneOfFlds.get().contains(fld.getName())) {
-                if (grpExists.get() && onlyOneOfGrp.get())
-                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
+            if (state.oneOfFlds.contains(fld.getName())) {
+                if (state.grpFldExists && state.onlyOneOf())
+                    throw new IllegalArgumentException("Only one of " + state.oneOfFlds + " allowed");
 
-                grpExists.set(true);
+                state.grpFldExists = true;
             }
 
             try {
-                argCls.getMethod(fld.getName(), fld.getType()).invoke(arg, val);
+                argCls.getMethod(fld.getName(), fld.getType()).invoke(state.res, val);
             }
             catch (NoSuchMethodException | IllegalAccessException e) {
                 throw new IgniteException(e);
@@ -149,24 +131,68 @@ public abstract class AbstractCommandInvoker {
             }
         };
 
-        AtomicInteger idx = new AtomicInteger();
-
         visitCommandParams(
-            arg.getClass(),
-            fld -> fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement())),
+            state.res.getClass(),
+            fld -> fldSetter.accept(fld, positionalParamProvider.apply(fld, state.nextIdx())),
             fld -> fldSetter.accept(fld, paramProvider.apply(fld)),
             (argGrp, flds) -> flds.forEach(fld -> {
                 if (fld.isAnnotationPresent(Positional.class))
-                    fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement()));
+                    fldSetter.accept(fld, positionalParamProvider.apply(fld, state.nextIdx()));
                 else
                     fldSetter.accept(fld, paramProvider.apply(fld));
             })
         );
 
-        if (!optionalGrp.get() && !grpExists.get())
-            throw new IllegalArgumentException("One of " + oneOfFlds + " required");
+        if (!state.optional() && !state.grpFldExists)
+            throw new IllegalArgumentException("One of " + state.oneOfFlds + " required");
 
-        return arg;
+        return state.res;
+    }
+
+    /** */
+    private static class ArgumentParseState<A extends IgniteDataTransferObject> {
+        /** */
+        final A res;
+
+        /** */
+        final ArgumentGroup argGrp;
+
+        /** */
+        boolean grpFldExists;
+
+        /** */
+        int idx;
+
+        /** */
+        final Set<String> oneOfFlds;
+
+        /** */
+        public ArgumentParseState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
+            res = argCls.newInstance();
+            argGrp = argCls.getAnnotation(ArgumentGroup.class);
+            oneOfFlds = argGrp == null
+                ? Collections.emptySet()
+                : new HashSet<>(Arrays.asList(argGrp.value()));
+        }
+
+        /** */
+        public boolean optional() {
+            return argGrp != null && argGrp.optional();
+        }
+
+        /** */
+        public boolean onlyOneOf() {
+            return argGrp != null && argGrp.onlyOneOf();
+        }
+
+        /** */
+        public int nextIdx() {
+            int idx0 = idx;
+
+            idx++;
+
+            return idx0;
+        }
     }
 
     /**
