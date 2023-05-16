@@ -26,11 +26,11 @@ Run `index-reader.sh|bat` script from Ignite bin directory:
 |===
 |Parameter | Description | Default Value
 | --dir | Partition directory where index.bin and (optionally) partition files are located. |
-| --part-cnt | Full partitions count in cache group. | Default value: 0.
-| --page-size | Page size. | Default value: 4096.
-| --page-store-ver | Page store version. | Default value: 2.
-| --indexes | You can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. | Default value: []
-| --check-parts |  Check cache data tree in partition files and its consistency with indexes. | Default value: false.
+| --part-cnt | Full partitions count in cache group. | 0
+| --page-size | Page size | 4096
+| --page-store-ver | Page store version. | 2
+| --indexes | You can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. | []
+| --check-parts |  Check cache data tree in partition files and its consistency with indexes. | false
 |===
 
 == Usage
