@@ -15,57 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence;
+package org.apache.ignite.internal.management.persistence;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
-
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class PersistenceCleanAndBackupSettings extends IgniteDataTransferObject {
+public class PersistenceBackupCachesTaskArg extends PersistenceCommand.PersistenceTaskArg {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
     /** */
-    private PersistenceCleanAndBackupType cleanAndBackupType;
-
-    /** */
-    private List<String> cacheNames;
-
-    /** */
-    public PersistenceCleanAndBackupSettings() {
-        // No-op.
-    }
-
-    /** */
-    public PersistenceCleanAndBackupSettings(PersistenceCleanAndBackupType cleanAndBackupType, List<String> cacheNames) {
-        this.cleanAndBackupType = cleanAndBackupType;
-        this.cacheNames = cacheNames;
-    }
+    @Positional
+    @Argument(example = "cache1,cache2,cache3")
+    private String[] caches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, cleanAndBackupType);
-        U.writeCollection(out, cacheNames);
+        super.writeExternalData(out);
+
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cleanAndBackupType = PersistenceCleanAndBackupType.fromOrdinal(in.readByte());
-        cacheNames = U.readList(in);
+        super.readExternalData(protoVer, in);
+
+        caches = U.readArray(in, String.class);
     }
 
     /** */
-    public PersistenceCleanAndBackupType cleanAndBackupType() {
-        return cleanAndBackupType;
+    public String[] caches() {
+        return caches;
     }
 
     /** */
-    public List<String> cacheNames() {
-        return cacheNames;
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 }

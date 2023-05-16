@@ -394,13 +394,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "clean", "caches",
-            nonExistingCacheName,
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(
+            "--host", "localhost", "--port", port,
+            "--persistence", "clean", "caches",
+            nonExistingCacheName));
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
-            cacheName0 + "," + cacheName1,
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute(
+            "--host", "localhost", "--port", port,
+            "--persistence", "clean", "caches",
+            cacheName0 + "," + cacheName1));
 
         boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(f -> f.getName().contains(cacheName0) || f.getName().contains(cacheName1))
@@ -422,9 +424,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(ig1.context().maintenanceRegistry().isMaintenanceMode());
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "caches",
-            cacheName2,
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute(
+            "--host", "localhost", "--port", port,
+            "--persistence", "clean", "caches", cacheName2));
 
         stopGrid(1);
 
@@ -458,8 +460,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "corrupted",
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence"));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "info"));
+
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "clean", "corrupted"));
 
         boolean cleanedEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(f ->
@@ -500,8 +504,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "all",
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "clean", "all"));
 
         boolean allEmpty = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
@@ -539,8 +542,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "all",
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port, "--persistence", "backup", "all"));
 
         Set<String> backedUpCacheDirs = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
@@ -581,8 +583,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "corrupted",
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port,
+            "--persistence", "backup", "corrupted"));
 
         long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)
@@ -621,13 +623,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "backup", "caches",
-            nonExistingCacheName,
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--host", "localhost", "--port", port,
+            "--persistence", "backup", "caches",
+            nonExistingCacheName));
 
-        assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "caches",
-            cacheName0 + "," + cacheName2,
-            "--host", "localhost", "--port", port));
+        assertEquals(EXIT_CODE_OK, execute("--host", "localhost", "--port", port,
+            "--persistence", "backup", "caches",
+            cacheName0 + "," + cacheName2));
 
         long backedUpCachesCnt = Arrays.stream(mntcNodeWorkDir.listFiles())
             .filter(File::isDirectory)

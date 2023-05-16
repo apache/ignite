@@ -15,29 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence;
+package org.apache.ignite.internal.management.persistence;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceBackupAllTaskArg;
 
-/** Persistence cleaning operations. */
-public enum PersistenceOperation {
-    /** */
-    INFO,
+/** */
+public class PersistenceBackupAllCommand extends PersistenceAbstractCommand {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Backup data files of all caches";
+    }
 
-    /** */
-    CLEAN,
-
-    /** */
-    BACKUP;
-
-    /** */
-    private static final PersistenceOperation[] VALS = values();
-
-    /**
-     * @param ordinal Index of enum value.
-     * @return Value of {@link PersistenceOperation} enum.
-     */
-    @Nullable public static PersistenceOperation fromOrdinal(int ordinal) {
-        return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
+    /** {@inheritDoc} */
+    @Override public Class<PersistenceBackupAllTaskArg> argClass() {
+        return PersistenceBackupAllTaskArg.class;
     }
 }

@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.persistence;
+package org.apache.ignite.internal.management.persistence;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanCorruptedTaskArg;
 
 /** */
-public enum PersistenceCleanAndBackupType {
-    /** */
-    ALL,
-    /** */
-    CORRUPTED,
-    /** */
-    CACHES;
+public class PersistenceCleanCorruptedCommand extends PersistenceAbstractCommand {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Clean directories of caches with corrupted data files";
+    }
 
-    /** */
-    private static final PersistenceCleanAndBackupType[] VALS = values();
-
-    /**
-     * @param ordinal Index of enum value.
-     * @return Value of {@link PersistenceCleanAndBackupType} enum.
-     */
-    @Nullable public static PersistenceCleanAndBackupType fromOrdinal(int ordinal) {
-        return ordinal >= 0 && ordinal < VALS.length ? VALS[ordinal] : null;
+    /** {@inheritDoc} */
+    @Override public Class<PersistenceCleanCorruptedTaskArg> argClass() {
+        return PersistenceCleanCorruptedTaskArg.class;
     }
 }

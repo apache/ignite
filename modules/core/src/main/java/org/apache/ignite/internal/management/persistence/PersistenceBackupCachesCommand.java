@@ -15,32 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.api;
+package org.apache.ignite.internal.management.persistence;
 
-import java.util.Iterator;
-import java.util.Map;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-
-/**
- * Registry that knows all of its subcommands.
- */
-public interface CommandsRegistry<A extends IgniteDataTransferObject, R> extends Command<A, R> {
-    /**
-     * @param name Name of the command.
-     * @return Command instance by name.
-     */
-    public Command<?, ?> command(String name);
-
-    /** @return Commands iterator. */
-    public Iterator<Map.Entry<String, Command<?, ?>>> commands();
-
+/** */
+public class PersistenceBackupCachesCommand extends PersistenceAbstractCommand {
     /** {@inheritDoc} */
-    @Override public default String description() {
-        throw new UnsupportedOperationException();
+    @Override public String description() {
+        return "Backup data files of only given caches";
     }
 
     /** {@inheritDoc} */
-    @Override public default Class<? extends A> argClass() {
-        throw new UnsupportedOperationException();
+    @Override public Class<PersistenceBackupCachesTaskArg> argClass() {
+        return PersistenceBackupCachesTaskArg.class;
     }
 }
