@@ -32,7 +32,7 @@ import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
 
 /** */
-public class DiagnosticPageLocksCommand implements ComputeCommand<DiagnosticPagelocksCommandArg, Map<ClusterNode, VisorPageLocksResult>> {
+public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPagelocksCommandArg, Map<ClusterNode, VisorPageLocksResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "View pages locks state information on the node or nodes";

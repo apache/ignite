@@ -17,18 +17,12 @@
 
 package org.apache.ignite.internal.management.diagnostic;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.HelpCommand;
 
 /** */
-@CliPositionalSubcommands
-public class DiagnosticCommand extends CommandRegistryImpl {
-    /** */
-    public DiagnosticCommand() {
-        super(
-            new DiagnosticHelpCommand(),
-            new DiagnosticPagelocksCommand(),
-            new DiagnosticConnectivityCommand()
-        );
+public class DiagnosticHelpCommand implements HelpCommand {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Print diagnostic command help";
     }
 }

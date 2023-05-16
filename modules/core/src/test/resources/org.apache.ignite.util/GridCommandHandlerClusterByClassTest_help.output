@@ -80,8 +80,11 @@ This utility can do the following commands:
   Delete unused archived wal segments on each node:
     control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
 
+  Print diagnostic command help:
+    control.(sh|bat) --diagnostic help
+
   View pages locks state information on the node or nodes:
-    control.(sh|bat) --diagnostic --page-locks [DUMP|DUMP_LOG] [--path path] [--node-ids node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]] [--all]
+    control.(sh|bat) --diagnostic pagelocks [DUMP|DUMP_LOG] [--path path] [--node-ids node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]] [--all]
 
     Parameters:
       DUMP                                                                                            - Save page locks dump to file generated in IGNITE_HOME/work/diagnostic directory.
@@ -90,7 +93,7 @@ This utility can do the following commands:
       --all                                                                                           - Run for all nodes.
 
   View connectvity state of all nodes in cluster:
-    control.(sh|bat) --diagnostic --connectivity
+    control.(sh|bat) --diagnostic connectivity
 
   Print the current master key name:
     control.(sh|bat) --encryption get_master_key_name
