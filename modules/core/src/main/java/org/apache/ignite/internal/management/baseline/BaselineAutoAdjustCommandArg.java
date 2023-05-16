@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @WithCliConfirmParameter
-@ArgumentGroup(value = {"enabled", "timeout"})
+@ArgumentGroup(value = {"enabled", "timeout"}, optional = false)
 public class BaselineAutoAdjustCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.management.meta.MetaListCommand.printInt;
 
 /** */
-@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true)
+@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true, optional = false)
 public class MetaDetailsCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -101,72 +98,24 @@ public abstract class AbstractCommandInvoker {
         BiFunction<Field, Integer, Object> positionalParamProvider,
         Function<Field, Object> paramProvider
     ) throws InstantiationException, IllegalAccessException {
-        A arg = argCls.newInstance();
-
-        AtomicBoolean onlyOneOfGrp = new AtomicBoolean();
-        AtomicBoolean optionalGrp = new AtomicBoolean(true);
-
-        AtomicReference<Set<String>> oneOfFlds = new AtomicReference<>(Collections.emptySet());
-
-        if (arg.getClass().isAnnotationPresent(ArgumentGroup.class)) {
-            ArgumentGroup argGrp = arg.getClass().getAnnotation(ArgumentGroup.class);
-
-            onlyOneOfGrp.set(argGrp.onlyOneOf());
-            optionalGrp.set(argGrp.optional());
-            oneOfFlds.set(new HashSet<>(Arrays.asList(argGrp.value())));
-        }
-
-        AtomicBoolean grpExists = new AtomicBoolean(false);
-
-        BiConsumer<Field, Object> fldSetter = (fld, val) -> {
-            if (val == null) {
-                if (fld.getAnnotation(Argument.class).optional())
-                    return;
-
-                String name = fld.isAnnotationPresent(Positional.class)
-                    ? parameterExample(fld, false)
-                    : toFormattedFieldName(fld);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (oneOfFlds.get().contains(fld.getName())) {
-                if (grpExists.get() && onlyOneOfGrp.get())
-                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
-
-                grpExists.set(true);
-            }
-
-            try {
-                argCls.getMethod(fld.getName(), fld.getType()).invoke(arg, val);
-            }
-            catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new IgniteException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
-                    throw (RuntimeException)e.getTargetException();
-            }
-        };
-
-        AtomicInteger idx = new AtomicInteger();
+        ArgumentState<A> arg = new ArgumentState<>(argCls);
 
         visitCommandParams(
-            arg.getClass(),
-            fld -> fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement())),
-            fld -> fldSetter.accept(fld, paramProvider.apply(fld)),
+            argCls,
+            fld -> arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx())),
+            fld -> arg.accept(fld, paramProvider.apply(fld)),
             (argGrp, flds) -> flds.forEach(fld -> {
                 if (fld.isAnnotationPresent(Positional.class))
-                    fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement()));
+                    arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx()));
                 else
-                    fldSetter.accept(fld, paramProvider.apply(fld));
+                    arg.accept(fld, paramProvider.apply(fld));
             })
         );
 
-        if (!optionalGrp.get() && !grpExists.get())
-            throw new IllegalArgumentException("One of " + oneOfFlds + " required");
+        if (!arg.grpOptional() && !arg.grpFldExists)
+            throw new IllegalArgumentException("One of " + arg.oneOfFlds + " required");
 
-        return arg;
+        return arg.res;
     }
 
     /**
@@ -272,4 +221,77 @@ public abstract class AbstractCommandInvoker {
 
     /** @return Local node. */
     public abstract IgniteEx grid();
+
+    /** */
+    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
+        /** */
+        final A res;
+
+        /** */
+        final ArgumentGroup argGrp;
+
+        /** */
+        boolean grpFldExists;
+
+        /** */
+        int idx;
+
+        /** */
+        final Set<String> oneOfFlds;
+
+        /** */
+        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
+            res = argCls.newInstance();
+            argGrp = argCls.getAnnotation(ArgumentGroup.class);
+            oneOfFlds = argGrp == null
+                ? Collections.emptySet()
+                : new HashSet<>(Arrays.asList(argGrp.value()));
+        }
+
+        /** */
+        public boolean grpOptional() {
+            return argGrp != null && argGrp.optional();
+        }
+
+        /** */
+        private int nextIdx() {
+            int idx0 = idx;
+
+            idx++;
+
+            return idx0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld, Object val) {
+            if (val == null) {
+                if (fld.getAnnotation(Argument.class).optional())
+                    return;
+
+                String name = fld.isAnnotationPresent(Positional.class)
+                    ? parameterExample(fld, false)
+                    : toFormattedFieldName(fld);
+
+                throw new IllegalArgumentException("Argument " + name + " required.");
+            }
+
+            if (oneOfFlds.contains(fld.getName())) {
+                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
+                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
+
+                grpFldExists = true;
+            }
+
+            try {
+                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+            }
+        }
+    }
 }
