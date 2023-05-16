@@ -100,46 +100,15 @@ public abstract class AbstractCommandInvoker {
     ) throws InstantiationException, IllegalAccessException {
         ArgumentParseState<A> state = new ArgumentParseState<>(argCls);
 
-        BiConsumer<Field, Object> fldSetter = (fld, val) -> {
-            if (val == null) {
-                if (fld.getAnnotation(Argument.class).optional())
-                    return;
-
-                String name = fld.isAnnotationPresent(Positional.class)
-                    ? parameterExample(fld, false)
-                    : toFormattedFieldName(fld);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (state.oneOfFlds.contains(fld.getName())) {
-                if (state.grpFldExists && state.onlyOneOf())
-                    throw new IllegalArgumentException("Only one of " + state.oneOfFlds + " allowed");
-
-                state.grpFldExists = true;
-            }
-
-            try {
-                argCls.getMethod(fld.getName(), fld.getType()).invoke(state.res, val);
-            }
-            catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new IgniteException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
-                    throw (RuntimeException)e.getTargetException();
-            }
-        };
-
         visitCommandParams(
-            state.res.getClass(),
-            fld -> fldSetter.accept(fld, positionalParamProvider.apply(fld, state.nextIdx())),
-            fld -> fldSetter.accept(fld, paramProvider.apply(fld)),
+            argCls,
+            fld -> state.accept(fld, positionalParamProvider.apply(fld, state.nextIdx())),
+            fld -> state.accept(fld, paramProvider.apply(fld)),
             (argGrp, flds) -> flds.forEach(fld -> {
                 if (fld.isAnnotationPresent(Positional.class))
-                    fldSetter.accept(fld, positionalParamProvider.apply(fld, state.nextIdx()));
+                    state.accept(fld, positionalParamProvider.apply(fld, state.nextIdx()));
                 else
-                    fldSetter.accept(fld, paramProvider.apply(fld));
+                    state.accept(fld, paramProvider.apply(fld));
             })
         );
 
@@ -150,7 +119,7 @@ public abstract class AbstractCommandInvoker {
     }
 
     /** */
-    private static class ArgumentParseState<A extends IgniteDataTransferObject> {
+    private static class ArgumentParseState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
         /** */
         final A res;
 
@@ -181,17 +150,44 @@ public abstract class AbstractCommandInvoker {
         }
 
         /** */
-        public boolean onlyOneOf() {
-            return argGrp != null && argGrp.onlyOneOf();
-        }
-
-        /** */
-        public int nextIdx() {
+        private int nextIdx() {
             int idx0 = idx;
 
             idx++;
 
             return idx0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld, Object val) {
+            if (val == null) {
+                if (fld.getAnnotation(Argument.class).optional())
+                    return;
+
+                String name = fld.isAnnotationPresent(Positional.class)
+                    ? parameterExample(fld, false)
+                    : toFormattedFieldName(fld);
+
+                throw new IllegalArgumentException("Argument " + name + " required.");
+            }
+
+            if (oneOfFlds.contains(fld.getName())) {
+                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
+                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
+
+                grpFldExists = true;
+            }
+
+            try {
+                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+            }
         }
     }
 
