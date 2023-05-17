@@ -20,13 +20,14 @@ package org.apache.ignite.internal.management.tracing;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.spi.tracing.Scope;
 
 /** */
-public class TracingConfigurationGetAllCommandArg extends IgniteDataTransferObject {
+public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCommandArg {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -36,12 +37,21 @@ public class TracingConfigurationGetAllCommandArg extends IgniteDataTransferObje
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         U.writeEnum(out, scope);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         scope = U.readEnum(in, Scope.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public VisorTracingConfigurationOperation operation() {
+        return VisorTracingConfigurationOperation.GET_ALL;
     }
 
     /** */

@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
-
 /** */
-public class TracingConfigurationGetAllCommand implements ComputeCommand<TracingConfigurationGetAllCommandArg, Void>,
-    ExperimentalCommand<TracingConfigurationGetAllCommandArg, Void> {
+public class TracingConfigurationGetAllCommand extends AbstractTracingConfigurationCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print tracing configuration";
@@ -31,10 +27,5 @@ public class TracingConfigurationGetAllCommand implements ComputeCommand<Tracing
     /** {@inheritDoc} */
     @Override public Class<TracingConfigurationGetAllCommandArg> argClass() {
         return TracingConfigurationGetAllCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
     }
 }

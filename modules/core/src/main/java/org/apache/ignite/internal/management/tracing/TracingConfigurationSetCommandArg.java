@@ -20,24 +20,17 @@ package org.apache.ignite.internal.management.tracing;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Set;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.spi.tracing.Scope;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /** */
-public class TracingConfigurationSetCommandArg extends IgniteDataTransferObject {
+public class TracingConfigurationSetCommandArg extends TracingConfigurationGetCommandArg {
     /** */
     private static final long serialVersionUID = 0;
-
-    /** */
-    @Argument(optional = true)
-    private Scope scope;
-
-    /** */
-    @Argument(optional = true)
-    private boolean label;
 
     /** */
     @Argument(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
@@ -46,42 +39,27 @@ public class TracingConfigurationSetCommandArg extends IgniteDataTransferObject 
 
     /** */
     @Argument(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
-    private Set<Scope> includedScopes;
+    private Scope[] includedScopes;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, scope);
-        out.writeBoolean(label);
+        super.writeExternalData(out);
+
         out.writeDouble(samplingRate);
-        U.writeCollection(out, includedScopes);
+        U.writeArray(out, includedScopes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        scope = U.readEnum(in, Scope.class);
-        label = in.readBoolean();
+        super.readExternalData(protoVer, in);
+
         samplingRate = in.readDouble();
-        includedScopes = U.readSet(in);
+        includedScopes = U.readArray(in, Scope.class);
     }
 
-    /** */
-    public Scope scope() {
-        return scope;
-    }
-
-    /** */
-    public void scope(Scope scope) {
-        this.scope = scope;
-    }
-
-    /** */
-    public boolean label() {
-        return label;
-    }
-
-    /** */
-    public void label(boolean label) {
-        this.label = label;
+    /** {@inheritDoc} */
+    @Override public VisorTracingConfigurationOperation operation() {
+        return VisorTracingConfigurationOperation.SET;
     }
 
     /** */
@@ -91,16 +69,20 @@ public class TracingConfigurationSetCommandArg extends IgniteDataTransferObject 
 
     /** */
     public void samplingRate(double samplingRate) {
+        if (samplingRate < SAMPLING_RATE_NEVER || samplingRate > SAMPLING_RATE_ALWAYS)
+            throw new IllegalArgumentException(
+                "Invalid sampling-rate '" + samplingRate + "'. Decimal value between 0 and 1 should be used.");
+
         this.samplingRate = samplingRate;
     }
 
     /** */
-    public Set includedScopes() {
+    public Scope[] includedScopes() {
         return includedScopes;
     }
 
     /** */
-    public void includedScopes(Set includedScopes) {
+    public void includedScopes(Scope[] includedScopes) {
         this.includedScopes = includedScopes;
     }
 }

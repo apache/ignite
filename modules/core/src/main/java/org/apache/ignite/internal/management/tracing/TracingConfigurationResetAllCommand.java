@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationResetAllCommandArg;
 
 /** */
-public class TracingConfigurationResetAllCommand implements ComputeCommand<TracingConfigurationResetAllCommandArg, Void>,
-    ExperimentalCommand<TracingConfigurationResetAllCommandArg, Void> {
+public class TracingConfigurationResetAllCommand extends AbstractTracingConfigurationCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Reset all specific tracing configuration the to default. " +
@@ -35,10 +33,5 @@ public class TracingConfigurationResetAllCommand implements ComputeCommand<Traci
     /** {@inheritDoc} */
     @Override public Class<TracingConfigurationResetAllCommandArg> argClass() {
         return TracingConfigurationResetAllCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
     }
 }

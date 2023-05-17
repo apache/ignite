@@ -20,34 +20,39 @@ package org.apache.ignite.internal.management.tracing;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.spi.tracing.Scope;
 
 /** */
-public class TracingConfigurationGetCommandArg extends IgniteDataTransferObject {
+public class TracingConfigurationGetCommandArg extends TracingConfigurationCommandArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(optional = true)
+    @Argument
     private Scope scope;
 
     /** */
     @Argument(optional = true)
-    private boolean label;
+    private String label;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        super.writeExternalData(out);
+
         U.writeEnum(out, scope);
-        out.writeBoolean(label);
+        U.writeString(out, label);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(protoVer, in);
+
         scope = U.readEnum(in, Scope.class);
-        label = in.readBoolean();
+        label = U.readString(in);
     }
 
     /** */
@@ -60,13 +65,18 @@ public class TracingConfigurationGetCommandArg extends IgniteDataTransferObject 
         this.scope = scope;
     }
 
+    /** {@inheritDoc} */
+    @Override public VisorTracingConfigurationOperation operation() {
+        return VisorTracingConfigurationOperation.GET;
+    }
+
     /** */
-    public boolean label() {
+    public String label() {
         return label;
     }
 
     /** */
-    public void label(boolean label) {
+    public void label(String label) {
         this.label = label;
     }
 }

@@ -17,18 +17,30 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import org.apache.ignite.compute.ComputeTask;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
+import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
+import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
+import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
 @CliPositionalSubcommands
-public class TracingConfigurationCommand extends CommandRegistryImpl<NoArg, Void>
-    implements ComputeCommand<NoArg, Void>, ExperimentalCommand<NoArg, Void> {
+public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>
+    implements ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>,
+    ExperimentalCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
     /** */
     public TracingConfigurationCommand() {
         super(
@@ -46,12 +58,67 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<NoArg, Void
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public Class<TracingConfigurationGetAllCommandArg> argClass() {
+        return TracingConfigurationGetAllCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<? extends ComputeTask<VisorTaskArgument<NoArg>, Void>> taskClass() {
-        return null;
+    @Override public Class<VisorTracingConfigurationTask> taskClass() {
+        return VisorTracingConfigurationTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, TracingConfigurationCommandArg arg) {
+        return coordinatorOrNull(nodes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(
+        TracingConfigurationCommandArg arg,
+        VisorTracingConfigurationTaskResult res,
+        Consumer<String> printer
+    ) {
+        res.print(printer);
+    }
+
+    /** */
+    public abstract static class TracingConfigurationCommandArg extends IgniteDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            // No-op.
+        }
+
+        /** */
+        public abstract VisorTracingConfigurationOperation operation();
+    }
+
+    /** */
+    public static class TracingConfigurationResetAllCommandArg extends TracingConfigurationGetAllCommandArg {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** {@inheritDoc} */
+        @Override public VisorTracingConfigurationOperation operation() {
+            return VisorTracingConfigurationOperation.RESET_ALL;
+        }
+    }
+
+    /** */
+    public static class TracingConfigurationResetCommandArg extends TracingConfigurationGetCommandArg {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** {@inheritDoc} */
+        @Override public VisorTracingConfigurationOperation operation() {
+            return VisorTracingConfigurationOperation.RESET;
+        }
     }
 }
