@@ -49,4 +49,24 @@ public class TracingConfigurationGetCommandArg extends IgniteDataTransferObject 
         scope = U.readEnum(in, Scope.class);
         label = in.readBoolean();
     }
+
+    /** */
+    public Scope scope() {
+        return scope;
+    }
+
+    /** */
+    public void scope(Scope scope) {
+        this.scope = scope;
+    }
+
+    /** */
+    public boolean label() {
+        return label;
+    }
+
+    /** */
+    public void label(boolean label) {
+        this.label = label;
+    }
 }

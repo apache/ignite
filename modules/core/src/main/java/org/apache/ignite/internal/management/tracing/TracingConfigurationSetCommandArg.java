@@ -63,4 +63,44 @@ public class TracingConfigurationSetCommandArg extends IgniteDataTransferObject 
         samplingRate = in.readDouble();
         includedScopes = U.readSet(in);
     }
+
+    /** */
+    public Scope scope() {
+        return scope;
+    }
+
+    /** */
+    public void scope(Scope scope) {
+        this.scope = scope;
+    }
+
+    /** */
+    public boolean label() {
+        return label;
+    }
+
+    /** */
+    public void label(boolean label) {
+        this.label = label;
+    }
+
+    /** */
+    public double samplingRate() {
+        return samplingRate;
+    }
+
+    /** */
+    public void samplingRate(double samplingRate) {
+        this.samplingRate = samplingRate;
+    }
+
+    /** */
+    public Set includedScopes() {
+        return includedScopes;
+    }
+
+    /** */
+    public void includedScopes(Set includedScopes) {
+        this.includedScopes = includedScopes;
+    }
 }

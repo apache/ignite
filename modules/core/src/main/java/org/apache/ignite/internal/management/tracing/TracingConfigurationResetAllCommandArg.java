@@ -43,4 +43,14 @@ public class TracingConfigurationResetAllCommandArg extends IgniteDataTransferOb
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         scope = U.readEnum(in, Scope.class);
     }
+
+    /** */
+    public Scope scope() {
+        return scope;
+    }
+
+    /** */
+    public void scope(Scope scope) {
+        this.scope = scope;
+    }
 }
