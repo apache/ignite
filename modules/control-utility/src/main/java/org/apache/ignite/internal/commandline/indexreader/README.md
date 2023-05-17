@@ -1,4 +1,4 @@
-# Ignite index-reader utility
+# Index Reader Utility
 
 THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRID!
 

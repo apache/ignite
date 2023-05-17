@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Index-reader utility
+= Index Reader Utility
 
 Ignite provides a command line script — `index-reader.sh|bat` that you can use to check cache data tree in partition files and its consistency with indexes. The script is located under the `/bin/` folder of the installation directory.
 
