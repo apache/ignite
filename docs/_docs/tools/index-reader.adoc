@@ -14,26 +14,31 @@
 // limitations under the License.
 = Index-reader utility
 
-Ignite provides a command line script — index-reader.sh|bat that you can use to check cache data tree in partition files and its consistency with indexes. The script is located under the /bin/ folder of the installation directory.
+Ignite provides a command line script — `index-reader.sh|bat` that you can use to check cache data tree in partition files and its consistency with indexes. The script is located under the `/bin/` folder of the installation directory.
 
+[CAUTION]
+====
 THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRID!
+====
 
 == Run
 
-Run `index-reader.sh|bat` script from Ignite bin directory:
+Run `index-reader.sh|bat` script from `{IGNITE_HOME}/bin` directory:
 
 [cols="1,3,1",opts="header"]
 |===
 |Parameter | Description | Default Value
-| --dir | Partition directory where index.bin and (optionally) partition files are located. |
-| --part-cnt | Total partitions count in cache group. | 0
-| --page-size | Page size. | 4096 bytes
-| --page-store-ver | Page store version. | 2
-| --indexes | You can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. | []
-| --check-parts |  Check cache data tree in partition files and its consistency with indexes. | false
+| `--dir` | Partition directory where index.bin and (optionally) partition files are located. |
+| `--part-cnt` | Total partitions count in cache group. | 0
+| `--page-size` | Page size (in bytes). | 4096
+| `--page-store-ver` | Page store version. | 2
+| `--indexes` | You can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. | `[]`
+| `--check-parts` |  Check cache data tree in partition files and its consistency with indexes. | `false`
 |===
 
 == Usage
 
-`./index-reader.sh|bat --dir [--part-cnt] [--page-size] [--page-store-ver] [--indexes] [--check-parts]`
-
+[source, shell]
+----
+./index-reader.sh|bat --dir [--part-cnt] [--page-size] [--page-store-ver] [--indexes] [--check-parts]
+----

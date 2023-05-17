@@ -4,7 +4,7 @@ THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRI
 
 ## Run
 
-`./index-reader.sh` or `./index-reader.bat`: run script from Ignite bin directory.
+`./index-reader.sh` or `./index-reader.bat`: run script from `{IGNITE_HOME}/bin` directory:.
 
 ## Parameters
 
@@ -12,13 +12,13 @@ THIS UTILITY MUST BE LAUNCHED ON PERSISTENT STORE WHICH IS NOT UNDER RUNNING GRI
 
 `--part-cnt`: total partitions count in cache group. Default value: 0.
 
-`--page-size`: page size. Default value: 4096 bytes.
+`--page-size`: page size (in bytes). Default value: 4096.
 
 `--page-store-ver`: page store version. Default value: 2.
 
-`--indexes`: you can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. Default value: [].
+`--indexes`: you can specify index tree names that will be processed, separated by comma without spaces, other index trees will be skipped. Default value: `[]`.
 
-`--check-parts`: check cache data tree in partition files and its consistency with indexes. Default value: false.
+`--check-parts`: check cache data tree in partition files and its consistency with indexes. Default value: `false`.
 
 ### Usage
 
