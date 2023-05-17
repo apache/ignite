@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 
@@ -47,7 +47,7 @@ public class ConsistencyStatusCommand implements
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, NoArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
         return nodes.entrySet().stream()
             .filter(e -> !e.getValue().get1())
             .map(Map.Entry::getKey)

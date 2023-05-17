@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 
 /** */
@@ -46,7 +46,7 @@ public class ConsistencyRepairCommand implements
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T2<Boolean, Object>> nodes, ConsistencyRepairCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, ConsistencyRepairCommandArg arg) {
         return arg.parallel()
             ? nodes.keySet()
             : nodes.entrySet().stream()
