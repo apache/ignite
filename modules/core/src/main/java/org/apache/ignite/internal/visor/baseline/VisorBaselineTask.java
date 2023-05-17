@@ -27,6 +27,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import org.apache.ignite.internal.management.baseline.BaselineRemoveCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineSetCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineVersionCommandArg;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -230,37 +236,30 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
          * @param settings Baseline autoAdjustment settings.
          * @return New baseline.
          */
-        private VisorBaselineTaskResult updateAutoAdjustmentSettings(VisorBaselineAutoAdjustSettings settings) {
-            if (settings.getSoftTimeout() != null)
-                ignite.cluster().baselineAutoAdjustTimeout(settings.getSoftTimeout());
+        private VisorBaselineTaskResult updateAutoAdjustmentSettings(BaselineAutoAdjustCommandArg settings) {
+            if (settings.timeout() != null)
+                ignite.cluster().baselineAutoAdjustTimeout(settings.timeout());
 
-            if (settings.getEnabled() != null)
-                ignite.cluster().baselineAutoAdjustEnabled(settings.getEnabled());
+            if (settings.enabled() != null)
+                ignite.cluster().baselineAutoAdjustEnabled(settings.enabled() == BaselineAutoAdjustCommandArg.Enabled.ENABLE);
 
             return collect();
         }
 
         /** {@inheritDoc} */
         @Override protected VisorBaselineTaskResult run(@Nullable VisorBaselineTaskArg arg) throws IgniteException {
-            switch (arg.getOperation()) {
-                case ADD:
-                    return add(arg.getConsistentIds());
-
-                case REMOVE:
-                    return remove(arg.getConsistentIds());
-
-                case SET:
-                    return set(arg.getConsistentIds());
-
-                case VERSION:
-                    return version(arg.getTopologyVersion());
-
-                case AUTOADJUST:
-                    return updateAutoAdjustmentSettings(arg.getAutoAdjustSettings());
-
-                default:
-                    return collect();
-            }
+            if (arg instanceof BaselineRemoveCommandArg)
+                return remove(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
+            else if (arg instanceof BaselineSetCommandArg)
+                return set(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
+            else if (arg instanceof BaselineAddCommandArg)
+                return add(F.asList(((BaselineAddCommandArg)arg).consistentIDs()));
+            else if (arg instanceof BaselineVersionCommandArg)
+                return version(((BaselineVersionCommandArg)arg).topologyVersion());
+            else if (arg instanceof BaselineAutoAdjustCommandArg)
+                return updateAutoAdjustmentSettings((BaselineAutoAdjustCommandArg)arg);
+            else
+                return collect();
         }
 
         /** {@inheritDoc} */

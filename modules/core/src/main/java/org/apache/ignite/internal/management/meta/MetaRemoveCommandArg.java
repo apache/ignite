@@ -25,11 +25,11 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.OneOf;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@OneOf({"typeId", "typeName"})
+@ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true, optional = false)
 public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     /** */
     private static final long serialVersionUID = 0;

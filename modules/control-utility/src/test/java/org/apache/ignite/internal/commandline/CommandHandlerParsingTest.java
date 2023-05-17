@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild;
 import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild.Arguments;
@@ -44,15 +43,16 @@ import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
+import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
+import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
-import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -472,10 +472,18 @@ public class CommandHandlerParsingTest {
 
                         checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                        BaselineArguments arg = ((BaselineCommand)args.command()).arg();
+                        BaselineAddCommandArg arg = ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).arg();
+                        org.apache.ignite.internal.management.api.Command<?, ?> cmd0 =
+                            ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).command();
 
-                        assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        if (baselineAct.equals("add"))
+                            assertEquals(BaselineAddCommand.class, cmd0.getClass());
+                        else if (baselineAct.equals("remove"))
+                            assertEquals(BaselineRemoveCommand.class, cmd0.getClass());
+                        else if (baselineAct.equals("set"))
+                            assertEquals(BaselineSetCommand.class, cmd0.getClass());
+
+                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
                     }
 
                     break;
@@ -486,11 +494,11 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    VisorTxTaskArg txTaskArg = ((TxCommands)args.command()).arg();
+                    TxCommandArg txTaskArg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-                    assertEquals("xid1", txTaskArg.getXid());
-                    assertEquals(10_000, txTaskArg.getMinDuration().longValue());
-                    assertEquals(VisorTxOperation.KILL, txTaskArg.getOperation());
+                    assertEquals("xid1", txTaskArg.xid());
+                    assertEquals(10_000, txTaskArg.minDuration().longValue());
+                    assertTrue(txTaskArg.kill());
 
                     break;
                 }
@@ -578,41 +586,44 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tx"));
 
-        assertParseArgsThrows("Expecting --min-duration", "--tx", "--min-duration");
-        assertParseArgsThrows("Invalid value for --min-duration: -1", "--tx", "--min-duration", "-1");
-        assertParseArgsThrows("Expecting --min-size", "--tx", "--min-size");
-        assertParseArgsThrows("Invalid value for --min-size: -1", "--tx", "--min-size", "-1");
+        assertParseArgsThrows("Please specify a value for argument: --min-duration", "--tx", "--min-duration");
+        assertParseArgsThrows("Ouch! Argument is invalid: --min-duration", "--tx", "--min-duration", "-1");
+        assertParseArgsThrows("Please specify a value for argument: --min-size", "--tx", "--min-size");
+        assertParseArgsThrows("Ouch! Argument is invalid: --min-size", "--tx", "--min-size", "-1");
         assertParseArgsThrows("--label", "--tx", "--label");
         assertParseArgsThrows("Illegal regex syntax", "--tx", "--label", "tx123[");
-        assertParseArgsThrows("Projection can't be used together with list of consistent ids.", "--tx", "--servers", "--nodes", "1,2,3");
+        assertParseArgsThrows("Only one of [servers, clients, nodes] allowed", "--tx", "--servers", "--nodes", "1,2,3");
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
-        VisorTxTaskArg arg = ((TxCommands)args.command()).arg();
+        TxCommandArg arg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-        assertEquals(Long.valueOf(120 * 1000L), arg.getMinDuration());
-        assertEquals(Integer.valueOf(10), arg.getMinSize());
-        assertEquals(Integer.valueOf(100), arg.getLimit());
-        assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
-        assertEquals(VisorTxProjection.SERVER, arg.getProjection());
+        assertEquals(Long.valueOf(120 * 1000L), arg.minDuration());
+        assertEquals(Integer.valueOf(10), arg.minSize());
+        assertEquals(Integer.valueOf(100), arg.limit());
+        assertEquals(VisorTxSortOrder.SIZE, arg.order());
+        assertTrue(arg.servers());
+        assertFalse(arg.clients());
 
         args = parseArgs(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
             "--clients"));
 
-        arg = ((TxCommands)args.command()).arg();
+        arg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-        assertEquals(Long.valueOf(130 * 1000L), arg.getMinDuration());
-        assertEquals(Integer.valueOf(1), arg.getMinSize());
-        assertEquals(Integer.valueOf(60), arg.getLimit());
-        assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
-        assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
+        assertEquals(Long.valueOf(130 * 1000L), arg.minDuration());
+        assertEquals(Integer.valueOf(1), arg.minSize());
+        assertEquals(Integer.valueOf(60), arg.limit());
+        assertEquals(VisorTxSortOrder.DURATION, arg.order());
+        assertFalse(arg.servers());
+        assertTrue(arg.clients());
 
         args = parseArgs(asList("--tx", "--nodes", "1,2,3"));
 
-        arg = ((TxCommands)args.command()).arg();
+        arg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
 
-        assertNull(arg.getProjection());
-        assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
+        assertFalse(arg.servers());
+        assertFalse(arg.clients());
+        assertArrayEquals(new String[] {"1", "2", "3"}, arg.nodes());
     }
 
     /**
@@ -785,66 +796,52 @@ public class CommandHandlerParsingTest {
     @Test
     public void testTracingConfigurationArgumentsValidation() {
         // reset
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "reset", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "reset", "--scope", "aaa");
 
-        assertParseArgsThrows("The label should be specified.",
-            "--tracing-configuration", "reset", "--label");
+        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "reset", "--label");
 
         // reset all
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset_all", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "reset_all", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset_all", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "reset_all", "--scope", "aaa");
 
         // get
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "get", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "get", "--scope", "aaa");
 
-        assertParseArgsThrows("The label should be specified.",
-            "--tracing-configuration", "get", "--label");
+        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "get", "--label");
 
         // get all
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get_all", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "get_all", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get_all", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "get_all", "--scope", "aaa");
 
         // set
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "set", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "set", "--scope", "aaa");
 
-        assertParseArgsThrows("The label should be specified.",
-            "--tracing-configuration", "set", "--label");
+        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "set", "--label");
 
-        assertParseArgsThrows("The sampling rate should be specified. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate");
+        assertParseArgsThrows("Please specify a value for argument: --sampling-rate", "--tracing-configuration", "set", "--sampling-rate");
 
-        assertParseArgsThrows("Invalid sampling-rate 'aaa'. Decimal value between 0 and 1 should be used.",
+        assertParseArgsThrows("Failed to parse --sampling-rate command argument",
             "--tracing-configuration", "set", "--sampling-rate", "aaa");
 
-        assertParseArgsThrows("Invalid sampling-rate '-1'. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate", "-1");
+        assertParseArgsThrows("Invalid sampling-rate '-1.0'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "-1", "--scope", "SQL");
 
-        assertParseArgsThrows("Invalid sampling-rate '2'. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate", "2");
+        assertParseArgsThrows("Invalid sampling-rate '2.0'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "2", "--scope", "SQL");
 
-        assertParseArgsThrows("At least one supported scope should be specified.",
+        assertParseArgsThrows("Please specify a value for argument: --included-scopes",
             "--tracing-configuration", "set", "--included-scopes");
 
-        assertParseArgsThrows("Invalid supported scope 'aaa'. The following values can be used: "
-                + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--included-scopes", "TX,aaa");
+        assertParseArgsThrows("Failed to parse --included-scopes command argument",
+            "--tracing-configuration", "set", "--included-scopes", "TX,aaa");
     }
 
     /**
@@ -856,14 +853,11 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tracing-configuration", "get_all"));
 
-        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset");
+        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "reset");
 
-        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get");
+        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "get");
 
-        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set");
+        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "set");
     }
 
     /**
@@ -1186,7 +1180,7 @@ public class CommandHandlerParsingTest {
                 null,
                 () -> parseArgs(asList(arg)),
                 IllegalArgumentException.class,
-                "--stop argument is missing."
+                "Command warm-up can't be executed"
             );
         }
 

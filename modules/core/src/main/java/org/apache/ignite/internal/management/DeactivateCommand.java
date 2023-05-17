@@ -44,17 +44,14 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public NoArg execute(GridClient cli, DeactivateCommandArg arg) throws Exception {
+    @Override public NoArg execute(GridClient cli, DeactivateCommandArg arg, Consumer<String> printer) throws Exception {
         GridClientClusterState state = cli.state();
 
         state.state(INACTIVE, arg.force());
 
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printResult(DeactivateCommandArg arg, NoArg res, Consumer<String> printer) {
         printer.accept("Cluster deactivated");
+
+        return null;
     }
 
     /** {@inheritDoc} */

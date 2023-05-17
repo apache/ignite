@@ -20,56 +20,34 @@ package org.apache.ignite.internal.visor.diagnostic;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
+import org.apache.ignite.internal.management.diagnostic.DiagnosticPagelocksCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpHelper;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /** */
 @GridInternal
 public class VisorPageLocksTask
-    extends VisorMultiNodeTask<VisorPageLocksTrackerArgs, Map<ClusterNode, VisorPageLocksResult>, VisorPageLocksResult> {
+    extends VisorMultiNodeTask<DiagnosticPagelocksCommandArg, Map<ClusterNode, VisorPageLocksResult>, VisorPageLocksResult> {
     /**
      *
      */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorPageLocksTrackerArgs, VisorPageLocksResult> job(VisorPageLocksTrackerArgs arg) {
+    @Override protected VisorJob<DiagnosticPagelocksCommandArg, VisorPageLocksResult> job(DiagnosticPagelocksCommandArg arg) {
         return new VisorPageLocksTrackerJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorPageLocksTrackerArgs> arg) {
-        Set<UUID> nodeIds = new HashSet<>();
-
-        Set<String> nodeIds0 = arg.getArgument().nodeIds();
-
-        for (ClusterNode node : ignite.cluster().nodes()) {
-            if (nodeIds0.contains(String.valueOf(node.consistentId())) || nodeIds0.contains(node.id().toString()))
-                nodeIds.add(node.id());
-        }
-
-        if (F.isEmpty(nodeIds))
-            nodeIds.add(ignite.localNode().id());
-
-        return nodeIds;
     }
 
     /** {@inheritDoc} */
@@ -97,7 +75,7 @@ public class VisorPageLocksTask
     /**
      *
      */
-    private static class VisorPageLocksTrackerJob extends VisorJob<VisorPageLocksTrackerArgs, VisorPageLocksResult> {
+    private static class VisorPageLocksTrackerJob extends VisorJob<DiagnosticPagelocksCommandArg, VisorPageLocksResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -105,12 +83,12 @@ public class VisorPageLocksTask
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorPageLocksTrackerJob(VisorPageLocksTrackerArgs arg, boolean debug) {
+        private VisorPageLocksTrackerJob(DiagnosticPagelocksCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorPageLocksResult run(VisorPageLocksTrackerArgs arg) {
+        @Override protected VisorPageLocksResult run(DiagnosticPagelocksCommandArg arg) {
             PageLockTrackerManager lockTrackerMgr = ignite.context().cache().context().diagnostic().pageLockTracker();
 
             String result;
@@ -123,9 +101,9 @@ public class VisorPageLocksTask
                         ToStringDumpHelper.DATE_FMT.format(Instant.now());
 
                     break;
-                case DUMP_FILE:
-                    String filePath = arg.filePath() != null ?
-                        lockTrackerMgr.dumpLocksToFile(arg.filePath()) :
+                case DUMP:
+                    String filePath = arg.path() != null ?
+                        lockTrackerMgr.dumpLocksToFile(arg.path()) :
                         lockTrackerMgr.dumpLocksToFile();
 
                     result = "Page locks dump was writtern to file " + filePath;

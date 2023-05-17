@@ -23,12 +23,12 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.OneOf;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@OneOf(value = {"nodeIds", "nodeId", "allNodes"}, optional = true)
+@ArgumentGroup(value = {"nodeIds", "nodeId", "allNodes"}, optional = true, onlyOneOf = true)
 public class SystemViewCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

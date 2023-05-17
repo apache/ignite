@@ -104,6 +104,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_ENABLE_EXPERIMENTAL = "--enable-experimental";
 
+    /** */
+    static final String CMD_SSL_FACTORY = "--ssl-factory";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -126,6 +129,7 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
         AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
         AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+        AUX_COMMANDS.add(CMD_SSL_FACTORY);
 
         AUX_COMMANDS.add(CMD_KEYSTORE);
         AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
@@ -175,6 +179,7 @@ public class CommonArgParser {
         list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
         list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
         list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(optional(CMD_SSL_FACTORY, "SSL_FACTORY_PATH"));
         list.add(optional(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
         list.add(optional(CMD_KEYSTORE, "KEYSTORE_PATH"));
         list.add(optional(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
@@ -233,6 +238,8 @@ public class CommonArgParser {
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
 
         Command<?> command = null;
+
+        String sslFactoryCfg = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
@@ -354,6 +361,11 @@ public class CommonArgParser {
                         experimentalEnabled = true;
                         break;
 
+                    case CMD_SSL_FACTORY:
+                        sslFactoryCfg = argIter.nextArg("Expected SSL factory config path");
+
+                        break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
@@ -374,7 +386,7 @@ public class CommonArgParser {
                 pingTimeout, pingInterval, autoConfirmation, verbose,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, sslFactoryCfg);
     }
 
     /**

@@ -29,19 +29,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -49,13 +53,14 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.lang.IgniteBiTuple;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -100,7 +105,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         PeekableIterator<String> cliArgs = argIter.raw();
 
         org.apache.ignite.internal.management.api.Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
-                ? command((CommandsRegistry)baseCmd, cliArgs, true)
+                ? command((CommandsRegistry<?, ?>)baseCmd, cliArgs, true)
                 : (org.apache.ignite.internal.management.api.Command<A, ?>)baseCmd;
 
         if (cmd0 instanceof HelpCommand) {
@@ -111,7 +116,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             return;
         }
 
-        if (!(cmd0 instanceof ComputeCommand) && !(cmd0 instanceof LocalCommand)) {
+        if (!(cmd0 instanceof ComputeCommand) && !(cmd0 instanceof LocalCommand) && !(cmd0 instanceof BeforeNodeStartCommand)) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedCommandName(cmd0.getClass()) + " can't be executed"
             );
@@ -119,7 +124,6 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
-        List<IgniteBiTuple<Boolean, List<CLIArgument<?>>>> oneOfArgs = new ArrayList<>();
 
         BiFunction<Field, Boolean, CLIArgument<?>> toArg = (fld, optional) -> new CLIArgument<>(
             toFormattedFieldName(fld),
@@ -129,26 +133,25 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             null
         );
 
-        visitCommandParams(
-            cmd0.argClass(),
-            fld -> positionalArgs.add(new CLIArgument<>(
-                fld.getName(),
-                null,
-                fld.getAnnotation(Argument.class).optional(),
-                fld.getType(),
-                null
-            )),
-            fld -> namedArgs.add(toArg.apply(fld, fld.getAnnotation(Argument.class).optional())),
-            (optionals, flds) -> {
-                List<CLIArgument<?>> oneOfArg = flds.stream().map(
-                    fld -> toArg.apply(fld, fld.getAnnotation(Argument.class).optional())
-                ).collect(Collectors.toList());
+        Consumer<Field> namedArgCb =
+            fld -> namedArgs.add(toArg.apply(fld, fld.getAnnotation(Argument.class).optional()));
 
-                oneOfArgs.add(F.t(optionals, oneOfArg));
+        Consumer<Field> positionalArgCb = fld -> positionalArgs.add(new CLIArgument<>(
+            fld.getName(),
+            null,
+            fld.getAnnotation(Argument.class).optional(),
+            fld.getType(),
+            null
+        ));
 
-                flds.forEach(fld -> namedArgs.add(toArg.apply(fld, true)));
-            }
-        );
+        BiConsumer<ArgumentGroup, List<Field>> argGrpCb = (argGrp, flds) -> flds.forEach(fld -> {
+            if (fld.isAnnotationPresent(Positional.class))
+                positionalArgCb.accept(fld);
+            else
+                namedArgs.add(toArg.apply(fld, true));
+        });
+
+        visitCommandParams(cmd0.argClass(), positionalArgCb, namedArgCb, argGrpCb);
 
         namedArgs.add(optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class, () -> false));
 
@@ -174,6 +177,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        if (cmd instanceof BeforeNodeStartCommand)
+            return executeBeforeNodeStart(clientCfg, logger);
+
         return execute0(clientCfg, logger);
     }
 
@@ -194,21 +200,21 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             R res;
 
             if (cmd instanceof LocalCommand)
-                res = ((LocalCommand<A, R>)cmd).execute(client, arg);
+                res = ((LocalCommand<A, R>)cmd).execute(client, arg, logger::info);
             else if (cmd instanceof ComputeCommand) {
                 GridClientCompute compute = client.compute();
 
                 Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
-                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
+                    .collect(toMap(GridClientNode::nodeId, n -> n));
 
-                ComputeCommand<A, ?> cmd = (ComputeCommand<A, ?>)this.cmd;
+                ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
                 Collection<UUID> nodeIds = commandNodes(
                     cmd,
                     arg,
                     clusterNodes.values()
                         .stream()
-                        .collect(Collectors.toMap(GridClientNode::nodeId, n -> new T2<>(n.isClient(), n.consistentId()))),
+                        .collect(toMap(GridClientNode::nodeId, n -> new T3<>(n.isClient(), n.consistentId(), n.order()))),
                     TaskExecutor.defaultNode(client, clientCfg).nodeId()
                 );
 
@@ -222,12 +228,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     compute = compute.projection(connectable);
 
                 res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+
+                cmd.printResult(arg, res, logger::info);
             }
             else
                 throw new IllegalArgumentException("Unknown command type: " + cmd);
-
-            ((org.apache.ignite.internal.management.api.Command<A, R>)cmd)
-                .printResult(arg, res, logger::info);
 
             return res;
         }
@@ -236,6 +241,19 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             logger.error(CommandLogger.errorMessage(e));
 
             throw e;
+        }
+        finally {
+            state(null, null, true);
+        }
+    }
+
+    /** */
+    private <R> R executeBeforeNodeStart(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        try (GridClientBeforeNodeStart client = Command.startClientBeforeNodeStart(clientCfg)) {
+            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, logger::info);
+        }
+        catch (GridClientDisconnectedException e) {
+            throw new GridClientException(e.getCause());
         }
         finally {
             state(null, null, true);
@@ -259,7 +277,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
-        if (cmd instanceof LocalCommand || cmd instanceof ComputeCommand || cmd instanceof HelpCommand) {
+        if (cmd instanceof LocalCommand
+            || cmd instanceof ComputeCommand
+            || cmd instanceof HelpCommand
+            || cmd instanceof BeforeNodeStartCommand) {
             logger.info("");
 
             if (cmd.experimental())
@@ -284,12 +305,17 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     }
                 };
 
-                visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (optional, flds) -> flds.forEach(lenCalc));
+                visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (argGrp, flds) -> flds.forEach(lenCalc));
 
                 Consumer<Field> printer = fld -> {
-                    BiConsumer<String, String> logParam = (name, description) -> logger.info(
-                        DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
-                    );
+                    BiConsumer<String, String> logParam = (name, description) -> {
+                        if (F.isEmpty(description))
+                            return;
+
+                        logger.info(
+                            DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
+                        );
+                    };
 
                     if (!fld.isAnnotationPresent(EnumDescription.class)) {
                         logParam.accept(
@@ -308,7 +334,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                     }
                 };
 
-                visitCommandParams(cmd.argClass(), printer, printer, (optional, flds) -> flds.forEach(printer));
+                visitCommandParams(cmd.argClass(), printer, printer, (argGrp, flds) -> {
+                    flds.stream().filter(fld -> fld.isAnnotationPresent(Positional.class)).forEach(printer);
+                    flds.stream().filter(fld -> !fld.isAnnotationPresent(Positional.class)).forEach(printer);
+                });
             }
         }
 
@@ -317,7 +346,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
             parents0.add(cmd);
 
-            ((CommandsRegistry)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
         }
     }
 
@@ -377,14 +406,24 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             cmd.argClass(),
             fld -> bldr.append(' ').append(valueExample(fld)),
             fld -> paramPrinter.accept(true, fld),
-            (optional, flds) -> {
-                bldr.append(' ');
+            (argGrp, flds) -> {
+                if (argGrp.onlyOneOf()) {
+                    bldr.append(' ');
 
-                for (int i = 0; i < flds.size(); i++) {
-                    if (i != 0)
-                        bldr.append('|');
+                    for (int i = 0; i < flds.size(); i++) {
+                        if (i != 0)
+                            bldr.append('|');
 
-                    paramPrinter.accept(false, flds.get(i));
+                        paramPrinter.accept(false, flds.get(i));
+                    }
+                }
+                else {
+                    flds.stream()
+                        .filter(fld -> fld.isAnnotationPresent(Positional.class))
+                        .forEach(fld -> bldr.append(' ').append(valueExample(fld)));
+                    flds.stream()
+                        .filter(fld -> !fld.isAnnotationPresent(Positional.class))
+                        .forEach(fld -> paramPrinter.accept(true, fld));
                 }
             }
         );
@@ -459,7 +498,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 !fld.getAnnotation(Argument.class).description().isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class)
             ),
-            (spaceReq, flds) -> flds.forEach(fld -> res.compareAndSet(false,
+            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
                 !fld.getAnnotation(Argument.class).description().isEmpty() ||
                     fld.isAnnotationPresent(EnumDescription.class)
             ))

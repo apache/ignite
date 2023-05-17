@@ -22,8 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
-import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.ActivateCommand;
 import org.apache.ignite.internal.management.ChangeTagCommand;
@@ -32,14 +30,21 @@ import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.StateCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.WarmUpCommand;
+import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
+import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
+import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
+import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -61,10 +66,10 @@ public enum CommandList {
     SET_STATE(new SetStateCommand()),
 
     /** */
-    BASELINE("--baseline", new BaselineCommand()),
+    BASELINE(new BaselineCommand()),
 
     /** */
-    TX("--tx", new TxCommands()),
+    TX(new TxCommand()),
 
     /** */
     CACHE("--cache", new CacheCommands()),
@@ -73,7 +78,7 @@ public enum CommandList {
     WAL(new WalCommand()),
 
     /** */
-    DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
+    DIAGNOSTIC(new DiagnosticCommand()),
 
     /** Encryption features command. */
     ENCRYPTION(new EncryptionCommand()),
@@ -94,10 +99,10 @@ public enum CommandList {
     SHUTDOWN_POLICY(new ShutdownPolicyCommand()),
 
     /** */
-    TRACING_CONFIGURATION("--tracing-configuration", new TracingConfigurationCommand()),
+    TRACING_CONFIGURATION(new TracingConfigurationCommand()),
 
     /** Warm-up command. */
-    WARM_UP("--warm-up", new WarmUpCommand()),
+    WARM_UP(new WarmUpCommand()),
 
     /** Commands to manage distributed properties. */
     PROPERTY(new PropertyCommand()),
@@ -106,10 +111,10 @@ public enum CommandList {
     SYSTEM_VIEW(new SystemViewCommand()),
 
     /** Command for printing metric values. */
-    METRIC("--metric", new MetricCommand()),
+    METRIC(new MetricCommand()),
 
     /** */
-    PERSISTENCE("--persistence", new PersistenceCommand()),
+    PERSISTENCE(new PersistenceCommand()),
 
     /** Command to manage PDS defragmentation. */
     DEFRAGMENTATION(new DefragmentationCommand()),

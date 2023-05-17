@@ -4,7 +4,7 @@ User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
 
-  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--ssl-factory SSL_FACTORY_PATH] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
 
 
 This utility can do the following commands:
@@ -31,7 +31,7 @@ This utility can do the following commands:
     control.(sh|bat) --baseline [--verbose]
 
     Parameters:
-      verbose  - Show the full list of node ips.
+      --verbose  - Show the full list of node ips.
 
   Add nodes into baseline topology:
     control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
@@ -49,7 +49,7 @@ This utility can do the following commands:
     control.(sh|bat) --baseline auto_adjust [disable|enable] [timeout <timeoutMillis>] [--yes]
 
   List or kill transactions:
-    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--servers|--clients] [--nodes consistentId1[,consistentId2,....,consistentIdN]] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--info] [--yes]
+    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--servers]|[--clients]|[--nodes consistentId1[,consistentId2,....,consistentIdN]] [--yes]
 
   Print detailed information (topology and key lock ownership) about specific transaction:
     control.(sh|bat) --tx --info <TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|<TX identifier as UUID (can be retrieved via --tx command)>

@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -38,15 +36,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.OneOf;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
@@ -68,7 +67,7 @@ public abstract class AbstractCommandInvoker {
     protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
         ComputeCommand<A, ?> cmd,
         A arg,
-        Map<UUID, T2<Boolean, Object>> nodes,
+        Map<UUID, T3<Boolean, Object, Long>> nodes,
         UUID dflt
     ) {
         Collection<UUID> nodeIds = cmd.nodes(nodes, arg);
@@ -100,61 +99,24 @@ public abstract class AbstractCommandInvoker {
         BiFunction<Field, Integer, Object> positionalParamProvider,
         Function<Field, Object> paramProvider
     ) throws InstantiationException, IllegalAccessException {
-        A arg = argCls.newInstance();
-
-        AtomicBoolean oneOfSet = new AtomicBoolean(false);
-
-        Set<String> oneOfFields = arg.getClass().isAnnotationPresent(OneOf.class)
-            ? new HashSet<>(Arrays.asList(arg.getClass().getAnnotation(OneOf.class).value()))
-            : Collections.emptySet();
-
-        BiConsumer<Field, Object> fldSetter = (fld, val) -> {
-            if (val == null) {
-                if (fld.getAnnotation(Argument.class).optional())
-                    return;
-
-                String name = fld.isAnnotationPresent(Positional.class)
-                    ? parameterExample(fld, false)
-                    : toFormattedFieldName(fld);
-
-                throw new IllegalArgumentException("Argument " + name + " required.");
-            }
-
-            if (oneOfFields.contains(fld.getName())) {
-                if (oneOfSet.get())
-                    throw new IllegalArgumentException("Only one of " + oneOfFields + " allowed");
-
-                oneOfSet.set(true);
-            }
-
-            try {
-                argCls.getMethod(fld.getName(), fld.getType()).invoke(arg, val);
-            }
-            catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new IgniteException(e);
-            }
-            catch (InvocationTargetException e) {
-                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
-                    throw (RuntimeException)e.getTargetException();
-            }
-        };
-
-        AtomicInteger idx = new AtomicInteger();
+        ArgumentState<A> arg = new ArgumentState<>(argCls);
 
         visitCommandParams(
-            arg.getClass(),
-            fld -> fldSetter.accept(fld, positionalParamProvider.apply(fld, idx.getAndIncrement())),
-            fld -> fldSetter.accept(fld, paramProvider.apply(fld)),
-            (optionals, flds) -> flds.forEach(fld -> fldSetter.accept(fld, paramProvider.apply(fld)))
+            argCls,
+            fld -> arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx())),
+            fld -> arg.accept(fld, paramProvider.apply(fld)),
+            (argGrp, flds) -> flds.forEach(fld -> {
+                if (fld.isAnnotationPresent(Positional.class))
+                    arg.accept(fld, positionalParamProvider.apply(fld, arg.nextIdx()));
+                else
+                    arg.accept(fld, paramProvider.apply(fld));
+            })
         );
 
-        boolean oneOfRequired = arg.getClass().isAnnotationPresent(OneOf.class)
-            && !arg.getClass().getAnnotation(OneOf.class).optional();
+        if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
+            throw new IllegalArgumentException("One of " + arg.oneOfFlds + " required");
 
-        if (oneOfRequired && !oneOfSet.get())
-            throw new IllegalArgumentException("One of " + oneOfFields + " required");
-
-        return arg;
+        return arg.res;
     }
 
     /**
@@ -167,7 +129,7 @@ public abstract class AbstractCommandInvoker {
      * @param <A> Argument type.
      */
     protected <A extends IgniteDataTransferObject> Command<A, ?> command(
-        CommandsRegistry root,
+        CommandsRegistry<?, ?> root,
         PeekableIterator<String> iter,
         boolean isCli
     ) {
@@ -178,16 +140,18 @@ public abstract class AbstractCommandInvoker {
 
         while (cmd0 instanceof CommandsRegistry && iter.hasNext()) {
             String name = iter.peek();
+            char delim = PARAM_WORDS_DELIM;
 
             if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class) && isCli) {
                 if (!name.startsWith(PARAMETER_PREFIX))
                     break;
 
                 name = name.substring(PARAMETER_PREFIX.length());
+                delim = CMD_WORDS_DELIM;
             }
 
             Command<A, ?> cmd1 =
-                (Command<A, ?>)((CommandsRegistry)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
+                (Command<A, ?>)((CommandsRegistry<?, ?>)cmd0).command(fromFormattedCommandName(name, delim));
 
             if (cmd1 == null)
                 break;
@@ -206,14 +170,14 @@ public abstract class AbstractCommandInvoker {
      * @param argCls Argument class.
      * @param positionalParamVisitor Visitor of positional parameters.
      * @param namedParamVisitor Visitor of named parameters.
-     * @param oneOfNamedParamVisitor Visitor of "one of" parameters.
+     * @param argumentGroupVisitor Visitor of "one of" parameters.
      * @param <A> Argument type.
      */
     protected <A extends IgniteDataTransferObject> void visitCommandParams(
         Class<A> argCls,
         Consumer<Field> positionalParamVisitor,
         Consumer<Field> namedParamVisitor,
-        BiConsumer<Boolean, List<Field>> oneOfNamedParamVisitor
+        BiConsumer<ArgumentGroup, List<Field>> argumentGroupVisitor
     ) {
         Class<? extends IgniteDataTransferObject> clazz0 = argCls;
 
@@ -228,21 +192,21 @@ public abstract class AbstractCommandInvoker {
         List<Field> positionalParams = new ArrayList<>();
         List<Field> namedParams = new ArrayList<>();
 
-        OneOf oneOf = argCls.getAnnotation(OneOf.class);
+        ArgumentGroup argGrp = argCls.getAnnotation(ArgumentGroup.class);
 
-        Set<String> oneOfNames = oneOf != null
-            ? new HashSet<>(Arrays.asList(oneOf.value()))
+        Set<String> grpNames = argGrp != null
+            ? new HashSet<>(Arrays.asList(argGrp.value()))
             : Collections.emptySet();
 
-        List<Field> oneOfFlds = new ArrayList<>();
+        List<Field> grpFlds = new ArrayList<>();
 
         // Iterates classes from the roots.
         for (int i = classes.size() - 1; i >= 0; i--) {
             Field[] flds = classes.get(i).getDeclaredFields();
 
             for (Field fld : flds) {
-                if (oneOfNames.contains(fld.getName()))
-                    oneOfFlds.add(fld);
+                if (grpNames.contains(fld.getName()))
+                    grpFlds.add(fld);
                 else if (fld.isAnnotationPresent(Positional.class))
                     positionalParams.add(fld);
                 else if (fld.isAnnotationPresent(Argument.class))
@@ -254,10 +218,83 @@ public abstract class AbstractCommandInvoker {
 
         namedParams.forEach(namedParamVisitor);
 
-        if (oneOf != null)
-            oneOfNamedParamVisitor.accept(oneOf.optional(), oneOfFlds);
+        if (argGrp != null)
+            argumentGroupVisitor.accept(argGrp, grpFlds);
     }
 
     /** @return Local node. */
     public abstract IgniteEx grid();
+
+    /** */
+    private static class ArgumentState<A extends IgniteDataTransferObject> implements BiConsumer<Field, Object> {
+        /** */
+        final A res;
+
+        /** */
+        final ArgumentGroup argGrp;
+
+        /** */
+        boolean grpFldExists;
+
+        /** */
+        int idx;
+
+        /** */
+        final Set<String> oneOfFlds;
+
+        /** */
+        public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
+            res = argCls.newInstance();
+            argGrp = argCls.getAnnotation(ArgumentGroup.class);
+            oneOfFlds = argGrp == null
+                ? Collections.emptySet()
+                : new HashSet<>(Arrays.asList(argGrp.value()));
+        }
+
+        /** */
+        public boolean grpOptional() {
+            return argGrp == null && argGrp.optional();
+        }
+
+        /** */
+        private int nextIdx() {
+            int idx0 = idx;
+
+            idx++;
+
+            return idx0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld, Object val) {
+            if (val == null) {
+                if (fld.getAnnotation(Argument.class).optional())
+                    return;
+
+                String name = fld.isAnnotationPresent(Positional.class)
+                    ? parameterExample(fld, false)
+                    : toFormattedFieldName(fld);
+
+                throw new IllegalArgumentException("Argument " + name + " required.");
+            }
+
+            if (oneOfFlds.contains(fld.getName())) {
+                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
+                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
+
+                grpFldExists = true;
+            }
+
+            try {
+                res.getClass().getMethod(fld.getName(), fld.getType()).invoke(res, val);
+            }
+            catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+            catch (InvocationTargetException e) {
+                if (e.getTargetException() != null && e.getTargetException() instanceof RuntimeException)
+                    throw (RuntimeException)e.getTargetException();
+            }
+        }
+    }
 }
