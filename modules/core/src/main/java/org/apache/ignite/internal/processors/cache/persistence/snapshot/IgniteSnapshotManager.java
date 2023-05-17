@@ -328,6 +328,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot operation finish log message. */
     private static final String SNAPSHOT_FINISHED_MSG = "Cluster-wide snapshot operation finished successfully: ";
 
+    /** Snapshot operation finish with warnings log message. */
+    public static final String SNAPSHOT_FINISHED_WRN_MSG = "Cluster-wide snapshot operation finished with warnings: ";
+
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
 
@@ -1478,17 +1481,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
+                        String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpReq.warnings());
+
                         SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" +
-                            snpReq.snapshotName() + "' completed with the warnings:" + U.nl() + "\t- " +
-                            String.join(U.nl() + "\t- ", snpReq.warnings()));
+                            snpReq.snapshotName() + "' completed with the warnings:" + wrnsLst);
 
                         clusterSnpFut.onDone(wrn);
+
+                        log.warning(SNAPSHOT_FINISHED_WRN_MSG + snpReq + ". Warnings:" + wrnsLst);
                     }
-                    else
+                    else {
                         clusterSnpFut.onDone();
 
-                    if (log.isInfoEnabled())
-                        log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                        if (log.isInfoEnabled())
+                            log.info(SNAPSHOT_FINISHED_MSG + snpReq);
+                    }
                 }
                 else if (snpReq.error() == null) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
@@ -2221,8 +2228,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             snpFut0.listen(f -> {
                 if (f.error() == null)
                     recordSnapshotEvent(name, SNAPSHOT_FINISHED_MSG + grps, EVT_CLUSTER_SNAPSHOT_FINISHED);
-                else
-                    recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+                else {
+                    String errMsgPref = f.error() instanceof SnapshotWarningException ? SNAPSHOT_FINISHED_WRN_MSG
+                        : SNAPSHOT_FAILED_MSG;
+
+                    recordSnapshotEvent(name, errMsgPref + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
+                }
             });
 
             Set<UUID> bltNodeIds =

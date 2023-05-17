@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,11 +67,13 @@ public class SnapshotOperationRequest implements Serializable {
     private volatile List<String> warnings;
 
     /** Snapshot metadata. */
+    @GridToStringExclude
     private transient SnapshotMetadata meta;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
      */
+    @GridToStringExclude
     private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
