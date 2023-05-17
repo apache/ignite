@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.processors.security;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +26,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -61,7 +61,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class NodeSecurityContextTest extends AbstractSecurityTest {
+public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
     /** */
     private static final Collection<UUID> TEST_MESSAGE_ACCEPTED_NODES = new HashSet<>();
 
@@ -110,7 +110,7 @@ public class NodeSecurityContextTest extends AbstractSecurityTest {
     @Override protected IgniteEx startGrid(int idx) throws Exception {
         IgniteEx ignite = super.startGrid(idx);
 
-        wrapDiscoveryMessageQueue(ignite);
+        wrapRingMessageWorkerQueue(ignite);
 
         return ignite;
     }
@@ -223,7 +223,7 @@ public class NodeSecurityContextTest extends AbstractSecurityTest {
     }
 
     /** */
-    private void wrapDiscoveryMessageQueue(IgniteEx ignite) throws Exception {
+    private void wrapRingMessageWorkerQueue(IgniteEx ignite) throws Exception {
         Object discoMsgWorker = discoveryMessageWorker(ignite);
 
         BlockingDeque<TcpDiscoveryAbstractMessage> queue = U.field(discoMsgWorker, "queue");
