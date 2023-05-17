@@ -31,7 +31,6 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
@@ -95,30 +94,17 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
         @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
             // No-op.
         }
-
-        /** */
-        public abstract VisorTracingConfigurationOperation operation();
     }
 
     /** */
     public static class TracingConfigurationResetAllCommandArg extends TracingConfigurationGetAllCommandArg {
         /** */
         private static final long serialVersionUID = 0;
-
-        /** {@inheritDoc} */
-        @Override public VisorTracingConfigurationOperation operation() {
-            return VisorTracingConfigurationOperation.RESET_ALL;
-        }
     }
 
     /** */
     public static class TracingConfigurationResetCommandArg extends TracingConfigurationGetCommandArg {
         /** */
         private static final long serialVersionUID = 0;
-
-        /** {@inheritDoc} */
-        @Override public VisorTracingConfigurationOperation operation() {
-            return VisorTracingConfigurationOperation.RESET;
-        }
     }
 }

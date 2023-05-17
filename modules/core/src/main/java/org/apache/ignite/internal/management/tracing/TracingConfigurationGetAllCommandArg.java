@@ -23,7 +23,6 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.spi.tracing.Scope;
 
 /** */
@@ -47,11 +46,6 @@ public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCo
         super.readExternalData(protoVer, in);
 
         scope = U.readEnum(in, Scope.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public VisorTracingConfigurationOperation operation() {
-        return VisorTracingConfigurationOperation.GET_ALL;
     }
 
     /** */

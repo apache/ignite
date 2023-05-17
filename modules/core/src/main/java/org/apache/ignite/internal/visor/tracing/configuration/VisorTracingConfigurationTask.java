@@ -73,38 +73,34 @@ public class VisorTracingConfigurationTask
         /** {@inheritDoc} */
         @Override protected @NotNull VisorTracingConfigurationTaskResult run(
             TracingConfigurationCommandArg arg) throws IgniteException {
-            switch (arg.operation()) {
-                case GET_ALL:
-                    return getAll(((TracingConfigurationGetAllCommandArg)arg).scope());
+            if (arg instanceof TracingConfigurationResetAllCommandArg)
+                return resetAll(((TracingConfigurationResetAllCommandArg)arg).scope());
+            else if (arg instanceof TracingConfigurationResetCommandArg) {
+                TracingConfigurationResetCommandArg arg0 = (TracingConfigurationResetCommandArg)arg;
 
-                case GET:
-                    TracingConfigurationGetCommandArg arg0 = (TracingConfigurationGetCommandArg)arg;
+                return reset(arg0.scope(), arg0.label());
+            }
+            else if (arg instanceof TracingConfigurationSetCommandArg) {
+                TracingConfigurationSetCommandArg arg0 = (TracingConfigurationSetCommandArg)arg;
 
-                    return get(arg0.scope(), arg0.label());
+                Set<Scope> includedScopes = arg0.includedScopes() == null
+                    ? null
+                    : new HashSet<>(Arrays.asList(arg0.includedScopes()));
 
-                case RESET:
-                    TracingConfigurationResetCommandArg arg1 = (TracingConfigurationResetCommandArg)arg;
+                return set(arg0.scope(), arg0.label(), arg0.samplingRate(), includedScopes);
+            }
+            else if (arg instanceof TracingConfigurationGetAllCommandArg)
+                return getAll(((TracingConfigurationGetAllCommandArg)arg).scope());
+            else if (arg instanceof TracingConfigurationGetCommandArg) {
+                TracingConfigurationGetCommandArg arg0 = (TracingConfigurationGetCommandArg)arg;
 
-                    return reset(arg1.scope(), arg1.label());
+                return get(arg0.scope(), arg0.label());
+            }
+            else {
+                // We should never get here.
+                assert false : "Unexpected tracing configuration argument [arg= " + arg + ']';
 
-                case RESET_ALL:
-                    return resetAll(((TracingConfigurationResetAllCommandArg)arg).scope());
-
-                case SET:
-                    TracingConfigurationSetCommandArg arg2 = (TracingConfigurationSetCommandArg)arg;
-
-                    Set<Scope> includedScopes = arg2.includedScopes() == null
-                        ? null
-                        : new HashSet<>(Arrays.asList(arg2.includedScopes()));
-
-                    return set(arg2.scope(), arg2.label(), arg2.samplingRate(), includedScopes);
-
-                default: {
-                    // We should never get here.
-                    assert false : "Unexpected tracing configuration argument [arg= " + arg + ']';
-
-                    return getAll(null); // Just in case.
-                }
+                return getAll(null); // Just in case.
             }
         }
 

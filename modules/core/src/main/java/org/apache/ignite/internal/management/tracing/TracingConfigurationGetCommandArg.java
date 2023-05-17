@@ -23,7 +23,6 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.spi.tracing.Scope;
 
 /** */
@@ -63,11 +62,6 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
     /** */
     public void scope(Scope scope) {
         this.scope = scope;
-    }
-
-    /** {@inheritDoc} */
-    @Override public VisorTracingConfigurationOperation operation() {
-        return VisorTracingConfigurationOperation.GET;
     }
 
     /** */

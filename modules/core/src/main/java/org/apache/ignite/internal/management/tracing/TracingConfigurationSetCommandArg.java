@@ -22,7 +22,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationOperation;
 import org.apache.ignite.spi.tracing.Scope;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
@@ -55,11 +54,6 @@ public class TracingConfigurationSetCommandArg extends TracingConfigurationGetCo
 
         samplingRate = in.readDouble();
         includedScopes = U.readArray(in, Scope.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public VisorTracingConfigurationOperation operation() {
-        return VisorTracingConfigurationOperation.SET;
     }
 
     /** */
