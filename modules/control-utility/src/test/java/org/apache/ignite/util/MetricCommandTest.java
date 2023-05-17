@@ -131,13 +131,13 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, "some.metric"),
-            "Argument bounds required"
+            "Argument newBounds required"
         );
 
         assertContains(
             log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HITRATE, "some.metric"),
-            "Argument rate_time_interval required"
+            "Argument newRateTimeInterval required"
         );
 
         assertContains(

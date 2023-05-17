@@ -313,20 +313,20 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       --node-id node_id  - Node id.
 
   Configure histogram metric:
-    control.(sh|bat) --metric --configure-histogram name value1[,value2,....,valueN] [--node-id node_id]
+    control.(sh|bat) --metric --configure-histogram name newBounds [--node-id node_id]
 
     Parameters:
       name               - Name of the metric.
-      values             - New bounds.
+      newBounds          - Comma-separated list of longs to configure histogram.
       --node-id node_id  - Node id.
 
   Configure hitrate metric:
-    control.(sh|bat) --metric --configure-hitrate name interval [--node-id node_id]
+    control.(sh|bat) --metric --configure-hitrate name newRateTimeInterval [--node-id node_id]
 
     Parameters:
-      name               - Name of the metric.
-      interval           - New hitrate time interval.
-      --node-id node_id  - Node id.
+      name                 - Name of the metric.
+      newRateTimeInterval  - Rate time interval of hitrate.
+      --node-id node_id    - Node id.
 
   Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence
