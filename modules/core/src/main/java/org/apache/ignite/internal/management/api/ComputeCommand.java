@@ -35,6 +35,7 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
     public Class<? extends ComputeTask<VisorTaskArgument<A>, R>> taskClass();
 
     /**
+     * @param nodes Live nodes. Key is node ID, Boolean is client flag, Object is consistent id, Long is node order.
      * Prints command result to the user.
      * @param arg Argument.
      * @param res Result.

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -143,17 +144,14 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             null
         ));
 
-        visitCommandParams(
-            cmd0.argClass(),
-            positionalArgCb,
-            namedArgCb,
-            (argGrp, flds) -> flds.forEach(fld -> {
-                if (fld.isAnnotationPresent(Positional.class))
-                    positionalArgCb.accept(fld);
-                else
-                    namedArgs.add(toArg.apply(fld, true));
-            })
-        );
+        BiConsumer<ArgumentGroup, List<Field>> argGrpCb = (argGrp, flds) -> flds.forEach(fld -> {
+            if (fld.isAnnotationPresent(Positional.class))
+                positionalArgCb.accept(fld);
+            else
+                namedArgs.add(toArg.apply(fld, true));
+        });
+
+        visitCommandParams(cmd0.argClass(), positionalArgCb, namedArgCb, argGrpCb);
 
         namedArgs.add(optionalArg(CMD_AUTO_CONFIRMATION, "Confirm without prompt", boolean.class, () -> false));
 

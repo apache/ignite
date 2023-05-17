@@ -39,8 +39,8 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
     @Override public void printResult(PersistenceTaskArg arg, PersistenceTaskResult res, Consumer<String> printer) {
         if (!res.inMaintenanceMode())
             printer.accept("Persistence command can be sent only to node in Maintenance Mode.");
-        //info command
         else if (res.cachesInfo() != null) {
+            //info command
             printer.accept("Persistent caches found on node:");
 
             //sort results so corrupted caches occur in the list at the top
@@ -67,7 +67,7 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
 
                     if (!t.get1())
                         status = "corrupted - WAL disabled globally.";
-                    else if (!t.get1())
+                    else if (!t.get2())
                         status = "corrupted - WAL disabled locally.";
                     else
                         status = "no corruption.";
@@ -76,10 +76,10 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
                 }
             );
         }
-        //clean command
         else if (arg instanceof PersistenceCleanAllTaskArg
                 || arg instanceof PersistenceCleanCorruptedTaskArg
                 || arg instanceof PersistenceCleanCachesTaskArg) {
+            //clean command
             printer.accept("Maintenance task is " + (!res.maintenanceTaskCompleted() ? "not " : "") + "fixed.");
 
             List<String> cleanedCaches = res.handledCaches();
@@ -98,8 +98,8 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
                 printer.accept("Failed to clean following directories: [" + failedToHandleCachesStr + ']');
             }
         }
-        // backup command
         else {
+            // backup command
             List<String> backupCompletedCaches = res.handledCaches();
 
             if (backupCompletedCaches != null && !backupCompletedCaches.isEmpty()) {
