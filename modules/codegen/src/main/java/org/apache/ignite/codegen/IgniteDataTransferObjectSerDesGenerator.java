@@ -94,6 +94,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Byte.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Byte)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(byte[].class, F.t(
             fld -> "U.writeByteArray(out, " + fld + ");",
             fld -> fld + " = U.readByteArray(in);",
@@ -103,6 +109,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
         TYPE_GENS.put(short.class, F.t(
             fld -> "out.writeShort(" + fld + ");",
             fld -> fld + " = in.readShort();",
+            false
+        ));
+
+        TYPE_GENS.put(Short.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Short)in.readObject();",
             false
         ));
 
@@ -154,6 +166,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
             false
         ));
 
+        TYPE_GENS.put(Float.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Float)in.readObject();",
+            false
+        ));
+
         TYPE_GENS.put(float[].class, F.t(
             fld -> "U.writeFloatArray(out, " + fld + ");",
             fld -> fld + " = U.readFloatArray(in);",
@@ -181,6 +199,12 @@ public class IgniteDataTransferObjectSerDesGenerator {
         TYPE_GENS.put(boolean.class, F.t(
             fld -> "out.writeBoolean(" + fld + ");",
             fld -> fld + " = in.readBoolean();",
+            false
+        ));
+
+        TYPE_GENS.put(Boolean.class, F.t(
+            fld -> "out.writeObject(" + fld + ");",
+            fld -> fld + " = (Boolean)in.readObject();",
             false
         ));
 
