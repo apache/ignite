@@ -112,7 +112,7 @@ public abstract class AbstractCommandInvoker {
             })
         );
 
-        if (!arg.grpOptional() && !arg.grpFldExists)
+        if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
             throw new IllegalArgumentException("One of " + arg.oneOfFlds + " required");
 
         return arg.res;
@@ -250,7 +250,7 @@ public abstract class AbstractCommandInvoker {
 
         /** */
         public boolean grpOptional() {
-            return argGrp != null && argGrp.optional();
+            return argGrp == null && argGrp.optional();
         }
 
         /** */
