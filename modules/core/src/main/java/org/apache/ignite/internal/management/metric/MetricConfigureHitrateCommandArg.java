@@ -31,29 +31,29 @@ public class MetricConfigureHitrateCommandArg extends MetricCommandArg {
     /** */
     @Argument(description = "New hitrate time interval")
     @Positional
-    private long interval;
+    private long rateTimeInterval;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
 
-        out.writeLong(interval);
+        out.writeLong(rateTimeInterval);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
 
-        interval = in.readLong();
+        rateTimeInterval = in.readLong();
     }
 
     /** */
-    public long interval() {
-        return interval;
+    public long rateTimeInterval() {
+        return rateTimeInterval;
     }
 
     /** */
-    public void interval(long interval) {
-        this.interval = interval;
+    public void rateTimeInterval(long interval) {
+        this.rateTimeInterval = interval;
     }
 }

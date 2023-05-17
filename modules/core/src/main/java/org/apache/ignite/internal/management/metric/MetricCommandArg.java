@@ -38,7 +38,7 @@ public class MetricCommandArg extends IgniteDataTransferObject {
     private String name;
 
     /** */
-    @Argument(description = "Node id")
+    @Argument(description = "Node id", optional = true)
     private UUID nodeId;
 
     /** {@inheritDoc} */

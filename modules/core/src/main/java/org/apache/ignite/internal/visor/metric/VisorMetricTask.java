@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.metric.MetricCommandArg;
+import org.apache.ignite.internal.management.metric.MetricConfigureHistogramCommandArg;
+import org.apache.ignite.internal.management.metric.MetricConfigureHitrateCommandArg;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -35,24 +38,23 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
 
 /** Reperesents visor task for obtaining metric values. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<String, ?>> {
+public class VisorMetricTask extends VisorOneNodeTask<MetricCommandArg, Map<String, ?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorMetricTaskArg, Map<String, ?>> job(VisorMetricTaskArg arg) {
+    @Override protected VisorJob<MetricCommandArg, Map<String, ?>> job(MetricCommandArg arg) {
         return new VisorMetricJob(arg, false);
     }
 
     /** */
-    private static class VisorMetricJob extends VisorJob<VisorMetricTaskArg, Map<String, ?>> {
+    private static class VisorMetricJob extends VisorJob<MetricCommandArg, Map<String, ?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -62,24 +64,24 @@ public class VisorMetricTask extends VisorOneNodeTask<VisorMetricTaskArg, Map<St
          * @param arg   Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorMetricJob(@Nullable VisorMetricTaskArg arg, boolean debug) {
+        protected VisorMetricJob(@Nullable MetricCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, ?> run(@Nullable VisorMetricTaskArg arg) throws IgniteException {
+        @Override protected Map<String, ?> run(@Nullable MetricCommandArg arg) throws IgniteException {
             String name = arg.name();
 
             GridMetricManager mmgr = ignite.context().metric();
 
             try {
-                if (arg.bounds() != null) {
-                    mmgr.configureHistogram(arg.name(), arg.bounds());
+                if (arg instanceof MetricConfigureHistogramCommandArg) {
+                    mmgr.configureHistogram(arg.name(), ((MetricConfigureHistogramCommandArg)arg).bounds());
 
                     return null;
                 }
-                else if (arg.rateTimeInterval() > 0) {
-                    mmgr.configureHitRate(arg.name(), arg.rateTimeInterval());
+                else if (arg instanceof MetricConfigureHitrateCommandArg) {
+                    mmgr.configureHitRate(arg.name(), ((MetricConfigureHitrateCommandArg)arg).rateTimeInterval());
 
                     return null;
                 }

@@ -58,4 +58,10 @@ public class CommandUtilsSelfTest {
     public void testCommandName() {
         assertEquals(FORMATTED_CMD_NAME, CommandUtils.toFormattedCommandName(SystemViewCommand.class));
     }
+
+    /** */
+    @Test
+    public void testFromCommandName() {
+        assertEquals("ConfigureHistogram", CommandUtils.fromFormattedCommandName("configure-histogram", CMD_WORDS_DELIM));
+    }
 }

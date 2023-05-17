@@ -17,11 +17,25 @@
 
 package org.apache.ignite.internal.management.metric;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.visor.metric.VisorMetricTask;
+import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** */
-public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Void> implements ComputeCommand<MetricCommandArg, Void> {
+public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<String, ?>>
+    implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
     /** */
     public MetricCommand() {
         super(
@@ -41,7 +55,25 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Void> i
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
+    @Override public Class<VisorMetricTask> taskClass() {
+        return VisorMetricTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, MetricCommandArg arg) {
+        return arg.nodeId() == null ? null : Collections.singleton(arg.nodeId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(MetricCommandArg arg, Map<String, ?> res, Consumer<String> printer) {
+        if (res != null) {
+            List<List<?>> data = res.entrySet().stream()
+                .map(entry -> Arrays.asList(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+
+            printTable(asList("metric", "value"), asList(STRING, STRING), data, printer);
+        }
+        else
+            printer.accept("No metric with specified name was found [name=" + arg.name() + "]");
     }
 }

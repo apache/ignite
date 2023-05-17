@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
@@ -32,29 +33,32 @@ public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
     /** */
     @Argument(description = "New bounds")
     @Positional
-    private long[] values;
+    private long[] bounds;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
 
-        U.writeLongArray(out, values);
+        U.writeLongArray(out, bounds);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
 
-        values = U.readLongArray(in);
+        bounds = U.readLongArray(in);
     }
 
     /** */
-    public long[] values() {
-        return values;
+    public long[] bounds() {
+        return bounds;
     }
 
     /** */
-    public void values(long[] values) {
-        this.values = values;
+    public void bounds(long[] bounds) {
+        if (!F.isSorted(bounds))
+            throw new IllegalArgumentException("Bounds must be sorted");
+
+        this.bounds = bounds;
     }
 }

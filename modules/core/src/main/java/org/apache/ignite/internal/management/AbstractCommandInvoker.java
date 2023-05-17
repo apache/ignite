@@ -45,6 +45,7 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.T3;
 import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
@@ -139,16 +140,18 @@ public abstract class AbstractCommandInvoker {
 
         while (cmd0 instanceof CommandsRegistry && iter.hasNext()) {
             String name = iter.peek();
+            char delim = PARAM_WORDS_DELIM;
 
             if (!cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class) && isCli) {
                 if (!name.startsWith(PARAMETER_PREFIX))
                     break;
 
                 name = name.substring(PARAMETER_PREFIX.length());
+                delim = CMD_WORDS_DELIM;
             }
 
             Command<A, ?> cmd1 =
-                (Command<A, ?>)((CommandsRegistry<?, ?>)cmd0).command(fromFormattedCommandName(name, PARAM_WORDS_DELIM));
+                (Command<A, ?>)((CommandsRegistry<?, ?>)cmd0).command(fromFormattedCommandName(name, delim));
 
             if (cmd1 == null)
                 break;

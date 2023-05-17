@@ -306,19 +306,27 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       --all-nodes                    - Get the system view from all nodes. If not set, random node will be chosen.
 
   Print metric value:
-    control.(sh|bat) --metric [--node-id node_id] name
+    control.(sh|bat) --metric name [--node-id node_id]
 
     Parameters:
-      name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
-      node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
+      name               - Name of the metric.
+      --node-id node_id  - Node id.
 
-  Configure metric:
-    control.(sh|bat) --metric (--configure-histogram name newBounds)|(--configure-hitrate name newRateTimeInterval)
+  Configure histogram metric:
+    control.(sh|bat) --metric --configure-histogram name value1[,value2,....,valueN] [--node-id node_id]
 
     Parameters:
-      name                 - Name of the metric which value should be configured.
-      newBounds            - Comma-separated list of longs to configure histogram.
-      newRateTimeInterval  - Rate time interval of hitrate.
+      name               - Name of the metric.
+      values             - New bounds.
+      --node-id node_id  - Node id.
+
+  Configure hitrate metric:
+    control.(sh|bat) --metric --configure-hitrate name interval [--node-id node_id]
+
+    Parameters:
+      name               - Name of the metric.
+      interval           - New hitrate time interval.
+      --node-id node_id  - Node id.
 
   Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence

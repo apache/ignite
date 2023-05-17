@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal.management.metric;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 
 /** */
-public class MetricConfigureHitrateCommand implements ComputeCommand<MetricConfigureHitrateCommandArg, Void> {
+public class MetricConfigureHitrateCommand implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Configure hitrate metric";
@@ -32,7 +38,12 @@ public class MetricConfigureHitrateCommand implements ComputeCommand<MetricConfi
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
+    @Override public Class<VisorMetricTask> taskClass() {
+        return VisorMetricTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, MetricCommandArg arg) {
+        return arg.nodeId() == null ? null : Collections.singleton(arg.nodeId());
     }
 }
