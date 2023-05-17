@@ -76,12 +76,12 @@ public class VisorMetricTask extends VisorOneNodeTask<MetricCommandArg, Map<Stri
 
             try {
                 if (arg instanceof MetricConfigureHistogramCommandArg) {
-                    mmgr.configureHistogram(arg.name(), ((MetricConfigureHistogramCommandArg)arg).bounds());
+                    mmgr.configureHistogram(arg.name(), ((MetricConfigureHistogramCommandArg)arg).newBounds());
 
                     return null;
                 }
                 else if (arg instanceof MetricConfigureHitrateCommandArg) {
-                    mmgr.configureHitRate(arg.name(), ((MetricConfigureHitrateCommandArg)arg).rateTimeInterval());
+                    mmgr.configureHitRate(arg.name(), ((MetricConfigureHitrateCommandArg)arg).newRateTimeInterval());
 
                     return null;
                 }

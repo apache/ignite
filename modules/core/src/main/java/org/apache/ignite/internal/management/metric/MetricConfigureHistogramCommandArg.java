@@ -31,34 +31,34 @@ public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "New bounds")
+    @Argument(description = "Comma-separated list of longs to configure histogram", example = "newBounds")
     @Positional
-    private long[] bounds;
+    private long[] newBounds;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
 
-        U.writeLongArray(out, bounds);
+        U.writeLongArray(out, newBounds);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
 
-        bounds = U.readLongArray(in);
+        newBounds = U.readLongArray(in);
     }
 
     /** */
-    public long[] bounds() {
-        return bounds;
+    public long[] newBounds() {
+        return newBounds;
     }
 
     /** */
-    public void bounds(long[] bounds) {
+    public void newBounds(long[] bounds) {
         if (!F.isSorted(bounds))
             throw new IllegalArgumentException("Bounds must be sorted");
 
-        this.bounds = bounds;
+        this.newBounds = bounds;
     }
 }
