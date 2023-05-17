@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -28,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -58,6 +61,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -96,6 +100,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
 
+    /** */
+    private Map<String, ListeningTestLogger> logLsnrs = new HashMap<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -114,6 +121,12 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             cfg.setCacheConfiguration(ccfg);
+
+            ListeningTestLogger lsnLog = new ListeningTestLogger(cfg.getGridLogger());
+
+            logLsnrs.put(igniteInstanceName, lsnLog);
+
+            cfg.setGridLogger(lsnLog);
         }
 
         return cfg;
@@ -174,6 +187,16 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     public void testLockAndConcurrentTimeout() throws Exception {
         startClient();
 
+        LongAdder wontLockCnt = new LongAdder();
+
+        Consumer<String> wontLockLogLsnr = s -> {
+            if (s.contains(GridDhtTxLocalAdapter.LOG_MSG_LATE_TO_TAKE_LOCK_TIMEOUT_PREFIX))
+                wontLockCnt.add(1);
+        };
+
+        for (ListeningTestLogger logLsnr : logLsnrs.values())
+            logLsnr.registerListener(wontLockLogLsnr);
+
         for (Ignite node : G.allGrids()) {
             log.info("Test with node: " + node.name());
 
@@ -183,6 +206,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
             lock(node, true);
         }
+
+        assertTrue(wontLockCnt.sum() > 1);
     }
 
     /**
