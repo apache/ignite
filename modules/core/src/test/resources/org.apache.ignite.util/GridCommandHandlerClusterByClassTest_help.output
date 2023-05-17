@@ -81,6 +81,9 @@ This utility can do the following commands:
     control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
 
   Print diagnostic command help:
+    control.(sh|bat) --diagnostic
+
+  Print diagnostic command help:
     control.(sh|bat) --diagnostic help
 
   View pages locks state information on the node or nodes:
