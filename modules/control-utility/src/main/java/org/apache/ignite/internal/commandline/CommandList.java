@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
-import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.ActivateCommand;
 import org.apache.ignite.internal.management.ChangeTagCommand;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
+import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
@@ -110,7 +110,7 @@ public enum CommandList {
     SYSTEM_VIEW(new SystemViewCommand()),
 
     /** Command for printing metric values. */
-    METRIC("--metric", new MetricCommand()),
+    METRIC(new MetricCommand()),
 
     /** */
     PERSISTENCE(new PersistenceCommand()),
