@@ -477,6 +477,11 @@ namespace ignite
                     writer.WriteInt64(jobHandle);
                     writer.WriteObject<F>(func);
 
+                    std::string typeName;
+                    ignite::binary::BinaryType<F>::GetTypeName(typeName);
+
+                    writer.WriteString(typeName);
+
                     out.Synchronize();
 
                     IgniteError err;
@@ -529,6 +534,12 @@ namespace ignite
                     writer.WriteObject<K>(key);
                     writer.WriteObject<F>(func);
                     writer.WriteInt64(jobHandle);
+
+                    std::string typeName;
+                    ignite::binary::BinaryType<F>::GetTypeName(typeName);
+
+                    writer.WriteString(typeName);
+
                     writer.WriteInt64(taskHandle);
                     writer.WriteInt32(TYP_OBJ);
 

@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -55,7 +56,7 @@ public class RebalanceCompleteDuringExchangeTest extends GridCommonAbstractTest 
     public void testRebalance() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache = ignite0.cache(DEFAULT_CACHE_NAME);
 

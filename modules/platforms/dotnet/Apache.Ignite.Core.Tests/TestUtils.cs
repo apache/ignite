@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -72,27 +73,20 @@ namespace Apache.Ignite.Core.Tests
             // ReSharper disable once AssignNullToNotNullAttribute
             Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ignite_work");
 
+        private static readonly IList<string> TestJvmOptsCommon = new List<string>
+        {
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-ea",
+            "-DIGNITE_QUIET=true",
+            "-Duser.timezone=UTC",
+            "-DIGNITE_UPDATE_NOTIFIER=false"
+        };
+
         /** */
-        private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
-            ? new List<string>
-            {
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms4g",
-                "-Xmx7g",
-                "-ea",
-                "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
-            }
-            : new List<string>
-            {
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms64m",
-                "-Xmx99m",
-                "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
-                "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
-            };
+        private static readonly IList<string> TestJvmOpts = (Environment.Is64BitProcess
+                ? new[] { "-Xms2g", "-Xmx2g" }
+                : new[] { "-Xms64m", "-Xmx99m", "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000" })
+            .Concat(TestJvmOptsCommon).ToList();
 
         /** */
         private static readonly IList<string> JvmDebugOpts =
@@ -719,11 +713,36 @@ namespace Apache.Ignite.Core.Tests
                     return;
                 }
 
-                var text = args != null
-                    ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
-                    : message;
+                var sb = new StringBuilder();
 
-                _listener.TestOutput(new TestOutput(text + Environment.NewLine, "Progress", _ctx.CurrentTest?.Id, _ctx.CurrentTest?.FullName));
+                if (args != null)
+                {
+                    sb.AppendFormat(formatProvider ?? CultureInfo.InvariantCulture, message, args);
+                }
+                else
+                {
+                    sb.Append(message);
+                }
+
+                if (nativeErrorInfo != null)
+                {
+                    sb.Append(Environment.NewLine).Append(nativeErrorInfo);
+                }
+
+                if (ex != null)
+                {
+                    sb.Append(Environment.NewLine).Append(ex);
+                }
+
+                sb.Append(Environment.NewLine);
+
+                var output = new TestOutput(
+                    text: sb.ToString(),
+                    stream: "Progress",
+                    testId: _ctx.CurrentTest?.Id,
+                    testName: _ctx.CurrentTest?.FullName);
+
+                _listener.TestOutput(output);
             }
 
             /** <inheritdoc /> */

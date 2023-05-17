@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -176,7 +177,7 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     public void testPartitionLossDetectionOnClientTopology() throws Exception {
         final IgniteEx crd = startGrids(3);
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(grid(1).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty());
         assertTrue(grid(2).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty());

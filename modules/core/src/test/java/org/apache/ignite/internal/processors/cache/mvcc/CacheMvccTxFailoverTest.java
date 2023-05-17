@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -141,7 +142,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     public void checkSingleNodeRestart(boolean rollBack, boolean recoverFromWAL, boolean omitTxFinish) throws Exception {
         IgniteEx node = startGrid(0);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -192,7 +193,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         node = startGrid(0);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         cache = node.cache(DEFAULT_CACHE_NAME);
 
@@ -218,7 +219,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         final CyclicBarrier barrier = new CyclicBarrier(2);
 

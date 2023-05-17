@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import javax.cache.Cache;
@@ -86,7 +87,9 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertNotEquals;
 
@@ -341,7 +344,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         IgniteEx srv = startGrid(getConfiguration());
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         String cacheName1 = "CACHE_1";
         String cacheSqlName1 = "SQL_PUBLIC_" + cacheName1;
@@ -371,7 +374,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         srv = startGrid(getConfiguration());
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
@@ -955,7 +958,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1")
             .setUserAttributes(F.asMap(customAttr, "val1")));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         List<List<?>> res = execSql("SELECT CONSISTENT_ID, ONLINE FROM " +
             systemSchemaName() + ".BASELINE_NODES ORDER BY CONSISTENT_ID");
@@ -1130,7 +1133,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testIoStatisticsViews() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
@@ -1407,7 +1410,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         Ignite ignite1 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node1"));
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Ignite ignite2 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node2"));
 
@@ -1691,6 +1694,49 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .collect(Collectors.toList());
 
         assertEqualsCollections(elevenExpVals, durationMetrics);
+    }
+
+    /** */
+    @Test
+    public void testConfigurationView() throws Exception {
+        IgniteConfiguration icfg = new IgniteConfiguration();
+
+        long expMaxSize = 10 * MB;
+
+        String expName = "my-instance";
+
+        String expDrName = "my-dr";
+
+        icfg.setIgniteInstanceName(expName)
+            .setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION);
+        icfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setLazyMemoryAllocation(false))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setName(expDrName)
+                    .setMaxSize(expMaxSize)));
+
+        try (IgniteEx srv = startGrid(icfg)) {
+            srv.createCache(DEFAULT_CACHE_NAME);
+
+            BiConsumer<String, String> checker = (name, val) -> assertEquals(
+                val,
+                execSql(srv, "SELECT VALUE FROM SYS.CONFIGURATION WHERE NAME = ?", name).get(0).get(0)
+            );
+
+            checker.accept("IgniteInstanceName", expName);
+            checker.accept("DataStorageConfiguration.DefaultDataRegionConfiguration.LazyMemoryAllocation", "false");
+            checker.accept("DataStorageConfiguration.DataRegionConfigurations[0].Name", expDrName);
+            checker.accept(
+                "DataStorageConfiguration.DataRegionConfigurations[0].MaxSize",
+                Long.toString(expMaxSize)
+            );
+            checker.accept("CacheConfiguration[0].AtomicityMode", CacheAtomicityMode.TRANSACTIONAL.name());
+            checker.accept("AddressResolver", null);
+            checker.accept("IncludeEventTypes", "[" + EVT_CONSISTENCY_VIOLATION + ']');
+        }
     }
 
     /**

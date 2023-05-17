@@ -621,7 +621,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId), metrics);
 
-                    if (!ctx.wal().disabled(fullId.groupId())) {
+                    if (!ctx.wal().disabled(fullId.groupId(), fullId.pageId())) {
                         if (!ctx.wal().isAlwaysWriteFullPages())
                             ctx.wal().log(
                                 new InitNewPageRecord(
@@ -926,6 +926,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 long actualPageId = 0;
 
+                long startReadTs = System.nanoTime();
+
                 try {
                     pmPageMgr.read(grpId, pageId, buf, false);
 
@@ -933,7 +935,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     actualPageId = PageIO.getPageId(buf);
 
-                    dataRegionMetrics.onPageRead();
+                    dataRegionMetrics.onPageRead(System.nanoTime() - startReadTs);
 
                     if (PageIO.isIndexPage(PageIO.getType(buf)))
                         dataRegionMetrics.cacheGrpPageMetrics(grpId).indexPages().increment();
@@ -954,7 +956,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
-                    dataRegionMetrics.onPageRead();
+                    dataRegionMetrics.onPageRead(System.nanoTime() - startReadTs);
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
@@ -1893,7 +1895,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) throws IgniteCheckedException {
-        boolean walIsNotDisabled = walMgr != null && !walMgr.disabled(pageId.groupId());
+        boolean walIsNotDisabled = walMgr != null && !walMgr.disabled(pageId.groupId(), pageId.pageId());
         boolean pageRecOrAlwaysWriteFullPage = walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages());
 
         if (pageRecOrAlwaysWriteFullPage && walIsNotDisabled)
@@ -2211,8 +2213,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 checkpointPages.markAsSaved(fullPageId);
             }
 
-            dataRegionMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
-
             loadedPages.remove(fullPageId.groupId(), fullPageId.effectivePageId());
 
             if (PageIO.isIndexPage(PageIO.getType(absPtr + PAGE_OVERHEAD))) {
@@ -2344,7 +2344,16 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (acquiredPages() >= loadedPages.size())
                 throw oomException("all pages are acquired");
 
-            return pageReplacementPolicy.replace();
+            long replaceStartTs = System.nanoTime();
+
+            long page = pageReplacementPolicy.replace();
+
+            dataRegionMetrics.onPageReplaced(
+                U.currentTimeMillis() - PageHeader.readTimestamp(absolute(page)),
+                System.nanoTime() - replaceStartTs
+            );
+
+            return page;
         }
 
         /**

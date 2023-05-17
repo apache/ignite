@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -310,6 +312,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Distributed transaction configuration. */
     private DistributedTransactionConfiguration distributedTransactionConfiguration;
+
+    /** Transforms transaction message. */
+    private volatile BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> txMsgTransform;
+
+    /** Callback invoked on transaction commit. */
+    private volatile Consumer<IgniteInternalTx> onCommitCallback;
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
@@ -1608,6 +1616,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
 
+        Consumer<IgniteInternalTx> onCommitCallback0 = onCommitCallback;
+
+        if (onCommitCallback0 != null)
+            onCommitCallback0.accept(tx);
+
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
         if (txIdMap.remove(tx.xidVersion(), tx)) {
@@ -2452,18 +2465,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else if (!tx.local()) {
-            // This tx was rolled back on recovery because of primary node fail, other backups may be not aware of it.
-            TxCounters cnts = tx.txCounters(false);
+        else {
+            if (!tx.local()) {
+                // This tx was rolled back on recovery because of primary node fail, other backups may be not aware of it.
+                TxCounters cnts = tx.txCounters(false);
 
-            if (cnts != null)
-                // Skipping counters update to keep them the same everywhere without any sync.
-                // Tx counters will be finalized (gaps removed) on local txs recovery finish.
-                // Each node will have counters equals to latest successful transactions counters.
-                cnts.updateCounters().clear();
+                if (cnts != null)
+                    // Skipping counters update to keep them the same everywhere without any sync.
+                    // Tx counters will be finalized (gaps removed) on local txs recovery finish.
+                    // Each node will have counters equals to latest successful transactions counters.
+                    cnts.updateCounters().clear();
+            }
+
+            tx.rollbackAsync();
         }
-
-        tx.rollbackAsync();
     }
 
     /**
@@ -3128,6 +3143,45 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public DistributedTransactionConfiguration getDistributedTransactionConfiguration() {
         return distributedTransactionConfiguration;
+    }
+
+    /** @param transform Transaction message transformer. */
+    public void txMessageTransformer(BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform) {
+        txMsgTransform = transform;
+    }
+
+    /** @param callback Callback invoked on transaction commit. */
+    public void onCommitCallback(Consumer<IgniteInternalTx> callback) {
+        onCommitCallback = callback;
+    }
+
+    /**
+     * Sends transaction message after transforming it.
+     *
+     * @param nodeId Node ID to send message.
+     * @param msg Original message to transform.
+     * @param tx Transaction.
+     * @param plc IO policy.
+     */
+    public void sendTransactionMessage(UUID nodeId, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
+        BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform = txMsgTransform;
+
+        if (transform != null)
+            msg = transform.apply(msg, tx);
+
+        cctx.io().send(nodeId, msg, plc);
+    }
+
+    /**
+     * Sends transaction message after transforming it.
+     *
+     * @param n Node to send message.
+     * @param msg Original message to transform.
+     * @param tx Transaction.
+     * @param plc IO policy.
+     */
+    public void sendTransactionMessage(ClusterNode n, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
+        sendTransactionMessage(n.id(), msg, tx, plc);
     }
 
     /** Tx key collisions info holder. */

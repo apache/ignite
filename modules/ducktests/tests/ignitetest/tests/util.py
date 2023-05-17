@@ -34,6 +34,7 @@ class DataGenerationParams(NamedTuple):
     entry_count: int = 15_000
     entry_size: int = 50_000
     preloaders: int = 1
+    index_count: int = 0
 
     @property
     def data_region_max_size(self):
@@ -77,7 +78,8 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
                 "cacheCount": data_gen_params.cache_count,
                 "entrySize": data_gen_params.entry_size,
                 "from": _from,
-                "to": _to
+                "to": _to,
+                "indexCount": data_gen_params.index_count
             },
             shutdown_timeout_sec=timeout)
         app.start_async()

@@ -53,7 +53,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
     }
 
     /** */
-    private static class VisorSnapshotStartRestoreJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotStartRestoreJob extends VisorSnapshotJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -67,8 +67,13 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
-            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr()
-                .restoreSnapshot(arg.snapshotName(), arg.snapshotPath(), arg.groupNames());
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().restoreSnapshot(
+                arg.snapshotName(),
+                arg.snapshotPath(),
+                arg.groupNames(),
+                arg.incrementIndex(),
+                arg.check()
+            );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
                 fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?
@@ -90,7 +95,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
      * @deprecated Use {@link VisorSnapshotCancelTask} instead.
      */
     @Deprecated
-    private static class VisorSnapshotRestoreCancelJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotRestoreCancelJob extends VisorSnapshotJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -115,7 +120,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
      * @deprecated Use {@link VisorSnapshotStatusTask} instead.
      */
     @Deprecated
-    private static class VisorSnapshotRestoreStatusJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotRestoreStatusJob extends VisorSnapshotJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 

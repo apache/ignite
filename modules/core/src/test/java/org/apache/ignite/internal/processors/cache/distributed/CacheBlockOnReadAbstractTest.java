@@ -46,6 +46,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -315,7 +316,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             baseline.add(startGrid(idx++));
 
         // Activate cluster.
-        baseline.get(0).cluster().active(true);
+        baseline.get(0).cluster().state(ClusterState.ACTIVE);
 
         // Start server nodes in activated cluster.
         for (int i = 0; i < serversCount(); i++)
@@ -343,7 +344,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
 
         clients.clear();
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
         stopAllGrids();
 

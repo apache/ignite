@@ -48,9 +48,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -73,6 +71,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -148,7 +147,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -171,6 +169,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -189,6 +188,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.remoteSecurityContext;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 
 /**
@@ -413,7 +413,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
                     GridDhtPartitionExchangeId exchangeId = msg.exchangeId();
@@ -450,7 +450,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsFullMessage.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsFullMessage.class,
             new MessageHandler<GridDhtPartitionsFullMessage>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
                     if (msg.exchangeId() == null) {
@@ -470,7 +470,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             });
 
-        cctx.io().addCacheHandler(0, GridDhtPartitionsSingleRequest.class,
+        cctx.io().addCacheHandler(GridDhtPartitionsSingleRequest.class,
             new MessageHandler<GridDhtPartitionsSingleRequest>() {
                 @Override public void onMessage(ClusterNode node, GridDhtPartitionsSingleRequest msg) {
                     processSinglePartitionRequest(node, msg);
@@ -2351,7 +2351,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             long txOwnerThreadId = tx.threadId();
 
-            Ignite ignite = cctx.kernalContext().grid();
+            IgniteEx ignite = cctx.kernalContext().grid();
 
             ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
@@ -2362,13 +2362,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             );
 
             if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
-                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
-
                 try {
-                    compute
-                        .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
-                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
-                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
+                    ignite.context().closure()
+                        .callAsync(
+                            BALANCE,
+                            new FetchActiveTxOwnerTraceClosure(txOwnerThreadId),
+                            options(ignite.cluster().forNodeId(nearNodeId).nodes())
+                        ).listen(new IgniteInClosure<IgniteInternalFuture<String>>() {
+                            @Override public void apply(IgniteInternalFuture<String> strIgniteFut) {
                                 String traceDump = null;
 
                                 try {

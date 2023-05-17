@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.ClientTransactions;
@@ -238,14 +239,14 @@ class TcpClientTransactions implements ClientTransactions {
          */
         private void endTx(boolean committed) {
             try {
-                ch.service(ClientOperation.TX_END,
+                clientCh.service(ClientOperation.TX_END,
                     req -> {
-                        if (clientCh != req.clientChannel())
-                            throw new ClientException("Transaction context has been lost due to connection errors");
-
                         req.out().writeInt(txId);
                         req.out().writeBoolean(committed);
                     }, null);
+            }
+            catch (ClientConnectionException e) {
+                throw new ClientException("Transaction context has been lost due to connection errors", e);
             }
             finally {
                 txMap.remove(txUid);

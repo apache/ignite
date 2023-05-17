@@ -77,8 +77,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -216,22 +215,20 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 final IgniteInternalFuture<Object> taskFut;
 
                 if (locExec) {
-                    ctx.task().setThreadContext(TC_TIMEOUT, timeout);
-
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    taskFut = ctx.task().execute(name, arg);
+                    taskFut = ctx.task().execute(name, arg, options().asPublicRequest().withTimeout(timeout));
                 }
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
                     ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(req.destinationId()));
 
-                    ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
                     taskFut = ctx.closure().callAsync(
                         BALANCE,
-                        new ExeCallable(name, params, timeout), prj.nodes());
+                        new ExeCallable(name, params, timeout),
+                        options(prj.nodes()).withFailoverDisabled()
+                    );
                 }
 
                 if (async) {

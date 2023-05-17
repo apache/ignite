@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -73,6 +75,9 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
 
     /** */
     private static final String CACHE_WITH_NODE_FILTER = "cacheWithFilter";
+
+    /** */
+    private static final int GRIDS = 6;
 
     /** Node filter filter test restoring on some nodes only. */
     private static final IgnitePredicate<ClusterNode> ZERO_SUFFIX_NODE_FILTER = new IgnitePredicate<ClusterNode>() {
@@ -99,6 +104,26 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     /** Cache value builder. */
     private final Function<Integer, Object> valBuilder = String::valueOf;
 
+    /** */
+    private String changedConsistentId;
+
+    /** */
+    private boolean usePairedConnections;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (!F.isEmpty(changedConsistentId))
+            cfg.setConsistentId(cfg.getConsistentId() + changedConsistentId);
+
+        cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(usePairedConnections);
+
+        return cfg;
+    }
+
     /** @throws Exception If fails. */
     @Before
     public void prepareDedicatedSnapshot() throws Exception {
@@ -116,10 +141,10 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
                     .setBackups(1)
                     .setNodeFilter(ZERO_SUFFIX_NODE_FILTER);
 
-            IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, 6, CACHE_KEYS_RANGE, valBuilder,
+            IgniteEx ignite = startDedicatedGridsWithCache(FIRST_CLUSTER_PREFIX, GRIDS, CACHE_KEYS_RANGE, valBuilder,
                 dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2, cacheCfg3);
 
-            ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
 
             awaitPartitionMapExchange();
             stopAllGrids();
@@ -145,6 +170,29 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     public static void cleanupSnapshot() {
         snpParts.forEach(U::delete);
         cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testRestoreWithPairedConnections() throws Exception {
+        changedConsistentId = "_new";
+
+        usePairedConnections = true;
+
+        IgniteEx scc = startDedicatedGrids(SECOND_CLUSTER_PREFIX, GRIDS);
+
+        scc.cluster().state(ClusterState.ACTIVE);
+
+        copyAndShuffle(snpParts, G.allGrids());
+
+        grid(0).cache(DEFAULT_CACHE_NAME).destroy();
+
+        awaitPartitionMapExchange();
+
+        // Restore all cache groups.
+        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        assertCacheKeys(scc.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */

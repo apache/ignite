@@ -124,6 +124,7 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.spi.tracing.NoopTracingSpi;
 import org.apache.ignite.thread.IgniteThread;
@@ -150,7 +151,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
+import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
 /**
@@ -2073,8 +2076,11 @@ public class IgnitionEx {
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
-            if (F.isEmpty(cfg.getMetricExporterSpi()))
-                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+            if (F.isEmpty(cfg.getMetricExporterSpi())) {
+                cfg.setMetricExporterSpi(IGNITE_MBEANS_DISABLED
+                    ? new NoopMetricExporterSpi()
+                    : new JmxMetricExporterSpi());
+            }
 
             if (cfg.getTracingSpi() == null)
                 cfg.setTracingSpi(new NoopTracingSpi());
@@ -2170,7 +2176,7 @@ public class IgnitionEx {
                 }
             }
 
-            if (shutdown == ShutdownPolicy.GRACEFUL && !grid.context().clientNode() && grid.cluster().active()) {
+            if (shutdown == ShutdownPolicy.GRACEFUL && !grid.context().clientNode() && grid.cluster().state().active()) {
                 delayedShutdown = true;
 
                 if (log.isInfoEnabled())
@@ -2263,8 +2269,18 @@ public class IgnitionEx {
                             .collect(Collectors.toSet());
 
                         if (!supportedPolicyNodes.isEmpty()) {
-                            safeToStop = grid0.compute(grid0.cluster().forNodeIds(supportedPolicyNodes))
-                                .execute(CheckCpHistTask.class, proposedSuppliers);
+                            try {
+                                safeToStop = grid0.context().task().execute(
+                                    CheckCpHistTask.class,
+                                    proposedSuppliers,
+                                    options(grid0.cluster().forNodeIds(supportedPolicyNodes).nodes())
+                                ).get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to check availability of historical rebalance", e);
+
+                                safeToStop = false;
+                            }
                         }
                     }
 
@@ -2412,7 +2428,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
-            if (U.IGNITE_MBEANS_DISABLED)
+            if (IGNITE_MBEANS_DISABLED)
                 return;
 
             assert srv != null;
@@ -2467,7 +2483,7 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
-            if (U.IGNITE_MBEANS_DISABLED)
+            if (IGNITE_MBEANS_DISABLED)
                 return;
 
             synchronized (mbeans) {
@@ -2597,7 +2613,7 @@ public class IgnitionEx {
 
     /** Initialize default mbean server. */
     public static void initializeDefaultMBeanServer(IgniteConfiguration myCfg) {
-        if (myCfg.getMBeanServer() == null && !U.IGNITE_MBEANS_DISABLED)
+        if (myCfg.getMBeanServer() == null && !IGNITE_MBEANS_DISABLED)
             myCfg.setMBeanServer(ManagementFactory.getPlatformMBeanServer());
     }
 

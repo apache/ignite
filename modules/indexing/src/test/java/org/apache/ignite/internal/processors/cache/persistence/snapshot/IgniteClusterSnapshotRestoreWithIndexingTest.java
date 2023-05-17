@@ -76,8 +76,13 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
+        if (onlyPrimary)
+            awaitPartitionMapExchange();
+
         assertCacheKeys(client.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-        assertRebuildIndexes(client.cache(DEFAULT_CACHE_NAME), false);
+        assertRebuildIndexes(client.cache(DEFAULT_CACHE_NAME), onlyPrimary);
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
     }
@@ -98,8 +103,13 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
+        // Only primary mode leads to index rebuild on restore.
+        // Must wait until index rebuild finish so subsequent checks will pass.
+        if (onlyPrimary)
+            awaitPartitionMapExchange();
+
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
-        assertRebuildIndexes(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), false);
+        assertRebuildIndexes(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), onlyPrimary);
 
         for (Ignite grid : G.allGrids())
             assertNotNull(((IgniteEx)grid).context().cacheObjects().metadata(typeId));
@@ -196,6 +206,9 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
             GridKernalContext ctx = ((IgniteEx)grid).context();
 
             assertTrue("nodeId=" + ctx.localNodeId(), grid.cache(cache.getName()).indexReadyFuture().isDone());
+
+            if (grid.configuration().isClientMode())
+                continue;
 
             // Make sure no index rebuild happened.
             assertEquals("nodeId=" + ctx.localNodeId(),

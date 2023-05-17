@@ -458,8 +458,6 @@
   items:
     - title: Control Script
       url: tools/control-script
-    - title: Visor CMD
-      url: tools/visor-cmd
     - title: GridGain Control Center
       url: tools/gg-control-center
     - title: SQLLine
@@ -470,6 +468,8 @@
       url: tools/informatica
     - title: Pentaho
       url: tools/pentaho
+    - title: Index Reader
+      url: tools/index-reader
 - title: Security
   url: security
   items: 

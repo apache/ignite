@@ -24,6 +24,7 @@ import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -126,7 +127,7 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
         node1 = startGrid(0);
         node2 = startGrid(1);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
     }
 
     /**

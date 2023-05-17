@@ -20,10 +20,11 @@ package org.apache.ignite.internal.client.router;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -75,7 +76,7 @@ public class GridTcpRouterConfiguration {
     private boolean sslClientAuth;
 
     /** Ssl context factory. */
-    private GridSslContextFactory sslCtxFactory;
+    private Factory<SSLContext> sslCtxFactory;
 
     /** Collection of servers */
     private Collection<String> srvrs = DFLT_SERVERS;
@@ -162,9 +163,8 @@ public class GridTcpRouterConfiguration {
      * of both rest binary server and out coming connections.
      *
      * @return SslContextFactory instance.
-     * @see GridSslContextFactory
      */
-    @Nullable public GridSslContextFactory getSslContextFactory() {
+    @Nullable public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
     }
 
@@ -288,7 +288,7 @@ public class GridTcpRouterConfiguration {
      * @param sslCtxFactory Ssl context factory.
      * @return {@code this} for chaining.
      */
-    public GridTcpRouterConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+    public GridTcpRouterConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
 
         return this;

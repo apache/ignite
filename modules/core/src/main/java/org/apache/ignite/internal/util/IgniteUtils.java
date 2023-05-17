@@ -400,6 +400,12 @@ public abstract class IgniteUtils {
     /** Alphanumeric with underscore regexp pattern. */
     private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
+    /** Length of numbered file name. */
+    public static final int NUMBER_FILE_NAME_LENGTH = 16;
+
+    /** Ignite package. */
+    public static final String IGNITE_PKG = "org.apache.ignite.";
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -3364,6 +3370,50 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Generates file name from index.
+     *
+     * @param num Number to generate file name.
+     * @param ext Optional extension
+     * @return File name.
+     */
+    public static String fixedLengthNumberName(long num, @Nullable String ext) {
+        SB b = new SB();
+
+        String segmentStr = Long.toString(num);
+
+        for (int i = segmentStr.length(); i < NUMBER_FILE_NAME_LENGTH; i++)
+            b.a('0');
+
+        b.a(segmentStr);
+
+        if (ext != null)
+            b.a(ext);
+
+        return b.toString();
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Number of this file.
+     */
+    public static long fixedLengthFileNumber(String fileName) {
+        return Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH));
+    }
+
+    /**
+     * @param ext Optional extension.
+     * @return Pattern to match numbered file name with the specific extension.
+     */
+    public static Pattern fixedLengthNumberNamePattern(@Nullable String ext) {
+        String pattern = "\\d{" + NUMBER_FILE_NAME_LENGTH + "}";
+
+        if (ext != null)
+            pattern += ext.replaceAll("\\.", "\\\\\\.");
+
+        return Pattern.compile(pattern);
+    }
+
+    /**
      * Verifier always returns successful result for any host.
      */
     private static class DeploymentHostnameVerifier implements HostnameVerifier {
@@ -3735,7 +3785,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param file File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -3756,7 +3806,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param path File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -6827,7 +6877,7 @@ public abstract class IgniteUtils {
     public static String compact(String s) {
         return s.replace("org.apache.ignite.internal.visor.", "o.a.i.i.v.").
             replace("org.apache.ignite.internal.", "o.a.i.i.").
-            replace("org.apache.ignite.", "o.a.i.");
+            replace(IGNITE_PKG, "o.a.i.");
     }
 
     /**

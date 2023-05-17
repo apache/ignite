@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -78,8 +78,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setMetricExporterSpi(new JmxMetricExporterSpi());
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (getTestIgniteInstanceIndex(igniteInstanceName) < DEDICATED_CNT) {
             cfg.setWorkDirectory(Paths.get(U.defaultWorkDirectory(),
@@ -188,16 +187,21 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         String failingFilePath = Paths.get(FilePageStoreManager.cacheDirName(dfltCacheCfg),
-            PART_FILE_PREFIX + (dfltCacheCfg.getAffinity().partitions() / 2) + FILE_SUFFIX).toString();
+            PART_FILE_PREFIX + primaries[0] + FILE_SUFFIX).toString();
 
         FileIOFactory ioFactory = new RandomAccessFileIOFactory();
         String testErrMsg = "Test exception";
 
+        AtomicBoolean failFlag = new AtomicBoolean();
+
         ignite.context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
             FileIO delegate = ioFactory.create(file, modes);
 
-            if (file.getPath().endsWith(failingFilePath))
+            if (file.getPath().endsWith(failingFilePath)) {
+                failFlag.set(true);
+
                 throw new RuntimeException(testErrMsg);
+            }
 
             return delegate;
         });
@@ -224,6 +228,8 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
             assertTrue(nodeNameMsg, endTime >= startTime);
             assertTrue(nodeNameMsg, ((String)mReg.getAttribute("error")).contains(testErrMsg));
         }
+
+        assertTrue(failFlag.get());
     }
 
     /** @throws Exception If fails. */

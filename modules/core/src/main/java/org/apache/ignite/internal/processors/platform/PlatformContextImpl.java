@@ -558,13 +558,13 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformJob createJob(Object task, long ptr, @Nullable Object job) {
-        return new PlatformFullJob(this, (PlatformAbstractTask)task, ptr, job);
+    @Override public PlatformJob createJob(Object task, long ptr, @Nullable Object job, String jobName) {
+        return new PlatformFullJob(this, (PlatformAbstractTask)task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformJob createClosureJob(Object task, long ptr, Object job) {
-        return new PlatformClosureJob((PlatformAbstractTask)task, ptr, job);
+    @Override public PlatformJob createClosureJob(Object task, long ptr, Object job, String jobName) {
+        return new PlatformClosureJob((PlatformAbstractTask)task, ptr, job, jobName);
     }
 
     /** {@inheritDoc} */

@@ -614,7 +614,7 @@ public class ClusterCachesInfo {
     public boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
-        if (state.active() && !state.transition()) {
+        if (state.state().active() && !state.transition()) {
             Set<IgniteUuid> restartIds = new HashSet<>(F.viewReadOnly(
                 batch.requests(), DynamicCacheChangeRequest::restartId, req -> req.start() && req.restartId() != null));
 
@@ -2058,7 +2058,7 @@ public class ClusterCachesInfo {
     private void processClientReconnectData(CacheClientReconnectDiscoveryData clientData, UUID clientNodeId) {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
-        if (state.active() && !state.transition()) {
+        if (state.state().active() && !state.transition()) {
             for (CacheClientReconnectDiscoveryData.CacheInfo cacheInfo : clientData.clientCaches().values()) {
                 String cacheName = cacheInfo.config().getName();
 

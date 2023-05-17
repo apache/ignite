@@ -54,6 +54,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -2497,7 +2498,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             startGrid(i);
 
             if (persistence && i == 0)
-                ignite(i).active(true);
+                ignite(i).cluster().state(ClusterState.ACTIVE);
 
             checkCoordinatorsConsistency(i + 1);
         }

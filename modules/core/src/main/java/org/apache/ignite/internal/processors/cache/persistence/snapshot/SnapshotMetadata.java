@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +30,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -46,9 +50,11 @@ public class SnapshotMetadata implements Serializable {
     private final UUID rqId;
 
     /** Snapshot name. */
+    @GridToStringInclude
     private final String snpName;
 
     /** Consistent id of a node to which this metadata relates. */
+    @GridToStringInclude
     private final String consId;
 
     /**
@@ -68,6 +74,9 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Set<String> bltNodes;
 
+    /** WAL pointer to {@link ClusterSnapshotRecord} if exists. */
+    private final @Nullable WALPointer snpRecPtr;
+
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
      * since for instance, due to the node filter there is no cache data on node.
@@ -83,14 +92,26 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private List<String> warnings;
 
+    /** */
+    private transient Set<Integer> comprGrpIds;
+
+    /** */
+    private boolean hasComprGrps;
+
+    /** If {@code true} snapshot only primary copies of partitions. */
+    private boolean onlyPrimary;
+
     /**
-     * F@param snpName Snapshot name.
+     * @param rqId Unique request id.
+     * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
+     * @param onlyPrimary If {@code true} snapshot only primary copies of partitions.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -99,9 +120,12 @@ public class SnapshotMetadata implements Serializable {
         String folderName,
         int pageSize,
         List<Integer> grpIds,
+        Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
-        @Nullable byte[] masterKeyDigest
+        @Nullable WALPointer snpRecPtr,
+        @Nullable byte[] masterKeyDigest,
+        boolean onlyPrimary
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -110,7 +134,15 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
+        this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
+        this.onlyPrimary = onlyPrimary;
+
+        if (!F.isEmpty(compGrpIds)) {
+            hasComprGrps = true;
+
+            comprGrpIds = new HashSet<>(compGrpIds);
+        }
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -174,6 +206,28 @@ public class SnapshotMetadata implements Serializable {
         return Collections.unmodifiableMap(locParts);
     }
 
+    /** */
+    public boolean isGroupWithCompresion(int grpId) {
+        return hasComprGrps && comprGrpIds.contains(grpId);
+    }
+
+    /** */
+    public boolean hasCompressedGroups() {
+        return hasComprGrps;
+    }
+
+    /**
+     * @return WAL pointer to {@link ClusterSnapshotRecord} if exists.
+     */
+    public @Nullable WALPointer snapshotRecordPointer() {
+        return snpRecPtr;
+    }
+
+    /** @return If {@code true} snapshot only primary copies of partitions. */
+    public boolean onlyPrimary() {
+        return onlyPrimary;
+    }
+
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
@@ -191,6 +245,9 @@ public class SnapshotMetadata implements Serializable {
             for (Integer partId : e.getValue())
                 s.writeInt(partId);
         }
+
+        if (hasComprGrps)
+            U.writeCollection(s, comprGrpIds);
     }
 
     /** Reconstitute the <tt>HashMap</tt> instance of partitions and cache groups from a stream. */
@@ -221,6 +278,9 @@ public class SnapshotMetadata implements Serializable {
 
             locParts.put(grpId, parts);
         }
+
+        if (hasComprGrps)
+            comprGrpIds = U.readSet(s);
     }
 
     /**
@@ -233,7 +293,8 @@ public class SnapshotMetadata implements Serializable {
             pageSize() == compare.pageSize() &&
             Objects.equals(cacheGroupIds(), compare.cacheGroupIds()) &&
             Arrays.equals(masterKeyDigest, compare.masterKeyDigest) &&
-            Objects.equals(baselineNodes(), compare.baselineNodes());
+            Objects.equals(baselineNodes(), compare.baselineNodes()) &&
+            onlyPrimary == compare.onlyPrimary;
     }
 
     /**
@@ -275,12 +336,15 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
-            Objects.equals(warnings, meta.warnings);
+            Objects.equals(warnings, meta.warnings) &&
+            Objects.equals(hasComprGrps, meta.hasComprGrps) &&
+            Objects.equals(comprGrpIds, meta.comprGrpIds) &&
+            onlyPrimary == meta.onlyPrimary;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes);
+        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes, onlyPrimary);
     }
 
     /** {@inheritDoc} */

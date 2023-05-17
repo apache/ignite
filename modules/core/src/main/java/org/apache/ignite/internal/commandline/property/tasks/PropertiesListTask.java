@@ -25,9 +25,11 @@ import org.apache.ignite.internal.commandline.meta.subcommands.VoidDto;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_READ_DISTRIBUTED_PROPERTY;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 
 /**
  * Task for property operations.
@@ -71,9 +73,12 @@ public class PropertiesListTask extends VisorMultiNodeTask<VoidDto, PropertiesLi
         }
 
         /** {@inheritDoc} */
-        @Override protected PropertiesListResult run(@Nullable VoidDto arg) {
-            ignite.context().security().authorize(ADMIN_READ_DISTRIBUTED_PROPERTY);
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return systemPermissions(ADMIN_READ_DISTRIBUTED_PROPERTY);
+        }
 
+        /** {@inheritDoc} */
+        @Override protected PropertiesListResult run(@Nullable VoidDto arg) {
             return new PropertiesListResult(
                 ignite.context().distributedConfiguration().properties().stream()
                     .map(pd -> pd.getName())

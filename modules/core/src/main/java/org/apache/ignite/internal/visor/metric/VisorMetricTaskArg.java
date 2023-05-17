@@ -32,14 +32,30 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
     /** Name of a particular metric or metric registry. */
     private String name;
 
+    /**
+     * New bounds of histogram metric.
+     * @see org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl#bounds(long[])
+     * @see org.apache.ignite.mxbean.MetricsMxBean#configureHistogramMetric(String, long[])
+     */
+    private long[] bounds;
+
+    /**
+     * New rate time internal of hirtate metric.
+     * @see org.apache.ignite.internal.processors.metric.impl.HitRateMetric#reset(long)
+     * @see org.apache.ignite.mxbean.MetricsMxBean#configureHitRateMetric(String, long)
+     */
+    private long rateTimeInterval;
+
     /** Default constructor. */
     public VisorMetricTaskArg() {
         // No-op.
     }
 
     /** @param name Name of a particular metric or metric registry. */
-    public VisorMetricTaskArg(String name) {
+    public VisorMetricTaskArg(String name, long[] bounds, long rateTimeInterval) {
         this.name = name;
+        this.bounds = bounds;
+        this.rateTimeInterval = rateTimeInterval;
     }
 
     /** @return Name of a particular metric or metric registry. */
@@ -47,14 +63,28 @@ public class VisorMetricTaskArg extends IgniteDataTransferObject {
         return name;
     }
 
+    /** @return New bounds of histgoram metric. */
+    public long[] bounds() {
+        return bounds;
+    }
+
+    /** @return New rate time internal. */
+    public long rateTimeInterval() {
+        return rateTimeInterval;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        U.writeLongArray(out, bounds);
+        out.writeLong(rateTimeInterval);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
+        bounds = U.readLongArray(in);
+        rateTimeInterval = in.readLong();
     }
 
     /** {@inheritDoc} */

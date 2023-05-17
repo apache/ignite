@@ -99,7 +99,8 @@ public class WalRecordsConsumer<K, V> {
             (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
             e.partitionId(),
             e.writeVersion(),
-            e.cacheId()
+            e.cacheId(),
+            e.expireTime()
         );
     };
 
@@ -247,7 +248,9 @@ public class WalRecordsConsumer<K, V> {
         T2<WALPointer, Integer> state() {
             return hasNext() ?
                 new T2<>(curRec.get1(), entryIdx) :
-                new T2<>(curRec.get1().next(), 0);
+                curRec != null
+                    ? new T2<>(curRec.get1().next(), 0)
+                    : walIter.lastRead().map(ptr -> new T2<>(ptr.next(), 0)).orElse(null);
         }
 
         /** Initialize state. */

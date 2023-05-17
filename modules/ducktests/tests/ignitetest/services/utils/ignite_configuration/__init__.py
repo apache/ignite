@@ -73,7 +73,7 @@ class IgniteConfiguration(NamedTuple):
     auto_activation_enabled: bool = None
     transaction_configuration: TransactionConfiguration = None
 
-    def __prepare_ssl(self, test_globals, shared_root):
+    def prepare_ssl(self, test_globals, shared_root):
         """
         Updates ssl configuration from globals.
         """
@@ -112,7 +112,7 @@ class IgniteConfiguration(NamedTuple):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(cluster.globals, cluster.shared_root).__prepare_discovery(cluster, node)
+        return self.__prepare_discovery(cluster, node)
 
     @property
     def service_type(self):
@@ -133,13 +133,15 @@ class IgniteThinClientConfiguration(NamedTuple):
     """
     Thin client configuration.
     """
-    addresses: str = None
+    addresses: list = []
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
     username: str = None
     password: str = None
+    ext_beans: list = []
+    partition_awareness_enabled: bool = None
 
-    def __prepare_ssl(self, test_globals, shared_root):
+    def prepare_ssl(self, test_globals, shared_root):
         """
         Updates ssl configuration from globals.
         """
@@ -154,7 +156,7 @@ class IgniteThinClientConfiguration(NamedTuple):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(cluster.globals, cluster.shared_root)
+        return self
 
     @property
     def service_type(self):

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTaskArg;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.DESTINATION;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.INCREMENTAL;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotCreateCommandOption.SYNC;
 
 /**
@@ -45,6 +46,7 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
         String snpName = argIter.nextArg("Expected snapshot name.");
         String snpPath = null;
         boolean sync = false;
+        boolean incremental = false;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
@@ -72,10 +74,15 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
 
                 sync = true;
             }
+            else if (option == INCREMENTAL) {
+                if (incremental)
+                    throw new IllegalArgumentException(INCREMENTAL.argName() + " arg specified twice.");
 
+                incremental = true;
+            }
         }
 
-        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync);
+        cmdArg = new VisorSnapshotCreateTaskArg(snpName, snpPath, sync, incremental, false);
     }
 
     /** {@inheritDoc} */
@@ -84,8 +91,9 @@ public class SnapshotCreateCommand extends SnapshotSubcommand {
 
         params.put(DESTINATION.argName() + " " + DESTINATION.arg(), DESTINATION.description());
         params.put(SYNC.argName(), SYNC.description());
+        params.put(INCREMENTAL.argName(), INCREMENTAL.description());
 
         usage(log, "Create cluster snapshot:", SNAPSHOT, params, name(), SNAPSHOT_NAME_ARG,
-            optional(DESTINATION.argName(), DESTINATION.arg()), optional(SYNC.argName()));
+            optional(DESTINATION.argName(), DESTINATION.arg()), optional(SYNC.argName()), optional(INCREMENTAL.argName()));
     }
 }

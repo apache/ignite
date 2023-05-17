@@ -371,6 +371,9 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void startCacheConfiguration(CacheConfiguration startCfg) {
         this.startCfg = startCfg;
+
+        if (startCfg.getNearConfiguration() != null)
+            nearCacheCfg = startCfg.getNearConfiguration();
     }
 
     /**

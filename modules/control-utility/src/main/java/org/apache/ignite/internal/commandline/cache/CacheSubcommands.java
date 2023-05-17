@@ -50,9 +50,29 @@ public enum CacheSubcommands {
     LIST("list", ListCommandArg.class, new CacheViewer()),
 
     /**
+     * Create caches.
+     */
+    CREATE("create", null, new CacheCreate()),
+
+    /**
+     * Destroy caches.
+     */
+    DESTROY("destroy", null, new CacheDestroy()),
+
+    /**
+     * Clear caches.
+     */
+    CLEAR("clear", null, new CacheClear()),
+
+    /**
      * Validates indexes attempting to read each indexed entry.
      */
     VALIDATE_INDEXES("validate_indexes", ValidateIndexesCommandArg.class, new CacheValidateIndexes()),
+
+    /**
+     * Check secondary indexes inline size.
+     */
+    CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", null, new CheckIndexInlineSizes()),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
@@ -90,24 +110,19 @@ public enum CacheSubcommands {
     INDEX_FORCE_REBUILD("indexes_force_rebuild", IndexForceRebuildCommandArg.class, new CacheIndexesForceRebuild()),
 
     /**
+     * Enable / disable cache metrics collection or show metrics collection status.
+     */
+    METRICS("metrics", null, new CacheMetrics()),
+
+    /**
      * Index rebuild via the maintenance mode.
      */
     INDEX_REBUILD("schedule_indexes_rebuild", IndexRebuildCommandArg.class, new CacheScheduleIndexesRebuild()),
 
     /**
-     * Check secondary indexes inline size.
+     * Scan cache entries.
      */
-    CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", null, new CheckIndexInlineSizes()),
-
-    /**
-     * Destroy caches.
-     */
-    DESTROY("destroy", null, new CacheDestroy()),
-
-    /**
-     * Enable / disable cache metrics collection or show metrics collection status.
-     */
-    METRICS("metrics", null, new CacheMetrics());
+    SCAN("scan", IndexRebuildCommandArg.class, new CacheScan());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

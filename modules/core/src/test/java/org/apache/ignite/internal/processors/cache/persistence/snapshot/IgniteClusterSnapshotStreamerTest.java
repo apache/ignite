@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -34,6 +36,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.SnapshotEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -43,12 +46,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests snapshot is consistent or snapshot process produces proper warning with concurrent streaming.
@@ -62,6 +68,12 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
     /** Non-baseline.*/
     private IgniteEx nonBaseline;
+
+    /** Node log listeners. */
+    private final Map<String, ListeningTestLogger> logLsnrs = new HashMap<>();
+
+    /** */
+    private final List<SnapshotEvent> snpEvts = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void beforeTestSnapshot() throws Exception {
@@ -90,6 +102,17 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setCacheConfiguration(null);
+
+        if (cfg.isClientMode())
+            return cfg;
+
+        ListeningTestLogger logLsnr = new ListeningTestLogger(cfg.getGridLogger());
+
+        logLsnrs.put(igniteInstanceName, logLsnr);
+
+        cfg.setGridLogger(logLsnr);
+
         // In-memory data region.
         DataRegionConfiguration inMemDr = new DataRegionConfiguration();
         inMemDr.setPersistenceEnabled(false);
@@ -98,8 +121,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         inMemDr.setName(INMEM_DATA_REGION);
         inMemDr.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(inMemDr);
-
-        cfg.setCacheConfiguration(null);
 
         return cfg;
     }
@@ -152,6 +173,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         assert U.isLocalNodeCoordinator(nonBaseline.context().discovery());
 
+        nonBaseline.events().localListen(e -> snpEvts.add((SnapshotEvent)e), EVT_CLUSTER_SNAPSHOT_FAILED);
+
         doTestDataStreamerWhileSnapshot(nonBaseline, false);
     }
 
@@ -179,6 +202,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoDefaultClient() throws Exception {
+        Assume.assumeFalse("Test check !onlyPrimary mode", onlyPrimary);
+
         doTestDataStreamerFailedBeforeSnapshot(client, false);
     }
 
@@ -188,6 +213,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoDefaultCoordinator() throws Exception {
+        Assume.assumeFalse("Test !onlyPrimary mode", onlyPrimary);
+
         doTestDataStreamerFailedBeforeSnapshot(grid(0), false);
     }
 
@@ -234,8 +261,12 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         IgniteInternalFuture<?> loadFut = runLoad(grid(0), false, stopLoad);
 
         try {
-            assertThrows(null, () -> snp(client).createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class,
-                DataStreamerUpdatesHandler.WRN_MSG);
+            assertThrows(
+                null,
+                () -> snp(client).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
+                IgniteException.class,
+                DataStreamerUpdatesHandler.WRN_MSG
+            );
         }
         finally {
             stopLoad.set(true);
@@ -277,7 +308,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         IgniteInternalFuture<?> loadFut = runLoad(client, false, stop);
 
         try {
-            snp(client).createSnapshot(SNAPSHOT_NAME).get();
+            snp(client).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
         }
         finally {
             stop.set(true);
@@ -421,24 +452,42 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         if (create) {
             if (expWrn == null)
-                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get();
+                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get();
             else {
+                LogListener logLsnr = LogListener.matches(IgniteSnapshotManager.SNAPSHOT_FINISHED_WRN_MSG)
+                    .andMatches(expWrn).times(1).build();
+
+                Ignite realOpNode = snpHnd.localNode().isClient() ? G.allGrids().stream()
+                    .filter(g -> U.isLocalNodeCoordinator(((IgniteEx)g).context().discovery()))
+                    .findFirst().get() : snpHnd;
+
+                realOpNode.events().localListen(e -> snpEvts.add((SnapshotEvent)e), EVT_CLUSTER_SNAPSHOT_FAILED);
+
+                logLsnrs.get(realOpNode.name()).registerListener(logLsnr);
+
                 Throwable snpWrn = assertThrows(
                     null,
-                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get(),
+                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
                     IgniteException.class,
                     expWrn
                 );
 
                 if (notExpWrn != null)
                     assertTrue(!snpWrn.getMessage().contains(notExpWrn));
+
+                logLsnr.check(getTestTimeout());
+
+                waitForCondition(() -> snpEvts.removeIf(e -> e.snapshotName().equals(SNAPSHOT_NAME) &&
+                    e.message().contains(IgniteSnapshotManager.SNAPSHOT_FINISHED_WRN_MSG)), getTestTimeout());
             }
         }
 
         SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
-        assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
+
+        if (!onlyPrimary)
+            assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
 
         if (expWrn != null) {
             ListeningTestLogger testLog = new ListeningTestLogger();

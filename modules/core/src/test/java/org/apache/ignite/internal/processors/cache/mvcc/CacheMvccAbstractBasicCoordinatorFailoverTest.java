@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -763,7 +764,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         Ignite nearNode = survivors.get(0);
 
         if (persistence)
-            nearNode.cluster().active(true);
+            nearNode.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, DATA_NODES - 1, DFLT_PARTITION_COUNT)
             .setNodeFilter(new CoordinatorNodeFilter());

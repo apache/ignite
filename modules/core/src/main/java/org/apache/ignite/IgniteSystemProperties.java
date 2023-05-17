@@ -2100,6 +2100,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = "IGNITE_SNAPSHOT_SEQUENTIAL_WRITE";
 
     /**
+     * Comma separated packages list to expose in configuration view.
+     * The default value is null.
+     * @see org.apache.ignite.internal.IgniteKernal#CFG_VIEW
+     * @see org.apache.ignite.spi.systemview.view.ConfigurationView
+     */
+    @SystemProperty(value = "Packages list to expose in configuration view")
+    @IgniteExperimental
+    public static final String IGNITE_CONFIGURATION_VIEW_PACKAGES = "IGNITE_CONFIGURATION_VIEW_PACKAGES";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

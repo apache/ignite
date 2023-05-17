@@ -60,6 +60,7 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetri
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManagerImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -437,17 +439,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
+    @Override public void initialize(int cacheId, int partitions, String cacheName, PageMetrics pageMetrics)
         throws IgniteCheckedException {
         assert storeWorkDir != null;
 
         if (!idxCacheStores.containsKey(cacheId)) {
+            GridCacheContext<?, ?> cctx = this.cctx.cacheContext(cacheId);
+
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, workingDir),
+                new File(storeWorkDir, cacheName),
                 cacheId,
+                cacheName,
                 partitions,
                 pageMetrics,
-                cctx.cacheContext(cacheId) != null && cctx.cacheContext(cacheId).config().isEncryptionEnabled()
+                cctx != null && cctx.config().isEncryptionEnabled(),
+                cctx != null
+                    ? cctx.group().caches().stream().map(GridCacheContext::name).collect(Collectors.toSet())
+                    : null
             );
 
             CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
@@ -484,9 +492,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             CacheStoreHolder holder = initDir(
                 new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
                 grpId,
+                MetaStorage.METASTORAGE_CACHE_NAME,
                 MetaStorage.METASTORAGE_PARTITIONS.size(),
                 pageMetrics,
-                false);
+                false,
+                null);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -586,9 +596,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return initDir(
             cacheWorkDir,
             grpDesc.groupId(),
+            ccfg.getName(),
             grpDesc.config().getAffinity().partitions(),
             pageMetrics,
-            ccfg.isEncryptionEnabled()
+            ccfg.isEncryptionEnabled(),
+            grpDesc.caches().keySet()
         );
     }
 
@@ -657,6 +669,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
+     * @param cacheName Cache name.
      * @param partitions Number of partitions.
      * @param pageMetrics Page metrics.
      * @param encrypted {@code True} if this cache encrypted.
@@ -665,9 +678,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
+        String cacheName,
         int partitions,
         PageMetrics pageMetrics,
-        boolean encrypted) throws IgniteCheckedException {
+        boolean encrypted,
+        Collection<String> grpCaches) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir, log);
 
@@ -679,6 +694,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
 
             File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
+
+            GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+            if (qryProc.moduleEnabled()) {
+                boolean idxRecreating = grpCaches == null
+                    ? !qryProc.recreateCompleted(cacheName)
+                    : grpCaches.stream().anyMatch(name -> !qryProc.recreateCompleted(name));
+
+                if (idxFile.exists() && idxRecreating) {
+                    log.warning("Recreate of index.bin don't finish before node stop, index.bin can be inconsistent. " +
+                        "Removing it to recreate one more time [grpId=" + grpId + ", cacheName=" + cacheName + ']');
+
+                    if (!idxFile.delete()) {
+                        throw new IgniteCheckedException(
+                            "Failed to remove index.bin [grpId=" + grpId + ", cacheName=" + cacheName + ']'
+                        );
+                    }
+                }
+            }
 
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
@@ -945,6 +979,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return MetaStorage.METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
+    }
+
+    /**
+     * @param root Root directory.
+     * @return Array of cache data files.
+     */
+    public static File[] cacheDataFiles(File root) {
+        return root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME));
     }
 
     /** {@inheritDoc} */

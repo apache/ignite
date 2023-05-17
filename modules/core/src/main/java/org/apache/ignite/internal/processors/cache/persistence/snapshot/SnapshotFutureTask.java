@@ -67,9 +67,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -96,7 +99,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * If partitions for particular cache group are not provided that they will be collected and added
  * on checkpoint under the write-lock.
  */
-class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener {
+class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> implements CheckpointListener {
     /** File page store manager for accessing cache group associated files. */
     private final FilePageStoreManager pageStore;
 
@@ -141,6 +144,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     private volatile CompletableFuture<Void> closeFut;
+
+    /** Pointer to {@link ClusterSnapshotRecord}. */
+    private volatile @Nullable WALPointer snpPtr;
 
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
@@ -192,13 +198,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /**
-     * @return Set of cache groups included into snapshot operation.
-     */
-    public Set<Integer> affectedCacheGroups() {
-        return parts.keySet();
-    }
-
-    /**
      * @param th An exception which occurred during snapshot processing.
      */
     @Override public void acceptException(Throwable th) {
@@ -215,7 +214,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -355,7 +354,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
             // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
             if (cctx.wal() != null) {
-                cctx.wal().log(new ClusterSnapshotRecord(snpName));
+                snpPtr = cctx.wal().log(new ClusterSnapshotRecord(snpName));
 
                 ctx.walFlush(true);
             }
@@ -632,7 +631,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            closeFut = CompletableFuture.runAsync(() -> onDone(taken, err0),
+            closeFut = CompletableFuture.runAsync(() -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
                 cctx.kernalContext().pools().getSystemExecutorService());
         }
 
@@ -943,12 +942,27 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (!store.read(pageId, locBuf, true))
                         return;
 
-                    locBuf.flip();
+                    locBuf.clear();
 
                     writePage0(pageId, locBuf);
                 }
                 else {
                     // Direct buffer is needs to be written, associated checkpoint not finished yet.
+                    if (PageIO.getCompressionType(GridUnsafe.bufferAddress(buf)) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                        final ByteBuffer locBuf = locBuff.get();
+
+                        assert locBuf.capacity() == store.getPageSize();
+
+                        locBuf.clear();
+
+                        GridUnsafe.copyOffheapOffheap(GridUnsafe.bufferAddress(buf), GridUnsafe.bufferAddress(locBuf), buf.limit());
+
+                        locBuf.limit(locBuf.capacity());
+                        locBuf.position(0);
+
+                        buf = locBuf;
+                    }
+
                     writePage0(pageId, buf);
 
                     // Page marked as written to delta file, so there is no need to
@@ -989,6 +1003,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
+
+            assert len == pageBuf.capacity();
 
             totalSize.addAndGet(len);
         }

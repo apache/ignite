@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -37,8 +41,9 @@ import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
-import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -48,6 +53,7 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.context.ApplicationContext;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
@@ -112,6 +118,9 @@ public class CommandHandler {
     /** JULs logger. */
     private final IgniteLogger logger;
 
+    /** Supported commands. */
+    private final Map<String, Command<?>> cmds;
+
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
 
@@ -155,7 +164,7 @@ public class CommandHandler {
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger("control-utility", CommandHandler.class);
+        this(setupJavaLogger("control-utility", CommandHandler.class));
     }
 
     /**
@@ -163,6 +172,35 @@ public class CommandHandler {
      */
     public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
+        Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
+
+        Map<String, Command<?>> cmds = new LinkedHashMap<>();
+
+        CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
+
+        if (!F.isEmpty(it)) {
+            for (CommandsProvider provider : it) {
+                if (logger.isDebugEnabled())
+                    logger.debug("Registering pluggable commands provider: " + provider);
+
+                provider.commands().forEach((k, v) -> {
+                    k = k.toLowerCase();
+
+                    if (logger.isDebugEnabled())
+                        logger.debug("Registering command: " + k);
+
+                    if (cmds.containsKey(k)) {
+                        throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
+                            provider + " tries to register command " + v + ", but this command has already been " +
+                            "registered " + cmds.get(k));
+                    }
+                    else
+                        cmds.put(k, v);
+                });
+            }
+        }
+
+        this.cmds = Collections.unmodifiableMap(cmds);
     }
 
     /**
@@ -195,7 +233,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs.iterator());
 
             Command command = args.command();
             commandName = command.name();
@@ -504,8 +542,13 @@ public class CommandHandler {
         if (!F.isEmpty(userName))
             clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
-        if (!F.isEmpty(args.sslKeyStorePath()))
+        if (!F.isEmpty(args.sslKeyStorePath()) || !F.isEmpty(args.sslFactoryConfigPath())) {
+            if (!F.isEmpty(args.sslKeyStorePath()) && !F.isEmpty(args.sslFactoryConfigPath()))
+                throw new IgniteCheckedException("Incorrect SSL configuration. " +
+                    "SSL factory config path should not be specified simultaneously with other SSL options like keystore path.");
+
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
+        }
 
         return clientCfg;
     }
@@ -538,18 +581,29 @@ public class CommandHandler {
      * @param args Commond args.
      * @return Ssl support factory.
      */
-    @NotNull private GridSslBasicContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
-        GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
+    @NotNull private Factory<SSLContext> createSslSupportFactory(ConnectionAndSslParameters args) throws IgniteCheckedException {
+        if (!F.isEmpty(args.sslFactoryConfigPath())) {
+            URL springCfg = IgniteUtils.resolveSpringUrl(args.sslFactoryConfigPath());
 
-        List<String> sslProtocols = split(args.sslProtocol(), ",");
+            ApplicationContext ctx = IgniteSpringHelperImpl.applicationContext(springCfg);
 
-        String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols.get(0);
+            return (Factory<SSLContext>)ctx.getBean(Factory.class);
+        }
 
-        factory.setProtocol(sslProtocol);
+        SslContextFactory factory = new SslContextFactory();
+
+        String[] sslProtocols = split(args.sslProtocol(), ",");
+
+        if (F.isEmpty(sslProtocols))
+            factory.setProtocol(DFLT_SSL_PROTOCOL);
+        else {
+            factory.setProtocol(sslProtocols[0]);
+
+            if (sslProtocols.length > 1)
+                factory.setProtocols(sslProtocols);
+        }
+
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-        if (sslProtocols.size() > 1)
-            factory.setProtocols(sslProtocols);
 
         factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
 
@@ -567,7 +621,7 @@ public class CommandHandler {
         factory.setKeyStoreType(args.sslKeyStoreType());
 
         if (F.isEmpty(args.sslTrustStorePath()))
-            factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+            factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
         else {
             factory.setTrustStoreFilePath(args.sslTrustStorePath());
 
@@ -679,14 +733,14 @@ public class CommandHandler {
      * @param delim Delimiter.
      * @return List with items.
      */
-    private static List<String> split(String s, String delim) {
+    private static String[] split(String s, String delim) {
         if (F.isEmpty(s))
-            return Collections.emptyList();
+            return null;
 
         return Arrays.stream(s.split(delim))
             .map(String::trim)
             .filter(item -> !item.isEmpty())
-            .collect(Collectors.toList());
+            .toArray(String[]::new);
     }
 
     /** @param rawArgs Arguments. */
@@ -705,9 +759,10 @@ public class CommandHandler {
 
         logger.info("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values())
-            .filter(c -> experimentalEnabled || !c.command().experimental())
-            .forEach(c -> c.command().printUsage(logger));
+        cmds.values().forEach(c -> {
+            if (experimentalEnabled || !c.experimental())
+                c.printUsage(logger);
+        });
 
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");

@@ -39,7 +39,7 @@ public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapsh
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorJob<VisorSnapshotCheckTaskArg,
+    private static class VisorSnapshotCheckJob extends VisorSnapshotJob<VisorSnapshotCheckTaskArg,
         SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -56,8 +56,7 @@ public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapsh
         @Override protected SnapshotPartitionsVerifyTaskResult run(VisorSnapshotCheckTaskArg arg) throws IgniteException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.snapshotPath()))
-                .get();
+            return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.snapshotPath(), arg.incrementIndex())).get();
         }
     }
 }

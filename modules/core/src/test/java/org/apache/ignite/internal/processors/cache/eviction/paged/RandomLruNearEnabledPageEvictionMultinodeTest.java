@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 /**
  *
  */
@@ -24,5 +27,12 @@ public class RandomLruNearEnabledPageEvictionMultinodeTest extends RandomLruPage
     /** {@inheritDoc} */
     @Override protected boolean nearEnabled() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-18544")
+    @Test
+    @Override public void testPageEviction() {
+        // Ignored.
     }
 }

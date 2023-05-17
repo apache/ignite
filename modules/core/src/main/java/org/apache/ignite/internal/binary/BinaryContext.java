@@ -275,6 +275,11 @@ public class BinaryContext {
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
+
+        if (U.sunReflectionFactory() == null) {
+            U.warn(log, "ReflectionFactory not found, deserialization of binary objects for classes without " +
+                "default constructor is not possible");
+        }
     }
 
     /**
@@ -399,12 +404,26 @@ public class BinaryContext {
                     for (String clsName0 : classesInPackage(pkgName)) {
                         String affField = affFields.remove(clsName0);
 
+                        if (affField == null) {
+                            Class<?> cls = U.classForName(clsName0, null);
+
+                            if (cls != null)
+                                affField = affinityFieldName(cls);
+                        }
+
                         descs.add(clsName0, mapper, serializer, identity, affField,
                             typeCfg.isEnum(), typeCfg.getEnumValues(), true);
                     }
                 }
                 else {
                     String affField = affFields.remove(clsName);
+
+                    if (affField == null) {
+                        Class<?> cls = U.classForName(clsName, null);
+
+                        if (cls != null)
+                            affField = affinityFieldName(cls);
+                    }
 
                     descs.add(clsName, mapper, serializer, identity, affField,
                         typeCfg.isEnum(), typeCfg.getEnumValues(), false);
@@ -648,7 +667,10 @@ public class BinaryContext {
 
             BinarySerializer serializer = serializerForClass(cls);
 
+            // Firstly check annotations, then check in cache key configurations.
             String affFieldName = affinityFieldName(cls);
+            if (affFieldName == null)
+                affFieldName = affKeyFieldNames.get(typeId);
 
             return new BinaryClassDescriptor(this,
                 cls,
@@ -1453,6 +1475,11 @@ public class BinaryContext {
      */
     public synchronized void removeType(int typeId) {
         schemas.remove(typeId);
+    }
+
+    /** */
+    Collection<BinaryClassDescriptor> predefinedTypes() {
+        return Collections.unmodifiableCollection(predefinedTypes.values());
     }
 
     /**

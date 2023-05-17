@@ -1091,6 +1091,11 @@ public class BinaryClassDescriptor {
         }
     }
 
+    /** */
+    Constructor<?> ctor() {
+        return ctor;
+    }
+
     /**
      * @param cls Class.
      * @return Constructor.

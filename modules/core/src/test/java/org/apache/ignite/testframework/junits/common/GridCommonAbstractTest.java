@@ -66,6 +66,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -554,8 +555,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
         if (awaitPartMapExchange) {
-            if (!g.active())
-                g.active(true);
+            if (!g.cluster().state().active())
+                g.cluster().state(ClusterState.ACTIVE);
 
             awaitPartitionMapExchange();
         }
@@ -1525,20 +1526,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer primaryKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer primaryKey(IgniteCache<?, ?> cache) {
         return primaryKeys(cache, 1, 1).get(0);
     }
 
     /**
      * @param cache Cache.
      * @return Keys for which given cache is backup.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer backupKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer backupKey(IgniteCache<?, ?> cache) {
         return backupKeys(cache, 1, 1).get(0);
     }
 
@@ -1959,6 +1956,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        cleanPersistenceDir(false);
+    }
+
+    /**
+     * @param saveSnp Do not clean snapshot directory if {@code true}.
+     */
+    protected void cleanPersistenceDir(boolean saveSnp) throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
@@ -1966,7 +1970,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH,
             false));
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
+
+        if (!saveSnp)
+            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false));
     }
 
     /**

@@ -22,7 +22,13 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 /** Represents all possible arguments for {@link MetricCommand}. */
 public enum MetricCommandArg implements CommandArg {
     /** Id of the node to get metric values from. */
-    NODE_ID("--node-id");
+    NODE_ID("--node-id"),
+
+    /** Configure histograme. */
+    CONFIGURE_HISTOGRAM("--configure-histogram"),
+
+    /** Configure histograme. */
+    CONFIGURE_HITRATE("--configure-hitrate");
 
     /** Name of the argument. */
     private final String name;

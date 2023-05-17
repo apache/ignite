@@ -66,7 +66,7 @@ public class VisorBaselineViewTask extends VisorOneNodeTask<Void, VisorBaselineT
             BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
 
             return new VisorBaselineTaskResult(
-                ignite.cluster().active(),
+                ignite.cluster().state().active(),
                 cluster.topologyVersion(),
                 cluster.currentBaselineTopology(),
                 cluster.forServers().nodes(),

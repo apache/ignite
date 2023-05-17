@@ -37,6 +37,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -364,7 +365,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param ignite Ignite instance.
      */
     private void prepareCachesAndData(IgniteEx ignite) {
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         for (int j = 0; j < 3; j++) {
             for (int i = 0; i < 64 * 10; i++) {

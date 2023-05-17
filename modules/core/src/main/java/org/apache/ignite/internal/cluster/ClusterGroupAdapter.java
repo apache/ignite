@@ -458,7 +458,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 nodeIds = U.newHashSet(ids.length + 1);
 
                 for (UUID id0 : ids) {
-                    if (contains(id))
+                    if (contains(id0))
                         nodeIds.add(id0);
                 }
 

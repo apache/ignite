@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.cdc.CdcCommand;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommands;
@@ -103,7 +108,10 @@ public enum CommandList {
     PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand()),
 
     /** Command to check/repair consistency. */
-    CONSISTENCY("--consistency", new ConsistencyCommand());
+    CONSISTENCY("--consistency", new ConsistencyCommand()),
+
+    /** Cdc commands. */
+    CDC("--cdc", new CdcCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
@@ -112,28 +120,23 @@ public enum CommandList {
     private final String text;
 
     /** Command implementation. */
-    private final Command command;
+    private final Command<?> command;
 
     /**
      * @param text Text.
      * @param command Command implementation.
      */
-    CommandList(String text, Command command) {
+    CommandList(String text, Command<?> command) {
         this.text = text;
         this.command = command;
     }
 
     /**
-     * @param text Command text.
-     * @return Command for the text.
+     * @return Map with commands.
      */
-    public static CommandList of(String text) {
-        for (CommandList cmd : VALUES) {
-            if (cmd.text().equalsIgnoreCase(text))
-                return cmd;
-        }
-
-        return null;
+    public static Map<String, Command<?>> commands() {
+        return Arrays.stream(VALUES).collect(
+            Collectors.toMap(CommandList::text, CommandList::command, (a, b) -> a, LinkedHashMap::new));
     }
 
     /**
@@ -146,7 +149,7 @@ public enum CommandList {
     /**
      * @return Command implementation.
      */
-    public Command command() {
+    public Command<?> command() {
         return command;
     }
 

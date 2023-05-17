@@ -305,7 +305,7 @@ tab:XML[]
 tab:Java[]
 [source,java]
 ----
-include::{javaFile}[tag=google,indent=0]
+include::{javaFile}[tag=azureBlobStorage,indent=0]
 ----
 tab:C#/.NET[unsupported]
 tab:C++[unsupported]

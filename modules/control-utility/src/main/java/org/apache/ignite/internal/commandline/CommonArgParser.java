@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -45,6 +46,9 @@ public class CommonArgParser {
     private final IgniteLogger logger;
 
     /** */
+    private final Map<String, Command<?>> cmds;
+
+    /** */
     static final String CMD_HOST = "--host";
 
     /** */
@@ -57,7 +61,7 @@ public class CommonArgParser {
     static final String CMD_USER = "--user";
 
     /** Option is used for auto confirmation. */
-    static final String CMD_AUTO_CONFIRMATION = "--yes";
+    public static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** */
     static final String CMD_PING_INTERVAL = "--ping-interval";
@@ -100,6 +104,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_ENABLE_EXPERIMENTAL = "--enable-experimental";
 
+    /** */
+    static final String CMD_SSL_FACTORY = "--ssl-factory";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -122,6 +129,7 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
         AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
         AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+        AUX_COMMANDS.add(CMD_SSL_FACTORY);
 
         AUX_COMMANDS.add(CMD_KEYSTORE);
         AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
@@ -146,9 +154,11 @@ public class CommonArgParser {
 
     /**
      * @param logger Logger.
+     * @param cmds Supported commands.
      */
-    public CommonArgParser(IgniteLogger logger) {
+    public CommonArgParser(IgniteLogger logger, Map<String, Command<?>> cmds) {
         this.logger = logger;
+        this.cmds = cmds;
     }
 
     /**
@@ -169,6 +179,7 @@ public class CommonArgParser {
         list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
         list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
         list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(optional(CMD_SSL_FACTORY, "SSL_FACTORY_PATH"));
         list.add(optional(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
         list.add(optional(CMD_KEYSTORE, "KEYSTORE_PATH"));
         list.add(optional(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
@@ -224,26 +235,27 @@ public class CommonArgParser {
 
         boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
+        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
 
-        CommandList command = null;
+        Command<?> command = null;
+
+        String sslFactoryCfg = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            CommandList cmd = CommandList.of(str);
+            Command<?> cmd = cmds.get(str);
 
             if (cmd != null) {
                 if (command != null)
                     throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
                         cmd.toString() + ", " + command.toString());
 
-                cmd.command().parseArguments(argIter);
+                cmd.parseArguments(argIter);
 
                 command = cmd;
             }
             else {
-
                 switch (str) {
                     case CMD_HOST:
                         host = argIter.nextArg("Expected host name");
@@ -349,6 +361,11 @@ public class CommonArgParser {
                         experimentalEnabled = true;
                         break;
 
+                    case CMD_SSL_FACTORY:
+                        sslFactoryCfg = argIter.nextArg("Expected SSL factory config path");
+
+                        break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
@@ -358,18 +375,18 @@ public class CommonArgParser {
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-        if (!experimentalEnabled && command.command().experimental()) {
+        if (!experimentalEnabled && command.experimental()) {
             logger.warning(String.format("To use experimental command add --enable-experimental parameter for %s",
                 UTILITY_NAME));
 
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
+        return new ConnectionAndSslParameters(command, host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation, verbose,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, sslFactoryCfg);
     }
 
     /**

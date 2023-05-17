@@ -527,6 +527,16 @@ public interface EventType {
     public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
 
     /**
+     * Built-in event type: cache object was transformed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheEvent
+     */
+    public static final int EVT_CACHE_OBJECT_TRANSFORMED = 68;
+
+    /**
      * Built-in event type: cache object was expired when reading it.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -1162,7 +1172,8 @@ public interface EventType {
         EVT_CACHE_OBJECT_REMOVED,
         EVT_CACHE_OBJECT_LOCKED,
         EVT_CACHE_OBJECT_UNLOCKED,
-        EVT_CACHE_OBJECT_EXPIRED
+        EVT_CACHE_OBJECT_EXPIRED,
+        EVT_CACHE_OBJECT_TRANSFORMED
     };
 
     /**

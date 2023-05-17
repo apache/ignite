@@ -34,7 +34,6 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Command line handler test with SSL.
@@ -80,13 +79,13 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
 
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.cluster().active());
+        assertFalse(ignite.cluster().state().active());
 
         final CommandHandler cmd = new CommandHandler();
 
         List<String> params = new ArrayList<>();
 
-        addSslParams(params);
+        extendSslParams(params);
 
         if (!F.isEmpty(utilityCipherSuite)) {
             params.add("--ssl-cipher-suites");
@@ -98,9 +97,9 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         assertEquals(expRes, execute(params));
 
         if (expRes == EXIT_CODE_OK)
-            assertTrue(ignite.cluster().active());
+            assertTrue(ignite.cluster().state().active());
         else
-            assertFalse(ignite.cluster().active());
+            assertFalse(ignite.cluster().state().active());
 
         assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
     }

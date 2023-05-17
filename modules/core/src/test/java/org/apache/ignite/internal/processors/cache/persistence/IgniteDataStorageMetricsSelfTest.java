@@ -38,6 +38,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -202,7 +203,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     public void testPersistenceMetrics() throws Exception {
         final IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         try {
             IgniteCache<Object, Object> cache = ig.cache("cache");

@@ -790,8 +790,6 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
                 written += size;
 
-                metrics.onWalBytesWritten(size);
-
                 assert written == fileIO.position();
             }
             catch (IOException e) {

@@ -38,7 +38,7 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
     }
 
     /** */
-    private static class VisorSnapshotCreateJob extends VisorJob<VisorSnapshotCreateTaskArg, String> {
+    private static class VisorSnapshotCreateJob extends VisorSnapshotJob<VisorSnapshotCreateTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -52,8 +52,12 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotCreateTaskArg arg) throws IgniteException {
-            IgniteFutureImpl<Void> fut =
-                ignite.context().cache().context().snapshotMgr().createSnapshot(arg.snapshotName(), arg.snapshotPath());
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
+                arg.snapshotName(),
+                arg.snapshotPath(),
+                arg.incremental(),
+                arg.onlyPrimary()
+            );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
                 fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?

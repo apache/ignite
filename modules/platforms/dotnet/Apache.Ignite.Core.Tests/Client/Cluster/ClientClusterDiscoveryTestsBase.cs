@@ -60,6 +60,38 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 AssertClientConnectionCount(client, 3);
             }
         }
+
+        /// <summary>
+        /// Tests that client with one initial endpoint discovers all servers.
+        /// </summary>
+        [Test]
+        public void TestDisabledDiscovery()
+        {
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                EnableClusterDiscovery = false
+            };
+
+            using var client = Ignition.StartClient(cfg);
+
+            AssertClientConnectionCount(client, 1);
+        }
+
+        /// <summary>
+        /// Tests that client with one initial endpoint discovers all servers.
+        /// </summary>
+        [Test]
+        public void TestDisabledPartitionAwareness()
+        {
+            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
+            {
+                EnablePartitionAwareness = false
+            };
+
+            using var client = Ignition.StartClient(cfg);
+
+            AssertClientConnectionCount(client, 1);
+        }
 #endif
 
         /// <summary>

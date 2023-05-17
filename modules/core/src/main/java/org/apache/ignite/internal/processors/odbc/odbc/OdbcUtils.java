@@ -54,7 +54,7 @@ public class OdbcUtils {
      * @return String without leading and trailing quotation marks.
      */
     public static String removeQuotationMarksIfNeeded(String str) {
-        if (str != null && str.startsWith("\"") && str.endsWith("\""))
+        if (str != null && ((str.startsWith("\"") && str.endsWith("\"")) || (str.startsWith("'") && str.endsWith("'"))))
             return str.substring(1, str.length() - 1);
 
         return str;

@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -121,7 +122,7 @@ public class IgniteWalReplayingAfterRestartTest extends GridCommonAbstractTest {
     public void testWalRecordsAfterRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(CACHE_NAME);
 
@@ -142,7 +143,7 @@ public class IgniteWalReplayingAfterRestartTest extends GridCommonAbstractTest {
         // There are no exceptions should be thrown here.
         ignite = startGrid(0);
 
-        ignite.cluster().active();
+        ignite.cluster().state().active();
 
         // delta records should always follow PageSnapshot records.
         String workDir = U.defaultWorkDirectory();
@@ -188,7 +189,7 @@ public class IgniteWalReplayingAfterRestartTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 

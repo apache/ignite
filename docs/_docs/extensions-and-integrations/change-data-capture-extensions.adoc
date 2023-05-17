@@ -25,6 +25,11 @@ link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[Cha
 
 NOTE: For each cache replicated between clusters link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/version/CacheVersionConflictResolver.java[CacheVersionConflictResolver] should be defined.
 
+NOTE: All implementations of CDC replication support replication of link:https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/binary/BinaryType.html[BinaryTypes] and link:https://ignite.apache.org/releases/latest/javadoc/org/apache/ignite/cdc/TypeMapping.html[TypeMappings]
+
+NOTE: To use SQL queries on the destination cluster over CDC-replicated data, set the same `VALUE_TYPE` in
+link:sql-reference/ddl#create-table[CREATE TABLE] on both source and destination clusters for each table.
+
 == Ignite to Java Thin Client CDC streamer
 This streamer starts link:thin-clients/java-thin-client[Java Thin Client] which connects to destination cluster.
 After connection is established, all changes captured by CDC will be replicated to destination cluster.
@@ -92,6 +97,8 @@ This way to replicate changes between clusters requires setting up two applicati
 
 NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
 
+IMPORTANT: CDC trough Kafka requires _metadata topic with the only one partition_ for sequential ordering guarantees.
+
 image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 
 === IgniteToKafkaCdcStreamer Configuration
@@ -101,8 +108,9 @@ image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 |Name |Description | Default value
 | `caches` | Set of cache names to replicate. | null
 | `kafkaProperties` | Kafka producer properties. | null
-| `topic` | Name of the Kafka topic. | null
-| `kafkaParts` | Number of Kafka topic partitions. | null
+| `topic` | Name of the Kafka topic for CDC events. | null
+| `kafkaParts` | Number of Kafka partitions in CDC events topic. | null
+| `metadataTopic` | Name of topic for replication of BinaryTypes and TypeMappings. | null
 | `onlyPrimary` | Flag to handle changes only on primary node. | `false`
 | `maxBatchSize` | Maximum size of concurrently produced Kafka records. When streamer reaches this number, it waits for Kafka acknowledgements, and then commits CDC offset. | `1024`
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
@@ -160,9 +168,11 @@ Kafka to Ignite configuration file should contain the following beans that will 
 |===
 |Name |Description | Default value
 | `caches` | Set of cache names to replicate. | null
-| `topic` | Name of the Kafka topic. | null
-| `kafkaPartsFrom` | Lower Kafka partitions number (inclusive). | -1
-| `kafkaPartsTo` | Lower Kafka partitions number (exclusive). | -1
+| `topic` | Name of the Kafka topic for CDC events. | null
+| `kafkaPartsFrom` | Lower Kafka partitions number (inclusive) for CDC events topic. | -1
+| `kafkaPartsTo` | Lower Kafka partitions number (exclusive) for CDC events topic. | -1
+| `metadataTopic` | Name of topic for replication of BinaryTypes and TypeMappings. | null
+| `metadataConsumerGroup` | Group for `KafkaConsumer`, which polls from metadata topic | ignite-metadata-update-<kafkaPartsFrom>-<kafkaPartsTo>
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
 | `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
 | `threadCount` | Count of threads to proceed consumers. Each thread poll records from dedicated partitions in round-robin manner. | 16
@@ -170,7 +180,7 @@ Kafka to Ignite configuration file should contain the following beans that will 
 
 ==== Logging
 
-`kakfa-to-ignite.sh` uses the same logging configuration as the Ignite node does. The only difference is that the log is written in the "kafka-ignite-streamer.log" file.
+`kafka-to-ignite.sh` uses the same logging configuration as the Ignite node does. The only difference is that the log is written in the "kafka-ignite-streamer.log" file.
 
 == CacheVersionConflictResolver implementation
 

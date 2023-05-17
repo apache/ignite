@@ -331,6 +331,20 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |===
 
+== CONFIGURATION
+
+
+The CONFIGURATION view contains the configuration properties of node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Configuration property name.
+|VALUE |VARCHAR |Configuration property value.
+
+|===
+
 == BASELINE_NODES
 
 
@@ -682,6 +696,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 === DATA_REGION_PAGE_LISTS
@@ -694,6 +709,7 @@ and also helps to detect skews in page lists utilization.
 |BUCKET_SIZE | long  |  Count of pages in the bucket
 |STRIPES_COUNT |   int| Count of stripes used by this bucket. Stripes are used to avoid contention.
 |CACHED_PAGES_COUNT |  int| Count of pages in an on-heap page list cache for this bucket.
+|PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
 == PARTITION_STATES
@@ -729,6 +745,17 @@ This view exposes information about all available binary types.
 == METASTORAGE
 
 This view exposes the contents of the metastorage cache.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|NAME | string | Name
+|VALUE | string | String or raw binary (if data could not be deserialized for some reason) representation of an element
+|===
+
+== DISTRIBUTED_METASTORAGE
+
+This view exposes the contents of the distributed metastorage cache.
 
 [{table_opts}]
 |===
@@ -963,4 +990,7 @@ The SNAPSHOT view exposes information about local snapshots.
 | CONSISTENT_ID | VARCHAR | Consistent ID of a node to which snapshot data relates.
 | BASELINE_NODES | VARCHAR | Baseline nodes affected by the snapshot.
 | CACHE_GROUPS | VARCHAR | Cache group names that were included in the snapshot.
+| SNAPSHOT_RECORD_SEGMENT | BIGINT | Index of WAL segment containing snapshot's WAL record.
+| INCREMENT_INDEX | INTEGER | Incremental snapshot index.
+| TYPE | VARCHAR | Type of snapshot - full or incremental.
 |===

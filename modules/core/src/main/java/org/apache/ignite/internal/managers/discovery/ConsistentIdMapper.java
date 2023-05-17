@@ -31,6 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * Class is needed for map UUID to consistent id and vice versa.
  */
 public class ConsistentIdMapper {
+    /** Optimization for short store full nodes set. */
+    public static final Short ALL_NODES = Short.MAX_VALUE;
+
     /** Discovery manager. */
     private final GridDiscoveryManager discoveryMgr;
 
@@ -125,9 +128,8 @@ public class ConsistentIdMapper {
                 }
             }
 
-            // Optimization for short store full nodes set.
             if (backups.size() == nodeCnt && nodeCnt == (bltNodes - 1))
-                backups = Collections.singletonList(Short.MAX_VALUE);
+                backups = Collections.singletonList(ALL_NODES);
 
             consistentMap.put(mapToCompactId(topVer, node), backups);
         }
