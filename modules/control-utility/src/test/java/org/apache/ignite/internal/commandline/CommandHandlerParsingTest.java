@@ -53,6 +53,7 @@ import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommand
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
+import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -411,6 +412,7 @@ public class CommandHandlerParsingTest {
             // SET_STATE command has mandatory argument used in confirmation message.
             Command cmd = cmdL != SET_STATE ? cmdL.command() : parseArgs(asList(cmdL.text(), "ACTIVE")).command();
 
+            // TODO: fixme.
             if (cmd.confirmationPrompt() == null)
                 continue;
 

@@ -431,6 +431,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SNAPSHOT",
             "TABLES",
             "CLIENT_CONNECTIONS",
+            "CLIENT_CONNECTION_ATTRIBUTES",
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
