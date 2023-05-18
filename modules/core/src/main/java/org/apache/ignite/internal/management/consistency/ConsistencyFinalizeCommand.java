@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.consistency;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyCountersFinalizationTask;
 
 /** */
 public class ConsistencyFinalizeCommand implements
@@ -35,7 +36,7 @@ public class ConsistencyFinalizeCommand implements
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null; //VisorConsistencyCountersFinalizationTask.class;
+    @Override public Class<VisorConsistencyCountersFinalizationTask> taskClass() {
+        return VisorConsistencyCountersFinalizationTask.class;
     }
 }

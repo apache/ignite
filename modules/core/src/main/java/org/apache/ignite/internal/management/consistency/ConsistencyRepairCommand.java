@@ -17,19 +17,22 @@
 
 package org.apache.ignite.internal.management.consistency;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import org.apache.ignite.internal.management.api.ComputeCommand;
+import java.util.function.Consumer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
-import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
+import static java.util.stream.Collectors.toSet;
 
 /** */
 public class ConsistencyRepairCommand implements
-    ExperimentalCommand<ConsistencyRepairCommandArg, VisorConsistencyTaskResult>,
-    ComputeCommand<ConsistencyRepairCommandArg, VisorConsistencyTaskResult> {
+    ExperimentalCommand<ConsistencyRepairCommandArg, String>,
+    LocalCommand<ConsistencyRepairCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Check/Repair cache consistency using Read Repair approach";
@@ -41,17 +44,61 @@ public class ConsistencyRepairCommand implements
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null; //VisorConsistencyRepairTask.class;
-    }
+    @Override public String execute(
+        GridClient cli,
+        ConsistencyRepairCommandArg arg,
+        Consumer<String> printer
+    ) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        boolean failed = false;
 
-    /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, ConsistencyRepairCommandArg arg) {
-        return arg.parallel()
-            ? nodes.keySet()
-            : nodes.entrySet().stream()
-                .filter(e -> !e.getValue().get1())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+        Set<UUID> nodeIds = arg.parallel() ?
+            Collections.singleton(BROADCAST_UUID) :
+            cli.compute().nodes().stream()
+                .filter(node -> !node.isClient())
+                .map(GridClientNode::nodeId)
+                .collect(toSet());
+
+        for (UUID nodeId : nodeIds) {
+            VisorConsistencyTaskResult res = executeTaskByNameOnNode(
+                client,
+                cmd.taskName(),
+                arg(),
+                nodeId,
+                clientCfg
+            );
+
+            if (res.cancelled()) {
+                sb.append("Operation execution cancelled.\n\n");
+
+                failed = true;
+            }
+
+            if (res.failed()) {
+                sb.append("Operation execution failed.\n\n");
+
+                failed = true;
+            }
+
+            if (failed)
+                sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
+
+            if (res.message() != null)
+                sb.append(res.message());
+            else
+                assert !arg.parallel();
+
+            if (failed)
+                break;
+        }
+
+        String res = sb.toString();
+
+        if (failed)
+            throw new IgniteCheckedException(res);
+
+        printer.accept(res);
+
+        return res;
     }
 }
