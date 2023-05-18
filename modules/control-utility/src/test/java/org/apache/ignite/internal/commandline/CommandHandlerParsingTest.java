@@ -1199,7 +1199,7 @@ public class CommandHandlerParsingTest {
                 null,
                 () -> parseArgs(asList(arg)),
                 IllegalArgumentException.class,
-                "--stop argument is missing."
+                "Command warm-up can't be executed"
             );
         }
 

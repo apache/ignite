@@ -3866,7 +3866,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
             // Arguments --user and --password are needed for additional sending of the GridClientAuthenticationRequest.
-            assertEquals(EXIT_CODE_OK, execute("--warm-up", "--stop", "--yes", "--user", "user", "--password", "123"));
+            assertEquals(EXIT_CODE_OK, execute("--user", "user", "--password", "123", "--warm-up", "--stop", "--yes"));
 
             assertEquals(0, blockedWarmUpStgy.stopLatch.getCount());
         }

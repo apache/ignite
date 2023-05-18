@@ -33,8 +33,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
@@ -42,6 +45,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -112,7 +116,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             return;
         }
 
-        if (!(cmd0 instanceof ComputeCommand) && !(cmd0 instanceof LocalCommand)) {
+        if (!(cmd0 instanceof ComputeCommand) && !(cmd0 instanceof LocalCommand) && !(cmd0 instanceof BeforeNodeStartCommand)) {
             throw new IllegalArgumentException(
                 "Command " + toFormattedCommandName(cmd0.getClass()) + " can't be executed"
             );
@@ -173,6 +177,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        if (cmd instanceof BeforeNodeStartCommand)
+            return executeBeforeNodeStart(clientCfg, logger);
+
         return execute0(clientCfg, logger);
     }
 
@@ -240,6 +247,19 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
     }
 
+    /** */
+    private <R> R executeBeforeNodeStart(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        try (GridClientBeforeNodeStart client = Command.startClientBeforeNodeStart(clientCfg)) {
+            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, logger::info);
+        }
+        catch (GridClientDisconnectedException e) {
+            throw new GridClientException(e.getCause());
+        }
+        finally {
+            state(null, null, true);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
         usage(baseCmd, Collections.emptyList(), logger);
@@ -257,7 +277,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
         IgniteLogger logger
     ) {
-        if (cmd instanceof LocalCommand || cmd instanceof ComputeCommand || cmd instanceof HelpCommand) {
+        if (cmd instanceof LocalCommand
+            || cmd instanceof ComputeCommand
+            || cmd instanceof HelpCommand
+            || cmd instanceof BeforeNodeStartCommand) {
             logger.info("");
 
             if (cmd.experimental())
