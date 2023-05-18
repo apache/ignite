@@ -59,6 +59,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestO
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -107,6 +109,7 @@ import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
@@ -175,6 +178,7 @@ import static org.apache.ignite.internal.processors.datastructures.DataStructure
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.STAMPED_VIEW;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_ATTR_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.SYS_POOL_QUEUE_VIEW;
@@ -585,6 +589,49 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             boolean res = GridTestUtils.waitForCondition(() -> conns.size() == 0, 5_000);
 
             assertTrue(res);
+        }
+    }
+
+    /** */
+    @Test
+    public void testClientConnectionAttributes() throws Exception {
+        try (IgniteEx g0 = startGrid(0)) {
+            SystemView<ClientConnectionAttributeView> view = g0.context().systemView().view(CLI_CONN_ATTR_VIEW);
+
+            try (
+                IgniteClient cl1 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                    .setUserAttributes(F.asMap("attr1", "val1", "attr2", "val2")));
+                IgniteClient cl2 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                    .setUserAttributes(F.asMap("attr1", "val2")));
+                IgniteClient cl3 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+            ) {
+                assertEquals(3, F.size(view.iterator()));
+
+                assertEquals(1, F.size(view.iterator(), row ->
+                    "attr1".equals(row.name()) && "val1".equals(row.value())));
+
+                // Test filtering.
+                assertTrue(view instanceof FiltrableSystemView);
+
+                Iterator<ClientConnectionAttributeView> iter = ((FiltrableSystemView<ClientConnectionAttributeView>)view)
+                    .iterator(F.asMap(ClientConnectionAttributeViewWalker.NAME_FILTER, "attr1"));
+
+                assertEquals(2, F.size(iter));
+
+                iter = ((FiltrableSystemView<ClientConnectionAttributeView>)view).iterator(
+                    F.asMap(ClientConnectionAttributeViewWalker.NAME_FILTER, "attr2"));
+
+                assertTrue(iter.hasNext());
+
+                long connId = iter.next().connectionId();
+
+                assertFalse(iter.hasNext());
+
+                iter = ((FiltrableSystemView<ClientConnectionAttributeView>)view).iterator(
+                    F.asMap(ClientConnectionAttributeViewWalker.CONNECTION_ID_FILTER, connId));
+
+                assertEquals(2, F.size(iter));
+            }
         }
     }
 
