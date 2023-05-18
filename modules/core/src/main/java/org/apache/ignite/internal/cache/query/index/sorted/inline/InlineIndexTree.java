@@ -352,8 +352,10 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     public IndexRowImpl createIndexRow(long link) throws IgniteCheckedException {
         IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
 
-        if (cachedRow != null)
-            return cachedRow;
+        if (cachedRow != null) {
+            return cachedRow.rowHandler() == rowHandler() ? cachedRow :
+                new IndexRowImpl(rowHandler(), cachedRow.cacheDataRow());
+        }
 
         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
