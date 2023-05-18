@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.api;
 
-import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
@@ -43,16 +42,6 @@ public interface Command<A extends IgniteDataTransferObject, R> {
 
     /** @return Arguments class. */
     public Class<? extends A> argClass();
-
-    /**
-     * Prints command result to the user.
-     * @param arg Argument.
-     * @param res Result.
-     * @param printer Implementation specific printer.
-     */
-    public default void printResult(A arg, R res, Consumer<String> printer) {
-        // No-op.
-    }
 
     /** @return {@code true} if the command is experimental, {@code false} otherwise. */
     public default boolean experimental() {

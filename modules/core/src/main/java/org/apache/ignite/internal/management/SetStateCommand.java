@@ -35,23 +35,20 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean execute(GridClient cli, SetStateCommandArg arg) throws Exception {
+    @Override public Boolean execute(GridClient cli, SetStateCommandArg arg, Consumer<String> printer) throws Exception {
         ClusterState clusterState = cli.state().state();
 
-        if (clusterState == arg.state())
+        if (clusterState == arg.state()) {
+            printer.accept("Cluster state is already " + arg.state() + '.');
+
             return false;
+        }
 
         cli.state().state(arg.state(), arg.force());
 
-        return true;
-    }
+        printer.accept("Cluster state changed to " + arg.state() + '.');
 
-    /** {@inheritDoc} */
-    @Override public void printResult(SetStateCommandArg arg, Boolean res, Consumer<String> printer) {
-        if (res)
-            printer.accept("Cluster state changed to " + arg.state() + '.');
-        else
-            printer.accept("Cluster state is already " + arg.state() + '.');
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.api;
 
+import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
@@ -27,7 +28,8 @@ public interface LocalCommand<A extends IgniteDataTransferObject, R> extends Com
     /**
      * @param cli Grid client instance.
      * @param arg Command argument.
+     * @param printer Results printer.
      * @return Command result.
      */
-    public R execute(GridClient cli, A arg) throws Exception;
+    public R execute(GridClient cli, A arg, Consumer<String> printer) throws Exception;
 }

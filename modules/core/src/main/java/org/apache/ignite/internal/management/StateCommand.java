@@ -41,20 +41,15 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple3<UUID, String, ClusterState> execute(GridClient cli, NoArg arg) throws Exception {
+    @Override public GridTuple3<UUID, String, ClusterState> execute(GridClient cli, NoArg arg, Consumer<String> printer) throws Exception {
         GridClientClusterState state = cli.state();
 
-        return F.t(state.id(), state.tag(), state.state());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, GridTuple3<UUID, String, ClusterState> res, Consumer<String> printer) {
-        printer.accept("Cluster  ID: " + res.get1());
-        printer.accept("Cluster tag: " + res.get2());
+        printer.accept("Cluster  ID: " + state.id());
+        printer.accept("Cluster tag: " + state.tag());
 
         printer.accept(DELIM);
 
-        switch (res.get3()) {
+        switch (state.state()) {
             case ACTIVE:
                 printer.accept("Cluster is active");
 
@@ -71,7 +66,9 @@ public class StateCommand implements LocalCommand<NoArg, GridTuple3<UUID, String
                 break;
 
             default:
-                throw new IllegalStateException("Unknown state: " + res.get3());
+                throw new IllegalStateException("Unknown state: " + state.state());
         }
+
+        return F.t(state.id(), state.tag(), state.state());
     }
 }
