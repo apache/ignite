@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairFuture;
@@ -145,8 +147,8 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 @SuppressWarnings("unchecked")
 public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable, MvccCoordinatorChangeAware {
     /** Prepare future updater. */
-    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
-        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
+    private static final AtomicReferenceFieldUpdater<GridNearTxLocal, GridNearTxPrepareFutureAdapter> PREP_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, GridNearTxPrepareFutureAdapter.class, "prepFut");
 
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
@@ -161,7 +163,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** Prepare future. */
     @GridToStringExclude
-    private volatile IgniteInternalFuture<?> prepFut;
+    private volatile GridNearTxPrepareFutureAdapter prepFut;
 
     /** Commit future. */
     @GridToStringExclude
@@ -3903,7 +3905,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         // We assume that prepare start time should be set only once for the transaction.
         prepareStartTime.compareAndSet(0, System.nanoTime());
 
-        GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut;
+        GridNearTxPrepareFutureAdapter fut = prepFut;
 
         if (fut == null) {
             long timeout = remainingTime();
@@ -4082,10 +4084,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!onTimeout && trackTimeout)
             removeTimeoutHandler();
 
-        IgniteInternalFuture<?> prepFut = this.prepFut;
+        GridNearTxPrepareFutureAdapter prepFut = this.prepFut;
 
-        if (onTimeout && prepFut instanceof GridNearTxPrepareFutureAdapter && !prepFut.isDone())
-            ((GridNearTxPrepareFutureAdapter)prepFut).onNearTxLocalTimeout();
+        if (onTimeout && prepFut != null && !prepFut.isDone())
+            prepFut.onNearTxLocalTimeout();
 
         final NearTxFinishFuture fut;
         final NearTxFinishFuture fut0 = finishFut;
@@ -5010,19 +5012,36 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override public void onTimeout() {
         boolean proceed;
 
+        Collection<UUID> unrespondedNodes;
+
         synchronized (this) {
+            unrespondedNodes = new HashSet<>();
+
+            if (lockFut instanceof GridDhtColocatedLockFuture)
+                unrespondedNodes.addAll(((GridDhtColocatedLockFuture)lockFut).unrespondedNodes());
+
+            if (unrespondedNodes.isEmpty() && prepFut != null)
+                unrespondedNodes.addAll(prepFut.unrespondedNodes());
+
             proceed = state() != PREPARED && state(MARKED_ROLLBACK, true);
         }
 
-        if (proceed || (state() == MARKED_ROLLBACK)) {
+        if (proceed || state() == MARKED_ROLLBACK) {
             cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     // Note: if rollback asynchronously on timeout should not clear thread map
                     // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(false, true);
 
-                    U.warn(log, "The transaction was forcibly rolled back because a timeout is reached: " +
-                        CU.txString(GridNearTxLocal.this));
+                    String errMsg = "The transaction was forcibly rolled back because a timeout is reached: " +
+                        CU.txString(GridNearTxLocal.this) + ']';
+
+                    if (!F.isEmpty(unrespondedNodes)) {
+                        errMsg += ". Detected unresponded primary nodes: " + unrespondedNodes.stream()
+                            .map(UUID::toString).collect(Collectors.joining(",")) + '.';
+                    }
+
+                    U.warn(log, errMsg);
                 }
             });
         }

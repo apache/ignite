@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Collectors;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -2063,10 +2064,25 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
+            Collection<? extends IgniteInternalFuture<?>> futs;
+
             synchronized (GridDhtTxPrepareFuture.this) {
+                futs = futures();
+
                 clear();
 
                 lockKeys.clear();
+            }
+
+            String unresponded = futs.stream().filter(f -> isMini(f) && !f.isDone() && !f.isCancelled())
+                .map(f -> ((MiniFuture)f).nodeId.toString()).collect(Collectors.joining(","));
+
+            if (!F.isEmpty(unresponded)) {
+                String errMsg = "Unable to prepare transaction within timeout " + CU.txString(tx);
+
+                errMsg += ". Detected unresponded backup nodes: " + unresponded;
+
+                U.warn(log, errMsg);
             }
 
             onError(tx.timeoutException());
