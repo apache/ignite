@@ -250,7 +250,7 @@ public abstract class AbstractCommandInvoker {
 
         /** */
         public boolean grpOptional() {
-            return argGrp == null && argGrp.optional();
+            return argGrp == null || argGrp.optional();
         }
 
         /** */
