@@ -392,7 +392,7 @@ This view exposes information about currently opened client connections: JDBC, O
 == CLIENT_CONNECTION_ATTRIBUTES
 
 
-The CLIENT_CONNECTION_ATTRIBUTES view exposes user defined attributes of connected clients (thin, JDBC, ODBC).
+The CLIENT_CONNECTION_ATTRIBUTES view exposes user defined attributes of client connections (thin, JDBC, ODBC). Attributes for the connection are provided by clients. For example, attributes for java thin client can be specified using `ClientConfiguration.setUserAttributes` method.
 
 [{table_opts}]
 |===
