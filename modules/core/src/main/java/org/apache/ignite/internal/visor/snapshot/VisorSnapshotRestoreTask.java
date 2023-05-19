@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -28,14 +30,14 @@ import org.apache.ignite.internal.visor.VisorJob;
  * Visor snapshot restore task.
  */
 @GridInternal
-public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnapshotRestoreTaskArg, String> {
+public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotRestoreCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorSnapshotRestoreTaskArg, String> job(VisorSnapshotRestoreTaskArg arg) {
+    @Override protected VisorJob<SnapshotRestoreCommandArg, String> job(SnapshotRestoreCommandArg arg) {
         VisorSnapshotRestoreTaskAction action =
-            arg.jobAction() == null ? VisorSnapshotRestoreTaskAction.START : arg.jobAction();
+            VisorSnapshotRestoreTaskAction.START;
 
         switch (action) {
             case START:
@@ -48,12 +50,12 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
                 return new VisorSnapshotRestoreStatusJob(arg, debug);
 
             default:
-                throw new IllegalArgumentException("Action is not supported: " + arg.jobAction());
+                throw new IllegalArgumentException("Action is not supported: " + action);
         }
     }
 
     /** */
-    private static class VisorSnapshotStartRestoreJob extends VisorSnapshotJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotStartRestoreJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -61,17 +63,17 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotStartRestoreJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+        protected VisorSnapshotStartRestoreJob(SnapshotRestoreCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
+        @Override protected String run(SnapshotRestoreCommandArg arg) throws IgniteException {
             IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().restoreSnapshot(
                 arg.snapshotName(),
-                arg.snapshotPath(),
-                arg.groupNames(),
-                arg.incrementIndex(),
+                arg.src(),
+                arg.groups() == null ? null : Arrays.asList(arg.groups()),
+                arg.increment(),
                 arg.check()
             );
 
@@ -83,7 +85,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
                 fut.get();
 
             String msgSuff = arg.sync() ? "completed successfully" : "started";
-            String msgGrps = arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",");
+            String msgGrps = arg.groups() == null ? "" : ", group(s)=" + F.concat(arg.groups(), ",");
             String msgId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
 
             return "Snapshot cache group restore operation " + msgSuff +
@@ -95,7 +97,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
      * @deprecated Use {@link VisorSnapshotCancelTask} instead.
      */
     @Deprecated
-    private static class VisorSnapshotRestoreCancelJob extends VisorSnapshotJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotRestoreCancelJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -103,12 +105,12 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotRestoreCancelJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+        protected VisorSnapshotRestoreCancelJob(SnapshotRestoreCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
+        @Override protected String run(SnapshotRestoreCommandArg arg) throws IgniteException {
             boolean stopped = ignite.snapshot().cancelSnapshotRestore(arg.snapshotName()).get();
 
             return "Snapshot cache group restore operation " +
@@ -120,7 +122,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
      * @deprecated Use {@link VisorSnapshotStatusTask} instead.
      */
     @Deprecated
-    private static class VisorSnapshotRestoreStatusJob extends VisorSnapshotJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotRestoreStatusJob extends VisorSnapshotJob<SnapshotRestoreCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -128,12 +130,12 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotRestoreStatusJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+        protected VisorSnapshotRestoreStatusJob(SnapshotRestoreCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
+        @Override protected String run(SnapshotRestoreCommandArg arg) throws IgniteException {
             boolean state = ignite.context().cache().context().snapshotMgr().restoreStatus(arg.snapshotName()).get();
 
             return "Snapshot cache group restore operation is " + (state ? "" : "NOT ") +

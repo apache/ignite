@@ -20,9 +20,11 @@ package org.apache.ignite.internal.management.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"id", "name"}, optional = false, onlyOneOf = true)
@@ -32,7 +34,7 @@ public class SnapshotCancelCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Snapshot operation request ID")
-    private String id;
+    private UUID id;
 
     /** */
     @Argument(description = "Snapshot name (deprecated)")
@@ -40,9 +42,33 @@ public class SnapshotCancelCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeUuid(out, id);
+        U.writeString(out, name);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        id = U.readUuid(in);
+        name = U.readString(in);
+    }
+
+    /** */
+    public UUID id() {
+        return id;
+    }
+
+    /** */
+    public void id(UUID id) {
+        this.id = id;
+    }
+
+    /** */
+    public String name() {
+        return name;
+    }
+
+    /** */
+    public void name(String name) {
+        this.name = name;
     }
 }

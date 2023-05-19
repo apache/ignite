@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
@@ -54,9 +55,57 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, snapshotName);
+        U.writeString(out, dest);
+        out.writeBoolean(sync);
+        out.writeBoolean(incremental);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        snapshotName = U.readString(in);
+        dest = U.readString(in);
+        sync = in.readBoolean();
+        incremental = in.readBoolean();
+    }
+
+    /** */
+    public String snapshotName() {
+        return snapshotName;
+    }
+
+    /** */
+    public void snapshotName(String snapshotName) {
+        this.snapshotName = snapshotName;
+    }
+
+    /** */
+    public String dest() {
+        return dest;
+    }
+
+    /** */
+    public void dest(String dest) {
+        this.dest = dest;
+    }
+
+    /** */
+    public boolean sync() {
+        return sync;
+    }
+
+    /** */
+    public void sync(boolean sync) {
+        this.sync = sync;
+    }
+
+    /** */
+    public boolean incremental() {
+        return incremental;
+    }
+
+    /** */
+    public void incremental(boolean incremental) {
+        this.incremental = incremental;
     }
 }

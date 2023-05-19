@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public class SnapshotCreateCommand implements ComputeCommand<SnapshotCreateCommandArg, Void> {
+public class SnapshotCreateCommand implements ComputeCommand<SnapshotCreateCommandArg, VisorSnapshotTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Create cluster snapshot";
@@ -32,7 +34,7 @@ public class SnapshotCreateCommand implements ComputeCommand<SnapshotCreateComma
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
+    @Override public Class<VisorSnapshotCreateTask> taskClass() {
+        return VisorSnapshotCreateTask.class;
     }
 }

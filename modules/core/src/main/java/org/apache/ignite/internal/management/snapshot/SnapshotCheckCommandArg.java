@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
@@ -49,9 +50,45 @@ public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, snapshotName);
+        U.writeString(out, src);
+        out.writeInt(increment);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        snapshotName = U.readString(in);
+        src = U.readString(in);
+        increment = in.readInt();
+    }
+
+    /** */
+    public String snapshotName() {
+        return snapshotName;
+    }
+
+    /** */
+    public void snapshotName(String snapshotName) {
+        this.snapshotName = snapshotName;
+    }
+
+    /** */
+    public String src() {
+        return src;
+    }
+
+    /** */
+    public void src(String src) {
+        this.src = src;
+    }
+
+    /** */
+    public int increment() {
+        return increment;
+    }
+
+    /** */
+    public void increment(int increment) {
+        this.increment = increment;
     }
 }

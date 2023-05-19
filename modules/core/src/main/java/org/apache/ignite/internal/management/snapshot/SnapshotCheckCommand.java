@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public class SnapshotCheckCommand implements ComputeCommand<SnapshotCheckCommandArg, Void> {
+public class SnapshotCheckCommand implements ComputeCommand<SnapshotCheckCommandArg, VisorSnapshotTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Check snapshot";
@@ -32,7 +34,7 @@ public class SnapshotCheckCommand implements ComputeCommand<SnapshotCheckCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Class taskClass() {
-        return null;
+    @Override public Class<VisorSnapshotCheckTask> taskClass() {
+        return VisorSnapshotCheckTask.class;
     }
 }

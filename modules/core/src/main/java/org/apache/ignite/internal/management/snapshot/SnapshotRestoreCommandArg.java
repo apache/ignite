@@ -20,10 +20,10 @@ package org.apache.ignite.internal.management.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
@@ -44,7 +44,7 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(optional = true, description = "Cache group names", example = "group1,...groupN")
-    private List<String> groups;
+    private String[] groups;
 
     /** */
     @Argument(example = "path", optional = true,
@@ -65,9 +65,81 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, snapshotName);
+        out.writeInt(increment);
+        U.writeArray(out, groups);
+        U.writeString(out, src);
+        out.writeBoolean(sync);
+        out.writeBoolean(check);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        snapshotName = U.readString(in);
+        increment = in.readInt();
+        groups = U.readArray(in, String.class);
+        src = U.readString(in);
+        sync = in.readBoolean();
+        check = in.readBoolean();
+    }
+
+    /** */
+    public String[] groups() {
+        return groups;
+    }
+
+    /** */
+    public void groups(String[] groups) {
+        this.groups = groups;
+    }
+
+    /** */
+    public String snapshotName() {
+        return snapshotName;
+    }
+
+    /** */
+    public void snapshotName(String snapshotName) {
+        this.snapshotName = snapshotName;
+    }
+
+    /** */
+    public int increment() {
+        return increment;
+    }
+
+    /** */
+    public void increment(int increment) {
+        this.increment = increment;
+    }
+
+    /** */
+    public String src() {
+        return src;
+    }
+
+    /** */
+    public void src(String src) {
+        this.src = src;
+    }
+
+    /** */
+    public boolean sync() {
+        return sync;
+    }
+
+    /** */
+    public void sync(boolean sync) {
+        this.sync = sync;
+    }
+
+    /** */
+    public boolean check() {
+        return check;
+    }
+
+    /** */
+    public void check(boolean check) {
+        this.check = check;
     }
 }
