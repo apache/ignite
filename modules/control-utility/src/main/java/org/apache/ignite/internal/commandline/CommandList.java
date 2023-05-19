@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
-import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.metric.MetricCommand;
 import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.ActivateCommand;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.management.WarmUpCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
+import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
@@ -77,7 +77,7 @@ public enum CommandList {
     WAL(new WalCommand()),
 
     /** */
-    DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
+    DIAGNOSTIC(new DiagnosticCommand()),
 
     /** Encryption features command. */
     ENCRYPTION(new EncryptionCommand()),

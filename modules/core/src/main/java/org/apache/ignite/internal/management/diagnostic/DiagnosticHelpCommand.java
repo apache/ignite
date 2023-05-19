@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.diagnostic;
+package org.apache.ignite.internal.management.diagnostic;
 
-/**
- * Operation type for {@link VisorPageLocksTask}
- */
-public enum Operation {
-    /** Dump page locks to file operation. */
-    DUMP,
-    /** Dump page locks to log. */
-    DUMP_LOG
+import org.apache.ignite.internal.management.api.HelpCommand;
+
+/** */
+public class DiagnosticHelpCommand implements HelpCommand {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Print diagnostic command help";
+    }
 }

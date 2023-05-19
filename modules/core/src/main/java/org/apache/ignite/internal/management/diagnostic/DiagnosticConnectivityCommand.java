@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,91 +15,72 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.diagnostic;
+package org.apache.ignite.internal.management.diagnostic;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.TaskExecutor;
-import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityArgs;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityResult;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityTask;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
-import static org.apache.ignite.internal.commandline.CommandLogger.join;
-import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.CONNECTIVITY;
-
-/**
- * Command to check connectivity between every node.
- */
-public class ConnectivityCommand implements Command<Void> {
+/** */
+public class DiagnosticConnectivityCommand implements ComputeCommand<NoArg, Map<ClusterNode, VisorConnectivityResult>> {
     /**
      * Header of output table.
      */
-    private final List<String> TABLE_HEADER = Arrays.asList(
-            "SOURCE-NODE-ID",
-            "SOURCE-CONSISTENT-ID",
-            "SOURCE-NODE-TYPE",
-            "DESTINATION-NODE-ID",
-            "DESTINATION_CONSISTENT_ID",
-            "DESTINATION-NODE-TYPE"
+    private static final List<String> TABLE_HEADER = Arrays.asList(
+        "SOURCE-NODE-ID",
+        "SOURCE-CONSISTENT-ID",
+        "SOURCE-NODE-TYPE",
+        "DESTINATION-NODE-ID",
+        "DESTINATION_CONSISTENT_ID",
+        "DESTINATION-NODE-TYPE"
     );
 
     /**
      * Client node type string.
      */
-    private final String NODE_TYPE_CLIENT = "CLIENT";
+    private static final String NODE_TYPE_CLIENT = "CLIENT";
 
     /**
      * Server node type string.
      */
-    private final String NODE_TYPE_SERVER = "SERVER";
+    private static final String NODE_TYPE_SERVER = "SERVER";
 
-    /**
-     * Logger
-     */
-    private IgniteLogger logger;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        this.logger = logger;
-
-        Map<ClusterNode, VisorConnectivityResult> result;
-
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Set<UUID> nodeIds = client.compute().nodes().stream().map(GridClientNode::nodeId).collect(Collectors.toSet());
-
-            VisorConnectivityArgs taskArg = new VisorConnectivityArgs(nodeIds);
-
-            result = TaskExecutor.executeTask(
-                client,
-                VisorConnectivityTask.class,
-                taskArg,
-                clientCfg
-            );
-        }
-
-        printResult(result);
-
-        return result;
+    @Override public String description() {
+        return "View connectvity state of all nodes in cluster";
     }
 
-    /**
-     * @param res Result.
-     */
-    private void printResult(Map<ClusterNode, VisorConnectivityResult> res) {
+    /** {@inheritDoc} */
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<VisorConnectivityTask> taskClass() {
+        return VisorConnectivityTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
+        return nodes.keySet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(NoArg arg, Map<ClusterNode, VisorConnectivityResult> res, Consumer<String> printer) {
         final boolean[] hasFailed = {false};
 
         final List<List<String>> table = new ArrayList<>();
@@ -140,9 +121,9 @@ public class ConnectivityCommand implements Command<Void> {
         }
 
         if (hasFailed[0])
-            logger.info("There is no connectivity between the following nodes:\n" + formatAsTable(table));
+            printer.accept("There is no connectivity between the following nodes:\n" + formatAsTable(table));
         else
-            logger.info("There are no connectivity problems.");
+            printer.accept("There are no connectivity problems.");
     }
 
     /**
@@ -168,27 +149,8 @@ public class ConnectivityCommand implements Command<Void> {
         StringBuilder result = new StringBuilder();
 
         for (List<String> row : rows)
-            result.append(String.format(format, row.toArray(new String[0]))).append("\n");
+            result.append(String.format(format, row.toArray())).append("\n");
 
         return result.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Void arg() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printUsage(IgniteLogger logger) {
-        logger.info("View connectvity state of all nodes in cluster");
-        logger.info(join(" ",
-            UTILITY_NAME, DIAGNOSTIC, CONNECTIVITY,
-            "// Prints info about connectivity between nodes"));
-        logger.info("");
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return CONNECTIVITY.name();
     }
 }

@@ -113,7 +113,7 @@ public class CommandUtils {
 
         while (i < formatted.length()) {
             if (formatted.charAt(i) != delim)
-                name.append(formatted.charAt(i));
+                name.append(Character.toLowerCase(formatted.charAt(i)));
             else {
                 i++;
                 name.append(Character.toUpperCase(formatted.charAt(i)));
