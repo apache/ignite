@@ -259,7 +259,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   [EXPERIMENTAL]
   Print tracing configuration:
-    control.(sh|bat) --tracing-configuration
+    control.(sh|bat) --tracing-configuration [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
   [EXPERIMENTAL]
   Print tracing configuration:
@@ -267,7 +267,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   [EXPERIMENTAL]
   Print specific tracing configuration based on specified --scope and --label:
-    control.(sh|bat) --tracing-configuration get [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL] [--label label]
+    control.(sh|bat) --tracing-configuration get --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label]
 
   [EXPERIMENTAL]
   Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration:
@@ -275,11 +275,11 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   [EXPERIMENTAL]
   Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration:
-    control.(sh|bat) --tracing-configuration reset [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL] [--label label]
+    control.(sh|bat) --tracing-configuration reset --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label]
 
   [EXPERIMENTAL]
   Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration:
-    control.(sh|bat) --tracing-configuration set [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL] [--label label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
+    control.(sh|bat) --tracing-configuration set --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
 
   Stop warm-up:
     control.(sh|bat) --warm-up --stop
