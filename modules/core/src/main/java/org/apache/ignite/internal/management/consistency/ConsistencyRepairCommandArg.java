@@ -35,7 +35,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     private String cacheName;
 
     /** */
-    @Argument(description = "Cache's partition to be checked/repaired")
+    @Argument(description = "Cache's partition to be checked/repaired", example = "partition")
     private int[] partition;
 
     /** Strategy. */

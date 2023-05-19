@@ -375,7 +375,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   [EXPERIMENTAL]
   Check/Repair cache consistency using Read Repair approach:
-    control.(sh|bat) --consistency repair --cache-name cache_name --partition partition --strategy LWW|PRIMARY|RELATIVE_MAJORITY|REMOVE|CHECK_ONLY --parallel
+    control.(sh|bat) --consistency repair --cache-name cache_name --partition partition --strategy LWW|PRIMARY|RELATIVE_MAJORITY|REMOVE|CHECK_ONLY [--parallel]
 
     Parameters:
       --cache-name cache_name                                     - Cache to be checked/repaired.
