@@ -84,13 +84,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocalAdapter.class, IgniteInternalFuture.class, "lockFut");
 
-    /**
-     * Log message prefix of a timeouted transaction when not even trying to get a lock because it is too late to
-     * do anything within the transaction timeout.
-     */
-    public static final String LOG_MSG_LATE_TO_TAKE_LOCK_TIMEOUT_PREFIX = "Did not try to acquire any lock. Too " +
-        "late. Transaction has already timeouted ";
-
     /** Near mappings. */
     protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
@@ -713,8 +706,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         long timeout = remainingTime();
 
-        if (timeout == -1)
-            return new GridFinishedFuture<>(timeoutException(LOG_MSG_LATE_TO_TAKE_LOCK_TIMEOUT_PREFIX));
+        if (timeout == -1) {
+            return new GridFinishedFuture<>(timeoutException("The transaction has already finished with " +
+                "timeout before attempting to acquire a data lock"));
+        }
 
         if (isRollbackOnly())
             return new GridFinishedFuture<>(rollbackException());

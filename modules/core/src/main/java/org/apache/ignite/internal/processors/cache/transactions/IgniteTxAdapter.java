@@ -792,7 +792,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return Transaction timeout exception with the message of lock acquire failure.
      */
     public final IgniteCheckedException timeoutException() {
-        return timeoutException("Failed to acquire lock within provided timeout for transaction ");
+        return timeoutException("Failed to acquire lock within provided timeout for transaction");
     }
 
     /**
@@ -800,7 +800,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return Transaction timeout exception with the provided message.
      */
     public final IgniteCheckedException timeoutException(String msg) {
-        return new IgniteTxTimeoutCheckedException(msg + "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+        return new IgniteTxTimeoutCheckedException(msg + " [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /**
