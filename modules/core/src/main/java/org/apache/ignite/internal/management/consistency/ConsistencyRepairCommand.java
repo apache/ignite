@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal.management.consistency;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import static java.util.stream.Collectors.toSet;
 
@@ -52,44 +56,19 @@ public class ConsistencyRepairCommand implements
         StringBuilder sb = new StringBuilder();
         boolean failed = false;
 
-        Set<UUID> nodeIds = arg.parallel() ?
-            Collections.singleton(BROADCAST_UUID) :
-            cli.compute().nodes().stream()
+        if (arg.parallel())
+            failed = execute(cli, arg, cli.compute().nodes(GridClientNode::connectable), sb);
+        else {
+            Set<GridClientNode> nodes = cli.compute().nodes().stream()
                 .filter(node -> !node.isClient())
-                .map(GridClientNode::nodeId)
                 .collect(toSet());
 
-        for (UUID nodeId : nodeIds) {
-            VisorConsistencyTaskResult res = executeTaskByNameOnNode(
-                client,
-                cmd.taskName(),
-                arg(),
-                nodeId,
-                clientCfg
-            );
+            for (GridClientNode node : nodes) {
+                failed = execute(cli, arg, Collections.singleton(node), sb);
 
-            if (res.cancelled()) {
-                sb.append("Operation execution cancelled.\n\n");
-
-                failed = true;
+                if (failed)
+                    break;
             }
-
-            if (res.failed()) {
-                sb.append("Operation execution failed.\n\n");
-
-                failed = true;
-            }
-
-            if (failed)
-                sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
-
-            if (res.message() != null)
-                sb.append(res.message());
-            else
-                assert !arg.parallel();
-
-            if (failed)
-                break;
         }
 
         String res = sb.toString();
@@ -100,5 +79,42 @@ public class ConsistencyRepairCommand implements
         printer.accept(res);
 
         return res;
+    }
+
+    /** */
+    public boolean execute(
+        GridClient cli,
+        ConsistencyRepairCommandArg arg,
+        Collection<GridClientNode> nodes,
+        StringBuilder sb
+    ) throws GridClientException {
+        boolean failed = false;
+
+        VisorConsistencyTaskResult res = cli.compute().projection(nodes).execute(
+            VisorConsistencyRepairTask.class.getName(),
+            new VisorTaskArgument<>(nodes.stream().map(GridClientNode::nodeId).collect(Collectors.toList()), arg, false)
+        );
+
+        if (res.cancelled()) {
+            sb.append("Operation execution cancelled.\n\n");
+
+            failed = true;
+        }
+
+        if (res.failed()) {
+            sb.append("Operation execution failed.\n\n");
+
+            failed = true;
+        }
+
+        if (failed)
+            sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
+
+        if (res.message() != null)
+            sb.append(res.message());
+        else
+            assert !arg.parallel();
+
+        return failed;
     }
 }

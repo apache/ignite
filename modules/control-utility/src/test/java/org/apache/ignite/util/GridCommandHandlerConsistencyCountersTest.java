@@ -45,7 +45,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
@@ -496,9 +495,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
             assertNoneAtomicCounters();
 
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-            ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-            ConsistencyCommand.PARTITIONS, "0",
-            ConsistencyCommand.STRATEGY, strategy.toString()));
+            KillCommandsControlShTest.CACHE, DEFAULT_CACHE_NAME,
+            KillCommandsControlShTest.PARTITIONS, "0",
+            KillCommandsControlShTest.STRATEGY, strategy.toString()));
 
         int repairedCnt = repairedEntriesCount();
 
@@ -540,9 +539,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         // Repairing one more time, but with guarantee to fix (primary strategy);
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-            ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-            ConsistencyCommand.PARTITIONS, "0",
-            ConsistencyCommand.STRATEGY, PRIMARY.toString()));
+            KillCommandsControlShTest.CACHE, DEFAULT_CACHE_NAME,
+            KillCommandsControlShTest.PARTITIONS, "0",
+            KillCommandsControlShTest.STRATEGY, PRIMARY.toString()));
 
         repairedCnt += repairedEntriesCount();
 

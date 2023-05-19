@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.consistency;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
+import org.apache.ignite.internal.management.consistency.ConsistencyRepairCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -47,13 +49,12 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
-
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
  *
  */
-public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorConsistencyRepairTaskArg, String> {
+public class VisorConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRepairCommandArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -70,14 +71,14 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
     public static final String PROCESSED_PREFIX = "[processed=";
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorConsistencyRepairTaskArg, String> job(VisorConsistencyRepairTaskArg arg) {
+    @Override protected VisorJob<ConsistencyRepairCommandArg, String> job(ConsistencyRepairCommandArg arg) {
         return new VisorConsistencyRepairJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorConsistencyRepairJob extends VisorJob<VisorConsistencyRepairTaskArg, String> {
+    private static class VisorConsistencyRepairJob extends VisorJob<ConsistencyRepairCommandArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -92,16 +93,16 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
          * @param arg Arguments.
          * @param debug Debug.
          */
-        protected VisorConsistencyRepairJob(VisorConsistencyRepairTaskArg arg, boolean debug) {
+        protected VisorConsistencyRepairJob(ConsistencyRepairCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
+        @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
-            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = arg.parts().stream()
-                .map(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
+            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partition())
+                .mapToObj(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
                         return F.t(t.get1(), t.get2().get());
@@ -132,8 +133,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
          * @param arg Taks arguments.
          * @return Partition results.
          */
-        private String processPartition(int p, VisorConsistencyRepairTaskArg arg) {
-            String cacheOrGrpName = arg.cacheOrGroupName();
+        private String processPartition(int p, ConsistencyRepairCommandArg arg) {
+            String cacheOrGrpName = arg.cacheName();
             ReadRepairStrategy strategy = arg.strategy();
 
             int batchSize = 128;

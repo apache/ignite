@@ -124,9 +124,6 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEA
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
-import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
-import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
-import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -136,6 +133,9 @@ import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.util.KillCommandsControlShTest.CACHE;
+import static org.apache.ignite.util.KillCommandsControlShTest.PARTITIONS;
+import static org.apache.ignite.util.KillCommandsControlShTest.STRATEGY;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 import static org.apache.ignite.util.TestStorageUtils.corruptDataEntry;
 

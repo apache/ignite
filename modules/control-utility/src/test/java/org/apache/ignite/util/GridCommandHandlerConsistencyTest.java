@@ -31,7 +31,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -297,9 +296,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
                 execute("--consistency", "repair",
-                    ConsistencyCommand.CACHE, "non-existent",
-                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
-                    ConsistencyCommand.STRATEGY, strategy.toString()));
+                    KillCommandsControlShTest.CACHE, "non-existent",
+                    KillCommandsControlShTest.PARTITIONS, String.valueOf(i),
+                    KillCommandsControlShTest.STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 
@@ -319,10 +318,10 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
 
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-                ConsistencyCommand.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
-                ConsistencyCommand.PARTITIONS,
+                KillCommandsControlShTest.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
+                KillCommandsControlShTest.PARTITIONS,
                     IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
-                ConsistencyCommand.STRATEGY, strategy.toString()));
+                KillCommandsControlShTest.STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 

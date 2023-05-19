@@ -34,7 +34,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
@@ -49,6 +48,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.KillCommandsControlShTest.PARALLEL;
 
 /**
  *
@@ -328,12 +328,12 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             for (String cacheName : caches) {
                 List<String> cmd = new ArrayList<>(Arrays.asList(
                     "--consistency", "repair",
-                    ConsistencyCommand.CACHE, cacheName,
-                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
-                    ConsistencyCommand.STRATEGY, strategy.toString()));
+                    KillCommandsControlShTest.CACHE, cacheName,
+                    KillCommandsControlShTest.PARTITIONS, String.valueOf(i),
+                    KillCommandsControlShTest.STRATEGY, strategy.toString()));
 
                 if (parallel)
-                    cmd.add(ConsistencyCommand.PARALLEL);
+                    cmd.add(PARALLEL);
 
                 assertEquals(EXIT_CODE_OK, execute(cmd));
 
