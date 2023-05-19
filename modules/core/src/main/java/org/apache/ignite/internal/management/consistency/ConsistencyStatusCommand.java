@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.consistency;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
@@ -54,4 +55,17 @@ public class ConsistencyStatusCommand implements
             .collect(Collectors.toList());
     }
 
+    /** {@inheritDoc} */
+    @Override public void printResult(NoArg arg, VisorConsistencyTaskResult res, Consumer<String> printer) {
+        if (res.cancelled())
+            printer.accept("Operation execution cancelled.\n\n");
+
+        if (res.failed())
+            printer.accept("Operation execution failed.\n\n");
+
+        if (res.cancelled() || res.failed())
+            printer.accept("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
+
+        printer.accept(res.message());
+    }
 }
