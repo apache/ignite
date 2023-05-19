@@ -239,10 +239,10 @@ public class CommandUtils {
             if (compType == String.class)
                 return (T)vals;
 
-            Object[] res = (Object[])Array.newInstance(compType, vals.length);
+            Object res = Array.newInstance(compType, vals.length);
 
             for (int i = 0; i < vals.length; i++)
-                res[i] = parseSingleVal(vals[i], compType);
+                Array.set(res, i, parseSingleVal(vals[i], compType));
 
             return (T)res;
         }
