@@ -45,7 +45,7 @@ public class GridIntList implements Message, Externalizable {
     private int[] arr;
 
     /** */
-    private int idx;
+    private volatile int idx;
 
     /**
      *
@@ -171,7 +171,9 @@ public class GridIntList implements Message, Externalizable {
         else if (arr.length == idx)
             arr = Arrays.copyOf(arr, arr.length << 1);
 
-        arr[idx++] = x;
+        arr[idx] = x;
+
+        idx++;
     }
 
     /**
