@@ -411,7 +411,6 @@ public class CommandHandlerParsingTest {
             // SET_STATE command has mandatory argument used in confirmation message.
             Command cmd = cmdL != SET_STATE ? cmdL.command() : parseArgs(asList(cmdL.text(), "ACTIVE")).command();
 
-            // TODO: fixme.
             if (cmd.confirmationPrompt() == null)
                 continue;
 
