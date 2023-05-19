@@ -335,7 +335,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             for (int i = 0; i < activeCacheIds.size(); i++) {
                 int cacheId = activeCacheIds.get(i);
 
-                GridCacheContext<?,?> ctx = sctx.cacheContext(cacheId);
+                GridCacheContext<?, ?> ctx = sctx.cacheContext(cacheId);
 
                 // Ad-hoc solution to avoid the node crash.
                 if (ctx == null) // Most likely, because of reading of an inconsitent state of a non-threadsafe collection.
