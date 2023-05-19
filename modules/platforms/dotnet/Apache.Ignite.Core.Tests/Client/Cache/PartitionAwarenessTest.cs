@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.DataStructures;
-    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -127,11 +126,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void CachePut_UserDefinedTypeWithAffinityKey_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
             // Note: annotation-based configuration is not supported on Java side.
             // Use manual configuration instead.
-            var cacheClientConfiguration = new CacheClientConfiguration("c_custom_key_aff")
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
             {
                 KeyConfiguration = new List<CacheKeyConfiguration>
                 {
@@ -141,14 +146,109 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     }
                 }
             };
+
             var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>(cacheClientConfiguration);
 
-            var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
+            cache.Put(new TestKeyWithAffinity(key, Guid.NewGuid().ToString()), key);
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Put"));
+        }
 
-            var expected = string.Format("Affinity keys are not supported. Object '{0}' has an affinity key.",
-                typeof(TestKeyWithAffinity));
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void CachePut_UserDefinedTypeWithAffinityKeyBinarizable_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
+            {
+                KeyConfiguration = new List<CacheKeyConfiguration>
+                {
+                    new CacheKeyConfiguration(typeof(TestKeyWithAffinityBinarizable))
+                    {
+                        AffinityKeyFieldName = "id"
+                    }
+                }
+            };
 
-            Assert.AreEqual(expected, ex.Message);
+            var cache = Client.GetOrCreateCache<TestKeyWithAffinityBinarizable, int>(cacheClientConfiguration);
+
+            cache.Put(new TestKeyWithAffinityBinarizable(key, Guid.NewGuid().ToString()), key);
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Put"));
+        }
+
+        [Test]
+        public void CachePut_UserDefinedTypeWithAffinityKeyBinarizable_SkipKey_LogsWarningAndBypassesPartitionAwareness()
+        {
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
+            {
+                KeyConfiguration = new List<CacheKeyConfiguration>
+                {
+                    new CacheKeyConfiguration(typeof(TestKeyWithAffinityBinarizable))
+                    {
+                        AffinityKeyFieldName = "id"
+                    }
+                }
+            };
+
+            var cache = Client.GetOrCreateCache<TestKeyWithAffinityBinarizable, int>(cacheClientConfiguration);
+
+            var logger = (ListLogger)Client.GetConfiguration().Logger;
+            logger.Clear();
+
+            cache.Put(new TestKeyWithAffinityBinarizable(123, Guid.NewGuid().ToString(), skipKey: true), 123);
+
+            Assert.AreEqual(
+                "Failed to compute partition awareness hash code for type " +
+                "'Apache.Ignite.Core.Tests.Client.Cache.TestKeyWithAffinityBinarizable'",
+                logger.Entries.Single().Message);
+        }
+
+        [Test]
+        [TestCase(1, 0)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 2)]
+        [TestCase(5, 2)]
+        [TestCase(6, 1)]
+        public void CachePut_UserDefinedTypeWithUserTypeAffinityKey_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            var cacheClientConfiguration = new CacheClientConfiguration(TestUtils.TestName)
+            {
+                KeyConfiguration = new List<CacheKeyConfiguration>
+                {
+                    new CacheKeyConfiguration(typeof(TestKeyWithUserObjectAffinity))
+                    {
+                        AffinityKeyFieldName = "_key"
+                    }
+                }
+            };
+
+            var cache = Client.GetOrCreateCache<TestKeyWithUserObjectAffinity, int>(cacheClientConfiguration);
+
+            var keyObj = new TestKeyWithUserObjectAffinity(new TestKey(key, key.ToString()), Guid.NewGuid().ToString());
+            cache.Put(keyObj, key);
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Put"));
+        }
+
+        [Test]
+        public void CachePut_MultidimensionalArrayKey_LogsWarningAndBypassesPartitionAwareness()
+        {
+            var logger = (ListLogger)Client.GetConfiguration().Logger;
+            logger.Clear();
+
+            var cache = Client.GetOrCreateCache<int[,], int>(TestUtils.TestName);
+
+            // Two operations, single warning.
+            cache.Put(new int[1, 1], 1);
+            cache.Put(new int[2, 2], 2);
+
+            Assert.AreEqual(
+                "Failed to compute partition awareness hash code for type 'System.Int32[,]'",
+                logger.Entries.Single().Message);
         }
 
         [Test]

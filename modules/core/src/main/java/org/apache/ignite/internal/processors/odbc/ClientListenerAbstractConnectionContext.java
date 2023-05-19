@@ -148,4 +148,9 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     public String clientDescriptor() {
         return clientDesc;
     }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> attributes() {
+        return F.isEmpty(userAttrs) ? Collections.emptyMap() : Collections.unmodifiableMap(userAttrs);
+    }
 }
