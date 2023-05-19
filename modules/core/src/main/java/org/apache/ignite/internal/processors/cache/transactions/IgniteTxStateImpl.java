@@ -330,12 +330,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeWriteThrough(GridCacheSharedContext cctx) {
+    @Override public boolean storeWriteThrough(GridCacheSharedContext sctx) {
         if (!activeCacheIds.isEmpty()) {
             for (int i = 0; i < activeCacheIds.size(); i++) {
                 int cacheId = activeCacheIds.get(i);
 
-                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+                GridCacheContext<?,?> ctx = sctx.cacheContext(cacheId);
+
+                // Ad-hoc solution to avoid the node crash.
+                if (ctx == null) // Most likely, because of reading of an inconsitent state of a non-threadsafe collection.
+                    continue;
+
+                CacheStoreManager store = ctx.store();
 
                 if (store.configured() && store.isWriteThrough())
                     return true;
