@@ -47,6 +47,7 @@ import org.apache.ignite.spi.systemview.view.CacheGroupIoView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.CacheView;
+import org.apache.ignite.spi.systemview.view.ClientConnectionAttributeView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
@@ -116,6 +117,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeJobView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ClientConnectionAttributeView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ContinuousQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClusterNodeView.class, DFLT_SRC_DIR);
