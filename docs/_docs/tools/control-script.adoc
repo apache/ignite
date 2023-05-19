@@ -60,6 +60,7 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
 | --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
 
@@ -419,6 +420,33 @@ control.sh|bat --cache list . --seq
 
 # Displays info about the atomic sequnces whose names start with "counter-".
 control.sh|bat --cache list counter-.* --seq
+----
+
+== Creating Caches
+
+You can use the control script to create specific caches.
+
+NOTE: The 'ignite-spring' module should be enabled.
+
+[source, shell]
+----
+control.sh|bat --cache create --springXmlConfig springXmlFilePath
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--springXmlConfig springXmlConfigPath` | Path to the Spring XML configuration that contains
+'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from.
+|===
+
+Examples:
+[source, shell]
+----
+# Create caches from the `/ignite/config/userCaches.xml` configuration.
+control.sh|bat --cache create --springXmlConfig /ignite/config/userCaches.xml`
 ----
 
 == Destroying Caches

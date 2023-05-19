@@ -195,7 +195,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.includeMetadata(),
             qry.keepBinary(),
             qry.taskHash(),
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             qry.mvccSnapshot(),
             // Force deployment anyway if scan query is used.
             cctx.deploymentEnabled() || deployFilterOrTransformer,
@@ -220,7 +220,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             false,
             qry.keepBinary(),
             qry.taskHash(),
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
             cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
             qry.isDataPageScanEnabled());
@@ -236,7 +236,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return new GridCacheQueryRequest(cctx.cacheId(),
             reqId,
             fieldsQry,
-            cctx.startTopologyVersion(),
+            cctx.affinity().affinityTopologyVersion(),
             cctx.deploymentEnabled());
     }
 

@@ -646,7 +646,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @throws IgniteCheckedException If callback failed.
      */
-    protected void onKernalStart() throws IgniteCheckedException {
+    public void onKernalStart() throws IgniteCheckedException {
         // No-op.
     }
 

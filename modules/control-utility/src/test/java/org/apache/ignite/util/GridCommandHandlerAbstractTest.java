@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
@@ -80,7 +82,6 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
-import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Common abstract class for testing {@link CommandHandler}.
@@ -267,7 +268,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(sslEnabled()));
 
         if (sslEnabled())
-            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+            cfg.setSslContextFactory(sslFactory());
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
@@ -393,8 +394,21 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         if (sslEnabled()) {
             // We shouldn't add extra args for --cache help.
             if (args.size() < 2 || !args.get(0).equals("--cache") || !args.get(1).equals("help"))
-                addSslParams(args);
+                extendSslParams(args);
         }
+    }
+
+    /** Custom SSL params. */
+    protected void extendSslParams(List<String> params) {
+        params.add("--keystore");
+        params.add(GridTestUtils.keyStorePath("node01"));
+        params.add("--keystore-password");
+        params.add(GridTestUtils.keyStorePassword());
+    }
+
+    /** Custom SSL factory. */
+    protected Factory<SSLContext> sslFactory() {
+        return GridTestUtils.sslFactory();
     }
 
     /** */
