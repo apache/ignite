@@ -53,7 +53,6 @@ import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommand
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
