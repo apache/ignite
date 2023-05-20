@@ -2671,15 +2671,25 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return resolved node, or <code>null</code> if node not found.
      */
     public ClusterNode historicalNode(UUID nodeId) {
+        Set<Long> checkedTopVersions = new HashSet<>();
+
         for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
             ClusterNode node = discoCache.node(nodeId);
 
             if (node != null)
                 return node;
+
+            checkedTopVersions.add(discoCache.version().topologyVersion());
         }
 
-        for (Collection<ClusterNode> top : topHist.values()) {
-            for (ClusterNode node : top) {
+        // We did not find node with given ID in the discovery history of the local node. This means that the local
+        // node could join the cluster after the node with given ID left it. Let's check in the global topology history,
+        // which contains all topology versions since the cluster was started.
+        for (Map.Entry<Long, Collection<ClusterNode>> top : topHist.entrySet()) {
+            if (checkedTopVersions.contains(top.getKey()))
+                continue;
+
+            for (ClusterNode node : top.getValue()) {
                 if (F.eq(node.id(), nodeId))
                     return node;
             }

@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -50,6 +51,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -61,21 +63,14 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
+public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<UUID> TEST_MESSAGE_ACCEPTED_NODES = new HashSet<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return getConfiguration(igniteInstanceName, false);
-    }
-
-    /** */
-    private IgniteConfiguration getConfiguration(String igniteInstanceName, boolean isClient) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setFailureHandler(new StopNodeOrHaltFailureHandler())
-            .setDataStorageConfiguration(new DataStorageConfiguration())
-            .setClientMode(isClient)
             .setLocalEventListeners(
                 Collections.singletonMap(e -> {
                     DiscoveryCustomEvent discoEvt = (DiscoveryCustomEvent)e;
@@ -117,10 +112,10 @@ public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
 
     /** */
     @Test
-    public void test() throws Exception {
+    public void testProcessCustomDiscoveryMessageFromLeftNode() throws Exception {
         IgniteEx crd = startGrid(0);
 
-        IgniteEx cli = startClientNode(11);
+        IgniteEx cli = startClientGrid(11);
 
         IgniteEx srv = startGrid(1);
 
@@ -135,32 +130,32 @@ public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
             EVT_NODE_LEFT
         );
 
-        discoveryMessageQueue(srv).block();
+        discoveryRingMessageWorkerQueue(srv).block();
 
-        long pollingTimeout = U.field(discoveryMessageWorker(srv), "pollingTimeout");
+        long pollingTimeout = U.field(discoveryRingMessageWorker(srv), "pollingTimeout");
 
         // We need to wait for any active BlockingDeque#poll operation to complete.
         U.sleep(5 * pollingTimeout);
 
         cli.context().discovery().sendCustomEvent(new TestDiscoveryMessage());
 
-        waitForCondition(() -> !getReceivedMessages(srv, TestDiscoveryMessage.class).isEmpty(), getTestTimeout());
+        waitForCondition(() -> anyReceivedMessageMatch(srv, msg -> msg instanceof TestDiscoveryMessage), getTestTimeout());
 
         runAsync(() -> stopGrid(11));
 
         cliLefEvtProcessedByCoordinator.await();
 
-        waitForCondition(() -> !getReceivedMessages(srv, TcpDiscoveryNodeLeftMessage.class).isEmpty(), getTestTimeout());
+        waitForCondition(() -> anyReceivedMessageMatch(srv, msg -> msg instanceof TcpDiscoveryNodeLeftMessage), getTestTimeout());
 
         runAsync(() -> startGrid(2));
 
-        waitForCondition(() -> isNodeAddedMessageReceived(srv, 2), getTestTimeout());
+        waitForCondition(() -> anyReceivedMessageMatch(srv, msg -> isDiscoveryNodeAddedMessage(msg, 2)), getTestTimeout());
 
         runAsync(() -> startGrid(3));
 
-        waitForCondition(() -> isNodeAddedMessageReceived(srv, 3), getTestTimeout());
+        waitForCondition(() -> anyReceivedMessageMatch(srv, msg -> isDiscoveryNodeAddedMessage(msg, 3)), getTestTimeout());
 
-        discoveryMessageQueue(srv).unblock();
+        discoveryRingMessageWorkerQueue(srv).unblock();
 
         waitForCondition(
             () -> grid(0).cluster().nodes().size() == 4
@@ -169,27 +164,22 @@ public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
     }
 
     /** */
-    private IgniteEx startClientNode(int idx) throws Exception {
-        return startGrid(getConfiguration(getTestIgniteInstanceName(idx), true));
+    private boolean isDiscoveryNodeAddedMessage(Object msg, int joiningNdeIdx) {
+        return msg instanceof TcpDiscoveryNodeAddedMessage &&
+            F.eq(
+                getTestIgniteInstanceName(joiningNdeIdx),
+                ((TcpDiscoveryNodeAddedMessage)msg).node().attribute(ATTR_IGNITE_INSTANCE_NAME)
+            );
     }
 
     /** */
-    private boolean isNodeAddedMessageReceived(IgniteEx ignite, int nodeIdx) {
-        return getReceivedMessages(ignite, TcpDiscoveryNodeAddedMessage.class)
-            .stream()
-            .anyMatch(msg -> F.eq(getTestIgniteInstanceName(nodeIdx), msg.node().attribute(ATTR_IGNITE_INSTANCE_NAME)));
+    private BlockingDequeWrapper<TcpDiscoveryAbstractMessage> discoveryRingMessageWorkerQueue(IgniteEx ignite) {
+        return U.field(discoveryRingMessageWorker(ignite), "queue");
     }
 
     /** */
-    private BlockingDequeWrapper<TcpDiscoveryAbstractMessage> discoveryMessageQueue(IgniteEx ignite) {
-        return U.field(discoveryMessageWorker(ignite), "queue");
-    }
-
-    /** */
-    private <T> Collection<T> getReceivedMessages(IgniteEx ignite, Class<T> msgCls) {
-        Collection<T> res = new HashSet<>();
-
-        for (TcpDiscoveryAbstractMessage msg : discoveryMessageQueue(ignite)) {
+    private boolean anyReceivedMessageMatch(IgniteEx ignite, Predicate<Object> predicate) {
+        for (TcpDiscoveryAbstractMessage msg : discoveryRingMessageWorkerQueue(ignite)) {
             Object unwrappedMsg = msg;
 
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
@@ -213,18 +203,16 @@ public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
                 unwrappedMsg = ((CustomMessageWrapper)customMsg).delegate();
             }
 
-            if (!msgCls.equals(unwrappedMsg.getClass()))
-                continue;
-
-            res.add((T)unwrappedMsg);
+            if (predicate.test(unwrappedMsg))
+                return true;
         }
 
-        return Collections.unmodifiableCollection(res);
+        return false;
     }
 
     /** */
     private void wrapRingMessageWorkerQueue(IgniteEx ignite) throws Exception {
-        Object discoMsgWorker = discoveryMessageWorker(ignite);
+        Object discoMsgWorker = discoveryRingMessageWorker(ignite);
 
         BlockingDeque<TcpDiscoveryAbstractMessage> queue = U.field(discoMsgWorker, "queue");
 
@@ -234,7 +222,7 @@ public class NodeSecurityContextPropagationTest extends AbstractSecurityTest {
     }
 
     /** */
-    private Object discoveryMessageWorker(IgniteEx ignite) {
+    private Object discoveryRingMessageWorker(IgniteEx ignite) {
         DiscoverySpi[] discoverySpis = U.field(ignite.context().discovery(), "spis");
 
         Object impl = U.field(discoverySpis[0], "impl");
