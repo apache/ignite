@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
-@ArgumentGroup(value = {"status", "cancel"}, onlyOneOf = true, optional = true)
+@ArgumentGroup(value = {"start", "status", "cancel"}, onlyOneOf = true, optional = true)
 public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
@@ -76,8 +76,7 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     private boolean cancel;
 
     /** */
-    @Argument(optional = true,
-        description = "Start snapshot restore operation (default action)")
+    @Argument(optional = true, description = "Start snapshot restore operation (Default action)")
     private boolean start;
 
     /** */
