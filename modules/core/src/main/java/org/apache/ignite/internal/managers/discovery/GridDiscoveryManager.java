@@ -2683,11 +2683,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // We did not find node with given ID in the discovery history of the local node. This means that the local
         // node could join the cluster after the node with given ID left it. Let's check in the global topology history,
         // which contains all topology versions since the cluster was started.
-        Map<Long, Collection<ClusterNode>> preJoinTopHist = discoCacheHist.isEmpty()
-            ? topHist
-            : topHist.headMap(F.first(discoCacheHist.keySet()).topologyVersion());
+        AffinityTopologyVersion youngestLocAffTop = F.first(discoCacheHist.keySet());
 
-        for (Collection<ClusterNode> top : preJoinTopHist.values()) {
+        NavigableMap<Long, Collection<ClusterNode>> preJoinTopHist = youngestLocAffTop == null
+            ? topHist
+            : topHist.headMap(youngestLocAffTop.topologyVersion(), false);
+
+        for (Collection<ClusterNode> top : preJoinTopHist.descendingMap().values()) {
             for (ClusterNode node : top) {
                 if (F.eq(node.id(), nodeId))
                     return node;
