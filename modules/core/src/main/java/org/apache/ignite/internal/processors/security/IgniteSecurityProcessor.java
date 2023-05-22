@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -148,22 +147,13 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
         try {
-            ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
-                .orElseGet(() -> ctx.discovery().historicalNode(subjId));
+            SecurityContext res = secPrc.securityContext(subjId);
 
-            SecurityContext res;
+            if (res == null)
+                res = findNodeSecurityContext(subjId);
 
-            if (node == null)
-                res = secPrc.securityContext(subjId);
-            else if (dfltSecCtx.subject().id().equals(subjId))
-                res = dfltSecCtx;
-            else
-                res = secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node));
-
-            if (res == null) {
-                throw new IllegalStateException("Failed to find security context " +
-                    "for subject with given ID : " + subjId);
-            }
+            if (res == null)
+                throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
 
             return withContext(res);
         }
@@ -172,6 +162,28 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
             throw e;
         }
+    }
+
+    /**
+     * Looks for a node which ID is equal to the given Subject ID. If such a node exists, returns the Security Context
+     * that belongs to it. Otherwise {@code null}.
+     */
+    private SecurityContext findNodeSecurityContext(UUID subjId) {
+        SecurityContext locNodeSecCtx = dfltSecCtx;
+
+        if (locNodeSecCtx.subject().id().equals(subjId))
+            return locNodeSecCtx;
+
+        return secCtxs.computeIfAbsent(subjId, uuid -> {
+            // Here we must go directly to SPI without checking Discovery Cache to avoid race between Communication
+            // messages processing and Discovery Cache updates.
+            ClusterNode node = ctx.discovery().getAlive(subjId);
+
+            if (node == null)
+                node = ctx.discovery().historicalNode(subjId);
+
+            return node == null ? null : nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
+        });
     }
 
     /** Restores local node context for the current thread. */

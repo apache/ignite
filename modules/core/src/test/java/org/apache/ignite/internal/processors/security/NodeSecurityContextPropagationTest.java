@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -25,9 +26,12 @@ import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +44,8 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -56,7 +62,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -71,6 +82,7 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setFailureHandler(new StopNodeOrHaltFailureHandler())
+            .setConsistentId(igniteInstanceName)
             .setLocalEventListeners(
                 Collections.singletonMap(e -> {
                     DiscoveryCustomEvent discoEvt = (DiscoveryCustomEvent)e;
@@ -92,6 +104,13 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
                 .setAddresses(Collections.singleton("127.0.0.1:47500")));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -161,6 +180,60 @@ public class NodeSecurityContextPropagationTest extends GridCommonAbstractTest {
             () -> grid(0).cluster().nodes().size() == 4
                 && TEST_MESSAGE_ACCEPTED_NODES.contains(grid(2).cluster().localNode().id()),
             getTestTimeout());
+    }
+
+    /** */
+    @Test
+    public void testProcessCommunicationMessageFromJoiningNode() throws Exception {
+        startGrids(2).cluster().state(ACTIVE);
+
+        grid(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setBackups(1)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setAtomicityMode(TRANSACTIONAL));
+
+        awaitPartitionMapExchange();
+
+        CountDownLatch notificationWrkBlockedLatch = new CountDownLatch(1);
+
+        grid(1).context().io().addMessageListener(
+            TOPIC_CACHE,
+            (nodeId, msg, plc) -> {
+                if (msg instanceof GridDhtTxPrepareRequest)
+                    notificationWrkBlockedLatch.countDown();
+            });
+
+        blockDiscoveryNotificationWorker(grid(1), notificationWrkBlockedLatch);
+
+        IgniteEx cli = startClientGrid(2);
+
+        int key = keyForNode(grid(0).affinity(DEFAULT_CACHE_NAME), new AtomicInteger(), grid(0).localNode());
+
+        cli.cache(DEFAULT_CACHE_NAME).put(key, 0);
+
+        assertEquals(0, grid(1).cache(DEFAULT_CACHE_NAME).get(key));
+    }
+
+    /** */
+    private void blockDiscoveryNotificationWorker(IgniteEx ignite, CountDownLatch latch) throws Exception {
+        Object discoWrk = U.field(ignite.context().discovery(), "discoNtfWrk");
+
+        Method submitMethod = discoWrk.getClass().getDeclaredMethod("submit", GridFutureAdapter.class, Runnable.class);
+
+        submitMethod.setAccessible(true);
+
+        Runnable blockTask = () -> {
+            try {
+                assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException(e);
+            }
+        };
+
+        submitMethod.invoke(discoWrk, new GridFutureAdapter<>(), blockTask);
     }
 
     /** */
