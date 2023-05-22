@@ -192,10 +192,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      */
     private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            if (cmd.getClass().isAnnotationPresent(Deprecated.class) &&
-                cmd.deprecationMessage() != null) {
-                logger.warning(cmd.deprecationMessage());
-            }
+            String deprecationMsg = cmd.deprecationMessage(arg);
+
+            if (deprecationMsg != null)
+                logger.warning(deprecationMsg);
 
             R res;
 

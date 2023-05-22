@@ -17,15 +17,27 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public class SnapshotRestoreCommand implements ComputeCommand<SnapshotRestoreCommandArg, VisorSnapshotTaskResult> {
+public class SnapshotRestoreCommand extends AbstractSnapshotCommand<SnapshotRestoreCommandArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Restore snapshot";
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable String deprecationMessage(SnapshotRestoreCommandArg arg) {
+        if (arg.start())
+            return "Command option '--start' is redundant and must be avoided.";
+        else if (arg.cancel())
+            return "Command deprecated. Use '--snapshot cancel' instead.";
+        else if (arg.status())
+            return "Command deprecated. Use '--snapshot status' instead.";
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -36,5 +48,12 @@ public class SnapshotRestoreCommand implements ComputeCommand<SnapshotRestoreCom
     /** {@inheritDoc} */
     @Override public Class<VisorSnapshotRestoreTask> taskClass() {
         return VisorSnapshotRestoreTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt(GridClient cli, SnapshotRestoreCommandArg arg) throws Exception {
+        return arg.status() || arg.cancel() || arg.groups() != null
+            ? null :
+            "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 }

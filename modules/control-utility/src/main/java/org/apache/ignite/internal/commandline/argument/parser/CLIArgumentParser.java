@@ -95,6 +95,8 @@ public class CLIArgumentParser {
 
                 continue;
             }
+            else if (parsedArgs.get(cliArg.name()) != null)
+                throw new IllegalArgumentException(cliArg.name() + " argument specified twice");
 
             boolean bool = cliArg.type().equals(Boolean.class) || cliArg.type().equals(boolean.class);
 

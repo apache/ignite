@@ -34,7 +34,7 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public String deprecationMessage() {
+    @Override public String deprecationMessage(DeactivateCommandArg arg) {
         return "Command deprecated. Use --set-state instead.";
     }
 

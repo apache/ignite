@@ -23,7 +23,6 @@ import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommandArg;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 
 /**
@@ -36,22 +35,12 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotRestoreCommandArg, String> job(SnapshotRestoreCommandArg arg) {
-        VisorSnapshotRestoreTaskAction action =
-            VisorSnapshotRestoreTaskAction.START;
+        if (arg.cancel())
+            return new VisorSnapshotRestoreCancelJob(arg, debug);
+        else if (arg.status())
+            return new VisorSnapshotRestoreStatusJob(arg, debug);
 
-        switch (action) {
-            case START:
-                return new VisorSnapshotStartRestoreJob(arg, debug);
-
-            case CANCEL:
-                return new VisorSnapshotRestoreCancelJob(arg, debug);
-
-            case STATUS:
-                return new VisorSnapshotRestoreStatusJob(arg, debug);
-
-            default:
-                throw new IllegalArgumentException("Action is not supported: " + action);
-        }
+        return new VisorSnapshotStartRestoreJob(arg, debug);
     }
 
     /** */
@@ -85,7 +74,7 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<SnapshotR
                 fut.get();
 
             String msgSuff = arg.sync() ? "completed successfully" : "started";
-            String msgGrps = arg.groups() == null ? "" : ", group(s)=" + F.concat(arg.groups(), ",");
+            String msgGrps = arg.groups() == null ? "" : ", group(s)=" + String.join(",", arg.groups());
             String msgId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
 
             return "Snapshot cache group restore operation " + msgSuff +

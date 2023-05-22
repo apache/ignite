@@ -22,11 +22,13 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
+@ArgumentGroup(value = {"status", "cancel"}, onlyOneOf = true, optional = true)
 public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
@@ -63,6 +65,33 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
         description = "Check snapshot data integrity before restore (slow!). Similar to the \"check\" command")
     private boolean check;
 
+    /** */
+    @Argument(optional = true,
+        description = "Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead)")
+    private boolean status;
+
+    /** */
+    @Argument(optional = true,
+        description = "Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead)")
+    private boolean cancel;
+
+    /** */
+    @Argument(optional = true,
+        description = "Start snapshot restore operation (default action)")
+    private boolean start;
+
+    /** */
+    public void ensureOptions() {
+        if (!sync)
+            return;
+
+        if (cancel)
+            throw new IllegalArgumentException("--sync and --cancel can't be used together");
+
+        if (status)
+            throw new IllegalArgumentException("--sync and --status can't be used together");
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snapshotName);
@@ -71,6 +100,9 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
         U.writeString(out, src);
         out.writeBoolean(sync);
         out.writeBoolean(check);
+        out.writeBoolean(status);
+        out.writeBoolean(cancel);
+        out.writeBoolean(start);
     }
 
     /** {@inheritDoc} */
@@ -81,6 +113,42 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
         src = U.readString(in);
         sync = in.readBoolean();
         check = in.readBoolean();
+        status = in.readBoolean();
+        cancel = in.readBoolean();
+        start = in.readBoolean();
+    }
+
+    /** */
+    public boolean start() {
+        return start;
+    }
+
+    /** */
+    public void start(boolean start) {
+        this.start = start;
+        ensureOptions();
+    }
+
+    /** */
+    public boolean status() {
+        return status;
+    }
+
+    /** */
+    public void status(boolean status) {
+        this.status = status;
+        ensureOptions();
+    }
+
+    /** */
+    public boolean cancel() {
+        return cancel;
+    }
+
+    /** */
+    public void cancel(boolean cancel) {
+        this.cancel = cancel;
+        ensureOptions();
     }
 
     /** */
@@ -131,6 +199,7 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     /** */
     public void sync(boolean sync) {
         this.sync = sync;
+        ensureOptions();
     }
 
     /** */

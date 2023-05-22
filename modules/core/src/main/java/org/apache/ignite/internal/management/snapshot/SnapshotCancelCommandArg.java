@@ -21,23 +21,23 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
 
 /** */
 @ArgumentGroup(value = {"id", "name"}, optional = false, onlyOneOf = true)
-public class SnapshotCancelCommandArg extends IgniteDataTransferObject {
+public class SnapshotCancelCommandArg extends CancelSnapshotArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "Snapshot operation request ID")
+    @Argument(description = "Snapshot operation request ID", optional = true)
     private UUID id;
 
     /** */
-    @Argument(description = "Snapshot name (deprecated)")
+    @Argument(description = "Snapshot name (deprecated)", optional = true)
     private String name;
 
     /** {@inheritDoc} */
@@ -70,5 +70,15 @@ public class SnapshotCancelCommandArg extends IgniteDataTransferObject {
     /** */
     public void name(String name) {
         this.name = name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID requestId() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String snapshotName() {
+        return name;
     }
 }

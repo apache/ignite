@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public class SnapshotCreateCommand implements ComputeCommand<SnapshotCreateCommandArg, VisorSnapshotTaskResult> {
+public class SnapshotCreateCommand extends AbstractSnapshotCommand<SnapshotCreateCommandArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Create cluster snapshot";

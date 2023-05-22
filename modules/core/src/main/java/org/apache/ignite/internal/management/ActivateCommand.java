@@ -33,7 +33,7 @@ public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public String deprecationMessage() {
+    @Override public String deprecationMessage(NoArg arg) {
         return "Command deprecated. Use --set-state instead.";
     }
 

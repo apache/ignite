@@ -17,23 +17,22 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
+import java.util.function.Consumer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public class SnapshotCancelCommand extends AbstractSnapshotCommand<CancelSnapshotArg> {
+public abstract class AbstractSnapshotCommand<A extends IgniteDataTransferObject>
+    implements ComputeCommand<A, VisorSnapshotTaskResult> {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Cancel running snapshot operation";
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<SnapshotCancelCommandArg> argClass() {
-        return SnapshotCancelCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<VisorSnapshotCancelTask> taskClass() {
-        return VisorSnapshotCancelTask.class;
+    @Override public void printResult(A arg, VisorSnapshotTaskResult res, Consumer<String> printer) {
+        try {
+            printer.accept(String.valueOf(res.result()));
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
     }
 }

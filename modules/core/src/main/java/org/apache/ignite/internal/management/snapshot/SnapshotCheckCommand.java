@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.management.api.ComputeCommand;
+import java.util.function.Consumer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-public class SnapshotCheckCommand implements ComputeCommand<SnapshotCheckCommandArg, VisorSnapshotTaskResult> {
+public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckCommandArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Check snapshot";
@@ -36,5 +38,15 @@ public class SnapshotCheckCommand implements ComputeCommand<SnapshotCheckCommand
     /** {@inheritDoc} */
     @Override public Class<VisorSnapshotCheckTask> taskClass() {
         return VisorSnapshotCheckTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(SnapshotCheckCommandArg arg, VisorSnapshotTaskResult res0, Consumer<String> printer) {
+        try {
+            ((SnapshotPartitionsVerifyTaskResult)res0.result()).print(printer);
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
     }
 }
