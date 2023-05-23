@@ -168,7 +168,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
      * Looks for a node which ID is equal to the given Subject ID. If such a node exists, returns the Security Context
      * that belongs to it. Otherwise {@code null}.
      */
-    private SecurityContext findNodeSecurityContext(UUID subjId) {
+    @Nullable private SecurityContext findNodeSecurityContext(UUID subjId) {
         SecurityContext locNodeSecCtx = dfltSecCtx;
 
         if (locNodeSecCtx.subject().id().equals(subjId))
