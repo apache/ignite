@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
@@ -28,7 +29,9 @@ import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommand
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildStatusArg;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
+import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 
 /**
  *
@@ -57,7 +60,7 @@ public enum CacheSubcommands {
     /**
      * Destroy caches.
      */
-    DESTROY("destroy", null, new CacheDestroy()),
+    DESTROY(new CacheDestroyCommand()),
 
     /**
      * Clear caches.
@@ -148,6 +151,13 @@ public enum CacheSubcommands {
         this.name = name;
         this.commandArgs = commandArgs;
         this.command = command;
+    }
+
+    /** @param command Management API command. */
+    CacheSubcommands(org.apache.ignite.internal.management.api.Command<?, ?> command) {
+        this.name = toFormattedCommandName(command.getClass()).substring("Cache".length());
+        this.command = new DeclarativeCommandAdapter<>(command);
+        this.commandArgs = null;
     }
 
     /**

@@ -17,14 +17,55 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 
 /** */
 public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandArg, Void> {
+    /** Confirmation message format. */
+    public static final String CONFIRM_MSG = "Warning! The command will destroy %d caches: %s.\n" +
+        "If you continue, the cache data will be impossible to recover.";
+
+    /** No user-created caches exists message. */
+    public static final String NOOP_MSG = "No user-created caches exist.";
+
+    /** Result message. */
+    public static final String RESULT_MSG = "The following caches have been stopped: %s.";
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Permanently destroy specified caches";
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt(GridClient cli, CacheDestroyCommandArg arg) throws Exception {
+        if (arg.destroyAllCaches()) {
+            Set<String> caches = new TreeSet<>();
+
+            for (GridClientNode node : cli.compute().nodes(GridClientNode::connectable))
+                caches.addAll(node.caches().keySet());
+
+            arg.caches(caches.toArray(U.EMPTY_STRS));
+        }
+
+        if (F.isEmpty(arg.caches()))
+            return null;
+
+        return String.format(CONFIRM_MSG, arg.caches().length, S.joinToString(Arrays.asList(arg.caches()), ", ", "..", 80, 0));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(CacheDestroyCommandArg arg, Void res, Consumer<String> printer) {
+        printer.accept(String.format(RESULT_MSG, F.concat(Arrays.asList(arg.caches()), ", ")));
     }
 
     /** {@inheritDoc} */
@@ -33,7 +74,7 @@ public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandAr
     }
 
     /** {@inheritDoc} */
-    @Override public Class<VisorCacheStopTask> taskClass() {
+    @Override public Class taskClass() {
         return VisorCacheStopTask.class;
     }
 }

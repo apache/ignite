@@ -23,25 +23,52 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"destroyAllCaches", "caches"}, onlyOneOf = true, optional = false)
 public class CacheDestroyCommandArg extends IgniteDataTransferObject {
     /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
+    @Argument(description = "specifies a comma-separated list of cache names to be destroyed",
+        example = "cache1,...,cacheN")
+    private String[] caches;
+
+    /** */
     @Argument(description = "permanently destroy all user-created caches")
     private boolean destroyAllCaches;
 
-    /** */
-    @Argument(description = "specifies a comma-separated list of cache names to be destroyed")
-    private String[] caches;
-
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-
+        out.writeBoolean(destroyAllCaches);
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        destroyAllCaches = in.readBoolean();
+        caches = U.readArray(in, String.class);
+    }
 
+    /** */
+    public boolean destroyAllCaches() {
+        return destroyAllCaches;
+    }
+
+    /** */
+    public void destroyAllCaches(boolean destroyAllCaches) {
+        this.destroyAllCaches = destroyAllCaches;
+    }
+
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 }
