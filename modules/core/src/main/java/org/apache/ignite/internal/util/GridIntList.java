@@ -38,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
  * to avoid boxing/unboxing when using standard list from Java.
  */
 public class GridIntList implements Message, Externalizable {
+    /** Empty array. */
+    private static final int[] EMPTY_ARRAY = new int[0];
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -388,6 +391,9 @@ public class GridIntList implements Message, Externalizable {
      * @return Array copy.
      */
     public int[] array() {
+        if (idx == 0)
+            return EMPTY_ARRAY;
+
         int[] res = new int[idx];
 
         System.arraycopy(arr, 0, res, 0, idx);
