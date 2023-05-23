@@ -59,7 +59,7 @@ public interface Command<A extends IgniteDataTransferObject, R> {
 
     /**
      * @param arg Command argument.
-     * @return Deprecation message if command on the way to be decomissioned.
+     * @return Deprecation message if command on the way to being decomissioned.
      */
     public default @Nullable String deprecationMessage(A arg) {
         return null;
