@@ -53,7 +53,6 @@ import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommand
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
-import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -797,66 +796,52 @@ public class CommandHandlerParsingTest {
     @Test
     public void testTracingConfigurationArgumentsValidation() {
         // reset
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "reset", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "reset", "--scope", "aaa");
 
-        assertParseArgsThrows("The label should be specified.",
-            "--tracing-configuration", "reset", "--label");
+        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "reset", "--label");
 
         // reset all
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset_all", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "reset_all", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset_all", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "reset_all", "--scope", "aaa");
 
         // get
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "get", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "get", "--scope", "aaa");
 
-        assertParseArgsThrows("The label should be specified.",
-            "--tracing-configuration", "get", "--label");
+        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "get", "--label");
 
         // get all
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get_all", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "get_all", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get_all", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "get_all", "--scope", "aaa");
 
         // set
-        assertParseArgsThrows("The scope should be specified. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--scope");
+        assertParseArgsThrows("Please specify a value for argument: --scope", "--tracing-configuration", "set", "--scope");
 
-        assertParseArgsThrows("Invalid scope 'aaa'. The following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--scope", "aaa");
+        assertParseArgsThrows("Failed to parse --scope command argument", "--tracing-configuration", "set", "--scope", "aaa");
 
-        assertParseArgsThrows("The label should be specified.",
-            "--tracing-configuration", "set", "--label");
+        assertParseArgsThrows("Please specify a value for argument: --label", "--tracing-configuration", "set", "--label");
 
-        assertParseArgsThrows("The sampling rate should be specified. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate");
+        assertParseArgsThrows("Please specify a value for argument: --sampling-rate", "--tracing-configuration", "set", "--sampling-rate");
 
-        assertParseArgsThrows("Invalid sampling-rate 'aaa'. Decimal value between 0 and 1 should be used.",
+        assertParseArgsThrows("Failed to parse --sampling-rate command argument",
             "--tracing-configuration", "set", "--sampling-rate", "aaa");
 
-        assertParseArgsThrows("Invalid sampling-rate '-1'. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate", "-1");
+        assertParseArgsThrows("Invalid sampling-rate '-1.0'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "-1", "--scope", "SQL");
 
-        assertParseArgsThrows("Invalid sampling-rate '2'. Decimal value between 0 and 1 should be used.",
-            "--tracing-configuration", "set", "--sampling-rate", "2");
+        assertParseArgsThrows("Invalid sampling-rate '2.0'. Decimal value between 0 and 1 should be used.",
+            "--tracing-configuration", "set", "--sampling-rate", "2", "--scope", "SQL");
 
-        assertParseArgsThrows("At least one supported scope should be specified.",
+        assertParseArgsThrows("Please specify a value for argument: --included-scopes",
             "--tracing-configuration", "set", "--included-scopes");
 
-        assertParseArgsThrows("Invalid supported scope 'aaa'. The following values can be used: "
-                + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set", "--included-scopes", "TX,aaa");
+        assertParseArgsThrows("Failed to parse --included-scopes command argument",
+            "--tracing-configuration", "set", "--included-scopes", "TX,aaa");
     }
 
     /**
@@ -868,14 +853,11 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tracing-configuration", "get_all"));
 
-        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "reset");
+        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "reset");
 
-        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "get");
+        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "get");
 
-        assertParseArgsThrows("Scope attribute is missing. Following values can be used: "
-            + Arrays.toString(Scope.values()) + '.', "--tracing-configuration", "set");
+        assertParseArgsThrows("Mandatory argument(s) missing: [--scope]", "--tracing-configuration", "set");
     }
 
     /**
