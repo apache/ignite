@@ -586,7 +586,7 @@ public class ZookeeperDiscoveryImpl {
                 rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
                 locNode,
                 nodes,
-                 Collections.emptyNavigableMap(),
+                Collections.emptyNavigableMap(),
                 null,
                 null
             )
