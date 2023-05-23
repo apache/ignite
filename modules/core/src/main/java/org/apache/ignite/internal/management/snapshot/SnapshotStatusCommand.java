@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.snapshot;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -24,42 +24,57 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
-
-import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
-import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.STATUS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
-/**
- * Command to get the status of the current snapshot operation in the cluster.
- */
-public class SnapshotStatusCommand extends SnapshotSubcommand {
-    /** */
-    protected SnapshotStatusCommand() {
-        super("status", VisorSnapshotStatusTask.class);
+/** */
+public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg> {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Get the status of the current snapshot operation";
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(Object res, IgniteLogger log) {
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<VisorSnapshotStatusTask> taskClass() {
+        return VisorSnapshotStatusTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(NoArg arg, VisorSnapshotTaskResult res0, Consumer<String> printer) {
+        Object res;
+
+        try {
+            res = res0.result();
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+
         if (res == null) {
-            log.info("There is no create or restore snapshot operation in progress.");
+            printer.accept("There is no create or restore snapshot operation in progress.");
 
             return;
         }
 
-        SnapshotStatus status = (SnapshotStatus)res;
+        VisorSnapshotStatusTask.SnapshotStatus status = (VisorSnapshotStatusTask.SnapshotStatus)res;
 
         boolean isCreating = status.operation() == VisorSnapshotStatusTask.SnapshotOperation.CREATE;
         boolean isIncremental = status.incrementIndex() > 0;
@@ -80,10 +95,10 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
         s.a("Operation request ID: ").a(status.requestId()).nl();
         s.a("Started at: ").a(DateFormat.getDateTimeInstance().format(new Date(status.startTime()))).nl();
         s.a("Duration: ").a(X.timeSpan2DHMSM(System.currentTimeMillis() - status.startTime())).nl()
-                .nl();
+            .nl();
         s.a("Estimated operation progress:").nl();
 
-        log.info(s.toString());
+        printer.accept(s.toString());
 
         SnapshotTaskProgressDesc desc;
 
@@ -100,20 +115,9 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
             .map(e -> desc.buildRow(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
 
-        SystemViewCommand.printTable(desc.titles(), desc.types(), rows, log::info);
+        SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
 
-        log.info(U.nl());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void parseArguments(CommandArgIterator argIter) {
-        if (argIter.hasNextSubArg())
-            throw new IllegalArgumentException("Unexpected argument: " + argIter.peekNextArg() + '.');
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printUsage(IgniteLogger log) {
-        usage(log, "Get the status of the current snapshot operation:", SNAPSHOT, STATUS.toString());
+        printer.accept(U.nl());
     }
 
     /** Describes progress of a snapshot task. */

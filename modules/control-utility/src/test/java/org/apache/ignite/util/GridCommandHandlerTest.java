@@ -119,6 +119,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -3169,10 +3170,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync, --dest, --incremental.");
+        assertContains(log, testOut.toString(), "Unexpected argument: blah");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--sync", "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah.");
+        assertContains(log, testOut.toString(), "Unexpected argument: blah");
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName));
 
@@ -3199,7 +3200,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 waitForCondition(endTimeMetricPredicate::getAsBoolean, getTestTimeout()));
         }
 
-        assertContains(log, (String)h.getLastOperationResult(), snpName);
+        assertContains(log, (String)((VisorSnapshotTaskResult)h.getLastOperationResult()).result(), snpName);
 
         stopAllGrids();
 
@@ -3274,7 +3275,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((SnapshotPartitionsVerifyTaskResult)h.getLastOperationResult()).print(sb::append);
+        ((SnapshotPartitionsVerifyTaskResult)((VisorSnapshotTaskResult)h.getLastOperationResult()).result()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
@@ -3301,27 +3302,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Invalid command syntax checks.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--cancel", "--sync"));
-        assertContains(log, testOut.toString(), "Invalid argument: --sync.");
+        assertContains(log, testOut.toString(), "--sync and --cancel can't be used together");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "blah"));
-        assertContains(
-            log,
-            testOut.toString(),
-            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --check."
-        );
+        assertContains(log, testOut.toString(), "Unexpected argument: blah");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--status", "--sync"));
-        assertContains(log, testOut.toString(), "Invalid argument: --sync. Action \"--status\" does not support specified option.");
-
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--sync", "--start"));
-        assertContains(log, testOut.toString(), "Invalid argument: --start.");
+        assertContains(log, testOut.toString(), "--sync and --status can't be used together");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--start", "blah"));
-        assertContains(
-            log,
-            testOut.toString(),
-            "Invalid argument: blah. Possible options: --groups, --src, --increment, --sync, --check."
-        );
+        assertContains(log, testOut.toString(), "Unexpected argument: blah");
 
         autoConfirmation = true;
 
@@ -3387,8 +3377,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         CommandHandler h = new CommandHandler(createTestLogger());
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
-        assertContains(log, testOut.toString(),
-            "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --increment, --sync, --check.");
+        assertContains(log, testOut.toString(), "Unexpected argument: " + cacheName1);
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));
@@ -3519,20 +3508,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertNull(ig.cache(cacheName1));
 
-        // Missed increment index.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment"));
-        assertContains(log, testOut.toString(), "Expected incremental snapshot index");
+        boolean autoConfirmation0 = autoConfirmation;
+        autoConfirmation = false;
 
-        // Wrong params.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "wrong"));
-        assertContains(log, testOut.toString(), "Invalid value for incremental snapshot index");
+        try {
 
-        // Missed increment index.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "1", "--increment", "2"));
-        assertContains(log, testOut.toString(), "increment arg specified twice");
+            // Missed increment index.
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment"));
+            assertContains(log, testOut.toString(), "Please specify a value for argument: --increment");
 
-        // Non existent increment.
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+            // Wrong params.
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "wrong"));
+            assertContains(log, testOut.toString(), "Can't parse number 'wrong'");
+
+            // Missed increment index.
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "1", "--increment", "2"));
+            assertContains(log, testOut.toString(), "--increment argument specified twice");
+
+            // Non existent increment.
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--snapshot", "restore", snpName, "--increment", "2", "--sync"));
+        }
+        finally {
+            autoConfirmation = autoConfirmation0;
+        }
 
         // Succesfull restore.
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "restore", snpName, "--increment", "1", "--sync"));
@@ -3579,7 +3577,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             injectTestSystemOut();
 
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "create", snpName, "--dest", "A", "--dest", "B"));
-            assertContains(log, testOut.toString(), "--dest arg specified twice.");
+            assertContains(log, testOut.toString(), "--dest argument specified twice");
 
             assertEquals(EXIT_CODE_OK,
                 execute("--snapshot", "create", snpName, "--sync", "--dest", snpDir.getAbsolutePath()));
@@ -3591,7 +3589,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
                 execute("--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
-            assertContains(log, testOut.toString(), "--src arg specified twice.");
+            assertContains(log, testOut.toString(), "--src argument specified twice");
 
             // The check command simply prints the results of the check, it always ends with a zero exit code.
             assertEquals(EXIT_CODE_OK, execute("--snapshot", "check", snpName));
@@ -3866,7 +3864,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             U.await(blockedWarmUpStgy.startLatch, 60, TimeUnit.SECONDS);
 
             // Arguments --user and --password are needed for additional sending of the GridClientAuthenticationRequest.
-            assertEquals(EXIT_CODE_OK, execute("--user", "user", "--password", "123", "--warm-up", "--stop", "--yes"));
+            assertEquals(EXIT_CODE_OK, execute("--user", "user", "--password", "123", "--warm-up", "--stop"));
 
             assertEquals(0, blockedWarmUpStgy.stopLatch.getCount());
         }
@@ -3891,7 +3889,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testFailStopWarmUp() throws Exception {
         startGrid(0);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop", "--yes"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--warm-up", "--stop"));
     }
 
     /**

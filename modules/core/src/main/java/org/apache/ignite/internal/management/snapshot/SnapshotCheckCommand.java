@@ -15,41 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
-import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 /** */
-@Deprecated
-public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
+public class SnapshotCheckCommand extends AbstractSnapshotCommand<SnapshotCheckCommandArg> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Activate cluster (deprecated. Use --set-state instead)";
+        return "Check snapshot";
     }
 
     /** {@inheritDoc} */
-    @Override public String deprecationMessage(NoArg arg) {
-        return "Command deprecated. Use --set-state instead.";
+    @Override public Class<SnapshotCheckCommandArg> argClass() {
+        return SnapshotCheckCommandArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public NoArg execute(GridClient cli, NoArg arg, Consumer<String> printer) throws Exception {
-        GridClientClusterState state = cli.state();
-
-        state.state(ACTIVE, false);
-
-        printer.accept("Cluster activated");
-
-        return null;
+    @Override public Class<VisorSnapshotCheckTask> taskClass() {
+        return VisorSnapshotCheckTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public void printResult(SnapshotCheckCommandArg arg, VisorSnapshotTaskResult res0, Consumer<String> printer) {
+        try {
+            ((SnapshotPartitionsVerifyTaskResult)res0.result()).print(printer);
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
     }
 }

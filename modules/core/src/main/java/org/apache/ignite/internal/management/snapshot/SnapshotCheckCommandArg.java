@@ -15,59 +15,80 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.kill;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
 
 /** */
-public class KillSnapshotCommandArg extends CancelSnapshotArg {
+public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
     @Positional
-    @Argument(description = "Request id")
-    private UUID requestId;
+    @Argument(description = "Snapshot name. " +
+        "In case incremental snapshot (--incremental) full snapshot name must be provided")
+    private String snapshotName;
 
     /** */
-    private String snapshotName;
+    @Argument(example = "path", optional = true,
+        description = "Path to the directory where the snapshot files are located. " +
+            "If not specified, the default configured snapshot directory will be used")
+    private String src;
+
+    /** */
+    @Argument(example = "incrementIndex", optional = true,
+        description = "Incremental snapshot index. " +
+            "The command will check incremental snapshots sequentially from 1 to the specified index")
+    private int increment;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, requestId);
         U.writeString(out, snapshotName);
+        U.writeString(out, src);
+        out.writeInt(increment);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        requestId = U.readUuid(in);
         snapshotName = U.readString(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID requestId() {
-        return requestId;
+        src = U.readString(in);
+        increment = in.readInt();
     }
 
     /** */
-    public void requestId(UUID requestId) {
-        this.requestId = requestId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String snapshotName() {
+    public String snapshotName() {
         return snapshotName;
     }
 
     /** */
     public void snapshotName(String snapshotName) {
         this.snapshotName = snapshotName;
+    }
+
+    /** */
+    public String src() {
+        return src;
+    }
+
+    /** */
+    public void src(String src) {
+        this.src = src;
+    }
+
+    /** */
+    public int increment() {
+        return increment;
+    }
+
+    /** */
+    public void increment(int increment) {
+        this.increment = increment;
     }
 }

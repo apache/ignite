@@ -22,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commandline.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.ActivateCommand;
 import org.apache.ignite.internal.management.ChangeTagCommand;
 import org.apache.ignite.internal.management.DeactivateCommand;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
@@ -87,7 +87,7 @@ public enum CommandList {
     KILL(new KillCommand()),
 
     /** Snapshot commands. */
-    SNAPSHOT("--snapshot", new SnapshotCommand()),
+    SNAPSHOT(new SnapshotCommand()),
 
     /** Change Cluster tag command. */
     CLUSTER_CHANGE_TAG(new ChangeTagCommand()),

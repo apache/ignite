@@ -15,59 +15,70 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.kill;
+package org.apache.ignite.internal.management.snapshot;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask.CancelSnapshotArg;
 
 /** */
-public class KillSnapshotCommandArg extends CancelSnapshotArg {
+@ArgumentGroup(value = {"id", "name"}, optional = false, onlyOneOf = true)
+public class SnapshotCancelCommandArg extends CancelSnapshotArg {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Positional
-    @Argument(description = "Request id")
-    private UUID requestId;
+    @Argument(description = "Snapshot operation request ID", optional = true)
+    private UUID id;
 
     /** */
-    private String snapshotName;
+    @Argument(description = "Snapshot name (deprecated)", optional = true)
+    private String name;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, requestId);
-        U.writeString(out, snapshotName);
+        U.writeUuid(out, id);
+        U.writeString(out, name);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        requestId = U.readUuid(in);
-        snapshotName = U.readString(in);
+        id = U.readUuid(in);
+        name = U.readString(in);
+    }
+
+    /** */
+    public UUID id() {
+        return id;
+    }
+
+    /** */
+    public void id(UUID id) {
+        this.id = id;
+    }
+
+    /** */
+    public String name() {
+        return name;
+    }
+
+    /** */
+    public void name(String name) {
+        this.name = name;
     }
 
     /** {@inheritDoc} */
     @Override public UUID requestId() {
-        return requestId;
-    }
-
-    /** */
-    public void requestId(UUID requestId) {
-        this.requestId = requestId;
+        return id;
     }
 
     /** {@inheritDoc} */
     @Override public String snapshotName() {
-        return snapshotName;
-    }
-
-    /** */
-    public void snapshotName(String snapshotName) {
-        this.snapshotName = snapshotName;
+        return name;
     }
 }
