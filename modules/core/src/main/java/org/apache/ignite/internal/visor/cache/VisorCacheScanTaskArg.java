@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Argument for {@link VisorCacheStopTask}.
+ * Argument for {@link VisorCacheScanTask}.
  */
 public class VisorCacheScanTaskArg extends IgniteDataTransferObject {
     /** */
