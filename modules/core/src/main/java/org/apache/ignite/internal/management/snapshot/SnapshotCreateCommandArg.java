@@ -33,7 +33,7 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Snapshot name. " +
-        "In case incremental snapshot (--incremental) full snapshot name must be provided")
+        "In the case of incremental snapshot (--incremental) full snapshot name must be provided")
     private String snapshotName;
 
     /** */
