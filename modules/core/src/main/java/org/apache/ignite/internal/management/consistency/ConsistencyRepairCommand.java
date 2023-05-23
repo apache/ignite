@@ -82,7 +82,7 @@ public class ConsistencyRepairCommand implements
     }
 
     /** */
-    public boolean execute(
+    private boolean execute(
         GridClient cli,
         ConsistencyRepairCommandArg arg,
         Collection<GridClientNode> nodes,

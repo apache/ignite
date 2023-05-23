@@ -73,6 +73,15 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /** Group postfix. */
     private static final String GRP_POSTFIX = "_grp";
 
+    /** */
+    public static final String CACHE = "--cache-name";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS_ARG = "--partition";
+
     /** Partitions. */
     private static final int PARTITIONS = 32;
 
@@ -296,9 +305,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
                 execute("--consistency", "repair",
-                    KillCommandsControlShTest.CACHE, "non-existent",
-                    KillCommandsControlShTest.PARTITIONS, String.valueOf(i),
-                    KillCommandsControlShTest.STRATEGY, strategy.toString()));
+                    CACHE, "non-existent",
+                    PARTITIONS_ARG, String.valueOf(i),
+                    STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 
@@ -318,10 +327,10 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
 
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-                KillCommandsControlShTest.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
-                KillCommandsControlShTest.PARTITIONS,
+                CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
+                PARTITIONS_ARG,
                     IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
-                KillCommandsControlShTest.STRATEGY, strategy.toString()));
+                STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 

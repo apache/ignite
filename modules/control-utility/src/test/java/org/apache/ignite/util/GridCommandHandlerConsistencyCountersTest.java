@@ -84,6 +84,15 @@ import static org.apache.ignite.testframework.LogListener.matches;
 @RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
+    public static final String CACHE = "--cache-name";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS = "--partition";
+
+    /** */
     @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
@@ -495,9 +504,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
             assertNoneAtomicCounters();
 
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-            KillCommandsControlShTest.CACHE, DEFAULT_CACHE_NAME,
-            KillCommandsControlShTest.PARTITIONS, "0",
-            KillCommandsControlShTest.STRATEGY, strategy.toString()));
+            CACHE, DEFAULT_CACHE_NAME,
+            PARTITIONS, "0",
+            STRATEGY, strategy.toString()));
 
         int repairedCnt = repairedEntriesCount();
 
@@ -539,9 +548,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         // Repairing one more time, but with guarantee to fix (primary strategy);
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-            KillCommandsControlShTest.CACHE, DEFAULT_CACHE_NAME,
-            KillCommandsControlShTest.PARTITIONS, "0",
-            KillCommandsControlShTest.STRATEGY, PRIMARY.toString()));
+            CACHE, DEFAULT_CACHE_NAME,
+            PARTITIONS, "0",
+            STRATEGY, PRIMARY.toString()));
 
         repairedCnt += repairedEntriesCount();
 

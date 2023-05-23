@@ -48,7 +48,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.util.KillCommandsControlShTest.PARALLEL;
 
 /**
  *
@@ -56,6 +55,18 @@ import static org.apache.ignite.util.KillCommandsControlShTest.PARALLEL;
 @RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest extends GridCommandHandlerAbstractTest {
+    /** */
+    public static final String CACHE = "--cache-name";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS_ARG = "--partition";
+
+    /** */
+    public static final String PARALLEL = "--parallel";
+
     /** Test parameters. */
     @Parameterized.Parameters(name = "misses={0}, nulls={1}, strategy={2}, parallel={3}")
     public static Iterable<Object[]> parameters() {
@@ -328,9 +339,9 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             for (String cacheName : caches) {
                 List<String> cmd = new ArrayList<>(Arrays.asList(
                     "--consistency", "repair",
-                    KillCommandsControlShTest.CACHE, cacheName,
-                    KillCommandsControlShTest.PARTITIONS, String.valueOf(i),
-                    KillCommandsControlShTest.STRATEGY, strategy.toString()));
+                    CACHE, cacheName,
+                    PARTITIONS_ARG, String.valueOf(i),
+                    STRATEGY, strategy.toString()));
 
                 if (parallel)
                     cmd.add(PARALLEL);
