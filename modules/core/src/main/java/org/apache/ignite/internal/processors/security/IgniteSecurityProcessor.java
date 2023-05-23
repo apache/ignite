@@ -175,9 +175,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
             return locNodeSecCtx;
 
         return secCtxs.computeIfAbsent(subjId, uuid -> {
-            // Here we must go directly to SPI without checking Discovery Cache to avoid race between Communication
-            // messages processing and Discovery Cache updates.
-            ClusterNode node = ctx.discovery().getAlive(subjId);
+            ClusterNode node = ctx.discovery().node(subjId);
 
             if (node == null)
                 node = ctx.discovery().historicalNode(subjId);
