@@ -34,7 +34,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
@@ -56,6 +55,18 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 @RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest extends GridCommandHandlerAbstractTest {
+    /** */
+    public static final String CACHE = "--cache-name";
+
+    /** */
+    public static final String STRATEGY = "--strategy";
+
+    /** */
+    public static final String PARTITIONS_ARG = "--partition";
+
+    /** */
+    public static final String PARALLEL = "--parallel";
+
     /** Test parameters. */
     @Parameterized.Parameters(name = "misses={0}, nulls={1}, strategy={2}, parallel={3}")
     public static Iterable<Object[]> parameters() {
@@ -328,12 +339,12 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             for (String cacheName : caches) {
                 List<String> cmd = new ArrayList<>(Arrays.asList(
                     "--consistency", "repair",
-                    ConsistencyCommand.CACHE, cacheName,
-                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
-                    ConsistencyCommand.STRATEGY, strategy.toString()));
+                    CACHE, cacheName,
+                    PARTITIONS_ARG, String.valueOf(i),
+                    STRATEGY, strategy.toString()));
 
                 if (parallel)
-                    cmd.add(ConsistencyCommand.PARALLEL);
+                    cmd.add(PARALLEL);
 
                 assertEquals(EXIT_CODE_OK, execute(cmd));
 
