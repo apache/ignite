@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -260,7 +259,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
 
     /** Topology snapshots history. */
-    private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
+    private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
 
     /** Topology version. */
     private final AtomicReference<Snapshot> topSnap =
@@ -846,7 +845,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         assert rmvd != null : histVer;
                     }
 
-                    topHist.clear();
+                    topHist = Collections.emptyNavigableMap();
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
                         createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode,
