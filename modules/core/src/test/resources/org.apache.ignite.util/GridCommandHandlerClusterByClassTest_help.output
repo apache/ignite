@@ -184,7 +184,7 @@ This utility can do the following commands:
     control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync] [--incremental]
 
     Parameters:
-      snapshot_name  - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
+      snapshot_name  - Snapshot name. In the case of incremental snapshot (--incremental) full snapshot name must be provided.
       --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default configured snapshot directory will be used.
       --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
       --incremental  - Create an incremental snapshot for previously created full snapshot. Full snapshot must be accessible via --dest and snapshot_name.
@@ -208,7 +208,7 @@ This utility can do the following commands:
     control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync] [--check] [--status]|[--cancel]|[--start]
 
     Parameters:
-      snapshot_name               - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
+      snapshot_name               - Snapshot name. In the case of incremental snapshot (--incremental) full snapshot name must be provided.
       --increment incrementIndex  - Incremental snapshot index. The command will restore snapshot and after that all its increments sequentially from 1 to the specified index.
       --groups group1,...groupN   - Cache group names.
       --src path                  - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
