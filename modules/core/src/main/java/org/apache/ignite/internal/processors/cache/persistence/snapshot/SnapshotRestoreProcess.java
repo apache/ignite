@@ -1110,12 +1110,12 @@ public class SnapshotRestoreProcess {
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
                     snpAff.forEach((nodeId, nodePartitions) -> {
-                        log.info("Trying to request partitions from remote nodes " +
+                        log.info("Trying to request partitions from remote node " +
                             "[reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName +
                             ", nodeId=" + nodeId +
                             ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
-                            ", map=" + partitionsMapToString(nodePartitions) + "]");
+                            ", grpParts=" + partitionsMapToString(nodePartitions) + "]");
                     });
                 }
 
@@ -1845,10 +1845,18 @@ public class SnapshotRestoreProcess {
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
-    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+    private String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+        Map<Integer, String> cacheGrpNames = new HashMap<>(opCtx.dirs.size());
+
+        opCtx.dirs.forEach(dir -> {
+            String grpName = cacheGroupName(dir);
+            cacheGrpNames.put(CU.cacheId(grpName), grpName);
+        });
+
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())))
+            .collect(Collectors.toMap(e -> String.format("[grpId=%d, grpName=%s]", e.getKey(), cacheGrpNames.get(e.getKey())),
+                e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 
