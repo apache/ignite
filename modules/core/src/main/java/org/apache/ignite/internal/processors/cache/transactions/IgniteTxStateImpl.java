@@ -489,7 +489,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** */
-    private synchronized int[] activeCacheIds(){
+    private synchronized int[] activeCacheIds() {
         return activeCacheIds.array();
     }
 
