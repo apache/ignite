@@ -24,7 +24,7 @@ class DataRegionConfiguration(NamedTuple):
     """
     Ignite DataRegion Configuration
     """
-    cdc_enabled: bool = False
+    cdc_enabled: bool = None
     name: str = "default"
     persistence_enabled: bool = False
     initial_size: int = 100 * 1024 * 1024
