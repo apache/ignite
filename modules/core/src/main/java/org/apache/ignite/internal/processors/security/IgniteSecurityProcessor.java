@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +45,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
@@ -176,7 +176,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         if (locNodeSecCtx.subject().id().equals(subjId))
             return locNodeSecCtx;
 
-        ClusterNode node = Optional.of(ctx.discovery().node(subjId)).orElseGet(() -> ctx.discovery().historicalNode(subjId));
+        ClusterNode node = ofNullable(ctx.discovery().node(subjId)).orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
         return node == null
             ? null
