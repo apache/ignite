@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -175,14 +176,14 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         if (locNodeSecCtx.subject().id().equals(subjId))
             return locNodeSecCtx;
 
-        return secCtxs.computeIfAbsent(subjId, uuid -> {
-            ClusterNode node = ctx.discovery().node(subjId);
+        ClusterNode node = Optional.of(ctx.discovery().node(subjId)).orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
-            if (node == null)
-                node = ctx.discovery().historicalNode(subjId);
-
-            return node == null ? null : nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
-        });
+        return node == null
+            ? null
+            : secCtxs.computeIfAbsent(
+                node.id(),
+                uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node)
+            );
     }
 
     /** Restores local node context for the current thread. */
