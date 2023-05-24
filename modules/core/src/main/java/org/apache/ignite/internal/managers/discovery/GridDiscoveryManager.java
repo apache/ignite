@@ -607,7 +607,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final ClusterNode locNode = localNode();
 
                 if (notification.getTopHist() != null)
-                    topHist = notification.getTopHist();
+                    topHist = Collections.unmodifiableNavigableMap(notification.getTopHist());
 
                 boolean verChanged;
 
