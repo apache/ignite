@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -268,7 +269,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         new GridBoundedConcurrentLinkedHashMap<>(DISCOVERY_HISTORY_SIZE);
 
     /** Topology snapshots history. */
-    private volatile Map<Long, Collection<ClusterNode>> topHist = new HashMap<>();
+    private volatile NavigableMap<Long, Collection<ClusterNode>> topHist = Collections.emptyNavigableMap();
 
     /** Topology version. */
     private final AtomicReference<Snapshot> topSnap =
@@ -618,7 +619,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 final ClusterNode locNode = localNode();
 
                 if (notification.getTopHist() != null)
-                    topHist = notification.getTopHist();
+                    topHist = Collections.unmodifiableNavigableMap(notification.getTopHist());
 
                 boolean verChanged;
 
@@ -858,7 +859,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         assert rmvd != null : histVer;
                     }
 
-                    topHist.clear();
+                    topHist = Collections.emptyNavigableMap();
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
                         createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode,
@@ -2702,11 +2703,25 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return resolved node, or <code>null</code> if node not found.
      */
     public ClusterNode historicalNode(UUID nodeId) {
+        long lastCheckedLocTopVer = Long.MAX_VALUE;
+
         for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
             ClusterNode node = discoCache.node(nodeId);
 
             if (node != null)
                 return node;
+
+            lastCheckedLocTopVer = discoCache.version().topologyVersion();
+        }
+
+        // We did not find node with given ID in the discovery history of the local node. This means that the local
+        // node could join the cluster after the node with given ID left it. Let's check in the global topology history,
+        // which contains all topology versions since the cluster was started.
+        for (Collection<ClusterNode> top : topHist.headMap(lastCheckedLocTopVer, false).descendingMap().values()) {
+            for (ClusterNode node : top) {
+                if (F.eq(node.id(), nodeId))
+                    return node;
+            }
         }
 
         return null;

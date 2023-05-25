@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
@@ -625,7 +626,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     topVer++;
 
-                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
+                    NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
                     lsnr.onDiscovery(
@@ -1703,7 +1704,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> top = upcast(ring.visibleNodes());
 
-            Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
+            NavigableMap<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
             lsnr.onDiscovery(
                 new DiscoveryNotification(type, topVer, node, top, hist, null, spanContainer)
@@ -1727,7 +1728,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @param top Topology snapshot.
      * @return Copy of updated topology history.
      */
-    @Nullable private Map<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
+    @Nullable private NavigableMap<Long, Collection<ClusterNode>> updateTopologyHistory(long topVer, Collection<ClusterNode> top) {
         synchronized (mux) {
             if (topHist.containsKey(topVer))
                 return null;
@@ -6368,7 +6369,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             TcpDiscoverySpiState spiState = spiStateCopy();
 
-            Map<Long, Collection<ClusterNode>> hist;
+            NavigableMap<Long, Collection<ClusterNode>> hist;
 
             synchronized (mux) {
                 hist = new TreeMap<>(topHist);

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +46,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
@@ -151,21 +151,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
         try {
-            ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
-                .orElseGet(() -> ctx.discovery().historicalNode(subjId));
-
-            SecurityContext res;
-
-            if (node == null)
-                res = secPrc.securityContext(subjId);
-            else if (dfltSecCtx.subject().id().equals(subjId))
-                res = dfltSecCtx;
-            else
-                res = secCtxs.computeIfAbsent(subjId, uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node));
+            SecurityContext res = secPrc.securityContext(subjId);
 
             if (res == null) {
-                throw new IllegalStateException("Failed to find security context " +
-                    "for subject with given ID : " + subjId);
+                res = findNodeSecurityContext(subjId);
+
+                if (res == null)
+                    throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
             }
 
             return withContext(res);
@@ -175,6 +167,26 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             throw e;
         }
+    }
+
+    /**
+     * Looks for a node which ID is equal to the given Subject ID. If such a node exists, returns the Security Context
+     * that belongs to it. Otherwise {@code null}.
+     */
+    @Nullable private SecurityContext findNodeSecurityContext(UUID subjId) {
+        SecurityContext locNodeSecCtx = dfltSecCtx;
+
+        if (locNodeSecCtx.subject().id().equals(subjId))
+            return locNodeSecCtx;
+
+        ClusterNode node = ofNullable(ctx.discovery().node(subjId)).orElseGet(() -> ctx.discovery().historicalNode(subjId));
+
+        return node == null
+            ? null
+            : secCtxs.computeIfAbsent(
+                node.id(),
+                uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node)
+            );
     }
 
     /** Restores local node context for the current thread. */
