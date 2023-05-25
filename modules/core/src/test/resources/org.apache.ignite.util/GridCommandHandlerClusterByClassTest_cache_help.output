@@ -81,11 +81,11 @@ Arguments: --cache help --yes
       --cache-name regExp  - Regular expression allowing filtering by cache name
       --index-name regExp  - Regular expression allowing filtering by index name
 
-  --cache indexes_rebuild_status [--node-id nodeId]
-    List all indexes that have index rebuild in progress.
+  List all indexes that have index rebuild in progress:
+    control.(sh|bat) --cache indexes_rebuild_status [--node-id nodeId]
 
     Parameters:
-      --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes
+      --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes.
 
   Triggers rebuild of all indexes for specified caches or cache groups:
     control.(sh|bat) --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
