@@ -49,8 +49,14 @@ public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheInde
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, CacheIndexesForceRebuildCommandArg arg) {
-        if (arg.nodeId() != null)
+        if (arg.nodeId() != null) {
+            T3<Boolean, Object, Long> nodeDesc = nodes.get(arg.nodeId());
+
+            if (nodeDesc != null && nodeDesc.get1())
+                throw new IllegalArgumentException("Please, specify server node id");
+
             return Collections.singleton(arg.nodeId());
+        }
 
         return null;
     }
