@@ -229,9 +229,10 @@ public interface Command<T> {
      * Prepares confirmation for the command.
      *
      * @param clientCfg Thin client configuration.
+     * @param logger Logger.
      * @throws Exception If error occur.
      */
-    default void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception{
+    default void prepareConfirmation(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception{
         //no-op
     }
 

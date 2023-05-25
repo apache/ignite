@@ -155,7 +155,7 @@ public enum CacheSubcommands {
 
     /** @param command Management API command. */
     CacheSubcommands(org.apache.ignite.internal.management.api.Command<?, ?> command) {
-        this.name = toFormattedCommandName(command.getClass()).substring("Cache".length());
+        this.name = toFormattedCommandName(command.getClass()).substring("cache-".length());
         this.command = new DeclarativeCommandAdapter<>(command);
         this.commandArgs = null;
     }

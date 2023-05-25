@@ -47,7 +47,7 @@ public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandAr
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, CacheDestroyCommandArg arg) throws Exception {
+    @Override public boolean prepare(GridClient cli, CacheDestroyCommandArg arg, Consumer<String> printer) throws Exception {
         if (arg.destroyAllCaches()) {
             Set<String> caches = new TreeSet<>();
 
@@ -57,9 +57,17 @@ public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandAr
             arg.caches(caches.toArray(U.EMPTY_STRS));
         }
 
-        if (F.isEmpty(arg.caches()))
-            return null;
+        if (F.isEmpty(arg.caches())) {
+            printer.accept(NOOP_MSG);
 
+            return false;
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt(GridClient cli, CacheDestroyCommandArg arg) throws Exception {
         return String.format(CONFIRM_MSG, arg.caches().length, S.joinToString(Arrays.asList(arg.caches()), ", ", "..", 80, 0));
     }
 

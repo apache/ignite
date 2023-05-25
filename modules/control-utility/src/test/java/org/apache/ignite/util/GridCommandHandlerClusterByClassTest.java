@@ -1268,8 +1268,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     public void testCacheDestroy() throws IgniteCheckedException {
         String warningMsgPrefix = "Warning! The command will destroy";
-        String requiredArgsMsg =
-            "One of \"" + CACHE_NAMES_ARG + "\" or \"" + DESTROY_ALL_ARG + "\" is expected.";
+        String requiredArgsMsg = "One of [" + CACHE_NAMES_ARG + ", " + DESTROY_ALL_ARG + "] required";
 
         // Create some internal caches.
         CacheConfiguration<Object, Object> internalCfg = new CacheConfiguration<>("temp-internal-cache");
@@ -1291,20 +1290,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // No required argument.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX"));
-        assertContains(log, testOut.toString(), "Invalid argument \"cacheX\". " + requiredArgsMsg);
+        assertContains(log, testOut.toString(), "Unexpected argument: cacheX");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Invalid arguments.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X", DESTROY_ALL_ARG));
-        assertContains(log, testOut.toString(), "Invalid argument \"" + DESTROY_ALL_ARG);
+        assertContains(log, testOut.toString(), "Only one of [" + CACHE_NAMES_ARG + ", " + DESTROY_ALL_ARG + "] allowed");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "X"));
-        assertContains(log, testOut.toString(), "Invalid argument \"X\"");
+        assertContains(log, testOut.toString(), "Unexpected argument: X");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X,Y", "Z"));
-        assertContains(log, testOut.toString(), "Invalid argument \"Z\"");
+        assertContains(log, testOut.toString(), "Unexpected argument: Z");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // No user caches.

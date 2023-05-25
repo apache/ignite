@@ -19,10 +19,13 @@ package org.apache.ignite.internal.commandline;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +58,7 @@ import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -89,6 +93,15 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** Confirmed flag value. */
     private boolean confirmed = true;
+
+    /** Prepared flag value. */
+    private boolean prepared = false;
+
+    /**
+     * If {@code true} then command prepared successfully, {@code false} otherwise.
+     * @see ComputeCommand#prepare(GridClient, IgniteDataTransferObject, Consumer)
+     */
+    private boolean executeAfterPreparation = true;
 
     /** Message. */
     private String confirmMsg;
@@ -133,8 +146,14 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             null
         );
 
-        Consumer<Field> namedArgCb =
-            fld -> namedArgs.add(toArg.apply(fld, fld.getAnnotation(Argument.class).optional()));
+        ArgumentGroup argGrp = cmd0.argClass().getAnnotation(ArgumentGroup.class);
+        Set<String> grpdFlds = argGrp == null
+            ? Collections.emptySet()
+            : new HashSet<>(Arrays.asList(argGrp.value()));
+
+        Consumer<Field> namedArgCb = fld -> namedArgs.add(
+            toArg.apply(fld, grpdFlds.contains(fld.getName()) || fld.getAnnotation(Argument.class).optional())
+        );
 
         Consumer<Field> positionalArgCb = fld -> positionalArgs.add(new CLIArgument<>(
             fld.getName(),
@@ -144,11 +163,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             null
         ));
 
-        BiConsumer<ArgumentGroup, List<Field>> argGrpCb = (argGrp, flds) -> flds.forEach(fld -> {
+        BiConsumer<ArgumentGroup, List<Field>> argGrpCb = (argGrp0, flds) -> flds.forEach(fld -> {
             if (fld.isAnnotationPresent(Positional.class))
                 positionalArgCb.accept(fld);
             else
-                namedArgs.add(toArg.apply(fld, true));
+                namedArgCb.accept(fld);
         });
 
         visitCommandParams(cmd0.argClass(), positionalArgCb, namedArgCb, argGrpCb);
@@ -209,6 +228,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
                 ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
+                if (!prepared)
+                    executeAfterPreparation = cmd.prepare(client, arg, logger::info);
+
+                if (!executeAfterPreparation)
+                    return null;
+
                 Collection<UUID> nodeIds = commandNodes(
                     cmd,
                     arg,
@@ -262,7 +287,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        usage(baseCmd, Collections.emptyList(), logger);
+        if (baseCmd.getClass().getSimpleName().startsWith("Cache"))
+            usage(baseCmd, Collections.singletonList(new CacheCommand()), logger);
+        else
+            usage(baseCmd, Collections.emptyList(), logger);
     }
 
     /**
@@ -435,11 +463,20 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+    @Override public void prepareConfirmation(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (confirmed)
             return;
 
         try (GridClient client = Command.startClient(clientCfg)) {
+            if (cmd instanceof ComputeCommand) {
+                prepared = true;
+
+                executeAfterPreparation = ((ComputeCommand<A, ?>)cmd).prepare(client, arg, logger::info);
+
+                if (!executeAfterPreparation)
+                    return;
+            }
+
             confirmMsg = cmd.confirmationPrompt(client, arg);
         }
     }
@@ -463,7 +500,9 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         this.cmd = cmd;
         this.arg = arg;
         this.confirmed = confirmed;
-        this.confirmMsg = null;
+        confirmMsg = null;
+        prepared = false;
+        executeAfterPreparation = true;
     }
 
     /** {@inheritDoc} */
