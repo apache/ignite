@@ -886,21 +886,21 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id")),
             IllegalArgumentException.class,
-            "Failed to read node id."
+            "Please specify a value for argument: --node-id"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names")),
             IllegalArgumentException.class,
-            "Expected comma-separated list of cache names."
+            "Please specify a value for argument: --cache-names"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names")),
             IllegalArgumentException.class,
-            "Expected comma-separated list of cache group names."
+            "Please specify a value for argument: --group-names"
         );
 
         GridTestUtils.assertThrows(
@@ -912,7 +912,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "someNames"
             )),
             IllegalArgumentException.class,
-            "Either --group-names or --cache-names must be specified."
+            "Only one of [--group-names, --cache-names] allowed"
         );
 
         GridTestUtils.assertThrows(
@@ -924,7 +924,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "someMoreNames"
             )),
             IllegalArgumentException.class,
-            "--cache-names arg specified twice."
+            "--cache-names argument specified twice"
         );
 
         GridTestUtils.assertThrows(
@@ -936,7 +936,7 @@ public class CommandHandlerParsingTest {
                 "--group-names", "someMoreNames"
             )),
             IllegalArgumentException.class,
-            "--group-names arg specified twice."
+            "--group-names argument specified twice"
         );
 
         GridTestUtils.assertThrows(
@@ -947,7 +947,7 @@ public class CommandHandlerParsingTest {
                 "--group-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "--group-names not specified."
+            "Unexpected value: --some-other-arg"
         );
 
         GridTestUtils.assertThrows(
@@ -958,7 +958,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "--cache-names not specified."
+            "Unexpected value: --some-other-arg"
         );
     }
 

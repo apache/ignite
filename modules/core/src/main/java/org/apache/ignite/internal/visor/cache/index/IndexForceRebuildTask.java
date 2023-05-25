@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -36,17 +37,17 @@ import org.jetbrains.annotations.Nullable;
  * Task that triggers indexes force rebuild for specified caches or cache groups.
  */
 @GridInternal
-public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTaskArg, IndexForceRebuildTaskRes> {
+public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceRebuildCommandArg, IndexForceRebuildTaskRes> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected IndexForceRebuildJob job(IndexForceRebuildTaskArg arg) {
+    @Override protected IndexForceRebuildJob job(CacheIndexesForceRebuildCommandArg arg) {
         return new IndexForceRebuildJob(arg, debug);
     }
 
     /** */
-    private static class IndexForceRebuildJob extends VisorJob<IndexForceRebuildTaskArg, IndexForceRebuildTaskRes> {
+    private static class IndexForceRebuildJob extends VisorJob<CacheIndexesForceRebuildCommandArg, IndexForceRebuildTaskRes> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -56,13 +57,13 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected IndexForceRebuildJob(@Nullable IndexForceRebuildTaskArg arg, boolean debug) {
+        protected IndexForceRebuildJob(@Nullable CacheIndexesForceRebuildCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected IndexForceRebuildTaskRes run(@Nullable IndexForceRebuildTaskArg arg) throws IgniteException {
-            assert (arg.cacheNames() == null) ^ (arg.cacheGrps() == null) :
+        @Override protected IndexForceRebuildTaskRes run(@Nullable CacheIndexesForceRebuildCommandArg arg) throws IgniteException {
+            assert (arg.cacheNames() == null) ^ (arg.groupNames() == null) :
                 "Either cacheNames or cacheGroups must be specified.";
 
             Set<GridCacheContext> cachesToRebuild = new HashSet<>();
@@ -81,7 +82,7 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
                 }
             }
             else {
-                for (String cacheGrpName : arg.cacheGrps()) {
+                for (String cacheGrpName : arg.groupNames()) {
                     CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(cacheGrpName));
 
                     if (grpCtx != null)

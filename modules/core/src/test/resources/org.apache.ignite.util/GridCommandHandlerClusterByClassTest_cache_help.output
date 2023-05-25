@@ -87,13 +87,13 @@ Arguments: --cache help --yes
     Parameters:
       --node-id nodeId  - Specify node for job execution. If not specified explicitly, info will be gathered from all nodes
 
-  --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
-    Triggers rebuild of all indexes for specified caches or cache groups.
+  Triggers rebuild of all indexes for specified caches or cache groups:
+    control.(sh|bat) --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 
     Parameters:
-      --node-id      - Specify node for indexes rebuild.
-      --cache-names  - Comma-separated list of cache names for which indexes should be rebuilt.
-      --group-names  - Comma-separated list of cache group names for which indexes should be rebuilt.
+      --node-id nodeId                        - Specify node for indexes rebuild.
+      --cache-names cacheName1,...cacheNameN  - Comma-separated list of cache names for which indexes should be rebuilt.
+      --group-names groupName1,...groupNameN  - Comma-separated list of cache group names for which indexes should be rebuilt.
 
   --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
     Manages user cache metrics collection: enables, disables it or shows status.
