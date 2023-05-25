@@ -47,11 +47,6 @@ public class ClientReconnectTest extends GridCommonAbstractTest {
             @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
                 return new TestReconnectProcessor(ctx) {
                     @Override public SecurityContext securityContext(UUID subjId) {
-                        if (ctx.localNodeId().equals(subjId))
-                            return ctx.security().securityContext();
-
-                        fail("Unexpected subjId[subjId=" + subjId + ", localNodeId=" + ctx.localNodeId() + ']');
-
                         return null;
                     }
 

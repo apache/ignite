@@ -17,49 +17,76 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.lang.reflect.Method;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /**
  * Unit test for {@link IgniteSecurityProcessor}.
  */
-public class IgniteSecurityProcessorTest {
-    /**
-     * Checks that {@link IgniteSecurityProcessor#withContext(UUID)} throws exception in case a node ID is unknown.
-     */
-    @Test
-    public void testThrowIllegalStateExceptionIfNodeNotFoundInDiscoCache() {
-        GridKernalContext ctx = mock(GridKernalContext.class);
-        when(ctx.config()).thenReturn(new IgniteConfiguration());
-        when(ctx.discovery()).thenReturn(mock(GridDiscoveryManager.class));
+public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
+    /** */
+    private static ListeningTestLogger listeningLog;
 
-        LogListener logLsnr = LogListener
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(
+        String instanceName,
+        AbstractTestSecurityPluginProvider pluginProv
+    ) throws Exception {
+        return super.getConfiguration(instanceName, pluginProv)
+            .setGridLogger(listeningLog);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        listeningLog = new ListeningTestLogger();
+    }
+
+    /** Checks that {@link IgniteSecurityProcessor#withContext(UUID)} throws exception in case a node ID is unknown. */
+    @Test
+    public void testThrowIllegalStateExceptionIfNodeNotFoundInDiscoCache() throws Exception {
+        IgniteEx srv = startGridAllowAll("srv");
+
+        IgniteEx cli = startClientAllowAll("cli");
+
+        Method getSpiMethod = GridManagerAdapter.class.getDeclaredMethod("getSpi");
+
+        getSpiMethod.setAccessible(true);
+
+        TcpCommunicationSpi spi = (TcpCommunicationSpi)getSpiMethod.invoke(cli.context().io());
+
+        LogListener logPattern = LogListener
             .matches(s -> s.contains("Failed to obtain a security context."))
             .times(1)
             .build();
 
-        ListeningTestLogger log = new ListeningTestLogger();
+        listeningLog.registerListener(logPattern);
 
-        log.registerListener(logLsnr);
+        spi.sendMessage(srv.localNode(), new GridIoSecurityAwareMessage(
+            UUID.randomUUID(),
+            PUBLIC_POOL,
+            TOPIC_CACHE,
+            TOPIC_CACHE.ordinal(),
+            new AffinityTopologyVersion(),
+            false,
+            0,
+            false
+        ));
 
-        when(ctx.log(IgniteSecurityProcessor.class)).thenReturn(log);
-
-        GridSecurityProcessor secPrc = mock(GridSecurityProcessor.class);
-
-        IgniteSecurityProcessor ignSecPrc = new IgniteSecurityProcessor(ctx, secPrc);
-
-        assertThrowsWithCause(() -> ignSecPrc.withContext(UUID.randomUUID()), IllegalStateException.class);
-
-        assertTrue(logLsnr.check());
+        GridTestUtils.waitForCondition(logPattern::check, getTestTimeout());
     }
 }
