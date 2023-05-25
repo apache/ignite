@@ -514,12 +514,18 @@ public class SnapshotRestoreProcess {
             log.info(OP_FINISHED_MSG + " [reqId=" + reqId + "].");
 
         SnapshotRestoreContext opCtx0 = opCtx;
+        SnapshotRestoreContext lastOpCtx0 = lastOpCtx;
+
+        long endTime = U.currentTimeMillis();
 
         if (opCtx0 != null && reqId.equals(opCtx0.reqId)) {
             opCtx = null;
 
-            opCtx0.endTime = U.currentTimeMillis();
+            opCtx0.endTime = endTime;
         }
+
+        if (lastOpCtx0 != opCtx0 && reqId.equals(lastOpCtx0.reqId))
+            lastOpCtx0.endTime = endTime;
 
         synchronized (this) {
             ClusterSnapshotFuture fut0 = fut;
@@ -633,6 +639,8 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
+        SnapshotRestoreContext opCtx0 = lastOpCtx = new SnapshotRestoreContext(req);
+
         try {
             DiscoveryDataClusterState state = ctx.state().clusterState();
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
@@ -653,6 +661,11 @@ public class SnapshotRestoreProcess {
                     "process is not finished yet."));
             }
 
+            if (opCtx != null) {
+                throw new IgniteCheckedException(OP_REJECT_MSG +
+                    "The previous snapshot restore operation was not completed.");
+            }
+
             for (UUID nodeId : req.nodes()) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
@@ -662,25 +675,9 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot prepare restore operation" +
-                    " [reqId=" + req.requestId() +
-                    ", snapshot=" + req.snapshotName() +
-                    ", caches=" + req.groups() + ']');
-            }
-
             List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
-            SnapshotRestoreContext opCtx0 = prepareContext(req, locMetas);
-
-            synchronized (this) {
-                lastOpCtx = opCtx = opCtx0;
-
-                ClusterSnapshotFuture fut0 = fut;
-
-                if (fut0 != null)
-                    opCtx0.errHnd.accept(fut0.interruptEx);
-            }
+            enrichContext(opCtx0, req, locMetas);
 
             // Ensure that shared cache groups has no conflicts.
             for (StoredCacheData cfg : opCtx0.cfgs.values()) {
@@ -693,9 +690,27 @@ public class SnapshotRestoreProcess {
             if (ctx.isStopping())
                 throw new NodeStoppingException("The node is stopping: " + ctx.localNodeId());
 
+            synchronized (this) {
+                ClusterSnapshotFuture fut0 = fut;
+
+                if (fut0 != null)
+                    opCtx0.errHnd.accept(fut0.interruptEx);
+
+                opCtx = opCtx0;
+            }
+
+            if (log.isInfoEnabled()) {
+                log.info("Starting local snapshot prepare restore operation" +
+                    " [reqId=" + req.requestId() +
+                    ", snapshot=" + req.snapshotName() +
+                    ", caches=" + req.groups() + ']');
+            }
+
             return new GridFinishedFuture<>(new SnapshotRestoreOperationResponse(opCtx0.cfgs.values(), locMetas));
         }
-        catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
+        catch (Exception e) {
+            opCtx0.errHnd.accept(e);
+
             log.error("Unable to restore cache group(s) from the snapshot " +
                 "[reqId=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
 
@@ -724,19 +739,18 @@ public class SnapshotRestoreProcess {
     }
 
     /**
+     * @param curOpCtx Restore operation context to enrich.
      * @param req Request to prepare cache group restore from the snapshot.
      * @param metas Local snapshot metadatas.
-     * @return Snapshot restore operation context.
      * @throws IgniteCheckedException If failed.
      */
-    private SnapshotRestoreContext prepareContext(
+    private void enrichContext(
+        SnapshotRestoreContext curOpCtx,
         SnapshotOperationRequest req,
         Collection<SnapshotMetadata> metas
     ) throws IgniteCheckedException {
-        if (opCtx != null) {
-            throw new IgniteCheckedException(OP_REJECT_MSG +
-                "The previous snapshot restore operation was not completed.");
-        }
+        assert req.requestId().equals(curOpCtx.reqId);
+
         GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
 
         // Collection of baseline nodes that must survive and additional discovery data required for the affinity calculation.
@@ -745,10 +759,10 @@ public class SnapshotRestoreProcess {
         if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.nodes()))
             throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes missed: " + discoCache);
 
-        DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);
+        curOpCtx.discoCache = discoCache.copy(discoCache.version(), null);
 
         if (F.isEmpty(metas))
-            return new SnapshotRestoreContext(req, discoCache0, Collections.emptyMap());
+            return;
 
         if (F.first(metas).pageSize() != cctx.database().pageSize()) {
             throw new IgniteCheckedException("Incompatible memory page size " +
@@ -826,10 +840,8 @@ public class SnapshotRestoreProcess {
             }
         }
 
-        Map<Integer, StoredCacheData> cfgsById =
+        curOpCtx.cfgs =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
-
-        return new SnapshotRestoreContext(req, discoCache0, cfgsById);
     }
 
     /**
@@ -1862,8 +1874,11 @@ public class SnapshotRestoreProcess {
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /** Baseline discovery cache for node IDs that must be alive to complete the operation.*/
-        private final DiscoCache discoCache;
+        /**
+         * Baseline discovery cache for node IDs that must be alive to complete the operation. {@code Null} if the
+         * context is not initialized yet.
+         */
+        private @Nullable DiscoCache discoCache;
 
         /** Operational node id. */
         private final UUID opNodeId;
@@ -1892,7 +1907,7 @@ public class SnapshotRestoreProcess {
         /** Compressed groups. */
         private final Set<Integer> comprGrps = new HashSet<>();
 
-        /** Cache ID to configuration mapping. */
+        /** Cache ID to configuration mapping. Empty if the context is not initialized yet. */
         private volatile Map<Integer, StoredCacheData> cfgs = Collections.emptyMap();
 
         /** Graceful shutdown future. */
@@ -1932,23 +1947,14 @@ public class SnapshotRestoreProcess {
 
         /**
          * @param req Request to prepare cache group restore from the snapshot.
-         * @param discoCache Baseline discovery cache for node IDs that must be alive to complete the operation.
-         * @param cfgs Cache ID to configuration mapping.
          */
-        protected SnapshotRestoreContext(
-            SnapshotOperationRequest req,
-            DiscoCache discoCache,
-            Map<Integer, StoredCacheData> cfgs
-        ) {
+        protected SnapshotRestoreContext(SnapshotOperationRequest req) {
             reqId = req.requestId();
             snpName = req.snapshotName();
             snpPath = req.snapshotPath();
             opNodeId = req.operationalNodeId();
             incIdx = req.incrementIndex();
             startTime = U.currentTimeMillis();
-
-            this.discoCache = discoCache;
-            this.cfgs = cfgs;
         }
 
         /**
