@@ -1107,14 +1107,14 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id")),
             IllegalArgumentException.class,
-            "Failed to read node id."
+            "Please specify a value for argument: --node-id"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--group-name")),
             IllegalArgumentException.class,
-            "Failed to read group name regex."
+            "Please specify a value for argument: --group-name"
         );
 
         GridTestUtils.assertThrows(
@@ -1128,7 +1128,7 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--cache-name")),
             IllegalArgumentException.class,
-            "Failed to read cache name regex."
+            "Please specify a value for argument: --cache-name"
         );
 
         GridTestUtils.assertThrows(
@@ -1142,7 +1142,7 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--index-name")),
             IllegalArgumentException.class,
-            "Failed to read index name regex."
+            "Please specify a value for argument: --index-name"
         );
 
         GridTestUtils.assertThrows(

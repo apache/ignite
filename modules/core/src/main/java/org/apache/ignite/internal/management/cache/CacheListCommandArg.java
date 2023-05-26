@@ -64,8 +64,8 @@ public class CacheListCommandArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, regex);
-        U.writeUuid(out, nodeId);
         out.writeBoolean(config);
+        U.writeUuid(out, nodeId);
         U.writeString(out, outputFormat);
         out.writeBoolean(groups);
         out.writeBoolean(seq);
@@ -74,8 +74,8 @@ public class CacheListCommandArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         regex = U.readString(in);
-        nodeId = U.readUuid(in);
         config = in.readBoolean();
+        nodeId = U.readUuid(in);
         outputFormat = U.readString(in);
         groups = in.readBoolean();
         seq = in.readBoolean();
