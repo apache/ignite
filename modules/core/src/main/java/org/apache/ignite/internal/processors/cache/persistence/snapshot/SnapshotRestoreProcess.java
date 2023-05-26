@@ -168,7 +168,7 @@ public class SnapshotRestoreProcess {
     private volatile ClusterSnapshotFuture fut;
 
     /** Current snapshot restore operation context (will be {@code null} when the operation is not running). */
-    private static volatile SnapshotRestoreContext opCtx;
+    private volatile SnapshotRestoreContext opCtx;
 
     /** Last snapshot restore operation context (saves the metrics of the last operation). */
     private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext();
@@ -1846,7 +1846,7 @@ public class SnapshotRestoreProcess {
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
-    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+    private String partitionsMapToString(Map<Integer, Set<Integer>> map) {
         Map<Integer, String> cacheGrpNames = new HashMap<>(opCtx.dirs.size());
 
         opCtx.dirs.forEach(dir -> {
