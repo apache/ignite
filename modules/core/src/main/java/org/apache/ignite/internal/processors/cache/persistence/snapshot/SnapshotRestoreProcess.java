@@ -166,7 +166,7 @@ public class SnapshotRestoreProcess {
     private volatile ClusterSnapshotFuture fut;
 
     /** Current snapshot restore operation context (will be {@code null} when the operation is not running). */
-    private volatile SnapshotRestoreContext opCtx;
+    private static volatile SnapshotRestoreContext opCtx;
 
     /** Last snapshot restore operation context (saves the metrics of the last operation). */
     private volatile SnapshotRestoreContext lastOpCtx = new SnapshotRestoreContext();
@@ -1109,14 +1109,13 @@ public class SnapshotRestoreProcess {
 
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    snpAff.forEach((nodeId, nodePartitions) -> {
+                    snpAff.forEach((nodeId, nodePartitions) ->
                         log.info("Trying to request partitions from remote node " +
-                            "[reqId=" + reqId +
-                            ", snapshot=" + opCtx0.snpName +
-                            ", nodeId=" + nodeId +
-                            ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
-                            ", grpParts=" + partitionsMapToString(nodePartitions) + "]");
-                    });
+                        "[reqId=" + reqId +
+                        ", snapshot=" + opCtx0.snpName +
+                        ", nodeId=" + nodeId +
+                        ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
+                        ", grpParts=" + partitionsMapToString(nodePartitions) + "]"));
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -1845,7 +1844,7 @@ public class SnapshotRestoreProcess {
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
-    private String partitionsMapToString(Map<Integer, Set<Integer>> map) {
+    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
         Map<Integer, String> cacheGrpNames = new HashMap<>(opCtx.dirs.size());
 
         opCtx.dirs.forEach(dir -> {
