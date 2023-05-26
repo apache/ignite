@@ -27,6 +27,7 @@ public class CacheCommand extends CommandRegistryImpl {
     public CacheCommand() {
         super(
             new CacheDestroyCommand(),
+            new CacheClearCommand(),
             new CacheIndexesRebuildStatusCommand(),
             new CacheIndexesForceRebuildCommand(),
             new CacheScheduleIndexesRebuildCommand()

@@ -15,53 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.management.cache;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
-/** Argument for {@link ClearCachesTask}. */
-public class ClearCachesTaskArg extends VisorDataTransferObject {
+/** */
+public class CacheClearCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Cache names to clear. */
-    @GridToStringInclude
-    private List<String> caches;
+    private static final long serialVersionUID = 0;
 
     /** */
-    public ClearCachesTaskArg(List<String> caches) {
-        this.caches = caches;
-    }
-
-    /** */
-    public ClearCachesTaskArg() {
-        // No-op.
-    }
-
-    /** @return Cache names to clear. */
-    public List<String> caches() {
-        return caches;
-    }
+    @Argument(description = "specifies a comma-separated list of cache names to be cleared")
+    private String[] caches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, caches);
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readList(in);
+        caches = U.readArray(in, String.class);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ClearCachesTaskArg.class, this);
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 }

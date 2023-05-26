@@ -42,11 +42,11 @@ Arguments: --cache help --yes
       --caches cache1,...,cacheN  - specifies a comma-separated list of cache names to be destroyed.
       --destroy-all-caches        - permanently destroy all user-created caches.
 
-  --cache clear
-    Clear specified caches.
+  Clear specified caches:
+    control.(sh|bat) --cache clear --caches cache1[,cache2,....,cacheN]
 
     Parameters:
-      --caches  - specifies a comma-separated list of cache names to be cleared.
+      --caches cache1[,cache2,....,cacheN]  - specifies a comma-separated list of cache names to be cleared.
 
   --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
     Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries.
@@ -103,7 +103,7 @@ Arguments: --cache help --yes
       --all-caches                  - applies operation to all user caches.
 
   Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified caches and cache-groups:
-    control.(sh|bat) --cache schedule_indexes_rebuild [--node-id nodeId] --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1]|--group-names groupName1,groupName2,...groupNameN
+    control.(sh|bat) --cache schedule_indexes_rebuild [--node-id nodeId] --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
 
     Parameters:
       --node-id nodeId                                                         - (Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.
