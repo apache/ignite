@@ -30,6 +30,7 @@ import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesComm
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
+import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -121,7 +122,7 @@ public enum CacheSubcommands {
     /**
      * Index rebuild via the maintenance mode.
      */
-    INDEX_REBUILD("schedule_indexes_rebuild", IndexRebuildCommandArg.class, new CacheScheduleIndexesRebuild()),
+    INDEX_REBUILD(new CacheScheduleIndexesRebuildCommand()),
 
     /**
      * Scan cache entries.

@@ -35,8 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild;
-import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild.Arguments;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
@@ -47,6 +45,7 @@ import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
@@ -1034,9 +1033,10 @@ public class CommandHandlerParsingTest {
             "--cache-names", buildScheduleIndexRebuildCacheNames(params1))
         ).command();
 
-        CacheScheduleIndexesRebuild.Arguments arg1 = (Arguments)cacheCommand1.arg().subcommand().arg();
+        CacheScheduleIndexesRebuildCommandArg arg1 =
+            (CacheScheduleIndexesRebuildCommandArg)cacheCommand1.arg().subcommand().arg();
         assertEquals(normalizeScheduleIndexRebuildCacheNamesMap(params1), arg1.cacheToIndexes());
-        assertEquals(null, arg1.cacheGroups());
+        assertEquals(null, arg1.groupNames());
 
         Map<String, Set<String>> params2 = new HashMap<>();
         params2.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
@@ -1050,14 +1050,15 @@ public class CommandHandlerParsingTest {
 
         Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
 
-        CacheScheduleIndexesRebuild.Arguments arg2 = (Arguments)cacheCommand2.arg().subcommand().arg();
+        CacheScheduleIndexesRebuildCommandArg arg2 =
+            (CacheScheduleIndexesRebuildCommandArg)cacheCommand2.arg().subcommand().arg();
         assertEquals(normalized, arg2.cacheToIndexes());
-        assertEquals(new HashSet<>(Arrays.asList("foocache", "someGrp")), arg2.cacheGroups());
+        assertArrayEquals(new String[]{"foocache", "someGrp"}, arg2.groupNames());
     }
 
     /**
      * Builds a new --cache-names parameters map replacing nulls with empty set so it should be the same as
-     * the parsed argument of the {@link CacheScheduleIndexesRebuild.Arguments#cacheToIndexes()}.
+     * the parsed argument of the {@link CacheScheduleIndexesRebuildCommandArg#cacheToIndexes()}.
      *
      * @param paramsMap Cache -> indexes map.
      * @return New map with nulls replaced with empty set.

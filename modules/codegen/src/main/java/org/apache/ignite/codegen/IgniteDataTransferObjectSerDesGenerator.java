@@ -25,6 +25,8 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -85,175 +87,181 @@ public class IgniteDataTransferObjectSerDesGenerator {
     private final Set<String> staticImports = new TreeSet<>();
 
     /** */
-    private static final Map<Class<?>, GridTuple3<Function<String, String>, Function<String, String>, Boolean>> TYPE_GENS
+    private static final Map<Class<?>, GridTuple3<Function<Field, String>, Function<Field, String>, Boolean>> TYPE_GENS
         = new HashMap<>();
 
     static {
         TYPE_GENS.put(byte.class, F.t(
-            fld -> "out.writeByte(" + fld + ");",
-            fld -> fld + " = in.readByte();",
+            fld -> "out.writeByte(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readByte();",
             false
         ));
 
         TYPE_GENS.put(Byte.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Byte)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Byte)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(byte[].class, F.t(
-            fld -> "U.writeByteArray(out, " + fld + ");",
-            fld -> fld + " = U.readByteArray(in);",
+            fld -> "U.writeByteArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readByteArray(in);",
             true
         ));
 
         TYPE_GENS.put(short.class, F.t(
-            fld -> "out.writeShort(" + fld + ");",
-            fld -> fld + " = in.readShort();",
+            fld -> "out.writeShort(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readShort();",
             false
         ));
 
         TYPE_GENS.put(Short.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Short)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Short)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(short[].class, F.t(
-            fld -> "U.writeShortArray(out, " + fld + ");",
-            fld -> fld + " = U.readShortArray(in);",
+            fld -> "U.writeShortArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readShortArray(in);",
             true
         ));
 
         TYPE_GENS.put(int.class, F.t(
-            fld -> "out.writeInt(" + fld + ");",
-            fld -> fld + " = in.readInt();",
+            fld -> "out.writeInt(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readInt();",
             false
         ));
 
         TYPE_GENS.put(Integer.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Integer)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Integer)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(int[].class, F.t(
-            fld -> "U.writeIntArray(out, " + fld + ");",
-            fld -> fld + " = U.readIntArray(in);",
+            fld -> "U.writeIntArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readIntArray(in);",
             true
         ));
 
         TYPE_GENS.put(long.class, F.t(
-            fld -> "out.writeLong(" + fld + ");",
-            fld -> fld + " = in.readLong();",
+            fld -> "out.writeLong(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readLong();",
             false
         ));
 
         TYPE_GENS.put(Long.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Long)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Long)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(long[].class, F.t(
-            fld -> "U.writeLongArray(out, " + fld + ");",
-            fld -> fld + " = U.readLongArray(in);",
+            fld -> "U.writeLongArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readLongArray(in);",
             true
         ));
 
         TYPE_GENS.put(float.class, F.t(
-            fld -> "out.writeFloat(" + fld + ");",
-            fld -> fld + " = in.readFloat();",
+            fld -> "out.writeFloat(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readFloat();",
             false
         ));
 
         TYPE_GENS.put(Float.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Float)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Float)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(float[].class, F.t(
-            fld -> "U.writeFloatArray(out, " + fld + ");",
-            fld -> fld + " = U.readFloatArray(in);",
+            fld -> "U.writeFloatArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readFloatArray(in);",
             true
         ));
 
         TYPE_GENS.put(double.class, F.t(
-            fld -> "out.writeDouble(" + fld + ");",
-            fld -> fld + " = in.readDouble();",
+            fld -> "out.writeDouble(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readDouble();",
             false
         ));
 
         TYPE_GENS.put(Double.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Double)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Double)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(double[].class, F.t(
-            fld -> "U.writeDoubleArray(out, " + fld + ");",
-            fld -> fld + " = U.readDoubleArray(in);",
+            fld -> "U.writeDoubleArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readDoubleArray(in);",
             true
         ));
 
         TYPE_GENS.put(boolean.class, F.t(
-            fld -> "out.writeBoolean(" + fld + ");",
-            fld -> fld + " = in.readBoolean();",
+            fld -> "out.writeBoolean(" + outName(fld) + ");",
+            fld -> inName(fld) + " = in.readBoolean();",
             false
         ));
 
         TYPE_GENS.put(Boolean.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (Boolean)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (Boolean)in.readObject();",
             false
         ));
 
         TYPE_GENS.put(boolean[].class, F.t(
-            fld -> "U.writeBooleanArray(out, " + fld + ");",
-            fld -> fld + " = U.readBooleanArray(in);",
+            fld -> "U.writeBooleanArray(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readBooleanArray(in);",
             true
         ));
 
         TYPE_GENS.put(String.class, F.t(
-            fld -> "U.writeString(out, " + fld + ");",
-            fld -> fld + " = U.readString(in);",
+            fld -> "U.writeString(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readString(in);",
             true
         ));
 
         TYPE_GENS.put(UUID.class, F.t(
-            fld -> "U.writeUuid(out, " + fld + ");",
-            fld -> fld + " = U.readUuid(in);",
+            fld -> "U.writeUuid(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readUuid(in);",
             true
         ));
 
         TYPE_GENS.put(IgniteUuid.class, F.t(
-            fld -> "U.writeIgniteUuid(out, " + fld + ");",
-            fld -> fld + " = U.readIgniteUuid(in);",
+            fld -> "U.writeIgniteUuid(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readIgniteUuid(in);",
             true
         ));
 
         TYPE_GENS.put(Collection.class, F.t(
-            fld -> "U.writeCollection(out, " + fld + ");",
-            fld -> fld + " = U.readCollection(in);",
+            fld -> "U.writeCollection(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readCollection(in);",
             true
         ));
 
         TYPE_GENS.put(List.class, F.t(
-            fld -> "U.writeCollection(out, " + fld + ");",
-            fld -> fld + " = U.readList(in);",
+            fld -> "U.writeCollection(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readList(in);",
             true
         ));
 
         TYPE_GENS.put(Set.class, F.t(
-            fld -> "U.writeCollection(out, " + fld + ");",
-            fld -> fld + " = U.readSet(in);",
+            fld -> "U.writeCollection(out, " + outName(fld) + ");",
+            fld -> inName(fld) + " = U.readSet(in);",
             true
         ));
 
         TYPE_GENS.put(GridCacheVersion.class, F.t(
-            fld -> "out.writeObject(" + fld + ");",
-            fld -> fld + " = (GridCacheVersion)in.readObject();",
+            fld -> "out.writeObject(" + outName(fld) + ");",
+            fld -> inName(fld) + " = (GridCacheVersion)in.readObject();",
+            false
+        ));
+
+        TYPE_GENS.put(Map.class, F.t(
+            fld -> "U.writeMap(out, " + outName(fld) + ");",
+            fld -> fld.getName() + " = (" + generic(fld.getGenericType()) + ")in.readObject();",
             false
         ));
     }
@@ -383,7 +391,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
                 List<String> geter = new ArrayList<>();
 
                 geter.add(TAB + "/** */");
-                geter.add(TAB + "public " + fld.getType().getSimpleName() + " " + fld.getName() + "() {");
+                geter.add(TAB + "public " + generic(fld.getGenericType()) + " " + fld.getName() + "() {");
                 geter.add(TAB + TAB + "return " + fld.getName() + ";");
                 geter.add(TAB + "}");
 
@@ -395,7 +403,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
                 seter.add(TAB + "/** */");
                 seter.add(TAB + "public void " + fld.getName() +
-                    "(" + fld.getType().getSimpleName() + " " + fld.getName() + ") {");
+                    "(" + generic(fld.getGenericType()) + " " + fld.getName() + ") {");
                 seter.add(TAB + TAB + "this." + fld.getName() + " = " + fld.getName() + ";");
                 seter.add(TAB + "}");
 
@@ -485,7 +493,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
                     " = U.readArray(in, " + fld.getType().getComponentType().getSimpleName() + ".class);");
             }
             else {
-                GridTuple3<Function<String, String>, Function<String, String>, Boolean> gen
+                GridTuple3<Function<Field, String>, Function<Field, String>, Boolean> gen
                     = TYPE_GENS.get(fld.getType());
 
                 if (gen == null)
@@ -494,8 +502,8 @@ public class IgniteDataTransferObjectSerDesGenerator {
                 if (gen.get3())
                     addImport(U.class);
 
-                write.add(TAB + TAB + gen.get1().apply((name.equals("out") ? "this." : "") + name));
-                read.add(TAB + TAB + gen.get2().apply((name.equals("in") ? "this." : "") + name));
+                write.add(TAB + TAB + gen.get1().apply(fld));
+                read.add(TAB + TAB + gen.get2().apply(fld));
             }
         }
 
@@ -503,6 +511,51 @@ public class IgniteDataTransferObjectSerDesGenerator {
         read.add(TAB + "}");
 
         return Arrays.asList(write, read);
+    }
+
+    /** */
+    private static String generic(Type type0) {
+        if (!(type0 instanceof ParameterizedType))
+            return simpleName(type0.getTypeName());
+
+        ParameterizedType type = (ParameterizedType)type0;
+
+        Type[] typeArgs = type.getActualTypeArguments();
+
+        StringBuffer generic = new StringBuffer(simpleName(type.getRawType().getTypeName()));
+
+        generic.append('<');
+
+        for (int i = 0; i < typeArgs.length; i++) {
+            if (i != 0)
+                generic.append(", ");
+
+            generic.append(generic(typeArgs[i]));
+        }
+
+        generic.append('>');
+
+        return generic.toString();
+    }
+
+    /** */
+    private static String simpleName(String type) {
+        int idx = type.lastIndexOf('.');
+
+        if (idx == -1)
+            return type;
+
+        return type.substring(idx + 1);
+    }
+
+    /** */
+    private static String outName(Field fld) {
+        return (fld.getName().equals("out") ? "this." : "") + fld.getName();
+    }
+
+    /** */
+    private static String inName(Field fld) {
+        return (fld.getName().equals("in") ? "this." : "") + fld.getName();
     }
 
     /** */

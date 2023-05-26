@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild;
+import org.apache.ignite.internal.commandline.cache.CacheScan;
 
 /**
- * Arguments for {@link CacheScheduleIndexesRebuild} command.
+ * Arguments for {@link CacheScan} command.
  */
 public enum IndexRebuildCommandArg implements CommandArg {
     /** Node id. */

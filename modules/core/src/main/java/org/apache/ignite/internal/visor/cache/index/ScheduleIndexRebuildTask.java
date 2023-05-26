@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.cache.index;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -40,7 +42,6 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
 
@@ -49,12 +50,12 @@ import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.Ma
  */
 @GridInternal
 public class ScheduleIndexRebuildTask
-    extends VisorMultiNodeTask<ScheduleIndexRebuildTaskArg, ScheduleIndexRebuildTaskRes, ScheduleIndexRebuildJobRes> {
+    extends VisorMultiNodeTask<CacheScheduleIndexesRebuildCommandArg, ScheduleIndexRebuildTaskRes, ScheduleIndexRebuildJobRes> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected ScheduleIndexRebuildJob job(ScheduleIndexRebuildTaskArg arg) {
+    @Override protected ScheduleIndexRebuildJob job(CacheScheduleIndexesRebuildCommandArg arg) {
         return new ScheduleIndexRebuildJob(arg, debug);
     }
 
@@ -67,7 +68,7 @@ public class ScheduleIndexRebuildTask
     }
 
     /** Job that schedules index rebuild (via maintenance mode) on a specific node. */
-    private static class ScheduleIndexRebuildJob extends VisorJob<ScheduleIndexRebuildTaskArg, ScheduleIndexRebuildJobRes> {
+    private static class ScheduleIndexRebuildJob extends VisorJob<CacheScheduleIndexesRebuildCommandArg, ScheduleIndexRebuildJobRes> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -77,13 +78,15 @@ public class ScheduleIndexRebuildTask
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected ScheduleIndexRebuildJob(@Nullable ScheduleIndexRebuildTaskArg arg, boolean debug) {
+        protected ScheduleIndexRebuildJob(@Nullable CacheScheduleIndexesRebuildCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected ScheduleIndexRebuildJobRes run(@Nullable ScheduleIndexRebuildTaskArg arg) throws IgniteException {
-            Set<String> argCacheGroups = arg.cacheGroups();
+        @Override protected ScheduleIndexRebuildJobRes run(@Nullable CacheScheduleIndexesRebuildCommandArg arg) throws IgniteException {
+            Set<String> argCacheGroups = arg.groupNames() == null
+                ? null
+                : new HashSet<>(Arrays.asList(arg.groupNames()));
 
             assert (arg.cacheToIndexes() != null && !arg.cacheToIndexes().isEmpty())
                 || (argCacheGroups != null && !argCacheGroups.isEmpty()) : "Cache to indexes map or cache groups must be specified.";

@@ -102,13 +102,13 @@ Arguments: --cache help --yes
       --caches cache1[,...,cacheN]  - specifies a comma-separated list of cache names to which operation should be applied.
       --all-caches                  - applies operation to all user caches.
 
-  --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
-    Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified caches and cache-groups
+  Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified caches and cache-groups:
+    control.(sh|bat) --cache schedule_indexes_rebuild [--node-id nodeId] --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1]|--group-names groupName1,groupName2,...groupNameN
 
     Parameters:
-      --node-id      - (Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.
-      --cache-names  - Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
-      --group-names  - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
+      --node-id nodeId                                                         - (Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes.
+      --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1]  - Comma-separated list of cache names with optionally specified indexes. If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
+      --group-names groupName1,groupName2,...groupNameN                        - Comma-separated list of cache group names for which indexes should be scheduled for the rebuild. Can be used simultaneously with cache names.
 
   --cache scan cacheName [--limit N]
     Show cache content.

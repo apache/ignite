@@ -226,11 +226,11 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     public void testAllNodesAndNodeIds() {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES, NODE_IDS, ignite0.localNode().id().toString()),
-            "Only one of [nodeIds, nodeId, allNodes] allowed");
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES, NODE_ID, ignite0.localNode().id().toString()),
-            "Only one of [nodeIds, nodeId, allNodes] allowed");
+            "Only one of [--node-ids, --all-nodes, --node-id] allowed");
     }
 
     /**
