@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import org.apache.ignite.internal.management.cache.CacheDestroyCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
@@ -31,19 +33,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, Void> {
+public class VisorCacheStopTask extends VisorOneNodeTask<CacheDestroyCommandArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheStopJob job(VisorCacheStopTaskArg arg) {
+    @Override protected VisorCacheStopJob job(CacheDestroyCommandArg arg) {
         return new VisorCacheStopJob(arg, debug);
     }
 
     /**
      * Job that stop specified caches.
      */
-    private static class VisorCacheStopJob extends VisorJob<VisorCacheStopTaskArg, Void> {
+    private static class VisorCacheStopJob extends VisorJob<CacheDestroyCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -53,15 +55,15 @@ public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, 
          * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorCacheStopJob(VisorCacheStopTaskArg arg, boolean debug) {
+        private VisorCacheStopJob(CacheDestroyCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorCacheStopTaskArg arg) {
-            Collection<String> cacheNames = F.isEmpty(arg.getCacheNames())
-                ? F.asList(arg.getCacheName())
-                : new HashSet<>(arg.getCacheNames());
+        @Override protected Void run(CacheDestroyCommandArg arg) {
+            Collection<String> cacheNames = F.isEmpty(arg.caches())
+                ? F.asList(arg.caches())
+                : new HashSet<>(Arrays.asList(arg.caches()));
 
             if (F.isEmpty(cacheNames))
                 throw new IllegalStateException("Cache names was not specified.");

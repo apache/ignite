@@ -15,72 +15,60 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.management.cache;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- * Argument for {@link VisorCacheScanTask}.
- */
-public class VisorCacheScanTaskArg extends IgniteDataTransferObject {
+/** */
+@ArgumentGroup(value = {"destroyAllCaches", "caches"}, onlyOneOf = true, optional = false)
+public class CacheDestroyCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
-    /** Cache name. */
-    private String cacheName;
+    /** */
+    @Argument(description = "specifies a comma-separated list of cache names to be destroyed",
+        example = "cache1,...,cacheN")
+    private String[] caches;
 
-    /** Entries limit. */
-    private int limit;
-
-    /**
-     * Default constructor.
-     */
-    public VisorCacheScanTaskArg() {
-        // No-op.
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param limit Entries limit.
-     */
-    public VisorCacheScanTaskArg(String cacheName, int limit) {
-        this.cacheName = cacheName;
-        this.limit = limit;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String getCacheName() {
-        return cacheName;
-    }
-
-    /**
-     * @return Entries limit.
-     */
-    public int getLimit() {
-        return limit;
-    }
+    /** */
+    @Argument(description = "permanently destroy all user-created caches")
+    private boolean destroyAllCaches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
-        out.writeInt(limit);
+        out.writeBoolean(destroyAllCaches);
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
-        limit = in.readInt();
+        destroyAllCaches = in.readBoolean();
+        caches = U.readArray(in, String.class);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorCacheScanTaskArg.class, this);
+    /** */
+    public boolean destroyAllCaches() {
+        return destroyAllCaches;
+    }
+
+    /** */
+    public void destroyAllCaches(boolean destroyAllCaches) {
+        this.destroyAllCaches = destroyAllCaches;
+    }
+
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 }

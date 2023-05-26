@@ -123,9 +123,9 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+    @Override public void prepareConfirmation(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (subcommand != null && subcommand.subcommand() != null)
-            subcommand.subcommand().prepareConfirmation(clientCfg);
+            subcommand.subcommand().prepareConfirmation(clientCfg, logger);
     }
 
     /** {@inheritDoc} */

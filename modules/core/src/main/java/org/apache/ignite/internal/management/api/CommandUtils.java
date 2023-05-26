@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteUuid;
@@ -69,6 +71,16 @@ public class CommandUtils {
     public static String toFormattedFieldName(Field fld) {
         return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
             + toFormattedFieldName(fld, CMD_WORDS_DELIM);
+    }
+
+    /**
+     * @param flds Fields to format.
+     * @return Formatted names.
+     */
+    public static Set<String> toFormattedNames(Set<String> flds) {
+        return flds.stream()
+            .map(fld -> PARAMETER_PREFIX + toFormattedName(fld, CMD_WORDS_DELIM))
+            .collect(Collectors.toSet());
     }
 
     /**

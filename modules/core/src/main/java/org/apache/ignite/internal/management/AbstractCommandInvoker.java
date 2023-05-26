@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedNames;
 
 /**
  * Abstract class for management command invokers.
@@ -114,7 +115,7 @@ public abstract class AbstractCommandInvoker {
         );
 
         if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
-            throw new IllegalArgumentException("One of " + arg.oneOfFlds + " required");
+            throw new IllegalArgumentException("One of " + toFormattedNames(arg.grpdFlds) + " required");
 
         return arg.res;
     }
@@ -240,13 +241,13 @@ public abstract class AbstractCommandInvoker {
         int idx;
 
         /** */
-        final Set<String> oneOfFlds;
+        final Set<String> grpdFlds;
 
         /** */
         public ArgumentState(Class<A> argCls) throws InstantiationException, IllegalAccessException {
             res = argCls.newInstance();
             argGrp = argCls.getAnnotation(ArgumentGroup.class);
-            oneOfFlds = argGrp == null
+            grpdFlds = argGrp == null
                 ? Collections.emptySet()
                 : new HashSet<>(Arrays.asList(argGrp.value()));
         }
@@ -267,8 +268,10 @@ public abstract class AbstractCommandInvoker {
 
         /** {@inheritDoc} */
         @Override public void accept(Field fld, Object val) {
+            boolean grpdFld = grpdFlds.contains(fld.getName());
+
             if (val == null) {
-                if (fld.getAnnotation(Argument.class).optional())
+                if (grpdFld || fld.getAnnotation(Argument.class).optional())
                     return;
 
                 String name = fld.isAnnotationPresent(Positional.class)
@@ -278,9 +281,9 @@ public abstract class AbstractCommandInvoker {
                 throw new IllegalArgumentException("Argument " + name + " required.");
             }
 
-            if (oneOfFlds.contains(fld.getName())) {
+            if (grpdFld) {
                 if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
-                    throw new IllegalArgumentException("Only one of " + oneOfFlds + " allowed");
+                    throw new IllegalArgumentException("Only one of " + toFormattedNames(grpdFlds) + " allowed");
 
                 grpFldExists = true;
             }

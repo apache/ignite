@@ -246,7 +246,7 @@ public class CommandHandler {
             while (true) {
                 try {
                     if (!args.autoConfirmation()) {
-                        command.prepareConfirmation(clientCfg);
+                        command.prepareConfirmation(clientCfg, logger);
 
                         if (!confirm(command.confirmationPrompt())) {
                             logger.info("Operation cancelled.");
