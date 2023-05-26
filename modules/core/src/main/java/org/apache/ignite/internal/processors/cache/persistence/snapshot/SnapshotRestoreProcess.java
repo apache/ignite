@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1109,14 +1111,13 @@ public class SnapshotRestoreProcess {
 
             try {
                 if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    snpAff.forEach((nodeId, nodePartitions) -> {
+                    snpAff.forEach((nodeId, nodePartitions) ->
                         log.info("Trying to request partitions from remote node " +
-                            "[reqId=" + reqId +
-                            ", snapshot=" + opCtx0.snpName +
-                            ", nodeId=" + nodeId +
-                            ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
-                            ", grpParts=" + partitionsMapToString(nodePartitions) + "]");
-                    });
+                        "[reqId=" + reqId +
+                        ", snapshot=" + opCtx0.snpName +
+                        ", nodeId=" + nodeId +
+                        ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
+                        ", grpParts=" + partitionsMapToString(nodePartitions) + "]"));
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -1850,13 +1851,13 @@ public class SnapshotRestoreProcess {
 
         opCtx.dirs.forEach(dir -> {
             String grpName = cacheGroupName(dir);
-            cacheGrpNames.put(CU.cacheId(grpName), grpName);
+            cacheGrpNames.put(GridCacheUtils.cacheId(grpName), grpName);
         });
 
         return map.entrySet()
             .stream()
             .collect(Collectors.toMap(e -> String.format("[grpId=%d, grpName=%s]", e.getKey(), cacheGrpNames.get(e.getKey())),
-                e -> S.toStringSortedDistinct(e.getValue())))
+                e -> GridToStringBuilder.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 
