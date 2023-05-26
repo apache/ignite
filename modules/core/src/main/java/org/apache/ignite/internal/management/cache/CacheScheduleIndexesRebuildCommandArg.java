@@ -80,7 +80,7 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
         nodeId = U.readUuid(in);
         cacheNames = U.readString(in);
         groupNames = U.readArray(in, String.class);
-        cacheToIndexes = (Map<String, Set<String>>)in.readObject();
+        cacheToIndexes = U.readMap(in);
     }
 
     /** */

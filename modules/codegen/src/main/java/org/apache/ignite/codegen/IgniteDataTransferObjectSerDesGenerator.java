@@ -261,7 +261,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
         TYPE_GENS.put(Map.class, F.t(
             fld -> "U.writeMap(out, " + outName(fld) + ");",
-            fld -> fld.getName() + " = (" + generic(fld.getGenericType()) + ")in.readObject();",
+            fld -> fld.getName() + " = U.readMap(in);",
             false
         ));
     }

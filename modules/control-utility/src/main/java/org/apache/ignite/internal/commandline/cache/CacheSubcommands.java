@@ -112,7 +112,7 @@ public enum CacheSubcommands {
     /**
      * Index force rebuild.
      */
-    INDEXES_FORCE_REBUILD(new CacheIndexesForceRebuildCommand()),
+    INDEX_FORCE_REBUILD(new CacheIndexesForceRebuildCommand()),
 
     /**
      * Enable / disable cache metrics collection or show metrics collection status.
