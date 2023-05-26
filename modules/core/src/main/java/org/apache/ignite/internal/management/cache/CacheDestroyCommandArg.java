@@ -42,14 +42,14 @@ public class CacheDestroyCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, caches);
         out.writeBoolean(destroyAllCaches);
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readArray(in, String.class);
         destroyAllCaches = in.readBoolean();
+        caches = U.readArray(in, String.class);
     }
 
     /** */
