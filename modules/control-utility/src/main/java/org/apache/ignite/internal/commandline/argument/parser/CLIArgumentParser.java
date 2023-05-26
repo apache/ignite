@@ -78,7 +78,7 @@ public class CLIArgumentParser {
         int positionalIdx = 0;
 
         while (argsIter.hasNext()) {
-            String arg = argsIter.next();
+            String arg = argsIter.next().toLowerCase();
 
             CLIArgument<?> cliArg = argConfiguration.get(arg);
 

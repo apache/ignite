@@ -117,7 +117,6 @@ import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCreate.SPRING_XML_CONFIG;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
@@ -161,6 +160,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     public static final String DESTROY_ALL_ARG = "--destroy-all-caches";
+
+    /** */
+    private static final String SPRING_XML_CONFIG = "--springXmlConfig";
 
     /**
      * Very basic tests for running the command in different environment which other command are running in.
@@ -1239,15 +1241,19 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name()),
-            SPRING_XML_CONFIG + " must be specified.");
+            "Mandatory argument(s) missing: [--springxmlconfig]");
+
+        autoConfirmation = false;
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG),
-            "Expected path to the Spring XML configuration.");
+            "Please specify a value for argument: --springxmlconfig");
+
+        autoConfirmation = true;
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG, "file1", SPRING_XML_CONFIG, "file2"),
-            SPRING_XML_CONFIG + " argument specified twice.");
+            "--springxmlconfig argument specified twice");
 
         String cfgPath = resolveIgnitePath("modules/control-utility/src/test/resources/config/cache").getAbsolutePath();
 

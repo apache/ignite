@@ -28,6 +28,7 @@ import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommand
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
+import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
@@ -58,7 +59,7 @@ public enum CacheSubcommands {
     /**
      * Create caches.
      */
-    CREATE("create", null, new CacheCreate()),
+    CREATE(new CacheCreateCommand()),
 
     /**
      * Destroy caches.
