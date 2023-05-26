@@ -639,9 +639,16 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
-        SnapshotRestoreContext opCtx0 = lastOpCtx = new SnapshotRestoreContext(req);
+        SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req);
 
         try {
+            if (opCtx != null) {
+                throw new IgniteCheckedException(OP_REJECT_MSG +
+                    "The previous snapshot restore operation was not completed.");
+            }
+
+            lastOpCtx = opCtx0;
+
             DiscoveryDataClusterState state = ctx.state().clusterState();
             IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
 
@@ -659,11 +666,6 @@ public class SnapshotRestoreProcess {
             if (ctx.encryption().reencryptionInProgress()) {
                 return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Caches re-encryption " +
                     "process is not finished yet."));
-            }
-
-            if (opCtx != null) {
-                throw new IgniteCheckedException(OP_REJECT_MSG +
-                    "The previous snapshot restore operation was not completed.");
             }
 
             for (UUID nodeId : req.nodes()) {
