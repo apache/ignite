@@ -66,17 +66,15 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     private boolean check;
 
     /** */
-    @Argument(optional = true,
-        description = "Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead)")
+    @Argument(description = "Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead)")
     private boolean status;
 
     /** */
-    @Argument(optional = true,
-        description = "Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead)")
+    @Argument(description = "Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead)")
     private boolean cancel;
 
     /** */
-    @Argument(optional = true, description = "Start snapshot restore operation (Default action)")
+    @Argument(description = "Start snapshot restore operation (Default action)")
     private boolean start;
 
     /** */

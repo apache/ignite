@@ -55,15 +55,11 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
     private String path;
 
     /** Run command for all nodes. */
-    @Argument(
-        description = "Run for all nodes",
-        optional = true
-    )
+    @Argument(description = "Run for all nodes")
     private boolean all;
 
     /** */
     @Argument(
-        optional = true,
         description = "Comma separated list of node ids or consistent ids",
         example = "node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]"
     )

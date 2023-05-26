@@ -43,8 +43,7 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(
         description = "ID of the node to get the system view from (deprecated. Use --node-ids instead). " +
-            "If not set, random node will be chosen",
-        optional = true
+            "If not set, random node will be chosen"
     )
     private UUID nodeId;
 
@@ -52,16 +51,12 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     @Argument(
         description = "Comma-separated list of nodes IDs to get the system view from. " +
         "If not set, random node will be chosen",
-        example = "nodeId1,nodeId2,..",
-        optional = true
+        example = "nodeId1,nodeId2,.."
     )
     private UUID[] nodeIds;
 
     /** Flag to get the system view from all nodes. */
-    @Argument(
-        description = "Get the system view from all nodes. If not set, random node will be chosen",
-        optional = true
-    )
+    @Argument(description = "Get the system view from all nodes. If not set, random node will be chosen")
     private boolean allNodes;
 
     /** {@inheritDoc} */

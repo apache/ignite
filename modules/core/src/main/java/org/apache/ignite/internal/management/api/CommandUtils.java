@@ -184,10 +184,10 @@ public class CommandUtils {
 
         Argument param = fld.getAnnotation(Argument.class);
 
-        if (!param.example().isEmpty())
-            return param.example();
-
         boolean optional = fld.isAnnotationPresent(Positional.class) && param.optional();
+
+        if (!param.example().isEmpty())
+            return asOptional(param.example(), optional);
 
         if (Enum.class.isAssignableFrom(fld.getType())) {
             Object[] vals = fld.getType().getEnumConstants();

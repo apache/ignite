@@ -438,12 +438,18 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 if (argGrp.onlyOneOf()) {
                     bldr.append(' ');
 
+                    if (argGrp.optional())
+                        bldr.append('[');
+
                     for (int i = 0; i < flds.size(); i++) {
                         if (i != 0)
                             bldr.append('|');
 
                         paramPrinter.accept(false, flds.get(i));
                     }
+
+                    if (argGrp.optional())
+                        bldr.append(']');
                 }
                 else {
                     flds.stream()

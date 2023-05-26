@@ -20,8 +20,8 @@ Arguments: --cache help --yes
     Parameters:
       --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
 
-  --cache list regexPattern [--groups|--seq] [nodeId] [--config] [--output-format multi-line]
-    Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches.
+  Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches:
+    control.(sh|bat) --cache list regexPattern [nodeId] [--config] [--output-format multi-line] [--groups|--seq]
 
     Parameters:
       --config                    - print all configuration parameters for each cache.

@@ -64,7 +64,7 @@ This utility can do the following commands:
       --verbose  - Show the full list of node ips.
 
   List or kill transactions:
-    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--servers]|[--clients]|[--nodes consistentId1[,consistentId2,....,consistentIdN]] [--yes]
+    control.(sh|bat) --tx [--xid XID] [--min-duration SECONDS] [--min-size SIZE] [--label PATTERN_REGEX] [--limit NUMBER] [--order DURATION|SIZE|START_TIME] [--kill] [--servers|--clients|--nodes consistentId1[,consistentId2,....,consistentIdN]] [--yes]
 
   Print detailed information (topology and key lock ownership) about specific transaction:
     control.(sh|bat) --tx --info <TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|<TX identifier as UUID (can be retrieved via --tx command)>
@@ -87,7 +87,7 @@ This utility can do the following commands:
     control.(sh|bat) --diagnostic help
 
   View pages locks state information on the node or nodes:
-    control.(sh|bat) --diagnostic pagelocks [DUMP|DUMP_LOG] [--path path]  [--all]|[--nodes node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]]
+    control.(sh|bat) --diagnostic pagelocks [DUMP|DUMP_LOG] [--path path]  [--all|--nodes node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]]
 
     Parameters:
       DUMP                                                                                         - Save page locks dump to file generated in IGNITE_HOME/work/diagnostic directory.
@@ -205,7 +205,7 @@ This utility can do the following commands:
       --increment incrementIndex  - Incremental snapshot index. The command will check incremental snapshots sequentially from 1 to the specified index.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync] [--check] [--status]|[--cancel]|[--start]
+    control.(sh|bat) --snapshot restore snapshot_name [--increment incrementIndex] [--groups group1,...groupN] [--src path] [--sync] [--check] [--status|--cancel|--start]
 
     Parameters:
       snapshot_name               - Snapshot name. In the case of incremental snapshot (--incremental) full snapshot name must be provided.
@@ -288,7 +288,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Print system view content:
-    control.(sh|bat) --system-view system_view_name [--node-id node_id]|[--node-ids nodeId1,nodeId2,..]|[--all-nodes]
+    control.(sh|bat) --system-view system_view_name [--node-id node_id|--node-ids nodeId1,nodeId2,..|--all-nodes]
 
     Parameters:
       system_view_name               - Name of the system view which content should be printed. Both "SQL" and "Java" styles of system view name are supported (e.g. SQL_TABLES and sql.tables will be handled similarly).

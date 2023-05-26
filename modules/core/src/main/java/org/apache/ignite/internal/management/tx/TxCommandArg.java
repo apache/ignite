@@ -53,15 +53,15 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     private String label;
 
     /** */
-    @Argument(optional = true)
+    @Argument
     private boolean servers;
 
     /** */
-    @Argument(optional = true)
+    @Argument
     private boolean clients;
 
     /** */
-    @Argument(optional = true, example = "consistentId1[,consistentId2,....,consistentIdN]")
+    @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
     private String[] nodes;
 
     /** */
