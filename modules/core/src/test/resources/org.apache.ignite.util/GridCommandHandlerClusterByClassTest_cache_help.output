@@ -66,8 +66,8 @@ Arguments: --cache help --yes
   --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
     Prints the information about partition distribution.
 
-  --cache reset_lost_partitions cacheName1,...,cacheNameN
-    Reset the state of lost partitions for the specified caches.
+  Reset the state of lost partitions for the specified caches:
+    control.(sh|bat) --cache reset_lost_partitions cacheName1,...,cacheNameN
 
   --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
     Find and optionally delete garbage from shared cache groups which could be left after cache destroy.

@@ -115,14 +115,14 @@ import static org.apache.ignite.internal.commandline.CommandList.METADATA;
 import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
-import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
 import static org.apache.ignite.internal.management.cache.CacheClearCommand.CLEAR_MSG;
 import static org.apache.ignite.internal.management.cache.CacheClearCommand.SKIP_CLEAR_MSG;
+import static org.apache.ignite.internal.management.cache.CacheListCommand.OutputFormat.MULTI_LINE;
+import static org.apache.ignite.internal.management.cache.CacheListCommand.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -1247,7 +1247,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG),
-            "Please specify a value for argument: --springxmlconfig");
+            "Please specify a value for argument: --springXmlConfig");
 
         autoConfirmation = true;
 

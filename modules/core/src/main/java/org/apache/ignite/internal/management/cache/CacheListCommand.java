@@ -46,7 +46,6 @@ import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
-import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -336,7 +335,10 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, Visor
          * @return Enumerated value.
          * @throws IllegalArgumentException If enumerated value not found.
          */
-        public static OutputFormat fromConsoleName(@NotNull String text) {
+        public static OutputFormat fromConsoleName(String text) {
+            if (text == null)
+                return SINGLE_LINE;
+
             for (OutputFormat format : values()) {
                 if (format.text.equals(text))
                     return format;

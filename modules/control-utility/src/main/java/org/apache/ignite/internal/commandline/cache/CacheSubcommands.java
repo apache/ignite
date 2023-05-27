@@ -32,6 +32,7 @@ import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildComma
 import org.apache.ignite.internal.management.cache.CacheIndexesListCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
 import org.apache.ignite.internal.management.cache.CacheListCommand;
+import org.apache.ignite.internal.management.cache.CacheResetLostPartitionsCommand;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
 import org.jetbrains.annotations.Nullable;
@@ -95,7 +96,7 @@ public enum CacheSubcommands {
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions", null, new ResetLostPartitions()),
+    RESET_LOST_PARTITIONS(new CacheResetLostPartitionsCommand()),
 
     /**
      * Find and remove garbage.
