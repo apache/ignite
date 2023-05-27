@@ -21,13 +21,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
+import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /** */
 public class ConsistencyStatusCommand implements
@@ -49,10 +49,7 @@ public class ConsistencyStatusCommand implements
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().get1())
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
+        return servers(nodes);
     }
 
     /** {@inheritDoc} */

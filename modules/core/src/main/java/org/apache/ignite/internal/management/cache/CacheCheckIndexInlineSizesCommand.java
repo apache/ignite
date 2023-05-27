@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.cache;
+package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,65 +23,48 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.commandline.AbstractCommand;
-import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult;
 import org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesTask;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
-import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-
-/**
- * Command for check secondary indexes inline size on the different nodes.
- */
-public class CheckIndexInlineSizes extends AbstractCommand<Void> {
+/** */
+public class CacheCheckIndexInlineSizesCommand
+    implements ComputeCommand<NoArg, CheckIndexInlineSizesResult> {
     /** Success message. */
     public static final String INDEXES_INLINE_SIZE_ARE_THE_SAME =
         "All secondary indexes have the same effective inline size on all cluster nodes.";
 
-    /** Predicate to filter server nodes. */
-    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient();
-
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Set<GridClientNode> serverNodes = client.compute().nodes().stream()
-                .filter(SRV_NODES)
-                .collect(toSet());
-
-            Collection<UUID> serverNodeIds = F.transform(serverNodes, GridClientNode::nodeId);
-
-            CheckIndexInlineSizesResult res = client.compute().projection(serverNodes).execute(
-                CheckIndexInlineSizesTask.class.getName(),
-                new VisorTaskArgument<>(serverNodeIds, false)
-            );
-
-            analyzeResults(log, res);
-        }
-
-        return null;
+    @Override public String description() {
+        return "Checks that secondary indexes inline size are same on the cluster nodes";
     }
 
-    /**
-     * Compares inline sizes from nodes and print to log information about "problem" indexes.
-     *
-     * @param log Logger
-     * @param res Indexes inline size.
-     */
-    private void analyzeResults(
-        IgniteLogger log,
-        CheckIndexInlineSizesResult res
-    ) {
+    /** {@inheritDoc} */
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<CheckIndexInlineSizesTask> taskClass() {
+        return CheckIndexInlineSizesTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
+        return servers(nodes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(NoArg arg, CheckIndexInlineSizesResult res, Consumer<String> printer) {
         Map<String, Map<Integer, Set<UUID>>> indexToSizeNode = new HashMap<>();
 
         for (Map.Entry<UUID, Map<String, Integer>> nodeRes : res.inlineSizes().entrySet()) {
@@ -92,23 +75,23 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
             }
         }
 
-        log.info("Found " + indexToSizeNode.size() + " secondary indexes.");
+        printer.accept("Found " + indexToSizeNode.size() + " secondary indexes.");
 
         Map<String, Map<Integer, Set<UUID>>> problems = indexToSizeNode.entrySet().stream()
             .filter(e -> e.getValue().size() > 1)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         if (F.isEmpty(problems))
-            log.info(INDEXES_INLINE_SIZE_ARE_THE_SAME);
+            printer.accept(INDEXES_INLINE_SIZE_ARE_THE_SAME);
         else
-            printProblemsAndShowRecommendations(problems, log);
+            printProblemsAndShowRecommendations(problems, printer);
     }
 
     /** */
-    private void printProblemsAndShowRecommendations(Map<String, Map<Integer, Set<UUID>>> problems, IgniteLogger log) {
-        log.info(problems.size() +
+    private void printProblemsAndShowRecommendations(Map<String, Map<Integer, Set<UUID>>> problems, Consumer<String> printer) {
+        printer.accept(problems.size() +
             " index(es) have different effective inline size on nodes. It can lead to performance degradation in SQL queries.");
-        log.info("Index(es):");
+        printer.accept("Index(es):");
 
         for (Map.Entry<String, Map<Integer, Set<UUID>>> entry : problems.entrySet()) {
             SB sb = new SB();
@@ -120,35 +103,15 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
 
             sb.setLength(sb.length() - 1);
 
-            log.info(INDENT + sb);
+            printer.accept(INDENT + sb);
         }
 
-        log.info("");
+        printer.accept("");
 
-        log.info("Recommendations:");
-        log.info(
+        printer.accept("Recommendations:");
+        printer.accept(
             INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes."
         );
-        log.info(INDENT + "Recreate indexes (execute DROP INDEX, CREATE INDEX commands) with different inline size.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Void arg() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printUsage(IgniteLogger logger) {
-        usageCache(
-            logger,
-            CacheSubcommands.CHECK_INDEX_INLINE_SIZES,
-            "Checks that secondary indexes inline size are same on the cluster nodes.",
-            null
-        );
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return CacheSubcommands.CHECK_INDEX_INLINE_SIZES.text().toUpperCase();
+        printer.accept(INDENT + "Recreate indexes (execute DROP INDEX, CREATE INDEX commands) with different inline size.");
     }
 }
