@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /**
  * Utility class for creating {@code CommangHandler} log messages.
@@ -32,39 +30,6 @@ public class CommandLogger {
 
     /** Double indent for help output. */
     public static final String DOUBLE_INDENT = INDENT + INDENT;
-
-    /**
-     * Join input parameters with specified {@code delimeter} between them.
-     *
-     * @param delimeter Specified delimeter.
-     * @param params Other input parameter.
-     * @return Joined paramaters with specified {@code delimeter}.
-     */
-    public static String join(String delimeter, Object... params) {
-        return join(new SB(), "", delimeter, params).toString();
-    }
-
-    /**
-     * Join input parameters with specified {@code delimeter} between them and append to the end {@code delimeter}.
-     *
-     * @param sb Specified string builder.
-     * @param sbDelimeter Delimeter between {@code sb} and appended {@code param}.
-     * @param delimeter Specified delimeter.
-     * @param params Other input parameter.
-     * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
-     */
-    public static SB join(SB sb, String sbDelimeter, String delimeter, Object... params) {
-        if (!F.isEmpty(params)) {
-            sb.a(sbDelimeter);
-
-            for (Object par : params)
-                sb.a(par).a(delimeter);
-
-            sb.setLength(sb.length() - delimeter.length());
-        }
-
-        return sb;
-    }
 
     /**
      * Join input parameters with space and wrap optional braces {@code []}.
@@ -113,31 +78,5 @@ public class CommandLogger {
         }
 
         return msg;
-    }
-
-    /**
-     * Prints exception messages to log
-     *
-     * @param exceptions map containing node ids and exceptions
-     * @param infoMsg single message to log
-     * @param logger IgniteLogger to use
-     * @return true if errors were printed.
-     */
-    public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, IgniteLogger logger) {
-        if (!F.isEmpty(exceptions)) {
-            logger.info(infoMsg);
-
-            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-                logger.info(INDENT + "Node ID: " + e.getKey());
-
-                logger.info(INDENT + "Exception message:");
-                logger.info(DOUBLE_INDENT + e.getValue().getMessage());
-                logger.info("");
-            }
-
-            return true;
-        }
-
-        return false;
     }
 }

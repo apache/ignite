@@ -20,7 +20,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -62,6 +61,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -82,7 +82,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
@@ -93,7 +92,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
-
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
@@ -366,8 +364,15 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         log.info("Doing indexes validation.");
 
-        VisorValidateIndexesTaskArg taskArg =
-            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1, true, true);
+        CacheValidateIndexesCommandArg taskArg =
+            new CacheValidateIndexesCommandArg();
+
+        taskArg.caches(new String[]{"SQL_PUBLIC_T"});
+        taskArg.nodeIds(nodeIds.toArray(new UUID[0]));
+        taskArg.checkFirst(0);
+        taskArg.checkThrough(1);
+        taskArg.checkCrc(true);
+        taskArg.checkSizes(true);
 
         VisorValidateIndexesTaskResult taskRes =
             ignite.compute().execute(VisorValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));

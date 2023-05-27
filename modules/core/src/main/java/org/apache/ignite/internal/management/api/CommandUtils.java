@@ -25,10 +25,13 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
@@ -282,6 +285,65 @@ public class CommandUtils {
             .min(Comparator.comparingLong(e -> e.getValue().get3()))
             .map(e -> Collections.singleton(e.getKey()))
             .orElse(null);
+    }
+
+    /**
+     * Join input parameters with specified {@code delimeter} between them.
+     *
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return Joined paramaters with specified {@code delimeter}.
+     */
+    public static String join(String delimeter, Object... params) {
+        return join(new SB(), "", delimeter, params).toString();
+    }
+
+    /**
+     * Join input parameters with specified {@code delimeter} between them and append to the end {@code delimeter}.
+     *
+     * @param sb Specified string builder.
+     * @param sbDelimeter Delimeter between {@code sb} and appended {@code param}.
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
+     */
+    public static SB join(SB sb, String sbDelimeter, String delimeter, Object... params) {
+        if (!F.isEmpty(params)) {
+            sb.a(sbDelimeter);
+
+            for (Object par : params)
+                sb.a(par).a(delimeter);
+
+            sb.setLength(sb.length() - delimeter.length());
+        }
+
+        return sb;
+    }
+
+    /**
+     * Prints exception messages to log
+     *
+     * @param exceptions map containing node ids and exceptions.
+     * @param infoMsg single message to log.
+     * @param printer Printer to use.
+     * @return true if errors were printed.
+     */
+    public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Consumer<String> printer) {
+        if (!F.isEmpty(exceptions)) {
+            printer.accept(infoMsg);
+
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                printer.accept(INDENT + "Node ID: " + e.getKey());
+
+                printer.accept(INDENT + "Exception message:");
+                printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
+                printer.accept("");
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

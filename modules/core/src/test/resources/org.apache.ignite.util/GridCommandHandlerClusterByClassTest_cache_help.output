@@ -48,14 +48,14 @@ Arguments: --cache help --yes
     Parameters:
       --caches cache1[,cache2,....,cacheN]  - specifies a comma-separated list of cache names to be cleared.
 
-  --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
-    Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries.
+  Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries:
+    control.(sh|bat) --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N] [--check-through K] [--check-crc] [--check-sizes]
 
     Parameters:
-      --check-first N    - validate only the first N keys
-      --check-through K  - validate every Kth key
-      --check-crc        - check the CRC-sum of pages stored on disk
-      --check-sizes      - check that index size and cache size are the same
+      --check-first N            - validate only the first N keys.
+      --check-through K          - validate every Kth key.
+      --check-crc                - check the CRC-sum of pages stored on disk.
+      --check-sizes              - check that index size and cache size are the same.
 
   --cache check_index_inline_sizes
     Checks that secondary indexes inline size are same on the cluster nodes.

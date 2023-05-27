@@ -27,13 +27,12 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
-
+import org.apache.ignite.internal.management.api.CommandUtils;
 import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -120,7 +119,7 @@ public class CacheDistribution extends AbstractCommand<CacheDistribution.Argumen
             res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
-        CommandLogger.printErrors(res.exceptions(), "Cache distrubution task failed on nodes:", logger);
+        CommandUtils.printErrors(res.exceptions(), "Cache distrubution task failed on nodes:", logger::info);
 
         res.print(System.out);
 

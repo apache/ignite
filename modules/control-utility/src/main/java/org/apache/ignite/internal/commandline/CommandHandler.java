@@ -70,6 +70,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
@@ -753,7 +754,7 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + CommandLogger.join(" ", CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())),
+        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", getCommonOptions())),
             optional("command"), "<command_parameters>"));
         logger.info("");
         logger.info("");
