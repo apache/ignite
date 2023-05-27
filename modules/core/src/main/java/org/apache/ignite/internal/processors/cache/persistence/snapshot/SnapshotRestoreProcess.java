@@ -639,6 +639,13 @@ public class SnapshotRestoreProcess {
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
+        if (log.isInfoEnabled()) {
+            log.info("Starting local snapshot prepare restore operation" +
+                " [reqId=" + req.requestId() +
+                ", snapshot=" + req.snapshotName() +
+                ", caches=" + req.groups() + ']');
+        }
+
         SnapshotRestoreContext opCtx0 = new SnapshotRestoreContext(req);
 
         try {
@@ -699,13 +706,6 @@ public class SnapshotRestoreProcess {
                     opCtx0.errHnd.accept(fut0.interruptEx);
 
                 opCtx = opCtx0;
-            }
-
-            if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot prepare restore operation" +
-                    " [reqId=" + req.requestId() +
-                    ", snapshot=" + req.snapshotName() +
-                    ", caches=" + req.groups() + ']');
             }
 
             return new GridFinishedFuture<>(new SnapshotRestoreOperationResponse(opCtx0.cfgs.values(), locMetas));
