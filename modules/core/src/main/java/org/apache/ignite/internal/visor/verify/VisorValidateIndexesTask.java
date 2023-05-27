@@ -117,7 +117,7 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIn
             try {
                 ValidateIndexesClosure clo = new ValidateIndexesClosure(
                     this::isCancelled,
-                    new HashSet<>(Arrays.asList(arg.caches())),
+                    arg.caches() == null ? null : new HashSet<>(Arrays.asList(arg.caches())),
                     arg.checkFirst(),
                     arg.checkThrough(),
                     arg.checkCrc(),
