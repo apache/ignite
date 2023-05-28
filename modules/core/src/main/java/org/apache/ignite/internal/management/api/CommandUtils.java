@@ -287,6 +287,11 @@ public class CommandUtils {
             .orElse(null);
     }
 
+    /** */
+    public static Collection<UUID> nodeOrNull(@Nullable UUID nodeId) {
+        return nodeId == null ? null : Collections.singleton(nodeId);
+    }
+
     /**
      * @param nodes Nodes.
      * @return Server nodes.

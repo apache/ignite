@@ -60,8 +60,8 @@ Arguments: --cache help --yes
   Checks that secondary indexes inline size are same on the cluster nodes:
     control.(sh|bat) --cache check_index_inline_sizes
 
-  --cache contention minQueueSize [nodeId] [maxPrint]
-    Show the keys that are point of contention for multiple transactions.
+  Show the keys that are point of contention for multiple transactions:
+    control.(sh|bat) --cache contention minQueueSize [nodeId] [maxPrint]
 
   --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
     Prints the information about partition distribution.

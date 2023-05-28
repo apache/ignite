@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.metric;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
+import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** */
@@ -61,7 +61,7 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, MetricCommandArg arg) {
-        return arg.nodeId() == null ? null : Collections.singleton(arg.nodeId());
+        return nodeOrNull(arg.nodeId());
     }
 
     /** {@inheritDoc} */
