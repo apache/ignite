@@ -20,73 +20,74 @@ package org.apache.ignite.internal.management.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
 
 /** */
-public class CacheContentionCommandArg extends IgniteDataTransferObject {
+@ArgumentGroup(value = {"caches", "allCaches"}, onlyOneOf = true, optional = false)
+public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
-    /** Min queue size. */
+    /** */
     @Positional
-    @Argument(example = "minQueueSize")
-    private int minQueueSize;
+    @Argument
+    private CacheMetricsOperation operation;
 
-    /** Node id. */
-    @Positional
-    @Argument(optional = true, example = "nodeId")
-    private UUID nodeId;
+    /** */
+    @Argument(description = "specifies a comma-separated list of cache names to which operation should be applied",
+        example = "cache1[,...,cacheN]")
+    private String[] caches;
 
-    /** Max print. */
-    @Positional
-    @Argument(optional = true, example = "maxPrint")
-    private int maxPrint = 10;
+    /** */
+    @Argument(description = "applies operation to all user caches")
+    private boolean allCaches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(minQueueSize);
-        U.writeUuid(out, nodeId);
-        out.writeInt(maxPrint);
+        U.writeEnum(out, operation);
+        U.writeArray(out, caches);
+        out.writeBoolean(allCaches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        minQueueSize = in.readInt();
-        nodeId = U.readUuid(in);
-        maxPrint = in.readInt();
+        operation = U.readEnum(in, CacheMetricsOperation.class);
+        caches = U.readArray(in, String.class);
+        allCaches = in.readBoolean();
     }
 
     /** */
-    public UUID nodeId() {
-        return nodeId;
+    public CacheMetricsOperation operation() {
+        return operation;
     }
 
     /** */
-    public void nodeId(UUID nodeId) {
-        this.nodeId = nodeId;
+    public void operation(CacheMetricsOperation op) {
+        this.operation = op;
     }
 
     /** */
-    public int minQueueSize() {
-        return minQueueSize;
+    public String[] caches() {
+        return caches;
     }
 
     /** */
-    public void minQueueSize(int minQueueSize) {
-        this.minQueueSize = minQueueSize;
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 
     /** */
-    public int maxPrint() {
-        return maxPrint;
+    public boolean allCaches() {
+        return allCaches;
     }
 
     /** */
-    public void maxPrint(int maxPrint) {
-        this.maxPrint = maxPrint;
+    public void allCaches(boolean allCaches) {
+        this.allCaches = allCaches;
     }
 }

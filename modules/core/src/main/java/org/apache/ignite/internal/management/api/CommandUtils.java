@@ -408,8 +408,14 @@ public class CommandUtils {
         else if (type == IgniteUuid.class) {
             return (T)IgniteUuid.fromString(val);
         }
-        else if (type.isEnum())
-            return (T)Enum.valueOf((Class<Enum>)type, val.toUpperCase());
+        else if (type.isEnum()) {
+            try {
+                return (T)Enum.valueOf((Class<Enum>)type, val.toUpperCase());
+            }
+            catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Can't parse value '" + val + "', expected type: " + type.getName());
+            }
+        }
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }
