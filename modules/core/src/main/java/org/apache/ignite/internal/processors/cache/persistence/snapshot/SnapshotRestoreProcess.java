@@ -684,6 +684,15 @@ public class SnapshotRestoreProcess {
                 }
             }
 
+            Collection<UUID> missedNodes = new HashSet<>(req.nodes());
+
+            missedNodes.removeAll(F.transform(ctx.discovery().aliveServerNodes(), F.node2id()));
+
+            if (!missedNodes.isEmpty()) {
+                throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes " +
+                    "missed: " + missedNodes);
+            }
+
             List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
             enrichContext(opCtx0, req, locMetas);
@@ -754,14 +763,6 @@ public class SnapshotRestoreProcess {
         assert req.requestId().equals(curOpCtx.reqId);
 
         GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
-
-        // Collection of baseline nodes that must survive and additional discovery data required for the affinity calculation.
-        DiscoCache discoCache = ctx.discovery().discoCache();
-
-        if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.nodes()))
-            throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes missed: " + discoCache);
-
-        curOpCtx.discoCache = discoCache.copy(discoCache.version(), null);
 
         if (F.isEmpty(metas))
             return;
@@ -1019,7 +1020,7 @@ public class SnapshotRestoreProcess {
 
             for (StoredCacheData data : opCtx0.cfgs.values()) {
                 affCache.computeIfAbsent(CU.cacheOrGroupName(data.config()),
-                    grp -> calculateAffinity(ctx, data.config(), opCtx0.discoCache));
+                    grp -> calculateAffinity(ctx, data.config(), ctx.discovery().discoCache()));
             }
 
             Map<Integer, Set<PartitionRestoreFuture>> allParts = new HashMap<>();
@@ -1876,11 +1877,8 @@ public class SnapshotRestoreProcess {
         /** Snapshot directory path. */
         private final String snpPath;
 
-        /**
-         * Baseline discovery cache for node IDs that must be alive to complete the operation. {@code Null} if the
-         * context is not initialized yet.
-         */
-        private @Nullable DiscoCache discoCache;
+        /** IDs of the required nodes. */
+        private final Set<UUID> nodes;
 
         /** Operational node id. */
         private final UUID opNodeId;
@@ -1942,7 +1940,7 @@ public class SnapshotRestoreProcess {
             snpName = "";
             startTime = 0;
             opNodeId = null;
-            discoCache = null;
+            nodes = null;
             snpPath = null;
             incIdx = 0;
         }
@@ -1957,13 +1955,14 @@ public class SnapshotRestoreProcess {
             opNodeId = req.operationalNodeId();
             incIdx = req.incrementIndex();
             startTime = U.currentTimeMillis();
+            nodes = req.nodes();
         }
 
         /**
          * @return Required baseline nodeIds that must be alive to complete restore operation.
          */
         public Collection<UUID> nodes() {
-            return F.transform(discoCache.aliveBaselineNodes(), F.node2id());
+            return nodes;
         }
 
         /** */
