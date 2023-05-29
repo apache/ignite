@@ -1110,17 +1110,16 @@ public class SnapshotRestoreProcess {
                     rmtLoadParts.get(grpId).remove(new PartitionRestoreFuture(partId, opCtx0.processedParts)));
 
             try {
-                if (log.isInfoEnabled() && !snpAff.isEmpty()) {
-                    snpAff.forEach((nodeId, nodePartitions) ->
-                        log.info("Trying to request partitions from remote node " +
-                        "[reqId=" + reqId +
-                        ", snapshot=" + opCtx0.snpName +
-                        ", nodeId=" + nodeId +
-                        ", consistentId=" + ctx.discovery().node(nodeId).consistentId() +
-                        ", grpParts=" + partitionsMapToString(nodePartitions) + "]"));
-                }
-
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
+                    if (log.isInfoEnabled() && !snpAff.isEmpty()) {
+                        log.info("Trying to request partitions from remote node " +
+                            "[reqId=" + reqId +
+                            ", snapshot=" + opCtx0.snpName +
+                            ", nodeId=" + m.getKey() +
+                            ", consistentId=" + ctx.discovery().node(m.getKey()).consistentId() +
+                            ", grpParts=" + partitionsMapToString(m.getValue()) + "]");
+                    }
+
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
                             opCtx0.reqId,
