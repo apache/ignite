@@ -63,8 +63,8 @@ Arguments: --cache help --yes
   Show the keys that are point of contention for multiple transactions:
     control.(sh|bat) --cache contention minQueueSize [nodeId] [maxPrint]
 
-  --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
-    Prints the information about partition distribution.
+  Prints the information about partition distribution:
+    control.(sh|bat) --cache distribution nodeId|null [cacheName1,...,cacheNameN] [--user-attributes attrName1,...,attrNameN]
 
   Reset the state of lost partitions for the specified caches:
     control.(sh|bat) --cache reset_lost_partitions cacheName1,...,cacheNameN

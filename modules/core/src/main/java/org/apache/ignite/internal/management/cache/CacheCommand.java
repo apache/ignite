@@ -33,6 +33,7 @@ public class CacheCommand extends CommandRegistryImpl {
             new CacheValidateIndexesCommand(),
             new CacheCheckIndexInlineSizesCommand(),
             new CacheContentionCommand(),
+            new CacheDistributionCommand(),
             new CacheResetLostPartitionsCommand(),
             new CacheFindGarbageCommand(),
             new CacheIndexesListCommand(),

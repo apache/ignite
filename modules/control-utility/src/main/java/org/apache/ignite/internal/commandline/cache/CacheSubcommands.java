@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline.cache;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheCheckIndexInlineSizesCommand;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheContentionCommand;
 import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
+import org.apache.ignite.internal.management.cache.CacheDistributionCommand;
 import org.apache.ignite.internal.management.cache.CacheFindGarbageCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesListCommand;
@@ -93,7 +93,7 @@ public enum CacheSubcommands {
     /**
      * Collect information on the distribution of partitions.
      */
-    DISTRIBUTION("distribution", DistributionCommandArg.class, new CacheDistribution()),
+    DISTRIBUTION(new CacheDistributionCommand()),
 
     /**
      * Reset lost partitions
