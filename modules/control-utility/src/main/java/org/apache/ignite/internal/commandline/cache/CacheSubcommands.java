@@ -21,7 +21,6 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheCheckIndexInlineSizesCommand;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheContentionCommand;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusComm
 import org.apache.ignite.internal.management.cache.CacheListCommand;
 import org.apache.ignite.internal.management.cache.CacheMetricsCommand;
 import org.apache.ignite.internal.management.cache.CacheResetLostPartitionsCommand;
+import org.apache.ignite.internal.management.cache.CacheScanCommand;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
 import org.jetbrains.annotations.Nullable;
@@ -133,7 +133,7 @@ public enum CacheSubcommands {
     /**
      * Scan cache entries.
      */
-    SCAN("scan", IndexRebuildCommandArg.class, new CacheScan());
+    SCAN(new CacheScanCommand());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();

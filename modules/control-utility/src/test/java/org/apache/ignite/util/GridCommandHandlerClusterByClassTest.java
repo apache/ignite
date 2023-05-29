@@ -1505,22 +1505,22 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cacheX", "test"));
 
-        assertContains(log, testOut.toString(), "Unknown argument: test");
+        assertContains(log, testOut.toString(), "Unexpected argument: test");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit"));
 
         if (sslEnabled()) // Extra arguments at the end added.
             assertContains(log, testOut.toString(), "Invalid value for limit");
         else
-            assertContains(log, testOut.toString(), "Expecting limit");
+            assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit", "test"));
 
-        assertContains(log, testOut.toString(), "Invalid value for limit: test");
+        assertContains(log, testOut.toString(), "Failed to parse --limit command argument. Can't parse number 'test'");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit", "123", "test"));
 
-        assertContains(log, testOut.toString(), "Unknown argument: test");
+        assertContains(log, testOut.toString(), "Unexpected argument: test");
 
         IgniteCache<Integer, Object> c = crd.createCache(new CacheConfiguration<>("testCache"));
 

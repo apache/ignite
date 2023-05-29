@@ -15,57 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache;
+package org.apache.ignite.internal.management.cache;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- * Argument for {@link VisorCacheScanTask}.
- */
-public class VisorCacheScanTaskArg extends IgniteDataTransferObject {
+/** */
+public class CacheScanCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
-    /** Cache name. */
+    /** Default entries limit. */
+    private static final int DFLT_LIMIT = 1_000;
+
+    /** */
+    @Positional
+    @Argument(example = "cacheName")
     private String cacheName;
 
-    /** Entries limit. */
-    private int limit;
-
-    /**
-     * Default constructor.
-     */
-    public VisorCacheScanTaskArg() {
-        // No-op.
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param limit Entries limit.
-     */
-    public VisorCacheScanTaskArg(String cacheName, int limit) {
-        this.cacheName = cacheName;
-        this.limit = limit;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String getCacheName() {
-        return cacheName;
-    }
-
-    /**
-     * @return Entries limit.
-     */
-    public int getLimit() {
-        return limit;
-    }
+    /** */
+    @Argument(description = "limit count of entries to scan (" + DFLT_LIMIT + " by default)", example = "N", optional = true)
+    private int limit = DFLT_LIMIT;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
@@ -79,8 +54,23 @@ public class VisorCacheScanTaskArg extends IgniteDataTransferObject {
         limit = in.readInt();
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorCacheScanTaskArg.class, this);
+    /** */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /** */
+    public void cacheName(String cacheName) {
+        this.cacheName = cacheName;
+    }
+
+    /** */
+    public int limit() {
+        return limit;
+    }
+
+    /** */
+    public void limit(int limit) {
+        this.limit = limit;
     }
 }
