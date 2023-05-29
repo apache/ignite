@@ -513,7 +513,7 @@ public class ZookeeperDiscoveryImpl {
                     rtState.evtsData.topVer,
                     locNode,
                     rtState.top.topologySnapshot(),
-                    Collections.emptyNavigableMap(),
+                    Collections.emptyMap(),
                     null,
                     null
                 )
@@ -586,7 +586,7 @@ public class ZookeeperDiscoveryImpl {
                 rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
                 locNode,
                 nodes,
-                Collections.emptyNavigableMap(),
+                Collections.emptyMap(),
                 null,
                 null
             )
@@ -2367,7 +2367,7 @@ public class ZookeeperDiscoveryImpl {
                     1L,
                     locNode,
                     topSnapshot,
-                    Collections.emptyNavigableMap(),
+                    Collections.emptyMap(),
                     null,
                     null
                 )
@@ -3075,7 +3075,7 @@ public class ZookeeperDiscoveryImpl {
                     joinedEvtData.topVer,
                     locNode,
                     topSnapshot,
-                    Collections.emptyNavigableMap(),
+                    Collections.emptyMap(),
                     null,
                     null
                 )
@@ -3088,7 +3088,7 @@ public class ZookeeperDiscoveryImpl {
                         joinedEvtData.topVer,
                         locNode,
                         topSnapshot,
-                        Collections.emptyNavigableMap(),
+                        Collections.emptyMap(),
                         null,
                         null
                     )
@@ -3547,7 +3547,7 @@ public class ZookeeperDiscoveryImpl {
                 evtData.topologyVersion(),
                 sndNode,
                 topSnapshot,
-                Collections.emptyNavigableMap(),
+                Collections.emptyMap(),
                 msg,
                 null
             )
@@ -3577,7 +3577,7 @@ public class ZookeeperDiscoveryImpl {
                 joinedEvtData.topVer,
                 joinedNode,
                 topSnapshot,
-                Collections.emptyNavigableMap(),
+                Collections.emptyMap(),
                 null,
                 null
             )
@@ -3627,7 +3627,7 @@ public class ZookeeperDiscoveryImpl {
                 topVer,
                 leftNode,
                 topSnapshot,
-                Collections.emptyNavigableMap(),
+                Collections.emptyMap(),
                 null,
                 null
             )
