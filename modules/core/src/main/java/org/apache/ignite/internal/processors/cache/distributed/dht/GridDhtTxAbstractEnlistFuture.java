@@ -345,7 +345,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
             if (!tx.implicitSingle())
                 tx.addActiveCache(cctx, false);
-            else {// Nothing to do for single update.
+            else { // Nothing to do for single update.
                 int[] cacheIds = tx.txState().cacheIds();
 
                 assert cacheIds.length == 1 : cacheIds.length;
