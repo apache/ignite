@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -91,7 +90,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1850,13 +1848,13 @@ public class SnapshotRestoreProcess {
 
         opCtx.dirs.forEach(dir -> {
             String grpName = cacheGroupName(dir);
-            cacheGrpNames.put(GridCacheUtils.cacheId(grpName), grpName);
+            cacheGrpNames.put(CU.cacheId(grpName), grpName);
         });
 
         return map.entrySet()
             .stream()
             .collect(Collectors.toMap(e -> String.format("[grpId=%d, grpName=%s]", e.getKey(), cacheGrpNames.get(e.getKey())),
-                e -> GridToStringBuilder.toStringSortedDistinct(e.getValue())))
+                e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 
