@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryState;
@@ -60,8 +61,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.GlobalMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -131,6 +135,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private FailureProcessor failureProcessor;
+
+    /** */
+    private PerformanceStatisticsProcessor performanceStatisticsProc;
 
     /** */
     private AffinityService partSvc;
@@ -246,6 +253,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
      */
     public FailureProcessor failureProcessor() {
         return failureProcessor;
+    }
+
+    /**
+     * @param performanceStatisticsProc Performance statistics processor.
+     */
+    public void performanceStatisticsProcessor(PerformanceStatisticsProcessor performanceStatisticsProc) {
+        this.performanceStatisticsProc = performanceStatisticsProc;
     }
 
     /**
@@ -390,6 +404,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         exchangeManager(ctx.cache().context().exchange());
         cacheObjectValueContext(ctx.query().objectContext());
         eventManager(ctx.event());
+        performanceStatisticsProcessor(ctx.performanceStatistics());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
         CalciteQueryProcessor proc = Objects.requireNonNull(
@@ -572,6 +587,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             fragmentDesc,
             handler,
             qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
+            createIoTracker(locNodeId, qry.localQueryId()),
             Commons.parametersMap(qry.parameters()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
@@ -603,6 +619,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     try {
                         QueryStartRequest req = new QueryStartRequest(
                             qry.id(),
+                            qry.localQueryId(),
                             qry.context().schemaName(),
                             fragment.serialized(),
                             ectx.topologyVersion(),
@@ -711,6 +728,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.fragmentDescription(),
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
+                createIoTracker(nodeId, msg.originatingQryId()),
                 Commons.parametersMap(msg.parameters())
             );
 
@@ -785,5 +803,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onNodeLeft(UUID nodeId) {
         qryReg.runningQueries()
             .forEach((qry) -> ((Query<Row>)qry).onNodeLeft(nodeId));
+    }
+
+    /** */
+    private IoTracker createIoTracker(UUID originatingNodeId, long originatingQryId) {
+        return performanceStatisticsProc.enabled() ?
+            new PerformanceStatisticsIoTracker(performanceStatisticsProc, originatingNodeId, originatingQryId) :
+            NoOpIoTracker.INSTANCE;
     }
 }
