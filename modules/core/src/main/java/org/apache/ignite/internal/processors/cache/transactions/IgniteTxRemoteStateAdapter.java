@@ -53,8 +53,8 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridIntList cacheIds() {
-        return activeCacheIds;
+    @Override public int[] cacheIds() {
+        return activeCacheIds.array();
     }
 
     /** {@inheritDoc} */

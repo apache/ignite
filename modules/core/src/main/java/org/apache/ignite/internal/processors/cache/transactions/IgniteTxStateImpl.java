@@ -93,8 +93,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public synchronized GridIntList cacheIds() {
-        return activeCacheIds;
+    @Override public int[] cacheIds() {
+        return activeCacheIds();
     }
 
     /** {@inheritDoc} */

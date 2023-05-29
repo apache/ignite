@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -153,7 +152,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param duration Duration in nanoseconds.
      * @param commited {@code True} if commited.
      */
-    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
+    public void transaction(int[] cacheIds, long startTime, long duration, boolean commited) {
         write(writer -> writer.transaction(cacheIds, startTime, duration, commited));
     }
 

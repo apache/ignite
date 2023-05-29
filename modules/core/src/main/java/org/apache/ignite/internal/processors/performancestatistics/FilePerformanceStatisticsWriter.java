@@ -39,8 +39,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridIntIterator;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
@@ -228,14 +226,12 @@ public class FilePerformanceStatisticsWriter {
      * @param duration Duration in nanoseconds.
      * @param commited {@code True} if commited.
      */
-    public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commited) {
-        doWrite(commited ? TX_COMMIT : TX_ROLLBACK, transactionRecordSize(cacheIds.size()), buf -> {
-            buf.putInt(cacheIds.size());
+    public void transaction(int[] cacheIds, long startTime, long duration, boolean commited) {
+        doWrite(commited ? TX_COMMIT : TX_ROLLBACK, transactionRecordSize(cacheIds.length), buf -> {
+            buf.putInt(cacheIds.length);
 
-            GridIntIterator iter = cacheIds.iterator();
-
-            while (iter.hasNext())
-                buf.putInt(iter.next());
+            for (int id : cacheIds)
+                buf.putInt(id);
 
             buf.putLong(startTime);
             buf.putLong(duration);
