@@ -36,14 +36,13 @@ import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
-import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
@@ -197,7 +196,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
-        String delete = FindAndDeleteGarbageArg.DELETE.toString();
+        String delete = "--delete";
         String groups = "group1,grpoup2,group3";
 
         List<List<String>> lists = generateArgumentList(
@@ -214,17 +213,17 @@ public class CommandHandlerParsingTest {
 
             CacheSubcommands subcommand = ((CacheCommands)args.command()).arg();
 
-            FindAndDeleteGarbage.Arguments arg = (FindAndDeleteGarbage.Arguments)subcommand.subcommand().arg();
+            CacheFindGarbageCommandArg arg = (CacheFindGarbageCommandArg)subcommand.subcommand().arg();
 
             if (list.contains(nodeId))
-                assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeId().toString());
+                assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0].toString());
             else
-                assertNull(arg.nodeId());
+                assertNull(arg.nodeIds());
 
             assertEquals(list.contains(delete), arg.delete());
 
             if (list.contains(groups))
-                assertEquals(3, arg.groups().size());
+                assertEquals(3, arg.groups().length);
             else
                 assertNull(arg.groups());
         }
