@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline.cache;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.management.cache.CacheCheckIndexInlineSizesCommand;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheContentionCommand;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.CacheDistributionCommand;
 import org.apache.ignite.internal.management.cache.CacheFindGarbageCommand;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesListCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
@@ -53,7 +53,7 @@ public enum CacheSubcommands {
     /**
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
      */
-    IDLE_VERIFY("idle_verify", IdleVerifyCommandArg.class, new IdleVerify()),
+    IDLE_VERIFY(new CacheIdleVerifyCommand()),
 
     /**
      * Prints info regarding caches, groups or sequences.
