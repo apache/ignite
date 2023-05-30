@@ -137,7 +137,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FailureProcessor failureProcessor;
 
     /** */
-    private PerformanceStatisticsProcessor performanceStatisticsProc;
+    private PerformanceStatisticsProcessor perfStatProc;
 
     /** */
     private AffinityService partSvc;
@@ -256,10 +256,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /**
-     * @param performanceStatisticsProc Performance statistics processor.
+     * @param perfStatProc Performance statistics processor.
      */
-    public void performanceStatisticsProcessor(PerformanceStatisticsProcessor performanceStatisticsProc) {
-        this.performanceStatisticsProc = performanceStatisticsProc;
+    public void performanceStatisticsProcessor(PerformanceStatisticsProcessor perfStatProc) {
+        this.perfStatProc = perfStatProc;
     }
 
     /**
@@ -807,8 +807,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private IoTracker createIoTracker(UUID originatingNodeId, long originatingQryId) {
-        return performanceStatisticsProc.enabled() ?
-            new PerformanceStatisticsIoTracker(performanceStatisticsProc, originatingNodeId, originatingQryId) :
+        return perfStatProc.enabled() ?
+            new PerformanceStatisticsIoTracker(perfStatProc, originatingNodeId, originatingQryId) :
             NoOpIoTracker.INSTANCE;
     }
 }

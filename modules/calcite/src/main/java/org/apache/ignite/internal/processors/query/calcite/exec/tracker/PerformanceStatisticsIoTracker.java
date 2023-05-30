@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.performancestatistics.PerformanceSt
  */
 public class PerformanceStatisticsIoTracker implements IoTracker {
     /** */
-    private final PerformanceStatisticsProcessor performanceStatisticsProc;
+    private final PerformanceStatisticsProcessor perfStatProc;
 
     /** */
     private final UUID originatingNodeId;
@@ -38,11 +38,11 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
 
     /** */
     public PerformanceStatisticsIoTracker(
-        PerformanceStatisticsProcessor performanceStatisticsProc,
+        PerformanceStatisticsProcessor perfStatProc,
         UUID originatingNodeId,
         long originatingQryId
     ) {
-        this.performanceStatisticsProc = performanceStatisticsProc;
+        this.perfStatProc = perfStatProc;
         this.originatingNodeId = originatingNodeId;
         this.originatingQryId = originatingQryId;
     }
@@ -57,7 +57,7 @@ public class PerformanceStatisticsIoTracker implements IoTracker {
         IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 
         if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
-            performanceStatisticsProc.queryReads(
+            perfStatProc.queryReads(
                 GridCacheQueryType.SQL_FIELDS,
                 originatingNodeId,
                 originatingQryId,
