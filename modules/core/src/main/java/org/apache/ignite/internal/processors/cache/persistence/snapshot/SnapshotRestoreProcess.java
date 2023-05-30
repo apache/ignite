@@ -684,15 +684,6 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            Collection<UUID> missedNodes = new HashSet<>(req.nodes());
-
-            missedNodes.removeAll(F.transform(ctx.discovery().aliveServerNodes(), F.node2id()));
-
-            if (!missedNodes.isEmpty()) {
-                throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes " +
-                    "missed: " + missedNodes);
-            }
-
             List<SnapshotMetadata> locMetas = snpMgr.readSnapshotMetadatas(req.snapshotName(), req.snapshotPath());
 
             enrichContext(opCtx0, req, locMetas);
