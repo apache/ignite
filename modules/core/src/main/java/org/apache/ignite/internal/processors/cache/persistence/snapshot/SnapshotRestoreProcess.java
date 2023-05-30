@@ -935,6 +935,9 @@ public class SnapshotRestoreProcess {
         return null;
     }
 
+    /** Map for logging. */
+    Map<Integer, Set<Integer>> cacheGrpNames = new HashMap<>();
+
     /**
      * @param reqId Request id.
      * @return Future which will be completed when the preload ends.
@@ -1031,6 +1034,8 @@ public class SnapshotRestoreProcess {
 
                     if (parts != null)
                         availParts.addAll(parts);
+
+                    cacheGrpNames.put(grpId, parts);
                 }
 
                 List<List<ClusterNode>> assignment = affCache.get(cacheOrGrpName).idealAssignment().assignment();
@@ -1844,13 +1849,6 @@ public class SnapshotRestoreProcess {
      * @return String representation.
      */
     private String partitionsMapToString(Map<Integer, Set<Integer>> map) {
-        Map<Integer, String> cacheGrpNames = new HashMap<>(opCtx.dirs.size());
-
-        opCtx.dirs.forEach(dir -> {
-            String grpName = cacheGroupName(dir);
-            cacheGrpNames.put(CU.cacheId(grpName), grpName);
-        });
-
         return map.entrySet()
             .stream()
             .collect(Collectors.toMap(e -> String.format("[grpId=%d, grpName=%s]", e.getKey(), cacheGrpNames.get(e.getKey())),
