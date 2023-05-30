@@ -514,12 +514,18 @@ public class SnapshotRestoreProcess {
             log.info(OP_FINISHED_MSG + " [reqId=" + reqId + "].");
 
         SnapshotRestoreContext opCtx0 = opCtx;
+        SnapshotRestoreContext lastOpCtx0 = lastOpCtx;
+
+        long endTime = U.currentTimeMillis();
 
         if (opCtx0 != null && reqId.equals(opCtx0.reqId)) {
             opCtx = null;
 
-            opCtx0.endTime = U.currentTimeMillis();
+            opCtx0.endTime = endTime;
         }
+
+        if (lastOpCtx0 != opCtx0 && reqId.equals(lastOpCtx0.reqId))
+            lastOpCtx0.endTime = endTime;
 
         synchronized (this) {
             ClusterSnapshotFuture fut0 = fut;
