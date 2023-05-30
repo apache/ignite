@@ -23,14 +23,16 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildStatusArg;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
+import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
+import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
+import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 
 /**
@@ -105,12 +107,12 @@ public enum CacheSubcommands {
     /**
      * Index rebuild status.
      */
-    INDEX_REBUILD_STATUS("indexes_rebuild_status", IndexRebuildStatusArg.class, new CacheIndexesRebuildStatus()),
+    INDEX_REBUILD_STATUS(new CacheIndexesRebuildStatusCommand()),
 
     /**
      * Index force rebuild.
      */
-    INDEX_FORCE_REBUILD("indexes_force_rebuild", IndexForceRebuildCommandArg.class, new CacheIndexesForceRebuild()),
+    INDEX_FORCE_REBUILD(new CacheIndexesForceRebuildCommand()),
 
     /**
      * Enable / disable cache metrics collection or show metrics collection status.
@@ -120,7 +122,7 @@ public enum CacheSubcommands {
     /**
      * Index rebuild via the maintenance mode.
      */
-    INDEX_REBUILD("schedule_indexes_rebuild", IndexRebuildCommandArg.class, new CacheScheduleIndexesRebuild()),
+    INDEX_REBUILD(new CacheScheduleIndexesRebuildCommand()),
 
     /**
      * Scan cache entries.
@@ -155,7 +157,7 @@ public enum CacheSubcommands {
 
     /** @param command Management API command. */
     CacheSubcommands(org.apache.ignite.internal.management.api.Command<?, ?> command) {
-        this.name = toFormattedCommandName(command.getClass()).substring("cache-".length());
+        this.name = toFormattedCommandName(command.getClass(), PARAM_WORDS_DELIM).substring("cache_".length());
         this.command = new DeclarativeCommandAdapter<>(command);
         this.commandArgs = null;
     }

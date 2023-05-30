@@ -15,64 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache.index;
+package org.apache.ignite.internal.management.cache;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- * Argument for {@link IndexForceRebuildTask}.
- */
-public class IndexForceRebuildTaskArg extends IgniteDataTransferObject {
+/** */
+public class CacheIndexesRebuildStatusCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Cache group name. */
-    private Set<String> cacheGrps;
-
-    /** Cache name. */
-    private Set<String> cacheNames;
-
-    /**
-     * Empty constructor required for Serializable.
-     */
-    public IndexForceRebuildTaskArg() {
-        // No-op.
-    }
+    private static final long serialVersionUID = 0;
 
     /** */
-    public IndexForceRebuildTaskArg(Set<String> cacheGrps, Set<String> cacheNames) {
-        this.cacheGrps = cacheGrps;
-        this.cacheNames = cacheNames;
-    }
+    @Argument(
+        description = "Specify node for job execution. If not specified explicitly, info will be gathered from all nodes",
+        example = "nodeId",
+        optional = true)
+    private UUID nodeId;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, cacheGrps);
-        U.writeCollection(out, cacheNames);
+        U.writeUuid(out, nodeId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheGrps = U.readSet(in);
-        cacheNames = U.readSet(in);
+        nodeId = U.readUuid(in);
     }
 
-    /**
-     * @return Cache group name.
-     */
-    public Set<String> cacheGrps() {
-        return cacheGrps;
+    /** */
+    public UUID nodeId() {
+        return nodeId;
     }
 
-    /**
-     * @return Cache name.
-     */
-    public Set<String> cacheNames() {
-        return cacheNames;
+    /** */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
     }
 }

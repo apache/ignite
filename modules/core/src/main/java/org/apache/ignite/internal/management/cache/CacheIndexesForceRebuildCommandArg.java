@@ -15,58 +15,78 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.cache.index;
+package org.apache.ignite.internal.management.cache;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- * Argument for {@link IndexRebuildStatusTask}.
- */
-public class IndexRebuildStatusTaskArg extends IgniteDataTransferObject {
-    /** Required for serialization. */
-    private static final long serialVersionUID = 0L;
-
-    /** Node id. */
-    private UUID nodeId;
-
-    /**
-     * Empty constructor required for Serializable.
-     */
-    public IndexRebuildStatusTaskArg() {
-        // No-op.
-    }
+/** */
+@ArgumentGroup(value = {"cacheNames", "groupNames"}, onlyOneOf = true, optional = false)
+public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
 
     /** */
-    public IndexRebuildStatusTaskArg(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
+    @Argument(description = "Specify node for indexes rebuild", example = "nodeId")
+    private UUID nodeId;
+
+    /** */
+    @Argument(description = "Comma-separated list of cache names for which indexes should be rebuilt",
+        example = "cacheName1,...cacheNameN")
+    private String[] cacheNames;
+
+    /** */
+    @Argument(description = "Comma-separated list of cache group names for which indexes should be rebuilt",
+        example = "groupName1,...groupNameN")
+    private String[] groupNames;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);
+        U.writeArray(out, cacheNames);
+        U.writeArray(out, groupNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
+        cacheNames = U.readArray(in, String.class);
+        groupNames = U.readArray(in, String.class);
     }
 
-    /**
-     * @return Node id.
-     */
+    /** */
     public UUID nodeId() {
         return nodeId;
     }
 
-    /**
-     * @param nodeId New node id.
-     */
+    /** */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
+    }
+
+    /** */
+    public String[] cacheNames() {
+        return cacheNames;
+    }
+
+    /** */
+    public void cacheNames(String[] cacheNames) {
+        this.cacheNames = cacheNames;
+    }
+
+    /** */
+    public String[] groupNames() {
+        return groupNames;
+    }
+
+    /** */
+    public void groupNames(String[] groupNames) {
+        this.groupNames = groupNames;
     }
 }

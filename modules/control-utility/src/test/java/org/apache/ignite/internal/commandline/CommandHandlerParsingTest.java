@@ -35,8 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild;
-import org.apache.ignite.internal.commandline.cache.CacheScheduleIndexesRebuild.Arguments;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
@@ -47,6 +45,7 @@ import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
@@ -886,21 +885,21 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id")),
             IllegalArgumentException.class,
-            "Failed to read node id."
+            "Please specify a value for argument: --node-id"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--cache-names")),
             IllegalArgumentException.class,
-            "Expected comma-separated list of cache names."
+            "Please specify a value for argument: --cache-names"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "indexes_force_rebuild", "--node-id", nodeId, "--group-names")),
             IllegalArgumentException.class,
-            "Expected comma-separated list of cache group names."
+            "Please specify a value for argument: --group-names"
         );
 
         GridTestUtils.assertThrows(
@@ -912,7 +911,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "someNames"
             )),
             IllegalArgumentException.class,
-            "Either --group-names or --cache-names must be specified."
+            "Only one of [--group-names, --cache-names] allowed"
         );
 
         GridTestUtils.assertThrows(
@@ -924,7 +923,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "someMoreNames"
             )),
             IllegalArgumentException.class,
-            "--cache-names arg specified twice."
+            "--cache-names argument specified twice"
         );
 
         GridTestUtils.assertThrows(
@@ -936,7 +935,7 @@ public class CommandHandlerParsingTest {
                 "--group-names", "someMoreNames"
             )),
             IllegalArgumentException.class,
-            "--group-names arg specified twice."
+            "--group-names argument specified twice"
         );
 
         GridTestUtils.assertThrows(
@@ -947,7 +946,7 @@ public class CommandHandlerParsingTest {
                 "--group-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "--group-names not specified."
+            "Unexpected value: --some-other-arg"
         );
 
         GridTestUtils.assertThrows(
@@ -958,7 +957,7 @@ public class CommandHandlerParsingTest {
                 "--cache-names", "--some-other-arg"
             )),
             IllegalArgumentException.class,
-            "--cache-names not specified."
+            "Unexpected value: --some-other-arg"
         );
     }
 
@@ -969,7 +968,7 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id")),
             IllegalArgumentException.class,
-            "Failed to read node id."
+            "Please specify a value for argument: --node-id"
         );
 
         String nodeId = UUID.randomUUID().toString();
@@ -978,14 +977,14 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--cache-names")),
             IllegalArgumentException.class,
-            "Expected a comma-separated cache names (and optionally a comma-separated list of index names in square brackets)."
+            "Please specify a value for argument: --cache-names"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--node-id", nodeId)),
             IllegalArgumentException.class,
-            "--node-id arg specified twice."
+            "--node-id argument specified twice"
         );
 
         GridTestUtils.assertThrows(
@@ -993,7 +992,7 @@ public class CommandHandlerParsingTest {
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--cache-names", "a",
                 "--cache-names", "b")),
             IllegalArgumentException.class,
-            "--cache-names arg specified twice."
+            "--cache-names argument specified twice"
         );
 
         GridTestUtils.assertThrows(
@@ -1001,14 +1000,14 @@ public class CommandHandlerParsingTest {
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId, "--group-names", "a",
                 "--group-names", "b")),
             IllegalArgumentException.class,
-            "--group-names arg specified twice."
+            "--group-names argument specified twice"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "schedule_indexes_rebuild")),
             IllegalArgumentException.class,
-            "--cache-names or --group-names must be specified."
+            "One of [--group-names, --cache-names] required"
         );
 
         GridTestUtils.assertThrows(
@@ -1034,9 +1033,10 @@ public class CommandHandlerParsingTest {
             "--cache-names", buildScheduleIndexRebuildCacheNames(params1))
         ).command();
 
-        CacheScheduleIndexesRebuild.Arguments arg1 = (Arguments)cacheCommand1.arg().subcommand().arg();
+        CacheScheduleIndexesRebuildCommandArg arg1 =
+            (CacheScheduleIndexesRebuildCommandArg)cacheCommand1.arg().subcommand().arg();
         assertEquals(normalizeScheduleIndexRebuildCacheNamesMap(params1), arg1.cacheToIndexes());
-        assertEquals(null, arg1.cacheGroups());
+        assertEquals(null, arg1.groupNames());
 
         Map<String, Set<String>> params2 = new HashMap<>();
         params2.put("cache1", new HashSet<>(Arrays.asList("foo", "bar")));
@@ -1050,14 +1050,15 @@ public class CommandHandlerParsingTest {
 
         Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
 
-        CacheScheduleIndexesRebuild.Arguments arg2 = (Arguments)cacheCommand2.arg().subcommand().arg();
+        CacheScheduleIndexesRebuildCommandArg arg2 =
+            (CacheScheduleIndexesRebuildCommandArg)cacheCommand2.arg().subcommand().arg();
         assertEquals(normalized, arg2.cacheToIndexes());
-        assertEquals(new HashSet<>(Arrays.asList("foocache", "someGrp")), arg2.cacheGroups());
+        assertArrayEquals(new String[]{"foocache", "someGrp"}, arg2.groupNames());
     }
 
     /**
      * Builds a new --cache-names parameters map replacing nulls with empty set so it should be the same as
-     * the parsed argument of the {@link CacheScheduleIndexesRebuild.Arguments#cacheToIndexes()}.
+     * the parsed argument of the {@link CacheScheduleIndexesRebuildCommandArg#cacheToIndexes()}.
      *
      * @param paramsMap Cache -> indexes map.
      * @return New map with nulls replaced with empty set.
