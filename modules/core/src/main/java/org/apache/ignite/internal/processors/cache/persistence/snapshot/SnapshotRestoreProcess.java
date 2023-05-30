@@ -524,6 +524,9 @@ public class SnapshotRestoreProcess {
             opCtx0.endTime = endTime;
         }
 
+        // Actual operation context may not be assigned because some previous checks failed. The last operation context
+        // is assigned at the preparation to keep all operation statuses. Including failures of the preceding checks.
+        // @See #prepare(SnapshotOperationRequest).
         if (lastOpCtx0 != opCtx0 && reqId.equals(lastOpCtx0.reqId))
             lastOpCtx0.endTime = endTime;
 
