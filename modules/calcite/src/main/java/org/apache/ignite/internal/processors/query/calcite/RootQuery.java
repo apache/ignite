@@ -174,12 +174,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      */
     public void mapping() {
         synchronized (mux) {
-            if (state == QueryState.CLOSED) {
-                throw new IgniteSQLException(
-                    "The query was cancelled while executing.",
-                    IgniteQueryErrorCode.QUERY_CANCELED
-                );
-            }
+            if (state == QueryState.CLOSED)
+                throw queryCanceledException();
 
             state = QueryState.MAPPING;
         }
@@ -190,12 +186,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
      */
     public void run(ExecutionContext<RowT> ctx, MultiStepPlan plan, Node<RowT> root) {
         synchronized (mux) {
-            if (state == QueryState.CLOSED) {
-                throw new IgniteSQLException(
-                    "The query was cancelled while executing.",
-                    IgniteQueryErrorCode.QUERY_CANCELED
-                );
-            }
+            if (state == QueryState.CLOSED)
+                throw queryCanceledException();
 
             planningTime = U.currentTimeMillis() - startTs;
 
@@ -287,18 +279,14 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     @Override public void cancel() {
         cancel.cancel();
 
-        tryClose(new ExecutionCancelledException());
+        tryClose(queryCanceledException());
     }
 
     /** */
     public PlanningContext planningContext() {
         synchronized (mux) {
-            if (state == QueryState.CLOSED || state == QueryState.CLOSING) {
-                throw new IgniteSQLException(
-                    "The query was cancelled while executing.",
-                    IgniteQueryErrorCode.QUERY_CANCELED
-                );
-            }
+            if (state == QueryState.CLOSED || state == QueryState.CLOSING)
+                throw queryCanceledException();
 
             if (state == QueryState.EXECUTING || state == QueryState.MAPPING) {
                 throw new IgniteSQLException(
