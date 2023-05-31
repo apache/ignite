@@ -35,6 +35,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -44,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
@@ -95,12 +98,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
@@ -114,6 +119,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private UUID locNodeId;
+
+    /** */
+    private GridKernalContext ctx;
 
     /** */
     private GridEventStorageManager evtMgr;
@@ -400,6 +408,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
+        this.ctx = ctx;
         localNodeId(ctx.localNodeId());
         exchangeManager(ctx.cache().context().exchange());
         cacheObjectValueContext(ctx.query().objectContext());
@@ -647,8 +656,38 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
             o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
 
+        Function<List<Object>, List<Object>> rowConverter = null;
+
+        // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
+        if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
+            ClusterNode locNode = ctx.discovery().localNode();
+            UUID subjId = SecurityUtils.securitySubjectId(ctx);
+
+            rowConverter = row -> {
+                evtMgr.record(new CacheQueryReadEvent<>(
+                    locNode,
+                    "SQL fields query result set row read.",
+                    EVT_CACHE_QUERY_OBJECT_READ,
+                    CacheQueryType.SQL_FIELDS.name(),
+                    qryProps.cacheName(),
+                    null,
+                    qry.sql(),
+                    null,
+                    null,
+                    qry.parameters(),
+                    subjId,
+                    null,
+                    null,
+                    null,
+                    null,
+                    row));
+
+                return row;
+            };
+        }
+
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter);
+            fieldConverter, rowConverter);
 
         return new ListFieldsQueryCursor<>(plan, it, ectx);
     }
