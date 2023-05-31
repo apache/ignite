@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusTask;
 
-/** */
+/** Index rebuild status. */
 public class CacheIndexesRebuildStatusCommand
     implements ComputeCommand<CacheIndexesRebuildStatusCommandArg, Map<UUID, Set<IndexRebuildStatusInfoContainer>>> {
     /** {@inheritDoc} */

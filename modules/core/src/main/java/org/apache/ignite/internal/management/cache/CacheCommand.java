@@ -48,7 +48,7 @@ public class CacheCommand extends CommandRegistryImpl {
         );
     }
 
-    /** */
+    /** Prints out help for the cache command. */
     public static class CacheHelpCommand implements HelpCommand {
         /** {@inheritDoc} */
         @Override public String description() {

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskResult;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/** Change Cluster tag command. */
 public class ChangeTagCommand implements ComputeCommand<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {

@@ -34,7 +34,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.logParsedArgs;
 
-/** */
+/** Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster. */
 public class CacheIdleVerifyCommand
     extends CommandRegistryImpl<CacheIdleVerifyCommandArg, IdleVerifyResultV2>
     implements ComputeCommand<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {

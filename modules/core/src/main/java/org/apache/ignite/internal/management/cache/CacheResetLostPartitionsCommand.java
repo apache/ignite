@@ -22,7 +22,7 @@ import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheR
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
-/** */
+/** Reset lost partitions. */
 public class CacheResetLostPartitionsCommand
     implements ComputeCommand<CacheResetLostPartitionsCommandArg, CacheResetLostPartitionsTaskResult> {
     /** {@inheritDoc} */

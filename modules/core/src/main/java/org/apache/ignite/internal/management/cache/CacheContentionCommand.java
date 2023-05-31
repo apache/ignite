@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
 
-/** */
+/** Prints info about contended keys (the keys concurrently locked from multiple transactions). */
 public class CacheContentionCommand implements ComputeCommand<CacheContentionCommandArg, VisorContentionTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 
-/** */
+/** Destroy caches. */
 public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandArg, Void> {
     /** Confirmation message format. */
     public static final String CONFIRM_MSG = "Warning! The command will destroy %d caches: %s.\n" +

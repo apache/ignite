@@ -27,7 +27,7 @@ import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersist
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
-/** */
+/** Find and remove garbage. */
 public class CacheFindGarbageCommand
     implements ComputeCommand<CacheFindGarbageCommandArg, VisorFindAndDeleteGarbageInPersistenceTaskResult> {
     /** {@inheritDoc} */

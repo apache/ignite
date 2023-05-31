@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.management.SystemViewCommand.printTable
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
-/** */
+/** Command for printing metric values. */
 public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<String, ?>>
     implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
     /** */

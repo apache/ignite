@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.meta;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/** Metadata commands. */
 @CliPositionalSubcommands
 public class MetaCommand extends CommandRegistryImpl {
     /** */

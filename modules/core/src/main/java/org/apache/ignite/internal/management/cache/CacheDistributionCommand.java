@@ -28,7 +28,7 @@ import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.T3;
 
-/** */
+/** Collect information on the distribution of partitions. */
 public class CacheDistributionCommand
     implements ComputeCommand<CacheDistributionCommandArg, CacheDistributionTaskResult> {
     /** {@inheritDoc} */

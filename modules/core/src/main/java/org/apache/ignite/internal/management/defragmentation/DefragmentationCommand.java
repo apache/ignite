@@ -24,7 +24,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/** Command to manage PDS defragmentation. */
 @CliPositionalSubcommands
 public class DefragmentationCommand extends CommandRegistryImpl {
     /** */

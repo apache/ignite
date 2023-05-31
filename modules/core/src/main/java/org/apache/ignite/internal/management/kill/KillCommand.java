@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.kill;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/** Kill command. */
 @CliPositionalSubcommands
 public class KillCommand extends CommandRegistryImpl {
     /** */

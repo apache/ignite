@@ -22,7 +22,7 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.cache.VisorCacheCreateTask;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
-/** */
+/** Create caches. */
 public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg, Set<String>> {
     /** {@inheritDoc} */
     @Override public String description() {

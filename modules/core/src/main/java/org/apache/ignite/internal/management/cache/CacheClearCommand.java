@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.ClearCachesTask;
 import org.apache.ignite.internal.processors.cache.ClearCachesTaskResult;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/** Clear caches. */
 public class CacheClearCommand implements ComputeCommand<CacheClearCommandArg, ClearCachesTaskResult> {
     /** Message that contains cleared caches. */
     public static final String CLEAR_MSG = "The following caches have been cleared: %s";
