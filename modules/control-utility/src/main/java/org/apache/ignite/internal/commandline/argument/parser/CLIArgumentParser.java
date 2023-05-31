@@ -80,7 +80,7 @@ public class CLIArgumentParser {
         while (argsIter.hasNext()) {
             String arg = argsIter.next();
 
-            CLIArgument<?> cliArg = argConfiguration.get(arg);
+            CLIArgument<?> cliArg = argConfiguration.get(arg.toLowerCase());
 
             if (cliArg == null) {
                 if (positionalIdx < positionalArgCfg.size()) {
