@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -114,6 +115,8 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<CacheValidateIn
 
         /** {@inheritDoc} */
         @Override protected VisorValidateIndexesJobResult run(CacheValidateIndexesCommandArg arg) throws IgniteException {
+            A.notNull(arg, "arg");
+
             try {
                 ValidateIndexesClosure clo = new ValidateIndexesClosure(
                     this::isCancelled,
