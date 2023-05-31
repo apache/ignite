@@ -67,13 +67,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
@@ -288,10 +291,13 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        if (baseCmd.getClass().getSimpleName().startsWith("Cache"))
-            usage(baseCmd, Collections.singletonList(new CacheCommand()), logger);
-        else
-            usage(baseCmd, Collections.emptyList(), logger);
+        if (baseCmd instanceof CacheCommand || baseCmd instanceof CacheCommand.CacheHelpCommand)
+            printCacheHelpHeader(logger);
+
+        usage(baseCmd, Collections.emptyList(), logger);
+
+        if (baseCmd instanceof CacheCommand || baseCmd instanceof CacheCommand.CacheHelpCommand)
+            logger.info("");
     }
 
     /**
@@ -559,5 +565,21 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** */
     public org.apache.ignite.internal.management.api.Command<?, ?> command() {
         return baseCmd;
+    }
+
+    /** */
+    private void printCacheHelpHeader(IgniteLogger logger) {
+        logger.info(INDENT + "The '" + CACHE + " subcommand' is used to get information about and perform actions" +
+            " with caches. The command has the following syntax:");
+        logger.info("");
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", getCommonOptions())) + " " +
+            CACHE + " [subcommand] <subcommand_parameters>");
+        logger.info("");
+        logger.info(INDENT + "The subcommands that take [nodeId] as an argument ('list', 'find_garbage', " +
+            "'contention' and 'validate_indexes') will be executed on the given node or on all server nodes" +
+            " if the option is not specified. Other commands will run on a random server node.");
+        logger.info("");
+        logger.info("");
+        logger.info(INDENT + "Subcommands:");
     }
 }

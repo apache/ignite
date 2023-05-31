@@ -380,20 +380,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
-    public void testCorrectCacheOptionsNaming() {
-        Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
-
-        for (CacheSubcommands cmd : CacheSubcommands.values()) {
-            Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
-
-            if (args != null)
-                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
-                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
-        }
-    }
-
-    /** */
-    @Test
     public void testHelp() throws Exception {
         injectTestSystemOut();
 

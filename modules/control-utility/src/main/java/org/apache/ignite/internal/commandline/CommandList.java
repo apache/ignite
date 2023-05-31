@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.management.ActivateCommand;
 import org.apache.ignite.internal.management.ChangeTagCommand;
 import org.apache.ignite.internal.management.DeactivateCommand;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.management.StateCommand;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
@@ -72,7 +72,7 @@ public enum CommandList {
     TX(new TxCommand()),
 
     /** */
-    CACHE("--cache", new CacheCommands()),
+    CACHE(new CacheCommand()),
 
     /** */
     WAL(new WalCommand()),

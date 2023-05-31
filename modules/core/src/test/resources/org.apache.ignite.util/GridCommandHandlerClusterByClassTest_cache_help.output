@@ -14,6 +14,9 @@ Arguments: --cache help --yes
 
   Subcommands:
 
+  Print cache command help:
+    control.(sh|bat) --cache help
+
   Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps:
     control.(sh|bat) --cache idle_verify [cacheName1,...,cacheNameN] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL]
 

@@ -43,7 +43,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -273,10 +272,6 @@ public class IgniteDataTransferObjectSerDesGenerator {
         Arrays.stream(CommandList.values())
             .filter(cmd -> cmd.command() instanceof DeclarativeCommandAdapter)
             .forEach(cmd -> gen.generate(((DeclarativeCommandAdapter<?>)cmd.command()).command()));
-
-        Arrays.stream(CacheSubcommands.values())
-            .filter(cmd -> cmd.subcommand() instanceof DeclarativeCommandAdapter)
-            .forEach(cmd -> gen.generate(((DeclarativeCommandAdapter<?>)cmd.subcommand()).command()));
     }
 
     /** */

@@ -34,8 +34,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.commandline.cache.CacheCommands;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
@@ -136,11 +134,10 @@ public class CommandHandlerParsingTest {
                 Integer.toString(expectedCheckThrough)
             ));
 
-            assertTrue(args.command() instanceof CacheCommands);
+            assertTrue(args.command() instanceof DeclarativeCommandAdapter);
 
-            CacheSubcommands subcommand = ((CacheCommands)args.command()).arg();
-
-            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)subcommand.subcommand().arg();
+            CacheValidateIndexesCommandArg arg =
+                ((DeclarativeCommandAdapter<CacheValidateIndexesCommandArg>)args.command()).arg();
 
             assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
             assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, arg.checkFirst());
@@ -162,11 +159,10 @@ public class CommandHandlerParsingTest {
                     Integer.toString(expectedParam)
                 ));
 
-            assertTrue(args.command() instanceof CacheCommands);
+            assertTrue(args.command() instanceof DeclarativeCommandAdapter);
 
-            CacheSubcommands subcommand = ((CacheCommands)args.command()).arg();
-
-            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)subcommand.subcommand().arg();
+            CacheValidateIndexesCommandArg arg =
+                ((DeclarativeCommandAdapter<CacheValidateIndexesCommandArg>)args.command()).arg();
 
             assertNull("caches weren't specified, null value expected", arg.caches());
             assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
@@ -209,11 +205,9 @@ public class CommandHandlerParsingTest {
         for (List<String> list : lists) {
             ConnectionAndSslParameters args = parseArgs(list);
 
-            assertTrue(args.command() instanceof CacheCommands);
+            assertTrue(args.command() instanceof DeclarativeCommandAdapter);
 
-            CacheSubcommands subcommand = ((CacheCommands)args.command()).arg();
-
-            CacheFindGarbageCommandArg arg = (CacheFindGarbageCommandArg)subcommand.subcommand().arg();
+            CacheFindGarbageCommandArg arg = ((DeclarativeCommandAdapter<CacheFindGarbageCommandArg>)args.command()).arg();
 
             if (list.contains(nodeId))
                 assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0].toString());
@@ -1032,12 +1026,12 @@ public class CommandHandlerParsingTest {
         params1.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
         params1.put("bar", Collections.singleton("foo"));
 
-        CacheCommands cacheCommand1 = (CacheCommands)parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
-            "--cache-names", buildScheduleIndexRebuildCacheNames(params1))
-        ).command();
+        DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg> cacheCommand1 =
+            (DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg>)
+                parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
+                    "--cache-names", buildScheduleIndexRebuildCacheNames(params1))).command();
 
-        CacheScheduleIndexesRebuildCommandArg arg1 =
-            (CacheScheduleIndexesRebuildCommandArg)cacheCommand1.arg().subcommand().arg();
+        CacheScheduleIndexesRebuildCommandArg arg1 = cacheCommand1.arg();
         assertEquals(normalizeScheduleIndexRebuildCacheNamesMap(params1), arg1.cacheToIndexes());
         assertEquals(null, arg1.groupNames());
 
@@ -1047,14 +1041,15 @@ public class CommandHandlerParsingTest {
         params2.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
         params2.put("bar", Collections.singleton("foo"));
 
-        CacheCommands cacheCommand2 = (CacheCommands)parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
-            "--cache-names", buildScheduleIndexRebuildCacheNames(params2), "--group-names", "foocache,someGrp")
-        ).command();
+        DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg> cacheCommand2 =
+            (DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg>)
+                parseArgs(asList("--cache", "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
+                    "--cache-names", buildScheduleIndexRebuildCacheNames(params2), "--group-names", "foocache,someGrp")
+                ).command();
 
         Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
 
-        CacheScheduleIndexesRebuildCommandArg arg2 =
-            (CacheScheduleIndexesRebuildCommandArg)cacheCommand2.arg().subcommand().arg();
+        CacheScheduleIndexesRebuildCommandArg arg2 = cacheCommand2.arg();
         assertEquals(normalized, arg2.cacheToIndexes());
         assertArrayEquals(new String[]{"foocache", "someGrp"}, arg2.groupNames());
     }

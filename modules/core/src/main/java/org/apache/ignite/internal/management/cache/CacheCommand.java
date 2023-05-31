@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.cache;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.HelpCommand;
 
 /** */
 @CliPositionalSubcommands
@@ -26,6 +27,7 @@ public class CacheCommand extends CommandRegistryImpl {
     /** */
     public CacheCommand() {
         super(
+            new CacheHelpCommand(),
             new CacheIdleVerifyCommand(),
             new CacheListCommand(),
             new CacheCreateCommand(),
@@ -38,11 +40,19 @@ public class CacheCommand extends CommandRegistryImpl {
             new CacheResetLostPartitionsCommand(),
             new CacheFindGarbageCommand(),
             new CacheIndexesListCommand(),
-            new CacheMetricsCommand(),
             new CacheIndexesRebuildStatusCommand(),
             new CacheIndexesForceRebuildCommand(),
+            new CacheMetricsCommand(),
             new CacheScheduleIndexesRebuildCommand(),
             new CacheScanCommand()
         );
+    }
+
+    /** */
+    public static class CacheHelpCommand implements HelpCommand {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return "Print cache command help";
+        }
     }
 }
