@@ -36,7 +36,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeIssue;
@@ -45,14 +45,13 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Organization;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
 import org.junit.Test;
-
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandlerParsingTest.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
@@ -64,8 +63,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.organizatio
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.personEntity;
 
 /**
- * Class for testing function of checking size of index and cache in
- * {@link CacheSubcommands#VALIDATE_INDEXES}.
+ * Class for testing function of checking size of index and cache in {@link CacheValidateIndexesCommand}.
  */
 public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Entry count for entity. */
@@ -405,7 +403,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
      * @param checkSizes Add argument "--check-sizes".
      */
     private void execVIWithNoErrCheck(String cacheName, boolean checkSizes) {
-        List<String> cmdWithArgs = new ArrayList<>(asList(CACHE.text(), VALIDATE_INDEXES.text(), cacheName));
+        List<String> cmdWithArgs = new ArrayList<>(asList("--cache", VALIDATE_INDEXES, cacheName));
 
         if (checkSizes)
             cmdWithArgs.add(CHECK_SIZES);
@@ -431,7 +429,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
 
         assertEquals(
             EXIT_CODE_OK,
-            execute(CACHE.text(), VALIDATE_INDEXES.text(), cacheName)
+            execute(CACHE.text(), VALIDATE_INDEXES, cacheName)
         );
 
         String out = testOut.toString();
@@ -463,7 +461,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute(CACHE.text(), VALIDATE_INDEXES.text(), cacheName, CHECK_SIZES));
+        assertEquals(EXIT_CODE_OK, execute(CACHE.text(), VALIDATE_INDEXES, cacheName, CHECK_SIZES));
 
         String out = testOut.toString();
         assertContains(log, out, "issues found (listed above)");

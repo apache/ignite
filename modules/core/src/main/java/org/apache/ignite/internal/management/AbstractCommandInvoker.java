@@ -174,7 +174,7 @@ public abstract class AbstractCommandInvoker {
      * @param argumentGroupVisitor Visitor of "one of" parameters.
      * @param <A> Argument type.
      */
-    protected <A extends IgniteDataTransferObject> void visitCommandParams(
+    public static <A extends IgniteDataTransferObject> void visitCommandParams(
         Class<A> argCls,
         Consumer<Field> positionalParamVisitor,
         Consumer<Field> namedParamVisitor,

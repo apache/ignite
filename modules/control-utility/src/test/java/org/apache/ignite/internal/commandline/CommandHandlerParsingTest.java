@@ -72,8 +72,6 @@ import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
@@ -110,6 +108,9 @@ public class CommandHandlerParsingTest {
     public static final String CHECK_THROUGH = "--check-through";
 
     /** */
+    public static final String VALIDATE_INDEXES = "validate_indexes";
+
+    /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();
 
     /**
@@ -125,7 +126,7 @@ public class CommandHandlerParsingTest {
 
             ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
-                VALIDATE_INDEXES.text(),
+                VALIDATE_INDEXES,
                 "cache1,cache2",
                 nodeId.toString(),
                 CHECK_FIRST.toString(),
@@ -153,7 +154,7 @@ public class CommandHandlerParsingTest {
 
             ConnectionAndSslParameters args = parseArgs(asList(
                     CACHE.text(),
-                    VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES,
                     nodeId.toString(),
                     CHECK_THROUGH.toString(),
                     Integer.toString(expectedParam)
@@ -176,14 +177,14 @@ public class CommandHandlerParsingTest {
         assertParseArgsThrows(
             "Value for '--check-first' property should be positive.",
             CACHE.text(),
-            VALIDATE_INDEXES.text(),
+            VALIDATE_INDEXES,
             CHECK_FIRST.toString(),
             "0"
         );
         assertParseArgsThrows(
             "Please specify a value for argument: --check-through",
             CACHE.text(),
-            VALIDATE_INDEXES.text(),
+            VALIDATE_INDEXES,
             CHECK_THROUGH.toString()
         );
     }
@@ -196,7 +197,7 @@ public class CommandHandlerParsingTest {
         String groups = "group1,grpoup2,group3";
 
         List<List<String>> lists = generateArgumentList(
-            FIND_AND_DELETE_GARBAGE.text(),
+            "find_garbage",
             new T2<>(nodeId, false),
             new T2<>(delete, false),
             new T2<>(groups, false)
