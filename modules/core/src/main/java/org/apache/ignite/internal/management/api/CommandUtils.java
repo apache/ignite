@@ -288,17 +288,6 @@ public class CommandUtils {
     }
 
     /**
-     * @param nodes Nodes.
-     * @return Server nodes.
-     */
-    public static Collection<UUID> servers(Map<UUID, T3<Boolean, Object, Long>> nodes) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().get1())
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
-    }
-
-    /**
      * Join input parameters with specified {@code delimeter} between them.
      *
      * @param delimeter Specified delimeter.
@@ -340,21 +329,20 @@ public class CommandUtils {
      * @return true if errors were printed.
      */
     public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Consumer<String> printer) {
-        if (!F.isEmpty(exceptions)) {
-            printer.accept(infoMsg);
+        if (F.isEmpty(exceptions))
+            return false;
 
-            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-                printer.accept(INDENT + "Node ID: " + e.getKey());
+        printer.accept(infoMsg);
 
-                printer.accept(INDENT + "Exception message:");
-                printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
-                printer.accept("");
-            }
+        for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+            printer.accept(INDENT + "Node ID: " + e.getKey());
 
-            return true;
+            printer.accept(INDENT + "Exception message:");
+            printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
+            printer.accept("");
         }
 
-        return false;
+        return true;
     }
 
     /**
