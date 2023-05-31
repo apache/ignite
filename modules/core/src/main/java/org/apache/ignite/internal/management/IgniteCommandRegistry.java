@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.management.wal.WalCommand;
  *
  * @see org.apache.ignite.internal.management.api.Command
  */
-public class IgniteCommandRegistry extends CommandRegistryImpl {
+public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     /** */
     public IgniteCommandRegistry() {
         super(

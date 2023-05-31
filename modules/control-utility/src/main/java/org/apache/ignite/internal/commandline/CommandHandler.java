@@ -42,6 +42,7 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,7 +55,6 @@ import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;
-
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -68,7 +68,9 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
@@ -178,7 +180,10 @@ public class CommandHandler {
 
         Map<String, Command<?>> cmds = new LinkedHashMap<>();
 
-        CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
+            PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()),
+            new DeclarativeCommandAdapter<>(e.getValue())
+        ));
 
         if (!F.isEmpty(it)) {
             for (CommandsProvider provider : it) {

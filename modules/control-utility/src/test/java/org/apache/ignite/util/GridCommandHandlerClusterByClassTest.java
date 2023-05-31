@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
@@ -375,9 +373,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String output = testOut.toString();
 
-        Iterator<Map.Entry<String, Command<?, ?>>> commands = new CacheCommand().commands();
-
-        commands.forEachRemaining(cmd -> {
+        new CacheCommand().commands().forEachRemaining(cmd -> {
             if (!(cmd.getValue() instanceof HelpCommand)) {
                 String cacheSubcommand = toFormattedCommandName(cmd.getValue().getClass(), PARAM_WORDS_DELIM)
                     .replaceFirst("cache_", "");

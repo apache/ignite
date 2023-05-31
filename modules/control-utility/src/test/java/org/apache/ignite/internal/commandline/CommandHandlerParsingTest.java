@@ -34,16 +34,33 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.management.ChangeTagCommand;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.SetStateCommandArg;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
+import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.WarmUpCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
+import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
+import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
+import org.apache.ignite.internal.management.encryption.EncryptionCommand;
+import org.apache.ignite.internal.management.kill.KillCommand;
+import org.apache.ignite.internal.management.meta.MetaCommand;
+import org.apache.ignite.internal.management.metric.MetricCommand;
+import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
+import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -72,6 +89,8 @@ import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
@@ -298,9 +317,11 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateSSLArguments() {
-        for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
+
+            if (requireArgs(cmd.getClass()))
+                return;
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
@@ -313,8 +334,8 @@ public class CommandHandlerParsingTest {
                 "--truststore-type", "testTruststoreType",
                 "--ssl-key-algorithm", "testSSLKeyAlgorithm",
                 "--ssl-protocol", "testSSLProtocol",
-                cmd.text())
-            );
+                PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass())
+            ));
 
             assertEquals("testSSLProtocol", args.sslProtocol());
             assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
@@ -325,8 +346,8 @@ public class CommandHandlerParsingTest {
             assertArrayEquals("testTruststorePassword".toCharArray(), args.sslTrustStorePassword());
             assertEquals("testTruststoreType", args.sslTrustStoreType());
 
-            assertEquals(cmd.command(), args.command());
-        }
+            assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
+        });
     }
 
     /**
@@ -334,19 +355,22 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateUserAndPassword() {
-        for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
+
+            if (requireArgs(cmd.getClass()))
+                return;
 
             assertParseArgsThrows("Expected user name", "--user");
             assertParseArgsThrows("Expected password", "--password");
 
-            ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
+            ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass",
+                PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass())));
 
             assertEquals("testUser", args.userName());
             assertEquals("testPass", args.password());
-            assertEquals(cmd.command(), args.command());
-        }
+            assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
+        });
     }
 
     /**
@@ -549,29 +573,33 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testConnectionSettings() {
-        for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
 
-            ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
+            if (requireArgs(cmd.getClass()))
+                return;
 
-            assertEquals(cmd.command(), args.command());
+            String name = PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass());
+
+            ConnectionAndSslParameters args = parseArgs(asList(name));
+
+            assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
             args = parseArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
-                "--ping-timeout", "40000", cmd.text()));
+                "--ping-timeout", "40000", name));
 
-            assertEquals(cmd.command(), args.command());
+            assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
             assertEquals(5000, args.pingInterval());
             assertEquals(40000, args.pingTimeout());
 
-            assertParseArgsThrows("Invalid value for port: wrong-port", "--port", "wrong-port", cmd.text());
-            assertParseArgsThrows("Invalid value for ping interval: -10", "--ping-interval", "-10", cmd.text());
-            assertParseArgsThrows("Invalid value for ping timeout: -20", "--ping-timeout", "-20", cmd.text());
-        }
+            assertParseArgsThrows("Invalid value for port: wrong-port", "--port", "wrong-port", name);
+            assertParseArgsThrows("Invalid value for ping interval: -10", "--ping-interval", "-10", name);
+            assertParseArgsThrows("Invalid value for ping timeout: -20", "--ping-timeout", "-20", name);
+        });
     }
 
     /**
@@ -864,13 +892,17 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseVerboseOption() {
-        for (CommandList cmd : CommandList.values()) {
-            if (requireArgs(cmd))
-                continue;
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
 
-            assertFalse(cmd.toString(), parseArgs(singletonList(cmd.text())).verbose());
-            assertTrue(cmd.toString(), parseArgs(asList(cmd.text(), CMD_VERBOSE)).verbose());
-        }
+            if (requireArgs(cmd.getClass()))
+                return;
+
+            String name = PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass());
+
+            assertFalse(cmd.toString(), parseArgs(singletonList(name)).verbose());
+            assertTrue(cmd.toString(), parseArgs(asList(name, CMD_VERBOSE)).verbose());
+        });
     }
 
     /** */
@@ -1234,22 +1266,22 @@ public class CommandHandlerParsingTest {
      *
      * @return {@code True} if cmd there are required arguments.
      */
-    private boolean requireArgs(@Nullable CommandList cmd) {
-        return cmd == CommandList.CACHE ||
-            cmd == CommandList.WAL ||
-            cmd == CommandList.SET_STATE ||
-            cmd == CommandList.ENCRYPTION ||
-            cmd == CommandList.KILL ||
-            cmd == CommandList.SNAPSHOT ||
-            cmd == CommandList.CLUSTER_CHANGE_TAG ||
-            cmd == CommandList.METADATA ||
-            cmd == CommandList.WARM_UP ||
-            cmd == CommandList.PROPERTY ||
-            cmd == CommandList.SYSTEM_VIEW ||
-            cmd == CommandList.METRIC ||
-            cmd == CommandList.DEFRAGMENTATION ||
-            cmd == CommandList.PERFORMANCE_STATISTICS ||
-            cmd == CommandList.CONSISTENCY ||
-            cmd == CDC;
+    private boolean requireArgs(Class<?> cmd) {
+        return cmd == CacheCommand.class ||
+            cmd == WalCommand.class ||
+            cmd == SetStateCommand.class ||
+            cmd == EncryptionCommand.class ||
+            cmd == KillCommand.class ||
+            cmd == SnapshotCommand.class ||
+            cmd == ChangeTagCommand.class ||
+            cmd == MetaCommand.class ||
+            cmd == WarmUpCommand.class ||
+            cmd == PropertyCommand.class ||
+            cmd == SystemViewCommand.class ||
+            cmd == MetricCommand.class ||
+            cmd == DefragmentationCommand.class ||
+            cmd == PerformanceStatisticsCommand.class ||
+            cmd == ConsistencyCommand.class ||
+            cmd == CdcCommand.class;
     }
 }
