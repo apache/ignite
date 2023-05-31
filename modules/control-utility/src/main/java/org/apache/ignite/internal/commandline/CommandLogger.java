@@ -36,26 +36,6 @@ public class CommandLogger {
     }
 
     /**
-     * Concatenates input parameters to single string with OR delimiter {@code |}.
-     *
-     * @param params Remaining parameters.
-     * @return Concatenated string.
-     */
-    public static String or(Object... params) {
-        return join("|", params);
-    }
-
-    /**
-     * Join input parameters with space and wrap grouping braces {@code ()}.
-     *
-     * @param params Input parameter.
-     * @return Joined parameters wrapped grouped braces.
-     */
-    public static String grouped(Object... params) {
-        return join(new SB(), "(", " ", params).a(")").toString();
-    }
-
-    /**
      * Generates readable error message from exception
      * @param e Exctption
      * @return error message

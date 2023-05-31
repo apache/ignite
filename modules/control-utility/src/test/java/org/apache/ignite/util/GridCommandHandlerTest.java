@@ -155,7 +155,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CO
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -865,7 +864,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         injectTestSystemOut();
         injectTestSystemIn(CONFIRM_MSG);
 
-        assertEquals(EXIT_CODE_OK, execute(DEACTIVATE.text()));
+        assertEquals(EXIT_CODE_OK, execute("--deactivate"));
         assertFalse(igniteEx.cluster().state().active());
 
         assertContains(
@@ -2779,7 +2778,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--yes"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "LOST partitions:");
     }
