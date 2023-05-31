@@ -98,7 +98,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private boolean confirmed = true;
 
     /** Prepared flag value. */
-    private boolean prepared = false;
+    private boolean prepared;
 
     /**
      * If {@code true} then command prepared successfully, {@code false} otherwise.
@@ -504,6 +504,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     /** {@inheritDoc} */
     @Override public A arg() {
         return arg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return cmd == null ? baseCmd.experimental() : cmd.experimental();
     }
 
     /** */

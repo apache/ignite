@@ -80,6 +80,11 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
         res.print(printer);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return true;
+    }
+
     /** */
     public abstract static class TracingConfigurationCommandArg extends IgniteDataTransferObject {
         /** */

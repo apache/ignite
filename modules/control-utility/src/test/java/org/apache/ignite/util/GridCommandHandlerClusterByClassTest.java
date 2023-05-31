@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +69,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
@@ -112,13 +113,9 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
-import static org.apache.ignite.internal.commandline.CommandList.CDC;
-import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
-import static org.apache.ignite.internal.commandline.CommandList.METADATA;
-import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
-import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.AbstractCommandInvoker.visitCommandParams;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -424,8 +421,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String testOutStr = testOut.toString();
 
-        for (CommandList cmd : CommandList.values())
-            assertContains(log, testOutStr, cmd.toString());
+        new IgniteCommandRegistry().commands().forEachRemaining(
+            e -> assertContains(log, testOutStr, PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()))
+        );
 
         assertNotContains(log, testOutStr, "Control.sh");
 
@@ -1966,34 +1964,41 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testContainsWarnInsteadExecExperimentalCmdWhenEnableExperimentalFalse() {
         injectTestSystemOut();
 
-        Map<CommandList, Collection<String[]>> cmdArgs = new EnumMap<>(CommandList.class);
+        Map<String, Collection<String[]>> cmdArgs = new HashMap<>();
 
-        cmdArgs.put(WAL, asList(new String[] {"print"}, new String[] {"delete"}));
-        cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
-        cmdArgs.put(TRACING_CONFIGURATION, singletonList(new String[] {"get_all"}));
-        cmdArgs.put(CONSISTENCY, asList(
+        cmdArgs.put("--wal", asList(new String[] {"print"}, new String[] {"delete"}));
+        cmdArgs.put("--meta", asList(new String[] {"help"}, new String[] {"list"}));
+        cmdArgs.put("--tracing-configuration", singletonList(new String[] {"get_all"}));
+        cmdArgs.put("--consistency", asList(
             new String[] {"repair", CACHE, "cache", PARTITIONS, "0", STRATEGY, "LWW"},
             new String[] {"status"},
             new String[] {"finalize"}));
-        cmdArgs.put(CDC, singletonList(new String[] {DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()}));
+        cmdArgs.put("--cdc", singletonList(new String[] {DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()}));
 
         String warning = String.format(
             "To use experimental command add --enable-experimental parameter for %s",
             UTILITY_NAME
         );
 
-        stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
-            .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
-            .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            if (!e.getValue().experimental())
+                return;
+
+            String name = PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass());
+
+            assertTrue("Not contains " + name, cmdArgs.containsKey(name));
+
+            cmdArgs.get(name).forEach(cmdArg -> {
                 List<String> args = new ArrayList<>();
 
-                args.add(cmd.text());
+                args.add(name);
                 args.addAll(Arrays.asList(cmdArg));
 
                 assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(args));
 
                 assertContains(log, testOut.toString(), warning);
-            }));
+            });
+        });
     }
 
     /**

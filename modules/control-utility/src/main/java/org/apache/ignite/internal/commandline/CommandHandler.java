@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -771,8 +773,17 @@ public class CommandHandler {
         logger.info("This utility can do the following commands:");
 
         cmds.values().forEach(c -> {
-            if (experimentalEnabled || !c.experimental())
+            if (experimentalEnabled || !c.experimental()) {
+                if (Objects.equals(((DeclarativeCommandAdapter<?>)c).command().getClass(), CacheCommand.class)) {
+                    logger.info("");
+                    logger.info("View caches information in a cluster. For more details type:");
+                    logger.info(DOUBLE_INDENT + UTILITY_NAME + " --cache help");
+
+                    return;
+                }
+
                 c.printUsage(logger);
+            }
         });
 
         logger.info("");
