@@ -286,7 +286,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * Tests streaming into in-memory cache doesn't affect snapshot.
      */
     @Test
-    public void testStreamingIntoInMemoryDoesntAffectSnapshot() throws Exception {
+    public void testStreamingIntoInMemoryDoesntAffecпшеtSnapshot() throws Exception {
         String cache2Name = "cache2";
         int loadCnt = 1000;
 
@@ -316,6 +316,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         }
 
         grid(0).destroyCache(cache2Name);
+
+        awaitPartitionMapExchange();
 
         snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME, null).get();
 
