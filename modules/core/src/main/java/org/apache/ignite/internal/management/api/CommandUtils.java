@@ -187,6 +187,9 @@ public class CommandUtils {
 
         Argument param = fld.getAnnotation(Argument.class);
 
+        if (!param.example().isEmpty())
+            return param.example();
+
         boolean optional = fld.isAnnotationPresent(Positional.class) && param.optional();
 
         if (!param.example().isEmpty())
@@ -288,6 +291,17 @@ public class CommandUtils {
     }
 
     /**
+     * @param nodes Nodes.
+     * @return Server nodes.
+     */
+    public static Collection<UUID> servers(Map<UUID, T3<Boolean, Object, Long>> nodes) {
+        return nodes.entrySet().stream()
+            .filter(e -> !e.getValue().get1())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Join input parameters with specified {@code delimeter} between them.
      *
      * @param delimeter Specified delimeter.
@@ -329,20 +343,21 @@ public class CommandUtils {
      * @return true if errors were printed.
      */
     public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Consumer<String> printer) {
-        if (F.isEmpty(exceptions))
-            return false;
+        if (!F.isEmpty(exceptions)) {
+            printer.accept(infoMsg);
 
-        printer.accept(infoMsg);
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                printer.accept(INDENT + "Node ID: " + e.getKey());
 
-        for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-            printer.accept(INDENT + "Node ID: " + e.getKey());
+                printer.accept(INDENT + "Exception message:");
+                printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
+                printer.accept("");
+            }
 
-            printer.accept(INDENT + "Exception message:");
-            printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
-            printer.accept("");
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     /**
