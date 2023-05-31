@@ -286,7 +286,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * Tests streaming into in-memory cache doesn't affect snapshot.
      */
     @Test
-    public void testStreamingIntoInMemoryDoesntAffecпшеtSnapshot() throws Exception {
+    public void testStreamingIntoInMemoryDoesntAffectSnapshot() throws Exception {
         String cache2Name = "cache2";
         int loadCnt = 1000;
 
