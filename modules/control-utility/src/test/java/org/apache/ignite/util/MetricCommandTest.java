@@ -23,17 +23,15 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-
 import static java.util.regex.Pattern.quote;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandList.METRIC;
 import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
@@ -42,10 +40,10 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 
-/** Tests output of {@link CommandList#METRIC} command. */
+/** Tests output of {@link MetricCommand} command. */
 public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Command line argument for printing metric values. */
-    private static final String CMD_METRIC = METRIC.text();
+    private static final String CMD_METRIC = "--metric";
 
     /** */
     private static final String CONFIGURE_HISTOGRAM = "--configure-histogram";
@@ -448,7 +446,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     private Map<String, String> parseMetricCommandOutput(String out) {
         String outStart = "--------------------------------------------------------------------------------";
 
-        String outEnd = "Command [" + METRIC.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
+        String outEnd = "Command [METRIC] finished with code: " + EXIT_CODE_OK;
 
         String[] rows = out.substring(
             out.indexOf(outStart) + outStart.length() + 1,
