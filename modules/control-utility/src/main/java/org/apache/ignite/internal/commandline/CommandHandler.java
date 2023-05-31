@@ -60,16 +60,14 @@ import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
@@ -103,6 +101,12 @@ public class CommandHandler {
 
     /** */
     private static final long DFLT_PING_TIMEOUT = 30_000L;
+
+    /** */
+    public static final String DFLT_HOST = "127.0.0.1";
+
+    /** */
+    public static final String DFLT_PORT = "11211";
 
     /** */
     private final Scanner in = new Scanner(System.in);

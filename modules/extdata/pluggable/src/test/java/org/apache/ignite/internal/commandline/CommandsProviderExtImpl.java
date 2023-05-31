@@ -45,7 +45,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     }
 
     /** */
-    public static class TestCommand extends AbstractCommand<Object> {
+    public static class TestCommand implements Command<Object> {
         /** */
         private String arg;
 

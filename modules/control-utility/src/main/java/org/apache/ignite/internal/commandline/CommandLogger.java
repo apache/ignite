@@ -25,12 +25,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.join;
  * Utility class for creating {@code CommangHandler} log messages.
  */
 public class CommandLogger {
-    /** Indent for help output. */
-    public static final String INDENT = "  ";
-
-    /** Double indent for help output. */
-    public static final String DOUBLE_INDENT = INDENT + INDENT;
-
     /**
      * Join input parameters with space and wrap optional braces {@code []}.
      *

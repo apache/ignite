@@ -62,6 +62,8 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
+import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
+import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.CDC;
 import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
@@ -70,8 +72,6 @@ import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;

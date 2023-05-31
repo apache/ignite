@@ -21,10 +21,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -33,74 +31,13 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
+import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 
 /**
  * Visor task executor.
  */
 public class TaskExecutor {
-    /** */
-    public static final String DFLT_HOST = "127.0.0.1";
-
-    /** */
-    public static final String DFLT_PORT = "11211";
-
-    /** Broadcast uuid. */
-    public static final UUID BROADCAST_UUID = UUID.randomUUID();
-
-    /**
-     * @param client Client
-     * @param taskClsName Task class name.
-     * @param taskArgs Task args.
-     * @param nodeId Node ID to execute task at (if null, random node will be chosen by balancer).
-     * @param clientCfg
-     * @return Task result.
-     * @throws GridClientException If failed to execute task.
-     */
-    public static <R> R executeTaskByNameOnNode(
-        GridClient client,
-        String taskClsName,
-        Object taskArgs,
-        UUID nodeId,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        GridClientCompute compute = client.compute();
-
-        if (nodeId == BROADCAST_UUID) {
-            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
-
-            if (F.isEmpty(nodes))
-                throw new GridClientDisconnectedException("Connectable nodes not found", null);
-
-            List<UUID> nodeIds = nodes.stream()
-                .map(GridClientNode::nodeId)
-                .collect(Collectors.toList());
-
-            return client.compute().execute(taskClsName, new VisorTaskArgument<>(nodeIds, taskArgs, false));
-        }
-
-        GridClientNode node = null;
-
-        if (nodeId == null) {
-            node = defaultNode(client, clientCfg);
-        }
-        else {
-            for (GridClientNode n : compute.nodes()) {
-                if (n.connectable() && nodeId.equals(n.nodeId())) {
-                    node = n;
-
-                    break;
-                }
-            }
-
-            if (node == null)
-                throw new IllegalArgumentException("Node with id=" + nodeId + " not found");
-        }
-
-        return compute.projection(node).execute(taskClsName, new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
-    }
-
     /** */
     public static GridClientNode defaultNode(GridClient client, GridClientConfiguration clientCfg) throws GridClientException {
         GridClientNode node;
@@ -139,23 +76,6 @@ public class TaskExecutor {
             node = getBalancedNode(client.compute());
 
         return node;
-    }
-
-    /**
-     * @param client Client.
-     * @param taskCls Task class.
-     * @param taskArgs Task arguments.
-     * @param clientCfg Client configuration.
-     * @return Task result.
-     * @throws GridClientException If failed to execute task.
-     */
-    public static <R> R executeTask(
-        GridClient client,
-        Class<? extends ComputeTask<?, R>> taskCls,
-        Object taskArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        return executeTaskByNameOnNode(client, taskCls.getName(), taskArgs, null, clientCfg);
     }
 
     /**
