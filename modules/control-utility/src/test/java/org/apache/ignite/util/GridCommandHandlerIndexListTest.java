@@ -25,8 +25,10 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
 import org.junit.Test;
+
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME_SECOND;
@@ -44,9 +46,6 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
     /** Ignite instance. */
     private Ignite ignite;
-
-    /** Empty group name. */
-    public static final String EMPTY_GROUP_NAME = "no_group";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -201,7 +200,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
      */
     @Test
     public void testEmptyGroupFilter() {
-        checkGroup(EMPTY_GROUP_NAME, EMPTY_GROUP_NAME, 4);
+        checkGroup(CacheCommands.EMPTY_GROUP_NAME, CacheCommands.EMPTY_GROUP_NAME, 4);
     }
 
     /** */
