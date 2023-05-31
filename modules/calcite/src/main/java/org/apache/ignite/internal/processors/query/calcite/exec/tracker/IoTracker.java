@@ -15,31 +15,15 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/cache/CacheIdleVerifyDumpCommandArg.java
-package org.apache.ignite.internal.management.cache;
-
-/** */
-public class CacheIdleVerifyDumpCommandArg extends CacheIdleVerifyCommandArg {
-    /** */
-    private static final long serialVersionUID = 0;
-========
 package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
 /**
- * I/O operations tracker that does nothing.
+ * I/O operations tracker interface.
  */
-public class NoOpIoTracker implements IoTracker {
-    /** */
-    public static final IoTracker INSTANCE = new NoOpIoTracker();
+public interface IoTracker {
+    /** Start tracking of I/O operations performed by current thread. */
+    public void startTracking();
 
-    /** {@inheritDoc} */
-    @Override public void startTracking() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stopTracking() {
-        // No-op.
-    }
->>>>>>>> IGNITE-15629:modules/calcite/src/main/java/org/apache/ignite/internal/processors/query/calcite/exec/tracker/NoOpIoTracker.java
+    /** Stop tracking and save result. */
+    public void stopTracking();
 }
