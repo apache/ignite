@@ -17,22 +17,26 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import java.util.Set;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.visor.cache.VisorCacheCreateTask;
+import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /** */
-@CliPositionalSubcommands
-public class CacheCommand extends CommandRegistryImpl {
-    /** */
-    public CacheCommand() {
-        super(
-            new CacheListCommand(),
-            new CacheCreateCommand(),
-            new CacheDestroyCommand(),
-            new CacheClearCommand(),
-            new CacheIndexesRebuildStatusCommand(),
-            new CacheIndexesForceRebuildCommand(),
-            new CacheScheduleIndexesRebuildCommand()
-        );
+public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg, Set<String>> {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Create caches from Spring XML configuration. Note that the '" +
+            SPRING.module() + "' module should be enabled";
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<CacheCreateCommandArg> argClass() {
+        return CacheCreateCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<VisorCacheCreateTask> taskClass() {
+        return VisorCacheCreateTask.class;
     }
 }

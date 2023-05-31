@@ -68,8 +68,8 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheClear;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
+import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -117,11 +117,12 @@ import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCreate.SPRING_XML_CONFIG;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
+import static org.apache.ignite.internal.management.cache.CacheClearCommand.CLEAR_MSG;
+import static org.apache.ignite.internal.management.cache.CacheClearCommand.SKIP_CLEAR_MSG;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -155,10 +156,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /** */
-    public static final String CACHE_NAMES_ARG = "--caches";
+    public static final String CACHES = "--caches";
 
     /** */
     public static final String DESTROY_ALL_ARG = "--destroy-all-caches";
+
+    /** */
+    private static final String SPRING_XML_CONFIG = "--springXmlConfig";
 
     /**
      * Very basic tests for running the command in different environment which other command are running in.
@@ -1237,15 +1241,19 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name()),
-            SPRING_XML_CONFIG + " must be specified.");
+            "Mandatory argument(s) missing: [--springxmlconfig]");
+
+        autoConfirmation = false;
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG),
-            "Expected path to the Spring XML configuration.");
+            "Please specify a value for argument: --springxmlconfig");
+
+        autoConfirmation = true;
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG, "file1", SPRING_XML_CONFIG, "file2"),
-            SPRING_XML_CONFIG + " argument specified twice.");
+            "--springxmlconfig argument specified twice");
 
         String cfgPath = resolveIgnitePath("modules/control-utility/src/test/resources/config/cache").getAbsolutePath();
 
@@ -1268,7 +1276,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     @Test
     public void testCacheDestroy() throws IgniteCheckedException {
         String warningMsgPrefix = "Warning! The command will destroy";
-        String requiredArgsMsg = "One of [" + CACHE_NAMES_ARG + ", " + DESTROY_ALL_ARG + "] required";
+        String requiredArgsMsg = "One of [" + CACHES + ", " + DESTROY_ALL_ARG + "] required";
 
         // Create some internal caches.
         CacheConfiguration<Object, Object> internalCfg = new CacheConfiguration<>("temp-internal-cache");
@@ -1294,15 +1302,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Invalid arguments.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X", DESTROY_ALL_ARG));
-        assertContains(log, testOut.toString(), "Only one of [" + CACHE_NAMES_ARG + ", " + DESTROY_ALL_ARG + "] allowed");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHES, "X", DESTROY_ALL_ARG));
+        assertContains(log, testOut.toString(), "Only one of [" + CACHES + ", " + DESTROY_ALL_ARG + "] allowed");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "X"));
         assertContains(log, testOut.toString(), "Unexpected argument: X");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "X,Y", "Z"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Unexpected argument: Z");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
@@ -1322,7 +1330,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Ensure we cannot delete a cache groups.
         injectTestSystemIn(CONFIRM_MSG);
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CACHE_NAMES_ARG, "shared1,shared2"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CACHES, "shared1,shared2"));
         assertTrue(crd.cacheNames().containsAll(cacheNames));
 
         // Destroy all user-created caches.
@@ -1350,18 +1358,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text()));
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), "cacheX"));
-        assertContains(log, testOut.toString(), "Unknown argument: cacheX");
+        assertContains(log, testOut.toString(), "Unexpected argument: cacheX");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), CacheClear.CACHES, "X,Y", "Z"));
-        assertContains(log, testOut.toString(), "Invalid argument \"Z\", no more arguments are expected.");
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), CACHES, "X,Y", "Z"));
+        assertContains(log, testOut.toString(), "Unexpected argument: Z");
 
         autoConfirmation = false;
 
-        String expConfirmation = String.format(CacheClear.CONFIRM_MSG, 2, "cache1, cache2");
+        String expConfirmation = String.format(CacheClearCommand.CONFIRM_MSG, 2, "cache1, cache2");
 
         // Ensure we cannot delete a cache groups.
         injectTestSystemIn(CONFIRM_MSG);
-        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CacheClear.CACHES, "cache1,cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CACHES, "cache1,cache2"));
         assertContains(log, testOut.toString(), expConfirmation);
 
         autoConfirmation = true;
@@ -1398,7 +1406,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             }
         }
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CacheClear.CACHES, String.join(",", clearCaches)));
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CACHES, String.join(",", clearCaches)));
 
         List<String> nonExistentCaches = clearCaches.stream()
             .filter(c -> !caches.contains(c))
@@ -1409,14 +1417,14 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             .collect(Collectors.toList());
 
         if (!nonExistentCaches.isEmpty())
-            assertContains(log, testOut.toString(), String.format(CacheClear.SKIP_CLEAR_MSG, String.join(", ", nonExistentCaches)));
+            assertContains(log, testOut.toString(), String.format(SKIP_CLEAR_MSG, String.join(", ", nonExistentCaches)));
         else
-            assertNotContains(log, testOut.toString(), String.format(CacheClear.SKIP_CLEAR_MSG, ""));
+            assertNotContains(log, testOut.toString(), String.format(SKIP_CLEAR_MSG, ""));
 
         if (!clearedCaches.isEmpty())
-            assertContains(log, testOut.toString(), String.format(CacheClear.CLEAR_MSG, String.join(", ", clearedCaches)));
+            assertContains(log, testOut.toString(), String.format(CLEAR_MSG, String.join(", ", clearedCaches)));
         else
-            assertNotContains(log, testOut.toString(), String.format(CacheClear.CLEAR_MSG, ""));
+            assertNotContains(log, testOut.toString(), String.format(CLEAR_MSG, ""));
 
         for (String cache: caches) {
             int count;

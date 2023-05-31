@@ -30,11 +30,11 @@ import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.cache.CacheClear.CACHES;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.util.CdcCommandTest.RESEND;
 import static org.apache.ignite.util.CdcCommandTest.runCdc;
 import static org.apache.ignite.util.CdcCommandTest.waitForSize;
+import static org.apache.ignite.util.GridCommandHandlerClusterByClassTest.CACHES;
 
 /**
  * CDC resend command tests.

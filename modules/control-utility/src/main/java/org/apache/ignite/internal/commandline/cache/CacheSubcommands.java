@@ -25,11 +25,13 @@ import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbag
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
+import org.apache.ignite.internal.management.cache.CacheClearCommand;
+import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
+import org.apache.ignite.internal.management.cache.CacheListCommand;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
@@ -52,12 +54,12 @@ public enum CacheSubcommands {
     /**
      * Prints info regarding caches, groups or sequences.
      */
-    LIST("list", ListCommandArg.class, new CacheViewer()),
+    LIST(new CacheListCommand()),
 
     /**
      * Create caches.
      */
-    CREATE("create", null, new CacheCreate()),
+    CREATE(new CacheCreateCommand()),
 
     /**
      * Destroy caches.
@@ -67,7 +69,7 @@ public enum CacheSubcommands {
     /**
      * Clear caches.
      */
-    CLEAR("clear", null, new CacheClear()),
+    CLEAR(new CacheClearCommand()),
 
     /**
      * Validates indexes attempting to read each indexed entry.

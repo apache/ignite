@@ -15,71 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.verify;
+package org.apache.ignite.internal.management.cache;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
-/**
- *
- */
-public class VisorViewCacheTaskArg extends VisorDataTransferObject {
+/** */
+public class CacheClearCommandArg extends IgniteDataTransferObject {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0;
 
-    /** Regex. */
-    private String regex;
-
-    /** Type. */
-    private VisorViewCacheCmd cmd;
-
-    /**
-     * @param regex Regex.
-     * @param cmd Command.
-     */
-    public VisorViewCacheTaskArg(String regex, VisorViewCacheCmd cmd) {
-        this.regex = regex;
-        this.cmd = cmd;
-    }
-
-    /**
-     * For externalization only.
-     */
-    public VisorViewCacheTaskArg() {
-    }
-
-    /**
-     * @return Regex.
-     */
-    public String regex() {
-        return regex;
-    }
-
-    /**
-     * @return Command.
-     */
-    public VisorViewCacheCmd command() {
-        return cmd;
-    }
+    /** */
+    @Argument(description = "specifies a comma-separated list of cache names to be cleared")
+    private String[] caches;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, regex);
-        U.writeEnum(out, cmd);
+        U.writeArray(out, caches);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        regex = U.readString(in);
-        cmd = VisorViewCacheCmd.fromOrdinal(in.readByte());
+        caches = U.readArray(in, String.class);
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(VisorViewCacheTaskArg.class, this);
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 }
