@@ -23,8 +23,6 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
-
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -36,6 +34,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /**
  * High-level "cache" command implementation.
@@ -57,7 +56,7 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     @Override public void printUsage(IgniteLogger logger) {
         logger.info("");
         logger.info(INDENT + "View caches information in a cluster. For more details type:");
-        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, CACHE, HELP));
+        logger.info(DOUBLE_INDENT + join(" ", UTILITY_NAME, CACHE, HELP));
     }
 
     /** {@inheritDoc} */
@@ -104,7 +103,7 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
         logger.info(INDENT + "The '" + CACHE + " subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
         logger.info("");
-        logger.info(INDENT + CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())) + " " +
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", getCommonOptions())) + " " +
             CACHE + " [subcommand] <subcommand_parameters>");
         logger.info("");
         logger.info(INDENT + "The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '"

@@ -48,14 +48,14 @@ Arguments: --cache help --yes
     Parameters:
       --caches cache1[,cache2,....,cacheN]  - specifies a comma-separated list of cache names to be cleared.
 
-  --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
-    Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries.
+  Validates indexes for the specified caches/cache groups on an idle cluster on all or specified cluster nodes. validate_indexes checks consistence between primary/secondary indexes against each other and data entries:
+    control.(sh|bat) --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N] [--check-through K] [--check-crc] [--check-sizes]
 
     Parameters:
-      --check-first N    - validate only the first N keys
-      --check-through K  - validate every Kth key
-      --check-crc        - check the CRC-sum of pages stored on disk
-      --check-sizes      - check that index size and cache size are the same
+      --check-first N            - validate only the first N keys.
+      --check-through K          - validate every Kth key.
+      --check-crc                - check the CRC-sum of pages stored on disk.
+      --check-sizes              - check that index size and cache size are the same.
 
   --cache check_index_inline_sizes
     Checks that secondary indexes inline size are same on the cluster nodes.
@@ -72,14 +72,14 @@ Arguments: --cache help --yes
   --cache find_garbage [groupName1,...,groupNameN] [nodeId] [--delete]
     Find and optionally delete garbage from shared cache groups which could be left after cache destroy.
 
-  --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
-    List all indexes that match specified filters.
+  List all indexes that match specified filters:
+    control.(sh|bat) --cache indexes_list [--node-id nodeId] [--group-name grpRegExp] [--cache-name cacheRegExp] [--index-name idxNameRegExp]
 
     Parameters:
-      --node-id nodeId     - Specify node for job execution. If not specified explicitly, node will be chosen by grid
-      --group-name regExp  - Regular expression allowing filtering by cache group name
-      --cache-name regExp  - Regular expression allowing filtering by cache name
-      --index-name regExp  - Regular expression allowing filtering by index name
+      --node-id nodeId            - Specify node for job execution. If not specified explicitly, node will be chosen by grid.
+      --group-name grpRegExp      - Regular expression allowing filtering by cache group name.
+      --cache-name cacheRegExp    - Regular expression allowing filtering by cache name.
+      --index-name idxNameRegExp  - Regular expression allowing filtering by index name.
 
   List all indexes that have index rebuild in progress:
     control.(sh|bat) --cache indexes_rebuild_status [--node-id nodeId]

@@ -23,16 +23,16 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
+import org.apache.ignite.internal.management.cache.CacheIndexesListCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
 import org.apache.ignite.internal.management.cache.CacheListCommand;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
@@ -74,7 +74,7 @@ public enum CacheSubcommands {
     /**
      * Validates indexes attempting to read each indexed entry.
      */
-    VALIDATE_INDEXES("validate_indexes", ValidateIndexesCommandArg.class, new CacheValidateIndexes()),
+    VALIDATE_INDEXES(new CacheValidateIndexesCommand()),
 
     /**
      * Check secondary indexes inline size.
@@ -104,7 +104,7 @@ public enum CacheSubcommands {
     /**
      * Index list.
      */
-    INDEX_LIST("indexes_list", IndexListCommandArg.class, new CacheIndexesList()),
+    INDEX_LIST(new CacheIndexesListCommand()),
 
     /**
      * Index rebuild status.

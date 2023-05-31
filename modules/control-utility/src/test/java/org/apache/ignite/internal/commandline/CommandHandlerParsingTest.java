@@ -36,7 +36,6 @@ import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
-import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.management.SetStateCommandArg;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg;
+import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
@@ -77,8 +77,6 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
-import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
-import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
@@ -109,6 +107,12 @@ public class CommandHandlerParsingTest {
     public static final String WAL_DELETE = "delete";
 
     /** */
+    public static final String CHECK_FIRST = "--check-first";
+
+    /** */
+    public static final String CHECK_THROUGH = "--check-through";
+
+    /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();
 
     /**
@@ -125,7 +129,7 @@ public class CommandHandlerParsingTest {
             ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
                 VALIDATE_INDEXES.text(),
-                "cache1, cache2",
+                "cache1,cache2",
                 nodeId.toString(),
                 CHECK_FIRST.toString(),
                 Integer.toString(expectedCheckFirst),
@@ -137,9 +141,9 @@ public class CommandHandlerParsingTest {
 
             CacheSubcommands subcommand = ((CacheCommands)args.command()).arg();
 
-            CacheValidateIndexes.Arguments arg = (CacheValidateIndexes.Arguments)subcommand.subcommand().arg();
+            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)subcommand.subcommand().arg();
 
-            assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeId());
+            assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
             assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, arg.checkFirst());
             assertEquals("checkThrough parameter unexpected value", expectedCheckThrough, arg.checkThrough());
         }
@@ -163,10 +167,10 @@ public class CommandHandlerParsingTest {
 
             CacheSubcommands subcommand = ((CacheCommands)args.command()).arg();
 
-            CacheValidateIndexes.Arguments arg = (CacheValidateIndexes.Arguments)subcommand.subcommand().arg();
+            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)subcommand.subcommand().arg();
 
             assertNull("caches weren't specified, null value expected", arg.caches());
-            assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeId());
+            assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
             assertEquals("checkFirst parameter unexpected value", -1, arg.checkFirst());
             assertEquals("checkThrough parameter unexpected value", expectedParam, arg.checkThrough());
         }
@@ -182,7 +186,7 @@ public class CommandHandlerParsingTest {
             "0"
         );
         assertParseArgsThrows(
-            "Numeric value for '--check-through' parameter expected.",
+            "Please specify a value for argument: --check-through",
             CACHE.text(),
             VALIDATE_INDEXES.text(),
             CHECK_THROUGH.toString()
@@ -591,7 +595,7 @@ public class CommandHandlerParsingTest {
         assertParseArgsThrows("Ouch! Argument is invalid: --min-size", "--tx", "--min-size", "-1");
         assertParseArgsThrows("--label", "--tx", "--label");
         assertParseArgsThrows("Illegal regex syntax", "--tx", "--label", "tx123[");
-        assertParseArgsThrows("Only one of [servers, clients, nodes] allowed", "--tx", "--servers", "--nodes", "1,2,3");
+        assertParseArgsThrows("Only one of [--servers, --nodes, --clients] allowed", "--tx", "--servers", "--nodes", "1,2,3");
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
@@ -1107,14 +1111,14 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id")),
             IllegalArgumentException.class,
-            "Failed to read node id."
+            "Please specify a value for argument: --node-id"
         );
 
         GridTestUtils.assertThrows(
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--group-name")),
             IllegalArgumentException.class,
-            "Failed to read group name regex."
+            "Please specify a value for argument: --group-name"
         );
 
         GridTestUtils.assertThrows(
@@ -1128,7 +1132,7 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--cache-name")),
             IllegalArgumentException.class,
-            "Failed to read cache name regex."
+            "Please specify a value for argument: --cache-name"
         );
 
         GridTestUtils.assertThrows(
@@ -1142,7 +1146,7 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id", nodeId, "--index-name")),
             IllegalArgumentException.class,
-            "Failed to read index name regex."
+            "Please specify a value for argument: --index-name"
         );
 
         GridTestUtils.assertThrows(
@@ -1161,7 +1165,7 @@ public class CommandHandlerParsingTest {
             null,
             () -> parseArgs(asList("--cache", "indexes_list", "--node-id")),
             IllegalArgumentException.class,
-            "Failed to read node id."
+            "Please specify a value for argument: --node-id"
         );
     }
 

@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.management.cache.CacheIndexesListCommandArg;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -34,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * Task that collects indexes information.
  */
 @GridInternal
-public class IndexListTask extends VisorOneNodeTask<IndexListTaskArg, Set<IndexListInfoContainer>> {
+public class IndexListTask extends VisorOneNodeTask<CacheIndexesListCommandArg, Set<IndexListInfoContainer>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,12 +43,12 @@ public class IndexListTask extends VisorOneNodeTask<IndexListTaskArg, Set<IndexL
     public static final String EMPTY_GROUP_NAME = "no_group";
 
     /** {@inheritDoc} */
-    @Override protected IndexListJob job(IndexListTaskArg arg) {
+    @Override protected IndexListJob job(CacheIndexesListCommandArg arg) {
         return new IndexListJob(arg, debug);
     }
 
     /** */
-    private static class IndexListJob extends VisorJob<IndexListTaskArg, Set<IndexListInfoContainer>> {
+    private static class IndexListJob extends VisorJob<CacheIndexesListCommandArg, Set<IndexListInfoContainer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -57,18 +58,18 @@ public class IndexListTask extends VisorOneNodeTask<IndexListTaskArg, Set<IndexL
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected IndexListJob(@Nullable IndexListTaskArg arg, boolean debug) {
+        protected IndexListJob(@Nullable CacheIndexesListCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Set<IndexListInfoContainer> run(@Nullable IndexListTaskArg arg) throws IgniteException {
+        @Override protected Set<IndexListInfoContainer> run(@Nullable CacheIndexesListCommandArg arg) throws IgniteException {
             if (arg == null)
-                throw new IgniteException("IndexListTaskArg is null");
+                throw new IgniteException("CacheIndexesListCommandArg is null");
 
-            Pattern indexesPtrn = getPattern(arg.indexesRegEx());
-            Pattern groupsPtrn = getPattern(arg.groupsRegEx());
-            Pattern cachesPtrn = getPattern(arg.cachesRegEx());
+            Pattern indexesPtrn = getPattern(arg.indexName());
+            Pattern groupsPtrn = getPattern(arg.groupName());
+            Pattern cachesPtrn = getPattern(arg.cacheName());
 
             Set<IndexListInfoContainer> idxInfos = new HashSet<>();
 

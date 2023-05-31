@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /**
  * Abstract class for control.sh commands, that support verbose mode.
@@ -57,7 +58,7 @@ public abstract class AbstractCommand<T> implements Command<T> {
         String... args
     ) {
         logger.info("");
-        logger.info(INDENT + CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)));
+        logger.info(INDENT + join(" ", CACHE, cmd, join(" ", args)));
         logger.info(DOUBLE_INDENT + description);
 
         if (!F.isEmpty(paramsDesc)) {

@@ -24,12 +24,11 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
-
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -114,7 +113,7 @@ public class CacheContention extends AbstractCommand<CacheContention.Arguments> 
             res = executeTaskByNameOnNode(client, VisorContentionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
-        CommandLogger.printErrors(res.exceptions(), "Contention check failed on nodes:", logger);
+        CommandUtils.printErrors(res.exceptions(), "Contention check failed on nodes:", logger::info);
 
         for (ContentionInfo info : res.getInfos())
             info.print();

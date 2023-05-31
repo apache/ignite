@@ -27,14 +27,13 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
-
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
@@ -119,7 +118,7 @@ public class FindAndDeleteGarbage extends AbstractCommand<FindAndDeleteGarbage.A
             VisorFindAndDeleteGarbageInPersistenceTaskResult taskRes = executeTask(
                 client, VisorFindAndDeleteGarbageInPersistenceTask.class, taskArg, clientCfg);
 
-            CommandLogger.printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:", logger);
+            CommandUtils.printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:", logger::info);
 
             for (Map.Entry<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
                 if (!nodeEntry.getValue().hasGarbage()) {

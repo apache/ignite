@@ -32,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /**
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
@@ -150,7 +151,7 @@ public interface Command<T> {
             logger.info(INDENT + "[EXPERIMENTAL]");
 
         logger.info(INDENT + desc);
-        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));
+        logger.info(DOUBLE_INDENT + join(" ", UTILITY_NAME, cmd, join(" ", args)));
 
         if (!F.isEmpty(paramsDesc)) {
             logger.info("");
