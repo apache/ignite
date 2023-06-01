@@ -74,6 +74,9 @@ public class GridRunningQueryInfo {
     /** Distributed joins flag. */
     private final boolean distributedJoins;
 
+    /** Request ID. */
+    private long reqId;
+
     /** Subject ID. */
     private final UUID subjId;
 
@@ -229,6 +232,11 @@ public class GridRunningQueryInfo {
         return span;
     }
 
+    /** @return Request ID. */
+    public long requestId() {
+        return reqId;
+    }
+
     /**
      * @return Query's originator string (client host+port, user name,
      * job name or any user's information about query initiator).
@@ -256,6 +264,11 @@ public class GridRunningQueryInfo {
      */
     public boolean lazy() {
         return lazy;
+    }
+
+    /** @param reqId Request ID. */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
     }
 
     /** @return Subject ID. */

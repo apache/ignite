@@ -602,7 +602,7 @@ public class GridMapQueryExecutor {
                     ctx.performanceStatistics().queryReads(
                         GridCacheQueryType.SQL_FIELDS,
                         node.id(),
-                        qryId,
+                        reqId,
                         stat.logicalReads(),
                         stat.physicalReads());
                 }

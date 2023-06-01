@@ -650,13 +650,23 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (fut != null)
                     fut.cancel();
 
-                if (performanceStatsEnabled && (logicalReads > 0 || physicalReads > 0)) {
-                    cctx.kernalContext().performanceStatistics().queryReads(
+                if (performanceStatsEnabled) {
+                    cctx.kernalContext().performanceStatistics().query(
                         SCAN,
-                        cctx.localNodeId(),
+                        cctx.name(),
                         ((GridCacheDistributedQueryFuture)fut).requestId(),
-                        logicalReads,
-                        physicalReads);
+                        startTime,
+                        System.nanoTime() - startTimeNanos,
+                        true);
+
+                    if (logicalReads > 0 || physicalReads > 0) {
+                        cctx.kernalContext().performanceStatistics().queryReads(
+                            SCAN,
+                            cctx.localNodeId(),
+                            ((GridCacheDistributedQueryFuture)fut).requestId(),
+                            logicalReads,
+                            physicalReads);
+                    }
                 }
             }
         };

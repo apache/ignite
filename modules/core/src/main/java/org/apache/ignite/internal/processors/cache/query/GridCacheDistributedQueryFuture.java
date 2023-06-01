@@ -41,8 +41,6 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 
 /**
@@ -69,9 +67,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** Metadata for IndexQuery. */
     private final CompletableFuture<IndexQueryResultMeta> idxQryMetaFut;
-
-    /** Query start time in nanoseconds to measure duration. */
-    private final long startTimeNanos;
 
     /**
      * @param ctx Cache context.
@@ -114,8 +109,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
             reducer = qry.query().type() == TEXT ? new TextQueryReducer<>(streamsMap) : new UnsortedCacheQueryReducer<>(streamsMap);
         }
-
-        startTimeNanos = ctx.kernalContext().performanceStatistics().enabled() ? System.nanoTime() : 0;
     }
 
     /**
@@ -246,8 +239,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * Send initial query request to query nodes.
      */
     public void startQuery() {
-        if (cctx.kernalContext().performanceStatistics().enabled())
-
         try {
             GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, this);
 
@@ -323,42 +314,5 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
             firstPageLatch.countDown();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean onDone(Collection<R> res, Throwable err) {
-        assert qry.query().type() != SQL_FIELDS;
-        assert qry.query().type() != SQL;
-
-        if (cctx.kernalContext().performanceStatistics().enabled() && startTimeNanos > 0) {
-            GridCacheQueryType type = qry.query().type();
-
-            String text;
-
-            switch (type) {
-                case SCAN:
-                    text = cctx.name();
-
-                    break;
-
-                case INDEX:
-                    text = cctx.name() + ":" + qry.query().idxQryDesc().toString();
-
-                    break;
-
-                default:
-                    text = cctx.name();
-            }
-
-            cctx.kernalContext().performanceStatistics().query(
-                qry.query().type(),
-                text,
-                reqId,
-                startTimeNanos,
-                System.nanoTime() - startTimeNanos,
-                err == null);
-        }
-
-        return super.onDone(res, err);
     }
 }
