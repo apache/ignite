@@ -85,13 +85,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.CommandList.CACHE;
-import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY;
-import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
+import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -129,6 +127,12 @@ public class CommandHandlerParsingTest {
     public static final String VALIDATE_INDEXES = "validate_indexes";
 
     /** */
+    public static final String WAL = "--wal";
+
+    /** */
+    public static final String SHUTDOWN_POLICY = "--shutdown-policy";
+
+    /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();
 
     /**
@@ -143,7 +147,7 @@ public class CommandHandlerParsingTest {
             UUID nodeId = UUID.randomUUID();
 
             ConnectionAndSslParameters args = parseArgs(asList(
-                CACHE.text(),
+                CACHE,
                 VALIDATE_INDEXES,
                 "cache1,cache2",
                 nodeId.toString(),
@@ -171,7 +175,7 @@ public class CommandHandlerParsingTest {
             UUID nodeId = UUID.randomUUID();
 
             ConnectionAndSslParameters args = parseArgs(asList(
-                    CACHE.text(),
+                    CACHE,
                     VALIDATE_INDEXES,
                     nodeId.toString(),
                     CHECK_THROUGH.toString(),
@@ -194,14 +198,14 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows(
             "Value for '--check-first' property should be positive.",
-            CACHE.text(),
+            CACHE,
             VALIDATE_INDEXES,
             CHECK_FIRST.toString(),
             "0"
         );
         assertParseArgsThrows(
             "Please specify a value for argument: --check-through",
-            CACHE.text(),
+            CACHE,
             VALIDATE_INDEXES,
             CHECK_THROUGH.toString()
         );
@@ -250,7 +254,7 @@ public class CommandHandlerParsingTest {
 
         ArrayList<String> empty = new ArrayList<>();
 
-        empty.add(CACHE.text());
+        empty.add(CACHE);
         empty.add(subcommand);
 
         res.add(empty);
@@ -376,7 +380,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateWalActions() {
-        ConnectionAndSslParameters args = parseArgs(asList(WAL.text(), WAL_PRINT));
+        ConnectionAndSslParameters args = parseArgs(asList(WAL, WAL_PRINT));
 
         DeclarativeCommandAdapter<WalDeleteCommandArg> command =
             (DeclarativeCommandAdapter<WalDeleteCommandArg>)args.command();
@@ -389,7 +393,7 @@ public class CommandHandlerParsingTest {
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = parseArgs(asList(WAL.text(), WAL_DELETE, nodes));
+        args = parseArgs(asList(WAL, WAL_DELETE, nodes));
 
         arg = (WalDeleteCommandArg)((DeclarativeCommandAdapter)args.command()).arg();
 
@@ -397,11 +401,11 @@ public class CommandHandlerParsingTest {
 
         assertEquals(nodes, String.join(",", arg.consistentIds()));
 
-        assertParseArgsThrows("Command wal can't be executed", WAL.text());
+        assertParseArgsThrows("Command wal can't be executed", WAL);
 
         String rnd = UUID.randomUUID().toString();
 
-        assertParseArgsThrows("Command wal can't be executed", WAL.text(), rnd);
+        assertParseArgsThrows("Command wal can't be executed", WAL, rnd);
     }
 
     /**
@@ -409,14 +413,14 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseShutdownPolicyParameters() {
-        ConnectionAndSslParameters args = parseArgs(asList(SHUTDOWN_POLICY.text()));
+        ConnectionAndSslParameters args = parseArgs(asList(SHUTDOWN_POLICY));
 
         assertEquals(ShutdownPolicyCommand.class, ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
 
         assertNull(((DeclarativeCommandAdapter<ShutdownPolicyCommandArg>)args.command()).arg().shutdownPolicy());
 
         for (ShutdownPolicy policy : ShutdownPolicy.values()) {
-            args = parseArgs(asList(SHUTDOWN_POLICY.text(), String.valueOf(policy)));
+            args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(policy)));
 
             assertEquals(ShutdownPolicyCommand.class, ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
 
