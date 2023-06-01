@@ -314,17 +314,6 @@ public class CommandUtils {
     }
 
     /**
-     * @param nodes Nodes.
-     * @return Server nodes.
-     */
-    public static Collection<UUID> servers(Map<UUID, T3<Boolean, Object, Long>> nodes) {
-        return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().get1())
-            .map(Map.Entry::getKey)
-            .collect(Collectors.toList());
-    }
-
-    /**
      * Join input parameters with specified {@code delimeter} between them.
      *
      * @param delimeter Specified delimeter.
