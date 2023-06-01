@@ -24,13 +24,24 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.cleanPerformanceStatisticsDir;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
@@ -40,6 +51,34 @@ import static org.apache.ignite.internal.processors.performancestatistics.Abstra
  * Test SQL diagnostic tools.
  */
 public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setSqlConfiguration(new SqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration()))
+            .setIncludeEventTypes(EVT_SQL_QUERY_EXECUTION, EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        startGrids(nodeCount());
+
+        client = startClientGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /** */
     @Override protected int nodeCount() {
         return 2;
@@ -124,5 +163,65 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertEquals(4, qryCnt.get());
         assertTrue("Query reads expected on nodes: " + readsNodes, readsNodes.isEmpty());
         assertEquals(Collections.singleton(lastQryId.get()), readsQueries);
+    }
+
+    /** */
+    @Test
+    public void testSqlEvents() {
+        sql("CREATE TABLE test_event (a INT) WITH cache_name=\"test_event\"");
+
+        AtomicIntegerArray evtsSqlExec = new AtomicIntegerArray(nodeCount());
+        AtomicIntegerArray evtsQryExec = new AtomicIntegerArray(nodeCount());
+        AtomicIntegerArray evtsQryRead = new AtomicIntegerArray(nodeCount());
+        for (int i = 0; i < nodeCount(); i++) {
+            int n = i;
+            grid(i).events().localListen(e -> {
+                evtsSqlExec.incrementAndGet(n);
+
+                assertTrue(e instanceof SqlQueryExecutionEvent);
+                assertTrue(((SqlQueryExecutionEvent)e).text().toLowerCase().contains("test_event"));
+
+                return true;
+            }, EVT_SQL_QUERY_EXECUTION);
+
+            grid(i).events().localListen(e -> {
+                evtsQryExec.incrementAndGet(n);
+
+                assertTrue(e instanceof CacheQueryExecutedEvent);
+                assertEquals("test_event", ((CacheQueryExecutedEvent<?, ?>)e).cacheName());
+                assertTrue(((CacheQueryExecutedEvent<?, ?>)e).clause().toLowerCase().contains("test_event"));
+                assertEquals(SQL_FIELDS.name(), ((CacheQueryExecutedEvent<?, ?>)e).queryType());
+                assertEquals(3, ((CacheQueryExecutedEvent<?, ?>)e).arguments().length);
+                assertNull(((CacheQueryExecutedEvent<?, ?>)e).scanQueryFilter());
+                assertNull(((CacheQueryExecutedEvent<?, ?>)e).continuousQueryFilter());
+
+                return true;
+            }, EVT_CACHE_QUERY_EXECUTED);
+
+            grid(i).events().localListen(e -> {
+                evtsQryRead.incrementAndGet(n);
+
+                assertTrue(e instanceof CacheQueryReadEvent);
+                assertEquals(SQL_FIELDS.name(), ((CacheQueryReadEvent<?, ?>)e).queryType());
+                assertTrue(((CacheQueryReadEvent<?, ?>)e).clause().toLowerCase().contains("test_event"));
+                assertNotNull(((CacheQueryReadEvent<?, ?>)e).row());
+
+                return true;
+            }, EVT_CACHE_QUERY_OBJECT_READ);
+        }
+
+        grid(0).cache("test_event").query(new SqlFieldsQuery("INSERT INTO test_event VALUES (?), (?), (?)")
+                .setArgs(0, 1, 2)).getAll();
+
+        grid(0).cache("test_event").query(new SqlFieldsQuery("SELECT * FROM test_event WHERE a IN (?, ?, ?)")
+                .setArgs(0, 1, 3)).getAll();
+
+        assertEquals(2, evtsSqlExec.get(0));
+        assertEquals(0, evtsSqlExec.get(1));
+        assertEquals(2, evtsQryExec.get(0));
+        assertEquals(0, evtsQryExec.get(1));
+        // 1 event fired by insert (number of rows inserted) + 2 events (1 per row selected) fired by the second query.
+        assertEquals(3, evtsQryRead.get(0));
+        assertEquals(0, evtsQryRead.get(1));
     }
 }
