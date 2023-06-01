@@ -15,33 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
-
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
 /**
- * Additional properties to execute the query (Stored in {@link QueryContext}).
+ * I/O operations tracker that does nothing.
  */
-public final class QueryProperties {
+public class NoOpIoTracker implements IoTracker {
     /** */
-    @Nullable String cacheName;
+    public static final IoTracker INSTANCE = new NoOpIoTracker();
 
-    /** */
-    private final boolean keepBinary;
-
-    /** */
-    public QueryProperties(@Nullable String cacheName, boolean keepBinary) {
-        this.cacheName = cacheName;
-        this.keepBinary = keepBinary;
+    /** {@inheritDoc} */
+    @Override public void startTracking() {
+        // No-op.
     }
 
-    /** */
-    public boolean keepBinary() {
-        return keepBinary;
-    }
-
-    /** */
-    public @Nullable String cacheName() {
-        return cacheName;
+    /** {@inheritDoc} */
+    @Override public void stopTracking() {
+        // No-op.
     }
 }

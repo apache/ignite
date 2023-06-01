@@ -110,6 +110,8 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
         inLoop = true;
         try {
+            context().ioTracker().startTracking();
+
             if (it == null)
                 it = src.iterator();
 
@@ -129,6 +131,8 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
             }
         }
         finally {
+            context().ioTracker().stopTracking();
+
             inLoop = false;
         }
 
