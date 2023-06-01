@@ -1247,7 +1247,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG),
-            "Please specify a value for argument: --springXmlConfig");
+            "Please specify a value for argument: --springxmlconfig");
 
         autoConfirmation = true;
 

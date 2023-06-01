@@ -545,6 +545,7 @@ public interface EventType {
      * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_EXPIRED = 70;
+
     /**
      * Built-in event type: cache rebalance started.
      * <p>
@@ -955,7 +956,7 @@ public interface EventType {
      * This event is triggered after a corresponding SQL query validated and before it is executed.
      * Unlike {@link #EVT_CACHE_QUERY_EXECUTED}, {@code EVT_SQL_QUERY_EXECUTION} is fired only once for a request
      * and does not relate to a specific cache.
-     * Enet includes the following information: qurey text and its arguments, security subject id.
+     * Event includes the following information: query text and its arguments, security subject id.
      *
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
