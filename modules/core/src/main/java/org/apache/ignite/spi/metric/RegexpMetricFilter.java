@@ -21,10 +21,12 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Metric registry filter based on regular expression.
  */
+@IgniteExperimental
 public class RegexpMetricFilter implements Predicate<ReadOnlyMetricRegistry> {
     /** Metric registries pattern. */
     private final Pattern regPtrn;
