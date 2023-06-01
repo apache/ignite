@@ -24,6 +24,7 @@ import org.apache.ignite.internal.commandline.cache.argument.DistributionCommand
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
+import org.apache.ignite.internal.management.cache.CacheCheckIndexInlineSizesCommand;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
 import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
@@ -79,7 +80,7 @@ public enum CacheSubcommands {
     /**
      * Check secondary indexes inline size.
      */
-    CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", null, new CheckIndexInlineSizes()),
+    CHECK_INDEX_INLINE_SIZES(new CacheCheckIndexInlineSizesCommand()),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).

@@ -22,13 +22,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
+import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /**
  * Command to delete lost segment links.
@@ -58,10 +58,7 @@ public class CdcDeleteLostSegmentLinksCommand implements
     ) {
         return arg.nodeId() != null
             ? Collections.singleton(arg.nodeId())
-            : nodes.entrySet().stream()
-                .filter(n -> !n.getValue().get1())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+            : servers(nodes);
     }
 
     /** {@inheritDoc} */

@@ -276,7 +276,7 @@ public class CommandUtils {
     }
 
     /**
-     * @param nodes Nodes
+     * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
     public static @Nullable Collection<UUID> coordinatorOrNull(Map<UUID, T3<Boolean, Object, Long>> nodes) {
@@ -285,6 +285,17 @@ public class CommandUtils {
             .min(Comparator.comparingLong(e -> e.getValue().get3()))
             .map(e -> Collections.singleton(e.getKey()))
             .orElse(null);
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @return Server nodes.
+     */
+    public static Collection<UUID> servers(Map<UUID, T3<Boolean, Object, Long>> nodes) {
+        return nodes.entrySet().stream()
+            .filter(e -> !e.getValue().get1())
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
     }
 
     /**

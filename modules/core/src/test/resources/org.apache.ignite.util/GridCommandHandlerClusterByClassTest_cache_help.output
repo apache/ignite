@@ -57,8 +57,8 @@ Arguments: --cache help --yes
       --check-crc                - check the CRC-sum of pages stored on disk.
       --check-sizes              - check that index size and cache size are the same.
 
-  --cache check_index_inline_sizes
-    Checks that secondary indexes inline size are same on the cluster nodes.
+  Checks that secondary indexes inline size are same on the cluster nodes:
+    control.(sh|bat) --cache check_index_inline_sizes
 
   --cache contention minQueueSize [nodeId] [maxPrint]
     Show the keys that are point of contention for multiple transactions.
