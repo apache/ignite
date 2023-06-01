@@ -112,8 +112,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.AbstractCommandInvoker.visitCommandParams;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
@@ -422,7 +422,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String testOutStr = testOut.toString();
 
         new IgniteCommandRegistry().commands().forEachRemaining(
-            e -> assertContains(log, testOutStr, PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()))
+            e -> assertContains(log, testOutStr, cmdText(e.getValue()))
         );
 
         assertNotContains(log, testOutStr, "Control.sh");
@@ -1984,7 +1984,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             if (!e.getValue().experimental())
                 return;
 
-            String name = PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass());
+            String name = cmdText(e.getValue());
 
             assertTrue("Not contains " + name, cmdArgs.containsKey(name));
 
@@ -2096,12 +2096,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             if (!e.getValue().experimental())
                 return;
 
-            String name = PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass());
-
             if (contains)
-                assertContains(log, helpOut, name);
+                assertContains(log, helpOut, cmdText(e.getValue()));
             else
-                assertNotContains(log, helpOut, name);
+                assertNotContains(log, helpOut, cmdText(e.getValue()));
         }));
     }
 
@@ -2114,7 +2112,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             if (e.getValue().experimental())
                 return;
 
-            assertContains(log, helpOut, PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()));
+            assertContains(log, helpOut, cmdText(e.getValue()));
         }));
     }
 

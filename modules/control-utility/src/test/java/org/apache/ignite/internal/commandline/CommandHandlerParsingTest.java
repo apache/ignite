@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.management.ChangeTagCommand;
+import org.apache.ignite.internal.management.DeactivateCommand;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.SetStateCommandArg;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
+import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.baseline.BaselineRemoveCommand;
 import org.apache.ignite.internal.management.baseline.BaselineSetCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
@@ -60,6 +62,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
@@ -83,15 +86,10 @@ import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
-import static org.apache.ignite.internal.commandline.CommandList.CDC;
-import static org.apache.ignite.internal.commandline.CommandList.CLUSTER_CHANGE_TAG;
-import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.SHUTDOWN_POLICY;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
-import static org.apache.ignite.internal.commandline.CommandList.WARM_UP;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
@@ -335,7 +333,7 @@ public class CommandHandlerParsingTest {
                 "--truststore-type", "testTruststoreType",
                 "--ssl-key-algorithm", "testSSLKeyAlgorithm",
                 "--ssl-protocol", "testSSLProtocol",
-                PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass())
+                cmdText(cmd)
             ));
 
             assertEquals("testSSLProtocol", args.sslProtocol());
@@ -365,8 +363,7 @@ public class CommandHandlerParsingTest {
             assertParseArgsThrows("Expected user name", "--user");
             assertParseArgsThrows("Expected password", "--password");
 
-            ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass",
-                PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass())));
+            ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmdText(cmd)));
 
             assertEquals("testUser", args.userName());
             assertEquals("testPass", args.password());
@@ -432,140 +429,123 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAutoConfirmationFlag() {
-        for (CommandList cmdL : CommandList.values()) {
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            org.apache.ignite.internal.management.api.Command<?, ?> cmdL = e.getValue();
+
             // SET_STATE command has mandatory argument used in confirmation message.
-            Command cmd = cmdL != SET_STATE ? cmdL.command() : parseArgs(asList(cmdL.text(), "ACTIVE")).command();
+            DeclarativeCommandAdapter<?> cmd = cmdL.getClass() != SetStateCommand.class
+                ? new DeclarativeCommandAdapter(cmdL)
+                : (DeclarativeCommandAdapter<?>)parseArgs(asList(cmdText(cmdL), "ACTIVE")).command();
 
             if (cmd.confirmationPrompt() == null)
-                continue;
+                return;
 
             ConnectionAndSslParameters args;
 
-            if (cmdL == SET_STATE)
-                args = parseArgs(asList(cmdL.text(), "ACTIVE"));
-            else if (cmdL == CLUSTER_CHANGE_TAG)
-                args = parseArgs(asList(cmdL.text(), "newTagValue"));
-            else if (cmdL == WARM_UP)
-                args = parseArgs(asList(cmdL.text(), "--stop"));
-            else if (cmdL == CDC)
-                args = parseArgs(asList(cmdL.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()));
+            if (cmdL.getClass() == SetStateCommand.class)
+                args = parseArgs(asList(cmdText(cmdL), "ACTIVE"));
+            else if (cmdL.getClass() == ChangeTagCommand.class)
+                args = parseArgs(asList(cmdText(cmdL), "newTagValue"));
+            else if (cmdL.getClass() == WarmUpCommand.class)
+                args = parseArgs(asList(cmdText(cmdL), "--stop"));
+            else if (cmdL.getClass() == CdcCommand.class)
+                args = parseArgs(asList(cmdText(cmdL), DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()));
             else
-                args = parseArgs(asList(cmdL.text()));
+                args = parseArgs(asList(cmdText(cmdL)));
 
             checkCommonParametersCorrectlyParsed(cmdL, args, false);
 
-            switch (cmdL) {
-                case DEACTIVATE: {
-                    args = parseArgs(asList(cmdL.text(), "--yes"));
+            if (cmdL.getClass() == DeactivateCommand.class) {
+                args = parseArgs(asList(cmdText(cmdL), "--yes"));
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+                checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    args = parseArgs(asList(cmdL.text(), "--force", "--yes"));
+                args = parseArgs(asList(cmdText(cmdL), "--force", "--yes"));
 
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                    break;
-                }
-                case SET_STATE: {
-                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
-                        args = parseArgs(asList(cmdL.text(), newState, "--yes"));
-
-                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                        ClusterState argState =
-                            (((DeclarativeCommandAdapter<SetStateCommandArg>)args.command()).arg()).state();
-
-                        assertEquals(newState, argState.toString());
-                    }
-
-                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
-                        args = parseArgs(asList(cmdL.text(), newState, "--force", "--yes"));
-
-                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                        ClusterState argState =
-                            (((DeclarativeCommandAdapter<SetStateCommandArg>)args.command()).arg()).state();
-
-                        assertEquals(newState, argState.toString());
-                    }
-
-                    break;
-                }
-                case BASELINE: {
-                    for (String baselineAct : asList("add", "remove", "set")) {
-                        args = parseArgs(asList(cmdL.text(), baselineAct, "c_id1,c_id2", "--yes"));
-
-                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                        BaselineAddCommandArg arg = ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).arg();
-                        org.apache.ignite.internal.management.api.Command<?, ?> cmd0 =
-                            ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).command();
-
-                        if (baselineAct.equals("add"))
-                            assertEquals(BaselineAddCommand.class, cmd0.getClass());
-                        else if (baselineAct.equals("remove"))
-                            assertEquals(BaselineRemoveCommand.class, cmd0.getClass());
-                        else if (baselineAct.equals("set"))
-                            assertEquals(BaselineSetCommand.class, cmd0.getClass());
-
-                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
-                    }
-
-                    break;
-                }
-
-                case TX: {
-                    args = parseArgs(asList(cmdL.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
-
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                    TxCommandArg txTaskArg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
-
-                    assertEquals("xid1", txTaskArg.xid());
-                    assertEquals(10_000, txTaskArg.minDuration().longValue());
-                    assertTrue(txTaskArg.kill());
-
-                    break;
-                }
-
-                case CLUSTER_CHANGE_TAG: {
-                    args = parseArgs(asList(cmdL.text(), "newTagValue", "--yes"));
-
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                    break;
-                }
-
-                case WARM_UP: {
-                    args = parseArgs(asList(cmdL.text(), "--stop", "--yes"));
-
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                    break;
-                }
-
-                case CDC: {
-                    args = parseArgs(asList(cmdL.text(), DELETE_LOST_SEGMENT_LINKS,
-                        NODE_ID, UUID.randomUUID().toString(), "--yes"));
-
-                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
-
-                    break;
-                }
-
-                default:
-                    fail("Unknown command: " + cmd);
+                checkCommonParametersCorrectlyParsed(cmdL, args, true);
             }
-        }
+            else if (cmdL.getClass() == SetStateCommand.class) {
+                for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                    args = parseArgs(asList(cmdText(cmdL), newState, "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    ClusterState argState =
+                        (((DeclarativeCommandAdapter<SetStateCommandArg>)args.command()).arg()).state();
+
+                    assertEquals(newState, argState.toString());
+                }
+
+                for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                    args = parseArgs(asList(cmdText(cmdL), newState, "--force", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    ClusterState argState =
+                        (((DeclarativeCommandAdapter<SetStateCommandArg>)args.command()).arg()).state();
+
+                    assertEquals(newState, argState.toString());
+                }
+            }
+            else if (cmdL.getClass() == BaselineCommand.class) {
+                for (String baselineAct : asList("add", "remove", "set")) {
+                    args = parseArgs(asList(cmdText(cmdL), baselineAct, "c_id1,c_id2", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    BaselineAddCommandArg arg = ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).arg();
+                    org.apache.ignite.internal.management.api.Command<?, ?> cmd0 =
+                        ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).command();
+
+                    if (baselineAct.equals("add"))
+                        assertEquals(BaselineAddCommand.class, cmd0.getClass());
+                    else if (baselineAct.equals("remove"))
+                        assertEquals(BaselineRemoveCommand.class, cmd0.getClass());
+                    else if (baselineAct.equals("set"))
+                        assertEquals(BaselineSetCommand.class, cmd0.getClass());
+
+                    assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
+                }
+            }
+            else if (cmdL.getClass() == TxCommand.class) {
+                args = parseArgs(asList(cmdText(cmdL), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
+
+                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                TxCommandArg txTaskArg = ((DeclarativeCommandAdapter<TxCommandArg>)args.command()).arg();
+
+                assertEquals("xid1", txTaskArg.xid());
+                assertEquals(10_000, txTaskArg.minDuration().longValue());
+                assertTrue(txTaskArg.kill());
+            }
+            else if (cmdL.getClass() == ChangeTagCommand.class) {
+                args = parseArgs(asList(cmdText(cmdL), "newTagValue", "--yes"));
+
+                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+            }
+            else if (cmdL.getClass() == WarmUpCommand.class) {
+                args = parseArgs(asList(cmdText(cmdL), "--stop", "--yes"));
+
+                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+            }
+            else if (cmdL.getClass() == CdcCommand.class) {
+                args = parseArgs(asList(cmdText(cmdL), DELETE_LOST_SEGMENT_LINKS,
+                    NODE_ID, UUID.randomUUID().toString(), "--yes"));
+
+                checkCommonParametersCorrectlyParsed(cmdL, args, true);
+            }
+            else
+                fail("Unknown command: " + cmd);
+        });
     }
 
     /** */
     private void checkCommonParametersCorrectlyParsed(
-        CommandList cmd,
+        org.apache.ignite.internal.management.api.Command cmd,
         ConnectionAndSslParameters args,
         boolean autoConfirm
     ) {
-        assertEquals(cmd.command(), args.command());
+        assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
         assertEquals(DFLT_HOST, args.host());
         assertEquals(DFLT_PORT, args.port());
         assertEquals(autoConfirm, args.autoConfirmation());
@@ -583,7 +563,7 @@ public class CommandHandlerParsingTest {
             if (requireArgs(cmd.getClass()))
                 return;
 
-            String name = PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass());
+            String name = cmdText(cmd);
 
             ConnectionAndSslParameters args = parseArgs(asList(name));
 
@@ -902,10 +882,8 @@ public class CommandHandlerParsingTest {
             if (requireArgs(cmd.getClass()))
                 return;
 
-            String name = PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass());
-
-            assertFalse(cmd.toString(), parseArgs(singletonList(name)).verbose());
-            assertTrue(cmd.toString(), parseArgs(asList(name, CMD_VERBOSE)).verbose());
+            assertFalse(cmd.toString(), parseArgs(singletonList(cmdText(cmd))).verbose());
+            assertTrue(cmd.toString(), parseArgs(asList(cmdText(cmd), CMD_VERBOSE)).verbose());
         });
     }
 
@@ -1231,7 +1209,7 @@ public class CommandHandlerParsingTest {
         Map<String, Command<?>> cmds = new HashMap<>();
 
         new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
-            PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()),
+            cmdText(e.getValue()),
             new DeclarativeCommandAdapter<>(e.getValue())
         ));
 

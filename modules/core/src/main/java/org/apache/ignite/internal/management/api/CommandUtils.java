@@ -58,6 +58,16 @@ public class CommandUtils {
     /**
      * Example: {@code "SystemView" -> "system-view"}.
      *
+     * @param cmd Command class.
+     * @return Formatted command name.
+     */
+    public static String cmdText(Command<?, ?> cmd) {
+        return PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM);
+    }
+
+    /**
+     * Example: {@code "SystemView" -> "system-view"}.
+     *
      * @param cls Command name class.
      * @return Formatted command name.
      */
