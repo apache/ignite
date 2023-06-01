@@ -246,8 +246,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
      * Send initial query request to query nodes.
      */
     public void startQuery() {
-        if (cctx.kernalContext().performanceStatistics().enabled())
-
         try {
             GridCacheQueryRequest req = GridCacheQueryRequest.startQueryRequest(cctx, reqId, this);
 
