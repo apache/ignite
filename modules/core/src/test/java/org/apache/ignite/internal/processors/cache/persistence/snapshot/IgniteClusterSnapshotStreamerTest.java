@@ -317,6 +317,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         grid(0).destroyCache(cache2Name);
 
+        awaitPartitionMapExchange();
+
         snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME, null).get();
 
         for (int i = 0; i < loadCnt; ++i)
