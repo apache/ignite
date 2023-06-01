@@ -170,20 +170,8 @@ public interface Command<T> {
     }
 
     /**
-     * Actual command execution. Parameters for run should be already set by calling parseArguments method.
-     *
-     * @param clientCfg Thin client configuration if connection to cluster is necessary.
-     * @param logger Logger to use.
-     * @return Result of operation (mostly usable for tests).
-     * @throws Exception If error occur.
-     */
-    public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception;
-
-    /**
      * Actual command execution with verbose mode if needed.
      * Implement it if your command supports verbose mode.
-     *
-     * @see Command#execute(GridClientConfiguration, IgniteLogger)
      *
      * @param clientCfg Thin client configuration if connection to cluster is necessary.
      * @param logger Logger to use.
@@ -191,9 +179,7 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    default Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
-        return execute(clientCfg, logger);
-    }
+    Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception;
 
     /**
      * Prepares confirmation for the command.

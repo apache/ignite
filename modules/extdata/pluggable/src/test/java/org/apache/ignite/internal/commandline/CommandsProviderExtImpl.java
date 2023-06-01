@@ -50,7 +50,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         private String arg;
 
         /** {@inheritDoc} */
-        @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) {
+        @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log, boolean verbose) {
             log.info(TEST_COMMAND_OUTPUT + ": " + arg);
 
             return null;

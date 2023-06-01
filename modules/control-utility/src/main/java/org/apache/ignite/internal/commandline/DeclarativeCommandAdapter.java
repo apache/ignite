@@ -198,7 +198,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
         if (cmd instanceof BeforeNodeStartCommand)
             return executeBeforeNodeStart(clientCfg, logger);
 
