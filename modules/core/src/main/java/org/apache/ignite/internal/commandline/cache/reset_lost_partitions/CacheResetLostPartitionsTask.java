@@ -65,29 +65,30 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
                 final CacheResetLostPartitionsTaskResult res = new CacheResetLostPartitionsTaskResult();
                 res.setMessageMap(new HashMap<>());
 
-                if (!F.isEmpty(arg.caches())) {
-                    for (String groupName : arg.caches()) {
-                        final int grpId = CU.cacheId(groupName);
+                if (F.isEmpty(arg.caches()))
+                    return res;
 
-                        CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
+                for (String groupName : arg.caches()) {
+                    final int grpId = CU.cacheId(groupName);
 
-                        if (grp != null) {
-                            SortedSet<String> cacheNames = grp.caches().stream()
-                                .map(GridCacheContext::name)
-                                .collect(Collectors.toCollection(TreeSet::new));
+                    CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
 
-                            if (!F.isEmpty(cacheNames)) {
-                                ignite.resetLostPartitions(cacheNames);
+                    if (grp != null) {
+                        SortedSet<String> cacheNames = grp.caches().stream()
+                            .map(GridCacheContext::name)
+                            .collect(Collectors.toCollection(TreeSet::new));
 
-                                res.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
-                                        "Cache group (name = '%s', id = %d), caches (%s).",
-                                    groupName, grpId, cacheNames));
-                            }
+                        if (!F.isEmpty(cacheNames)) {
+                            ignite.resetLostPartitions(cacheNames);
+
+                            res.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
+                                    "Cache group (name = '%s', id = %d), caches (%s).",
+                                groupName, grpId, cacheNames));
                         }
-                        else
-                            res.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
-                                groupName, grpId));
                     }
+                    else
+                        res.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
+                            groupName, grpId));
                 }
 
                 return res;
