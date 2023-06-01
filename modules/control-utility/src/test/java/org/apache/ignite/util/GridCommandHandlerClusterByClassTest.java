@@ -66,7 +66,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
@@ -99,7 +98,6 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
@@ -112,7 +110,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.AbstractCommandInvoker.visitCommandParams;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
@@ -155,6 +152,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** Error stack trace prefix. */
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
+
+    /** */
+    public static final String BASELINE = "--baseline";
 
     /** */
     public static final String CACHES = "--caches";
@@ -1329,7 +1329,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), "Unexpected argument: X");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, "X,Y", "Z"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Unexpected argument: Z");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
@@ -2011,10 +2011,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         int resCode = EXIT_CODE_OK;
 
-        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE));
+        assertEquals(resCode, execute(BASELINE, CMD_VERBOSE));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE.text()));
+        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
@@ -2029,10 +2029,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int resCode = EXIT_CODE_INVALID_ARGUMENTS;
         String uuid = UUID.randomUUID().toString();
 
-        assertEquals(resCode, execute(BASELINE.text(), uuid));
+        assertEquals(resCode, execute(BASELINE, uuid));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, uuid));
+        assertEquals(resCode, execute(BASELINE, CMD_VERBOSE, uuid));
         assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
@@ -2047,10 +2047,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int resCode = EXIT_CODE_CONNECTION_FAILED;
         String uuid = UUID.randomUUID().toString();
 
-        assertEquals(resCode, execute(BASELINE.text(), "--host", uuid));
+        assertEquals(resCode, execute(BASELINE, "--host", uuid));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, "--host", uuid));
+        assertEquals(resCode, execute(BASELINE, CMD_VERBOSE, "--host", uuid));
         assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
@@ -2078,10 +2078,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
         CommandHandler cmd = new CommandHandler(new JavaLogger(log, false));
 
-        assertEquals(resCode, execute(cmd, BASELINE.text()));
+        assertEquals(resCode, execute(cmd, BASELINE));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(cmd, BASELINE.text(), CMD_VERBOSE));
+        assertEquals(resCode, execute(cmd, BASELINE, CMD_VERBOSE));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
@@ -2092,15 +2092,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @param contains Check contains or not.
      */
     private void checkExperimentalCmdInHelpOutput(boolean contains) {
-        execHelpCmd(helpOut -> {
-            stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
-                .forEach(cmd -> {
-                    if (contains)
-                        assertContains(log, helpOut, cmd.text());
-                    else
-                        assertNotContains(log, helpOut, cmd.text());
-                });
-        });
+        execHelpCmd(helpOut -> new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            if (!e.getValue().experimental())
+                return;
+
+            String name = PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass());
+
+            if (contains)
+                assertContains(log, helpOut, name);
+            else
+                assertNotContains(log, helpOut, name);
+        }));
     }
 
     /**
@@ -2108,10 +2110,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * will contain non-experimental commands.
      */
     private void checkContainsNotExperimentalCmdInHelpOutput() {
-        execHelpCmd(helpOut -> {
-            stream(CommandList.values()).filter(cmd -> !cmd.command().experimental())
-                .forEach(cmd -> assertContains(log, helpOut, cmd.text()));
-        });
+        execHelpCmd(helpOut -> new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            if (e.getValue().experimental())
+                return;
+
+            assertContains(log, helpOut, PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()));
+        }));
     }
 
     /**

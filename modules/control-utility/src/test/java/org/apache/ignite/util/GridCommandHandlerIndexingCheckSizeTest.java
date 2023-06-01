@@ -51,7 +51,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandlerParsingTest.VALIDATE_INDEXES;
-import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
@@ -71,6 +70,9 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
 
     /** Non persistent data region name. */
     private static final String NON_PERSIST_REGION = "non-persist";
+
+    /** */
+    public static final String CACHE = "--cache";
 
     /** */
     public static final String CHECK_SIZES = "--check-sizes";
@@ -429,7 +431,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
 
         assertEquals(
             EXIT_CODE_OK,
-            execute(CACHE.text(), VALIDATE_INDEXES, cacheName)
+            execute(CACHE, VALIDATE_INDEXES, cacheName)
         );
 
         String out = testOut.toString();
@@ -461,7 +463,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute(CACHE.text(), VALIDATE_INDEXES, cacheName, CHECK_SIZES));
+        assertEquals(EXIT_CODE_OK, execute(CACHE, VALIDATE_INDEXES, cacheName, CHECK_SIZES));
 
         String out = testOut.toString();
         assertContains(log, out, "issues found (listed above)");
