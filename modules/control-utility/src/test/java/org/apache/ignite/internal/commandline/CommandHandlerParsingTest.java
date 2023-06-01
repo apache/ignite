@@ -38,6 +38,7 @@ import org.apache.ignite.internal.management.ChangeTagCommand;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.SetStateCommand;
 import org.apache.ignite.internal.management.SetStateCommandArg;
+import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
@@ -380,9 +381,12 @@ public class CommandHandlerParsingTest {
     public void testParseAndValidateWalActions() {
         ConnectionAndSslParameters args = parseArgs(asList(WAL.text(), WAL_PRINT));
 
-        assertEquals(WAL.command(), args.command());
+        DeclarativeCommandAdapter<WalDeleteCommandArg> command =
+            (DeclarativeCommandAdapter<WalDeleteCommandArg>)args.command();
 
-        WalDeleteCommandArg arg = (WalDeleteCommandArg)((DeclarativeCommandAdapter)args.command()).arg();
+        assertEquals(WalCommand.class, command.command().getClass());
+
+        WalDeleteCommandArg arg = command.arg();
 
         assertTrue(arg instanceof WalPrintCommandArg);
 
@@ -410,14 +414,14 @@ public class CommandHandlerParsingTest {
     public void testParseShutdownPolicyParameters() {
         ConnectionAndSslParameters args = parseArgs(asList(SHUTDOWN_POLICY.text()));
 
-        assertEquals(SHUTDOWN_POLICY.command(), args.command());
+        assertEquals(ShutdownPolicyCommand.class, ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
 
         assertNull(((DeclarativeCommandAdapter<ShutdownPolicyCommandArg>)args.command()).arg().shutdownPolicy());
 
         for (ShutdownPolicy policy : ShutdownPolicy.values()) {
             args = parseArgs(asList(SHUTDOWN_POLICY.text(), String.valueOf(policy)));
 
-            assertEquals(SHUTDOWN_POLICY.command(), args.command());
+            assertEquals(ShutdownPolicyCommand.class, ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
 
             assertSame(policy, ((DeclarativeCommandAdapter<ShutdownPolicyCommandArg>)args.command()).arg().shutdownPolicy());
         }
@@ -1224,7 +1228,14 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        return new CommonArgParser(setupTestLogger(), CommandList.commands()).
+        Map<String, Command<?>> cmds = new HashMap<>();
+
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
+            PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()),
+            new DeclarativeCommandAdapter<>(e.getValue())
+        ));
+
+        return new CommonArgParser(setupTestLogger(), cmds).
             parseAndValidate(args.iterator());
     }
 

@@ -125,7 +125,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
                 : (org.apache.ignite.internal.management.api.Command<A, ?>)baseCmd;
 
         if (cmd0 instanceof HelpCommand) {
-            cliArgs.next();
+            if (cliArgs.hasNext() && cliArgs.peek().equals("help"))
+                cliArgs.next();
 
             state(cmd0, null, true);
 
