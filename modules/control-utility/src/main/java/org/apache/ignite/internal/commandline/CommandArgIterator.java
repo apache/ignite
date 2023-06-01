@@ -37,7 +37,7 @@ public class CommandArgIterator {
     private final PeekableIterator<String> argsIt;
 
     /** */
-    private final Map<String, Command<?>> cmds;
+    private final Map<String, DeclarativeCommandAdapter<?>> cmds;
 
     /**
      * Set of common arguments names and high level command name set.
@@ -52,7 +52,7 @@ public class CommandArgIterator {
     public CommandArgIterator(
         Iterator<String> argsIt,
         Set<String> commonArgumentsAndHighLevelCommandSet,
-        Map<String, Command<?>> cmds
+        Map<String, DeclarativeCommandAdapter<?>> cmds
     ) {
         this.argsIt = new PeekableIterator<>(argsIt);
         this.commonArgumentsAndHighLevelCommandSet = commonArgumentsAndHighLevelCommandSet;

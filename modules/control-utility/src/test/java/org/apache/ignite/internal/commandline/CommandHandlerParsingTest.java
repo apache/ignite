@@ -43,6 +43,7 @@ import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
@@ -321,7 +322,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateSSLArguments() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
+            Command<?, ?> cmd = e.getValue();
 
             if (requireArgs(cmd.getClass()))
                 return;
@@ -359,7 +360,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateUserAndPassword() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
+            Command<?, ?> cmd = e.getValue();
 
             if (requireArgs(cmd.getClass()))
                 return;
@@ -434,12 +435,12 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAutoConfirmationFlag() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            org.apache.ignite.internal.management.api.Command<?, ?> cmdL = e.getValue();
+            Command<?, ?> cmdL = e.getValue();
 
             // SET_STATE command has mandatory argument used in confirmation message.
             DeclarativeCommandAdapter<?> cmd = cmdL.getClass() != SetStateCommand.class
                 ? new DeclarativeCommandAdapter(cmdL)
-                : (DeclarativeCommandAdapter<?>)parseArgs(asList(cmdText(cmdL), "ACTIVE")).command();
+                : parseArgs(asList(cmdText(cmdL), "ACTIVE")).command();
 
             if (cmd.confirmationPrompt() == null)
                 return;
@@ -498,8 +499,7 @@ public class CommandHandlerParsingTest {
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
                     BaselineAddCommandArg arg = ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).arg();
-                    org.apache.ignite.internal.management.api.Command<?, ?> cmd0 =
-                        ((DeclarativeCommandAdapter<BaselineAddCommandArg>)args.command()).command();
+                    Command<?, ?> cmd0 = args.command().command();
 
                     if (baselineAct.equals("add"))
                         assertEquals(BaselineAddCommand.class, cmd0.getClass());
@@ -545,11 +545,11 @@ public class CommandHandlerParsingTest {
 
     /** */
     private void checkCommonParametersCorrectlyParsed(
-        org.apache.ignite.internal.management.api.Command cmd,
+        Command<?, ?> cmd,
         ConnectionAndSslParameters args,
         boolean autoConfirm
     ) {
-        assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
+        assertEquals(cmd.getClass(), args.command().command().getClass());
         assertEquals(DFLT_HOST, args.host());
         assertEquals(DFLT_PORT, args.port());
         assertEquals(autoConfirm, args.autoConfirmation());
@@ -562,7 +562,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
+            Command<?, ?> cmd = e.getValue();
 
             if (requireArgs(cmd.getClass()))
                 return;
@@ -571,14 +571,14 @@ public class CommandHandlerParsingTest {
 
             ConnectionAndSslParameters args = parseArgs(asList(name));
 
-            assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
+            assertEquals(cmd.getClass(), args.command().command().getClass());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
             args = parseArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
                 "--ping-timeout", "40000", name));
 
-            assertEquals(cmd.getClass(), ((DeclarativeCommandAdapter<?>)args.command()).command().getClass());
+            assertEquals(cmd.getClass(), args.command().command().getClass());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
             assertEquals(5000, args.pingInterval());
@@ -881,7 +881,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseVerboseOption() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            org.apache.ignite.internal.management.api.Command<?, ?> cmd = e.getValue();
+            Command<?, ?> cmd = e.getValue();
 
             if (requireArgs(cmd.getClass()))
                 return;
@@ -1210,7 +1210,7 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        Map<String, Command<?>> cmds = new HashMap<>();
+        Map<String, DeclarativeCommandAdapter<?>> cmds = new HashMap<>();
 
         new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
             cmdText(e.getValue()),

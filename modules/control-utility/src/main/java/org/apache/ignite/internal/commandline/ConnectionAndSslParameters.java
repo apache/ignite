@@ -78,7 +78,7 @@ public class ConnectionAndSslParameters {
     private String sslFactoryCfgPath;
 
     /** High-level command. */
-    private Command command;
+    private DeclarativeCommandAdapter<?> command;
 
     /**
      * @param command Command.
@@ -101,7 +101,7 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStoreType Truststore Type.
      * @param sslFactoryCfgPath SSL Factory config.
      */
-    public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
+    public ConnectionAndSslParameters(DeclarativeCommandAdapter command, String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation, boolean verbose,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
@@ -138,7 +138,7 @@ public class ConnectionAndSslParameters {
     /**
      * @return High-level command which were defined by user to run.
      */
-    public Command command() {
+    public DeclarativeCommandAdapter<?> command() {
         return command;
     }
 

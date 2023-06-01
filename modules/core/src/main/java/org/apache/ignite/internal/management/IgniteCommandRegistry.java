@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
@@ -40,7 +41,7 @@ import org.apache.ignite.internal.management.wal.WalCommand;
 /**
  * Ignite command registry containing all commands known by Ignite node.
  *
- * @see org.apache.ignite.internal.management.api.Command
+ * @see Command
  */
 public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
     /** */

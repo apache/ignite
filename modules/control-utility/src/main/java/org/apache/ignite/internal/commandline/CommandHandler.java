@@ -70,9 +70,8 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
@@ -125,7 +124,7 @@ public class CommandHandler {
     private final IgniteLogger logger;
 
     /** Supported commands. */
-    private final Map<String, Command<?>> cmds;
+    private final Map<String, DeclarativeCommandAdapter<?>> cmds;
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -180,10 +179,10 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        Map<String, Command<?>> cmds = new LinkedHashMap<>();
+        Map<String, DeclarativeCommandAdapter<?>> cmds = new LinkedHashMap<>();
 
         new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
-            PARAMETER_PREFIX + toFormattedCommandName(e.getValue().getClass()),
+            cmdText(e.getValue()),
             new DeclarativeCommandAdapter<>(e.getValue())
         ));
 
@@ -192,19 +191,19 @@ public class CommandHandler {
                 if (logger.isDebugEnabled())
                     logger.debug("Registering pluggable commands provider: " + provider);
 
-                provider.commands().forEach((k, v) -> {
-                    k = k.toLowerCase();
+                provider.commands().forEach(cmd -> {
+                    String k = cmdText(cmd);
 
                     if (logger.isDebugEnabled())
                         logger.debug("Registering command: " + k);
 
                     if (cmds.containsKey(k)) {
                         throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
-                            provider + " tries to register command " + v + ", but this command has already been " +
+                            provider + " tries to register command " + cmd + ", but this command has already been " +
                             "registered " + cmds.get(k));
                     }
                     else
-                        cmds.put(k, v);
+                        cmds.put(k, new DeclarativeCommandAdapter<>(cmd));
                 });
             }
         }
@@ -244,7 +243,7 @@ public class CommandHandler {
 
             ConnectionAndSslParameters args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs.iterator());
 
-            Command command = args.command();
+            DeclarativeCommandAdapter<?> command = args.command();
             commandName = command.name();
 
             GridClientConfiguration clientCfg = getClientConfiguration(args);
@@ -271,9 +270,8 @@ public class CommandHandler {
                     logger.info("Arguments: " + argumentsToString(rawArgs));
                     logger.info(U.DELIM);
 
-                    if (command instanceof DeclarativeCommandAdapter && ((DeclarativeCommandAdapter<?>)command).isHelp()) {
+                    if (command.isHelp())
                         command.printUsage(logger);
-                    }
                     else
                         lastOperationRes = command.execute(clientCfg, logger, args.verbose());
 

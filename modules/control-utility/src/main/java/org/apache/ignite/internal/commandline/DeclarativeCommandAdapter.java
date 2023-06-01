@@ -42,6 +42,7 @@ import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -84,12 +86,12 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
  */
-public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker implements Command<A> {
+public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> extends AbstractCommandInvoker {
     /** Root command to start parsing from. */
-    private final org.apache.ignite.internal.management.api.Command<?, ?> baseCmd;
+    private final Command<?, ?> baseCmd;
 
     /** Command to execute. */
-    private org.apache.ignite.internal.management.api.Command<A, ?> cmd;
+    private Command<A, ?> cmd;
 
     /** Parsed argument. */
     private A arg;
@@ -110,19 +112,23 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     private String confirmMsg;
 
     /** @param baseCmd Base command. */
-    public DeclarativeCommandAdapter(org.apache.ignite.internal.management.api.Command<?, ?> baseCmd) {
+    public DeclarativeCommandAdapter(Command<?, ?> baseCmd) {
         this.baseCmd = baseCmd;
 
         assert baseCmd != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void parseArguments(CommandArgIterator argIter) {
+    /**
+     * Parse command-specific arguments.
+     *
+     * @param argIter Argument iterator.
+     */
+    public void parseArguments(CommandArgIterator argIter) {
         PeekableIterator<String> cliArgs = argIter.raw();
 
-        org.apache.ignite.internal.management.api.Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
+        Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
                 ? command((CommandsRegistry<?, ?>)baseCmd, cliArgs, true)
-                : (org.apache.ignite.internal.management.api.Command<A, ?>)baseCmd;
+                : (Command<A, ?>)baseCmd;
 
         if (cmd0 instanceof HelpCommand) {
             if (cliArgs.hasNext() && cliArgs.peek().equals("help"))
@@ -198,8 +204,17 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
+    /**
+     * Actual command execution with verbose mode if needed.
+     * Implement it if your command supports verbose mode.
+     *
+     * @param clientCfg Thin client configuration if connection to cluster is necessary.
+     * @param logger Logger to use.
+     * @param verbose Use verbose mode or not
+     * @return Result of operation (mostly usable for tests).
+     * @throws Exception If error occur.
+     */
+    public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
         if (cmd instanceof BeforeNodeStartCommand)
             return executeBeforeNodeStart(clientCfg, logger);
 
@@ -214,7 +229,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @throws Exception If failed.
      */
     private <R> R execute0(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (GridClient client = startClient(clientCfg)) {
             String deprecationMsg = cmd.deprecationMessage(arg);
 
             if (deprecationMsg != null)
@@ -278,7 +293,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
     /** */
     private <R> R executeBeforeNodeStart(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (GridClientBeforeNodeStart client = Command.startClientBeforeNodeStart(clientCfg)) {
+        try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
             return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, logger::info);
         }
         catch (GridClientDisconnectedException e) {
@@ -289,8 +304,12 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void printUsage(IgniteLogger logger) {
+    /**
+     * Print info for user about command (parameters, use cases and so on).
+     *
+     * @param logger Logger to use.
+     */
+    public void printUsage(IgniteLogger logger) {
         if (baseCmd instanceof CacheCommand || baseCmd instanceof CacheCommand.CacheHelpCommand)
             printCacheHelpHeader(logger);
 
@@ -307,11 +326,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @param parents Collection of parent commands.
      * @param logger Logger to print help to.
      */
-    private void usage(
-        org.apache.ignite.internal.management.api.Command<?, ?> cmd,
-        List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
-        IgniteLogger logger
-    ) {
+    private void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
         if (cmd instanceof LocalCommand
             || cmd instanceof ComputeCommand
             || cmd instanceof HelpCommand
@@ -377,7 +392,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
 
         if (cmd instanceof CommandsRegistry) {
-            List<org.apache.ignite.internal.management.api.Command<?, ?>> parents0 = new ArrayList<>(parents);
+            List<Command<?, ?>> parents0 = new ArrayList<>(parents);
 
             parents0.add(cmd);
 
@@ -392,11 +407,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @param parents Collection of parent commands.
      * @param logger Logger to print help to.
      */
-    private void printExample(
-        org.apache.ignite.internal.management.api.Command<?, ?> cmd,
-        List<org.apache.ignite.internal.management.api.Command<?, ?>> parents,
-        IgniteLogger logger
-    ) {
+    private void printExample(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
         logger.info(INDENT + cmd.description() + ":");
 
         StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
@@ -478,12 +489,18 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         logger.info(bldr.toString());
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareConfirmation(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    /**
+     * Prepares confirmation for the command.
+     *
+     * @param clientCfg Thin client configuration.
+     * @param logger Logger.
+     * @throws Exception If error occur.
+     */
+    public void prepareConfirmation(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (confirmed)
             return;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (GridClient client = startClient(clientCfg)) {
             if (cmd instanceof ComputeCommand) {
                 prepared = true;
 
@@ -497,27 +514,33 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String confirmationPrompt() {
+    /**
+     * @return Message text to show user for. If null it means that confirmantion is not needed.
+     */
+    public String confirmationPrompt() {
         return confirmMsg;
     }
 
-    /** {@inheritDoc} */
-    @Override public A arg() {
+    /**
+     * @return Command arguments which were parsed during {@link #parseArguments(CommandArgIterator)} call.
+     */
+    public A arg() {
         return arg;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean experimental() {
+    /**
+     * Return {@code true} if the command is experimental or {@code false}
+     * otherwise.
+     *
+     * @return {@code true} if the command is experimental or {@code false}
+     *      otherwise.
+     */
+    public boolean experimental() {
         return cmd == null ? baseCmd.experimental() : cmd.experimental();
     }
 
     /** */
-    private void state(
-        org.apache.ignite.internal.management.api.Command<A, ?> cmd,
-        A arg,
-        boolean confirmed
-    ) {
+    private void state(Command<A, ?> cmd, A arg, boolean confirmed) {
         this.cmd = cmd;
         this.arg = arg;
         this.confirmed = confirmed;
@@ -526,8 +549,10 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         executeAfterPreparation = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public String name() {
+    /**
+     * @return command name.
+     */
+    public String name() {
         return toFormattedCommandName(baseCmd.getClass()).toUpperCase();
     }
 
@@ -545,7 +570,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      * @param cmd Command.
      * @return {@code True} if command has described parameters.
      */
-    private boolean hasDescribedParameters(org.apache.ignite.internal.management.api.Command<?, ?> cmd) {
+    private boolean hasDescribedParameters(Command<?, ?> cmd) {
         AtomicBoolean res = new AtomicBoolean();
 
         visitCommandParams(
@@ -568,7 +593,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /** */
-    public org.apache.ignite.internal.management.api.Command<?, ?> command() {
+    public Command<?, ?> command() {
         return baseCmd;
     }
 
@@ -586,5 +611,62 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         logger.info("");
         logger.info("");
         logger.info(INDENT + "Subcommands:");
+    }
+
+    /**
+     * Method to create thin client for communication with cluster.
+     *
+     * @param clientCfg Thin client configuration.
+     * @return Grid thin client instance which is already connected to cluster.
+     * @throws Exception If error occur.
+     */
+    public static GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
+        GridClient client = GridClientFactory.start(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
+
+        return client;
+    }
+
+    /**
+     * Method to create thin client for communication with node before it starts.
+     * If node has already started, there will be an error.
+     *
+     * @param clientCfg Thin client configuration.
+     * @return Grid thin client instance which is already connected to node before it starts.
+     * @throws Exception If error occur.
+     */
+    public static GridClientBeforeNodeStart startClientBeforeNodeStart(
+        GridClientConfiguration clientCfg
+    ) throws Exception {
+        GridClientBeforeNodeStart client = GridClientFactory.startBeforeNodeStart(clientCfg);
+
+        // If connection is unsuccessful, fail before doing any operations:
+        if (!client.connected()) {
+            GridClientException lastErr = client.checkLastError();
+
+            try {
+                client.close();
+            }
+            catch (Throwable e) {
+                lastErr.addSuppressed(e);
+            }
+
+            throw lastErr;
+        }
+
+        return client;
     }
 }

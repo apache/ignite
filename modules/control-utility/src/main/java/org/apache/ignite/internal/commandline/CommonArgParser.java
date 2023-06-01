@@ -46,7 +46,7 @@ public class CommonArgParser {
     private final IgniteLogger logger;
 
     /** */
-    private final Map<String, Command<?>> cmds;
+    private final Map<String, DeclarativeCommandAdapter<?>> cmds;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -156,7 +156,7 @@ public class CommonArgParser {
      * @param logger Logger.
      * @param cmds Supported commands.
      */
-    public CommonArgParser(IgniteLogger logger, Map<String, Command<?>> cmds) {
+    public CommonArgParser(IgniteLogger logger, Map<String, DeclarativeCommandAdapter<?>> cmds) {
         this.logger = logger;
         this.cmds = cmds;
     }
@@ -237,14 +237,14 @@ public class CommonArgParser {
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
 
-        Command<?> command = null;
+        DeclarativeCommandAdapter<?> command = null;
 
         String sslFactoryCfg = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            Command<?> cmd = cmds.get(str);
+            DeclarativeCommandAdapter<?> cmd = cmds.get(str);
 
             if (cmd != null) {
                 if (command != null)
