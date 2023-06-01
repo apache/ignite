@@ -363,6 +363,64 @@ public class CommandUtils {
     }
 
     /**
+     * Join input parameters with specified {@code delimeter} between them.
+     *
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return Joined paramaters with specified {@code delimeter}.
+     */
+    public static String join(String delimeter, Object... params) {
+        return join(new SB(), "", delimeter, params).toString();
+    }
+
+    /**
+     * Join input parameters with specified {@code delimeter} between them and append to the end {@code delimeter}.
+     *
+     * @param sb Specified string builder.
+     * @param sbDelimeter Delimeter between {@code sb} and appended {@code param}.
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
+     */
+    public static SB join(SB sb, String sbDelimeter, String delimeter, Object... params) {
+        if (!F.isEmpty(params)) {
+            sb.a(sbDelimeter);
+
+            for (Object par : params)
+                sb.a(par).a(delimeter);
+
+            sb.setLength(sb.length() - delimeter.length());
+        }
+
+        return sb;
+    }
+
+    /**
+     * Prints exception messages to log
+     *
+     * @param exceptions map containing node ids and exceptions.
+     * @param infoMsg single message to log.
+     * @param printer Printer to use.
+     * @return true if errors were printed.
+     */
+    public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Consumer<String> printer) {
+        if (F.isEmpty(exceptions))
+            return false;
+
+        printer.accept(infoMsg);
+
+        for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+            printer.accept(INDENT + "Node ID: " + e.getKey());
+
+            printer.accept(INDENT + "Exception message:");
+            printer.accept(DOUBLE_INDENT + e.getValue().getMessage());
+            printer.accept("");
+        }
+
+        return true;
+    }
+
+    /**
      * Parse and return single value (without support of array type).
      *
      * @param val String value.
