@@ -97,15 +97,16 @@ public class CacheScheduleIndexesRebuildCommand
      * @param missed Missed caches or cache groups' names.
      */
     private void printMissed(Consumer<String> printer, String message, Set<String> missed) {
-        if (!F.isEmpty(missed)) {
-            printer.accept(message);
+        if (F.isEmpty(missed))
+            return;
 
-            missed.stream()
-                .sorted()
-                .forEach(name -> printer.accept(INDENT + name));
+        printer.accept(message);
 
-            printer.accept("");
-        }
+        missed.stream()
+            .sorted()
+            .forEach(name -> printer.accept(INDENT + name));
+
+        printer.accept("");
     }
 
     /**

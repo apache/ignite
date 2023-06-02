@@ -59,14 +59,14 @@ public class CacheIndexesRebuildStatusCommand
         Map<UUID, Set<IndexRebuildStatusInfoContainer>> res,
         Consumer<String> printer
     ) {
-        if (!res.isEmpty())
-            printer.accept("Caches that have index rebuilding in progress:");
-        else {
+        if (res.isEmpty()) {
             printer.accept("There are no caches that have index rebuilding in progress.");
             printer.accept("");
 
             return;
         }
+
+        printer.accept("Caches that have index rebuilding in progress:");
 
         for (Map.Entry<UUID, Set<IndexRebuildStatusInfoContainer>> entry: res.entrySet()) {
             printer.accept("");
