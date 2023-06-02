@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.ssl.SslContextFactory;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -69,10 +70,10 @@ public class CommonArgParser {
     /** Option is used for auto confirmation. */
     public static final String CMD_AUTO_CONFIRMATION = "--yes";
 
-    /** */
+    /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
     static final String CMD_PING_INTERVAL = "--ping-interval";
 
-    /** */
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
     static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
     /** Verbose mode. */
@@ -245,27 +246,7 @@ public class CommonArgParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters(
-            command,
-            val(vals, CMD_HOST),
-            val(vals, CMD_PORT),
-            val(vals, CMD_USER),
-            val(vals, CMD_PASSWORD),
-            val(vals, CMD_PING_INTERVAL),
-            val(vals, CMD_PING_TIMEOUT),
-            val(vals, CMD_AUTO_CONFIRMATION),
-            val(vals, CMD_VERBOSE),
-            val(vals, CMD_SSL_PROTOCOL),
-            val(vals, CMD_SSL_CIPHER_SUITES),
-            val(vals, CMD_SSL_KEY_ALGORITHM),
-            val(vals, CMD_KEYSTORE),
-            val(vals, CMD_KEYSTORE_PASSWORD),
-            val(vals, CMD_KEYSTORE_TYPE),
-            val(vals, CMD_TRUSTSTORE),
-            val(vals, CMD_TRUSTSTORE_PASSWORD),
-            val(vals, CMD_TRUSTSTORE_TYPE),
-            val(vals, CMD_SSL_FACTORY)
-        );
+        return new ConnectionAndSslParameters(command, args, vals);
     }
 
     /** */
