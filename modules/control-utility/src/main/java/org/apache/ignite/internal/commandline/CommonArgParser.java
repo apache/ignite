@@ -131,9 +131,6 @@ public class CommonArgParser {
     };
 
     /** */
-    private final BiConsumer<String, String> securityWarn;
-
-    /** */
     private final Map<String, CLIArgument<?>> args = new LinkedHashMap<>();
 
     static {
@@ -157,8 +154,9 @@ public class CommonArgParser {
     public CommonArgParser(IgniteLogger logger, Map<String, DeclarativeCommandAdapter<?>> cmds) {
         this.logger = logger;
         this.cmds = cmds;
-        this.securityWarn = (name, val) -> logger.info(String.format("Warning: %s is insecure. " +
-            "Whenever possible, use interactive prompt for password (just discard %s option).", val, val));
+
+        BiConsumer<String, String> securityWarn = (name, val) -> logger.info(String.format("Warning: %s is insecure. " +
+                "Whenever possible, use interactive prompt for password (just discard %s option).", val, val));
 
         arg(CMD_HOST, String.class, "HOST_OR_IP", DFLT_HOST);
         arg(CMD_PORT, Integer.class, "PORT", DFLT_PORT, PORT_VALIDATOR);
@@ -204,7 +202,7 @@ public class CommonArgParser {
                 list.add(optional(arg.name(), arg.usage()));
         }
 
-        return list.toArray(new String[0]);
+        return list.toArray(U.EMPTY_STRS);
     }
 
     /**
