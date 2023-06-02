@@ -154,7 +154,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             optional,
             fld.getType(),
             null,
-            v -> {}
+            (name, val) -> {}
         );
 
         ArgumentGroup argGrp = cmd0.argClass().getAnnotation(ArgumentGroup.class);
@@ -172,7 +172,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
             fld.getAnnotation(Argument.class).optional(),
             fld.getType(),
             null,
-            v -> {}
+            (name, val) -> {}
         ));
 
         BiConsumer<ArgumentGroup, List<Field>> argGrpCb = (argGrp0, flds) -> flds.forEach(fld -> {
