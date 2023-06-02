@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
@@ -166,7 +165,7 @@ public class Query<RowT> {
         }
 
         for (RunningFragment<RowT> frag : fragments)
-            frag.context().execute(() -> frag.root().onError(new ExecutionCancelledException()), frag.root()::onError);
+            frag.context().execute(() -> frag.root().onError(new QueryCancelledException()), frag.root()::onError);
 
         tryClose(queryCanceledException());
     }

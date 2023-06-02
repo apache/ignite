@@ -50,6 +50,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
@@ -575,12 +576,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 qrys.forEach(RootQuery::cancel);
 
             if (isCanceled) {
-                IgniteSQLException e0 = new IgniteSQLException("The query was cancelled while planning",
+                qryReg.unregister(qry.id(), new QueryCancelledException());
+
+                throw new IgniteSQLException("The query was cancelled while planning",
                     IgniteQueryErrorCode.QUERY_CANCELED, e);
-
-                qryReg.unregister(qry.id(), e0);
-
-                throw e0;
             }
             else {
                 qryReg.unregister(qry.id(), e);

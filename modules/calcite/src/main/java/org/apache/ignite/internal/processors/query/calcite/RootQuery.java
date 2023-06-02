@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
@@ -270,7 +269,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     log.warning("An exception occures during the query cancel", wrpEx);
             }
             finally {
-                super.tryClose(failure);
+                super.tryClose(failure == null && root != null ? root.failure() : failure);
             }
         }
     }
@@ -279,6 +278,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     @Override public void cancel() {
         cancel.cancel();
 
+        U.closeQuiet(root);
         tryClose(queryCanceledException());
     }
 

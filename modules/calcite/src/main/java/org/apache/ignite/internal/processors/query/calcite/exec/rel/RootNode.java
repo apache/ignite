@@ -31,12 +31,14 @@ import java.util.function.Function;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 
@@ -114,8 +116,10 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         lock.lock();
         try {
-            if (waiting != -1)
-                ex.compareAndSet(null, new IgniteSQLException(ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED));
+            if (waiting != -1) {
+                ex.compareAndSet(null, new IgniteSQLException(ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED,
+                    new QueryCancelledException()));
+            }
 
             closed = true; // an exception has to be set first to get right check order
 
@@ -126,6 +130,11 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         }
 
         onClose.accept(ex.get());
+    }
+
+    /** */
+    public @Nullable Throwable failure() {
+        return ex.get();
     }
 
     /** {@inheritDoc} */

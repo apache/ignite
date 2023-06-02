@@ -24,7 +24,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -147,7 +146,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
      * @param e Exception.
      */
     public void onError(Throwable e) {
-        if (e instanceof ExecutionCancelledException)
+        if (e instanceof QueryCancelledException)
             U.warn(context().logger(), "Execution is cancelled.", e);
         else
             onErrorInternal(e);
