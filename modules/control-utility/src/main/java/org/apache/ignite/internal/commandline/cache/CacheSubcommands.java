@@ -33,6 +33,7 @@ import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildComma
 import org.apache.ignite.internal.management.cache.CacheIndexesListCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommand;
 import org.apache.ignite.internal.management.cache.CacheListCommand;
+import org.apache.ignite.internal.management.cache.CacheMetricsCommand;
 import org.apache.ignite.internal.management.cache.CacheResetLostPartitionsCommand;
 import org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommand;
 import org.apache.ignite.internal.management.cache.CacheValidateIndexesCommand;
