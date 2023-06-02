@@ -115,9 +115,6 @@ public class CommandHandler {
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
 
-    /** */
-    public static final String NULL = "null";
-
     /** JULs logger. */
     private final IgniteLogger logger;
 
