@@ -27,7 +27,7 @@ public class ConnectionAndSslParameters {
     private String host;
 
     /** Port. */
-    private String port;
+    private int port;
 
     /** User. */
     private String user;
@@ -101,7 +101,7 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStoreType Truststore Type.
      * @param sslFactoryCfgPath SSL Factory config.
      */
-    public ConnectionAndSslParameters(DeclarativeCommandAdapter command, String host, String port, String user, String pwd,
+    public ConnectionAndSslParameters(DeclarativeCommandAdapter command, String host, int port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation, boolean verbose,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
@@ -152,7 +152,7 @@ public class ConnectionAndSslParameters {
     /**
      * @return port number
      */
-    public String port() {
+    public int port() {
         return port;
     }
 

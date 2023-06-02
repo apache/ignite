@@ -109,7 +109,7 @@ public class CommandHandler {
     public static final String DFLT_HOST = "127.0.0.1";
 
     /** */
-    public static final String DFLT_PORT = "11211";
+    public static final int DFLT_PORT = 11211;
 
     /** */
     private final Scanner in = new Scanner(System.in);

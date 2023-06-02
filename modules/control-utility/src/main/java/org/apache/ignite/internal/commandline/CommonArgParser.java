@@ -19,15 +19,18 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.ssl.SslContextFactory;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
@@ -35,6 +38,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
@@ -201,7 +205,7 @@ public class CommonArgParser {
     ConnectionAndSslParameters parseAndValidate(Iterator<String> rawArgIter) {
         String host = DFLT_HOST;
 
-        String port = DFLT_PORT;
+        int port = DFLT_PORT;
 
         String user = null;
 
@@ -241,6 +245,24 @@ public class CommonArgParser {
 
         String sslFactoryCfg = null;
 
+        Map<String, CLIArgument<?>> args = new HashMap<>();
+        Map<String, Object> vals = new HashMap<>();
+
+        BiConsumer<String, Integer> PORT_VALIDATOR = (name, val) -> {
+            if (val <= 0 || val > 65535)
+                throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
+        };
+
+        BiConsumer<String, Long> POSITIVE_LONG = (name, val) -> {
+            if (val <= 0)
+                throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
+        };
+
+        args.put(CMD_HOST, optionalArg(CMD_HOST, null, String.class, () -> DFLT_HOST));
+        args.put(CMD_PORT, optionalArg(CMD_PORT, null, Integer.class, t -> DFLT_PORT, PORT_VALIDATOR));
+        args.put(CMD_PING_INTERVAL, optionalArg(CMD_PING_INTERVAL, null, Long.class, t -> DFLT_PING_INTERVAL, POSITIVE_LONG));
+        args.put(CMD_PING_TIMEOUT, optionalArg(CMD_PING_TIMEOUT, null, Long.class, t -> DFLT_PING_TIMEOUT, POSITIVE_LONG));
+
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
@@ -255,38 +277,10 @@ public class CommonArgParser {
 
                 command = cmd;
             }
+            else if (args.containsKey(str))
+                vals.put(str, parseCommonArg(argIter, args.get(str)));
             else {
                 switch (str) {
-                    case CMD_HOST:
-                        host = argIter.nextArg("Expected host name");
-
-                        break;
-
-                    case CMD_PORT:
-                        port = argIter.nextArg("Expected port number");
-
-                        try {
-                            int p = Integer.parseInt(port);
-
-                            if (p <= 0 || p > 65535)
-                                throw new IllegalArgumentException("Invalid value for port: " + port);
-                        }
-                        catch (NumberFormatException ignored) {
-                            throw new IllegalArgumentException("Invalid value for port: " + port);
-                        }
-
-                        break;
-
-                    case CMD_PING_INTERVAL:
-                        pingInterval = argIter.nextNonNegativeLongArg("ping interval");
-
-                        break;
-
-                    case CMD_PING_TIMEOUT:
-                        pingTimeout = argIter.nextNonNegativeLongArg("ping timeout");
-
-                        break;
-
                     case CMD_USER:
                         user = argIter.nextArg("Expected user name");
 
@@ -370,6 +364,9 @@ public class CommonArgParser {
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
             }
+
+            host = (String)vals.getOrDefault(CMD_HOST, DFLT_HOST);
+            port = (int)vals.getOrDefault(CMD_PORT, DFLT_PORT);
         }
 
         if (command == null)
@@ -387,6 +384,18 @@ public class CommonArgParser {
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
                 sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, sslFactoryCfg);
+    }
+
+    /** */
+    private static <T> T parseCommonArg(
+        CommandArgIterator argIter,
+        CLIArgument<T> arg
+    ) {
+        T val = CommandUtils.parseVal(argIter.nextArg("Expected " + arg.name() + " value"), arg.type());
+
+        arg.validator().accept(arg.name(), val);
+
+        return val;
     }
 
     /**
