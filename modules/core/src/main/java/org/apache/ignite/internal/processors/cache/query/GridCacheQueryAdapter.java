@@ -70,7 +70,6 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
