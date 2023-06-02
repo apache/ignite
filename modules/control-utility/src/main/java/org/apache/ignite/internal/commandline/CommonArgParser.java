@@ -113,9 +113,6 @@ public class CommonArgParser {
     /** */
     static final String CMD_SSL_FACTORY = "--ssl-factory";
 
-    /** List of optional auxiliary commands. */
-    private static final Set<String> AUX_COMMANDS = new HashSet<>();
-
     /** Set of sensitive arguments */
     private static final Set<String> SENSITIVE_ARGUMENTS = new HashSet<>();
 
@@ -138,31 +135,6 @@ public class CommonArgParser {
     private final Map<String, CLIArgument<?>> args = new LinkedHashMap<>();
 
     static {
-        AUX_COMMANDS.add(CMD_HOST);
-        AUX_COMMANDS.add(CMD_PORT);
-
-        AUX_COMMANDS.add(CMD_PASSWORD);
-        AUX_COMMANDS.add(CMD_USER);
-
-        AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
-        AUX_COMMANDS.add(CMD_VERBOSE);
-
-        AUX_COMMANDS.add(CMD_PING_INTERVAL);
-        AUX_COMMANDS.add(CMD_PING_TIMEOUT);
-
-        AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
-        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
-        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
-        AUX_COMMANDS.add(CMD_SSL_FACTORY);
-
-        AUX_COMMANDS.add(CMD_KEYSTORE);
-        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
-
-        AUX_COMMANDS.add(CMD_TRUSTSTORE);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
-        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
-
         SENSITIVE_ARGUMENTS.add(CMD_PASSWORD);
         SENSITIVE_ARGUMENTS.add(CMD_KEYSTORE_PASSWORD);
         SENSITIVE_ARGUMENTS.add(CMD_TRUSTSTORE_PASSWORD);
@@ -241,7 +213,7 @@ public class CommonArgParser {
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
     ConnectionAndSslParameters parseAndValidate(Iterator<String> rawArgIter) {
-        CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
+        CommandArgIterator argIter = new CommandArgIterator(rawArgIter);
 
         DeclarativeCommandAdapter<?> command = null;
 
