@@ -453,14 +453,6 @@ public class CommandHandler {
     }
 
     /**
-     * @param arg To check.
-     * @return True if provided argument is among sensitive one and not should be displayed.
-     */
-    protected boolean isSensitiveArgument(String arg) {
-        return CommonArgParser.isSensitiveArgument(arg);
-    }
-
-    /**
      * Joins user's arguments and hides sensitive information.
      *
      * @param rawArgs Arguments which user has provided.
@@ -484,7 +476,7 @@ public class CommandHandler {
 
             sb.a(arg).a(' ');
 
-            hide = isSensitiveArgument(arg);
+            hide = CommonArgParser.isSensitiveArgument(arg);
         }
 
         return sb.toString();
@@ -718,23 +710,6 @@ public class CommandHandler {
 
             return scanner.nextLine();
         }
-    }
-
-    /**
-     * Split string into items.
-     *
-     * @param s String to process.
-     * @param delim Delimiter.
-     * @return List with items.
-     */
-    private static String[] split(String s, String delim) {
-        if (F.isEmpty(s))
-            return null;
-
-        return Arrays.stream(s.split(delim))
-            .map(String::trim)
-            .filter(item -> !item.isEmpty())
-            .toArray(String[]::new);
     }
 
     /** @param rawArgs Arguments. */
