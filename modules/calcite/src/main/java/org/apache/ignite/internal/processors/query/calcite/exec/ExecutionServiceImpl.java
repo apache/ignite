@@ -479,7 +479,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
-        return new FragmentPlan(fromJson(ctx, jsonFragment));
+        return new FragmentPlan(jsonFragment, fromJson(ctx, jsonFragment));
     }
 
     /** {@inheritDoc} */

@@ -373,7 +373,7 @@ public class PlannerTest extends AbstractPlannerTest {
     private MultiStepPlan splitPlan(IgniteRel phys) {
         assertNotNull(phys);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
+        MultiStepPlan plan = new MultiStepQueryPlan(null, new QueryTemplate(new Splitter().go(phys)), null, null);
 
         assertNotNull(plan);
 
