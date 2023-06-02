@@ -164,14 +164,14 @@ public class ConnectionAndSslParameters {
     /**
      * @return SSL protocol
      */
-    public String sslProtocol() {
+    public String[] sslProtocol() {
         return val(vals, CMD_SSL_PROTOCOL);
     }
 
     /**
      * @return SSL cipher suites.
      */
-    public String getSslCipherSuites() {
+    public String[] getSslCipherSuites() {
         return val(vals, CMD_SSL_CIPHER_SUITES);
     }
 

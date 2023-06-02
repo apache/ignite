@@ -71,7 +71,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
  * Class that execute several commands passed via command line.
@@ -602,21 +601,9 @@ public class CommandHandler {
 
         SslContextFactory factory = new SslContextFactory();
 
-        String[] sslProtocols = split(args.sslProtocol(), ",");
-
-        if (F.isEmpty(sslProtocols))
-            factory.setProtocol(DFLT_SSL_PROTOCOL);
-        else {
-            factory.setProtocol(sslProtocols[0]);
-
-            if (sslProtocols.length > 1)
-                factory.setProtocols(sslProtocols);
-        }
-
+        factory.setProtocols(args.sslProtocol());
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-        factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
-
+        factory.setCipherSuites(args.getSslCipherSuites());
         factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
         if (args.sslKeyStorePassword() != null)

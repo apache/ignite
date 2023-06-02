@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
@@ -166,8 +167,8 @@ public class CommonArgParser {
         arg(CMD_PING_INTERVAL, Long.class, "PING_INTERVAL", DFLT_PING_INTERVAL, POSITIVE_LONG);
         arg(CMD_PING_TIMEOUT, Long.class, "PING_TIMEOUT", DFLT_PING_TIMEOUT, POSITIVE_LONG);
         arg(CMD_VERBOSE, boolean.class, CMD_VERBOSE, false);
-        arg(CMD_SSL_PROTOCOL, String.class, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", DFLT_SSL_PROTOCOL);
-        arg(CMD_SSL_CIPHER_SUITES, String.class, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", "");
+        arg(CMD_SSL_PROTOCOL, String[].class, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", new String[] {DFLT_SSL_PROTOCOL});
+        arg(CMD_SSL_CIPHER_SUITES, String[].class, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", U.EMPTY_STRS);
         arg(CMD_SSL_KEY_ALGORITHM, String.class, "SSL_KEY_ALGORITHM", SslContextFactory.DFLT_KEY_ALGORITHM);
         arg(CMD_SSL_FACTORY, String.class, "SSL_FACTORY_PATH", null);
         arg(CMD_KEYSTORE_TYPE, String.class, "KEYSTORE_TYPE", SslContextFactory.DFLT_STORE_TYPE);
