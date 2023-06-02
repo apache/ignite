@@ -208,19 +208,17 @@ public class CommonArgParser {
     /**
      * Parses and validates arguments.
      *
-     * @param rawArgIter Iterator of arguments.
+     * @param iter Iterator of arguments.
      * @return Arguments bean.
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
-    ConnectionAndSslParameters parseAndValidate(Iterator<String> rawArgIter) {
-        CommandArgIterator argIter = new CommandArgIterator(rawArgIter);
-
+    ConnectionAndSslParameters parseAndValidate(Iterator<String> iter) {
         DeclarativeCommandAdapter<?> command = null;
 
         Map<String, Object> vals = new HashMap<>();
 
-        while (argIter.hasNextArg()) {
-            String str = argIter.nextArg("").toLowerCase();
+        while (iter.hasNext()) {
+            String str = iter.next().toLowerCase();
 
             DeclarativeCommandAdapter<?> cmd = cmds.get(str);
 
@@ -229,12 +227,12 @@ public class CommonArgParser {
                     throw new IllegalArgumentException("Only one action can be specified, but found at least two:" +
                         cmd.toString() + ", " + command.toString());
 
-                cmd.parseArguments(argIter);
+                cmd.parseArguments(iter);
 
                 command = cmd;
             }
             else if (args.containsKey(str))
-                vals.put(str, parseCommonArg(argIter, args.get(str)));
+                vals.put(str, parseCommonArg(iter, args.get(str)));
         }
 
         if (command == null)
@@ -277,13 +275,16 @@ public class CommonArgParser {
 
     /** */
     private static <T> T parseCommonArg(
-        CommandArgIterator argIter,
+        Iterator<String> argIter,
         CLIArgument<T> arg
     ) {
         if (isBoolean(arg.type()))
             return (T)Boolean.TRUE;
 
-        T val = parseVal(argIter.nextArg("Expected " + arg.name() + " value"), arg.type());
+        if (!argIter.hasNext())
+            throw new IllegalArgumentException("Expected " + arg.name() + " value");
+
+        T val = parseVal(argIter.next(), arg.type());
 
         arg.validator().accept(arg.name(), val);
 

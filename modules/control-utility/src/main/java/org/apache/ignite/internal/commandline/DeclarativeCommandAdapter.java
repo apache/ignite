@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -122,8 +123,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
      *
      * @param argIter Argument iterator.
      */
-    public void parseArguments(CommandArgIterator argIter) {
-        PeekableIterator<String> cliArgs = argIter.raw();
+    public void parseArguments(Iterator<String> argIter) {
+        PeekableIterator<String> cliArgs = new PeekableIterator<>(argIter);
 
         Command<A, ?> cmd0 = baseCmd instanceof CommandsRegistry
                 ? command((CommandsRegistry<?, ?>)baseCmd, cliArgs, true)
@@ -523,7 +524,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
     }
 
     /**
-     * @return Command arguments which were parsed during {@link #parseArguments(CommandArgIterator)} call.
+     * @return Command arguments which were parsed during {@link #parseArguments(Iterator<String>)} call.
      */
     public A arg() {
         return arg;
