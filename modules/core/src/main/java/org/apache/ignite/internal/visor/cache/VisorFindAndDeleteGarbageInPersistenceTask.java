@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -38,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * Compute task which are part of 'find and delete garbage' functionality.
  */
 @GridInternal
-public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTask<VisorFindAndDeleteGarbageInPersistenceTaskArg,
+public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTask<CacheFindGarbageCommandArg,
     VisorFindAndDeleteGarbageInPersistenceTaskResult, VisorFindAndDeleteGarbageInPersistenceJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -61,18 +64,20 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorFindAndDeleteGarbageInPersistenceTaskArg, VisorFindAndDeleteGarbageInPersistenceJobResult> job(
-        VisorFindAndDeleteGarbageInPersistenceTaskArg arg
+    @Override protected VisorJob<CacheFindGarbageCommandArg, VisorFindAndDeleteGarbageInPersistenceJobResult> job(
+        CacheFindGarbageCommandArg arg
     ) {
         return new FindAndDeleteGarbageInPersistenceJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorFindAndDeleteGarbageInPersistenceTaskArg> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CacheFindGarbageCommandArg> arg) {
         Collection<ClusterNode> srvNodes = ignite.cluster().forServers().nodes();
         Collection<UUID> ret = new ArrayList<>(srvNodes.size());
 
-        Set<UUID> nodeIds = arg.getArgument().getNodes();
+        Set<UUID> nodeIds = arg.getArgument().nodeIds() == null
+            ? null
+            : new HashSet<>(Arrays.asList(arg.getArgument().nodeIds()));
 
         if (nodeIds == null) {
             for (ClusterNode node : srvNodes)
@@ -92,7 +97,7 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
      *
      */
     private static class FindAndDeleteGarbageInPersistenceJob
-        extends VisorJob<VisorFindAndDeleteGarbageInPersistenceTaskArg, VisorFindAndDeleteGarbageInPersistenceJobResult> {
+        extends VisorJob<CacheFindGarbageCommandArg, VisorFindAndDeleteGarbageInPersistenceJobResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -100,16 +105,16 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected FindAndDeleteGarbageInPersistenceJob(@Nullable VisorFindAndDeleteGarbageInPersistenceTaskArg arg, boolean debug) {
+        protected FindAndDeleteGarbageInPersistenceJob(@Nullable CacheFindGarbageCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorFindAndDeleteGarbageInPersistenceJobResult run(@Nullable VisorFindAndDeleteGarbageInPersistenceTaskArg arg)
+        @Override protected VisorFindAndDeleteGarbageInPersistenceJobResult run(@Nullable CacheFindGarbageCommandArg arg)
             throws IgniteException {
             try {
                 VisorFindAndDeleteGarbageInPersistenceClosure closure =
-                    new VisorFindAndDeleteGarbageInPersistenceClosure(arg.getGrpNames(), arg.deleteFoundGarbage());
+                    new VisorFindAndDeleteGarbageInPersistenceClosure(arg.groups(), arg.delete());
 
                 ignite.context().resource().injectGeneric(closure);
 

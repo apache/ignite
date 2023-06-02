@@ -23,41 +23,74 @@ import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class CacheContentionCommandArg extends IgniteDataTransferObject {
+public class CacheDistributionCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
-    /** Min queue size. */
+    /** */
     @Positional
-    @Argument(example = "minQueueSize")
-    private int minQueueSize;
+    @Argument(example = "nodeId|null")
+    private String nodeIdOrNull;
 
-    /** Node id. */
+    /** */
     @Positional
-    @Argument(optional = true, example = "nodeId")
+    @Argument(optional = true, example = "cacheName1,...,cacheNameN")
+    private String[] caches;
+
+    /** */
     private UUID nodeId;
 
-    /** Max print. */
-    @Positional
-    @Argument(optional = true, example = "maxPrint")
-    private int maxPrint = 10;
+    /** */
+    @Argument(optional = true, example = "attrName1,...,attrNameN")
+    private String[] userAttributes;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(minQueueSize);
+        U.writeString(out, nodeIdOrNull);
+        U.writeArray(out, caches);
         U.writeUuid(out, nodeId);
-        out.writeInt(maxPrint);
+        U.writeArray(out, userAttributes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        minQueueSize = in.readInt();
+        nodeIdOrNull = U.readString(in);
+        caches = U.readArray(in, String.class);
         nodeId = U.readUuid(in);
-        maxPrint = in.readInt();
+        userAttributes = U.readArray(in, String.class);
+    }
+
+    /** */
+    private void parse(String value) {
+        if (!"null".equals(value))
+            nodeId = CommandUtils.parseVal(value, UUID.class);
+    }
+
+    /** */
+    public String nodeIdOrNull() {
+        return nodeIdOrNull;
+    }
+
+    /** */
+    public void nodeIdOrNull(String nodeIdOrNull) {
+        this.nodeIdOrNull = nodeIdOrNull;
+
+        parse(nodeIdOrNull);
+    }
+
+    /** */
+    public String[] caches() {
+        return caches;
+    }
+
+    /** */
+    public void caches(String[] caches) {
+        this.caches = caches;
     }
 
     /** */
@@ -71,22 +104,12 @@ public class CacheContentionCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public int minQueueSize() {
-        return minQueueSize;
+    public String[] userAttributes() {
+        return userAttributes;
     }
 
     /** */
-    public void minQueueSize(int minQueueSize) {
-        this.minQueueSize = minQueueSize;
-    }
-
-    /** */
-    public int maxPrint() {
-        return maxPrint;
-    }
-
-    /** */
-    public void maxPrint(int maxPrint) {
-        this.maxPrint = maxPrint;
+    public void userAttributes(String[] userAttributes) {
+        this.userAttributes = userAttributes;
     }
 }

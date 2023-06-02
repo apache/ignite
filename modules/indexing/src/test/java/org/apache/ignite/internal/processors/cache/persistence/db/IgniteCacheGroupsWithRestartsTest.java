@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -51,14 +52,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -348,15 +347,17 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         IgniteEx ignite,
         boolean deleteFoundGarbage
     ) {
-        VisorFindAndDeleteGarbageInPersistenceTaskArg group = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
-            Collections.singleton(GROUP), deleteFoundGarbage, null);
+        CacheFindGarbageCommandArg arg = new CacheFindGarbageCommandArg();
+
+        arg.groups(new String[] {GROUP});
+        arg.delete(deleteFoundGarbage);
 
         UUID id = ignite.localNode().id();
 
-        VisorTaskArgument arg = new VisorTaskArgument(id, group, true);
-
-        VisorFindAndDeleteGarbageInPersistenceTaskResult result =
-            ignite.compute().execute(VisorFindAndDeleteGarbageInPersistenceTask.class, arg);
+        VisorFindAndDeleteGarbageInPersistenceTaskResult result = ignite.compute().execute(
+            VisorFindAndDeleteGarbageInPersistenceTask.class,
+            new VisorTaskArgument(id, arg, true)
+        );
 
         return result;
     }
