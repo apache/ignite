@@ -26,6 +26,7 @@ import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandAr
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
 import org.apache.ignite.internal.management.cache.CacheCheckIndexInlineSizesCommand;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
+import org.apache.ignite.internal.management.cache.CacheContentionCommand;
 import org.apache.ignite.internal.management.cache.CacheCreateCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.management.cache.CacheIndexesForceRebuildCommand;
@@ -86,7 +87,7 @@ public enum CacheSubcommands {
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONTENTION("contention", null, new CacheContention()),
+    CONTENTION(new CacheContentionCommand()),
 
     /**
      * Collect information on the distribution of partitions.

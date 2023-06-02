@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.management.metric;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
+import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 
 /** */
 public class MetricConfigureHitrateCommand implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
@@ -44,6 +44,6 @@ public class MetricConfigureHitrateCommand implements ComputeCommand<MetricComma
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, MetricCommandArg arg) {
-        return arg.nodeId() == null ? null : Collections.singleton(arg.nodeId());
+        return nodeOrNull(arg.nodeId());
     }
 }
