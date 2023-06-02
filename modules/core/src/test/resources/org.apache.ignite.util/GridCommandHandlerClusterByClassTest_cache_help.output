@@ -95,8 +95,8 @@ Arguments: --cache help --yes
       --cache-names cacheName1,...cacheNameN  - Comma-separated list of cache names for which indexes should be rebuilt.
       --group-names groupName1,...groupNameN  - Comma-separated list of cache group names for which indexes should be rebuilt.
 
-  --cache metrics enable|disable|status --caches cache1[,...,cacheN]|--all-caches
-    Manages user cache metrics collection: enables, disables it or shows status.
+  Manages user cache metrics collection: enables, disables it or shows status:
+    control.(sh|bat) --cache metrics ENABLE|DISABLE|STATUS --caches cache1[,...,cacheN]|--all-caches
 
     Parameters:
       --caches cache1[,...,cacheN]  - specifies a comma-separated list of cache names to which operation should be applied.

@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.commandline.cache.CacheMetrics;
+import org.apache.ignite.internal.management.cache.CacheMetricsCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.visor.cache.metrics.CacheMetricsOperation;
@@ -34,16 +34,11 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetrics.ALL_CACHES_ARGUMENT;
-import static org.apache.ignite.internal.commandline.cache.CacheMetrics.CACHES_ARGUMENT;
-import static org.apache.ignite.internal.commandline.cache.CacheMetrics.EXPECTED_CACHES_LIST_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetrics.INCORRECT_CACHE_ARGUMENT_MESSAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheMetrics.INCORRECT_METRICS_OPERATION_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.METRICS;
 import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
 
 /**
- * Test for {@link CacheMetrics} command.
+ * Test for {@link CacheMetricsCommand} command.
  */
 public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
     /** Enable operation. */
@@ -60,6 +55,21 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
 
     /** Cache two. */
     private static final String CACHE_TWO = "cache-2";
+
+    /** */
+    private static final String ALL_CACHES_ARGUMENT = "--all-caches";
+
+    /** */
+    private static final String CACHES_ARGUMENT = "--caches";
+
+    /** Incorrect metrics operation message. */
+    public static final String INCORRECT_METRICS_OPERATION_MESSAGE = "Argument operation required";
+
+    /** Expected caches list message. */
+    public static final String EXPECTED_CACHES_LIST_MESSAGE = "Please specify a value for argument: --caches";
+
+    /** Incorrect cache argument message. */
+    public static final String INCORRECT_CACHE_ARGUMENT_MESSAGE = "One of [--all-caches, --caches] required";
 
     /** {@inheritDoc} */
     @Override public void beforeTest() throws Exception {
@@ -148,34 +158,34 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
         checkInvalidArguments(checkArgs + INCORRECT_METRICS_OPERATION_MESSAGE);
 
         // Check when unknown operation passed
-        checkInvalidArguments(checkArgs + INCORRECT_METRICS_OPERATION_MESSAGE, "bad-command");
+        checkInvalidArguments(checkArgs + "Can't parse value 'bad-command'", "bad-command");
 
         // Check when no --caches/--all-caches arguments passed
         checkInvalidArguments(checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE, ENABLE);
         checkInvalidArguments(checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE, STATUS);
 
-        String invalidCacheListFullMsg = "Check arguments. Expected " + EXPECTED_CACHES_LIST_MESSAGE;
+        String invalidCacheListFullMsg = checkArgs + EXPECTED_CACHES_LIST_MESSAGE;
 
         // Check when --caches argument passed without list of caches
         checkInvalidArguments(invalidCacheListFullMsg, ENABLE, CACHES_ARGUMENT);
         checkInvalidArguments(invalidCacheListFullMsg, STATUS, CACHES_ARGUMENT);
 
-        String incorrectCacheArgFullMsg = checkArgs + INCORRECT_CACHE_ARGUMENT_MESSAGE;
+        String incorrectCacheArgFullMsg = checkArgs + "Unexpected argument: --arg";
 
         // Check when unknown argument is passed after metric operation
         checkInvalidArguments(incorrectCacheArgFullMsg, ENABLE, "--arg");
         checkInvalidArguments(incorrectCacheArgFullMsg, STATUS, "--arg");
 
-        String unexpectedCacheArgMsg = "Unexpected argument of --cache subcommand: ";
+        String unexpectedCacheArgMsg = checkArgs + "Only one of [--all-caches, --caches] allowed";
 
         // Check when extra argument passed after correct command
-        checkInvalidArguments(unexpectedCacheArgMsg + ALL_CACHES_ARGUMENT, ENABLE, CACHES_ARGUMENT, CACHE_ONE,
+        checkInvalidArguments(unexpectedCacheArgMsg, ENABLE, CACHES_ARGUMENT, CACHE_ONE,
             ALL_CACHES_ARGUMENT);
-        checkInvalidArguments(unexpectedCacheArgMsg + CACHES_ARGUMENT, STATUS, ALL_CACHES_ARGUMENT, CACHES_ARGUMENT,
+        checkInvalidArguments(unexpectedCacheArgMsg, STATUS, ALL_CACHES_ARGUMENT, CACHES_ARGUMENT,
             CACHE_ONE);
 
         // Check when after --caches argument extra argument is passed instead of list of caches
-        checkInvalidArguments(unexpectedCacheArgMsg + ALL_CACHES_ARGUMENT, ENABLE, CACHES_ARGUMENT, ALL_CACHES_ARGUMENT);
+        checkInvalidArguments("Unexpected value: --all-caches", ENABLE, CACHES_ARGUMENT, ALL_CACHES_ARGUMENT);
     }
 
     /**
