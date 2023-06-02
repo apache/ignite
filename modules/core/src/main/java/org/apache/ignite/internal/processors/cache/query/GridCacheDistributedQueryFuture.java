@@ -41,9 +41,8 @@ import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor.indexQueryText;
 
 /**
  * Distributed query future.
@@ -325,31 +324,18 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {
-        assert qry.query().type() != SQL_FIELDS;
-        assert qry.query().type() != SQL;
-
         if (cctx.kernalContext().performanceStatistics().enabled() && startTimeNanos > 0) {
             GridCacheQueryType type = qry.query().type();
 
             String text;
 
-            switch (type) {
-                case SCAN:
-                    text = cctx.name();
-
-                    break;
-
-                case INDEX:
-                    text = cctx.name() + ":" + qry.query().idxQryDesc().toString();
-
-                    break;
-
-                default:
-                    text = cctx.name();
-            }
+            if (type == INDEX)
+                text = indexQueryText(cctx.name(), qry.query().idxQryDesc());
+            else
+                text = cctx.name();
 
             cctx.kernalContext().performanceStatistics().query(
-                qry.query().type(),
+                type,
                 text,
                 reqId,
                 startTimeNanos,
