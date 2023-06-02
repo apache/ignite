@@ -552,9 +552,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         boolean performanceStatsEnabled = cctx.kernalContext().performanceStatistics().enabled();
 
-        long startTime = performanceStatsEnabled ? System.currentTimeMillis() : 0;
-        long startTimeNanos = performanceStatsEnabled ? System.nanoTime() : 0;
-
         GridCloseableIterator locIter0 = null;
 
         for (ClusterNode node : nodes) {
