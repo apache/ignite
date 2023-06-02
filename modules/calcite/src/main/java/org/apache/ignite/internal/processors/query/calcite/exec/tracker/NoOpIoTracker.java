@@ -15,31 +15,6 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:modules/core/src/main/java/org/apache/ignite/internal/management/cache/CacheCreateCommand.java
-package org.apache.ignite.internal.management.cache;
-
-import java.util.Set;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.visor.cache.VisorCacheCreateTask;
-import static org.apache.ignite.internal.IgniteComponentType.SPRING;
-
-/** */
-public class CacheCreateCommand implements ComputeCommand<CacheCreateCommandArg, Set<String>> {
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return "Create caches from Spring XML configuration. Note that the '" +
-            SPRING.module() + "' module should be enabled";
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<CacheCreateCommandArg> argClass() {
-        return CacheCreateCommandArg.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<VisorCacheCreateTask> taskClass() {
-        return VisorCacheCreateTask.class;
-========
 package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
 /**
@@ -57,6 +32,5 @@ public class NoOpIoTracker implements IoTracker {
     /** {@inheritDoc} */
     @Override public void stopTracking() {
         // No-op.
->>>>>>>> IGNITE-15629:modules/calcite/src/main/java/org/apache/ignite/internal/processors/query/calcite/exec/tracker/NoOpIoTracker.java
     }
 }
