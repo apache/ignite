@@ -67,7 +67,6 @@ import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
@@ -763,7 +762,7 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", getCommonOptions())),
+        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new CommonArgParser(logger, cmds).getCommonOptions())),
             optional("command"), "<command_parameters>"));
         logger.info("");
         logger.info("");
@@ -772,7 +771,7 @@ public class CommandHandler {
 
         cmds.values().forEach(c -> {
             if (experimentalEnabled || !c.experimental()) {
-                if (Objects.equals(((DeclarativeCommandAdapter<?>)c).command().getClass(), CacheCommand.class)) {
+                if (Objects.equals(c.command().getClass(), CacheCommand.class)) {
                     logger.info("");
                     logger.info("View caches information in a cluster. For more details type:");
                     logger.info(DOUBLE_INDENT + UTILITY_NAME + " --cache help");

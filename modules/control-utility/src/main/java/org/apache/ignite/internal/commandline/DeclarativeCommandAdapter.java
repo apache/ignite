@@ -70,7 +70,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
@@ -604,7 +603,7 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         logger.info(INDENT + "The '--cache subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
         logger.info("");
-        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", getCommonOptions())) + " " +
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new CommonArgParser(logger, null).getCommonOptions())) + " " +
             "--cache [subcommand] <subcommand_parameters>");
         logger.info("");
         logger.info(INDENT + "The subcommands that take [nodeId] as an argument ('list', 'find_garbage', " +

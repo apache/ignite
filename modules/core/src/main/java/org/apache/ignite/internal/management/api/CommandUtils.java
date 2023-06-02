@@ -192,7 +192,7 @@ public class CommandUtils {
      * @return Example of value for the field.
      */
     public static String valueExample(Field fld) {
-        if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
+        if (isBoolean(fld.getType()))
             return "";
 
         Argument param = fld.getAnnotation(Argument.class);
@@ -235,6 +235,11 @@ public class CommandUtils {
         }
 
         return asOptional(name, optional);
+    }
+
+    /** */
+    public static boolean isBoolean(Class<?> cls) {
+        return cls == Boolean.class || cls == boolean.class;
     }
 
     /**
@@ -380,7 +385,7 @@ public class CommandUtils {
      * @param <T> Value type
      */
     private static <T> T parseSingleVal(String val, Class<T> type) {
-        if (type == Boolean.class || type == boolean.class)
+        if (isBoolean(type))
             return (T)Boolean.TRUE;
         if (type == String.class)
             return (T)val;

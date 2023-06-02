@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +30,6 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
-import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.ssl.SslContextFactory;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
@@ -39,6 +39,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
+import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
+import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
@@ -117,6 +119,24 @@ public class CommonArgParser {
     /** Set of sensitive arguments */
     private static final Set<String> SENSITIVE_ARGUMENTS = new HashSet<>();
 
+    /** */
+    private static final BiConsumer<String, Integer> PORT_VALIDATOR = (name, val) -> {
+        if (val <= 0 || val > 65535)
+            throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
+    };
+
+    /** */
+    private static final BiConsumer<String, Long> POSITIVE_LONG = (name, val) -> {
+        if (val <= 0)
+            throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
+    };
+
+    /** */
+    private final BiConsumer<String, String> securityWarn;
+
+    /** */
+    private final Map<String, CLIArgument<?>> args = new LinkedHashMap<>();
+
     static {
         AUX_COMMANDS.add(CMD_HOST);
         AUX_COMMANDS.add(CMD_PORT);
@@ -163,6 +183,33 @@ public class CommonArgParser {
     public CommonArgParser(IgniteLogger logger, Map<String, DeclarativeCommandAdapter<?>> cmds) {
         this.logger = logger;
         this.cmds = cmds;
+        this.securityWarn = (name, val) -> logger.info(String.format("Warning: %s is insecure. " +
+            "Whenever possible, use interactive prompt for password (just discard %s option).", val, val));
+
+        arg(CMD_HOST, String.class, "HOST_OR_IP", DFLT_HOST);
+        arg(CMD_PORT, Integer.class, "PORT", DFLT_PORT, PORT_VALIDATOR);
+        arg(CMD_USER, String.class, "USER", null);
+        arg(CMD_PASSWORD, String.class, "PASSWORD", null, securityWarn);
+        arg(CMD_PING_INTERVAL, Long.class, "PING_INTERVAL", DFLT_PING_INTERVAL, POSITIVE_LONG);
+        arg(CMD_PING_TIMEOUT, Long.class, "PING_TIMEOUT", DFLT_PING_TIMEOUT, POSITIVE_LONG);
+        arg(CMD_VERBOSE, boolean.class, CMD_VERBOSE, false);
+        arg(CMD_SSL_PROTOCOL, String.class, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", DFLT_SSL_PROTOCOL);
+        arg(CMD_SSL_CIPHER_SUITES, String.class, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", "");
+        arg(CMD_SSL_KEY_ALGORITHM, String.class, "SSL_KEY_ALGORITHM", SslContextFactory.DFLT_KEY_ALGORITHM);
+        arg(CMD_SSL_FACTORY, String.class, "SSL_FACTORY_PATH", null);
+        arg(CMD_KEYSTORE_TYPE, String.class, "KEYSTORE_TYPE", SslContextFactory.DFLT_STORE_TYPE);
+        arg(CMD_KEYSTORE, String.class, "KEYSTORE_PATH", null);
+        arg(CMD_KEYSTORE_PASSWORD, String.class, "KEYSTORE_PASSWORD", null, securityWarn);
+        arg(CMD_TRUSTSTORE_TYPE, String.class, "TRUSTSTORE_TYPE", SslContextFactory.DFLT_STORE_TYPE);
+        arg(CMD_TRUSTSTORE, String.class, "TRUSTSTORE_PATH", null);
+        arg(CMD_TRUSTSTORE_PASSWORD, String.class, "TRUSTSTORE_PASSWORD", null, securityWarn);
+        arg(CMD_AUTO_CONFIRMATION, boolean.class, CMD_AUTO_CONFIRMATION, false);
+        arg(
+            CMD_ENABLE_EXPERIMENTAL,
+            Boolean.class,
+            CMD_ENABLE_EXPERIMENTAL,
+            IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND)
+        );
     }
 
     /**
@@ -170,27 +217,18 @@ public class CommonArgParser {
      *
      * @return Array of common utility options.
      */
-    public static String[] getCommonOptions() {
-        List<String> list = new ArrayList<>(32);
+    public String[] getCommonOptions() {
+        List<String> list = new ArrayList<>();
 
-        list.add(optional(CMD_HOST, "HOST_OR_IP"));
-        list.add(optional(CMD_PORT, "PORT"));
-        list.add(optional(CMD_USER, "USER"));
-        list.add(optional(CMD_PASSWORD, "PASSWORD"));
-        list.add(optional(CMD_PING_INTERVAL, "PING_INTERVAL"));
-        list.add(optional(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
-        list.add(optional(CMD_VERBOSE));
-        list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
-        list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
-        list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
-        list.add(optional(CMD_SSL_FACTORY, "SSL_FACTORY_PATH"));
-        list.add(optional(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
-        list.add(optional(CMD_KEYSTORE, "KEYSTORE_PATH"));
-        list.add(optional(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
-        list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
-        list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
-        list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
-        list.add(optional(CMD_ENABLE_EXPERIMENTAL));
+        for (CLIArgument<?> arg : args.values()) {
+            if (arg.name().equals(CMD_AUTO_CONFIRMATION))
+                continue;
+
+            if (isBoolean(arg.type()))
+                list.add(optional(arg.name()));
+            else
+                list.add(optional(arg.name(), arg.usage()));
+        }
 
         return list.toArray(new String[0]);
     }
@@ -203,65 +241,11 @@ public class CommonArgParser {
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
     ConnectionAndSslParameters parseAndValidate(Iterator<String> rawArgIter) {
-        String host = DFLT_HOST;
-
-        int port = DFLT_PORT;
-
-        String user = null;
-
-        String pwd = null;
-
-        Long pingInterval = DFLT_PING_INTERVAL;
-
-        Long pingTimeout = DFLT_PING_TIMEOUT;
-
-        boolean autoConfirmation = false;
-
-        boolean verbose = false;
-
-        String sslProtocol = DFLT_SSL_PROTOCOL;
-
-        String sslCipherSuites = "";
-
-        String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
-
-        String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
-
-        String sslKeyStorePath = null;
-
-        char sslKeyStorePassword[] = null;
-
-        String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
-
-        String sslTrustStorePath = null;
-
-        char sslTrustStorePassword[] = null;
-
-        boolean experimentalEnabled = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS, cmds);
 
         DeclarativeCommandAdapter<?> command = null;
 
-        String sslFactoryCfg = null;
-
-        Map<String, CLIArgument<?>> args = new HashMap<>();
         Map<String, Object> vals = new HashMap<>();
-
-        BiConsumer<String, Integer> PORT_VALIDATOR = (name, val) -> {
-            if (val <= 0 || val > 65535)
-                throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
-        };
-
-        BiConsumer<String, Long> POSITIVE_LONG = (name, val) -> {
-            if (val <= 0)
-                throw new IllegalArgumentException("Invalid value for " + name + ": " + val);
-        };
-
-        args.put(CMD_HOST, optionalArg(CMD_HOST, null, String.class, () -> DFLT_HOST));
-        args.put(CMD_PORT, optionalArg(CMD_PORT, null, Integer.class, t -> DFLT_PORT, PORT_VALIDATOR));
-        args.put(CMD_PING_INTERVAL, optionalArg(CMD_PING_INTERVAL, null, Long.class, t -> DFLT_PING_INTERVAL, POSITIVE_LONG));
-        args.put(CMD_PING_TIMEOUT, optionalArg(CMD_PING_TIMEOUT, null, Long.class, t -> DFLT_PING_TIMEOUT, POSITIVE_LONG));
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
@@ -279,111 +263,44 @@ public class CommonArgParser {
             }
             else if (args.containsKey(str))
                 vals.put(str, parseCommonArg(argIter, args.get(str)));
-            else {
-                switch (str) {
-                    case CMD_USER:
-                        user = argIter.nextArg("Expected user name");
-
-                        break;
-
-                    case CMD_PASSWORD:
-                        pwd = argIter.nextArg("Expected password");
-
-                        logger.info(securityWarningMessage(CMD_PASSWORD));
-
-                        break;
-
-                    case CMD_SSL_PROTOCOL:
-                        sslProtocol = argIter.nextArg("Expected SSL protocol");
-
-                        break;
-
-                    case CMD_SSL_CIPHER_SUITES:
-                        sslCipherSuites = argIter.nextArg("Expected SSL cipher suites");
-
-                        break;
-
-                    case CMD_SSL_KEY_ALGORITHM:
-                        sslKeyAlgorithm = argIter.nextArg("Expected SSL key algorithm");
-
-                        break;
-
-                    case CMD_KEYSTORE:
-                        sslKeyStorePath = argIter.nextArg("Expected SSL key store path");
-
-                        break;
-
-                    case CMD_KEYSTORE_PASSWORD:
-                        sslKeyStorePassword = argIter.nextArg("Expected SSL key store password").toCharArray();
-
-                        logger.info(securityWarningMessage(CMD_KEYSTORE_PASSWORD));
-
-                        break;
-
-                    case CMD_KEYSTORE_TYPE:
-                        sslKeyStoreType = argIter.nextArg("Expected SSL key store type");
-
-                        break;
-
-                    case CMD_TRUSTSTORE:
-                        sslTrustStorePath = argIter.nextArg("Expected SSL trust store path");
-
-                        break;
-
-                    case CMD_TRUSTSTORE_PASSWORD:
-                        sslTrustStorePassword = argIter.nextArg("Expected SSL trust store password").toCharArray();
-
-                        logger.info(securityWarningMessage(CMD_TRUSTSTORE_PASSWORD));
-
-                        break;
-
-                    case CMD_TRUSTSTORE_TYPE:
-                        sslTrustStoreType = argIter.nextArg("Expected SSL trust store type");
-
-                        break;
-
-                    case CMD_AUTO_CONFIRMATION:
-                        autoConfirmation = true;
-
-                        break;
-
-                    case CMD_VERBOSE:
-                        verbose = true;
-                        break;
-
-                    case CMD_ENABLE_EXPERIMENTAL:
-                        experimentalEnabled = true;
-                        break;
-
-                    case CMD_SSL_FACTORY:
-                        sslFactoryCfg = argIter.nextArg("Expected SSL factory config path");
-
-                        break;
-
-                    default:
-                        throw new IllegalArgumentException("Unexpected argument: " + str);
-                }
-            }
-
-            host = (String)vals.getOrDefault(CMD_HOST, DFLT_HOST);
-            port = (int)vals.getOrDefault(CMD_PORT, DFLT_PORT);
         }
 
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-        if (!experimentalEnabled && command.experimental()) {
+        if (!this.<Boolean>val(vals, CMD_ENABLE_EXPERIMENTAL) && command.experimental()) {
             logger.warning(String.format("To use experimental command add --enable-experimental parameter for %s",
                 UTILITY_NAME));
 
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters(command, host, port, user, pwd,
-                pingTimeout, pingInterval, autoConfirmation, verbose,
-                sslProtocol, sslCipherSuites,
-                sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, sslFactoryCfg);
+        return new ConnectionAndSslParameters(
+            command,
+            val(vals, CMD_HOST),
+            val(vals, CMD_PORT),
+            val(vals, CMD_USER),
+            val(vals, CMD_PASSWORD),
+            val(vals, CMD_PING_INTERVAL),
+            val(vals, CMD_PING_TIMEOUT),
+            val(vals, CMD_AUTO_CONFIRMATION),
+            val(vals, CMD_VERBOSE),
+            val(vals, CMD_SSL_PROTOCOL),
+            val(vals, CMD_SSL_CIPHER_SUITES),
+            val(vals, CMD_SSL_KEY_ALGORITHM),
+            val(vals, CMD_KEYSTORE),
+            val(vals, CMD_KEYSTORE_PASSWORD),
+            val(vals, CMD_KEYSTORE_TYPE),
+            val(vals, CMD_TRUSTSTORE),
+            val(vals, CMD_TRUSTSTORE_PASSWORD),
+            val(vals, CMD_TRUSTSTORE_TYPE),
+            val(vals, CMD_SSL_FACTORY)
+        );
+    }
+
+    /** */
+    private <T> T val(Map<String, Object> vals, String name) {
+        return (T)vals.computeIfAbsent(name, key -> args.get(name).defaultValueSupplier().apply(null));
     }
 
     /** */
@@ -391,21 +308,23 @@ public class CommonArgParser {
         CommandArgIterator argIter,
         CLIArgument<T> arg
     ) {
-        T val = CommandUtils.parseVal(argIter.nextArg("Expected " + arg.name() + " value"), arg.type());
+        if (isBoolean(arg.type()))
+            return (T)Boolean.TRUE;
+
+        T val = parseVal(argIter.nextArg("Expected " + arg.name() + " value"), arg.type());
 
         arg.validator().accept(arg.name(), val);
 
         return val;
     }
 
-    /**
-     * @param password Parsed password.
-     * @return String with warning to show for user.
-     */
-    private String securityWarningMessage(String password) {
-        final String pwdArgWarnFmt = "Warning: %s is insecure. " +
-            "Whenever possible, use interactive prompt for password (just discard %s option).";
+    /** */
+    private <T> void arg(String name, Class<T> type, String usage, T dflt, BiConsumer<String, T> validator) {
+        args.put(name, optionalArg(name, usage, type, t -> dflt, validator));
+    }
 
-        return String.format(pwdArgWarnFmt, password, password);
+    /** */
+    private <T> void arg(String name, Class<T> type, String usage, T dflt) {
+        args.put(name, optionalArg(name, usage, type, () -> dflt));
     }
 }
