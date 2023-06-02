@@ -63,12 +63,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
@@ -747,7 +747,7 @@ public class CommandHandler {
         logger.info("");
 
         logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new CommonArgParser(logger, cmds).getCommonOptions())),
-            optional("command"), "<command_parameters>"));
+            asOptional("command", true), "<command_parameters>"));
         logger.info("");
         logger.info("");
 

@@ -73,7 +73,7 @@ public class TaskExecutor {
 
         // Otherwise choose random node.
         if (node == null)
-            node = getBalancedNode(client.compute());
+            node = balancedNode(client.compute());
 
         return node;
     }
@@ -116,7 +116,7 @@ public class TaskExecutor {
      * @param compute instance
      * @return balanced node
      */
-    public static GridClientNode getBalancedNode(GridClientCompute compute) throws GridClientException {
+    private static GridClientNode balancedNode(GridClientCompute compute) throws GridClientException {
         Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
 
         if (F.isEmpty(nodes))

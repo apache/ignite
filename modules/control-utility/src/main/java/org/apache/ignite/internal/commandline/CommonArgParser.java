@@ -39,8 +39,8 @@ import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PIN
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
+import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -197,9 +197,9 @@ public class CommonArgParser {
                 continue;
 
             if (isBoolean(arg.type()))
-                list.add(optional(arg.name()));
+                list.add(asOptional(arg.name(), true));
             else
-                list.add(optional(arg.name(), arg.usage()));
+                list.add(asOptional(arg.name() + " " + arg.usage(), true));
         }
 
         return list.toArray(U.EMPTY_STRS);

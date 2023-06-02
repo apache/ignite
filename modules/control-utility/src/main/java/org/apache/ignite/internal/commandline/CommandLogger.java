@@ -18,23 +18,11 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /**
  * Utility class for creating {@code CommangHandler} log messages.
  */
 public class CommandLogger {
-    /**
-     * Join input parameters with space and wrap optional braces {@code []}.
-     *
-     * @param params Other input parameter.
-     * @return Joined parameters wrapped optional braces.
-     */
-    public static String optional(Object... params) {
-        return join(new SB(), "[", " ", params).a("]").toString();
-    }
-
     /**
      * Generates readable error message from exception
      * @param e Exctption
