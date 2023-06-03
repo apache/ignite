@@ -150,6 +150,14 @@ Use this flag to tell Ignite to perform all intermediate row analysis and update
 Defaults to `false`, meaning that the intermediate results are fetched to the query initiator first.
 |`false`
 
+|`queryTimeout`
+|Sets the number of seconds the driver will wait for a Statement object to execute. Zero means there is no limits.
+|`0`
+
+|`connectionTimeout`
+|Sets the number of milliseconds JDBC client will waits for server to response. Zero means there is no limits.
+|'0'
+
 
 |=======================================================================
 
