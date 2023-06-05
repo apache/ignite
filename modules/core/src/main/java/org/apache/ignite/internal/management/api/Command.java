@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,11 +48,10 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     }
 
     /**
-     * @param cli Grid client to get required information from cluster.
      * @param arg Command argument.
      * @return Message text to show user for. If {@code null} it means that confirmation is not needed.
      */
-    public default @Nullable String confirmationPrompt(GridClient cli, A arg) throws Exception {
+    public default @Nullable String confirmationPrompt(A arg) {
         return null;
     }
 

@@ -55,6 +55,9 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     @Argument(optional = true, description = "If true, cluster deactivation will be forced")
     private boolean force;
 
+    /** */
+    private String clusterName;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, state);
@@ -85,5 +88,15 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     /** */
     public void force(boolean force) {
         this.force = force;
+    }
+
+    /** */
+    public String clusterName() {
+        return clusterName;
+    }
+
+    /** */
+    public void clusterName(String clusterName) {
+        this.clusterName = clusterName;
     }
 }

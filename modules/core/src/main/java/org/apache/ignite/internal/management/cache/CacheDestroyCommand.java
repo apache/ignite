@@ -24,13 +24,15 @@ import java.util.function.Consumer;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 
 /** Destroy caches. */
-public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandArg, Void> {
+public class CacheDestroyCommand
+    implements ComputeCommand<CacheDestroyCommandArg, Void>, PreparableCommand<CacheDestroyCommandArg, Void> {
     /** Confirmation message format. */
     public static final String CONFIRM_MSG = "Warning! The command will destroy %d caches: %s.\n" +
         "If you continue, the cache data will be impossible to recover.";
@@ -67,7 +69,7 @@ public class CacheDestroyCommand implements ComputeCommand<CacheDestroyCommandAr
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, CacheDestroyCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(CacheDestroyCommandArg arg) {
         return String.format(CONFIRM_MSG, arg.caches().length, S.joinToString(Arrays.asList(arg.caches()), ", ", "..", 80, 0));
     }
 

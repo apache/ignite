@@ -22,12 +22,14 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /** */
 @Deprecated
-public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoArg> {
+public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoArg>, PreparableCommand<DeactivateCommandArg, NoArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Deactivate cluster (deprecated. Use --set-state instead)";
@@ -39,8 +41,8 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String confirmationPrompt(GridClient cli, DeactivateCommandArg arg) throws Exception {
-        return "Warning: the command will deactivate a cluster \"" + cli.state().clusterName() + "\".";
+    @Override public @Nullable String confirmationPrompt(DeactivateCommandArg arg) {
+        return "Warning: the command will deactivate a cluster \"" + arg.clusterName() + "\".";
     }
 
     /** {@inheritDoc} */
@@ -57,5 +59,12 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     /** {@inheritDoc} */
     @Override public Class<DeactivateCommandArg> argClass() {
         return DeactivateCommandArg.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean prepare(GridClient cli, DeactivateCommandArg arg, Consumer<String> printer) throws Exception {
+        arg.clusterName(cli.state().clusterName());
+
+        return true;
     }
 }

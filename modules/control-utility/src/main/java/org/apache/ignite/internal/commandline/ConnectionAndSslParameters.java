@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.Map;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
 
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE
 /**
  * Container with common parsed and validated arguments.
  */
-public class ConnectionAndSslParameters {
+public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     /** User. */
     private String user;
 
@@ -57,67 +57,57 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
-    /** High-level command. */
-    private final DeclarativeCommandAdapter<?> command;
+    /** Command to execute. */
+    private final Command<A, ?> command;
+
+    /** Command argument. */
+    private final A arg;
 
     /** */
-    private final Map<String, CLIArgument<?>> args;
-
-    /** */
-    private final Map<String, Object> vals;
+    private final CLIArgumentParser parser;
 
     /**
      * @param command Command.
      */
     public ConnectionAndSslParameters(
-        DeclarativeCommandAdapter<?> command,
-        Map<String, CLIArgument<?>> args,
-        Map<String, Object> vals
+        Command<A, ?> command,
+        A arg,
+        CLIArgumentParser parser
     ) {
         this.command = command;
-        this.args = args;
-        this.vals = vals;
+        this.arg = arg;
+        this.parser = parser;
 
-        this.user = val(vals, CMD_USER);
-        this.pwd = val(vals, CMD_PASSWORD);
-        this.sslKeyStorePassword = val(vals, CMD_KEYSTORE_PASSWORD);
-        this.sslTrustStorePassword = val(vals, CMD_TRUSTSTORE_PASSWORD);
-    }
-
-    /** */
-    private <T> T val(Map<String, Object> vals, String name) {
-        return (T)vals.computeIfAbsent(name, key -> args.get(name).defaultValueSupplier().apply(null));
+        this.user = parser.get(CMD_USER);
+        this.pwd = parser.get(CMD_PASSWORD);
+        this.sslKeyStorePassword = parser.get(CMD_KEYSTORE_PASSWORD);
+        this.sslTrustStorePassword = parser.get(CMD_TRUSTSTORE_PASSWORD);
     }
 
     /**
      * @return High-level command which were defined by user to run.
      */
-    public Command<?, ?> command() {
-        return command.command();
-    }
-
-    /** */
-    public DeclarativeCommandAdapter<?> declarativeCmd() {
+    public Command<A, ?> command() {
         return command;
     }
 
     /** */
-    public <T> T commandArg() {
-        return (T)command.arg();
+    public A commandArg() {
+        return arg;
     }
 
     /**
      * @return host name
      */
     public String host() {
-        return val(vals, CMD_HOST);
+        return parser.get(CMD_HOST);
     }
 
     /**
      * @return port number
      */
     public int port() {
-        return val(vals, CMD_PORT);
+        return parser.get(CMD_PORT);
     }
 
     /**
@@ -154,7 +144,7 @@ public class ConnectionAndSslParameters {
      * @return Ping timeout.
      */
     public long pingTimeout() {
-        return val(vals, CMD_PING_TIMEOUT);
+        return parser.get(CMD_PING_TIMEOUT);
     }
 
     /**
@@ -163,49 +153,49 @@ public class ConnectionAndSslParameters {
      * @return Ping interval.
      */
     public long pingInterval() {
-        return val(vals, CMD_PING_INTERVAL);
+        return parser.get(CMD_PING_INTERVAL);
     }
 
     /**
      * @return Auto confirmation option.
      */
     public boolean autoConfirmation() {
-        return val(vals, CMD_AUTO_CONFIRMATION);
+        return parser.get(CMD_AUTO_CONFIRMATION);
     }
 
     /**
      * @return SSL protocol
      */
     public String[] sslProtocol() {
-        return val(vals, CMD_SSL_PROTOCOL);
+        return parser.get(CMD_SSL_PROTOCOL);
     }
 
     /**
      * @return SSL cipher suites.
      */
     public String[] getSslCipherSuites() {
-        return val(vals, CMD_SSL_CIPHER_SUITES);
+        return parser.get(CMD_SSL_CIPHER_SUITES);
     }
 
     /**
      * @return SSL Key Algorithm
      */
     public String sslKeyAlgorithm() {
-        return val(vals, CMD_SSL_KEY_ALGORITHM);
+        return parser.get(CMD_SSL_KEY_ALGORITHM);
     }
 
     /**
      * @return Keystore
      */
     public String sslKeyStorePath() {
-        return val(vals, CMD_KEYSTORE);
+        return parser.get(CMD_KEYSTORE);
     }
 
     /**
      * @return Keystore type
      */
     public String sslKeyStoreType() {
-        return val(vals, CMD_KEYSTORE_TYPE);
+        return parser.get(CMD_KEYSTORE_TYPE);
     }
 
     /**
@@ -228,14 +218,14 @@ public class ConnectionAndSslParameters {
      * @return Truststore
      */
     public String sslTrustStorePath() {
-        return val(vals, CMD_TRUSTSTORE);
+        return parser.get(CMD_TRUSTSTORE);
     }
 
     /**
      * @return Truststore type
      */
     public String sslTrustStoreType() {
-        return val(vals, CMD_TRUSTSTORE_TYPE);
+        return parser.get(CMD_TRUSTSTORE_TYPE);
     }
 
     /**
@@ -258,7 +248,7 @@ public class ConnectionAndSslParameters {
      * @return Predefined SSL Factory config.
      */
     public String sslFactoryConfigPath() {
-        return val(vals, CMD_SSL_FACTORY);
+        return parser.get(CMD_SSL_FACTORY);
     }
 
     /**
@@ -267,6 +257,6 @@ public class ConnectionAndSslParameters {
      * @return {@code True} if verbose mode is enabled.
      */
     public boolean verbose() {
-        return val(vals, CMD_VERBOSE);
+        return parser.get(CMD_VERBOSE);
     }
 }

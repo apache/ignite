@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.baseline;
+package org.apache.ignite.internal.management.api;
 
-import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
-public class BaselineAddCommand extends AbstractBaselineCommand {
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return "Add nodes into baseline topology";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String confirmationPrompt(VisorBaselineTaskArg arg) {
-        return "Warning: the command will perform changes in baseline.";
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<BaselineAddCommandArg> argClass() {
-        return BaselineAddCommandArg.class;
-    }
+public interface PreparableCommand<A extends IgniteDataTransferObject, R> extends Command<A, R> {
+    /**
+     * Enriches argument with cluster information if required.
+     *
+     * @param cli Grid client to get required information from cluster.
+     * @param arg Command argument.
+     * @param printer Implementation specific printer.
+     * @return {@code True} if command must be executed, {@code false} otherwise.
+     */
+    public boolean prepare(GridClient cli, A arg, Consumer<String> printer) throws Exception;
 }

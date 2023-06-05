@@ -20,13 +20,13 @@ package org.apache.ignite.internal.management.wal;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
@@ -50,7 +50,7 @@ public class WalDeleteCommand implements
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, WalDeleteCommandArg arg) {
+    @Override public String confirmationPrompt(WalDeleteCommandArg arg) {
         return "Warning: the command will delete unused WAL segments.";
     }
 

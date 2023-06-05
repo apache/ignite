@@ -52,8 +52,8 @@ public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, SetStateCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(SetStateCommandArg arg) {
         return "Warning: the command will change state of cluster " +
-            "with name \"" + cli.state().clusterName() + "\" to " + arg.state() + ".";
+            "with name \"" + arg.clusterName() + "\" to " + arg.state() + ".";
     }
 }

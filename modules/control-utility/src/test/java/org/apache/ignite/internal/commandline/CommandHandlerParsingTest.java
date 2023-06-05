@@ -158,7 +158,7 @@ public class CommandHandlerParsingTest {
                 Integer.toString(expectedCheckThrough)
             ));
 
-            CacheValidateIndexesCommandArg arg = args.commandArg();
+            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)args.commandArg();
 
             assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
             assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, arg.checkFirst());
@@ -180,7 +180,7 @@ public class CommandHandlerParsingTest {
                     Integer.toString(expectedParam)
                 ));
 
-            CacheValidateIndexesCommandArg arg = args.commandArg();
+            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)args.commandArg();
 
             assertNull("caches weren't specified, null value expected", arg.caches());
             assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
@@ -223,7 +223,7 @@ public class CommandHandlerParsingTest {
         for (List<String> list : lists) {
             ConnectionAndSslParameters args = parseArgs(list);
 
-            CacheFindGarbageCommandArg arg = args.commandArg();
+            CacheFindGarbageCommandArg arg = (CacheFindGarbageCommandArg)args.commandArg();
 
             if (list.contains(nodeId))
                 assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0].toString());
@@ -377,7 +377,7 @@ public class CommandHandlerParsingTest {
 
         assertEquals(WalCommand.class, args.command().getClass());
 
-        WalDeleteCommandArg arg = args.commandArg();
+        WalDeleteCommandArg arg = (WalDeleteCommandArg)args.commandArg();
 
         assertTrue(arg instanceof WalPrintCommandArg);
 
@@ -385,7 +385,7 @@ public class CommandHandlerParsingTest {
 
         args = parseArgs(asList(WAL, WAL_DELETE, nodes));
 
-        arg = args.commandArg();
+        arg = (WalDeleteCommandArg)args.commandArg();
 
         assertFalse(arg instanceof WalPrintCommandArg);
 
@@ -427,9 +427,9 @@ public class CommandHandlerParsingTest {
             Command<?, ?> cmdL = e.getValue();
 
             // SET_STATE command has mandatory argument used in confirmation message.
-            DeclarativeCommandAdapter<?> cmd = cmdL.getClass() != SetStateCommand.class
-                ? new DeclarativeCommandAdapter<>(cmdL)
-                : parseArgs(asList(cmdText(cmdL), "ACTIVE")).declarativeCmd();
+            CommandInvoker<?> cmd = cmdL.getClass() != SetStateCommand.class
+                ? new CommandInvoker<>(cmdL, null)
+                : new CommandInvoker<>(parseArgs(asList(cmdText(cmdL), "ACTIVE")).command(), null);
 
             if (cmd.confirmationPrompt() == null)
                 return;
@@ -485,7 +485,7 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    BaselineAddCommandArg arg = args.commandArg();
+                    BaselineAddCommandArg arg = (BaselineAddCommandArg)args.commandArg();
 
                     if (baselineAct.equals("add"))
                         assertEquals(BaselineAddCommand.class, args.command().getClass());
@@ -595,7 +595,7 @@ public class CommandHandlerParsingTest {
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
-        TxCommandArg arg = args.commandArg();
+        TxCommandArg arg = (TxCommandArg)args.commandArg();
 
         assertEquals(Long.valueOf(120 * 1000L), arg.minDuration());
         assertEquals(Integer.valueOf(10), arg.minSize());
@@ -607,7 +607,7 @@ public class CommandHandlerParsingTest {
         args = parseArgs(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
             "--clients"));
 
-        arg = args.commandArg();
+        arg = (TxCommandArg)args.commandArg();
 
         assertEquals(Long.valueOf(130 * 1000L), arg.minDuration());
         assertEquals(Integer.valueOf(1), arg.minSize());
@@ -618,7 +618,7 @@ public class CommandHandlerParsingTest {
 
         args = parseArgs(asList("--tx", "--nodes", "1,2,3"));
 
-        arg = args.commandArg();
+        arg = (TxCommandArg)args.commandArg();
 
         assertFalse(arg.servers());
         assertFalse(arg.clients());
@@ -1031,7 +1031,7 @@ public class CommandHandlerParsingTest {
         params1.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
         params1.put("bar", Collections.singleton("foo"));
 
-        CacheScheduleIndexesRebuildCommandArg arg1 =
+        CacheScheduleIndexesRebuildCommandArg arg1 = (CacheScheduleIndexesRebuildCommandArg)
             parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
                 "--cache-names", buildScheduleIndexRebuildCacheNames(params1))).commandArg();
 
@@ -1046,7 +1046,7 @@ public class CommandHandlerParsingTest {
 
         Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
 
-        CacheScheduleIndexesRebuildCommandArg arg2 =
+        CacheScheduleIndexesRebuildCommandArg arg2 = (CacheScheduleIndexesRebuildCommandArg)
             parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
                 "--cache-names", buildScheduleIndexRebuildCacheNames(params2), "--group-names", "foocache,someGrp")
             ).commandArg();
@@ -1199,8 +1199,7 @@ public class CommandHandlerParsingTest {
             e.getValue()
         ));
 
-        return new CommonArgParser(setupTestLogger(), cmds).
-            parseAndValidate(args.iterator());
+        return new CommonArgParser(setupTestLogger(), cmds).parseAndValidate(args);
     }
 
     /**

@@ -19,24 +19,29 @@ package org.apache.ignite.internal.management.api;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.management.AbstractCommandInvoker.visitCommandParams;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
@@ -294,6 +299,90 @@ public class CommandUtils {
     }
 
     /**
+     * Utility method. Scans argument class fields and visits each field representing command argument.
+     *
+     * @param argCls Argument class.
+     * @param positionalParamVisitor Visitor of positional parameters.
+     * @param namedParamVisitor Visitor of named parameters.
+     * @param argumentGroupVisitor Visitor of "one of" parameters.
+     * @param <A> Argument type.
+     */
+    public static <A extends IgniteDataTransferObject> void visitCommandParams(
+        Class<A> argCls,
+        Consumer<Field> positionalParamVisitor,
+        Consumer<Field> namedParamVisitor,
+        BiConsumer<ArgumentGroup, List<Field>> argumentGroupVisitor
+    ) {
+        Class<? extends IgniteDataTransferObject> clazz0 = argCls;
+
+        List<Class<? extends IgniteDataTransferObject>> classes = new ArrayList<>();
+
+        while (clazz0 != IgniteDataTransferObject.class) {
+            classes.add(clazz0);
+
+            clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
+        }
+
+        List<Field> positionalParams = new ArrayList<>();
+        List<Field> namedParams = new ArrayList<>();
+
+        ArgumentGroup argGrp = argCls.getAnnotation(ArgumentGroup.class);
+
+        Set<String> grpNames = argGrp != null
+            ? new HashSet<>(Arrays.asList(argGrp.value()))
+            : Collections.emptySet();
+
+        List<Field> grpFlds = new ArrayList<>();
+
+        // Iterates classes from the roots.
+        for (int i = classes.size() - 1; i >= 0; i--) {
+            Field[] flds = classes.get(i).getDeclaredFields();
+
+            for (Field fld : flds) {
+                if (grpNames.contains(fld.getName()))
+                    grpFlds.add(fld);
+                else if (fld.isAnnotationPresent(Positional.class))
+                    positionalParams.add(fld);
+                else if (fld.isAnnotationPresent(Argument.class))
+                    namedParams.add(fld);
+            }
+        }
+
+        positionalParams.forEach(positionalParamVisitor);
+
+        namedParams.forEach(namedParamVisitor);
+
+        if (argGrp != null)
+            argumentGroupVisitor.accept(argGrp, grpFlds);
+    }
+
+    /**
+     * @param cmd Command.
+     * @return {@code True} if command has described parameters.
+     */
+    public static boolean hasDescribedParameters(Command<?, ?> cmd) {
+        AtomicBoolean res = new AtomicBoolean();
+
+        visitCommandParams(
+            cmd.argClass(),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ))
+        );
+
+        return res.get();
+    }
+
+    /**
      * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
@@ -377,32 +466,6 @@ public class CommandUtils {
         }
 
         return true;
-    }
-
-    /**
-     * @param cmd Command.
-     * @return {@code True} if command has described parameters.
-     */
-    public static boolean hasDescribedParameters(Command<?, ?> cmd) {
-        AtomicBoolean res = new AtomicBoolean();
-
-        visitCommandParams(
-            cmd.argClass(),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ),
-            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
-                !fld.getAnnotation(Argument.class).description().isEmpty() ||
-                    fld.isAnnotationPresent(EnumDescription.class)
-            ))
-        );
-
-        return res.get();
     }
 
     /**

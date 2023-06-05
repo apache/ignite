@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.tx;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -75,7 +74,7 @@ public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<Clu
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, AbstractTxCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(AbstractTxCommandArg arg) {
         if (((TxCommandArg)arg).kill())
             return "Warning: the command will kill some transactions.";
 

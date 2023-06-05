@@ -34,6 +34,9 @@ public class DeactivateCommandArg extends IgniteDataTransferObject {
     @Argument(optional = true)
     private boolean force;
 
+    /** */
+    private String clusterName;
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(force);
@@ -52,5 +55,15 @@ public class DeactivateCommandArg extends IgniteDataTransferObject {
     /** */
     public void force(boolean force) {
         this.force = force;
+    }
+
+    /** */
+    public String clusterName() {
+        return clusterName;
+    }
+
+    /** */
+    public void clusterName(String clusterName) {
+        this.clusterName = clusterName;
     }
 }

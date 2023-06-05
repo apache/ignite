@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataRemoveTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -79,7 +78,7 @@ public class MetaRemoveCommand implements
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, MetaRemoveCommandArg arg) {
+    @Override public String confirmationPrompt(MetaRemoveCommandArg arg) {
         return "Warning: the command will remove the binary metadata for a type \""
             + (arg.typeId() != 0 ? arg.typeId() : arg.typeName()) + "\" from cluster.";
     }

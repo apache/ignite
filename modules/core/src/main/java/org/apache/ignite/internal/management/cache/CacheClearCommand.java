@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.processors.cache.ClearCachesTask;
 import org.apache.ignite.internal.processors.cache.ClearCachesTaskResult;
@@ -42,7 +41,7 @@ public class CacheClearCommand implements ComputeCommand<CacheClearCommandArg, C
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, CacheClearCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(CacheClearCommandArg arg) {
         return String.format(CONFIRM_MSG, arg.caches().length, String.join(", ", arg.caches()));
     }
 
