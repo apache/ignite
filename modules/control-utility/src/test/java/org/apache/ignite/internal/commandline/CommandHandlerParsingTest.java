@@ -428,8 +428,8 @@ public class CommandHandlerParsingTest {
 
             // SET_STATE command has mandatory argument used in confirmation message.
             CommandInvoker<?> cmd = cmdL.getClass() != SetStateCommand.class
-                ? new CommandInvoker<>(cmdL, null)
-                : new CommandInvoker<>(parseArgs(asList(cmdText(cmdL), "ACTIVE")).command(), null);
+                ? new CommandInvoker<>(cmdL, null, null)
+                : new CommandInvoker<>(parseArgs(asList(cmdText(cmdL), "ACTIVE")).command(), null, null);
 
             if (cmd.confirmationPrompt() == null)
                 return;

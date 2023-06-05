@@ -83,28 +83,31 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  */
 public class CommandInvoker<A extends IgniteDataTransferObject> {
     /** Command to execute. */
-    private Command<A, ?> cmd;
+    private final Command<A, ?> cmd;
 
     /** Parsed argument. */
-    private A arg;
+    private final A arg;
+
+    /** Client configuration. */
+    private GridClientConfiguration clientCfg;
 
     /** @param cmd Command to execute. */
-    public CommandInvoker(Command<A, ?> cmd, A arg) {
+    public CommandInvoker(Command<A, ?> cmd, A arg, GridClientConfiguration clientCfg) {
         this.cmd = cmd;
         this.arg = arg;
+        this.clientCfg = clientCfg;
     }
 
     /**
      * Actual command execution with verbose mode if needed.
      * Implement it if your command supports verbose mode.
      *
-     * @param clientCfg Thin client configuration if connection to cluster is necessary.
      * @param logger Logger to use.
      * @param verbose Use verbose mode or not
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    public <R> R invoke(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
+    public <R> R invoke(IgniteLogger logger, boolean verbose) throws Exception {
         try (GridClient client = startClient(clientCfg)) {
             String deprecationMsg = cmd.deprecationMessage(arg);
 
@@ -118,30 +121,36 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
             else if (cmd instanceof ComputeCommand) {
                 GridClientCompute compute = client.compute();
 
-                Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
+                Map<UUID, GridClientNode> nodes = compute.nodes().stream()
                     .collect(toMap(GridClientNode::nodeId, n -> n));
 
                 ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-                Collection<UUID> nodeIds = commandNodes(
-                    cmd,
-                    arg,
-                    clusterNodes.values()
+                Collection<UUID> cmdNodes = cmd.nodes(
+                    nodes.values()
                         .stream()
                         .collect(toMap(GridClientNode::nodeId, n -> new T3<>(n.isClient(), n.consistentId(), n.order()))),
-                    defaultNode(client, clientCfg).nodeId()
+                    arg
                 );
 
+                if (cmdNodes == null)
+                    cmdNodes = singleton(defaultNode(client, clientCfg).nodeId());
+
+                for (UUID id : cmdNodes) {
+                    if (!nodes.containsKey(id))
+                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
+                }
+
                 Collection<GridClientNode> connectable = F.viewReadOnly(
-                    nodeIds,
-                    clusterNodes::get,
-                    id -> clusterNodes.get(id).connectable()
+                    cmdNodes,
+                    nodes::get,
+                    id -> nodes.get(id).connectable()
                 );
 
                 if (!F.isEmpty(connectable))
                     compute = compute.projection(connectable);
 
-                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(nodeIds, arg, false));
+                res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(cmdNodes, arg, false));
 
                 cmd.printResult(arg, res, logger::info);
             }
@@ -156,13 +165,10 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
 
             throw e;
         }
-        finally {
-            state(null, null);
-        }
     }
 
     /** */
-    public boolean prepare(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    public boolean prepare(IgniteLogger logger) throws Exception {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
@@ -180,13 +186,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     }
 
     /** */
-    private void state(Command<A, ?> cmd, A arg) {
-        this.cmd = cmd;
-        this.arg = arg;
-    }
-
-    /** */
-    public void usage(IgniteLogger logger) {
+    public static void usage(Command<?, ?> cmd, IgniteLogger logger) {
         usage(cmd, Collections.emptyList(), logger);
     }
 
@@ -197,7 +197,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      * @param parents Collection of parent commands.
      * @param logger Logger to print help to.
      */
-    private void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
+    private static void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
         if (cmd instanceof LocalCommand
             || cmd instanceof ComputeCommand
             || cmd instanceof HelpCommand
@@ -278,7 +278,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      * @param parents Collection of parent commands.
      * @param logger Logger to print help to.
      */
-    private void printExample(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
+    private static void printExample(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
         logger.info(INDENT + cmd.description() + ":");
 
         StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
@@ -360,43 +360,13 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
         logger.info(bldr.toString());
     }
 
-    /**
-     * @param cmd Command.
-     * @param arg Command argument.
-     * @param nodes Cluster nodes.
-     * @param dflt Default node.
-     * @param <A> Argument type.
-     * @return Nodes to execute command on.
-     */
-    protected <A extends IgniteDataTransferObject, R> Collection<UUID> commandNodes(
-        ComputeCommand<A, ?> cmd,
-        A arg,
-        Map<UUID, T3<Boolean, Object, Long>> nodes,
-        UUID dflt
-    ) {
-        Collection<UUID> nodeIds = cmd.nodes(nodes, arg);
-
-        if (nodeIds == null)
-            return singleton(dflt);
-
-        for (UUID id : nodeIds) {
-            if (!nodes.containsKey(id))
-                throw new IllegalArgumentException("Node with id=" + id + " not found.");
-        }
-
-        return nodeIds;
-    }
-
     /** */
-    public <R> R invokeBeforeNodeStart(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    public <R> R invokeBeforeNodeStart(IgniteLogger logger) throws Exception {
         try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
             return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, logger::info);
         }
         catch (GridClientDisconnectedException e) {
             throw new GridClientException(e.getCause());
-        }
-        finally {
-            state(null, null);
         }
     }
 
@@ -542,5 +512,15 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
             throw new GridClientDisconnectedException("Connectable node not found", null);
 
         return compute.balancer().balancedNode(nodes);
+    }
+
+    /** */
+    public void clientConfiguration(GridClientConfiguration clientCfg) {
+        this.clientCfg = clientCfg;
+    }
+
+    /** */
+    public GridClientConfiguration clientConfiguration() {
+        return clientCfg;
     }
 }

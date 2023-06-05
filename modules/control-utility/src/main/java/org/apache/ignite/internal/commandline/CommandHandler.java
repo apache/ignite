@@ -241,11 +241,9 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs);
 
-            CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg());
-
             commandName = toFormattedCommandName(args.command().getClass()).toUpperCase();
 
-            GridClientConfiguration clientCfg = getClientConfiguration(args);
+            CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args));
 
             int tryConnectMaxCount = 3;
 
@@ -255,7 +253,7 @@ public class CommandHandler {
 
             while (true) {
                 try {
-                    if (!invoker.prepare(clientCfg, logger))
+                    if (!invoker.prepare(logger))
                         return EXIT_CODE_OK;
 
                     if (!args.autoConfirmation()) {
@@ -273,9 +271,9 @@ public class CommandHandler {
                     if (args.command() instanceof HelpCommand)
                         printUsage(logger, args.command());
                     else if (args.command() instanceof BeforeNodeStartCommand)
-                        lastOperationRes = invoker.invokeBeforeNodeStart(clientCfg, logger);
+                        lastOperationRes = invoker.invokeBeforeNodeStart(logger);
                     else
-                        lastOperationRes = invoker.invoke(clientCfg, logger, args.verbose());
+                        lastOperationRes = invoker.invoke(logger, args.verbose());
 
                     break;
                 }
@@ -298,11 +296,11 @@ public class CommandHandler {
                     if (credentialsRequested)
                         tryConnectMaxCount--;
 
-                    String user = retrieveUserName(args, clientCfg);
-
-                    String pwd = new String(requestPasswordFromConsole("password: "));
-
-                    clientCfg = getClientConfiguration(user, pwd, args);
+                    invoker.clientConfiguration(getClientConfiguration(
+                        retrieveUserName(args, invoker.clientConfiguration()),
+                        new String(requestPasswordFromConsole("password: ")),
+                        args
+                    ));
 
                     credentialsRequested = true;
                 }
@@ -783,7 +781,7 @@ public class CommandHandler {
         if (cmd instanceof CacheCommand || cmd instanceof CacheCommand.CacheHelpCommand)
             printCacheHelpHeader(logger);
 
-        new CommandInvoker<>(cmd, null).usage(logger);
+        CommandInvoker.usage(cmd, logger);
 
         if (cmd instanceof CacheCommand || cmd instanceof CacheCommand.CacheHelpCommand)
             logger.info("");
