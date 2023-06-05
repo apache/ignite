@@ -20,6 +20,8 @@ package org.apache.ignite.internal.commandline;
 import java.util.Map;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
+import org.apache.ignite.internal.management.api.Command;
+
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_HOST;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_KEYSTORE;
@@ -68,7 +70,7 @@ public class ConnectionAndSslParameters {
      * @param command Command.
      */
     public ConnectionAndSslParameters(
-        DeclarativeCommandAdapter command,
+        DeclarativeCommandAdapter<?> command,
         Map<String, CLIArgument<?>> args,
         Map<String, Object> vals
     ) {
@@ -90,8 +92,18 @@ public class ConnectionAndSslParameters {
     /**
      * @return High-level command which were defined by user to run.
      */
-    public DeclarativeCommandAdapter<?> command() {
+    public Command<?, ?> command() {
+        return command.command();
+    }
+
+    /** */
+    public DeclarativeCommandAdapter<?> declarativeCmd() {
         return command;
+    }
+
+    /** */
+    public <T> T commandArg() {
+        return (T)command.arg();
     }
 
     /**

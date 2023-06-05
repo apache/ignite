@@ -31,8 +31,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
@@ -54,7 +56,7 @@ public class CommonArgParser {
     private final IgniteLogger logger;
 
     /** */
-    private final Map<String, DeclarativeCommandAdapter<?>> cmds;
+    private final Map<String, Command<?, ?>> cmds;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -151,7 +153,7 @@ public class CommonArgParser {
      * @param logger Logger.
      * @param cmds Supported commands.
      */
-    public CommonArgParser(IgniteLogger logger, Map<String, DeclarativeCommandAdapter<?>> cmds) {
+    public CommonArgParser(IgniteLogger logger, Map<String, Command<?, ?>> cmds) {
         this.logger = logger;
         this.cmds = cmds;
 
@@ -220,7 +222,7 @@ public class CommonArgParser {
         while (iter.hasNext()) {
             String str = iter.next().toLowerCase();
 
-            DeclarativeCommandAdapter<?> cmd = cmds.get(str);
+            DeclarativeCommandAdapter<?> cmd = new DeclarativeCommandAdapter<>(cmds.get(str));
 
             if (cmd != null) {
                 if (command != null)

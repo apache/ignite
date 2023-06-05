@@ -158,7 +158,7 @@ public class CommandHandlerParsingTest {
                 Integer.toString(expectedCheckThrough)
             ));
 
-            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)args.command().arg();
+            CacheValidateIndexesCommandArg arg = args.commandArg();
 
             assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
             assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, arg.checkFirst());
@@ -180,7 +180,7 @@ public class CommandHandlerParsingTest {
                     Integer.toString(expectedParam)
                 ));
 
-            CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)args.command().arg();
+            CacheValidateIndexesCommandArg arg = args.commandArg();
 
             assertNull("caches weren't specified, null value expected", arg.caches());
             assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
@@ -223,7 +223,7 @@ public class CommandHandlerParsingTest {
         for (List<String> list : lists) {
             ConnectionAndSslParameters args = parseArgs(list);
 
-            CacheFindGarbageCommandArg arg = (CacheFindGarbageCommandArg)args.command().arg();
+            CacheFindGarbageCommandArg arg = args.commandArg();
 
             if (list.contains(nodeId))
                 assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0].toString());
@@ -342,7 +342,7 @@ public class CommandHandlerParsingTest {
             assertArrayEquals("testTruststorePassword".toCharArray(), args.sslTrustStorePassword());
             assertEquals("testTruststoreType", args.sslTrustStoreType());
 
-            assertEquals(cmd.getClass(), args.command().command().getClass());
+            assertEquals(cmd.getClass(), args.command().getClass());
         });
     }
 
@@ -364,7 +364,7 @@ public class CommandHandlerParsingTest {
 
             assertEquals("testUser", args.userName());
             assertEquals("testPass", args.password());
-            assertEquals(cmd.getClass(), args.command().command().getClass());
+            assertEquals(cmd.getClass(), args.command().getClass());
         });
     }
 
@@ -375,12 +375,9 @@ public class CommandHandlerParsingTest {
     public void testParseAndValidateWalActions() {
         ConnectionAndSslParameters args = parseArgs(asList(WAL, WAL_PRINT));
 
-        DeclarativeCommandAdapter<WalDeleteCommandArg> command =
-            (DeclarativeCommandAdapter<WalDeleteCommandArg>)args.command();
+        assertEquals(WalCommand.class, args.command().getClass());
 
-        assertEquals(WalCommand.class, command.command().getClass());
-
-        WalDeleteCommandArg arg = command.arg();
+        WalDeleteCommandArg arg = args.commandArg();
 
         assertTrue(arg instanceof WalPrintCommandArg);
 
@@ -388,7 +385,7 @@ public class CommandHandlerParsingTest {
 
         args = parseArgs(asList(WAL, WAL_DELETE, nodes));
 
-        arg = (WalDeleteCommandArg)args.command().arg();
+        arg = args.commandArg();
 
         assertFalse(arg instanceof WalPrintCommandArg);
 
@@ -408,16 +405,16 @@ public class CommandHandlerParsingTest {
     public void testParseShutdownPolicyParameters() {
         ConnectionAndSslParameters args = parseArgs(asList(SHUTDOWN_POLICY));
 
-        assertEquals(ShutdownPolicyCommand.class, args.command().command().getClass());
+        assertEquals(ShutdownPolicyCommand.class, args.command().getClass());
 
-        assertNull(((ShutdownPolicyCommandArg)args.command().arg()).shutdownPolicy());
+        assertNull(((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
 
         for (ShutdownPolicy policy : ShutdownPolicy.values()) {
             args = parseArgs(asList(SHUTDOWN_POLICY, String.valueOf(policy)));
 
-            assertEquals(ShutdownPolicyCommand.class, args.command().command().getClass());
+            assertEquals(ShutdownPolicyCommand.class, args.command().getClass());
 
-            assertSame(policy, ((ShutdownPolicyCommandArg)args.command().arg()).shutdownPolicy());
+            assertSame(policy, ((ShutdownPolicyCommandArg)args.commandArg()).shutdownPolicy());
         }
     }
 
@@ -431,8 +428,8 @@ public class CommandHandlerParsingTest {
 
             // SET_STATE command has mandatory argument used in confirmation message.
             DeclarativeCommandAdapter<?> cmd = cmdL.getClass() != SetStateCommand.class
-                ? new DeclarativeCommandAdapter(cmdL)
-                : parseArgs(asList(cmdText(cmdL), "ACTIVE")).command();
+                ? new DeclarativeCommandAdapter<>(cmdL)
+                : parseArgs(asList(cmdText(cmdL), "ACTIVE")).declarativeCmd();
 
             if (cmd.confirmationPrompt() == null)
                 return;
@@ -467,7 +464,7 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    ClusterState argState = (((SetStateCommandArg)args.command().arg())).state();
+                    ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
 
                     assertEquals(newState, argState.toString());
                 }
@@ -477,7 +474,7 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    ClusterState argState = (((SetStateCommandArg)args.command().arg())).state();
+                    ClusterState argState = (((SetStateCommandArg)args.commandArg())).state();
 
                     assertEquals(newState, argState.toString());
                 }
@@ -488,15 +485,14 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                    BaselineAddCommandArg arg = (BaselineAddCommandArg)args.command().arg();
-                    Command<?, ?> cmd0 = args.command().command();
+                    BaselineAddCommandArg arg = args.commandArg();
 
                     if (baselineAct.equals("add"))
-                        assertEquals(BaselineAddCommand.class, cmd0.getClass());
+                        assertEquals(BaselineAddCommand.class, args.command().getClass());
                     else if (baselineAct.equals("remove"))
-                        assertEquals(BaselineRemoveCommand.class, cmd0.getClass());
+                        assertEquals(BaselineRemoveCommand.class, args.command().getClass());
                     else if (baselineAct.equals("set"))
-                        assertEquals(BaselineSetCommand.class, cmd0.getClass());
+                        assertEquals(BaselineSetCommand.class, args.command().getClass());
 
                     assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(Arrays.asList(arg.consistentIDs())));
                 }
@@ -506,7 +502,7 @@ public class CommandHandlerParsingTest {
 
                 checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
-                TxCommandArg txTaskArg = (TxCommandArg)args.command().arg();
+                TxCommandArg txTaskArg = (TxCommandArg)args.commandArg();
 
                 assertEquals("xid1", txTaskArg.xid());
                 assertEquals(10_000, txTaskArg.minDuration().longValue());
@@ -539,7 +535,7 @@ public class CommandHandlerParsingTest {
         ConnectionAndSslParameters args,
         boolean autoConfirm
     ) {
-        assertEquals(cmd.getClass(), args.command().command().getClass());
+        assertEquals(cmd.getClass(), args.command().getClass());
         assertEquals(DFLT_HOST, args.host());
         assertEquals(DFLT_PORT, args.port());
         assertEquals(autoConfirm, args.autoConfirmation());
@@ -561,14 +557,14 @@ public class CommandHandlerParsingTest {
 
             ConnectionAndSslParameters args = parseArgs(asList(name));
 
-            assertEquals(cmd.getClass(), args.command().command().getClass());
+            assertEquals(cmd.getClass(), args.command().getClass());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
             args = parseArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
                 "--ping-timeout", "40000", name));
 
-            assertEquals(cmd.getClass(), args.command().command().getClass());
+            assertEquals(cmd.getClass(), args.command().getClass());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
             assertEquals(5000, args.pingInterval());
@@ -599,7 +595,7 @@ public class CommandHandlerParsingTest {
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
-        TxCommandArg arg = (TxCommandArg)args.command().arg();
+        TxCommandArg arg = args.commandArg();
 
         assertEquals(Long.valueOf(120 * 1000L), arg.minDuration());
         assertEquals(Integer.valueOf(10), arg.minSize());
@@ -611,7 +607,7 @@ public class CommandHandlerParsingTest {
         args = parseArgs(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
             "--clients"));
 
-        arg = (TxCommandArg)args.command().arg();
+        arg = args.commandArg();
 
         assertEquals(Long.valueOf(130 * 1000L), arg.minDuration());
         assertEquals(Integer.valueOf(1), arg.minSize());
@@ -622,7 +618,7 @@ public class CommandHandlerParsingTest {
 
         args = parseArgs(asList("--tx", "--nodes", "1,2,3"));
 
-        arg = (TxCommandArg)args.command().arg();
+        arg = args.commandArg();
 
         assertFalse(arg.servers());
         assertFalse(arg.clients());
@@ -1035,12 +1031,10 @@ public class CommandHandlerParsingTest {
         params1.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
         params1.put("bar", Collections.singleton("foo"));
 
-        DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg> cacheCommand1 =
-            (DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg>)
-                parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
-                    "--cache-names", buildScheduleIndexRebuildCacheNames(params1))).command();
+        CacheScheduleIndexesRebuildCommandArg arg1 =
+            parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
+                "--cache-names", buildScheduleIndexRebuildCacheNames(params1))).commandArg();
 
-        CacheScheduleIndexesRebuildCommandArg arg1 = cacheCommand1.arg();
         assertEquals(normalizeScheduleIndexRebuildCacheNamesMap(params1), arg1.cacheToIndexes());
         assertEquals(null, arg1.groupNames());
 
@@ -1050,15 +1044,13 @@ public class CommandHandlerParsingTest {
         params2.put("foocache", new HashSet<>(Arrays.asList("idx", "bar")));
         params2.put("bar", Collections.singleton("foo"));
 
-        DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg> cacheCommand2 =
-            (DeclarativeCommandAdapter<CacheScheduleIndexesRebuildCommandArg>)
-                parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
-                    "--cache-names", buildScheduleIndexRebuildCacheNames(params2), "--group-names", "foocache,someGrp")
-                ).command();
-
         Map<String, Set<String>> normalized = normalizeScheduleIndexRebuildCacheNamesMap(params2);
 
-        CacheScheduleIndexesRebuildCommandArg arg2 = cacheCommand2.arg();
+        CacheScheduleIndexesRebuildCommandArg arg2 =
+            parseArgs(asList(CACHE, "schedule_indexes_rebuild", "--node-id", nodeId.toString(),
+                "--cache-names", buildScheduleIndexRebuildCacheNames(params2), "--group-names", "foocache,someGrp")
+            ).commandArg();
+
         assertEquals(normalized, arg2.cacheToIndexes());
         assertArrayEquals(new String[]{"foocache", "someGrp"}, arg2.groupNames());
     }
@@ -1200,11 +1192,11 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        Map<String, DeclarativeCommandAdapter<?>> cmds = new HashMap<>();
+        Map<String, Command<?, ?>> cmds = new HashMap<>();
 
         new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
             cmdText(e.getValue()),
-            new DeclarativeCommandAdapter<>(e.getValue())
+            e.getValue()
         ));
 
         return new CommonArgParser(setupTestLogger(), cmds).

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
@@ -119,7 +120,7 @@ public class CommandHandler {
     private final IgniteLogger logger;
 
     /** Supported commands. */
-    private final Map<String, DeclarativeCommandAdapter<?>> cmds;
+    private final Map<String, Command<?, ?>> cmds;
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -174,12 +175,9 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        Map<String, DeclarativeCommandAdapter<?>> cmds = new LinkedHashMap<>();
+        Map<String, Command<?, ?>> cmds = new LinkedHashMap<>();
 
-        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
-            cmdText(e.getValue()),
-            new DeclarativeCommandAdapter<>(e.getValue())
-        ));
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(cmdText(e.getValue()), e.getValue()));
 
         if (!F.isEmpty(it)) {
             for (CommandsProvider provider : it) {
@@ -198,7 +196,7 @@ public class CommandHandler {
                             "registered " + cmds.get(k));
                     }
                     else
-                        cmds.put(k, new DeclarativeCommandAdapter<>(cmd));
+                        cmds.put(k, cmd);
                 });
             }
         }
@@ -238,7 +236,7 @@ public class CommandHandler {
 
             ConnectionAndSslParameters args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs.iterator());
 
-            DeclarativeCommandAdapter<?> command = args.command();
+            DeclarativeCommandAdapter<?> command = args.declarativeCmd();
             commandName = command.name();
 
             GridClientConfiguration clientCfg = getClientConfiguration(args);
@@ -730,7 +728,7 @@ public class CommandHandler {
 
         cmds.values().forEach(c -> {
             if (experimentalEnabled || !c.experimental()) {
-                if (Objects.equals(c.command().getClass(), CacheCommand.class)) {
+                if (Objects.equals(c.getClass(), CacheCommand.class)) {
                     logger.info("");
                     logger.info("View caches information in a cluster. For more details type:");
                     logger.info(DOUBLE_INDENT + UTILITY_NAME + " --cache help");
@@ -738,7 +736,7 @@ public class CommandHandler {
                     return;
                 }
 
-                c.printUsage(logger);
+                new DeclarativeCommandAdapter<>(c).printUsage(logger);
             }
         });
 
