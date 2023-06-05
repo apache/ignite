@@ -97,6 +97,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
@@ -190,17 +191,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
             new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage",
-            ignite(0).localNode().id().toString()));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            ignite(0).localNode().id().toString(), "--port", "11212"));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
-        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage",
-            "groupGarbage"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            "groupGarbage", "--port", "11212"));
 
         assertContains(log, testOut.toString(), "garbage not found");
     }

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
 import org.junit.Test;
+
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME_SECOND;

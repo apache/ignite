@@ -34,6 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
+import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 
 /**
  * Test for {@link CacheMetricsCommand} command.
@@ -205,7 +206,7 @@ public class CacheMetricsCommandTest extends GridCommandHandlerAbstractTest {
      * @param args Command arguments.
      */
     private void exec(int expExitCode, String... args) {
-        String[] fullArgs = F.concat(new String[] {"--cache", "metrics"}, args);
+        String[] fullArgs = F.concat(new String[] {CACHE, "metrics"}, args);
 
         int exitCode = execute(fullArgs);
         assertEquals("Unexpected exit code", expExitCode, exitCode);

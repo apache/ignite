@@ -405,7 +405,7 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
      * @param checkSizes Add argument "--check-sizes".
      */
     private void execVIWithNoErrCheck(String cacheName, boolean checkSizes) {
-        List<String> cmdWithArgs = new ArrayList<>(asList("--cache", VALIDATE_INDEXES, cacheName));
+        List<String> cmdWithArgs = new ArrayList<>(asList(CACHE, VALIDATE_INDEXES, cacheName));
 
         if (checkSizes)
             cmdWithArgs.add(CHECK_SIZES);
