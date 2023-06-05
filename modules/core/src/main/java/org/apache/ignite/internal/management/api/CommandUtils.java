@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.management.AbstractCommandInvoker.visitCommandParams;
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
@@ -374,6 +377,32 @@ public class CommandUtils {
         }
 
         return true;
+    }
+
+    /**
+     * @param cmd Command.
+     * @return {@code True} if command has described parameters.
+     */
+    public static boolean hasDescribedParameters(Command<?, ?> cmd) {
+        AtomicBoolean res = new AtomicBoolean();
+
+        visitCommandParams(
+            cmd.argClass(),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ))
+        );
+
+        return res.get();
     }
 
     /**
