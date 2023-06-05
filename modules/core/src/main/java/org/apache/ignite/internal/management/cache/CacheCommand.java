@@ -40,7 +40,8 @@ public class CacheCommand extends CommandRegistryImpl {
             new CacheMetricsCommand(),
             new CacheIndexesRebuildStatusCommand(),
             new CacheIndexesForceRebuildCommand(),
-            new CacheScheduleIndexesRebuildCommand()
+            new CacheScheduleIndexesRebuildCommand(),
+            new CacheScanCommand()
         );
     }
 }
