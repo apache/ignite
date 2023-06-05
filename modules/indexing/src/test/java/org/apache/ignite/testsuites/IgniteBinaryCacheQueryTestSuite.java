@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldN
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryBuildValueTest;
 import org.apache.ignite.internal.processors.cache.DdlTransactionSelfTest;
+import org.apache.ignite.internal.processors.cache.DuplicateIndexCreationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -199,6 +200,7 @@ import org.junit.runners.Suite;
     SqlResultSetMetaSelfTest.class,
 
     BasicIndexTest.class,
+    DuplicateIndexCreationTest.class,
     ErroneousQueryEntityConfigurationTest.class,
     ArrayIndexTest.class,
     BasicIndexMultinodeTest.class,
