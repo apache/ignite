@@ -60,7 +60,7 @@ public class VisorViewCacheTask extends VisorOneNodeTask<CacheListCommandArg, Vi
         /** {@inheritDoc} */
         @Override protected VisorViewCacheTaskResult run(@Nullable CacheListCommandArg arg) throws IgniteException {
             try {
-                VisorViewCacheCmd cmd = arg.groups()
+                VisorViewCacheCmd cmd = (arg == null || arg.groups())
                     ? GROUPS
                     : (arg.seq() ? SEQ : CACHES);
 

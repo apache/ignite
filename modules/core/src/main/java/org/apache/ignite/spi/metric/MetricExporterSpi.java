@@ -60,6 +60,7 @@ public interface MetricExporterSpi extends IgniteSpi {
      * Metric registry that not satisfy {@code filter} shouldn't be exported.
      *
      * @param filter Filter.
+     * @see RegexpMetricFilter
      */
     public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter);
 }
