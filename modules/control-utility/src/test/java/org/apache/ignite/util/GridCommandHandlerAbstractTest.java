@@ -67,7 +67,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.delete;

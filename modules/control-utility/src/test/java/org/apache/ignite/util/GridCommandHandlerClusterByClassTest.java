@@ -191,17 +191,17 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
             new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage"));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
-            ignite(0).localNode().id().toString(), "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage",
+            ignite(0).localNode().id().toString()));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
-            "groupGarbage", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--port", "11212", "--cache", "find_garbage",
+            "groupGarbage"));
 
         assertContains(log, testOut.toString(), "garbage not found");
     }

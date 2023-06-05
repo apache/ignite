@@ -288,7 +288,7 @@ public class CommandHandler {
                     logger.info("Arguments: " + argumentsToString(rawArgs));
                     logger.info(U.DELIM);
 
-                    if (command.command() instanceof HelpCommand)
+                    if (command.isHelp())
                         printUsage(logger, command.command());
                     else
                         lastOperationRes = command.execute(clientCfg, logger, args.verbose());

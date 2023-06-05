@@ -366,6 +366,11 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         return baseCmd;
     }
 
+    /** */
+    public boolean isHelp() {
+        return cmd instanceof HelpCommand;
+    }
+
     /**
      * Method to create thin client for communication with cluster.
      *
