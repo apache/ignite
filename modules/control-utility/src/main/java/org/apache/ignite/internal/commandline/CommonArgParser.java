@@ -258,7 +258,7 @@ public class CommonArgParser {
 
         allNamedArgs.addAll(cmdArgs.get1());
 
-        CLIArgumentParser parser = new CLIArgumentParser(allNamedArgs, cmdArgs.get2());
+        CLIArgumentParser parser = new CLIArgumentParser(cmdArgs.get2(), allNamedArgs);
 
         parser.parse(args.iterator());
 
