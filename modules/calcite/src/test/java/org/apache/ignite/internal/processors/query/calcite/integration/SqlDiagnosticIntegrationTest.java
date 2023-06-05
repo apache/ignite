@@ -21,22 +21,32 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.SqlQueryExecutionEvent;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.RunningQuery;
+import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -223,5 +233,89 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         // 1 event fired by insert (number of rows inserted) + 2 events (1 per row selected) fired by the second query.
         assertEquals(3, evtsQryRead.get(0));
         assertEquals(0, evtsQryRead.get(1));
+    }
+
+    /** */
+    @Test
+    public void testSensitiveInformationHiding() throws Exception {
+        cleanPerformanceStatisticsDir();
+        startCollectStatistics();
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>("func_cache")
+            .setSqlFunctionClasses(FunctionsLibrary.class)
+            .setSqlSchema("PUBLIC")
+        );
+
+        QueryUtils.INCLUDE_SENSITIVE = false;
+
+        try {
+            // Check the same query twice, the first time - with parsing and planning,
+            // the second time from the parsers cache.
+            for (int i = 0; i < 2; i++) {
+                FunctionsLibrary.latch = new CountDownLatch(1);
+
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                    List<List<?>> res = sql(grid(0), "SELECT * FROM (VALUES('sensitive')) t(v) " +
+                        "WHERE v = 'sensitive' and waitLatch()");
+
+                    assertEquals(1, res.size());
+                    assertEquals(1, res.get(0).size());
+                    assertEquals("sensitive", res.get(0).get(0));
+                });
+
+                try {
+                    QueryRegistry qreg = queryProcessor(grid(0)).queryRegistry();
+                    assertTrue(GridTestUtils.waitForCondition(() -> qreg.runningQueries().size() == 1, 1000L));
+                    RunningQuery qry = F.first(qreg.runningQueries());
+                    assertFalse(qry.toString().contains("sensitive"));
+                }
+                finally {
+                    FunctionsLibrary.latch.countDown();
+                }
+
+                fut.get();
+            }
+
+            AtomicInteger qryCnt = new AtomicInteger();
+
+            stopCollectStatisticsAndRead(new AbstractPerformanceStatisticsTest.TestHandler() {
+                @Override public void query(
+                    UUID nodeId,
+                    GridCacheQueryType type,
+                    String text,
+                    long id,
+                    long qryStartTime,
+                    long duration,
+                    boolean success
+                ) {
+                    qryCnt.incrementAndGet();
+                    assertFalse(text.contains("sensitive"));
+                }
+            });
+
+            assertEquals(2, qryCnt.get());
+        }
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE = true;
+        }
+    }
+
+    /** */
+    public static class FunctionsLibrary {
+        /** */
+        static volatile CountDownLatch latch;
+
+        /** */
+        @QuerySqlFunction
+        public static boolean waitLatch() {
+            try {
+                latch.await(1000L, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return true;
+        }
     }
 }
