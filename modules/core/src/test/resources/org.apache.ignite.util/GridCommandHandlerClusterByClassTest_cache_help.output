@@ -14,8 +14,14 @@ Arguments: --cache help --yes
 
   Subcommands:
 
-  --cache idle_verify [--dump] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL] [cacheName1,...,cacheNameN]
-    Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps.
+  Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps:
+    control.(sh|bat) --cache idle_verify [cacheName1,...,cacheNameN] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL]
+
+    Parameters:
+      --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
+
+  Calculate partition hash and print into standard output:
+    control.(sh|bat) --cache idle_verify --dump [cacheName1,...,cacheNameN] [--skip-zeros] [--check-crc] [--exclude-caches cacheName1,...,cacheNameN] [--cache-filter DEFAULT|SYSTEM|PERSISTENT|NOT_PERSISTENT|USER|ALL]
 
     Parameters:
       --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.

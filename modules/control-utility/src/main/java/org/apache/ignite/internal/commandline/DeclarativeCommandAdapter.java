@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -395,7 +396,8 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
         StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
 
         AtomicBoolean prefixInclude = new AtomicBoolean(true);
-        StringBuilder parentPrefix = new StringBuilder();
+
+        AtomicReference<String> parentPrefix = new AtomicReference<>();
 
         Consumer<Object> namePrinter = cmd0 -> {
             bldr.append(' ');
@@ -405,16 +407,18 @@ public class DeclarativeCommandAdapter<A extends IgniteDataTransferObject> exten
 
             String cmdName = toFormattedCommandName(cmd0.getClass());
 
-            if (parentPrefix.length() > 0) {
-                cmdName = cmdName.replaceFirst(parentPrefix.toString(), "");
+            String parentPrefix0 = parentPrefix.get();
+
+            parentPrefix.set(cmdName);
+
+            if (!F.isEmpty(parentPrefix0)) {
+                cmdName = cmdName.replaceFirst(parentPrefix0 + CMD_WORDS_DELIM, "");
 
                 if (!prefixInclude.get())
                     cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
             }
 
             bldr.append(cmdName);
-
-            parentPrefix.append(cmdName).append(CMD_WORDS_DELIM);
 
             if (cmd0 instanceof CommandsRegistry)
                 prefixInclude.set(!(cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)));

@@ -50,8 +50,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.IdleVerify;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -67,7 +67,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.delete;
@@ -180,7 +179,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         File logDir = JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory());
 
         // Clean idle_verify log files.
-        for (File f : logDir.listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : logDir.listFiles(n -> n.getName().startsWith(CacheIdleVerifyCommand.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
         GridClientFactory.stopAll(false);
