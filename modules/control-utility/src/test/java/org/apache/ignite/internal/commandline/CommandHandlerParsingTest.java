@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.ChangeTagCommand;
 import org.apache.ignite.internal.management.DeactivateCommand;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
@@ -43,7 +44,11 @@ import org.apache.ignite.internal.management.ShutdownPolicyCommand;
 import org.apache.ignite.internal.management.ShutdownPolicyCommandArg;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.WarmUpCommand;
+import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommand;
 import org.apache.ignite.internal.management.baseline.BaselineAddCommandArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
@@ -424,17 +429,29 @@ public class CommandHandlerParsingTest {
      * Tests that the auto confirmation flag was correctly parsed.
      */
     @Test
-    public void testParseAutoConfirmationFlag() {
+    public <A extends IgniteDataTransferObject> void testParseAutoConfirmationFlag() {
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            Command<?, ?> cmdL = e.getValue();
+            Command<A, ?> cmdL = (Command<A, ?>)e.getValue();
 
             // SET_STATE command has mandatory argument used in confirmation message.
-            CommandInvoker<?> cmd = cmdL.getClass() != SetStateCommand.class
+            CommandInvoker<A> cmd = cmdL.getClass() != SetStateCommand.class
                 ? new CommandInvoker<>(cmdL, null, null)
                 : new CommandInvoker<>(parseArgs(asList(cmdText(cmdL), "ACTIVE")).command(), null, null);
 
-            if (cmd.confirmationPrompt() == null)
+            if (!(cmd instanceof ComputeCommand)
+                && !(cmd instanceof LocalCommand)
+                && !(cmd instanceof BeforeNodeStartCommand)
+                && !(cmd instanceof HelpCommand)) {
                 return;
+            }
+
+            try {
+                if (cmdL.confirmationPrompt(cmdL.argClass().newInstance()) == null)
+                    return;
+            }
+            catch (InstantiationException | IllegalAccessException ex) {
+                throw new IgniteException(ex);
+            }
 
             ConnectionAndSslParameters args;
 
