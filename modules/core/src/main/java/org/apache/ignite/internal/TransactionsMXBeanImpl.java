@@ -67,7 +67,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
                 arg.kill(true);
 
             arg.limit(limit);
-            arg.minDuration(minDuration == null ? null : minDuration * 1000);
+            arg.minDuration(minDuration);
             arg.minSize(minSize);
 
             if (prj != null) {

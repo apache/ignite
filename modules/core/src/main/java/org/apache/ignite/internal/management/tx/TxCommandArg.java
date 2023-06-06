@@ -121,9 +121,10 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     public void minDuration(Long minDuration) {
-        A.ensure(minDuration > 0, "--min-duration");
+        A.ensure(minDuration == null || minDuration > 0, "--min-duration");
 
-        this.minDuration = minDuration * 1000;
+        if (minDuration != null)
+            this.minDuration = minDuration * 1000;
     }
 
     /** */
@@ -133,7 +134,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     public void minSize(Integer minSize) {
-        A.ensure(minSize > 0, "--min-size");
+        A.ensure(minSize == null || minSize > 0, "--min-size");
 
         this.minSize = minSize;
     }
@@ -145,11 +146,13 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     public void label(String label) {
-        try {
-            Pattern.compile(label);
-        }
-        catch (PatternSyntaxException ignored) {
-            throw new IllegalArgumentException("Illegal regex syntax");
+        if (label != null) {
+            try {
+                Pattern.compile(label);
+            }
+            catch (PatternSyntaxException ignored) {
+                throw new IllegalArgumentException("Illegal regex syntax");
+            }
         }
 
         this.label = label;
@@ -192,7 +195,7 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     public void limit(Integer limit) {
-        A.ensure(limit > 0, "--limit");
+        A.ensure(limit == null || limit > 0, "--limit");
 
         this.limit = limit;
     }
