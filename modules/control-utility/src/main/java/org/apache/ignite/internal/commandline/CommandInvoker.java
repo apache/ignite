@@ -18,19 +18,11 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
@@ -43,40 +35,20 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
-import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.api.PreparableCommand;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
-import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
-import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
-import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
-import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
  * Adapter of new management API command for legacy {@code control.sh} execution flow.
@@ -183,181 +155,6 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      */
     public String confirmationPrompt() {
         return cmd.confirmationPrompt(arg);
-    }
-
-    /** */
-    public static void usage(Command<?, ?> cmd, IgniteLogger logger) {
-        usage(cmd, Collections.emptyList(), logger);
-    }
-
-    /**
-     * Generates usage for base command and all of its children, if any.
-     *
-     * @param cmd Base command.
-     * @param parents Collection of parent commands.
-     * @param logger Logger to print help to.
-     */
-    private static void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
-        if (cmd instanceof LocalCommand
-            || cmd instanceof ComputeCommand
-            || cmd instanceof HelpCommand
-            || cmd instanceof BeforeNodeStartCommand) {
-            logger.info("");
-
-            if (cmd.experimental())
-                logger.info(INDENT + "[EXPERIMENTAL]");
-
-            printExample(cmd, parents, logger);
-
-            if (CommandUtils.hasDescribedParameters(cmd)) {
-                logger.info("");
-                logger.info(DOUBLE_INDENT + "Parameters:");
-
-                AtomicInteger maxParamLen = new AtomicInteger();
-
-                Consumer<Field> lenCalc = fld -> {
-                    maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length()));
-
-                    if (fld.isAnnotationPresent(EnumDescription.class)) {
-                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
-
-                        for (String name : enumDesc.names())
-                            maxParamLen.set(Math.max(maxParamLen.get(), name.length()));
-                    }
-                };
-
-                visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (argGrp, flds) -> flds.forEach(lenCalc));
-
-                Consumer<Field> printer = fld -> {
-                    BiConsumer<String, String> logParam = (name, description) -> {
-                        if (F.isEmpty(description))
-                            return;
-
-                        logger.info(
-                            DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
-                        );
-                    };
-
-                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
-                        logParam.accept(
-                            parameterExample(fld, false),
-                            fld.getAnnotation(Argument.class).description()
-                        );
-                    }
-                    else {
-                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
-
-                        String[] names = enumDesc.names();
-                        String[] descriptions = enumDesc.descriptions();
-
-                        for (int i = 0; i < names.length; i++)
-                            logParam.accept(names[i], descriptions[i]);
-                    }
-                };
-
-                visitCommandParams(cmd.argClass(), printer, printer, (argGrp, flds) -> {
-                    flds.stream().filter(fld -> fld.isAnnotationPresent(Positional.class)).forEach(printer);
-                    flds.stream().filter(fld -> !fld.isAnnotationPresent(Positional.class)).forEach(printer);
-                });
-            }
-        }
-
-        if (cmd instanceof CommandsRegistry) {
-            List<Command<?, ?>> parents0 = new ArrayList<>(parents);
-
-            parents0.add(cmd);
-
-            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
-        }
-    }
-
-    /**
-     * Generates and prints example of command.
-     *
-     * @param cmd Command.
-     * @param parents Collection of parent commands.
-     * @param logger Logger to print help to.
-     */
-    private static void printExample(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
-        logger.info(INDENT + cmd.description() + ":");
-
-        StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
-
-        AtomicBoolean prefixInclude = new AtomicBoolean(true);
-
-        AtomicReference<String> parentPrefix = new AtomicReference<>();
-
-        Consumer<Object> namePrinter = cmd0 -> {
-            bldr.append(' ');
-
-            if (prefixInclude.get())
-                bldr.append(PARAMETER_PREFIX);
-
-            String cmdName = toFormattedCommandName(cmd0.getClass());
-
-            String parentPrefix0 = parentPrefix.get();
-
-            parentPrefix.set(cmdName);
-
-            if (!F.isEmpty(parentPrefix0)) {
-                cmdName = cmdName.replaceFirst(parentPrefix0 + CMD_WORDS_DELIM, "");
-
-                if (!prefixInclude.get())
-                    cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
-            }
-
-            bldr.append(cmdName);
-
-            if (cmd0 instanceof CommandsRegistry)
-                prefixInclude.set(!(cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)));
-        };
-
-        parents.forEach(namePrinter);
-        namePrinter.accept(cmd);
-
-        BiConsumer<Boolean, Field> paramPrinter = (spaceReq, fld) -> {
-            if (spaceReq)
-                bldr.append(' ');
-
-            bldr.append(parameterExample(fld, true));
-        };
-
-        visitCommandParams(
-            cmd.argClass(),
-            fld -> bldr.append(' ').append(valueExample(fld)),
-            fld -> paramPrinter.accept(true, fld),
-            (argGrp, flds) -> {
-                if (argGrp.onlyOneOf()) {
-                    bldr.append(' ');
-
-                    if (argGrp.optional())
-                        bldr.append('[');
-
-                    for (int i = 0; i < flds.size(); i++) {
-                        if (i != 0)
-                            bldr.append('|');
-
-                        paramPrinter.accept(false, flds.get(i));
-                    }
-
-                    if (argGrp.optional())
-                        bldr.append(']');
-                }
-                else {
-                    flds.stream()
-                        .filter(fld -> fld.isAnnotationPresent(Positional.class))
-                        .forEach(fld -> bldr.append(' ').append(valueExample(fld)));
-                    flds.stream()
-                        .filter(fld -> !fld.isAnnotationPresent(Positional.class))
-                        .forEach(fld -> paramPrinter.accept(true, fld));
-                }
-            }
-        );
-
-        if (cmd.argClass().isAnnotationPresent(WithCliConfirmParameter.class))
-            bldr.append(' ').append(CommandUtils.asOptional(CMD_AUTO_CONFIRMATION, true));
-
-        logger.info(bldr.toString());
     }
 
     /** */

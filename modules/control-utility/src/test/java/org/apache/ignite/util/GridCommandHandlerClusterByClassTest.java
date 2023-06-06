@@ -65,8 +65,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.HelpCommand;
@@ -105,13 +105,13 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
@@ -2004,7 +2004,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /**
      * Test checks that there will be no error when executing the command with
-     * option {@link CommonArgParser#CMD_VERBOSE}.
+     * option {@link ArgumentParser#CMD_VERBOSE}.
      */
     @Test
     public void testCorrectExecCmdWithVerboseInDiffParamsOrder() {
@@ -2021,7 +2021,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /**
      * Test checks that stack trace for incorrect arguments will be output
-     * only if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     * only if {@link ArgumentParser#CMD_VERBOSE} flag is present.
      */
     @Test
     public void testErrInvalidArgumentsWithVerbose() {
@@ -2039,7 +2039,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /**
      * Test checks that stack trace for connection error will be output only
-     * if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     * if {@link ArgumentParser#CMD_VERBOSE} flag is present.
      */
     @Test
     public void testErrConnectionWithVerbose() {
@@ -2057,7 +2057,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /**
      * Test checks that stack trace for unexpected error will be output with or
-     * without {@link CommonArgParser#CMD_VERBOSE} flag.
+     * without {@link ArgumentParser#CMD_VERBOSE} flag.
      */
     @Test
     public void testErrUnexpectedWithWithoutVerbose() {

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.management.wal.WalDeleteCommandArg;
+import org.apache.ignite.internal.management.wal.WalPrintCommand;
 import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommandArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -79,14 +80,15 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.CdcCommandTest.DELETE_LOST_SEGMENT_LINKS;
@@ -319,7 +321,7 @@ public class CommandHandlerParsingTest {
             if (requireArgs(cmd.getClass()))
                 return;
 
-            assertParseArgsThrows("Expected SSL trust store path", "--truststore");
+            assertParseArgsThrows("Please specify a value for argument: --truststore", "--truststore", "--tx");
 
             ConnectionAndSslParameters args = parseArgs(asList(
                 "--keystore", "testKeystore",
@@ -333,7 +335,7 @@ public class CommandHandlerParsingTest {
                 cmdText(cmd)
             ));
 
-            assertEquals("testSSLProtocol", args.sslProtocol());
+            assertArrayEquals(new String[] {"testSSLProtocol"}, args.sslProtocol());
             assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
             assertEquals("testKeystore", args.sslKeyStorePath());
             assertArrayEquals("testKeystorePassword".toCharArray(), args.sslKeyStorePassword());
@@ -357,8 +359,8 @@ public class CommandHandlerParsingTest {
             if (requireArgs(cmd.getClass()))
                 return;
 
-            assertParseArgsThrows("Expected user name", "--user");
-            assertParseArgsThrows("Expected password", "--password");
+            assertParseArgsThrows("Please specify a value for argument: --user", "--user", "--tx");
+            assertParseArgsThrows("Please specify a value for argument: --password", "--password", "--tx");
 
             ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmdText(cmd)));
 
@@ -375,7 +377,7 @@ public class CommandHandlerParsingTest {
     public void testParseAndValidateWalActions() {
         ConnectionAndSslParameters args = parseArgs(asList(WAL, WAL_PRINT));
 
-        assertEquals(WalCommand.class, args.command().getClass());
+        assertEquals(WalPrintCommand.class, args.command().getClass());
 
         WalDeleteCommandArg arg = (WalDeleteCommandArg)args.commandArg();
 
@@ -566,13 +568,13 @@ public class CommandHandlerParsingTest {
 
             assertEquals(cmd.getClass(), args.command().getClass());
             assertEquals("test-host", args.host());
-            assertEquals("12345", args.port());
+            assertEquals(12345, args.port());
             assertEquals(5000, args.pingInterval());
             assertEquals(40000, args.pingTimeout());
 
-            assertParseArgsThrows("Invalid value for port: wrong-port", "--port", "wrong-port", name);
-            assertParseArgsThrows("Invalid value for ping interval: -10", "--ping-interval", "-10", name);
-            assertParseArgsThrows("Invalid value for ping timeout: -20", "--ping-timeout", "-20", name);
+            assertParseArgsThrows("Can't parse number 'wrong-port'", "--port", "wrong-port", name);
+            assertParseArgsThrows("Invalid value for --ping-interval: -10", "--ping-interval", "-10", name);
+            assertParseArgsThrows("Invalid value for --ping-timeout: -20", "--ping-timeout", "-20", name);
         });
     }
 
@@ -860,7 +862,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * Test checks that option {@link CommonArgParser#CMD_VERBOSE} is parsed
+     * Test checks that option {@link ArgumentParser#CMD_VERBOSE} is parsed
      * correctly and if it is not present, it takes the default value
      * {@code false}.
      */
@@ -1199,7 +1201,7 @@ public class CommandHandlerParsingTest {
             e.getValue()
         ));
 
-        return new CommonArgParser(setupTestLogger(), cmds).parseAndValidate(args);
+        return new ArgumentParser(setupTestLogger(), cmds).parseAndValidate(args);
     }
 
     /**

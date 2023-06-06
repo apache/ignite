@@ -279,7 +279,7 @@ public class CommandUtils {
      * @param <T> Value type.
      */
     public static <T> T parseVal(String val, Class<T> type) {
-        if (type.isArray()) {
+        if (type.isArray() && type != char[].class) {
             String[] vals = val.split(",");
 
             Class<?> compType = type.getComponentType();
@@ -522,6 +522,8 @@ public class CommandUtils {
                 throw new IllegalArgumentException("Can't parse value '" + val + "', expected type: " + type.getName());
             }
         }
+        else if (type == char[].class)
+            return (T)val.toCharArray();
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }

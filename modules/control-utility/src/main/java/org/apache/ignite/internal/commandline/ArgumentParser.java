@@ -41,9 +41,13 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
+import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -64,16 +68,17 @@ import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedNames;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
- * Common argument parser.
+ * Argument parser.
  * Also would parse high-level command and delegate parsing for its argument to the command.
  */
-public class CommonArgParser {
+public class ArgumentParser {
     /** */
     private final IgniteLogger logger;
 
@@ -175,17 +180,17 @@ public class CommonArgParser {
      * @param logger Logger.
      * @param cmds Supported commands.
      */
-    public CommonArgParser(IgniteLogger logger, Map<String, Command<?, ?>> cmds) {
+    public ArgumentParser(IgniteLogger logger, Map<String, Command<?, ?>> cmds) {
         this.logger = logger;
         this.cmds = cmds;
 
-        BiConsumer<String, String> securityWarn = (name, val) -> logger.info(String.format("Warning: %s is insecure. " +
-                "Whenever possible, use interactive prompt for password (just discard %s option).", val, val));
+        BiConsumer<String, ?> securityWarn = (name, val) -> logger.info(String.format("Warning: %s is insecure. " +
+                "Whenever possible, use interactive prompt for password (just discard %s option).", name, name));
 
         arg(CMD_HOST, "HOST_OR_IP", String.class, DFLT_HOST);
         arg(CMD_PORT, "PORT", Integer.class, DFLT_PORT, PORT_VALIDATOR);
         arg(CMD_USER, "USER", String.class, null);
-        arg(CMD_PASSWORD, "PASSWORD", String.class, null, securityWarn);
+        arg(CMD_PASSWORD, "PASSWORD", String.class, null, (BiConsumer<String, String>)securityWarn);
         arg(CMD_PING_INTERVAL, "PING_INTERVAL", Long.class, DFLT_PING_INTERVAL, POSITIVE_LONG);
         arg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class, DFLT_PING_TIMEOUT, POSITIVE_LONG);
         arg(CMD_VERBOSE, CMD_VERBOSE, boolean.class, false);
@@ -195,10 +200,10 @@ public class CommonArgParser {
         arg(CMD_SSL_FACTORY, "SSL_FACTORY_PATH", String.class, null);
         arg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class, SslContextFactory.DFLT_STORE_TYPE);
         arg(CMD_KEYSTORE, "KEYSTORE_PATH", String.class, null);
-        arg(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD", String.class, null, securityWarn);
+        arg(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD", char[].class, null, (BiConsumer<String, char[]>)securityWarn);
         arg(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE", String.class, SslContextFactory.DFLT_STORE_TYPE);
         arg(CMD_TRUSTSTORE, "TRUSTSTORE_PATH", String.class, null);
-        arg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", String.class, null, securityWarn);
+        arg(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD", char[].class, null, (BiConsumer<String, char[]>)securityWarn);
         arg(CMD_AUTO_CONFIRMATION, CMD_AUTO_CONFIRMATION, boolean.class, false);
         arg(
             CMD_ENABLE_EXPERIMENTAL,
@@ -254,11 +259,9 @@ public class CommonArgParser {
 
         IgniteBiTuple<List<CLIArgument<?>>, List<CLIArgument<?>>> cmdArgs = commandArguments(cmd);
 
-        List<CLIArgument<?>> allNamedArgs = new ArrayList<>(common);
+        cmdArgs.get2().addAll(common);
 
-        allNamedArgs.addAll(cmdArgs.get1());
-
-        CLIArgumentParser parser = new CLIArgumentParser(cmdArgs.get2(), allNamedArgs);
+        CLIArgumentParser parser = new CLIArgumentParser(cmdArgs.get1(), cmdArgs.get2());
 
         parser.parse(args.iterator());
 
@@ -327,13 +330,22 @@ public class CommonArgParser {
             iter.remove();
         }
 
+        if (!(cmd instanceof ComputeCommand)
+            && !(cmd instanceof LocalCommand)
+            && !(cmd instanceof BeforeNodeStartCommand)
+            && !(cmd instanceof HelpCommand)) {
+            throw new IllegalArgumentException(
+                "Command " + toFormattedCommandName(cmd.getClass()) + " can't be executed"
+            );
+        }
+
         return (Command<A, ?>)cmd;
     }
 
     /** */
     private static IgniteBiTuple<List<CLIArgument<?>>, List<CLIArgument<?>>> commandArguments(Command<?, ?> cmd) {
-        List<CLIArgument<?>> namedArgs = new ArrayList<>();
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
+        List<CLIArgument<?>> namedArgs = new ArrayList<>();
 
         BiFunction<Field, Boolean, CLIArgument<?>> toArg = (fld, optional) -> new CLIArgument<>(
             toFormattedFieldName(fld),
@@ -371,7 +383,7 @@ public class CommonArgParser {
 
         visitCommandParams(cmd.argClass(), positionalArgCb, namedArgCb, argGrpCb);
 
-        return F.t(namedArgs, positionalArgs);
+        return F.t(positionalArgs, namedArgs);
     }
 
     /**

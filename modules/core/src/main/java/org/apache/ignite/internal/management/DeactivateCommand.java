@@ -23,7 +23,6 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.PreparableCommand;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
@@ -41,7 +40,7 @@ public class DeactivateCommand implements LocalCommand<DeactivateCommandArg, NoA
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String confirmationPrompt(DeactivateCommandArg arg) {
+    @Override public String confirmationPrompt(DeactivateCommandArg arg) {
         return "Warning: the command will deactivate a cluster \"" + arg.clusterName() + "\".";
     }
 

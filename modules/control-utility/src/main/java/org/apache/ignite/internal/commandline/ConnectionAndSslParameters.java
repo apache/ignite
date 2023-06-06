@@ -22,24 +22,24 @@ import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
 
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_HOST;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_KEYSTORE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_KEYSTORE_PASSWORD;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_KEYSTORE_TYPE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_PASSWORD;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_PING_INTERVAL;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_PING_TIMEOUT;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_PORT;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_SSL_CIPHER_SUITES;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_SSL_FACTORY;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_SSL_KEY_ALGORITHM;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_SSL_PROTOCOL;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_TRUSTSTORE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_TRUSTSTORE_PASSWORD;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_TRUSTSTORE_TYPE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_USER;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_HOST;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE_PASSWORD;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE_TYPE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PING_INTERVAL;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PING_TIMEOUT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PORT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_CIPHER_SUITES;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_FACTORY;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_KEY_ALGORITHM;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_PROTOCOL;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_TRUSTSTORE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_TRUSTSTORE_PASSWORD;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_TRUSTSTORE_TYPE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 
 /**
  * Container with common parsed and validated arguments.
