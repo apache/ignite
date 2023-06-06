@@ -113,7 +113,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     private QueryPlan prepareDdl(SqlNode sqlNode, PlanningContext ctx) {
         assert sqlNode instanceof SqlDdl : sqlNode == null ? "null" : sqlNode.getClass().getName();
 
-        return new DdlPlan(ddlConverter.convert((SqlDdl)sqlNode, ctx));
+        return new DdlPlan(ctx.query(), ddlConverter.convert((SqlDdl)sqlNode, ctx));
     }
 
     /**
@@ -132,7 +132,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
-        return new ExplainPlan(plan, explainFieldsMetadata(ctx));
+        return new ExplainPlan(ctx.query(), plan, explainFieldsMetadata(ctx));
     }
 
     /** */
@@ -159,8 +159,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()),
-            params);
+        return new MultiStepQueryPlan(ctx.query(), template,
+            queryFieldsMetadata(ctx, validated.dataType(), validated.origins()), params);
     }
 
     /** */
@@ -181,7 +181,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
+        return new MultiStepDmlPlan(ctx.query(), template,
+            queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
     }
 
     /** */
