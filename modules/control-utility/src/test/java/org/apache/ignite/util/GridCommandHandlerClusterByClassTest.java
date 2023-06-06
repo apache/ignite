@@ -480,11 +480,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testOldReadOnlyApiNotAvailable() {
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on", "--state"));
 
         assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-on");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off", "--state"));
 
         assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-off");
     }
@@ -1266,8 +1266,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         autoConfirmation = false;
 
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", CREATE, SPRING_XML_CONFIG),
-            "Please specify a value for argument: --springXmlConfig");
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", CREATE, SPRING_XML_CONFIG),
+            !sslEnabled()
+                ? "Please specify a value for argument: --springXmlConfig"
+                : "Unexpected value: --keystore"
+        );
 
         autoConfirmation = true;
 
