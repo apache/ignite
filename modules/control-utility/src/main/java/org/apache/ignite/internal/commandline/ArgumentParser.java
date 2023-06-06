@@ -195,7 +195,7 @@ public class ArgumentParser {
         arg(CMD_PING_TIMEOUT, "PING_TIMEOUT", Long.class, DFLT_PING_TIMEOUT, POSITIVE_LONG);
         arg(CMD_VERBOSE, CMD_VERBOSE, boolean.class, false);
         arg(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]", String[].class, new String[] {DFLT_SSL_PROTOCOL});
-        arg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String[].class, U.EMPTY_STRS);
+        arg(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]", String[].class, null);
         arg(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM", String.class, SslContextFactory.DFLT_KEY_ALGORITHM);
         arg(CMD_SSL_FACTORY, "SSL_FACTORY_PATH", String.class, null);
         arg(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE", String.class, SslContextFactory.DFLT_STORE_TYPE);
@@ -268,7 +268,7 @@ public class ArgumentParser {
         A arg = argument(
             cmd.argClass(),
             (fld, pos) -> parser.get(pos),
-            fld -> parser.get(toFormattedFieldName(fld))
+            fld -> parser.get(toFormattedFieldName(fld).toLowerCase())
         );
 
         if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.experimental()) {
@@ -348,7 +348,7 @@ public class ArgumentParser {
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
 
         BiFunction<Field, Boolean, CLIArgument<?>> toArg = (fld, optional) -> new CLIArgument<>(
-            toFormattedFieldName(fld),
+            toFormattedFieldName(fld).toLowerCase(),
             null,
             optional,
             fld.getType(),
@@ -366,7 +366,7 @@ public class ArgumentParser {
         );
 
         Consumer<Field> positionalArgCb = fld -> positionalArgs.add(new CLIArgument<>(
-            fld.getName(),
+            fld.getName().toLowerCase(),
             null,
             fld.getAnnotation(Argument.class).optional(),
             fld.getType(),
@@ -416,7 +416,7 @@ public class ArgumentParser {
             );
 
             if (arg.argGrp != null && (!arg.grpOptional() && !arg.grpFldExists))
-                throw new IllegalArgumentException("One of " + toFormattedNames(arg.grpdFlds) + " required");
+                throw new IllegalArgumentException("One of " + toFormattedNames(argCls, arg.grpdFlds) + " required");
 
             return arg.res;
         }
@@ -481,8 +481,11 @@ public class ArgumentParser {
             }
 
             if (grpdFld) {
-                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf()))
-                    throw new IllegalArgumentException("Only one of " + toFormattedNames(grpdFlds) + " allowed");
+                if (grpFldExists && (argGrp != null && argGrp.onlyOneOf())) {
+                    throw new IllegalArgumentException(
+                        "Only one of " + toFormattedNames(res.getClass(), grpdFlds) + " allowed"
+                    );
+                }
 
                 grpFldExists = true;
             }

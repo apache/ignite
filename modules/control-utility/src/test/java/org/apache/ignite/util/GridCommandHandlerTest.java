@@ -3513,7 +3513,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             // Missed increment index.
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment"));
-            assertContains(log, testOut.toString(), "Please specify a value for argument: --increment");
+            assertContains(
+                log,
+                testOut.toString(),
+                !sslEnabled()
+                    ? "Please specify a value for argument: --increment"
+                    : "Unexpected value: --ssl-factory"
+            );
 
             // Wrong params.
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment", "wrong"));

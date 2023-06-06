@@ -269,7 +269,7 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove"));
         out = testOut.toString();
-        assertContains(log, out, "Check arguments. One of [typeName, typeId] required");
+        assertContains(log, out, "Check arguments. One of [--typeName, --typeId] required");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", outDirName));
         out = testOut.toString();

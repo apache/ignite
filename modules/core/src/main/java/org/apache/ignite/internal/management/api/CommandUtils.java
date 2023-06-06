@@ -39,6 +39,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,12 +106,14 @@ public class CommandUtils {
     }
 
     /**
+     * @param argCls Argument class.
      * @param flds Fields to format.
      * @return Formatted names.
      */
-    public static Set<String> toFormattedNames(Set<String> flds) {
+    public static Set<String> toFormattedNames(Class<?> argCls, Set<String> flds) {
         return flds.stream()
-            .map(fld -> PARAMETER_PREFIX + toFormattedName(fld, CMD_WORDS_DELIM))
+            .map(name -> U.findField(argCls, name))
+            .map(CommandUtils::toFormattedFieldName)
             .collect(Collectors.toSet());
     }
 

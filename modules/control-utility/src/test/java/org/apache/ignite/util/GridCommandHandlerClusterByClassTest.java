@@ -1530,7 +1530,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit"));
 
         if (sslEnabled()) // Extra arguments at the end added.
-            assertContains(log, testOut.toString(), "Invalid value for limit");
+            assertContains(log, testOut.toString(), "Unexpected value: --keystore");
         else
             assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
 
