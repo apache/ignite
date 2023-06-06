@@ -263,10 +263,9 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, cmds).parseAndValidate(rawArgs);
 
-            commandName =
-                args.command() instanceof HelpCommand
-                    ? toFormattedCommandName(args.root().getClass()).toUpperCase()
-                    : toFormattedCommandName(args.command().getClass()).toUpperCase();
+            commandName = args.command() instanceof HelpCommand && args.root() != null
+                ? toFormattedCommandName(args.root().getClass()).toUpperCase()
+                : toFormattedCommandName(args.command().getClass()).toUpperCase();
 
             CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args));
 

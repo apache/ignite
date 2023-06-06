@@ -3510,7 +3510,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         autoConfirmation = false;
 
         try {
-
             // Missed increment index.
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--snapshot", "restore", snpName, "--increment"));
             assertContains(
@@ -3518,7 +3517,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 testOut.toString(),
                 !sslEnabled()
                     ? "Please specify a value for argument: --increment"
-                    : "Unexpected value: --ssl-factory"
+                    : ("Unexpected value: " + sslFactory() == null ? "--key-store" : "--ssl-factory")
             );
 
             // Wrong params.
