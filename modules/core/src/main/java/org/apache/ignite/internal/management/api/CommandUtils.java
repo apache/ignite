@@ -19,21 +19,30 @@ package org.apache.ignite.internal.management.api;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX;
 
 /**
@@ -54,6 +63,16 @@ public class CommandUtils {
 
     /** Double indent for help output. */
     public static final String DOUBLE_INDENT = INDENT + INDENT;
+
+    /**
+     * Example: {@code "SystemView" -> "system-view"}.
+     *
+     * @param cmd Command class.
+     * @return Formatted command name.
+     */
+    public static String cmdText(Command<?, ?> cmd) {
+        return PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM);
+    }
 
     /**
      * Example: {@code "SystemView" -> "system-view"}.
@@ -87,12 +106,14 @@ public class CommandUtils {
     }
 
     /**
+     * @param argCls Argument class.
      * @param flds Fields to format.
      * @return Formatted names.
      */
-    public static Set<String> toFormattedNames(Set<String> flds) {
+    public static Set<String> toFormattedNames(Class<?> argCls, Set<String> flds) {
         return flds.stream()
-            .map(fld -> PARAMETER_PREFIX + toFormattedName(fld, CMD_WORDS_DELIM))
+            .map(name -> U.findField(argCls, name))
+            .map(CommandUtils::toFormattedFieldName)
             .collect(Collectors.toSet());
     }
 
@@ -182,7 +203,7 @@ public class CommandUtils {
      * @return Example of value for the field.
      */
     public static String valueExample(Field fld) {
-        if (fld.getType() == Boolean.class || fld.getType() == boolean.class)
+        if (isBoolean(fld.getType()))
             return "";
 
         Argument param = fld.getAnnotation(Argument.class);
@@ -227,6 +248,11 @@ public class CommandUtils {
         return asOptional(name, optional);
     }
 
+    /** */
+    public static boolean isBoolean(Class<?> cls) {
+        return cls == Boolean.class || cls == boolean.class;
+    }
+
     /**
      * @param fld Field.
      * @param delim Words delimeter.
@@ -256,7 +282,7 @@ public class CommandUtils {
      * @param <T> Value type.
      */
     public static <T> T parseVal(String val, Class<T> type) {
-        if (type.isArray()) {
+        if (type.isArray() && type != char[].class) {
             String[] vals = val.split(",");
 
             Class<?> compType = type.getComponentType();
@@ -273,6 +299,90 @@ public class CommandUtils {
         }
 
         return parseSingleVal(val, type);
+    }
+
+    /**
+     * Utility method. Scans argument class fields and visits each field representing command argument.
+     *
+     * @param argCls Argument class.
+     * @param positionalParamVisitor Visitor of positional parameters.
+     * @param namedParamVisitor Visitor of named parameters.
+     * @param argumentGroupVisitor Visitor of "one of" parameters.
+     * @param <A> Argument type.
+     */
+    public static <A extends IgniteDataTransferObject> void visitCommandParams(
+        Class<A> argCls,
+        Consumer<Field> positionalParamVisitor,
+        Consumer<Field> namedParamVisitor,
+        BiConsumer<ArgumentGroup, List<Field>> argumentGroupVisitor
+    ) {
+        Class<? extends IgniteDataTransferObject> clazz0 = argCls;
+
+        List<Class<? extends IgniteDataTransferObject>> classes = new ArrayList<>();
+
+        while (clazz0 != IgniteDataTransferObject.class) {
+            classes.add(clazz0);
+
+            clazz0 = (Class<? extends IgniteDataTransferObject>)clazz0.getSuperclass();
+        }
+
+        List<Field> positionalParams = new ArrayList<>();
+        List<Field> namedParams = new ArrayList<>();
+
+        ArgumentGroup argGrp = argCls.getAnnotation(ArgumentGroup.class);
+
+        Set<String> grpNames = argGrp != null
+            ? new HashSet<>(Arrays.asList(argGrp.value()))
+            : Collections.emptySet();
+
+        List<Field> grpFlds = new ArrayList<>();
+
+        // Iterates classes from the roots.
+        for (int i = classes.size() - 1; i >= 0; i--) {
+            Field[] flds = classes.get(i).getDeclaredFields();
+
+            for (Field fld : flds) {
+                if (grpNames.contains(fld.getName()))
+                    grpFlds.add(fld);
+                else if (fld.isAnnotationPresent(Positional.class))
+                    positionalParams.add(fld);
+                else if (fld.isAnnotationPresent(Argument.class))
+                    namedParams.add(fld);
+            }
+        }
+
+        positionalParams.forEach(positionalParamVisitor);
+
+        namedParams.forEach(namedParamVisitor);
+
+        if (argGrp != null)
+            argumentGroupVisitor.accept(argGrp, grpFlds);
+    }
+
+    /**
+     * @param cmd Command.
+     * @return {@code True} if command has described parameters.
+     */
+    public static boolean hasDescribedParameters(Command<?, ?> cmd) {
+        AtomicBoolean res = new AtomicBoolean();
+
+        visitCommandParams(
+            cmd.argClass(),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ),
+            (argGrp, flds) -> flds.forEach(fld -> res.compareAndSet(false,
+                !fld.getAnnotation(Argument.class).description().isEmpty() ||
+                    fld.isAnnotationPresent(EnumDescription.class)
+            ))
+        );
+
+        return res.get();
     }
 
     /**
@@ -370,7 +480,7 @@ public class CommandUtils {
      * @param <T> Value type
      */
     private static <T> T parseSingleVal(String val, Class<T> type) {
-        if (type == Boolean.class || type == boolean.class)
+        if (isBoolean(type))
             return (T)Boolean.TRUE;
         if (type == String.class)
             return (T)val;
@@ -415,6 +525,8 @@ public class CommandUtils {
                 throw new IllegalArgumentException("Can't parse value '" + val + "', expected type: " + type.getName());
             }
         }
+        else if (type == char[].class)
+            return (T)val.toCharArray();
 
         throw new IgniteException("Unsupported argument type: " + type.getName());
     }

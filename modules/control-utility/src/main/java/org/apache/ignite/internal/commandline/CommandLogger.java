@@ -18,49 +18,11 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
 /**
  * Utility class for creating {@code CommangHandler} log messages.
  */
 public class CommandLogger {
-    /** Indent for help output. */
-    public static final String INDENT = "  ";
-
-    /** Double indent for help output. */
-    public static final String DOUBLE_INDENT = INDENT + INDENT;
-
-    /**
-     * Join input parameters with space and wrap optional braces {@code []}.
-     *
-     * @param params Other input parameter.
-     * @return Joined parameters wrapped optional braces.
-     */
-    public static String optional(Object... params) {
-        return join(new SB(), "[", " ", params).a("]").toString();
-    }
-
-    /**
-     * Concatenates input parameters to single string with OR delimiter {@code |}.
-     *
-     * @param params Remaining parameters.
-     * @return Concatenated string.
-     */
-    public static String or(Object... params) {
-        return join("|", params);
-    }
-
-    /**
-     * Join input parameters with space and wrap grouping braces {@code ()}.
-     *
-     * @param params Input parameter.
-     * @return Joined parameters wrapped grouped braces.
-     */
-    public static String grouped(Object... params) {
-        return join(new SB(), "(", " ", params).a(")").toString();
-    }
-
     /**
      * Generates readable error message from exception
      * @param e Exctption

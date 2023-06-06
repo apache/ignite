@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.processors.cache.ClearCachesTask;
 import org.apache.ignite.internal.processors.cache.ClearCachesTaskResult;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/** Clear caches. */
 public class CacheClearCommand implements ComputeCommand<CacheClearCommandArg, ClearCachesTaskResult> {
     /** Message that contains cleared caches. */
     public static final String CLEAR_MSG = "The following caches have been cleared: %s";
@@ -42,7 +41,7 @@ public class CacheClearCommand implements ComputeCommand<CacheClearCommandArg, C
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, CacheClearCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(CacheClearCommandArg arg) {
         return String.format(CONFIRM_MSG, arg.caches().length, String.join(", ", arg.caches()));
     }
 

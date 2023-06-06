@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.cdc;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/** Cdc commands. */
 @CliPositionalSubcommands
 public class CdcCommand extends CommandRegistryImpl {
     /** */

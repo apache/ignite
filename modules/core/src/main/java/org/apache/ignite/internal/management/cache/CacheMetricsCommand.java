@@ -28,7 +28,7 @@ import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
-/** */
+/** Enable / disable cache metrics collection or show metrics collection status. */
 public class CacheMetricsCommand implements ComputeCommand<CacheMetricsCommandArg, VisorCacheMetricsTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {

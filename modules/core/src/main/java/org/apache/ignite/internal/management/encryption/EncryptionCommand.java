@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.encryption;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/** Encryption features command. */
 @CliPositionalSubcommands
 public class EncryptionCommand extends CommandRegistryImpl {
     /** */

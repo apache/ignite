@@ -32,7 +32,6 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityResult;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityTask;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 public class DiagnosticConnectivityCommand implements ComputeCommand<NoArg, Map<ClusterNode, VisorConnectivityResult>> {
@@ -75,7 +74,7 @@ public class DiagnosticConnectivityCommand implements ComputeCommand<NoArg, Map<
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
         return nodes.keySet();
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.encryption;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.encryption.VisorChangeCacheGroupKeyTask;
 
@@ -45,7 +44,7 @@ public class EncryptionChangeCacheKeyCommand implements ComputeCommand<Encryptio
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, EncryptionCacheGroupArg arg) {
+    @Override public String confirmationPrompt(EncryptionCacheGroupArg arg) {
         return "Warning: the command will change the encryption key of the cache group. Joining a node during " +
             "the key change process is prohibited and will be rejected.";
     }

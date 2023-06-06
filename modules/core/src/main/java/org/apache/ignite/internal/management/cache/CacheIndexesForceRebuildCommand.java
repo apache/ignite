@@ -30,7 +30,7 @@ import org.apache.ignite.internal.visor.cache.index.IndexForceRebuildTaskRes;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
-/** */
+/** Index force rebuild. */
 public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheIndexesForceRebuildCommandArg, IndexForceRebuildTaskRes> {
     /** {@inheritDoc} */
     @Override public String description() {

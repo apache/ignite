@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
-/** */
+/** Check secondary indexes inline size. */
 public class CacheCheckIndexInlineSizesCommand
     implements ComputeCommand<NoArg, CheckIndexInlineSizesResult> {
     /** Success message. */

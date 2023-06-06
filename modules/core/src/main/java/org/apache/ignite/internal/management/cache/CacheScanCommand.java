@@ -26,7 +26,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheScanTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheScanTaskResult;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 
-/** */
+/** Scan cache entries. */
 public class CacheScanCommand implements ComputeCommand<CacheScanCommandArg, VisorCacheScanTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {

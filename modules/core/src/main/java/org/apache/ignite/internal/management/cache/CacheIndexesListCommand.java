@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
 import org.apache.ignite.internal.visor.cache.index.IndexListTask;
 
-/** */
+/** Index list. */
 public class CacheIndexesListCommand implements ComputeCommand<CacheIndexesListCommandArg, Set<IndexListInfoContainer>> {
     /** {@inheritDoc} */
     @Override public String description() {

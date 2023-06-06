@@ -30,7 +30,7 @@ import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTask;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskRes;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
-/** */
+/** Index rebuild via the maintenance mode. */
 public class CacheScheduleIndexesRebuildCommand
     implements ComputeCommand<CacheScheduleIndexesRebuildCommandArg, ScheduleIndexRebuildTaskRes> {
     /** {@inheritDoc} */

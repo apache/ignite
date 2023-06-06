@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +50,7 @@ public class SnapshotRestoreCommand extends AbstractSnapshotCommand<SnapshotRest
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, SnapshotRestoreCommandArg arg) throws Exception {
+    @Override public String confirmationPrompt(SnapshotRestoreCommandArg arg) {
         return arg.status() || arg.cancel() || arg.groups() != null
             ? null :
             "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';

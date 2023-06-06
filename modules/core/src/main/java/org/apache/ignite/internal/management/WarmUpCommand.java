@@ -19,7 +19,7 @@ package org.apache.ignite.internal.management;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/** */
+/** Warm-up command. */
 public class WarmUpCommand extends CommandRegistryImpl {
     /** */
     public WarmUpCommand() {

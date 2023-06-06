@@ -39,7 +39,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -90,6 +89,9 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private IgniteEx srv1;
+
+    /** */
+    public static final String CDC = "--cdc";
 
     /** */
     private DistributedChangeableProperty<Serializable> cdcDisabled;
@@ -168,15 +170,15 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         injectTestSystemOut();
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), "unexpected_command"),
+                CDC, "unexpected_command"),
             "Command cdc can't be executed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID),
+                CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID),
             "Unexpected value: --yes");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
+                CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, "10"),
             "Failed to parse " + NODE_ID + " command argument.");
     }
 
@@ -202,7 +204,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         appStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString()),
+                CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString()),
             "Failed to delete lost segment CDC links. Unable to acquire lock to lock CDC folder.");
 
         assertFalse(fut.isDone());
@@ -233,8 +235,8 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         checkLinks(srv0, expBefore);
         checkLinks(srv1, expBefore);
 
-        String[] args = allNodes ? new String[] {CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS} :
-            new String[] {CommandList.CDC.text(), DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString()};
+        String[] args = allNodes ? new String[] {CDC, DELETE_LOST_SEGMENT_LINKS} :
+            new String[] {CDC, DELETE_LOST_SEGMENT_LINKS, NODE_ID, srv0.localNode().id().toString()};
 
         executeCommand(EXIT_CODE_OK, args);
 
@@ -285,15 +287,15 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         injectTestSystemOut();
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), "unexpected_command"),
+                CDC, "unexpected_command"),
             "Command cdc can't be executed");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), RESEND),
+                CDC, RESEND),
             "Mandatory argument(s) missing: [--caches]");
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                CommandList.CDC.text(), RESEND, CACHES),
+                CDC, RESEND, CACHES),
             "Unexpected value: --yes");
     }
 
@@ -311,7 +313,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         cnsmr0.clear();
         cnsmr1.clear();
 
-        executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME);
+        executeCommand(EXIT_CODE_OK, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
 
         waitForSize(cnsmr0, srv0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
         waitForSize(cnsmr1, srv1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
@@ -323,7 +325,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         injectTestSystemOut();
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                CommandList.CDC.text(), RESEND, CACHES, "unknown_cache"),
+                CDC, RESEND, CACHES, "unknown_cache"),
             "Cache does not exist");
 
         String cdcDisabledCacheName = "cdcDisabledCache";
@@ -333,7 +335,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
             .setDataRegionName(CDC_DISABLED_DATA_REGION));
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                CommandList.CDC.text(), RESEND, CACHES, cdcDisabledCacheName),
+                CDC, RESEND, CACHES, cdcDisabledCacheName),
             "CDC is not enabled for given cache");
     }
 
@@ -357,7 +359,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         }
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME),
+                CDC, RESEND, CACHES, DEFAULT_CACHE_NAME),
             "CDC cache data resend cancelled. Failed to resend cache data on the node");
     }
 
@@ -387,7 +389,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         rebalanceStarted.await();
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME),
+                CDC, RESEND, CACHES, DEFAULT_CACHE_NAME),
             "CDC cache data resend cancelled. Rebalance sheduled");
     }
 
@@ -414,7 +416,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
             assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                    CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME),
+                    CDC, RESEND, CACHES, DEFAULT_CACHE_NAME),
                 "CDC cache data resend cancelled. Topology changed");
         });
 
@@ -452,7 +454,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
             assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR,
-                    CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME),
+                    CDC, RESEND, CACHES, DEFAULT_CACHE_NAME),
                 "CDC cache data resend cancelled. Topology changed");
         });
 
@@ -494,7 +496,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         }
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
-            executeCommand(EXIT_CODE_OK, CommandList.CDC.text(), RESEND, CACHES, DEFAULT_CACHE_NAME);
+            executeCommand(EXIT_CODE_OK, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
         });
 
         blocked.await();

@@ -30,4 +30,9 @@ public class WalCommand extends CommandRegistryImpl {
             new WalDeleteCommand()
         );
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return true;
+    }
 }

@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -52,17 +51,5 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
      */
     public default @Nullable Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, A arg) {
         return null;
-    }
-
-    /**
-     * Enriches argument with cluster information if required.
-     *
-     * @param cli Grid client to get required information from cluster.
-     * @param arg Command argument.
-     * @param printer Implementation specific printer.
-     * @return {@code True} if command must be executed, {@code false} otherwise.
-     */
-    public default boolean prepare(GridClient cli, A arg, Consumer<String> printer) throws Exception {
-        return true;
     }
 }

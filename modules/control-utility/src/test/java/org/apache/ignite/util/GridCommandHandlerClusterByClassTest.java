@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,12 +65,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.CommonArgParser;
-import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.cache.CacheClearCommand;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cache.CacheDestroyCommand;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -94,31 +97,27 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+
 import static java.util.Arrays.asList;
-import static java.util.Arrays.stream;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
-import static org.apache.ignite.internal.commandline.CommandList.CDC;
-import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
-import static org.apache.ignite.internal.commandline.CommandList.METADATA;
-import static org.apache.ignite.internal.commandline.CommandList.TRACING_CONFIGURATION;
-import static org.apache.ignite.internal.commandline.CommandList.WAL;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CLEAR;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.SCAN;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
+import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 import static org.apache.ignite.internal.management.cache.CacheClearCommand.CLEAR_MSG;
 import static org.apache.ignite.internal.management.cache.CacheClearCommand.SKIP_CLEAR_MSG;
 import static org.apache.ignite.internal.management.cache.CacheListCommand.OutputFormat.MULTI_LINE;
@@ -156,6 +155,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /** */
+    public static final String BASELINE = "--baseline";
+
+    /** */
     public static final String CACHES = "--caches";
 
     /** */
@@ -163,6 +165,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     private static final String SPRING_XML_CONFIG = "--springXmlConfig";
+
+    /** */
+    private static final String CREATE = "create";
+
+    /** */
+    public static final String CLEAR = "clear";
+
+    /** */
+    public static final String DESTROY = "destroy";
+
+    /** */
+    public static final String SCAN = "scan";
 
     /**
      * Very basic tests for running the command in different environment which other command are running in.
@@ -357,39 +371,46 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String output = testOut.toString();
 
-        for (CacheSubcommands cmd : CacheSubcommands.values()) {
-            if (cmd != HELP) {
-                assertContains(log, output, cmd.toString());
+        new CacheCommand().commands().forEachRemaining(cmd -> {
+            if (!(cmd.getValue() instanceof HelpCommand)) {
+                String cacheSubcommand = toFormattedCommandName(cmd.getValue().getClass(), PARAM_WORDS_DELIM)
+                    .replaceFirst("cache_", "");
 
-                Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+                assertContains(log, output, cacheSubcommand);
 
-                if (args != null)
-                    for (Enum<? extends CommandArg> arg : args.getEnumConstants())
-                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+                Class<? extends IgniteDataTransferObject> args = cmd.getValue().argClass();
+
+                if (args != null) {
+                    Consumer<Field> posChecker = fld -> {
+                        String name = parameterExample(fld, false);
+                        assertTrue(cmd + " " + name, output.contains(name));
+                    };
+
+                    Consumer<Field> argChecker = fld -> {
+                        String name = toFormattedFieldName(fld);
+                        assertTrue(cmd + " " + name, output.contains(name));
+                    };
+
+                    visitCommandParams(
+                        args,
+                        posChecker, argChecker,
+                        (grp, flds) -> {
+                            flds.stream().filter(fld -> fld.isAnnotationPresent(Positional.class)).forEach(posChecker);
+                            flds.stream().filter(fld -> !fld.isAnnotationPresent(Positional.class)).forEach(argChecker);
+                        }
+                    );
+                }
 
             }
             else
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
-        }
+
+        });
 
         diff(output, new String(readResource(
             getClass().getClassLoader(),
             "org.apache.ignite.util/" + getClass().getSimpleName() + "_cache_help.output"
         )));
-    }
-
-    /** */
-    @Test
-    public void testCorrectCacheOptionsNaming() {
-        Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
-
-        for (CacheSubcommands cmd : CacheSubcommands.values()) {
-            Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
-
-            if (args != null)
-                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
-                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
-        }
     }
 
     /** */
@@ -401,8 +422,9 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         String testOutStr = testOut.toString();
 
-        for (CommandList cmd : CommandList.values())
-            assertContains(log, testOutStr, cmd.toString());
+        new IgniteCommandRegistry().commands().forEachRemaining(
+            e -> assertContains(log, testOutStr, cmdText(e.getValue()))
+        );
 
         assertNotContains(log, testOutStr, "Control.sh");
 
@@ -458,11 +480,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testOldReadOnlyApiNotAvailable() {
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on", "--state"));
 
         assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-on");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off", "--state"));
 
         assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-off");
     }
@@ -1239,34 +1261,37 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testCacheCreate() {
         injectTestSystemOut();
 
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                "--cache", CacheSubcommands.CREATE.name()),
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", CREATE),
             "Mandatory argument(s) missing: [--springxmlconfig]");
 
         autoConfirmation = false;
 
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG),
-            "Please specify a value for argument: --springXmlConfig");
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, "--cache", CREATE, SPRING_XML_CONFIG),
+            !sslEnabled()
+                ? "Please specify a value for argument: --springXmlConfig"
+                : "Unexpected value: --keystore"
+        );
 
         autoConfirmation = true;
 
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
-                "--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG, "file1", SPRING_XML_CONFIG, "file2"),
+                "--cache", CREATE, SPRING_XML_CONFIG, "file1", SPRING_XML_CONFIG, "file2"),
             "--springxmlconfig argument specified twice");
 
         String cfgPath = resolveIgnitePath("modules/control-utility/src/test/resources/config/cache").getAbsolutePath();
 
-        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CacheSubcommands.CREATE.name(),
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CREATE,
                 SPRING_XML_CONFIG, cfgPath + "/cache-create-no-configs.xml"),
             "Failed to create caches. Make sure that Spring XML contains '" +
                 CacheConfiguration.class.getName() + "' beans.");
 
-        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CacheSubcommands.CREATE.name(),
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--cache", CREATE,
                 SPRING_XML_CONFIG, cfgPath + "/unknown.xml"),
             "Failed to create caches. Spring XML configuration file not found");
 
-        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CacheSubcommands.CREATE.name(), SPRING_XML_CONFIG,
+        assertEquals(CommandHandler.EXIT_CODE_OK, execute("--cache", CREATE, SPRING_XML_CONFIG,
             cfgPath + "/cache-create-correct.xml"));
 
         assertTrue(crd.cacheNames().containsAll(F.asList("cache1", "cache2")));
@@ -1292,30 +1317,30 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         injectTestSystemOut();
 
         // No arguments.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text()));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY));
         assertContains(log, testOut.toString(), requiredArgsMsg);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // No required argument.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), "cacheX"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, "cacheX"));
         assertContains(log, testOut.toString(), "Unexpected argument: cacheX");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // Invalid arguments.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHES, "X", DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, CACHES, "X", DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), "Only one of [" + CACHES + ", " + DESTROY_ALL_ARG + "] allowed");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG, "X"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, DESTROY_ALL_ARG, "X"));
         assertContains(log, testOut.toString(), "Unexpected argument: X");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY.text(), CACHES, "X,Y", "Z"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Unexpected argument: Z");
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
         // No user caches.
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), CacheDestroyCommand.NOOP_MSG);
         assertNotContains(log, testOut.toString(), warningMsgPrefix);
 
@@ -1330,12 +1355,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Ensure we cannot delete a cache groups.
         injectTestSystemIn(CONFIRM_MSG);
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), CACHES, "shared1,shared2"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, CACHES, "shared1,shared2"));
         assertTrue(crd.cacheNames().containsAll(cacheNames));
 
         // Destroy all user-created caches.
         injectTestSystemIn(CONFIRM_MSG);
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), expConfirmation);
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
 
@@ -1345,7 +1370,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String qry = "CREATE TABLE Person (id LONG PRIMARY KEY, name VARCHAR) WITH \"CACHE_NAME=sql-cache\";";
         crd.context().query().querySqlFields(new SqlFieldsQuery(qry).setSchema("PUBLIC"), false, false);
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY.text(), DESTROY_ALL_ARG));
+        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, DESTROY_ALL_ARG));
         assertContains(log, testOut.toString(), String.format(CacheDestroyCommand.RESULT_MSG, "sql-cache"));
         assertTrue("Caches must be destroyed: " + crd.cacheNames().toString(), crd.cacheNames().isEmpty());
     }
@@ -1355,12 +1380,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testCacheClear() {
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text()));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), "cacheX"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR, "cacheX"));
         assertContains(log, testOut.toString(), "Unexpected argument: cacheX");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR.text(), CACHES, "X,Y", "Z"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", CLEAR, CACHES, "X,Y", "Z"));
         assertContains(log, testOut.toString(), "Unexpected argument: Z");
 
         autoConfirmation = false;
@@ -1369,7 +1394,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         // Ensure we cannot delete a cache groups.
         injectTestSystemIn(CONFIRM_MSG);
-        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CACHES, "cache1,cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR, CACHES, "cache1,cache2"));
         assertContains(log, testOut.toString(), expConfirmation);
 
         autoConfirmation = true;
@@ -1406,7 +1431,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             }
         }
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR.text(), CACHES, String.join(",", clearCaches)));
+        assertEquals(EXIT_CODE_OK, execute("--cache", CLEAR, CACHES, String.join(",", clearCaches)));
 
         List<String> nonExistentCaches = clearCaches.stream()
             .filter(c -> !caches.contains(c))
@@ -1501,24 +1526,24 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         autoConfirmation = false;
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text()));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cacheX", "test"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cacheX", "test"));
 
         assertContains(log, testOut.toString(), "Unexpected argument: test");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit"));
 
         if (sslEnabled()) // Extra arguments at the end added.
-            assertContains(log, testOut.toString(), "Invalid value for limit");
+            assertContains(log, testOut.toString(), "Unexpected value: --keystore");
         else
             assertContains(log, testOut.toString(), "Please specify a value for argument: --limit");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit", "test"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit", "test"));
 
         assertContains(log, testOut.toString(), "Failed to parse --limit command argument. Can't parse number 'test'");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN.text(), "cache", "--limit", "123", "test"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", SCAN, "cache", "--limit", "123", "test"));
 
         assertContains(log, testOut.toString(), "Unexpected argument: test");
 
@@ -1533,7 +1558,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         c.put(6, UUID.randomUUID());
         c.put(7, new TestClass(0, "test class"));
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN.text(), "testCache"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache"));
 
         assertContains(log, testOut.toString(), "test string");
         assertContains(log, testOut.toString(), "test list 1");
@@ -1541,11 +1566,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), "test class");
         assertNotContains(log, testOut.toString(), "Result limited");
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN.text(), "testCache", "--limit", "5"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", "5"));
 
         assertContains(log, testOut.toString(), "Result limited");
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN.text(), "testCache", "--limit", "10"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", SCAN, "testCache", "--limit", "10"));
 
         assertNotContains(log, testOut.toString(), "Result limited");
     }
@@ -1945,39 +1970,46 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testContainsWarnInsteadExecExperimentalCmdWhenEnableExperimentalFalse() {
         injectTestSystemOut();
 
-        Map<CommandList, Collection<String[]>> cmdArgs = new EnumMap<>(CommandList.class);
+        Map<String, Collection<String[]>> cmdArgs = new HashMap<>();
 
-        cmdArgs.put(WAL, asList(new String[] {"print"}, new String[] {"delete"}));
-        cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
-        cmdArgs.put(TRACING_CONFIGURATION, singletonList(new String[] {"get_all"}));
-        cmdArgs.put(CONSISTENCY, asList(
+        cmdArgs.put("--wal", asList(new String[] {"print"}, new String[] {"delete"}));
+        cmdArgs.put("--meta", asList(new String[] {"help"}, new String[] {"list"}));
+        cmdArgs.put("--tracing-configuration", singletonList(new String[] {"get_all"}));
+        cmdArgs.put("--consistency", asList(
             new String[] {"repair", CACHE, "cache", PARTITIONS, "0", STRATEGY, "LWW"},
             new String[] {"status"},
             new String[] {"finalize"}));
-        cmdArgs.put(CDC, singletonList(new String[] {DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()}));
+        cmdArgs.put("--cdc", singletonList(new String[] {DELETE_LOST_SEGMENT_LINKS, NODE_ID, UUID.randomUUID().toString()}));
 
         String warning = String.format(
             "To use experimental command add --enable-experimental parameter for %s",
             UTILITY_NAME
         );
 
-        stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
-            .peek(cmd -> assertTrue("Not contains " + cmd, cmdArgs.containsKey(cmd)))
-            .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            if (!e.getValue().experimental())
+                return;
+
+            String name = cmdText(e.getValue());
+
+            assertTrue("Not contains " + name, cmdArgs.containsKey(name));
+
+            cmdArgs.get(name).forEach(cmdArg -> {
                 List<String> args = new ArrayList<>();
 
-                args.add(cmd.text());
+                args.add(name);
                 args.addAll(Arrays.asList(cmdArg));
 
                 assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(args));
 
                 assertContains(log, testOut.toString(), warning);
-            }));
+            });
+        });
     }
 
     /**
      * Test checks that there will be no error when executing the command with
-     * option {@link CommonArgParser#CMD_VERBOSE}.
+     * option {@link ArgumentParser#CMD_VERBOSE}.
      */
     @Test
     public void testCorrectExecCmdWithVerboseInDiffParamsOrder() {
@@ -1985,16 +2017,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         int resCode = EXIT_CODE_OK;
 
-        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE));
+        assertEquals(resCode, execute(BASELINE, CMD_VERBOSE));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE.text()));
+        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
     /**
      * Test checks that stack trace for incorrect arguments will be output
-     * only if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     * only if {@link ArgumentParser#CMD_VERBOSE} flag is present.
      */
     @Test
     public void testErrInvalidArgumentsWithVerbose() {
@@ -2003,16 +2035,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int resCode = EXIT_CODE_INVALID_ARGUMENTS;
         String uuid = UUID.randomUUID().toString();
 
-        assertEquals(resCode, execute(BASELINE.text(), uuid));
+        assertEquals(resCode, execute(BASELINE, uuid));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, uuid));
+        assertEquals(resCode, execute(BASELINE, CMD_VERBOSE, uuid));
         assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
     /**
      * Test checks that stack trace for connection error will be output only
-     * if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     * if {@link ArgumentParser#CMD_VERBOSE} flag is present.
      */
     @Test
     public void testErrConnectionWithVerbose() {
@@ -2021,16 +2053,16 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int resCode = EXIT_CODE_CONNECTION_FAILED;
         String uuid = UUID.randomUUID().toString();
 
-        assertEquals(resCode, execute(BASELINE.text(), "--host", uuid));
+        assertEquals(resCode, execute(BASELINE, "--host", uuid));
         assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, "--host", uuid));
+        assertEquals(resCode, execute(BASELINE, CMD_VERBOSE, "--host", uuid));
         assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
     /**
      * Test checks that stack trace for unexpected error will be output with or
-     * without {@link CommonArgParser#CMD_VERBOSE} flag.
+     * without {@link ArgumentParser#CMD_VERBOSE} flag.
      */
     @Test
     public void testErrUnexpectedWithWithoutVerbose() {
@@ -2052,10 +2084,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
         CommandHandler cmd = new CommandHandler(new JavaLogger(log, false));
 
-        assertEquals(resCode, execute(cmd, BASELINE.text()));
+        assertEquals(resCode, execute(cmd, BASELINE));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
 
-        assertEquals(resCode, execute(cmd, BASELINE.text(), CMD_VERBOSE));
+        assertEquals(resCode, execute(cmd, BASELINE, CMD_VERBOSE));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
@@ -2066,15 +2098,15 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @param contains Check contains or not.
      */
     private void checkExperimentalCmdInHelpOutput(boolean contains) {
-        execHelpCmd(helpOut -> {
-            stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
-                .forEach(cmd -> {
-                    if (contains)
-                        assertContains(log, helpOut, cmd.text());
-                    else
-                        assertNotContains(log, helpOut, cmd.text());
-                });
-        });
+        execHelpCmd(helpOut -> new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            if (!e.getValue().experimental())
+                return;
+
+            if (contains)
+                assertContains(log, helpOut, cmdText(e.getValue()));
+            else
+                assertNotContains(log, helpOut, cmdText(e.getValue()));
+        }));
     }
 
     /**
@@ -2082,10 +2114,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * will contain non-experimental commands.
      */
     private void checkContainsNotExperimentalCmdInHelpOutput() {
-        execHelpCmd(helpOut -> {
-            stream(CommandList.values()).filter(cmd -> !cmd.command().experimental())
-                .forEach(cmd -> assertContains(log, helpOut, cmd.text()));
-        });
+        execHelpCmd(helpOut -> new IgniteCommandRegistry().commands().forEachRemaining(e -> {
+            if (e.getValue().experimental())
+                return;
+
+            assertContains(log, helpOut, cmdText(e.getValue()));
+        }));
     }
 
     /**

@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 
-/** */
+/** Prints info regarding caches, groups or sequences. */
 public class CacheListCommand implements LocalCommand<CacheListCommandArg, VisorViewCacheTaskResult> {
     /** */
     Function<CacheListCommandArg, Predicate<GridClientNode>> FILTER = arg -> node ->

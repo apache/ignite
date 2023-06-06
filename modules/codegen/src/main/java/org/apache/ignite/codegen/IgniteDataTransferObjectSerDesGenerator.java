@@ -41,10 +41,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.commandline.CommandList;
-import org.apache.ignite.internal.commandline.DeclarativeCommandAdapter;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -268,15 +266,7 @@ public class IgniteDataTransferObjectSerDesGenerator {
 
     /** @param args Command line arguments. */
     public static void main(String[] args) {
-        IgniteDataTransferObjectSerDesGenerator gen = new IgniteDataTransferObjectSerDesGenerator();
-
-        Arrays.stream(CommandList.values())
-            .filter(cmd -> cmd.command() instanceof DeclarativeCommandAdapter)
-            .forEach(cmd -> gen.generate(((DeclarativeCommandAdapter<?>)cmd.command()).command()));
-
-        Arrays.stream(CacheSubcommands.values())
-            .filter(cmd -> cmd.subcommand() instanceof DeclarativeCommandAdapter)
-            .forEach(cmd -> gen.generate(((DeclarativeCommandAdapter<?>)cmd.subcommand()).command()));
+        new IgniteDataTransferObjectSerDesGenerator().generate(new IgniteCommandRegistry());
     }
 
     /** */

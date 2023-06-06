@@ -18,142 +18,108 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Command;
+
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_HOST;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE_PASSWORD;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_KEYSTORE_TYPE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PING_INTERVAL;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PING_TIMEOUT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PORT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_CIPHER_SUITES;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_FACTORY;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_KEY_ALGORITHM;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_SSL_PROTOCOL;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_TRUSTSTORE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_TRUSTSTORE_PASSWORD;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_TRUSTSTORE_TYPE;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 
 /**
  * Container with common parsed and validated arguments.
  */
-public class ConnectionAndSslParameters {
-    /** Host. */
-    private String host;
-
-    /** Port. */
-    private String port;
-
+public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     /** User. */
     private String user;
 
     /** Password. */
     private String pwd;
 
-    /** Force option is used for auto confirmation. */
-    private boolean autoConfirmation;
-
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
-    private long pingTimeout;
-
-    /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
-    private long pingInterval;
-
-    /** Verbose mode. */
-    private boolean verbose;
-
-    /** SSL Protocol. */
-    private String sslProtocol;
-
-    /** SSL Cipher suites. */
-    private String sslCipherSuites;
-
-    /** SSL Key Algorithm. */
-    private String sslKeyAlgorithm;
-
-    /** Keystore. */
-    private String sslKeyStorePath;
-
-    /** Keystore Type. */
-    private String sslKeyStoreType;
-
     /** Keystore Password. */
     private char[] sslKeyStorePassword;
-
-    /** Truststore. */
-    private String sslTrustStorePath;
-
-    /** Truststore Type. */
-    private String sslTrustStoreType;
 
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
-    /** SSL factory config. */
-    private String sslFactoryCfgPath;
+    /** Command to execute. */
+    private final Command<A, ?> command;
 
-    /** High-level command. */
-    private Command command;
+    /** Command to execute. */
+    private final Command<?, ?> root;
+
+    /** Command argument. */
+    private final A arg;
+
+    /** */
+    private final CLIArgumentParser parser;
 
     /**
      * @param command Command.
-     * @param host Host.
-     * @param port Port.
-     * @param user User.
-     * @param pwd Password.
-     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#getPingTimeout()}.
-     * @param pingInterval Ping interval. See {@link GridClientConfiguration#getPingInterval()}.
-     * @param autoConfirmation Auto confirmation flag.
-     * @param verbose Verbose mode.
-     * @param sslProtocol SSL Protocol.
-     * @param sslCipherSuites SSL cipher suites.
-     * @param sslKeyAlgorithm SSL Key Algorithm.
-     * @param sslKeyStorePath Keystore.
-     * @param sslKeyStorePassword Keystore Password.
-     * @param sslKeyStoreType Keystore Type.
-     * @param sslTrustStorePath Truststore.
-     * @param sslTrustStorePassword Truststore Password.
-     * @param sslTrustStoreType Truststore Type.
-     * @param sslFactoryCfgPath SSL Factory config.
      */
-    public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation, boolean verbose,
-        String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
-        String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType,
-        String sslFactoryCfgPath
+    public ConnectionAndSslParameters(
+        Command<A, ?> command,
+        Command<?, ?> root,
+        A arg,
+        CLIArgumentParser parser
     ) {
         this.command = command;
-        this.host = host;
-        this.port = port;
-        this.user = user;
-        this.pwd = pwd;
+        this.root = root;
+        this.arg = arg;
+        this.parser = parser;
 
-        this.pingTimeout = pingTimeout;
-        this.pingInterval = pingInterval;
-
-        this.autoConfirmation = autoConfirmation;
-        this.verbose = verbose;
-
-        this.sslProtocol = sslProtocol;
-        this.sslCipherSuites = sslCipherSuites;
-
-        this.sslKeyAlgorithm = sslKeyAlgorithm;
-        this.sslKeyStorePath = sslKeyStorePath;
-        this.sslKeyStoreType = sslKeyStoreType;
-        this.sslKeyStorePassword = sslKeyStorePassword;
-
-        this.sslTrustStorePath = sslTrustStorePath;
-        this.sslTrustStoreType = sslTrustStoreType;
-        this.sslTrustStorePassword = sslTrustStorePassword;
-
-        this.sslFactoryCfgPath = sslFactoryCfgPath;
+        this.user = parser.get(CMD_USER);
+        this.pwd = parser.get(CMD_PASSWORD);
+        this.sslKeyStorePassword = parser.get(CMD_KEYSTORE_PASSWORD);
+        this.sslTrustStorePassword = parser.get(CMD_TRUSTSTORE_PASSWORD);
     }
 
     /**
      * @return High-level command which were defined by user to run.
      */
-    public Command command() {
+    public Command<A, ?> command() {
         return command;
+    }
+
+    /**
+     * @return High-level command which were defined by user to run.
+     */
+    public Command<?, ?> root() {
+        return root;
+    }
+
+    /** */
+    public A commandArg() {
+        return arg;
     }
 
     /**
      * @return host name
      */
     public String host() {
-        return host;
+        return parser.get(CMD_HOST);
     }
 
     /**
      * @return port number
      */
-    public String port() {
-        return port;
+    public int port() {
+        return parser.get(CMD_PORT);
     }
 
     /**
@@ -190,7 +156,7 @@ public class ConnectionAndSslParameters {
      * @return Ping timeout.
      */
     public long pingTimeout() {
-        return pingTimeout;
+        return parser.get(CMD_PING_TIMEOUT);
     }
 
     /**
@@ -199,49 +165,49 @@ public class ConnectionAndSslParameters {
      * @return Ping interval.
      */
     public long pingInterval() {
-        return pingInterval;
+        return parser.get(CMD_PING_INTERVAL);
     }
 
     /**
      * @return Auto confirmation option.
      */
     public boolean autoConfirmation() {
-        return autoConfirmation;
+        return parser.get(CMD_AUTO_CONFIRMATION);
     }
 
     /**
      * @return SSL protocol
      */
-    public String sslProtocol() {
-        return sslProtocol;
+    public String[] sslProtocol() {
+        return parser.get(CMD_SSL_PROTOCOL);
     }
 
     /**
      * @return SSL cipher suites.
      */
-    public String getSslCipherSuites() {
-        return sslCipherSuites;
+    public String[] getSslCipherSuites() {
+        return parser.get(CMD_SSL_CIPHER_SUITES);
     }
 
     /**
      * @return SSL Key Algorithm
      */
     public String sslKeyAlgorithm() {
-        return sslKeyAlgorithm;
+        return parser.get(CMD_SSL_KEY_ALGORITHM);
     }
 
     /**
      * @return Keystore
      */
     public String sslKeyStorePath() {
-        return sslKeyStorePath;
+        return parser.get(CMD_KEYSTORE);
     }
 
     /**
      * @return Keystore type
      */
     public String sslKeyStoreType() {
-        return sslKeyStoreType;
+        return parser.get(CMD_KEYSTORE_TYPE);
     }
 
     /**
@@ -264,14 +230,14 @@ public class ConnectionAndSslParameters {
      * @return Truststore
      */
     public String sslTrustStorePath() {
-        return sslTrustStorePath;
+        return parser.get(CMD_TRUSTSTORE);
     }
 
     /**
      * @return Truststore type
      */
     public String sslTrustStoreType() {
-        return sslTrustStoreType;
+        return parser.get(CMD_TRUSTSTORE_TYPE);
     }
 
     /**
@@ -294,7 +260,7 @@ public class ConnectionAndSslParameters {
      * @return Predefined SSL Factory config.
      */
     public String sslFactoryConfigPath() {
-        return sslFactoryCfgPath;
+        return parser.get(CMD_SSL_FACTORY);
     }
 
     /**
@@ -303,6 +269,6 @@ public class ConnectionAndSslParameters {
      * @return {@code True} if verbose mode is enabled.
      */
     public boolean verbose() {
-        return verbose;
+        return parser.get(CMD_VERBOSE);
     }
 }

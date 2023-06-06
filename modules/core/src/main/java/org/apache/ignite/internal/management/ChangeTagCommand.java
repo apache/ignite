@@ -18,13 +18,11 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskResult;
-import org.jetbrains.annotations.Nullable;
 
-/** */
+/** Change Cluster tag command. */
 public class ChangeTagCommand implements ComputeCommand<ChangeTagCommandArg, VisorClusterChangeTagTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
@@ -54,7 +52,7 @@ public class ChangeTagCommand implements ComputeCommand<ChangeTagCommandArg, Vis
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String confirmationPrompt(GridClient cli, ChangeTagCommandArg arg) {
+    @Override public String confirmationPrompt(ChangeTagCommandArg arg) {
         return "Warning: the command will change cluster tag.";
     }
 }

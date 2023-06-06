@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
@@ -147,7 +146,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
 
         List<String> args = new ArrayList<>();
 
-        args.add(DEACTIVATE.text());
+        args.add("--deactivate");
         args.add("--force");
         args.add("--yes");
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
 /** */
@@ -28,7 +27,7 @@ public class BaselineVersionCommand extends AbstractBaselineCommand {
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, VisorBaselineTaskArg arg) throws Exception {
+    @Override public String confirmationPrompt(VisorBaselineTaskArg arg) {
         return "Warning: the command will perform changes in baseline.";
     }
 

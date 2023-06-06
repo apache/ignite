@@ -59,7 +59,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectEnum;
-import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
@@ -89,7 +89,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.management.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
@@ -130,10 +129,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
-/** Tests output of {@link CommandList#SYSTEM_VIEW} command. */
+/** Tests output of {@link SystemViewCommand} command. */
 public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Command line argument for printing content of a system view. */
-    private static final String CMD_SYS_VIEW = SYSTEM_VIEW.text();
+    private static final String CMD_SYS_VIEW = "--system-view";
 
     /** Latch that is used to unblock all compute jobs. */
     private static final CountDownLatch COMPUTE_JOB_UNBLOCK_LATCH = new CountDownLatch(1);
@@ -1271,7 +1270,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
         String outStart = "--------------------------------------------------------------------------------";
 
-        String outEnd = "Command [" + SYSTEM_VIEW.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
+        String outEnd = "Command [SYSTEM-VIEW] finished with code: " + EXIT_CODE_OK;
 
         String[] rows = out.substring(
             out.indexOf(outStart) + outStart.length() + 1,

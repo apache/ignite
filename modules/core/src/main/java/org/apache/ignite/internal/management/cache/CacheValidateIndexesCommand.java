@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
 
-/** */
+/** Validates indexes attempting to read each indexed entry. */
 public class CacheValidateIndexesCommand
     implements ComputeCommand<CacheValidateIndexesCommandArg, VisorValidateIndexesTaskResult> {
     /** {@inheritDoc} */

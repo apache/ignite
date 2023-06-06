@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,7 +49,22 @@ import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
+import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.EnumDescription;
+import org.apache.ignite.internal.management.api.HelpCommand;
+import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.Positional;
+import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -60,18 +83,22 @@ import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
-import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_ENABLE_EXPERIMENTAL;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_ENABLE_EXPERIMENTAL;
-import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
-import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
-import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
+import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
+import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.join;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
+import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
  * Class that execute several commands passed via command line.
@@ -105,19 +132,22 @@ public class CommandHandler {
     private static final long DFLT_PING_TIMEOUT = 30_000L;
 
     /** */
+    public static final String DFLT_HOST = "127.0.0.1";
+
+    /** */
+    public static final int DFLT_PORT = 11211;
+
+    /** */
     private final Scanner in = new Scanner(System.in);
 
     /** Utility name. */
     public static final String UTILITY_NAME = "control.(sh|bat)";
 
-    /** */
-    public static final String NULL = "null";
-
     /** JULs logger. */
     private final IgniteLogger logger;
 
     /** Supported commands. */
-    private final Map<String, Command<?>> cmds;
+    private final Map<String, Command<?, ?>> cmds;
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -172,28 +202,28 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        Map<String, Command<?>> cmds = new LinkedHashMap<>();
+        Map<String, Command<?, ?>> cmds = new LinkedHashMap<>();
 
-        CommandList.commands().forEach((k, v) -> cmds.put(k.toLowerCase(), v));
+        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(cmdText(e.getValue()), e.getValue()));
 
         if (!F.isEmpty(it)) {
             for (CommandsProvider provider : it) {
                 if (logger.isDebugEnabled())
                     logger.debug("Registering pluggable commands provider: " + provider);
 
-                provider.commands().forEach((k, v) -> {
-                    k = k.toLowerCase();
+                provider.commands().forEach(cmd -> {
+                    String k = cmdText(cmd);
 
                     if (logger.isDebugEnabled())
                         logger.debug("Registering command: " + k);
 
                     if (cmds.containsKey(k)) {
                         throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
-                            provider + " tries to register command " + v + ", but this command has already been " +
+                            provider + " tries to register command " + cmd + ", but this command has already been " +
                             "registered " + cmds.get(k));
                     }
                     else
-                        cmds.put(k, v);
+                        cmds.put(k, cmd);
                 });
             }
         }
@@ -207,7 +237,7 @@ public class CommandHandler {
      * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    public int execute(List<String> rawArgs) {
+    public <A extends IgniteDataTransferObject> int execute(List<String> rawArgs) {
         LocalDateTime startTime = LocalDateTime.now();
 
         Thread.currentThread().setName("session=" + ses);
@@ -231,12 +261,13 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger, cmds).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, cmds).parseAndValidate(rawArgs);
 
-            Command command = args.command();
-            commandName = command.name();
+            commandName = args.command() instanceof HelpCommand && args.root() != null
+                ? toFormattedCommandName(args.root().getClass()).toUpperCase()
+                : toFormattedCommandName(args.command().getClass()).toUpperCase();
 
-            GridClientConfiguration clientCfg = getClientConfiguration(args);
+            CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args));
 
             int tryConnectMaxCount = 3;
 
@@ -246,10 +277,11 @@ public class CommandHandler {
 
             while (true) {
                 try {
-                    if (!args.autoConfirmation()) {
-                        command.prepareConfirmation(clientCfg, logger);
+                    if (!invoker.prepare(logger))
+                        return EXIT_CODE_OK;
 
-                        if (!confirm(command.confirmationPrompt())) {
+                    if (!args.autoConfirmation()) {
+                        if (!confirm(invoker.confirmationPrompt())) {
                             logger.info("Operation cancelled.");
 
                             return EXIT_CODE_OK;
@@ -260,11 +292,12 @@ public class CommandHandler {
                     logger.info("Arguments: " + argumentsToString(rawArgs));
                     logger.info(U.DELIM);
 
-                    if (command instanceof DeclarativeCommandAdapter && ((DeclarativeCommandAdapter<?>)command).isHelp()) {
-                        command.printUsage(logger);
-                    }
+                    if (args.command() instanceof HelpCommand)
+                        printUsage(logger, args.root());
+                    else if (args.command() instanceof BeforeNodeStartCommand)
+                        lastOperationRes = invoker.invokeBeforeNodeStart(logger);
                     else
-                        lastOperationRes = command.execute(clientCfg, logger, args.verbose());
+                        lastOperationRes = invoker.invoke(logger, args.verbose());
 
                     break;
                 }
@@ -287,11 +320,11 @@ public class CommandHandler {
                     if (credentialsRequested)
                         tryConnectMaxCount--;
 
-                    String user = retrieveUserName(args, clientCfg);
-
-                    String pwd = new String(requestPasswordFromConsole("password: "));
-
-                    clientCfg = getClientConfiguration(user, pwd, args);
+                    invoker.clientConfiguration(getClientConfiguration(
+                        retrieveUserName(args, invoker.clientConfiguration()),
+                        new String(requestPasswordFromConsole("password: ")),
+                        args
+                    ));
 
                     credentialsRequested = true;
                 }
@@ -449,14 +482,6 @@ public class CommandHandler {
     }
 
     /**
-     * @param arg To check.
-     * @return True if provided argument is among sensitive one and not should be displayed.
-     */
-    protected boolean isSensitiveArgument(String arg) {
-        return CommonArgParser.isSensitiveArgument(arg);
-    }
-
-    /**
      * Joins user's arguments and hides sensitive information.
      *
      * @param rawArgs Arguments which user has provided.
@@ -480,7 +505,7 @@ public class CommandHandler {
 
             sb.a(arg).a(' ');
 
-            hide = isSensitiveArgument(arg);
+            hide = ArgumentParser.isSensitiveArgument(arg);
         }
 
         return sb.toString();
@@ -594,21 +619,13 @@ public class CommandHandler {
 
         SslContextFactory factory = new SslContextFactory();
 
-        String[] sslProtocols = split(args.sslProtocol(), ",");
-
-        if (F.isEmpty(sslProtocols))
-            factory.setProtocol(DFLT_SSL_PROTOCOL);
-        else {
-            factory.setProtocol(sslProtocols[0]);
-
-            if (sslProtocols.length > 1)
-                factory.setProtocols(sslProtocols);
-        }
+        if (args.sslProtocol().length > 1)
+            factory.setProtocols(args.sslProtocol());
+        else
+            factory.setProtocol(args.sslProtocol()[0]);
 
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
-
-        factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
-
+        factory.setCipherSuites(args.getSslCipherSuites());
         factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
         if (args.sslKeyStorePassword() != null)
@@ -728,23 +745,6 @@ public class CommandHandler {
         }
     }
 
-    /**
-     * Split string into items.
-     *
-     * @param s String to process.
-     * @param delim Delimiter.
-     * @return List with items.
-     */
-    private static String[] split(String s, String delim) {
-        if (F.isEmpty(s))
-            return null;
-
-        return Arrays.stream(s.split(delim))
-            .map(String::trim)
-            .filter(item -> !item.isEmpty())
-            .toArray(String[]::new);
-    }
-
     /** @param rawArgs Arguments. */
     private void printHelp(List<String> rawArgs) {
         boolean experimentalEnabled = rawArgs.stream().anyMatch(CMD_ENABLE_EXPERIMENTAL::equalsIgnoreCase) ||
@@ -754,16 +754,25 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", getCommonOptions())),
-            optional("command"), "<command_parameters>"));
+        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, cmds).getCommonOptions())),
+            asOptional("command", true), "<command_parameters>"));
         logger.info("");
         logger.info("");
 
         logger.info("This utility can do the following commands:");
 
         cmds.values().forEach(c -> {
-            if (experimentalEnabled || !c.experimental())
-                c.printUsage(logger);
+            if (experimentalEnabled || !c.experimental()) {
+                if (Objects.equals(c.getClass(), CacheCommand.class)) {
+                    logger.info("");
+                    logger.info("View caches information in a cluster. For more details type:");
+                    logger.info(DOUBLE_INDENT + UTILITY_NAME + " --cache help");
+
+                    return;
+                }
+
+                printUsage(logger, c);
+            }
         });
 
         logger.info("");
@@ -789,5 +798,206 @@ public class CommandHandler {
         logger.info(DOUBLE_INDENT + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
         logger.info(DOUBLE_INDENT + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
         logger.info(DOUBLE_INDENT + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
+    }
+
+    /**
+     * Print info for user about command (parameters, use cases and so on).
+     *
+     * @param logger Logger to use.
+     */
+    public void printUsage(IgniteLogger logger, Command<?, ?> cmd) {
+        if (cmd instanceof CacheCommand || cmd instanceof CacheCommand.CacheHelpCommand)
+            printCacheHelpHeader(logger);
+
+        usage(cmd, Collections.emptyList(), logger);
+
+        if (cmd instanceof CacheCommand || cmd instanceof CacheCommand.CacheHelpCommand)
+            logger.info("");
+    }
+
+    /** */
+    private void printCacheHelpHeader(IgniteLogger logger) {
+        logger.info(INDENT + "The '--cache subcommand' is used to get information about and perform actions" +
+            " with caches. The command has the following syntax:");
+        logger.info("");
+        logger.info(INDENT + join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, null).getCommonOptions())) + " " +
+            "--cache [subcommand] <subcommand_parameters>");
+        logger.info("");
+        logger.info(INDENT + "The subcommands that take [nodeId] as an argument ('list', 'find_garbage', " +
+            "'contention' and 'validate_indexes') will be executed on the given node or on all server nodes" +
+            " if the option is not specified. Other commands will run on a random server node.");
+        logger.info("");
+        logger.info("");
+        logger.info(INDENT + "Subcommands:");
+    }
+
+    /**
+     * Generates usage for base command and all of its children, if any.
+     *
+     * @param cmd Base command.
+     * @param parents Collection of parent commands.
+     * @param logger Logger to print help to.
+     */
+    public static void usage(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
+        if (cmd instanceof LocalCommand
+            || cmd instanceof ComputeCommand
+            || cmd instanceof HelpCommand
+            || cmd instanceof BeforeNodeStartCommand) {
+            logger.info("");
+
+            if (cmd.experimental())
+                logger.info(INDENT + "[EXPERIMENTAL]");
+
+            printExample(cmd, parents, logger);
+
+            if (CommandUtils.hasDescribedParameters(cmd)) {
+                logger.info("");
+                logger.info(DOUBLE_INDENT + "Parameters:");
+
+                AtomicInteger maxParamLen = new AtomicInteger();
+
+                Consumer<Field> lenCalc = fld -> {
+                    maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length()));
+
+                    if (fld.isAnnotationPresent(EnumDescription.class)) {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                        for (String name : enumDesc.names())
+                            maxParamLen.set(Math.max(maxParamLen.get(), name.length()));
+                    }
+                };
+
+                visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (argGrp, flds) -> flds.forEach(lenCalc));
+
+                Consumer<Field> printer = fld -> {
+                    BiConsumer<String, String> logParam = (name, description) -> {
+                        if (F.isEmpty(description))
+                            return;
+
+                        logger.info(
+                            DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
+                        );
+                    };
+
+                    if (!fld.isAnnotationPresent(EnumDescription.class)) {
+                        logParam.accept(
+                            parameterExample(fld, false),
+                            fld.getAnnotation(Argument.class).description()
+                        );
+                    }
+                    else {
+                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                        String[] names = enumDesc.names();
+                        String[] descriptions = enumDesc.descriptions();
+
+                        for (int i = 0; i < names.length; i++)
+                            logParam.accept(names[i], descriptions[i]);
+                    }
+                };
+
+                visitCommandParams(cmd.argClass(), printer, printer, (argGrp, flds) -> {
+                    flds.stream().filter(fld -> fld.isAnnotationPresent(Positional.class)).forEach(printer);
+                    flds.stream().filter(fld -> !fld.isAnnotationPresent(Positional.class)).forEach(printer);
+                });
+            }
+        }
+
+        if (cmd instanceof CommandsRegistry) {
+            List<Command<?, ?>> parents0 = new ArrayList<>(parents);
+
+            parents0.add(cmd);
+
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> usage(cmd0.getValue(), parents0, logger));
+        }
+    }
+
+    /**
+     * Generates and prints example of command.
+     *
+     * @param cmd Command.
+     * @param parents Collection of parent commands.
+     * @param logger Logger to print help to.
+     */
+    private static void printExample(Command<?, ?> cmd, List<Command<?, ?>> parents, IgniteLogger logger) {
+        logger.info(INDENT + cmd.description() + ":");
+
+        StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
+
+        AtomicBoolean prefixInclude = new AtomicBoolean(true);
+
+        AtomicReference<String> parentPrefix = new AtomicReference<>();
+
+        Consumer<Object> namePrinter = cmd0 -> {
+            bldr.append(' ');
+
+            if (prefixInclude.get())
+                bldr.append(PARAMETER_PREFIX);
+
+            String cmdName = toFormattedCommandName(cmd0.getClass());
+
+            String parentPrefix0 = parentPrefix.get();
+
+            parentPrefix.set(cmdName);
+
+            if (!F.isEmpty(parentPrefix0)) {
+                cmdName = cmdName.replaceFirst(parentPrefix0 + CMD_WORDS_DELIM, "");
+
+                if (!prefixInclude.get())
+                    cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
+            }
+
+            bldr.append(cmdName);
+
+            if (cmd0 instanceof CommandsRegistry)
+                prefixInclude.set(!(cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)));
+        };
+
+        parents.forEach(namePrinter);
+        namePrinter.accept(cmd);
+
+        BiConsumer<Boolean, Field> paramPrinter = (spaceReq, fld) -> {
+            if (spaceReq)
+                bldr.append(' ');
+
+            bldr.append(parameterExample(fld, true));
+        };
+
+        visitCommandParams(
+            cmd.argClass(),
+            fld -> bldr.append(' ').append(valueExample(fld)),
+            fld -> paramPrinter.accept(true, fld),
+            (argGrp, flds) -> {
+                if (argGrp.onlyOneOf()) {
+                    bldr.append(' ');
+
+                    if (argGrp.optional())
+                        bldr.append('[');
+
+                    for (int i = 0; i < flds.size(); i++) {
+                        if (i != 0)
+                            bldr.append('|');
+
+                        paramPrinter.accept(false, flds.get(i));
+                    }
+
+                    if (argGrp.optional())
+                        bldr.append(']');
+                }
+                else {
+                    flds.stream()
+                        .filter(fld -> fld.isAnnotationPresent(Positional.class))
+                        .forEach(fld -> bldr.append(' ').append(valueExample(fld)));
+                    flds.stream()
+                        .filter(fld -> !fld.isAnnotationPresent(Positional.class))
+                        .forEach(fld -> paramPrinter.accept(true, fld));
+                }
+            }
+        );
+
+        if (cmd.argClass().isAnnotationPresent(WithCliConfirmParameter.class))
+            bldr.append(' ').append(CommandUtils.asOptional(CMD_AUTO_CONFIRMATION, true));
+
+        logger.info(bldr.toString());
     }
 }

@@ -347,17 +347,17 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         IgniteEx ignite,
         boolean deleteFoundGarbage
     ) {
-        CacheFindGarbageCommandArg arg = new CacheFindGarbageCommandArg();
+        CacheFindGarbageCommandArg arg0 = new CacheFindGarbageCommandArg();
 
-        arg.groups(new String[] {GROUP});
-        arg.delete(deleteFoundGarbage);
+        arg0.groups(new String[] {GROUP});
+        arg0.delete(deleteFoundGarbage);
 
         UUID id = ignite.localNode().id();
 
-        VisorFindAndDeleteGarbageInPersistenceTaskResult result = ignite.compute().execute(
-            VisorFindAndDeleteGarbageInPersistenceTask.class,
-            new VisorTaskArgument(id, arg, true)
-        );
+        VisorTaskArgument arg = new VisorTaskArgument(id, arg0, true);
+
+        VisorFindAndDeleteGarbageInPersistenceTaskResult result =
+            ignite.compute().execute(VisorFindAndDeleteGarbageInPersistenceTask.class, arg);
 
         return result;
     }

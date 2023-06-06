@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
-/** */
+/** Command for printing system view content. */
 public class SystemViewCommand implements ComputeCommand<SystemViewCommandArg, VisorSystemViewTaskResult> {
     /** Column separator. */
     public static final String COLUMN_SEPARATOR = "    ";

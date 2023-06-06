@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -31,7 +30,7 @@ public class WarmUpStopCommand implements BeforeNodeStartCommand<NoArg, Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt(GridClient cli, NoArg arg) throws Exception {
+    @Override public String confirmationPrompt(NoArg arg) {
         return "Warning: command will stop warm-up.";
     }
 

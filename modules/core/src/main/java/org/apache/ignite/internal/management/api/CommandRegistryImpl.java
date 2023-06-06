@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 
 /**
  * All commands class names stored in registry must ends with {@link Command#CMD_NAME_POSTFIX}.
@@ -43,8 +44,11 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
      * @param cmd Command to register.
      */
     void register(Command<?, ?> cmd) {
-        Class<? extends CommandsRegistry<?, ?>> parent = CommandsRegistry.class.isAssignableFrom(getClass())
-            ? (Class<? extends CommandsRegistry<?, ?>>)getClass()
+        boolean hasParent = CommandsRegistry.class.isAssignableFrom(getClass())
+            && getClass() != IgniteCommandRegistry.class;
+
+        Class<? extends CommandsRegistry<?, ?>> parent = hasParent ?
+            (Class<? extends CommandsRegistry<?, ?>>)getClass()
             : null;
 
         String name = cmd.getClass().getSimpleName();
