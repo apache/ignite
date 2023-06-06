@@ -617,7 +617,7 @@ public class CommandHandler {
 
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setProtocols(args.sslProtocol());
+        factory.setProtocols(args.sslProtocol()[0]);
         factory.setKeyAlgorithm(args.sslKeyAlgorithm());
         factory.setCipherSuites(args.getSslCipherSuites());
         factory.setKeyStoreFilePath(args.sslKeyStorePath());
