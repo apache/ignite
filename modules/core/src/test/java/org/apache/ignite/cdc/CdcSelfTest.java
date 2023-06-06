@@ -802,9 +802,13 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, 0, 1);
 
-        File walCdcDir = U.field(ign.context().cache().context().wal(true), "walCdcDir");
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ign.context().cache().context().wal(true);
+
+        File walCdcDir = wal.walCdcDirectory();
+        File archiveDir = wal.archiveDir();
 
         assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        assertEquals(1, archiveDir.listFiles().length);
 
         DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
             .property(FileWriteAheadLogManager.CDC_DISABLED);
@@ -816,12 +820,15 @@ public class CdcSelfTest extends AbstractCdcTest {
         Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
 
         assertEquals(1, walCdcDir.list().length);
+        // In-memory CDC should not produce WAL records when disabled.
+        assertEquals(persistenceEnabled ? 2 : 1, archiveDir.list().length);
 
         disabled.propagate(false);
 
         addData(cache, 0, 1);
 
         assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        assertEquals(persistenceEnabled ? 3 : 2, archiveDir.listFiles().length);
     }
 
     /** */

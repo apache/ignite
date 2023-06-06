@@ -122,6 +122,7 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -923,6 +924,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (cctx.kernalContext().recoveryMode() &&
             !(rec instanceof PageDeltaRecord || rec instanceof PageSnapshot || rec instanceof MemoryRecoveryRecord))
             return null;
+
+        if (inMemoryCdc && cdcDisabled.getOrDefault(false)) {
+            LT.warn(log, "Logging CDC data records to WAL skipped. '" + CDC_DISABLED +
+                "' distributed property is 'true'.");
+
+            return null;
+        }
 
         FileWriteHandle currWrHandle = currentHandle();
 
