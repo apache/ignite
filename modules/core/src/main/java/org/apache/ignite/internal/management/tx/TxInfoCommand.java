@@ -183,13 +183,16 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
     private void printTransactionDetailedInfo(Map<ClusterNode, VisorTxTaskResult> res, Map<Integer, String> usedCaches,
                                               Map<Integer, String> usedCacheGroups, VisorTxInfo firstInfo, TxVerboseInfo firstVerboseInfo,
                                               Set<TransactionState> states, String indent, Consumer<String> printer) {
-        printer.accept(indent + "Near XID version: " + firstVerboseInfo.nearXidVersion());
+        printer.accept(indent + "Near XID version: " +
+            (firstVerboseInfo == null ? null : firstVerboseInfo.nearXidVersion()));
         printer.accept(indent + "Near XID version (UUID): " + firstInfo.getNearXid());
         printer.accept(indent + "Isolation: " + firstInfo.getIsolation());
         printer.accept(indent + "Concurrency: " + firstInfo.getConcurrency());
         printer.accept(indent + "Timeout: " + firstInfo.getTimeout());
-        printer.accept(indent + "Initiator node: " + firstVerboseInfo.nearNodeId());
-        printer.accept(indent + "Initiator node (consistent ID): " + firstVerboseInfo.nearNodeConsistentId());
+        printer.accept(indent + "Initiator node: " +
+            (firstVerboseInfo == null ? null : firstVerboseInfo.nearNodeId()));
+        printer.accept(indent + "Initiator node (consistent ID): " +
+            (firstVerboseInfo == null ? null : firstVerboseInfo.nearNodeConsistentId()));
         printer.accept(indent + "Label: " + firstInfo.getLabel());
         printer.accept(indent + "Topology version: " + firstInfo.getTopologyVersion());
         printer.accept(indent + "Used caches (ID to name): " + usedCaches);
