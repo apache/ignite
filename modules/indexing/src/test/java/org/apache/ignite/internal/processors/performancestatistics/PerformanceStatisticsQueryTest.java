@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -42,19 +43,23 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.THIN_CLIENT;
+import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor.indexQueryText;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.junit.Assume.assumeFalse;
 
@@ -175,6 +180,20 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         ScanQuery<Object, Object> qry = new ScanQuery<>().setPageSize(pageSize);
 
         checkQuery(SCAN, qry, DEFAULT_CACHE_NAME);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testIndexQuery() throws Exception {
+        IndexQuery<Integer, Integer> qry = new IndexQuery<>(Integer.class);
+
+        qry.setPageSize(pageSize);
+        qry.setCriteria(gt("_KEY", 0));
+
+        String expText = indexQueryText(DEFAULT_CACHE_NAME,
+            new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType()));
+
+        checkQuery(INDEX, qry, expText);
     }
 
     /** @throws Exception If failed. */

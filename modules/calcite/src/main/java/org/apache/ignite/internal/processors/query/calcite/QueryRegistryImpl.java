@@ -65,8 +65,6 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
             long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
                 false, createCancelToken(qry), initiatorId, false, false, false);
 
-            qryMgr.trackRequestId(locId);
-
             rootQry.localQueryId(locId);
 
             return qry;
