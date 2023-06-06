@@ -60,6 +60,9 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
     /** Command to execute. */
     private final Command<A, ?> command;
 
+    /** Command to execute. */
+    private final Command<?, ?> root;
+
     /** Command argument. */
     private final A arg;
 
@@ -71,10 +74,12 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      */
     public ConnectionAndSslParameters(
         Command<A, ?> command,
+        Command<?, ?> root,
         A arg,
         CLIArgumentParser parser
     ) {
         this.command = command;
+        this.root = root;
         this.arg = arg;
         this.parser = parser;
 
@@ -89,6 +94,13 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      */
     public Command<A, ?> command() {
         return command;
+    }
+
+    /**
+     * @return High-level command which were defined by user to run.
+     */
+    public Command<?, ?> root() {
+        return root;
     }
 
     /** */

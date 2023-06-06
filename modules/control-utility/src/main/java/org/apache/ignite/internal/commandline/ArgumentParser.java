@@ -255,9 +255,9 @@ public class ArgumentParser {
     ) {
         List<String> args = new ArrayList<>(raw);
 
-        Command<A, ?> cmd = command(args.iterator());
+        IgniteBiTuple<Command<A, ?>, Command<?, ?>> cmd = command(args.iterator());
 
-        IgniteBiTuple<List<CLIArgument<?>>, List<CLIArgument<?>>> cmdArgs = commandArguments(cmd);
+        IgniteBiTuple<List<CLIArgument<?>>, List<CLIArgument<?>>> cmdArgs = commandArguments(cmd.get1());
 
         cmdArgs.get2().addAll(common);
 
@@ -266,12 +266,12 @@ public class ArgumentParser {
         parser.parse(args.iterator());
 
         A arg = argument(
-            cmd.argClass(),
+            cmd.get1().argClass(),
             (fld, pos) -> parser.get(pos),
             fld -> parser.get(toFormattedFieldName(fld).toLowerCase())
         );
 
-        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.experimental()) {
+        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.get1().experimental()) {
             logger.warning(
                 String.format("To use experimental command add " + CMD_ENABLE_EXPERIMENTAL + " parameter for %s",
                     UTILITY_NAME)
@@ -280,7 +280,7 @@ public class ArgumentParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters<>(cmd, arg, parser);
+        return new ConnectionAndSslParameters<>(cmd.get1(), cmd.get2(), arg, parser);
     }
 
     /**
@@ -290,9 +290,10 @@ public class ArgumentParser {
      * @return Command to execute.
      * @param <A> Argument type.
      */
-    protected <A extends IgniteDataTransferObject> Command<A, ?> command(
+    protected <A extends IgniteDataTransferObject> IgniteBiTuple<Command<A, ?>, Command<?, ?>> command(
         Iterator<String> iter
     ) {
+        Command<?, ?> root = null;
         Command<?, ?> cmd = null;
 
         while (iter.hasNext() && cmd == null)
@@ -324,6 +325,7 @@ public class ArgumentParser {
             if (cmd1 == null)
                 break;
 
+            root = cmd;
             cmd = cmd1;
 
             // Remove command name parameter to exclude it from ongoing parsing.
@@ -339,7 +341,7 @@ public class ArgumentParser {
             );
         }
 
-        return (Command<A, ?>)cmd;
+        return F.t((Command<A, ?>)cmd, root);
     }
 
     /** */

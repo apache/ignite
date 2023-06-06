@@ -263,7 +263,10 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, cmds).parseAndValidate(rawArgs);
 
-            commandName = toFormattedCommandName(args.command().getClass()).toUpperCase();
+            commandName =
+                args.command() instanceof HelpCommand
+                    ? toFormattedCommandName(args.root().getClass()).toUpperCase()
+                    : toFormattedCommandName(args.command().getClass()).toUpperCase();
 
             CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args));
 
@@ -291,7 +294,7 @@ public class CommandHandler {
                     logger.info(U.DELIM);
 
                     if (args.command() instanceof HelpCommand)
-                        printUsage(logger, args.command());
+                        printUsage(logger, args.root());
                     else if (args.command() instanceof BeforeNodeStartCommand)
                         lastOperationRes = invoker.invokeBeforeNodeStart(logger);
                     else
