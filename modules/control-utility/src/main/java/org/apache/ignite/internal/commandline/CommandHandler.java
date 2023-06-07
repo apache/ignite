@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.configuration.Factory;
@@ -847,18 +844,7 @@ public class CommandHandler {
                 logger.info("");
                 logger.info(DOUBLE_INDENT + "Parameters:");
 
-                AtomicInteger maxParamLen = new AtomicInteger();
-
-                Consumer<Field> lenCalc = fld -> {
-                    maxParamLen.set(Math.max(maxParamLen.get(), parameterExample(fld, false).length()));
-
-                    if (fld.isAnnotationPresent(EnumDescription.class)) {
-                        EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
-
-                        for (String name : enumDesc.names())
-                            maxParamLen.set(Math.max(maxParamLen.get(), name.length()));
-                    }
-                };
+                LengthCalculator lenCalc = new LengthCalculator();
 
                 visitCommandParams(cmd.argClass(), lenCalc, lenCalc, (argGrp, flds) -> flds.forEach(lenCalc));
 
@@ -868,7 +854,7 @@ public class CommandHandler {
                             return;
 
                         logger.info(
-                            DOUBLE_INDENT + INDENT + U.extendToLen(name, maxParamLen.get()) + "  - " + description + "."
+                            DOUBLE_INDENT + INDENT + U.extendToLen(name, lenCalc.length) + "  - " + description + "."
                         );
                     };
 
@@ -917,37 +903,12 @@ public class CommandHandler {
 
         StringBuilder bldr = new StringBuilder(DOUBLE_INDENT + UTILITY_NAME);
 
-        AtomicBoolean prefixInclude = new AtomicBoolean(true);
+        CommandName name = new CommandName();
 
-        AtomicReference<String> parentPrefix = new AtomicReference<>();
+        parents.forEach(name);
+        name.accept(cmd);
 
-        Consumer<Object> namePrinter = cmd0 -> {
-            bldr.append(' ');
-
-            if (prefixInclude.get())
-                bldr.append(NAME_PREFIX);
-
-            String cmdName = toFormattedCommandName(cmd0.getClass());
-
-            String parentPrefix0 = parentPrefix.get();
-
-            parentPrefix.set(cmdName);
-
-            if (!F.isEmpty(parentPrefix0)) {
-                cmdName = cmdName.replaceFirst(parentPrefix0 + CMD_WORDS_DELIM, "");
-
-                if (!prefixInclude.get())
-                    cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
-            }
-
-            bldr.append(cmdName);
-
-            if (cmd0 instanceof CommandsRegistry)
-                prefixInclude.set(cmd0.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class));
-        };
-
-        parents.forEach(namePrinter);
-        namePrinter.accept(cmd);
+        bldr.append(name.name.toString());
 
         BiConsumer<Boolean, Field> paramPrinter = (spaceReq, fld) -> {
             if (spaceReq)
@@ -992,5 +953,61 @@ public class CommandHandler {
             bldr.append(' ').append(CommandUtils.asOptional(CMD_AUTO_CONFIRMATION, true));
 
         logger.info(bldr.toString());
+    }
+
+    /** */
+    private static class LengthCalculator implements Consumer<Field> {
+        /** */
+        int length;
+
+        /** {@inheritDoc} */
+        @Override public void accept(Field fld) {
+            length = Math.max(length, parameterExample(fld, false).length());
+
+            if (fld.isAnnotationPresent(EnumDescription.class)) {
+                EnumDescription enumDesc = fld.getAnnotation(EnumDescription.class);
+
+                for (String name : enumDesc.names())
+                    length = Math.max(length, name.length());
+            }
+        }
+    }
+
+    /** */
+    public static class CommandName implements Consumer<Object> {
+        /** */
+        private boolean prefixInclude = true;
+
+        /** */
+        private String parentPrefix;
+
+        /** */
+        StringBuilder name = new StringBuilder();
+
+        /** {@inheritDoc} */
+        @Override public void accept(Object cmd) {
+            name.append(' ');
+
+            if (prefixInclude)
+                name.append(NAME_PREFIX);
+
+            String cmdName = toFormattedCommandName(cmd.getClass());
+
+            String parentPrefix0 = parentPrefix;
+
+            parentPrefix = cmdName;
+
+            if (!F.isEmpty(parentPrefix0)) {
+                cmdName = cmdName.replaceFirst(parentPrefix0 + CMD_WORDS_DELIM, "");
+
+                if (!prefixInclude)
+                    cmdName = cmdName.replaceAll(CMD_WORDS_DELIM + "", PARAM_WORDS_DELIM + "");
+            }
+
+            name.append(cmdName);
+
+            if (cmd instanceof CommandsRegistry)
+                prefixInclude = cmd.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class);
+        }
     }
 }
