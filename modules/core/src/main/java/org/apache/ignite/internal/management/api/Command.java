@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface Command<A extends IgniteDataTransferObject, R> {
     /** */
-    String CMD_NAME_POSTFIX = "Command";
+    public static final String CMD_NAME_POSTFIX = "Command";
 
     /** Command description. */
     public String description();
