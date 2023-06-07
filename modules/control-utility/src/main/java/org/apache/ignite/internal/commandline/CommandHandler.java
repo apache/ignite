@@ -55,7 +55,7 @@ import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -951,7 +951,7 @@ public class CommandHandler {
             bldr.append(cmdName);
 
             if (cmd0 instanceof CommandsRegistry)
-                prefixInclude.set(!(cmd0.getClass().isAnnotationPresent(CliPositionalSubcommands.class)));
+                prefixInclude.set(cmd0.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class));
         };
 
         parents.forEach(namePrinter);

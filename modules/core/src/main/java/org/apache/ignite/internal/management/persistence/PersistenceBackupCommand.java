@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
 /** */
-@CliPositionalSubcommands
 public class PersistenceBackupCommand extends CommandRegistryImpl {
     /** */
     public PersistenceBackupCommand() {

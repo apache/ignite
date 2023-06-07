@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
 /** Command to manage PDS defragmentation. */
-@CliPositionalSubcommands
 public class DefragmentationCommand extends CommandRegistryImpl {
     /** */
     public DefragmentationCommand() {

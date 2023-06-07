@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.management;
 
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
 /** Warm-up command. */
+@CliSubcommandsWithPrefix
 public class WarmUpCommand extends CommandRegistryImpl {
     /** */
     public WarmUpCommand() {

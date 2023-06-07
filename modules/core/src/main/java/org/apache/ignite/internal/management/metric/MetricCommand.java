@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -34,6 +35,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /** Command for printing metric values. */
+@CliSubcommandsWithPrefix
 public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<String, ?>>
     implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
     /** */

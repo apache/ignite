@@ -25,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -35,6 +36,7 @@ import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.logParsedArgs;
 
 /** Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster. */
+@CliSubcommandsWithPrefix
 public class CacheIdleVerifyCommand
     extends CommandRegistryImpl<CacheIdleVerifyCommandArg, IdleVerifyResultV2>
     implements ComputeCommand<CacheIdleVerifyCommandArg, IdleVerifyResultV2> {

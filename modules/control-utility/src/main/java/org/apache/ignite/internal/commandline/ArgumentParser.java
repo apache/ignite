@@ -42,7 +42,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -311,7 +311,7 @@ public class ArgumentParser {
 
             char delim = PARAM_WORDS_DELIM;
 
-            if (!cmd.getClass().isAnnotationPresent(CliPositionalSubcommands.class)) {
+            if (cmd.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class)) {
                 if (!name.startsWith(PARAMETER_PREFIX))
                     break;
 

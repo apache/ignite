@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-@CliPositionalSubcommands
 public class CacheCommand extends CommandRegistryImpl<NoArg, Void> {
     /** */
     public CacheCommand() {

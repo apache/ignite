@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
 /** */
+@CliSubcommandsWithPrefix
 public class TxCommand extends CommandRegistryImpl<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>>
     implements ComputeCommand<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>> {
     /** */

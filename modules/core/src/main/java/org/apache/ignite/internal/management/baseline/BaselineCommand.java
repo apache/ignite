@@ -26,17 +26,16 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
-@CliPositionalSubcommands
 public class BaselineCommand extends CommandRegistryImpl<VisorBaselineTaskArg, VisorBaselineTaskResult>
     implements ComputeCommand<VisorBaselineTaskArg, VisorBaselineTaskResult> {
     /** {@inheritDoc} */

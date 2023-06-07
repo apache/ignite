@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
 /** Snapshot commands. */
-@CliPositionalSubcommands
 public class SnapshotCommand extends CommandRegistryImpl {
     /** */
     public SnapshotCommand() {

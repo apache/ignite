@@ -22,7 +22,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceTaskArg;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.visor.persistence.PersistenceTask;
 import org.apache.ignite.internal.visor.persistence.PersistenceTaskResult;
 
 /** */
-@CliPositionalSubcommands
 public class PersistenceCommand extends CommandRegistryImpl<PersistenceTaskArg, PersistenceTaskResult>
     implements ComputeCommand<PersistenceTaskArg, PersistenceTaskResult> {
     /** */

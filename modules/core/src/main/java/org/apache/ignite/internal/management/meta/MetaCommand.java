@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.management.meta;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /** Metadata commands. */
-@CliPositionalSubcommands
 public class MetaCommand extends CommandRegistryImpl {
     /** */
     public MetaCommand() {

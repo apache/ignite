@@ -20,11 +20,9 @@ package org.apache.ignite.internal.management.performancestatistics;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
 /** Command to manage performance statistics. */
-@CliPositionalSubcommands
 public class PerformanceStatisticsCommand extends CommandRegistryImpl {
     /** */
     public PerformanceStatisticsCommand() {

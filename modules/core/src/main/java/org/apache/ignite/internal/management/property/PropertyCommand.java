@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.management.property;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.HelpCommand;
 
 /** Commands to manage distributed properties. */
-@CliPositionalSubcommands
 public class PropertyCommand extends CommandRegistryImpl {
     /** */
     public PropertyCommand() {

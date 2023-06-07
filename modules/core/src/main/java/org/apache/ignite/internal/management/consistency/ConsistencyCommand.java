@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.management.consistency;
 
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
 /** Command to check/repair consistency. */
-@CliPositionalSubcommands
 public class ConsistencyCommand extends CommandRegistryImpl {
     /** */
     public ConsistencyCommand() {

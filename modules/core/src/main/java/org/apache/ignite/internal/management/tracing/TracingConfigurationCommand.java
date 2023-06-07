@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
@@ -38,7 +37,6 @@ import static org.apache.ignite.internal.management.api.CommandUtils.coordinator
 
 /** */
 @IgniteExperimental
-@CliPositionalSubcommands
 public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>
     implements ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
     /** */
