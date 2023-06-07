@@ -34,13 +34,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  */
 public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState {
     /** Active cache IDs. */
-    private GridIntList activeCacheIds = new GridIntList();
+    private final GridIntList activeCacheIds = new GridIntList();
 
     /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
-    private GridIntList mvccCachingCacheIds = new GridIntList();
+    private final GridIntList mvccCachingCacheIds = new GridIntList();
 
     /** */
-    protected boolean mvccEnabled;
+    private boolean mvccEnabled;
 
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
@@ -48,12 +48,12 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Integer firstCacheId() {
+    @Nullable @Override public synchronized Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : activeCacheIds.get(0);
     }
 
     /** {@inheritDoc} */
-    @Override public int[] cacheIds() {
+    @Override public synchronized int[] cacheIds() {
         return activeCacheIds.array();
     }
 
@@ -81,7 +81,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cctx, boolean recovery, IgniteTxAdapter tx)
+    @Override public synchronized void addActiveCache(GridCacheContext cctx, boolean recovery, IgniteTxAdapter tx)
         throws IgniteCheckedException {
         assert !tx.local();
 
@@ -135,12 +135,12 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
+    @Override public synchronized boolean mvccEnabled() {
         return mvccEnabled;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean useMvccCaching(int cacheId) {
+    @Override public synchronized boolean useMvccCaching(int cacheId) {
         return mvccCachingCacheIds.contains(cacheId);
     }
 }
