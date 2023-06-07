@@ -23,11 +23,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTask;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskRes;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** Index rebuild via the maintenance mode. */
@@ -51,7 +52,7 @@ public class CacheScheduleIndexesRebuildCommand
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(
-        Map<UUID, T3<Boolean, Object, Long>> nodes,
+        Map<UUID, GridClientNode> nodes,
         CacheScheduleIndexesRebuildCommandArg arg
     ) {
         return arg.nodeId() != null

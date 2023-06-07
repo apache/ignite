@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusTask;
 
@@ -47,7 +47,7 @@ public class CacheIndexesRebuildStatusCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, CacheIndexesRebuildStatusCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesRebuildStatusCommandArg arg) {
         return arg.nodeId() != null
             ? Collections.singleton(arg.nodeId())
             : nodes.keySet();

@@ -26,10 +26,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTask;
 import org.apache.ignite.internal.visor.defragmentation.VisorDefragmentationTaskResult;
 
@@ -61,7 +61,7 @@ public class DefragmentationScheduleCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, DefragmentationStatusCommandArg arg0) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DefragmentationStatusCommandArg arg0) {
         DefragmentationScheduleCommandArg arg = (DefragmentationScheduleCommandArg)arg0;
 
         if (F.isEmpty(arg.nodes()))
@@ -70,7 +70,7 @@ public class DefragmentationScheduleCommand
         Set<String> nodesArg = new HashSet<>(Arrays.asList(arg.nodes()));
 
         return nodes.entrySet().stream()
-            .filter(e -> nodesArg.contains(Objects.toString(e.getValue().get2())))
+            .filter(e -> nodesArg.contains(Objects.toString(e.getValue().consistentId())))
             .map(Map.Entry::getKey)
             .collect(Collectors.toList());
     }

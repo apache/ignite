@@ -29,16 +29,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
+
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
@@ -51,7 +52,7 @@ public abstract class AbstractBaselineCommand implements ComputeCommand<VisorBas
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, VisorBaselineTaskArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, VisorBaselineTaskArg arg) {
         return coordinatorOrNull(nodes);
     }
 

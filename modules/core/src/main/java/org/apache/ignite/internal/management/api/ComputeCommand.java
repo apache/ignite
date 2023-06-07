@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +49,7 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
-    public default @Nullable Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, A arg) {
+    public default @Nullable Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, A arg) {
         return null;
     }
 }

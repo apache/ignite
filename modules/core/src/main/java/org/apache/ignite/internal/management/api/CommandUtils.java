@@ -35,9 +35,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -390,10 +390,10 @@ public class CommandUtils {
      * @param nodes Nodes.
      * @return Coordinator ID or null is {@code nodes} are empty.
      */
-    public static @Nullable Collection<UUID> coordinatorOrNull(Map<UUID, T3<Boolean, Object, Long>> nodes) {
+    public static @Nullable Collection<UUID> coordinatorOrNull(Map<UUID, GridClientNode> nodes) {
         return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().get1())
-            .min(Comparator.comparingLong(e -> e.getValue().get3()))
+            .filter(e -> !e.getValue().isClient())
+            .min(Comparator.comparingLong(e -> e.getValue().order()))
             .map(e -> Collections.singleton(e.getKey()))
             .orElse(null);
     }
@@ -407,9 +407,9 @@ public class CommandUtils {
      * @param nodes Nodes.
      * @return Server nodes.
      */
-    public static Collection<UUID> servers(Map<UUID, T3<Boolean, Object, Long>> nodes) {
+    public static Collection<UUID> servers(Map<UUID, GridClientNode> nodes) {
         return nodes.entrySet().stream()
-            .filter(e -> !e.getValue().get1())
+            .filter(e -> !e.getValue().isClient())
             .map(Map.Entry::getKey)
             .collect(Collectors.toList());
     }

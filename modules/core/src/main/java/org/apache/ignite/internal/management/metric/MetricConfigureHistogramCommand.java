@@ -20,9 +20,10 @@ package org.apache.ignite.internal.management.metric;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 
 /** */
@@ -43,7 +44,7 @@ public class MetricConfigureHistogramCommand implements ComputeCommand<MetricCom
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, MetricCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, MetricCommandArg arg) {
         return nodeOrNull(arg.nodeId());
     }
 }

@@ -24,11 +24,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CliSubcommandsWithPrefix;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.metric.VisorMetricTask;
+
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.management.SystemViewCommand.printTable;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
@@ -62,7 +63,7 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, MetricCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, MetricCommandArg arg) {
         return nodeOrNull(arg.nodeId());
     }
 

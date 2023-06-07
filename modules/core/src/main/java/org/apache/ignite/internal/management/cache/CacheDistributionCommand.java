@@ -22,11 +22,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 
 /** Collect information on the distribution of partitions. */
 public class CacheDistributionCommand
@@ -47,7 +47,7 @@ public class CacheDistributionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, CacheDistributionCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheDistributionCommandArg arg) {
         return arg.nodeId() != null
             ? Collections.singleton(arg.nodeId())
             : nodes.keySet();

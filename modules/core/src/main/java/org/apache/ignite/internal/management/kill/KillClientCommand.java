@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 
 /** */
@@ -43,7 +43,7 @@ public class KillClientCommand implements ComputeCommand<KillClientCommandArg, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, KillClientCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, KillClientCommandArg arg) {
         if (arg.nodeId() == null)
             return nodes.keySet();
 

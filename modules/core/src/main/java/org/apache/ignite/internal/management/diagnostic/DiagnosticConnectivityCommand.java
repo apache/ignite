@@ -27,8 +27,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityResult;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityTask;
 
@@ -76,7 +76,7 @@ public class DiagnosticConnectivityCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, DiagnosticConnectivityCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DiagnosticConnectivityCommandArg arg) {
         // Task runs on default node but maps to all nodes in cluster.
         arg.nodes(nodes.keySet().toArray(EMPTY_UUIDS));
 

@@ -26,9 +26,9 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
 
@@ -50,7 +50,7 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, DiagnosticPagelocksCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, DiagnosticPagelocksCommandArg arg) {
         if (arg.all())
             return nodes.keySet();
 
@@ -61,7 +61,7 @@ public class DiagnosticPagelocksCommand implements ComputeCommand<DiagnosticPage
 
         return nodes.entrySet().stream()
             .filter(entry -> argNodes.contains(entry.getKey().toString())
-                || argNodes.contains(String.valueOf(entry.getValue().get2())))
+                || argNodes.contains(String.valueOf(entry.getValue().consistentId())))
             .map(Map.Entry::getKey)
             .collect(Collectors.toList());
     }

@@ -22,10 +22,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
 
@@ -47,7 +47,7 @@ public class CacheContentionCommand implements ComputeCommand<CacheContentionCom
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, CacheContentionCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheContentionCommandArg arg) {
         return arg.nodeId() == null ? nodes.keySet() : Collections.singleton(arg.nodeId());
     }
 

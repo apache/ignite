@@ -42,7 +42,6 @@ import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.PreparableCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -98,12 +97,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
 
                 ComputeCommand<A, R> cmd = (ComputeCommand<A, R>)this.cmd;
 
-                Collection<UUID> cmdNodes = cmd.nodes(
-                    nodes.values()
-                        .stream()
-                        .collect(toMap(GridClientNode::nodeId, n -> new T3<>(n.isClient(), n.consistentId(), n.order()))),
-                    arg
-                );
+                Collection<UUID> cmdNodes = cmd.nodes(nodes, arg);
 
                 if (cmdNodes == null)
                     cmdNodes = singleton(defaultNode(client, clientCfg).nodeId());

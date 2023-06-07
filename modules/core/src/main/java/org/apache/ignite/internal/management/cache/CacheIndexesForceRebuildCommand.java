@@ -22,12 +22,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.cache.index.IndexForceRebuildTask;
 import org.apache.ignite.internal.visor.cache.index.IndexForceRebuildTaskRes;
 import org.apache.ignite.internal.visor.cache.index.IndexRebuildStatusInfoContainer;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
 
 /** Index force rebuild. */
@@ -48,11 +49,11 @@ public class CacheIndexesForceRebuildCommand implements ComputeCommand<CacheInde
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, CacheIndexesForceRebuildCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, CacheIndexesForceRebuildCommandArg arg) {
         if (arg.nodeId() != null) {
-            T3<Boolean, Object, Long> nodeDesc = nodes.get(arg.nodeId());
+            GridClientNode node = nodes.get(arg.nodeId());
 
-            if (nodeDesc != null && nodeDesc.get1())
+            if (node != null && node.isClient())
                 throw new IllegalArgumentException("Please, specify server node id");
 
             return Collections.singleton(arg.nodeId());

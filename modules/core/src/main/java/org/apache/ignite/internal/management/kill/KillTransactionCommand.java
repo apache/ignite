@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.tx.KillTransactionTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 
@@ -45,7 +45,7 @@ public class KillTransactionCommand
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, KillTransactionCommandArg arg) {
+    @Override public Collection<UUID> nodes(Map<UUID, GridClientNode> nodes, KillTransactionCommandArg arg) {
         return nodes.keySet();
     }
 }
