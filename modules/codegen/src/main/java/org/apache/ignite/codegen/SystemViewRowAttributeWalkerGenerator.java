@@ -87,7 +87,6 @@ import org.apache.ignite.spi.systemview.view.sql.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.sql.SqlViewView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
-import static org.apache.ignite.codegen.MessageCodeGenerator.TAB;
 
 /**
  * Application for code generation of {@link SystemViewRowAttributeWalker}.
@@ -103,6 +102,9 @@ public class SystemViewRowAttributeWalkerGenerator {
 
     /** Package for {@link SystemViewRowAttributeWalker} implementations. */
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.managers.systemview.walker";
+
+    /** */
+    public static final String TAB = "    ";
 
     /**
      * @param args Command line arguments.
