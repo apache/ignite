@@ -198,7 +198,7 @@ class ControlUtility:
         """
         res = self.__run(f"--snapshot create {snapshot_name}")
 
-        assert "Command [SNAPSHOT] finished with code: 0" in res
+        assert "Command [SNAPSHOT-CREATE] finished with code: 0" in res
 
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
