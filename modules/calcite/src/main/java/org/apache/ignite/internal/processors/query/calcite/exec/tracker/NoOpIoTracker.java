@@ -15,39 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
-
-/** */
-public class DdlPlan extends AbstractQueryPlan {
+/**
+ * I/O operations tracker that does nothing.
+ */
+public class NoOpIoTracker implements IoTracker {
     /** */
-    private final DdlCommand cmd;
+    public static final IoTracker INSTANCE = new NoOpIoTracker();
 
-    /** */
-    public DdlPlan(String qry, DdlCommand cmd) {
-        super(qry);
-
-        this.cmd = cmd;
-    }
-
-    /** */
-    public DdlCommand command() {
-        return cmd;
+    /** {@inheritDoc} */
+    @Override public void startTracking() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.DDL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return cmd.toString();
+    @Override public void stopTracking() {
+        // No-op.
     }
 }

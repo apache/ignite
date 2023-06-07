@@ -35,11 +35,14 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -48,6 +51,7 @@ import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.QueryEngineConfiguration;
+import org.apache.ignite.events.SqlQueryExecutionEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -56,6 +60,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -98,10 +103,12 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
@@ -441,7 +448,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         for (final Object[] batch: batchedParams) {
             FieldsQueryCursor<List<?>> cur = processQuery(qryCtx, qry ->
-                executionSvc.executePlan(qry, planSupplier.apply(qry, batch)), schema.getName(), sql, qrys, batch);
+                executionSvc.executePlan(qry, planSupplier.apply(qry, batch)), schema.getName(),
+                    removeSensitive(qryNode), qrys, batch);
 
             cursors.add(cur);
         }
@@ -465,7 +473,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         if (plan != null) {
             return Collections.singletonList(
-                processQuery(qryCtx, qry -> action.apply(qry, plan), schema.getName(), sql, null, params)
+                processQuery(qryCtx, qry -> action.apply(qry, plan), schema.getName(), plan.query(), null, params)
             );
         }
 
@@ -488,12 +496,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     plan0 = prepareSvc.prepareSingle(sqlNode, qry.planningContext());
 
                 return action.apply(qry, plan0);
-            }, schema.getName(), sqlNode.toString(), qrys, params);
+            }, schema.getName(), removeSensitive(sqlNode), qrys, params);
 
             res.add(singleRes);
         }
 
         return res;
+    }
+
+    /** */
+    private String removeSensitive(SqlNode qry) {
+        if (QueryUtils.INCLUDE_SENSITIVE)
+            return qry.toString();
+        else {
+            return qry.accept(
+                new SqlShuttle() {
+                    @Override public SqlNode visit(SqlLiteral literal) {
+                        return new SqlDynamicParam(-1, literal.getParserPosition());
+                    }
+                }
+            ).toString();
+        }
     }
 
     /** */
@@ -520,6 +543,16 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             qrys.add(qry);
 
         qryReg.register(qry);
+
+        if (ctx.event().isRecordable(EVT_SQL_QUERY_EXECUTION)) {
+            ctx.event().record(new SqlQueryExecutionEvent(
+                ctx.discovery().localNode(),
+                "SQL query execution.",
+                sql,
+                params,
+                SecurityUtils.securitySubjectId(ctx))
+            );
+        }
 
         try {
             return action.apply(qry);

@@ -15,46 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.spi.metric;
+
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Query explain plan.
+ * Metric registry filter based on regular expression.
  */
-public class ExplainPlan extends AbstractQueryPlan {
-    /** Column name. */
-    public static final String PLAN_COL_NAME = "PLAN";
+@IgniteExperimental
+public class RegexpMetricFilter implements Predicate<ReadOnlyMetricRegistry> {
+    /** Metric registries pattern. */
+    private final Pattern regPtrn;
 
-    /** */
-    private final FieldsMetadata fieldsMeta;
+    /**
+     * @param regNameRegex Regular expression to filter metric registries.
+     */
+    public RegexpMetricFilter(String regNameRegex) {
+        A.notNull(regNameRegex, "regex");
 
-    /** */
-    private final String plan;
-
-    /** */
-    public ExplainPlan(String qry, String plan, FieldsMetadata fieldsMeta) {
-        super(qry);
-
-        this.fieldsMeta = fieldsMeta;
-        this.plan = plan;
+        regPtrn = Pattern.compile(regNameRegex);
     }
 
     /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.EXPLAIN;
-    }
+    @Override public boolean test(ReadOnlyMetricRegistry mreg) {
+        Matcher m = regPtrn.matcher(mreg.name());
 
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** */
-    public FieldsMetadata fieldsMeta() {
-        return fieldsMeta;
-    }
-
-    /** */
-    public String plan() {
-        return plan;
+        return m.matches();
     }
 }

@@ -20,7 +20,7 @@
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 {% for name, value in config._asdict().items() %}
-                {% if value %}
+                {% if value != None %}
                     {% if name == 'default' %}
                         <property name="defaultDataRegionConfiguration">
                             {{ data_region(value) }}
@@ -46,7 +46,7 @@
 {% macro data_region(config) %}
     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
         {% for name, value in config._asdict().items() %}
-        {% if value %}
+        {% if value != None %}
         <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
         {% endif %}
         {% endfor %}

@@ -17,37 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
-
-/** */
-public class DdlPlan extends AbstractQueryPlan {
+/**
+ * Abstract query plan.
+ */
+public abstract class AbstractQueryPlan implements QueryPlan {
     /** */
-    private final DdlCommand cmd;
-
-    /** */
-    public DdlPlan(String qry, DdlCommand cmd) {
-        super(qry);
-
-        this.cmd = cmd;
-    }
+    private final String qry;
 
     /** */
-    public DdlCommand command() {
-        return cmd;
+    protected AbstractQueryPlan(String qry) {
+        this.qry = qry;
     }
 
     /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.DDL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return cmd.toString();
+    @Override public String query() {
+        return qry;
     }
 }

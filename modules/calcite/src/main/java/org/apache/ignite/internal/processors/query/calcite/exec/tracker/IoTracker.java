@@ -15,39 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec.tracker;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
+/**
+ * I/O operations tracker interface.
+ */
+public interface IoTracker {
+    /** Start tracking of I/O operations performed by current thread. */
+    public void startTracking();
 
-/** */
-public class DdlPlan extends AbstractQueryPlan {
-    /** */
-    private final DdlCommand cmd;
-
-    /** */
-    public DdlPlan(String qry, DdlCommand cmd) {
-        super(qry);
-
-        this.cmd = cmd;
-    }
-
-    /** */
-    public DdlCommand command() {
-        return cmd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.DDL;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return cmd.toString();
-    }
+    /** Stop tracking and save result. */
+    public void stopTracking();
 }
