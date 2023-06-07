@@ -97,34 +97,11 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param idxName Index name.
      */
     public IndexQuery(String valType, @Nullable String idxName) {
-        this(valType, idxName, 0);
-    }
-
-    /**
-     * Specify index with cache value class, index name and limit.
-     *
-     * @param valCls Cache value class.
-     * @param idxName Index name.
-     * @param limit Limits response records count. If 0 or less, considered to be no limit.
-     */
-    public IndexQuery(Class<?> valCls, @Nullable String idxName, int limit) {
-        this(valCls.getName(), idxName, limit);
-    }
-
-    /**
-     * Specify index with cache value type, index name and limit.
-     *
-     * @param valType Cache value type.
-     * @param idxName Index name.
-     * @param limit Limits response records count. If 0 or less, considered to be no limit.
-     */
-    public IndexQuery(String valType, @Nullable String idxName, int limit) {
         A.notEmpty(valType, "valType");
         A.nullableNotEmpty(idxName, "idxName");
 
         this.valType = valType;
         this.idxName = idxName;
-        this.limit = limit;
     }
 
     /**
