@@ -134,7 +134,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
          * @return Partition results.
          */
         private String processPartition(int p, ConsistencyRepairCommandArg arg) {
-            String cacheOrGrpName = arg.cacheName();
+            String cacheOrGrpName = arg.cache();
             ReadRepairStrategy strategy = arg.strategy();
 
             int batchSize = 128;

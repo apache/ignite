@@ -76,6 +76,8 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
 
         try {
             uuid = IgniteUuid.fromString(value);
+
+            return;
         }
         catch (RuntimeException ignored) {
             // UUID parsing failed, let's try to parse GridCacheVersion.
