@@ -32,7 +32,7 @@ public class EncryptionReencryptionStatusCommandArg extends IgniteDataTransferOb
 
     /** */
     @Positional
-    @Argument(javaStyleExample = true)
+    @Argument(example = "cacheGroupName")
     private String cacheGroupName;
 
     /** {@inheritDoc} */

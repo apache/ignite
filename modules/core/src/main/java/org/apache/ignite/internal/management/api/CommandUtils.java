@@ -260,11 +260,8 @@ public class CommandUtils {
      * @return Name of the field.
      */
     private static String toFormattedFieldName(Field fld, char delim) {
-        if (fld.isAnnotationPresent(Positional.class)) {
-            return fld.getAnnotation(Argument.class).javaStyleExample()
-                ? fld.getName()
-                : toFormattedName(fld.getName(), delim);
-        }
+        if (fld.isAnnotationPresent(Positional.class))
+            return toFormattedName(fld.getName(), delim);
 
         return fld.getAnnotation(Argument.class).javaStyleName()
             ? fld.getName()

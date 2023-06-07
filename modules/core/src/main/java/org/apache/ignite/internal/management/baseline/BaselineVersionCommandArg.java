@@ -33,7 +33,7 @@ public class BaselineVersionCommandArg extends VisorBaselineTaskArg {
 
     /** */
     @Positional
-    @Argument(javaStyleExample = true)
+    @Argument(example = "topologyVersion")
     private long topologyVersion;
 
     /** {@inheritDoc} */

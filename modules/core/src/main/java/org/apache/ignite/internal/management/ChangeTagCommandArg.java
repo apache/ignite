@@ -35,7 +35,7 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Positional
-    @Argument(javaStyleExample = true)
+    @Argument(example = "newTagValue")
     private String newTagValue;
 
     /** {@inheritDoc} */

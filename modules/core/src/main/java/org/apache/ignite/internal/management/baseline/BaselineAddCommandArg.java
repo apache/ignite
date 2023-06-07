@@ -34,7 +34,7 @@ public class BaselineAddCommandArg extends VisorBaselineTaskArg {
 
     /** */
     @Positional
-    @Argument(javaStyleExample = true)
+    @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
     private String[] consistentIDs;
 
     /** {@inheritDoc} */

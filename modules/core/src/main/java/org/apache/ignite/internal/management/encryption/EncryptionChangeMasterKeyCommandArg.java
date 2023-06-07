@@ -32,7 +32,7 @@ public class EncryptionChangeMasterKeyCommandArg extends IgniteDataTransferObjec
 
     /** */
     @Positional
-    @Argument(javaStyleExample = true)
+    @Argument(example = "newMasterKeyName")
     private String newMasterKeyName;
 
     /** {@inheritDoc} */
