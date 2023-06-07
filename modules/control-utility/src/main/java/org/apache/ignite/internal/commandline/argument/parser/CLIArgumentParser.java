@@ -30,7 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 
 /**
@@ -109,7 +109,7 @@ public class CLIArgumentParser {
 
             String strVal = bool ? null : argsIter.next();
 
-            if (strVal != null && strVal.startsWith(PARAMETER_PREFIX))
+            if (strVal != null && strVal.startsWith(NAME_PREFIX))
                 throw new IllegalArgumentException("Unexpected value: " + strVal);
 
             try {

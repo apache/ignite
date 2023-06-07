@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.management.api.Command.CMD_NAME_POSTFIX
  */
 public class CommandUtils {
     /** CLI named parameter prefix. */
-    public static final String PARAMETER_PREFIX = "--";
+    public static final String NAME_PREFIX = "--";
 
     /** Delimeter for words in parameter and command names. */
     public static final char CMD_WORDS_DELIM = '-';
@@ -72,7 +72,7 @@ public class CommandUtils {
      * @return Formatted command name.
      */
     public static String cmdText(Command<?, ?> cmd) {
-        return PARAMETER_PREFIX + toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM);
+        return NAME_PREFIX + toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM);
     }
 
     /**
@@ -102,7 +102,7 @@ public class CommandUtils {
      * @return Formatted name of parameter for this field.
      */
     public static String toFormattedFieldName(Field fld) {
-        return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : PARAMETER_PREFIX)
+        return (fld.getAnnotation(Argument.class).withoutPrefix() ? "" : NAME_PREFIX)
             + toFormattedFieldName(fld, CMD_WORDS_DELIM);
     }
 

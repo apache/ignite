@@ -74,4 +74,9 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new CdcCommand()
         );
     }
+
+    /** {@inheritDoc} */
+    @Override public void register(Command<?, ?> cmd) {
+        super.register(cmd);
+    }
 }

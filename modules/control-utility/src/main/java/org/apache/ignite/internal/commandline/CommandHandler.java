@@ -25,9 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.UUID;
@@ -91,7 +89,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.management.api.CommandUtils.INDENT;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
@@ -148,7 +146,7 @@ public class CommandHandler {
     private final IgniteLogger logger;
 
     /** Supported commands. */
-    private final Map<String, Command<?, ?>> cmds;
+    private final IgniteCommandRegistry registry = new IgniteCommandRegistry();
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -203,10 +201,6 @@ public class CommandHandler {
         this.logger = logger;
         Iterable<CommandsProvider> it = U.loadService(CommandsProvider.class);
 
-        Map<String, Command<?, ?>> cmds = new LinkedHashMap<>();
-
-        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(cmdText(e.getValue()), e.getValue()));
-
         if (!F.isEmpty(it)) {
             for (CommandsProvider provider : it) {
                 if (logger.isDebugEnabled())
@@ -218,18 +212,16 @@ public class CommandHandler {
                     if (logger.isDebugEnabled())
                         logger.debug("Registering command: " + k);
 
-                    if (cmds.containsKey(k)) {
+                    if (registry.command(k) != null) {
                         throw new IllegalArgumentException("Found conflict for command " + k + ". Provider " +
                             provider + " tries to register command " + cmd + ", but this command has already been " +
-                            "registered " + cmds.get(k));
+                            "registered " + registry.command(k));
                     }
                     else
-                        cmds.put(k, cmd);
+                        registry.register(cmd);
                 });
             }
         }
-
-        this.cmds = Collections.unmodifiableMap(cmds);
     }
 
     /**
@@ -262,7 +254,7 @@ public class CommandHandler {
 
             verbose = F.exist(rawArgs, CMD_VERBOSE::equalsIgnoreCase);
 
-            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, cmds).parseAndValidate(rawArgs);
+            ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
             commandName = args.command() instanceof HelpCommand && args.root() != null
                 ? toFormattedCommandName(args.root().getClass()).toUpperCase()
@@ -755,16 +747,16 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.info("");
 
-        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, cmds).getCommonOptions())),
+        logger.info(INDENT + join(" ", join(" ", UTILITY_NAME, join(" ", new ArgumentParser(logger, registry).getCommonOptions())),
             asOptional("command", true), "<command_parameters>"));
         logger.info("");
         logger.info("");
 
         logger.info("This utility can do the following commands:");
 
-        cmds.values().forEach(c -> {
-            if (experimentalEnabled || !c.getClass().isAnnotationPresent(IgniteExperimental.class)) {
-                if (Objects.equals(c.getClass(), CacheCommand.class)) {
+        registry.commands().forEachRemaining(e -> {
+            if (experimentalEnabled || !e.getValue().getClass().isAnnotationPresent(IgniteExperimental.class)) {
+                if (Objects.equals(e.getValue().getClass(), CacheCommand.class)) {
                     logger.info("");
                     logger.info("View caches information in a cluster. For more details type:");
                     logger.info(DOUBLE_INDENT + UTILITY_NAME + " --cache help");
@@ -772,7 +764,7 @@ public class CommandHandler {
                     return;
                 }
 
-                printUsage(logger, c);
+                printUsage(logger, e.getValue());
             }
         });
 
@@ -933,7 +925,7 @@ public class CommandHandler {
             bldr.append(' ');
 
             if (prefixInclude.get())
-                bldr.append(PARAMETER_PREFIX);
+                bldr.append(NAME_PREFIX);
 
             String cmdName = toFormattedCommandName(cmd0.getClass());
 

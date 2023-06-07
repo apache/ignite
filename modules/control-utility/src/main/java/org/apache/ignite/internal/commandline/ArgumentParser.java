@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgumentParser;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAMETER_PREFIX;
+import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.asOptional;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
@@ -84,7 +84,7 @@ public class ArgumentParser {
     private final IgniteLogger log;
 
     /** */
-    private final Map<String, Command<?, ?>> cmds;
+    private final IgniteCommandRegistry registry;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -179,11 +179,11 @@ public class ArgumentParser {
 
     /**
      * @param log Logger.
-     * @param cmds Supported commands.
+     * @param registry Supported commands.
      */
-    public ArgumentParser(IgniteLogger log, Map<String, Command<?, ?>> cmds) {
+    public ArgumentParser(IgniteLogger log, IgniteCommandRegistry registry) {
         this.log = log;
-        this.cmds = cmds;
+        this.registry = registry;
 
         BiConsumer<String, ?> securityWarn = (name, val) -> log.info(String.format("Warning: %s is insecure. " +
                 "Whenever possible, use interactive prompt for password (just discard %s option).", name, name));
@@ -297,8 +297,14 @@ public class ArgumentParser {
         Command<?, ?> root = null;
         Command<?, ?> cmd = null;
 
-        while (iter.hasNext() && cmd == null)
-            cmd = cmds.get(iter.next());
+        while (iter.hasNext() && cmd == null) {
+            String cmdName = iter.next();
+
+            if (!cmdName.startsWith(NAME_PREFIX))
+                continue;
+
+            cmd = registry.command(fromFormattedCommandName(cmdName.substring(NAME_PREFIX.length()), CMD_WORDS_DELIM));
+        }
 
         if (cmd == null)
             throw new IllegalArgumentException("No action was specified");
@@ -312,10 +318,10 @@ public class ArgumentParser {
             char delim = PARAM_WORDS_DELIM;
 
             if (cmd.getClass().isAnnotationPresent(CliSubcommandsWithPrefix.class)) {
-                if (!name.startsWith(PARAMETER_PREFIX))
+                if (!name.startsWith(NAME_PREFIX))
                     break;
 
-                name = name.substring(PARAMETER_PREFIX.length());
+                name = name.substring(NAME_PREFIX.length());
 
                 delim = CMD_WORDS_DELIM;
             }

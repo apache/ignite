@@ -1211,14 +1211,7 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        Map<String, Command<?, ?>> cmds = new HashMap<>();
-
-        new IgniteCommandRegistry().commands().forEachRemaining(e -> cmds.put(
-            cmdText(e.getValue()),
-            e.getValue()
-        ));
-
-        return new ArgumentParser(setupTestLogger(), cmds).parseAndValidate(args);
+        return new ArgumentParser(setupTestLogger(), new IgniteCommandRegistry()).parseAndValidate(args);
     }
 
     /**
