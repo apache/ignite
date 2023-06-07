@@ -100,7 +100,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public void unwindEvicts(GridCacheSharedContext ctx) {
         for (int cacheId : activeCacheIds()) {
-            GridCacheContext<?,?> cctx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             if (ctx != null)
                 CU.unwindEvicts(cctx);
@@ -108,7 +108,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheContext<?,?> singleCacheContext(GridCacheSharedContext ctx) {
+    @Nullable @Override public GridCacheContext<?, ?> singleCacheContext(GridCacheSharedContext ctx) {
         int[] cacheIds = activeCacheIds();
 
         if (cacheIds.length == 1) {
@@ -149,7 +149,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
             int cacheId = e.getKey();
 
-            GridCacheContext<?,?> cctx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
 
@@ -287,7 +287,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         nonLocCtx.topology().readLock();
 
         for (Map.Entry<Integer, GridCacheContext> e : cacheCtxs.entrySet()) {
-            GridCacheContext<?,?> activeCacheCtx = e.getValue();
+            GridCacheContext<?, ?> activeCacheCtx = e.getValue();
 
             if (activeCacheCtx.topology().stopping()) {
                 fut.onDone(
@@ -335,7 +335,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public boolean hasInterceptor(GridCacheSharedContext ctx) {
         for (int cacheId : activeCacheIds()) {
-            CacheInterceptor<?,?> interceptor = ctx.cacheContext(cacheId).config().getInterceptor();
+            CacheInterceptor<?, ?> interceptor = ctx.cacheContext(cacheId).config().getInterceptor();
 
             if (interceptor != null)
                 return true;
@@ -368,7 +368,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public void onTxEnd(GridCacheSharedContext ctx, IgniteInternalTx tx, boolean commit) {
         for (int cacheId : activeCacheIds()) {
-            GridCacheContext<?,?> cacheCtx = ctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
             assert cacheCtx != null : "cacheCtx == null, cacheId=" + cacheId;
 
