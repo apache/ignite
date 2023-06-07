@@ -84,7 +84,7 @@ import static org.apache.ignite.testframework.LogListener.matches;
 @RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
-    public static final String CACHE = "--cache-name";
+    public static final String CACHE = "--cache";
 
     /** */
     public static final String STRATEGY = "--strategy";

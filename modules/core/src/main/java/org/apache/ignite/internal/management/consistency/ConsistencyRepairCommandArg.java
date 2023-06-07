@@ -32,7 +32,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Cache to be checked/repaired")
-    private String cacheName;
+    private String cache;
 
     /** */
     @Argument(description = "Cache's partition to be checked/repaired", example = "partition")
@@ -57,7 +57,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
+        U.writeString(out, cache);
         U.writeIntArray(out, partition);
         U.writeEnum(out, strategy);
         out.writeBoolean(parallel);
@@ -65,7 +65,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
+        cache = U.readString(in);
         partition = U.readIntArray(in);
         strategy = U.readEnum(in, ReadRepairStrategy.class);
         parallel = in.readBoolean();
@@ -82,13 +82,13 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public String cacheName() {
-        return cacheName;
+    public String cache() {
+        return cache;
     }
 
     /** */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
+    public void cache(String cacheName) {
+        this.cache = cacheName;
     }
 
     /** */
