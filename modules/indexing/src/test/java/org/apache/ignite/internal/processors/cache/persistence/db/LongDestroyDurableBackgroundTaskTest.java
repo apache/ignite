@@ -99,6 +99,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2.idxTreeFactory;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_UUIDS;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
@@ -368,7 +369,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             new CacheValidateIndexesCommandArg();
 
         taskArg.caches(new String[]{"SQL_PUBLIC_T"});
-        taskArg.nodeIds(nodeIds.toArray(new UUID[0]));
+        taskArg.nodeIds(nodeIds.toArray(EMPTY_UUIDS));
         taskArg.checkFirst(0);
         taskArg.checkThrough(1);
         taskArg.checkCrc(true);

@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.visor.diagnostic.availability;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +30,12 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.diagnostic.DiagnosticConnectivityCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
@@ -42,12 +45,12 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class VisorConnectivityTask
-    extends VisorMultiNodeTask<NoArg, Map<ClusterNode, VisorConnectivityResult>, VisorConnectivityResult> {
+    extends VisorMultiNodeTask<DiagnosticConnectivityCommandArg, Map<ClusterNode, VisorConnectivityResult>, VisorConnectivityResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, VisorConnectivityResult> job(NoArg arg) {
+    @Override protected VisorJob<DiagnosticConnectivityCommandArg, VisorConnectivityResult> job(DiagnosticConnectivityCommandArg arg) {
         return new VisorConnectivityJob(arg, debug);
     }
 
@@ -68,11 +71,16 @@ public class VisorConnectivityTask
         return map;
     }
 
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<DiagnosticConnectivityCommandArg> arg) {
+        return Arrays.asList(arg.getArgument().nodes());
+    }
+
     /**
      * This job is sent to every node in cluster. It then use compute on every other node just to check
      * that there is a connection between nodes.
      */
-    private static class VisorConnectivityJob extends VisorJob<NoArg, VisorConnectivityResult> {
+    private static class VisorConnectivityJob extends VisorJob<DiagnosticConnectivityCommandArg, VisorConnectivityResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -80,12 +88,12 @@ public class VisorConnectivityTask
          * @param arg   Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorConnectivityJob(NoArg arg, boolean debug) {
+        private VisorConnectivityJob(DiagnosticConnectivityCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorConnectivityResult run(NoArg arg) {
+        @Override protected VisorConnectivityResult run(DiagnosticConnectivityCommandArg arg) {
             List<UUID> ids = ignite.cluster().nodes().stream()
                 .map(ClusterNode::id)
                 .filter(uuid -> !Objects.equals(ignite.localNode().id(), uuid))

@@ -28,13 +28,15 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityResult;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityTask;
 
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_UUIDS;
+
 /** */
-public class DiagnosticConnectivityCommand implements ComputeCommand<NoArg, Map<ClusterNode, VisorConnectivityResult>> {
+public class DiagnosticConnectivityCommand
+    implements ComputeCommand<DiagnosticConnectivityCommandArg, Map<ClusterNode, VisorConnectivityResult>> {
     /**
      * Header of output table.
      */
@@ -64,8 +66,8 @@ public class DiagnosticConnectivityCommand implements ComputeCommand<NoArg, Map<
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
+    @Override public Class<DiagnosticConnectivityCommandArg> argClass() {
+        return DiagnosticConnectivityCommandArg.class;
     }
 
     /** {@inheritDoc} */
@@ -74,12 +76,19 @@ public class DiagnosticConnectivityCommand implements ComputeCommand<NoArg, Map<
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, NoArg arg) {
-        return nodes.keySet();
+    @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, DiagnosticConnectivityCommandArg arg) {
+        // Task runs on default node but maps to all nodes in cluster.
+        arg.nodes(nodes.keySet().toArray(EMPTY_UUIDS));
+
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, Map<ClusterNode, VisorConnectivityResult> res, Consumer<String> printer) {
+    @Override public void printResult(
+        DiagnosticConnectivityCommandArg arg,
+        Map<ClusterNode, VisorConnectivityResult> res,
+        Consumer<String> printer
+    ) {
         final boolean[] hasFailed = {false};
 
         final List<List<String>> table = new ArrayList<>();

@@ -378,6 +378,9 @@ public abstract class IgniteUtils {
     /** Empty fields array. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
+    /** */
+    public static final UUID[] EMPTY_UUIDS = new UUID[0];
+
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 

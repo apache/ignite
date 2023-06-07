@@ -62,12 +62,14 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeEnum(out, state);
         out.writeBoolean(force);
+        U.writeString(out, clusterName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         state = U.readEnum(in, ClusterState.class);
         force = in.readBoolean();
+        clusterName = U.readString(in);
     }
 
     /** */

@@ -15,58 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management;
+package org.apache.ignite.internal.management.diagnostic;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@CliConfirmArgument
-public class DeactivateCommandArg extends IgniteDataTransferObject {
+public class DiagnosticConnectivityCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(optional = true)
-    private boolean force;
-
-    /** */
-    private String clusterName;
+    private UUID[] nodes;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(force);
-        U.writeString(out, clusterName);
+        U.writeArray(out, nodes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        force = in.readBoolean();
-        clusterName = U.readString(in);
+        nodes = U.readArray(in, UUID.class);
     }
 
     /** */
-    public boolean force() {
-        return force;
+    public void nodes(UUID[] nodes) {
+        this.nodes = nodes;
     }
 
     /** */
-    public void force(boolean force) {
-        this.force = force;
-    }
-
-    /** */
-    public String clusterName() {
-        return clusterName;
-    }
-
-    /** */
-    public void clusterName(String clusterName) {
-        this.clusterName = clusterName;
+    public UUID[] nodes() {
+        return nodes;
     }
 }
