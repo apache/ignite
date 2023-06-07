@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIterator
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -43,6 +44,7 @@ import org.junit.runners.Suite;
     LogicalRelImplementorTest.class,
 
     ScriptTestSuite.class,
+    CalciteCommunicationMessageSerializationTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
