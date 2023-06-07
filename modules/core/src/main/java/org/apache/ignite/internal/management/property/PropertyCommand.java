@@ -19,6 +19,7 @@ package org.apache.ignite.internal.management.property;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.HelpCommand;
 
 /** Commands to manage distributed properties. */
 @CliPositionalSubcommands
@@ -31,5 +32,13 @@ public class PropertyCommand extends CommandRegistryImpl {
             new PropertyGetCommand(),
             new PropertySetCommand()
         );
+    }
+
+    /** */
+    public static class PropertyHelpCommand implements HelpCommand {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return "Print property command help";
+        }
     }
 }

@@ -43,4 +43,12 @@ public class DiagnosticCommand extends CommandRegistryImpl<NoArg, Void> implemen
     @Override public Class<NoArg> argClass() {
         return HelpCommand.super.argClass();
     }
+
+    /** */
+    public static class DiagnosticHelpCommand implements HelpCommand {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return "Print diagnostic command help";
+        }
+    }
 }
