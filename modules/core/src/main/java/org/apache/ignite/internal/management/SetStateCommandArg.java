@@ -23,13 +23,13 @@ import java.io.ObjectOutput;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@WithCliConfirmParameter
+@CliConfirmArgument
 public class SetStateCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

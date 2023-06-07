@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 
 /** */
-@WithCliConfirmParameter
+@CliConfirmArgument
 public class DeactivateCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;

@@ -24,13 +24,13 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 
 /** */
-@WithCliConfirmParameter
+@CliConfirmArgument
 @ArgumentGroup(value = {"servers", "clients", "nodes"}, onlyOneOf = true, optional = true)
 public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     /** */

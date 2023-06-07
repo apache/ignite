@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 
 /** */
-@WithCliConfirmParameter
+@CliConfirmArgument
 public class BaselineRemoveCommandArg extends BaselineAddCommandArg {
     /** */
     private static final long serialVersionUID = 0;

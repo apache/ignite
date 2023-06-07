@@ -21,12 +21,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.VisorBaselineTaskArg;
 
 /** */
-@WithCliConfirmParameter
+@CliConfirmArgument
 public class BaselineVersionCommandArg extends VisorBaselineTaskArg {
     /** */
     private static final long serialVersionUID = 0;

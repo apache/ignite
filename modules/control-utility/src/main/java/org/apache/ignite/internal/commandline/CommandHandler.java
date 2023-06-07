@@ -54,6 +54,7 @@ import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.BeforeNodeStartCommand;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.management.api.WithCliConfirmParameter;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelperImpl;
@@ -996,7 +996,7 @@ public class CommandHandler {
             }
         );
 
-        if (cmd.argClass().isAnnotationPresent(WithCliConfirmParameter.class))
+        if (cmd.argClass().isAnnotationPresent(CliConfirmArgument.class))
             bldr.append(' ').append(CommandUtils.asOptional(CMD_AUTO_CONFIRMATION, true));
 
         logger.info(bldr.toString());
