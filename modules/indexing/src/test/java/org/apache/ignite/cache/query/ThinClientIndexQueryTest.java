@@ -345,7 +345,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
         assertClientQuery(cache, left, right, idxQry);
 
-        if (left < right){
+        if (left < right) {
             Random r = new Random();
 
             int limit = 1 + r.nextInt(right - left);

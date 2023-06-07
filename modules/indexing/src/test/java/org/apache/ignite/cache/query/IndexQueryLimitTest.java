@@ -12,7 +12,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -87,12 +86,12 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSetLimit() throws Exception {
-        GridTestUtils.assertThrows(log,  () -> new IndexQuery<>(Person.class, IDX).setLimit(0),
+        GridTestUtils.assertThrows(log, () -> new IndexQuery<>(Person.class, IDX).setLimit(0),
             IllegalArgumentException.class, "Limit must be positive.");
 
         int limit = 1 + new Random().nextInt(1000);
 
-        GridTestUtils.assertThrows(log,  () -> new IndexQuery<>(Person.class, IDX).setLimit(0 - limit),
+        GridTestUtils.assertThrows(log, () -> new IndexQuery<>(Person.class, IDX).setLimit(0 - limit),
             IllegalArgumentException.class, "Limit must be positive.");
 
         IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
