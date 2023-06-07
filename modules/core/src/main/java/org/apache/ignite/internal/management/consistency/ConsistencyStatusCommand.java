@@ -22,16 +22,17 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
+import org.apache.ignite.lang.IgniteExperimental;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /** */
-public class ConsistencyStatusCommand implements
-    ExperimentalCommand<NoArg, VisorConsistencyTaskResult>, ComputeCommand<NoArg, VisorConsistencyTaskResult> {
+@IgniteExperimental
+public class ConsistencyStatusCommand implements ComputeCommand<NoArg, VisorConsistencyTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Cache consistency check/repair operations status";

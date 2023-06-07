@@ -28,12 +28,11 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataRemoveTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
-public class MetaRemoveCommand implements
-    ExperimentalCommand<MetaRemoveCommandArg, MetadataMarshalled>,
-    ComputeCommand<MetaRemoveCommandArg, MetadataMarshalled> {
+@IgniteExperimental
+public class MetaRemoveCommand implements ComputeCommand<MetaRemoveCommandArg, MetadataMarshalled> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Remove the metadata of the specified type " +

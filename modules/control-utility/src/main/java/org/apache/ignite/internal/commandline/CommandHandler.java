@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -762,7 +763,7 @@ public class CommandHandler {
         logger.info("This utility can do the following commands:");
 
         cmds.values().forEach(c -> {
-            if (experimentalEnabled || !c.experimental()) {
+            if (experimentalEnabled || !c.getClass().isAnnotationPresent(IgniteExperimental.class)) {
                 if (Objects.equals(c.getClass(), CacheCommand.class)) {
                     logger.info("");
                     logger.info("View caches information in a cluster. For more details type:");
@@ -845,7 +846,7 @@ public class CommandHandler {
             || cmd instanceof BeforeNodeStartCommand) {
             logger.info("");
 
-            if (cmd.experimental())
+            if (cmd.getClass().isAnnotationPresent(IgniteExperimental.class))
                 logger.info(INDENT + "[EXPERIMENTAL]");
 
             printExample(cmd, parents, logger);

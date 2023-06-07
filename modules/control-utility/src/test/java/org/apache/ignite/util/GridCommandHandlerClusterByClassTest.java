@@ -114,6 +114,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
+import static org.apache.ignite.internal.management.api.CommandUtils.experimental;
 import static org.apache.ignite.internal.management.api.CommandUtils.parameterExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
@@ -1987,7 +1988,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         );
 
         new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            if (!e.getValue().experimental())
+            if (!experimental(e.getValue()))
                 return;
 
             String name = cmdText(e.getValue());
@@ -2099,7 +2100,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     private void checkExperimentalCmdInHelpOutput(boolean contains) {
         execHelpCmd(helpOut -> new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            if (!e.getValue().experimental())
+            if (!experimental(e.getValue()))
                 return;
 
             if (contains)
@@ -2115,7 +2116,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     private void checkContainsNotExperimentalCmdInHelpOutput() {
         execHelpCmd(helpOut -> new IgniteCommandRegistry().commands().forEachRemaining(e -> {
-            if (e.getValue().experimental())
+            if (experimental(e.getValue()))
                 return;
 
             assertContains(log, helpOut, cmdText(e.getValue()));

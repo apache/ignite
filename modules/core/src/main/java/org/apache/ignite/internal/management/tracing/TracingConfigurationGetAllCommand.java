@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.management.tracing;
 
+import org.apache.ignite.lang.IgniteExperimental;
+
 /** */
+@IgniteExperimental
 public class TracingConfigurationGetAllCommand extends AbstractTracingConfigurationCommand {
     /** {@inheritDoc} */
     @Override public String description() {

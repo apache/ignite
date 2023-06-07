@@ -22,17 +22,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
 public abstract class AbstractTracingConfigurationCommand implements
-    ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>,
-    ExperimentalCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
+    ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
     /** {@inheritDoc} */
     @Override public Collection<UUID> nodes(Map<UUID, T3<Boolean, Object, Long>> nodes, TracingConfigurationCommandArg arg) {
         return coordinatorOrNull(nodes);

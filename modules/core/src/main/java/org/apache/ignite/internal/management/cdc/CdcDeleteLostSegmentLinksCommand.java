@@ -23,19 +23,18 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cdc.VisorCdcDeleteLostSegmentsTask;
+import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
 /**
  * Command to delete lost segment links.
  */
-public class CdcDeleteLostSegmentLinksCommand implements
-    ExperimentalCommand<CdcDeleteLostSegmentLinksCommandArg, Void>,
-    ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
+@IgniteExperimental
+public class CdcDeleteLostSegmentLinksCommand implements ComputeCommand<CdcDeleteLostSegmentLinksCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Delete lost segment CDC links";

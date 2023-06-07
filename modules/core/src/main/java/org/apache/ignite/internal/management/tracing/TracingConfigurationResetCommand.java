@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.management.tracing;
 
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationResetCommandArg;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
+@IgniteExperimental
 public class TracingConfigurationResetCommand extends AbstractTracingConfigurationCommand {
     /** {@inheritDoc} */
     @Override public String description() {

@@ -19,8 +19,10 @@ package org.apache.ignite.internal.management.wal;
 
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
+@IgniteExperimental
 @CliPositionalSubcommands
 public class WalCommand extends CommandRegistryImpl {
     /** */
@@ -29,10 +31,5 @@ public class WalCommand extends CommandRegistryImpl {
             new WalPrintCommand(),
             new WalDeleteCommand()
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean experimental() {
-        return true;
     }
 }

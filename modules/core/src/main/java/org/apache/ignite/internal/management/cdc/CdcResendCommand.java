@@ -19,16 +19,15 @@ package org.apache.ignite.internal.management.cdc;
 
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.visor.cdc.VisorCdcCacheDataResendTask;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * The command to forcefully resend all cache data to CDC.
  * Iterates over given caches and writes data entries to the WAL to get captured by CDC.
  */
-public class CdcResendCommand implements
-    ExperimentalCommand<CdcResendCommandArg, Void>,
-    ComputeCommand<CdcResendCommandArg, Void> {
+@IgniteExperimental
+public class CdcResendCommand implements ComputeCommand<CdcResendCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Forcefully resend all cache data to CDC. " +

@@ -28,18 +28,19 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.CliPositionalSubcommands;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand.TracingConfigurationCommandArg;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTask;
 import org.apache.ignite.internal.visor.tracing.configuration.VisorTracingConfigurationTaskResult;
+import org.apache.ignite.lang.IgniteExperimental;
+
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** */
+@IgniteExperimental
 @CliPositionalSubcommands
 public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>
-    implements ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult>,
-    ExperimentalCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
+    implements ComputeCommand<TracingConfigurationCommandArg, VisorTracingConfigurationTaskResult> {
     /** */
     public TracingConfigurationCommand() {
         super(
@@ -78,11 +79,6 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
         Consumer<String> printer
     ) {
         res.print(printer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean experimental() {
-        return true;
     }
 
     /** */

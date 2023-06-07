@@ -26,17 +26,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
+import org.apache.ignite.lang.IgniteExperimental;
+
 import static java.util.stream.Collectors.toSet;
 
 /** */
-public class ConsistencyRepairCommand implements
-    ExperimentalCommand<ConsistencyRepairCommandArg, String>,
-    LocalCommand<ConsistencyRepairCommandArg, String> {
+@IgniteExperimental
+public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Check/Repair cache consistency using Read Repair approach";

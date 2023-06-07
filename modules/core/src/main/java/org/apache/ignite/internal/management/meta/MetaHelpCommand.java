@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.management.meta;
 
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.HelpCommand;
-import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
-public class MetaHelpCommand implements HelpCommand, ExperimentalCommand<NoArg, Void> {
+@IgniteExperimental
+public class MetaHelpCommand implements HelpCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print metadata command help";

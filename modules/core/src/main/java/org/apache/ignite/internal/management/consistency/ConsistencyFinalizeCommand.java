@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.management.consistency;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCountersFinalizationTask;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
-public class ConsistencyFinalizeCommand implements
-    ExperimentalCommand<NoArg, String>, ComputeCommand<NoArg, String> {
+@IgniteExperimental
+public class ConsistencyFinalizeCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Finalize partitions update counters";

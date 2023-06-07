@@ -22,12 +22,11 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataMarshalled;
 import org.apache.ignite.internal.commandline.meta.tasks.MetadataUpdateTask;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.ExperimentalCommand;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
-public class MetaUpdateCommand implements
-    ExperimentalCommand<MetaUpdateCommandArg, MetadataMarshalled>,
-    ComputeCommand<MetaUpdateCommandArg, MetadataMarshalled> {
+@IgniteExperimental
+public class MetaUpdateCommand implements ComputeCommand<MetaUpdateCommandArg, MetadataMarshalled> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Update cluster metadata from specified file (file name is required)";

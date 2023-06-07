@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -469,6 +470,11 @@ public class CommandUtils {
         }
 
         return true;
+    }
+
+    /** */
+    public static boolean experimental(Command<?, ?> cmd) {
+        return cmd.getClass().isAnnotationPresent(IgniteExperimental.class);
     }
 
     /**

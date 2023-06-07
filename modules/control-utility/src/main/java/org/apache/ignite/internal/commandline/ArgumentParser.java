@@ -52,6 +52,7 @@ import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -271,7 +272,7 @@ public class ArgumentParser {
             fld -> parser.get(toFormattedFieldName(fld).toLowerCase())
         );
 
-        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.get1().experimental()) {
+        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.get1().getClass().isAnnotationPresent(IgniteExperimental.class)) {
             logger.warning(
                 String.format("To use experimental command add " + CMD_ENABLE_EXPERIMENTAL + " parameter for %s",
                     UTILITY_NAME)
