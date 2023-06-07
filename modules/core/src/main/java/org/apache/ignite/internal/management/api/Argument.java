@@ -54,7 +54,7 @@ public @interface Argument {
     public boolean javaStyleName() default false;
 
     /**
-     * Required to keep compatibility with existing {@code control.sh}.
+     * Required to keep compatibility with existing {@code control.sh} behaviour.
      *
      * @return {@code True} if parameter name expected without "--" prefix.
      */

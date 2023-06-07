@@ -21,12 +21,16 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Management command interface.
- * Implementations represent single action to manage Ignite cluster.
+ * Management command interface.<p>
+ * Implementations represent single action to manage Ignite cluster.<p>
  *
- * Name of the command that is expected from caller derived from actual command class name.
- * Name format: all words divided by capital letters except "Command" suffix will form hierarchical command name.
- * Example: {@code MyUsefullCommand} is name of command so {@code control.sh --my-usefull param1 param2} expected from user.
+ * Name of the command that is expected from caller derived from actual command class name.<br>
+ * <ul>
+ *     <li><b>Name format:</b> All words divided by capital letters except "Command" suffix will form hierarchical command name.</li>
+ *     <li><b>Example:</b> {@code MyUsefullCommand} is name of command so {@code control.sh --my-usefull param1 param2}
+ *     expected from user.</li>
+ * </ul>
+ *
  * Other protocols must expose command similarly. Rest API must expect {@code /api-root/my-usefull?param1=value1&param2=value2} URI.
  *
  * @param <A> Argument type.
