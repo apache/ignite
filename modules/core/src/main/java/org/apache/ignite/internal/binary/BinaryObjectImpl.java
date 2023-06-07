@@ -800,10 +800,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("valBytes",
-                    valBytes,
-                    0,
-                    valBytes.length))
+                if (!writer.writeByteArray("valBytes", valBytes))
                     return false;
 
                 writer.incrementState();
