@@ -275,12 +275,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public boolean activeCachesDeploymentEnabled() {
+    @Override public synchronized boolean activeCachesDeploymentEnabled() {
         return depEnabled;
     }
 
     /** {@inheritDoc} */
-    @Override public void activeCachesDeploymentEnabled(boolean depEnabled) {
+    @Override public synchronized void activeCachesDeploymentEnabled(boolean depEnabled) {
         this.depEnabled = depEnabled;
     }
 
