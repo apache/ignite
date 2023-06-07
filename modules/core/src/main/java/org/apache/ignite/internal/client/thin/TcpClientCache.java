@@ -1015,6 +1015,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                 w.writeInt(qry.getPageSize());
                 w.writeBoolean(qry.isLocal());
                 w.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());
+                w.writeInt(qry.getLimit());
 
                 w.writeString(qry.getValueType());
                 w.writeString(qry.getIndexName());

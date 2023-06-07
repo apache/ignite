@@ -344,6 +344,26 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             .setCriteria(crit);
 
         assertClientQuery(cache, left, right, idxQry);
+
+        if (left < right){
+            Random r = new Random();
+
+            int limit = 1 + r.nextInt(right - left);
+
+            idxQry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(crit)
+                .setLimit(limit);
+
+            assertClientQuery(cache, left, left + limit, idxQry);
+
+            limit = right - left + r.nextInt(right - left);
+
+            idxQry = new IndexQuery<Integer, Person>(Person.class, idxName)
+                .setCriteria(crit)
+                .setLimit(limit);
+
+            assertClientQuery(cache, left, right, idxQry);
+        }
     }
 
     /** */
