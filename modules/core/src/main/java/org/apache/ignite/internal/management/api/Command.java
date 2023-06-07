@@ -46,11 +46,6 @@ public interface Command<A extends IgniteDataTransferObject, R> {
     /** @return Arguments class. */
     public Class<? extends A> argClass();
 
-    /** @return {@code true} if the command is experimental, {@code false} otherwise. */
-    public default boolean experimental() {
-        return false;
-    }
-
     /**
      * @param arg Command argument.
      * @return Message text to show user for. If {@code null} it means that confirmation is not needed.
