@@ -657,7 +657,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         cctx.shared().mvccCaching().addEnlisted(entry.key(), updRes.newValue(), 0, 0, lockVer,
             updRes.oldValue(), tx.local(), tx.topologyVersion(), mvccSnapshot, cctx.cacheId(), tx, null, -1);
 
-        addToBatch(entry.key(), val, updRes.mvccHistory(), entry.context().cacheId(), backups);
+        addToBatch(entry.key(), val, updRes.mvccHistory(), backups);
     }
 
     /**
@@ -666,14 +666,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param key Key.
      * @param val Value.
      * @param hist History rows.
-     * @param cacheId Cache Id.
      * @param backups Backup nodes
      */
     private void addToBatch(KeyCacheObject key, Message val, List<MvccLinkAwareSearchRow> hist,
-        int cacheId, List<ClusterNode> backups) throws IgniteCheckedException {
+        List<ClusterNode> backups) throws IgniteCheckedException {
         int part = key.partition();
-
-        tx.touchPartition(cacheId, part);
 
         if (F.isEmpty(backups))
             return;
