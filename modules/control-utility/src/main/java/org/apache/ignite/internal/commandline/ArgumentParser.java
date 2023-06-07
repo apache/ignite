@@ -81,7 +81,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  */
 public class ArgumentParser {
     /** */
-    private final IgniteLogger logger;
+    private final IgniteLogger log;
 
     /** */
     private final Map<String, Command<?, ?>> cmds;
@@ -178,14 +178,14 @@ public class ArgumentParser {
     }
 
     /**
-     * @param logger Logger.
+     * @param log Logger.
      * @param cmds Supported commands.
      */
-    public ArgumentParser(IgniteLogger logger, Map<String, Command<?, ?>> cmds) {
-        this.logger = logger;
+    public ArgumentParser(IgniteLogger log, Map<String, Command<?, ?>> cmds) {
+        this.log = log;
         this.cmds = cmds;
 
-        BiConsumer<String, ?> securityWarn = (name, val) -> logger.info(String.format("Warning: %s is insecure. " +
+        BiConsumer<String, ?> securityWarn = (name, val) -> log.info(String.format("Warning: %s is insecure. " +
                 "Whenever possible, use interactive prompt for password (just discard %s option).", name, name));
 
         arg(CMD_HOST, "HOST_OR_IP", String.class, DFLT_HOST);
@@ -273,7 +273,7 @@ public class ArgumentParser {
         );
 
         if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.get1().getClass().isAnnotationPresent(IgniteExperimental.class)) {
-            logger.warning(
+            log.warning(
                 String.format("To use experimental command add " + CMD_ENABLE_EXPERIMENTAL + " parameter for %s",
                     UTILITY_NAME)
             );

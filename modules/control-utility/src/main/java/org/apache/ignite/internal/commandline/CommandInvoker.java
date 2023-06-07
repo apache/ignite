@@ -73,22 +73,22 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
      * Actual command execution with verbose mode if needed.
      * Implement it if your command supports verbose mode.
      *
-     * @param logger Logger to use.
+     * @param log Logger to use.
      * @param verbose Use verbose mode or not
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    public <R> R invoke(IgniteLogger logger, boolean verbose) throws Exception {
+    public <R> R invoke(IgniteLogger log, boolean verbose) throws Exception {
         try (GridClient client = startClient(clientCfg)) {
             String deprecationMsg = cmd.deprecationMessage(arg);
 
             if (deprecationMsg != null)
-                logger.warning(deprecationMsg);
+                log.warning(deprecationMsg);
 
             R res;
 
             if (cmd instanceof LocalCommand)
-                res = ((LocalCommand<A, R>)cmd).execute(client, arg, logger::info);
+                res = ((LocalCommand<A, R>)cmd).execute(client, arg, log::info);
             else if (cmd instanceof ComputeCommand) {
                 GridClientCompute compute = client.compute();
 
@@ -118,7 +118,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
 
                 res = compute.execute(cmd.taskClass().getName(), new VisorTaskArgument<>(cmdNodes, arg, false));
 
-                cmd.printResult(arg, res, logger::info);
+                cmd.printResult(arg, res, log::info);
             }
             else
                 throw new IllegalArgumentException("Unknown command type: " + cmd);
@@ -126,35 +126,34 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
             return res;
         }
         catch (Throwable e) {
-            logger.error("Failed to perform operation.");
-            logger.error(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
     }
 
     /** */
-    public boolean prepare(IgniteLogger logger) throws Exception {
+    public boolean prepare(IgniteLogger log) throws Exception {
         if (!(cmd instanceof PreparableCommand))
             return true;
 
         try (GridClient client = startClient(clientCfg)) {
-            return ((PreparableCommand<A, ?>)cmd).prepare(client, arg, logger::info);
+            return ((PreparableCommand<A, ?>)cmd).prepare(client, arg, log::info);
         }
     }
 
     /**
-     * @return Message text to show user for. If null it means that confirmantion is not needed.
-     * @throws Exception If error occur.
+     * @return Message text to show user for. {@code null} means that confirmantion is not required.
      */
     public String confirmationPrompt() {
         return cmd.confirmationPrompt(arg);
     }
 
     /** */
-    public <R> R invokeBeforeNodeStart(IgniteLogger logger) throws Exception {
+    public <R> R invokeBeforeNodeStart(IgniteLogger log) throws Exception {
         try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
-            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, logger::info);
+            return ((BeforeNodeStartCommand<A, R>)cmd).execute(client, arg, log::info);
         }
         catch (GridClientDisconnectedException e) {
             throw new GridClientException(e.getCause());

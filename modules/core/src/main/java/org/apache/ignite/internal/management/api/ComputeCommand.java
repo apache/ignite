@@ -45,7 +45,7 @@ public interface ComputeCommand<A extends IgniteDataTransferObject, R> extends C
     }
 
     /**
-     * @param nodes Live nodes. Key is node ID, Boolean is client flag, Object is consistent id, Long is node order.
+     * @param nodes Live nodes.
      * @param arg Argument.
      * @return nodes to execute command on, {@code null} means default node must be used.
      */
