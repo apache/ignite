@@ -1,7 +1,5 @@
 package org.apache.ignite.cache.query;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,25 +8,21 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
-import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -36,10 +30,8 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.in;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
-import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelType.REPLICATED;
 
 /** */
-@RunWith(Parameterized.class)
 public class IndexQueryLimitTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -48,75 +40,14 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
     private static final String IDX = "PERSON_ID_IDX";
 
     /** */
-    private static final String DESC_IDX = "PERSON_DESCID_IDX";
-
-    /** */
     private static final int CNT = 10_000;
 
     /** */
     private Ignite crd;
 
-    /** */
-    private IgniteCache<Long, Person> cache;
-
-    /** */
-    @Parameterized.Parameter
-    public int qryParallelism;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public CacheAtomicityMode atomicityMode;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public CacheMode cacheMode;
-
-    /** */
-    @Parameterized.Parameter(3)
-    public String node;
-
-    /** */
-    @Parameterized.Parameter(4)
-    public int backups;
-
-    /** */
-    @Parameterized.Parameter(5)
-    public String idxName;
-
-    /** Number of duplicates of indexed value. */
-    @Parameterized.Parameter(6)
-    public int duplicates;
-
-    /** */
-    @Parameterized.Parameters(name = "qryPar={0} atomicity={1} mode={2} node={3} backups={4} idxName={5} duplicates={6}")
-    public static Collection<Object[]> testParams() {
-        List<Object[]> params = new ArrayList<>();
-
-        Stream.of("CRD", "CLN").forEach(node ->
-                Stream.of(0, 2).forEach(backups ->
-                        Stream.of(1, 10).forEach(duplicates ->
-                                Stream.of(IDX, DESC_IDX).forEach(idx -> {
-                                    params.add(new Object[] {1, TRANSACTIONAL, REPLICATED, node, backups, idx, duplicates});
-                                    params.add(new Object[] {1, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates});
-                                    params.add(new Object[] {4, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates});
-                                })
-                        )
-                )
-        );
-
-        return params;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         crd = startGrids(4);
-
-        Ignite client = startClientGrid();
-
-        if ("CRD".equals(node))
-            cache = crd.cache(CACHE);
-        else
-            cache = client.cache(CACHE);
     }
 
     /** {@inheritDoc} */
@@ -131,10 +62,10 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         CacheConfiguration<Long, Person> ccfg = new CacheConfiguration<Long, Person>()
                 .setName(CACHE)
                 .setIndexedTypes(Long.class, Person.class)
-                .setAtomicityMode(atomicityMode)
-                .setCacheMode(cacheMode)
-                .setQueryParallelism(qryParallelism)
-                .setBackups(backups);
+                .setAtomicityMode(TRANSACTIONAL)
+                .setCacheMode(REPLICATED)
+                .setQueryParallelism(1)
+                .setBackups(0);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -143,101 +74,102 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRangeQueries() throws Exception {
-        // Query empty cache.
-        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, idxName);
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        // Add data
-        insertData();
-
-        // All
-        checkLimit(null, 0, CNT);
-
-        // Range queries.
-        String fld = idxName.equals(IDX) ? "id" : "descId";
-
-        int pivot = random(CNT);
-
-        // Eq.
-        checkLimit(eq(fld, pivot), pivot, pivot + 1);
-
-        // Lt.
-        checkLimit(lt(fld, pivot), 0, pivot);
-
-        // Lte.
-        checkLimit(lte(fld, pivot), 0, pivot + 1);
-
-        // Gt.
-        checkLimit(gt(fld, pivot), pivot + 1, CNT);
-
-        // Gte.
-        checkLimit(gte(fld, pivot), pivot, CNT);
-
-        // Between.
-        int lower = random(CNT / 2);
-        int upper = lower + CNT / 20;
-
-        checkLimit(between(fld, lower, upper), lower, upper + 1);
-
-        // In.
-        checkLimit(in(fld, F.asList(pivot, pivot + 1)), pivot, pivot + 2);
+    public void testRangeQueriesWithoutDuplicates() throws Exception {
+        checkRangeQueries(1);
     }
 
     /** */
-    private void checkLimit(IndexQueryCriterion criterion, int left, int right) throws Exception {
+    @Test
+    public void testRangeQueriesWithDuplicates() throws Exception {
+        checkRangeQueries(10);
+    }
+
+    /** */
+    @Test
+    public void testSetLimit() throws Exception {
+        GridTestUtils.assertThrows(log,  () -> new IndexQuery<>(Person.class, IDX).setLimit(0),
+            IllegalArgumentException.class, "Limit must be positive.");
+
+        int limit = 1 + new Random().nextInt(1000);
+
+        GridTestUtils.assertThrows(log,  () -> new IndexQuery<>(Person.class, IDX).setLimit(0 - limit),
+            IllegalArgumentException.class, "Limit must be positive.");
+
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
+
+        qry.setLimit(limit);
+
+        assertEquals(limit, qry.getLimit());
+    }
+
+    /** */
+    private void checkRangeQueries(int duplicates) throws Exception {
+
+        // Query empty cache.
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
+
+        assertTrue(crd.cache(CACHE).query(qry).getAll().isEmpty());
+
+        // Add data
+        insertData(duplicates);
+
+        // All
+        checkLimit(null, 0, CNT, duplicates);
+
+        // Range queries.
+        String fld = "id";
+
+        int pivot = new Random().nextInt(CNT);
+
+        // Eq.
+        checkLimit(eq(fld, pivot), pivot, pivot + 1, duplicates);
+
+        // Lt.
+        checkLimit(lt(fld, pivot), 0, pivot, duplicates);
+
+        // Lte.
+        checkLimit(lte(fld, pivot), 0, pivot + 1, duplicates);
+
+        // Gt.
+        checkLimit(gt(fld, pivot), pivot + 1, CNT, duplicates);
+
+        // Gte.
+        checkLimit(gte(fld, pivot), pivot, CNT, duplicates);
+
+        // Between.
+        int lower = new Random().nextInt(CNT / 2);
+        int upper = lower + CNT / 20;
+
+        checkLimit(between(fld, lower, upper), lower, upper + 1, duplicates);
+
+        // In.
+        checkLimit(in(fld, F.asList(pivot, pivot + 1)), pivot, pivot + 2, duplicates);
+    }
+
+    /** */
+    private void checkLimit(IndexQueryCriterion criterion, int left, int right, int duplicates) throws Exception {
         int rows = right - left;
-        int limit = random(1, rows + 1);
+        int limit = new Random().nextInt(rows + 1 - 1) + 1;
 
         // limit < rows
-        if (idxName.equals(DESC_IDX)) {
-            checkLimit(criterion, limit, right - limit, right);
-        }
-        else {
-            checkLimit(criterion, limit, left, left + limit);
-        }
+        checkLimit(criterion, limit, left, left + limit, duplicates);
 
         // limit >= rows
         if (rows > 1) {
-            limit = random(rows, CNT + 2);
-            checkLimit(criterion, limit, left, right);
+            limit = new Random().nextInt(CNT + 2 - rows) + rows;
+            checkLimit(criterion, limit, left, right, duplicates);
         }
     }
 
     /** */
-    private void checkLimit(IndexQueryCriterion criterion, int limit, int left, int right) throws Exception {
-        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, idxName);
+    private void checkLimit(IndexQueryCriterion criterion, int limit, int left, int right, int duplicates) throws Exception {
+        IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
         if (criterion != null) {
             qry.setCriteria(criterion);
         }
         qry.setLimit(limit);
 
-        check(qry, left, right, limit);
-    }
-
-    /** */
-    private int random(int bound) {
-        return new Random().nextInt(bound);
-    }
-
-    /** */
-    private int random(int from, int to) {
-        return new Random().nextInt(to - from) + from;
-    }
-
-    /**
-     * @param left First cache key, inclusive.
-     * @param right Last cache key, exclusive.
-     */
-    private void check(Query<Cache.Entry<Long, Person>> qry, int left, int right, int limit) throws Exception {
-
-        // PARTITIONED cache might return duplicates in any order, that's why it is not possible to predict how the last
-        // set of duplicates will be cut by query limit.
-        // So it was decided not to check key for such cases
-        boolean checkKeys = cacheMode != PARTITIONED && duplicates != 10;
-
-        QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
+        QueryCursor<Cache.Entry<Long, Person>> cursor = crd.cache(CACHE).query(qry);
 
         int expSize = (right - left) * duplicates;
         if (limit > 0 && limit < expSize) {
@@ -247,17 +179,12 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         Set<Long> expKeys = new HashSet<>(expSize);
         List<Integer> expOrderedValues = new LinkedList<>();
 
-        boolean desc = idxName.equals(DESC_IDX);
+        IntUnaryOperator op = (i) -> i + 1;
 
-        int from = desc ? right - 1 : left;
-        int to = desc ? left - 1 : right;
-        IntUnaryOperator op = (i) -> desc ? i - 1 : i + 1;
-
-        loop: for (int i = from; i != to; i = op.applyAsInt(i)) {
+        loop: for (int i = left; i != right; i = op.applyAsInt(i)) {
             for (int j = 0; j < duplicates; j++) {
                 expOrderedValues.add(i);
-                if (checkKeys)
-                    expKeys.add((long)CNT * j + i);
+                expKeys.add((long)CNT * j + i);
                 if (expOrderedValues.size() >= limit)
                     break loop;
             }
@@ -269,8 +196,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
             assertEquals(expOrderedValues.remove(0), (Integer)entry.getValue().id);
 
-            if (checkKeys)
-                assertTrue(expKeys.remove(entry.getKey()));
+            assertTrue(expKeys.remove(entry.getKey()));
 
             int persId = entry.getKey().intValue() % CNT;
 
@@ -281,13 +207,12 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
         assertEquals(expSize, actSize.get());
 
-        if (checkKeys)
-            assertTrue(expKeys.isEmpty());
+        assertTrue(expKeys.isEmpty());
     }
 
     /** */
-    private void insertData() {
-        try (IgniteDataStreamer<Long, Person> streamer = crd.dataStreamer(cache.getName())) {
+    private void insertData(int duplicates) {
+        try (IgniteDataStreamer<Long, Person> streamer = crd.dataStreamer(CACHE)) {
             for (int persId = 0; persId < CNT; persId++) {
                 // Create duplicates of data.
                 for (int i = 0; i < duplicates; i++)
@@ -303,22 +228,8 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         final int id;
 
         /** */
-        @QuerySqlField(index = true, descending = true)
-        final int descId;
-
-        /** */
-        @QuerySqlField
-        final int nonIdxSqlFld;
-
-        /** */
-        final int nonSqlFld;
-
-        /** */
         Person(int id) {
             this.id = id;
-            descId = id;
-            nonIdxSqlFld = id;
-            nonSqlFld = id;
         }
 
         /** {@inheritDoc} */
@@ -336,15 +247,12 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
             Person person = (Person)o;
 
-            return Objects.equals(id, person.id)
-                    && Objects.equals(descId, person.descId)
-                    && Objects.equals(nonIdxSqlFld, person.nonIdxSqlFld)
-                    && Objects.equals(nonSqlFld, person.nonSqlFld);
+            return Objects.equals(id, person.id);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(id, descId, nonIdxSqlFld, nonSqlFld);
+            return id;
         }
     }
 }

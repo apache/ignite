@@ -167,10 +167,13 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Sets limit to response records count.
      *
-     * @param limit If 0 or less, considered to be no limit.
+     * @param limit POsitive limit to set.
      * @return {@code this} For chaining.
      */
     public IndexQuery<K, V> setLimit(int limit) {
+        if (limit <= 0)
+            throw new IllegalArgumentException("Limit must be positive.");
+
         this.limit = limit;
 
         return this;
