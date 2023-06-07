@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Task that triggers indexes force rebuild for specified caches or cache groups.
@@ -57,12 +56,12 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<CacheIndexesForceReb
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected IndexForceRebuildJob(@Nullable CacheIndexesForceRebuildCommandArg arg, boolean debug) {
+        protected IndexForceRebuildJob(CacheIndexesForceRebuildCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected IndexForceRebuildTaskRes run(@Nullable CacheIndexesForceRebuildCommandArg arg) throws IgniteException {
+        @Override protected IndexForceRebuildTaskRes run(CacheIndexesForceRebuildCommandArg arg) throws IgniteException {
             assert (arg.cacheNames() == null) ^ (arg.groupNames() == null) :
                 "Either cacheNames or cacheGroups must be specified.";
 

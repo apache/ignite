@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Task to cancel scan queries.
@@ -53,12 +52,12 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<KillScanCommandAr
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorScanQueryCancelJob(@Nullable KillScanCommandArg arg, boolean debug) {
+        protected VisorScanQueryCancelJob(KillScanCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable KillScanCommandArg arg) throws IgniteException {
+        @Override protected Void run(KillScanCommandArg arg) throws IgniteException {
             new QueryMXBeanImpl(ignite.context())
                 .cancelScan(arg.originNodeId(), arg.cacheName(), arg.queryId());
 

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -53,12 +53,12 @@ public class VisorViewCacheTask extends VisorOneNodeTask<CacheListCommandArg, Vi
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected VisorViewCacheJob(@Nullable CacheListCommandArg arg, boolean debug) {
+        protected VisorViewCacheJob(CacheListCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorViewCacheTaskResult run(@Nullable CacheListCommandArg arg) throws IgniteException {
+        @Override protected VisorViewCacheTaskResult run(CacheListCommandArg arg) throws IgniteException {
             try {
                 VisorViewCacheCmd cmd = (arg == null || arg.groups())
                     ? GROUPS

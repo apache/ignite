@@ -185,16 +185,22 @@ public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<Clu
                                               Set<TransactionState> states, String indent, Consumer<String> printer) {
         printer.accept(indent + "Near XID version: " +
             (firstVerboseInfo == null ? null : firstVerboseInfo.nearXidVersion()));
-        printer.accept(indent + "Near XID version (UUID): " + firstInfo.getNearXid());
-        printer.accept(indent + "Isolation: " + firstInfo.getIsolation());
-        printer.accept(indent + "Concurrency: " + firstInfo.getConcurrency());
-        printer.accept(indent + "Timeout: " + firstInfo.getTimeout());
+        printer.accept(indent + "Near XID version (UUID): " +
+            (firstInfo == null ? null : firstInfo.getNearXid()));
+        printer.accept(indent + "Isolation: " +
+            (firstInfo == null ? null : firstInfo.getIsolation()));
+        printer.accept(indent + "Concurrency: " +
+            (firstInfo == null ? null : firstInfo.getConcurrency()));
+        printer.accept(indent + "Timeout: " +
+            (firstInfo == null ? null : firstInfo.getTimeout()));
         printer.accept(indent + "Initiator node: " +
             (firstVerboseInfo == null ? null : firstVerboseInfo.nearNodeId()));
         printer.accept(indent + "Initiator node (consistent ID): " +
             (firstVerboseInfo == null ? null : firstVerboseInfo.nearNodeConsistentId()));
-        printer.accept(indent + "Label: " + firstInfo.getLabel());
-        printer.accept(indent + "Topology version: " + firstInfo.getTopologyVersion());
+        printer.accept(indent + "Label: " +
+            (firstInfo == null ? null : firstInfo.getLabel()));
+        printer.accept(indent + "Topology version: " +
+            (firstInfo == null ? null : firstInfo.getTopologyVersion()));
         printer.accept(indent + "Used caches (ID to name): " + usedCaches);
         printer.accept(indent + "Used cache groups (ID to name): " + usedCacheGroups);
         printer.accept(indent + "States across the cluster: " + states);

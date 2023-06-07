@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Task for MetadataListCommand and MetadataDetailsCommand commands.
@@ -46,7 +45,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObjec
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected MetadataListResult reduce0(List<ComputeJobResult> results) {
+    @Override protected MetadataListResult reduce0(List<ComputeJobResult> results) {
         if (results.isEmpty())
             throw new IgniteException("Empty job results");
 
@@ -68,12 +67,12 @@ public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObjec
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected MetadataListJob(@Nullable IgniteDataTransferObject arg, boolean debug) {
+        protected MetadataListJob(IgniteDataTransferObject arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected MetadataListResult run(@Nullable IgniteDataTransferObject arg0) throws IgniteException {
+        @Override protected MetadataListResult run(IgniteDataTransferObject arg0) throws IgniteException {
             if (arg0 instanceof NoArg) {
                 // returns full metadata
                 return new MetadataListResult(

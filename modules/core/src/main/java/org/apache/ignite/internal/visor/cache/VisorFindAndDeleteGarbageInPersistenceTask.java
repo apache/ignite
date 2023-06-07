@@ -105,12 +105,12 @@ public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTa
          * @param arg Argument.
          * @param debug Debug.
          */
-        protected FindAndDeleteGarbageInPersistenceJob(@Nullable CacheFindGarbageCommandArg arg, boolean debug) {
+        protected FindAndDeleteGarbageInPersistenceJob(CacheFindGarbageCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorFindAndDeleteGarbageInPersistenceJobResult run(@Nullable CacheFindGarbageCommandArg arg)
+        @Override protected VisorFindAndDeleteGarbageInPersistenceJobResult run(CacheFindGarbageCommandArg arg)
             throws IgniteException {
             try {
                 VisorFindAndDeleteGarbageInPersistenceClosure closure =

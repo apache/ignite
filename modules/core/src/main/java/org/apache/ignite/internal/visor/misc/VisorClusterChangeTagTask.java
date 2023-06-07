@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -54,13 +53,13 @@ public class VisorClusterChangeTagTask extends VisorOneNodeTask<ChangeTagCommand
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
         VisorClusterChangeTagJob(
-            @Nullable ChangeTagCommandArg arg, boolean debug) {
+            ChangeTagCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected VisorClusterChangeTagTaskResult run(
-            @Nullable ChangeTagCommandArg arg
+            ChangeTagCommandArg arg
         ) throws IgniteException {
             return update(arg.newTagValue());
         }

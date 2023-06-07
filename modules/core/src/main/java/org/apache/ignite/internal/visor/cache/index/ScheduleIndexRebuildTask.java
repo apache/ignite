@@ -41,7 +41,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
-import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
 
@@ -60,7 +60,7 @@ public class ScheduleIndexRebuildTask
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable ScheduleIndexRebuildTaskRes reduce0(List<ComputeJobResult> results) throws IgniteException {
+    @Override protected ScheduleIndexRebuildTaskRes reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<UUID, ScheduleIndexRebuildJobRes> taskResultMap = results.stream()
             .collect(Collectors.toMap(res -> res.getNode().id(), ComputeJobResult::getData));
 
@@ -78,12 +78,12 @@ public class ScheduleIndexRebuildTask
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected ScheduleIndexRebuildJob(@Nullable CacheScheduleIndexesRebuildCommandArg arg, boolean debug) {
+        protected ScheduleIndexRebuildJob(CacheScheduleIndexesRebuildCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected ScheduleIndexRebuildJobRes run(@Nullable CacheScheduleIndexesRebuildCommandArg arg) throws IgniteException {
+        @Override protected ScheduleIndexRebuildJobRes run(CacheScheduleIndexesRebuildCommandArg arg) throws IgniteException {
             Set<String> argCacheGroups = arg.groupNames() == null
                 ? null
                 : new HashSet<>(Arrays.asList(arg.groupNames()));
