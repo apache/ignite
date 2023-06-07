@@ -23,10 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation required only for CLI utilities such as {@code control.sh}.
- * Fields marked by this annotation treated as "positional argument" so no explicit prefixed name will be provided by the user.
- * Example: {@code ./control.sh --my-command --param1 value1 positional_parameter_value}.
- * As you may see there are no {@code --positional-paramter-value} prefix for "positional_parameter_value".
+ * <p>This annotation required only for CLI utilities such as {@code control.sh}.
+ * Fields marked by this annotation treated as "positional argument" so no explicit prefixed name will be provided by the user.<br>
+ * Example:</p>
+ * <p>{@code ./control.sh --my-command --param1 value1 positional_value}.</p>
+ * As you may see there are no {@code --positional-parameter} prefix for "positional_value".
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

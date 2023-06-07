@@ -23,10 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Required for {@code control.sh} backward compatibility.
- * {@link CommandsRegistry} marked with this annotation must expect subcommand name with {@code --} prefix.
- * Example: {@code ./control.sh --warm-up --stop ... other options}.
- * Here subcommand name "--stop" passed with {@code --} command prefix.
+ * <p>Required for {@code control.sh} backward compatibility.
+ * {@link CommandsRegistry} marked with this annotation must expect subcommand name with {@code --} prefix.<br>
+ * Example:</p>
+ * <p>{@code ./control.sh --warm-up --stop ... other options}.</p>
+ * Here, subcommand name "--stop" passed with {@code --} command prefix.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
