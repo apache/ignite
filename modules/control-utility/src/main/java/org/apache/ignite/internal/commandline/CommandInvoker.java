@@ -218,7 +218,7 @@ public class CommandInvoker<A extends IgniteDataTransferObject> {
     }
 
     /** */
-    public static GridClientNode defaultNode(GridClient client, GridClientConfiguration clientCfg) throws GridClientException {
+    private static GridClientNode defaultNode(GridClient client, GridClientConfiguration clientCfg) throws GridClientException {
         GridClientNode node;
 
         // Prefer node from connect string.
