@@ -94,14 +94,16 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public void unwindEvicts(GridCacheSharedContext ctx) {
-        List<IgniteTxEntry> entry = entry();
+        GridCacheContext<?, ?> cctx;
 
-        if (entry == null || entry.isEmpty())
-            return;
+        synchronized (this) {
+            if (entry == null || entry.isEmpty())
+                return;
 
-        assert entry.size() == 1;
+            assert entry.size() == 1;
 
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(entry.get(0).cacheId());
+            cctx = ctx.cacheContext(entry.get(0).cacheId());
+        }
 
         if (cctx != null)
             CU.unwindEvicts(cctx);
@@ -134,15 +136,17 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
             return null;
 
         Throwable err = null;
+        KeyCacheObject key = null;
 
-        List<IgniteTxEntry> entry = entry();
-
-        if (entry != null) {
-            // An entry is a singleton list here, so a key is taken from a first element.
-            KeyCacheObject key = entry.get(0).key();
-
-            err = topFut.validateCache(cctx, recovery(), read, key, null);
+        synchronized (this) {
+            if (entry != null) {
+                // An entry is a singleton list here, so a key is taken from a first element.
+                key = entry.get(0).key();
+            }
         }
+
+        if (key != null)
+            err = topFut.validateCache(cctx, recovery(), read, key, null);
 
         if (err != null) {
             return new IgniteCheckedException(
@@ -237,9 +241,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEntry entry(IgniteTxKey key) {
-        List<IgniteTxEntry> entry = entry();
-
+    @Override public synchronized IgniteTxEntry entry(IgniteTxKey key) {
         if (entry != null && entry.get(0).txKey().equals(key))
             return entry.get(0);
 
@@ -247,9 +249,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasWriteKey(IgniteTxKey key) {
-        List<IgniteTxEntry> entry = entry();
-
+    @Override public synchronized boolean hasWriteKey(IgniteTxKey key) {
         return entry != null && entry.get(0).txKey().equals(key);
     }
 
@@ -259,9 +259,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<IgniteTxKey> writeSet() {
-        List<IgniteTxEntry> entry = entry();
-
+    @Override public synchronized Set<IgniteTxKey> writeSet() {
         if (entry != null) {
             Set<IgniteTxKey> set = new HashSet<>(3, 0.75f);
 
@@ -274,10 +272,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteTxEntry> writeEntries() {
-        List<IgniteTxEntry> entry = entry();
-
-        return entry != null ? entry : Collections.<IgniteTxEntry>emptyList();
+    @Override public synchronized Collection<IgniteTxEntry> writeEntries() {
+        return entry != null ? entry : Collections.emptyList();
     }
 
     /** {@inheritDoc} */
@@ -286,9 +282,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        List<IgniteTxEntry> entry = entry();
-        
+    @Override public synchronized Map<IgniteTxKey, IgniteTxEntry> writeMap() {
         return entry != null ? F.asMap(entry.get(0).txKey(), entry.get(0)) :
             Collections.emptyMap();
     }
@@ -342,9 +336,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEntry singleWrite() {
-        List<IgniteTxEntry> entry = entry();
-        
+    @Override public synchronized IgniteTxEntry singleWrite() {
         return entry != null ? entry.get(0) : null;
     }
 
@@ -367,11 +359,6 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public synchronized boolean recovery() {
         return recovery;
-    }
-
-    /** */
-    private synchronized List<IgniteTxEntry> entry() {
-        return entry;
     }
 
     /** */
