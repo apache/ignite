@@ -66,7 +66,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     public static final String PARALLEL = "--parallel";
 
     /** */
-    public static final String CACHE = "--cache-name";
+    public static final String CACHE = "--cache";
 
     /** */
     public static final String STRATEGY = "--strategy";
