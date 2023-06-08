@@ -72,7 +72,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     public static final String STRATEGY = "--strategy";
 
     /** */
-    public static final String PARTITIONS = "--partition";
+    public static final String PARTITIONS = "--partitions";
 
     /** */
     private static List<IgniteEx> srvs;

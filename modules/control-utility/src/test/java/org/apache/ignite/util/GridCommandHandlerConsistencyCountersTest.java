@@ -90,7 +90,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     public static final String STRATEGY = "--strategy";
 
     /** */
-    public static final String PARTITIONS = "--partition";
+    public static final String PARTITIONS = "--partitions";
 
     /** */
     @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")

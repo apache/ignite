@@ -56,13 +56,13 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest extends GridCommandHandlerAbstractTest {
     /** */
-    public static final String CACHE = "--cache-name";
+    public static final String CACHE = "--cache";
 
     /** */
     public static final String STRATEGY = "--strategy";
 
     /** */
-    public static final String PARTITIONS_ARG = "--partition";
+    public static final String PARTITIONS_ARG = "--partitions";
 
     /** */
     public static final String PARALLEL = "--parallel";

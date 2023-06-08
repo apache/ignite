@@ -74,13 +74,13 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     private static final String GRP_POSTFIX = "_grp";
 
     /** */
-    public static final String CACHE = "--cache-name";
+    public static final String CACHE = "--cache";
 
     /** */
     public static final String STRATEGY = "--strategy";
 
     /** */
-    public static final String PARTITIONS_ARG = "--partition";
+    public static final String PARTITIONS_ARG = "--partitions";
 
     /** Partitions. */
     private static final int PARTITIONS = 32;
