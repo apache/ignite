@@ -253,7 +253,7 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
-            commandName = args.command() instanceof HelpCommand && args.root() != null
+            commandName = args.command() instanceof HelpCommand || args.root() != null
                 ? toFormattedCommandName(args.root().getClass()).toUpperCase()
                 : toFormattedCommandName(args.command().getClass()).toUpperCase();
 
