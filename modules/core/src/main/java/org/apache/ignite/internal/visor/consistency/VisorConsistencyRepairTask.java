@@ -101,7 +101,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<Consiste
         @Override protected String run(ConsistencyRepairCommandArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
-            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partition())
+            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partitions())
                 .mapToObj(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {

@@ -853,7 +853,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
         ConsistencyRepairCommandArg arg = new ConsistencyRepairCommandArg();
 
         arg.cache(cacheName);
-        arg.partition(IntStream.range(0, PARTS).toArray());
+        arg.partitions(IntStream.range(0, PARTS).toArray());
         arg.strategy(ReadRepairStrategy.CHECK_ONLY);
 
         VisorConsistencyTaskResult res = grid(0).compute().execute(

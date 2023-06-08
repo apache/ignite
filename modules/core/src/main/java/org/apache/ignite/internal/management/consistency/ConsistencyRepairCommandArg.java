@@ -36,7 +36,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Cache's partition to be checked/repaired", example = "partition")
-    private int[] partition;
+    private int[] partitions;
 
     /** Strategy. */
     @Argument(description = "Repair strategy")
@@ -58,7 +58,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cache);
-        U.writeIntArray(out, partition);
+        U.writeIntArray(out, partitions);
         U.writeEnum(out, strategy);
         out.writeBoolean(parallel);
     }
@@ -66,19 +66,19 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cache = U.readString(in);
-        partition = U.readIntArray(in);
+        partitions = U.readIntArray(in);
         strategy = U.readEnum(in, ReadRepairStrategy.class);
         parallel = in.readBoolean();
     }
 
     /** */
-    public int[] partition() {
-        return partition;
+    public int[] partitions() {
+        return partitions;
     }
 
     /** */
-    public void partition(int[] partition) {
-        this.partition = partition;
+    public void partitions(int[] partition) {
+        this.partitions = partition;
     }
 
     /** */
