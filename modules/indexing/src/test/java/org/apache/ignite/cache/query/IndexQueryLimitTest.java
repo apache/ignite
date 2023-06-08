@@ -120,7 +120,6 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
     /** */
     private void checkRangeQueries(int duplicates) throws Exception {
-
         // Query empty cache.
         IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
 
@@ -165,7 +164,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
     /** */
     private void checkLimit(IndexQueryCriterion criterion, int left, int right, int duplicates) throws Exception {
         int rows = right - left;
-        int limit = new Random().nextInt(rows + 1 - 1) + 1;
+        int limit = new Random().nextInt(rows) + 1;
 
         // limit < rows
         checkLimit(criterion, limit, left, left + limit, duplicates);
@@ -173,6 +172,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         // limit >= rows
         if (rows > 1) {
             limit = new Random().nextInt(CNT + 2 - rows) + rows;
+
             checkLimit(criterion, limit, left, right, duplicates);
         }
     }
@@ -180,6 +180,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
     /** */
     private void checkLimit(IndexQueryCriterion criterion, int limit, int left, int right, int duplicates) throws Exception {
         IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, IDX);
+
         if (criterion != null) {
             qry.setCriteria(criterion);
         }
@@ -188,6 +189,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         QueryCursor<Cache.Entry<Long, Person>> cursor = crd.cache(CACHE).query(qry);
 
         int expSize = (right - left) * duplicates;
+
         if (limit > 0 && limit < expSize) {
             expSize = limit;
         }
@@ -200,6 +202,7 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         loop: for (int i = left; i != right; i = op.applyAsInt(i)) {
             for (int j = 0; j < duplicates; j++) {
                 expOrderedValues.add(i);
+
                 expKeys.add((long)CNT * j + i);
                 if (expOrderedValues.size() >= limit)
                     break loop;
@@ -207,7 +210,6 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
         }
 
         AtomicInteger actSize = new AtomicInteger();
-
         ((QueryCursorEx<Cache.Entry<Long, Person>>)cursor).getAll(entry -> {
 
             assertEquals(expOrderedValues.remove(0), (Integer)entry.getValue().id);
