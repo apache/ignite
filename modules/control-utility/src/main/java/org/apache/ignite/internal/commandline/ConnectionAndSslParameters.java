@@ -100,7 +100,7 @@ public class ConnectionAndSslParameters<A extends IgniteDataTransferObject> {
      * @return High-level command which were defined by user to run.
      */
     public Command<?, ?> root() {
-        return root;
+        return root != null ? root : command;
     }
 
     /** */

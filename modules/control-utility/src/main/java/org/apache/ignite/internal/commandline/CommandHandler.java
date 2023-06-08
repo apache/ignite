@@ -253,9 +253,7 @@ public class CommandHandler {
 
             ConnectionAndSslParameters<A> args = new ArgumentParser(logger, registry).parseAndValidate(rawArgs);
 
-            commandName = args.root() != null
-                ? toFormattedCommandName(args.root().getClass()).toUpperCase()
-                : toFormattedCommandName(args.command().getClass()).toUpperCase();
+            commandName = toFormattedCommandName(args.root().getClass()).toUpperCase();
 
             CommandInvoker<A> invoker = new CommandInvoker<>(args.command(), args.commandArg(), getClientConfiguration(args));
 
