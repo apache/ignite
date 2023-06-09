@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.running;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -175,15 +177,6 @@ public class GridRunningQueryInfo {
      */
     public long startTimeNanos() {
         return startTimeNanos;
-    }
-
-    /**
-     * @param curTime Current time.
-     * @param duration Duration of long query.
-     * @return {@code true} if this query should be considered as long running query.
-     */
-    public boolean longQuery(long curTime, long duration) {
-        return curTime - startTime > duration;
     }
 
     /**

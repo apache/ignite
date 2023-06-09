@@ -53,7 +53,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -92,7 +91,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
@@ -103,8 +101,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIt
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBean;
-import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
@@ -120,6 +116,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -256,8 +254,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Schema manager. */
     private H2SchemaManager schemaMgr;
 
-    /** H2 Connection manager. */
-    private LongRunningQueryManager longRunningQryMgr;
+    /** Heavy queries tracker. */
+    private HeavyQueriesTracker heavyQryTracker;
 
     /** Discovery event listener. */
     private GridLocalEventListener discoLsnr;
@@ -837,10 +835,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
         if (qryInfo != null)
-            longRunningQryMgr.registerQuery(qryInfo);
+            heavyQryTracker.startTracking(qryInfo);
 
         enableDataPageScan(dataPageScanEnabled);
 
+        Throwable err = null;
         try (
             TraceSurroundings ignored = MTC.support(ctx.tracing()
                 .create(SQL_QRY_EXECUTE, MTC.span())
@@ -848,16 +847,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ) {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
-            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, "Long running query is finished", null);
-
             return rs;
         }
         catch (Throwable e) {
-            if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
-                qryInfo.printLogMessage(log, "Long running query is finished with error: "
-                    + e.getMessage(), null);
-            }
+            err = e;
 
             throw e;
         }
@@ -865,7 +858,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             CacheDataTree.setDataPageScanEnabled(false);
 
             if (qryInfo != null)
-                longRunningQryMgr.unregisterQuery(qryInfo);
+                heavyQryTracker.stopTracking(qryInfo, err);
         }
     }
 
@@ -1866,7 +1859,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         connMgr = new ConnectionManager(ctx);
 
-        longRunningQryMgr = new LongRunningQueryManager(ctx);
+        heavyQryTracker = ctx.query().runningQueryManager().heavyQueriesTracker();
 
         parser = new QueryParser(this, connMgr, cmd -> cmdProc.isCommandSupported(cmd));
 
@@ -2118,7 +2111,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
-        longRunningQryMgr.stop();
         connMgr.stop();
 
         if (log.isDebugEnabled())
@@ -2785,18 +2777,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException {
-        SqlQueryMXBean qryMXBean = new SqlQueryMXBeanImpl(ctx);
-
-        mbMgr.registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), qryMXBean, SqlQueryMXBean.class);
-    }
-
     /**
-     * @return Long running queries manager.
+     * @return Heavy queries tracker.
      */
-    public LongRunningQueryManager longRunningQueries() {
-        return longRunningQryMgr;
+    public HeavyQueriesTracker heavyQueriesTracker() {
+        return heavyQryTracker;
     }
 
     /**

@@ -52,11 +52,10 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryProperties;
-import org.apache.ignite.internal.processors.query.QueryState;
-import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
+import org.apache.ignite.internal.processors.query.calcite.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.RootQuery;
 import org.apache.ignite.internal.processors.query.calcite.RunningFragment;
 import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHandler;
@@ -98,6 +97,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
+import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -524,9 +524,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
                 ", err=" + e.getMessage() + ']', e);
         }
-        finally {
-            qryReg.unregister(qry.id());
-        }
 
         if (plan.command() instanceof CreateTableCommand
             && ((CreateTableCommand)plan.command()).insertStatement() != null) {
@@ -656,7 +653,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
             o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
 
-        Function<List<Object>, List<Object>> rowConverter = null;
+        HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
+            .heavyQueriesTracker().resultSetChecker(qry);
+
+        Function<List<Object>, List<Object>> rowConverter;
 
         // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
         if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
@@ -682,12 +682,21 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     null,
                     row));
 
+                resultSetChecker.checkOnFetchNext();
+
+                return row;
+            };
+        }
+        else {
+            rowConverter = row -> {
+                resultSetChecker.checkOnFetchNext();
+
                 return row;
             };
         }
 
         Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter, rowConverter);
+            fieldConverter, rowConverter, resultSetChecker::checkOnClose);
 
         return new ListFieldsQueryCursor<>(plan, it, ectx);
     }
@@ -696,8 +705,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
-
-        qryReg.unregister(qry.id());
 
         return cur;
     }
@@ -742,7 +749,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     nodeId,
                     null,
                     exchangeSvc,
-                    (q) -> qryReg.unregister(q.id()),
+                    (q, f) -> qryReg.unregister(q.id(), f),
                     log,
                     msg.totalFragmentsCount()
                 )
@@ -806,7 +813,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartResponse msg) {
         assert nodeId != null && msg != null;
 
-        RunningQuery qry = qryReg.query(msg.queryId());
+        Query<?> qry = qryReg.query(msg.queryId());
 
         if (qry != null) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;
@@ -819,7 +826,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, ErrorMessage msg) {
         assert nodeId != null && msg != null;
 
-        RunningQuery qry = qryReg.query(msg.queryId());
+        Query<?> qry = qryReg.query(msg.queryId());
 
         if (qry != null && qry.state() != QueryState.CLOSED) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;
@@ -841,7 +848,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private void onNodeLeft(UUID nodeId) {
         qryReg.runningQueries()
-            .forEach((qry) -> ((Query<Row>)qry).onNodeLeft(nodeId));
+            .forEach((qry) -> qry.onNodeLeft(nodeId));
     }
 
     /** */

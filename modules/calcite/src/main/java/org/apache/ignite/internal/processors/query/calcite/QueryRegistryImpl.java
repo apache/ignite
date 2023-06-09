@@ -26,17 +26,17 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.RunningQuery;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Registry of the running queries.
  */
 public class QueryRegistryImpl extends AbstractService implements QueryRegistry {
     /** */
-    private final ConcurrentMap<UUID, RunningQuery> runningQrys = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, Query<?>> runningQrys = new ConcurrentHashMap<>();
 
     /** */
     protected final GridKernalContext kctx;
@@ -49,7 +49,7 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
     }
 
     /** {@inheritDoc} */
-    @Override public RunningQuery register(RunningQuery qry) {
+    @Override public Query<?> register(Query<?> qry) {
         return runningQrys.computeIfAbsent(qry.id(), k -> {
             if (!(qry instanceof RootQuery))
                 return qry;
@@ -67,24 +67,29 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
 
             rootQry.localQueryId(locId);
 
+            qryMgr.heavyQueriesTracker().startTracking(rootQry);
+
             return qry;
         });
     }
 
     /** {@inheritDoc} */
-    @Override public RunningQuery query(UUID id) {
+    @Override public Query<?> query(UUID id) {
         return runningQrys.get(id);
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(UUID id) {
-        RunningQuery val = runningQrys.remove(id);
-        if (val instanceof RootQuery<?>)
-            kctx.query().runningQueryManager().unregister(((RootQuery<?>)val).localQueryId(), null);
+    @Override public void unregister(UUID id, @Nullable Throwable failReason) {
+        Query<?> val = runningQrys.remove(id);
+        if (val instanceof RootQuery<?>) {
+            RootQuery<?> qry = (RootQuery<?>)val;
+            kctx.query().runningQueryManager().unregister(qry.localQueryId(), failReason);
+            kctx.query().runningQueryManager().heavyQueriesTracker().stopTracking(qry, failReason);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends RunningQuery> runningQueries() {
+    @Override public Collection<? extends Query<?>> runningQueries() {
         return runningQrys.values();
     }
 
@@ -95,7 +100,7 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
     }
 
     /** */
-    private static GridQueryCancel createCancelToken(RunningQuery qry) {
+    private static GridQueryCancel createCancelToken(Query<?> qry) {
         GridQueryCancel token = new GridQueryCancel();
         try {
             token.add(qry::cancel);
