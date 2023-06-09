@@ -845,9 +845,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .create(SQL_QRY_EXECUTE, MTC.span())
                 .addTag(SQL_QRY_TEXT, () -> sql))
         ) {
-            ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
-
-            return rs;
+            return executeSqlQuery(conn, stmt, timeoutMillis, cancel);
         }
         catch (Throwable e) {
             err = e;

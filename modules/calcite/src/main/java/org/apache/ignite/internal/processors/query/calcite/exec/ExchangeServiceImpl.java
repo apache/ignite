@@ -127,7 +127,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
 
         if (batchId == 0) {
-            Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+            Query<?> qry = qryRegistry.query(qryId);
 
             if (qry != null)
                 qry.onOutboundExchangeStarted(nodeId, exchangeId);
@@ -183,7 +183,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onOutboundExchangeFinished(UUID qryId, long exchangeId) {
-        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+        Query<?> qry = qryRegistry.query(qryId);
 
         if (qry != null)
             qry.onOutboundExchangeFinished(exchangeId);
@@ -191,7 +191,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onInboundExchangeFinished(UUID nodeId, UUID qryId, long exchangeId) {
-        Query<?> qry = (Query<?>)qryRegistry.query(qryId);
+        Query<?> qry = qryRegistry.query(qryId);
 
         if (qry != null)
             qry.onInboundExchangeFinished(nodeId, exchangeId);
