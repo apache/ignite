@@ -17,7 +17,9 @@
 
 package org.apache.ignite.cache.query;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -31,11 +33,13 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -386,6 +390,47 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             }
             else
                 assertEquals(null, fldOneVal.apply(e));
+        }
+    }
+
+    /** */
+    @Test
+    public void testIndexQueryLimitOnOlderProtocolVersion() throws Exception {
+        // Exclude INDEX_QUERY_LIMIT from protocol
+        Class<?> clazz = Class.forName("org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature");
+
+        Field field = clazz.getDeclaredField("ALL_FEATURES_AS_ENUM_SET");
+
+        field.setAccessible(true);
+
+        EnumSet<ProtocolBitmaskFeature> allFeaturesEnumSet = (EnumSet<ProtocolBitmaskFeature>)field.get(null);
+
+        allFeaturesEnumSet.remove(ProtocolBitmaskFeature.INDEX_QUERY_LIMIT);
+
+        try {
+            withClientCache((cache) -> {
+                // No limit.
+                IndexQuery<Integer, Person> idxQry = new IndexQuery<>(Person.class, IDX_FLD1);
+
+                assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
+
+                // With limit.
+                IndexQuery<Integer, Person> idxQryWithLImit = new IndexQuery<Integer, Person>(Person.class, IDX_FLD1)
+                    .setLimit(10);
+
+                GridTestUtils.assertThrowsAnyCause(
+                    log,
+                    () -> {
+                        cache.query(idxQryWithLImit).getAll();
+                        return null;
+                    },
+                    ClientFeatureNotSupportedByServerException.class,
+                    "Feature INDEX_QUERY_LIMIT is not supported by the server");
+            });
+        }
+        finally {
+            //revert the features set
+            allFeaturesEnumSet.add(ProtocolBitmaskFeature.INDEX_QUERY_LIMIT);
         }
     }
 
