@@ -171,7 +171,7 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @return {@code this} For chaining.
      */
     public IndexQuery<K, V> setLimit(int limit) {
-        A.ensure(limit <= 0, "Limit must be positive.");
+        A.ensure(limit > 0, "Limit must be positive.");
 
         this.limit = limit;
 

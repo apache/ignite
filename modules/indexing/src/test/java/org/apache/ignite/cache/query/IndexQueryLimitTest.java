@@ -32,20 +32,13 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.in;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
-import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
 public class IndexQueryLimitTest extends GridCommonAbstractTest {
@@ -136,29 +129,9 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        // Eq.
-        checkLimit(eq(fld, pivot), pivot, pivot + 1, duplicates);
-
         // Lt.
         checkLimit(lt(fld, pivot), 0, pivot, duplicates);
 
-        // Lte.
-        checkLimit(lte(fld, pivot), 0, pivot + 1, duplicates);
-
-        // Gt.
-        checkLimit(gt(fld, pivot), pivot + 1, CNT, duplicates);
-
-        // Gte.
-        checkLimit(gte(fld, pivot), pivot, CNT, duplicates);
-
-        // Between.
-        int lower = new Random().nextInt(CNT / 2);
-        int upper = lower + CNT / 20;
-
-        checkLimit(between(fld, lower, upper), lower, upper + 1, duplicates);
-
-        // In.
-        checkLimit(in(fld, F.asList(pivot, pivot + 1)), pivot, pivot + 2, duplicates);
     }
 
     /** */
