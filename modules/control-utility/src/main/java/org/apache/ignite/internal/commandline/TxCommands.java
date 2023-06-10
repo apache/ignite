@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -138,8 +139,12 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
                     ", consistentId=" + key.consistentId() +
                     "]");
 
-                for (VisorTxInfo info : entry.getValue().getInfos())
-                    logger.info(info.toUserString());
+                for (VisorTxInfo info : entry.getValue().getInfos()) {
+                    if (Objects.equals(info.getXid(), info.getNearXid()))
+                        logger.info(info.toUserString());
+                    else
+                        logger.info(info.toUserString() + " [Near node may be missed]");
+                }
             }
 
             return res;
