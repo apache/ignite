@@ -169,7 +169,7 @@ public class IgniteMBeansManager {
 
         if (ctx.query().moduleEnabled()) {
             SqlQueryMXBean sqlQryMXBean = new SqlQueryMXBeanImpl(ctx);
-            registerMBean("SQL Query", qryMXBean.getClass().getSimpleName(), sqlQryMXBean, SqlQueryMXBean.class);
+            registerMBean("SQL Query", sqlQryMXBean.getClass().getSimpleName(), sqlQryMXBean, SqlQueryMXBean.class);
         }
 
         PerformanceStatisticsMBeanImpl performanceStatMbean = new PerformanceStatisticsMBeanImpl(ctx);
