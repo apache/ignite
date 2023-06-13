@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.client;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.management.kill.KillClientCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -32,12 +33,12 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorClientConnectionDropTask extends VisorMultiNodeTask<Long, Void, Boolean> {
+public class VisorClientConnectionDropTask extends VisorMultiNodeTask<KillClientCommandArg, Void, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Long, Boolean> job(Long arg) {
+    @Override protected VisorJob<KillClientCommandArg, Boolean> job(KillClientCommandArg arg) {
         return new VisorClientConnectionDropJob(arg, debug);
     }
 
@@ -61,7 +62,7 @@ public class VisorClientConnectionDropTask extends VisorMultiNodeTask<Long, Void
     /**
      * Job to cancel client connection(s).
      */
-    private static class VisorClientConnectionDropJob extends VisorJob<Long, Boolean> {
+    private static class VisorClientConnectionDropJob extends VisorJob<KillClientCommandArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -71,16 +72,19 @@ public class VisorClientConnectionDropTask extends VisorMultiNodeTask<Long, Void
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorClientConnectionDropJob(@Nullable Long arg, boolean debug) {
+        protected VisorClientConnectionDropJob(@Nullable KillClientCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(@Nullable Long arg) throws IgniteException {
+        @Override protected Boolean run(@Nullable KillClientCommandArg arg) throws IgniteException {
+            if (arg == null)
+                return false;
+
             ClientProcessorMXBean bean = ignite.context().clientListener().mxBean();
 
-            if (arg != null)
-                return bean.dropConnection(arg);
+            if (!"ALL".equals(arg.connectionId()))
+                return bean.dropConnection(Long.parseLong(arg.connectionId()));
 
             bean.dropAllConnections();
 

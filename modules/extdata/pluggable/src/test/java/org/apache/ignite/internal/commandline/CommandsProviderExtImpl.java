@@ -17,18 +17,25 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Additional commands provider for control utility.
  */
 public class CommandsProviderExtImpl implements CommandsProvider {
     /** */
-    public static final Command<?> TEST_COMMAND = new TestCommand();
+    public static final Command<?, ?> TEST_COMMAND = new TestCommandCommand();
 
     /** */
     public static final String TEST_COMMAND_OUTPUT = "Test command executed";
@@ -37,54 +44,60 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     public static final String TEST_COMMAND_USAGE = "Test command usage.";
 
     /** */
-    public static final String TEST_COMMAND_ARG = "test-print";
+    public static final String TEST_COMMAND_ARG = "--test-print";
 
     /** {@inheritDoc} */
-    @Override public Map<String, Command<?>> commands() {
-        return Collections.singletonMap(TEST_COMMAND.name(), TEST_COMMAND);
+    @Override public Collection<Command<?, ?>> commands() {
+        return Collections.singleton(TEST_COMMAND);
     }
 
     /** */
-    public static class TestCommand extends AbstractCommand<Object> {
-        /** */
-        private String arg;
+    public static class TestCommandCommand implements LocalCommand<TestCommandCommandArg, Void> {
+        /** {@inheritDoc} */
+        @Override public String description() {
+            return TEST_COMMAND_USAGE;
+        }
 
         /** {@inheritDoc} */
-        @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) {
-            log.info(TEST_COMMAND_OUTPUT + ": " + arg);
+        @Override public Class<TestCommandCommandArg> argClass() {
+            return TestCommandCommandArg.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void execute(GridClient cli, TestCommandCommandArg arg, Consumer<String> printer) {
+            printer.accept(TEST_COMMAND_OUTPUT + ": " + arg.testPrint);
 
             return null;
         }
+    }
+
+    /** */
+    public static class TestCommandCommandArg extends IgniteDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        @Argument
+        private String testPrint;
 
         /** {@inheritDoc} */
-        @Override public void parseArguments(CommandArgIterator argIter) {
-            String cmdArg = argIter.nextArg("Required 1-st argument");
-
-            if (TEST_COMMAND_ARG.equals(cmdArg))
-                arg = argIter.nextArg("Required 2-nd argument");
-            else
-                throw new IllegalArgumentException("Invalid argument \"" + cmdArg + "\".");
-
-            if (argIter.hasNextSubArg()) {
-                throw new IllegalArgumentException(
-                    "Invalid argument \"" + argIter.peekNextArg() + "\", no more arguments is expected.");
-            }
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, testPrint);
         }
 
         /** {@inheritDoc} */
-        @Override public Object arg() {
-            return arg;
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+            testPrint = U.readString(in);
         }
 
-        /** {@inheritDoc} */
-        @Override public void printUsage(IgniteLogger log) {
-            usage(log, TEST_COMMAND_USAGE, TEST_COMMAND.name(), F.asMap("value", "Value to print"),
-                TEST_COMMAND_ARG, "value");
+        /** */
+        public void testPrint(String testPrint) {
+            this.testPrint = testPrint;
         }
 
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "--test-command";
+        /** */
+        public String testPrint() {
+            return testPrint;
         }
     }
 }

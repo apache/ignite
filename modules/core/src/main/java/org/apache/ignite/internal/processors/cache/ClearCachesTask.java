@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.management.cache.CacheClearCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -30,17 +31,17 @@ import org.jetbrains.annotations.Nullable;
 
 /** Clears specified caches. */
 @GridInternal
-public class ClearCachesTask extends VisorOneNodeTask<ClearCachesTaskArg, ClearCachesTaskResult> {
+public class ClearCachesTask extends VisorOneNodeTask<CacheClearCommandArg, ClearCachesTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Override protected VisorJob<ClearCachesTaskArg, ClearCachesTaskResult> job(ClearCachesTaskArg arg) {
+    @Override protected VisorJob<CacheClearCommandArg, ClearCachesTaskResult> job(CacheClearCommandArg arg) {
         return new ClearCacheJob(arg, debug);
     }
 
     /** Job clears specified caches. */
-    private static class ClearCacheJob extends VisorJob<ClearCachesTaskArg, ClearCachesTaskResult> {
+    private static class ClearCacheJob extends VisorJob<CacheClearCommandArg, ClearCachesTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -48,12 +49,12 @@ public class ClearCachesTask extends VisorOneNodeTask<ClearCachesTaskArg, ClearC
         private Ignite ignite;
 
         /** */
-        private ClearCacheJob(ClearCachesTaskArg arg, boolean debug) {
+        private ClearCacheJob(CacheClearCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected ClearCachesTaskResult run(@Nullable ClearCachesTaskArg arg) throws IgniteException {
+        @Override protected ClearCachesTaskResult run(@Nullable CacheClearCommandArg arg) throws IgniteException {
             List<String> clearedCaches = new ArrayList<>();
             List<String> nonExistentCaches = new ArrayList<>();
 

@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -42,14 +43,14 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class IndexRebuildStatusTask extends VisorMultiNodeTask<
-    IndexRebuildStatusTaskArg,
+    CacheIndexesRebuildStatusCommandArg,
     Map<UUID, Set<IndexRebuildStatusInfoContainer>>,
     Set<IndexRebuildStatusInfoContainer>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected IndexRebuildStatusJob job(IndexRebuildStatusTaskArg arg) {
+    @Override protected IndexRebuildStatusJob job(CacheIndexesRebuildStatusCommandArg arg) {
         return new IndexRebuildStatusJob(arg, debug);
     }
 
@@ -70,7 +71,7 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<IndexRebuildStatusTaskArg> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CacheIndexesRebuildStatusCommandArg> arg) {
         UUID targetNodeId = arg.getArgument().nodeId();
 
         if (targetNodeId == null)
@@ -81,7 +82,7 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<
     }
 
     /**  */
-    private static class IndexRebuildStatusJob extends VisorJob<IndexRebuildStatusTaskArg, Set<IndexRebuildStatusInfoContainer>> {
+    private static class IndexRebuildStatusJob extends VisorJob<CacheIndexesRebuildStatusCommandArg, Set<IndexRebuildStatusInfoContainer>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -91,13 +92,13 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected IndexRebuildStatusJob(@Nullable IndexRebuildStatusTaskArg arg, boolean debug) {
+        protected IndexRebuildStatusJob(@Nullable CacheIndexesRebuildStatusCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected Set<IndexRebuildStatusInfoContainer> run(
-            @Nullable IndexRebuildStatusTaskArg arg
+            @Nullable CacheIndexesRebuildStatusCommandArg arg
         ) throws IgniteException {
             Set<IgniteCache> rebuildIdxCaches =
                 ignite.context().cache().publicCaches().stream()

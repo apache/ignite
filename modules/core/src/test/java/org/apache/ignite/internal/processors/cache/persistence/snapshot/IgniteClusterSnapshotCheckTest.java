@@ -47,6 +47,7 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -76,13 +77,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -498,12 +496,14 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
 
-        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
-            new VisorIdleVerifyTaskArg(new HashSet<>(singletonList(ccfg.getName())),
-                new HashSet<>(),
-                false,
-                CacheFilterEnum.USER,
-                true));
+        CacheIdleVerifyCommandArg arg = new CacheIdleVerifyCommandArg();
+
+        arg.caches(new String[] {ccfg.getName()});
+        arg.skipZeros(false);
+        arg.cacheFilter(CacheFilterEnum.USER);
+        arg.checkCrc(true);
+
+        IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(), arg);
 
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(
             new TestSnapshotPartitionsVerifyTask(),

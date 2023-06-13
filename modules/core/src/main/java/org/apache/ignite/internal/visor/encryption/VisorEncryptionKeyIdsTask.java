@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.management.encryption.EncryptionCacheGroupArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,8 +37,8 @@ public class VisorEncryptionKeyIdsTask extends VisorCacheGroupEncryptionTask<Lis
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorCacheGroupEncryptionTaskArg, VisorSingleFieldDto<List<Integer>>> job(
-        VisorCacheGroupEncryptionTaskArg arg) {
+    @Override protected VisorJob<EncryptionCacheGroupArg, VisorSingleFieldDto<List<Integer>>> job(
+        EncryptionCacheGroupArg arg) {
         return new VisorEncryptionKeyIdsJob(arg, debug);
     }
 
@@ -50,7 +51,7 @@ public class VisorEncryptionKeyIdsTask extends VisorCacheGroupEncryptionTask<Lis
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorEncryptionKeyIdsJob(@Nullable VisorCacheGroupEncryptionTaskArg arg, boolean debug) {
+        protected VisorEncryptionKeyIdsJob(@Nullable EncryptionCacheGroupArg arg, boolean debug) {
             super(arg, debug);
         }
 

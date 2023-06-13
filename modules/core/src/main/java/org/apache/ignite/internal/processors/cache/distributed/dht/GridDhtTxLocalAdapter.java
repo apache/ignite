@@ -706,8 +706,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         long timeout = remainingTime();
 
-        if (timeout == -1)
-            return new GridFinishedFuture<>(timeoutException());
+        if (timeout == -1) {
+            return new GridFinishedFuture<>(timeoutException("The transaction has already finished with timeout " +
+                "before attempting to acquire a data lock"));
+        }
 
         if (isRollbackOnly())
             return new GridFinishedFuture<>(rollbackException());

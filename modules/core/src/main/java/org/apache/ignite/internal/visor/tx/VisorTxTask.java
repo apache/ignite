@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.visor.tx;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -34,6 +38,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
+import org.apache.ignite.internal.management.tx.TxCommandArg;
+import org.apache.ignite.internal.management.tx.TxInfoCommandArg;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -61,7 +68,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
@@ -70,45 +76,50 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  *
  */
 @GridInternal
-public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterNode, VisorTxTaskResult>, VisorTxTaskResult> {
+public class VisorTxTask
+    extends VisorMultiNodeTask<AbstractTxCommandArg, Map<ClusterNode, VisorTxTaskResult>, VisorTxTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorTxTaskArg, VisorTxTaskResult> job(VisorTxTaskArg arg) {
+    @Override protected VisorJob<AbstractTxCommandArg, VisorTxTaskResult> job(AbstractTxCommandArg arg) {
         return new VisorTxJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorTxTaskArg> arg) {
-        final VisorTxTaskArg taskArg = arg.getArgument();
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<AbstractTxCommandArg> arg) {
+        if (taskArg instanceof TxCommandArg) {
+            final TxCommandArg taskArg = (TxCommandArg)arg.getArgument();
 
-        if (taskArg.getConsistentIds() != null) {
-            return F.transform(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-                @Override public boolean apply(ClusterNode node) {
-                    return taskArg.getConsistentIds().contains((String)node.consistentId().toString());
-                }
-            }).nodes(), new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
-        }
+            if (!F.isEmpty(taskArg.nodes())) {
+                Set<String> consistentIds = new HashSet<>(Arrays.asList(taskArg.nodes()));
 
-        if (taskArg.getProjection() == VisorTxProjection.SERVER) {
-            return F.transform(ignite.cluster().forServers().nodes(), new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
-        }
+                return F.transform(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
+                        return consistentIds.contains(node.consistentId().toString());
+                    }
+                }).nodes(), new IgniteClosure<ClusterNode, UUID>() {
+                    @Override public UUID apply(ClusterNode node) {
+                        return node.id();
+                    }
+                });
+            }
 
-        if (taskArg.getProjection() == VisorTxProjection.CLIENT) {
-            return F.transform(ignite.cluster().forClients().nodes(), new IgniteClosure<ClusterNode, UUID>() {
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            });
+            if (taskArg.servers()) {
+                return F.transform(ignite.cluster().forServers().nodes(), new IgniteClosure<ClusterNode, UUID>() {
+                    @Override public UUID apply(ClusterNode node) {
+                        return node.id();
+                    }
+                });
+            }
+
+            if (taskArg.clients()) {
+                return F.transform(ignite.cluster().forClients().nodes(), new IgniteClosure<ClusterNode, UUID>() {
+                    @Override public UUID apply(ClusterNode node) {
+                        return node.id();
+                    }
+                });
+            }
         }
 
         return F.transform(ignite.cluster().nodes(), new IgniteClosure<ClusterNode, UUID>() {
@@ -120,6 +131,14 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
     /** {@inheritDoc} */
     @Nullable @Override protected Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
+        return reduce0(results, taskArg instanceof TxInfoCommandArg);
+    }
+
+    /** */
+    public static Map<ClusterNode, VisorTxTaskResult> reduce0(
+        List<ComputeJobResult> results,
+        boolean detailedInfo
+    ) {
         Map<ClusterNode, VisorTxTaskResult> mapRes = new TreeMap<>();
 
         Map<UUID, ClusterNode> nodeMap = new HashMap<>();
@@ -135,7 +154,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             nodeMap.put(result.getNode().id(), result.getNode());
         }
 
-        if (!taskArg.verboseMode()) {
+        if (!detailedInfo) {
             // If not in verbose mode, remove local and remote txs for which near txs are present.
             for (VisorTxTaskResult result : mapRes.values()) {
                 List<VisorTxInfo> infos = result.getInfos();
@@ -182,7 +201,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
     /**
      *
      */
-    private static class VisorTxJob extends VisorJob<VisorTxTaskArg, VisorTxTaskResult> {
+    static class VisorTxJob extends VisorJob<AbstractTxCommandArg, VisorTxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -202,12 +221,20 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorTxJob(VisorTxTaskArg arg, boolean debug) {
+        VisorTxJob(AbstractTxCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorTxTaskResult run(@Nullable VisorTxTaskArg arg) throws IgniteException {
+        @Override protected VisorTxTaskResult run(@Nullable AbstractTxCommandArg arg) throws IgniteException {
+            if (arg instanceof TxCommandArg)
+                return run(ignite, (TxCommandArg)arg, null);
+            else
+                return run(ignite, new TxCommandArg(), (TxInfoCommandArg)arg);
+        }
+
+        /** */
+        static VisorTxTaskResult run(IgniteEx ignite, TxCommandArg arg, @Nullable TxInfoCommandArg infoArg) {
             if (arg == null)
                 return new VisorTxTaskResult(Collections.emptyList());
 
@@ -217,13 +244,13 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
             List<VisorTxInfo> infos = new ArrayList<>();
 
-            int limit = arg.getLimit() == null ? DEFAULT_LIMIT : arg.getLimit();
+            int limit = arg.limit() == null ? DEFAULT_LIMIT : arg.limit();
 
             Pattern lbMatch = null;
 
-            if (arg.getLabelRegex() != null) {
+            if (arg.label() != null) {
                 try {
-                    lbMatch = Pattern.compile(arg.getLabelRegex());
+                    lbMatch = Pattern.compile(arg.label());
                 }
                 catch (PatternSyntaxException ignored) {
                     // No-op.
@@ -231,18 +258,15 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             }
 
             for (IgniteInternalTx locTx : transactions) {
-                if (arg.verboseMode() && !arg.txInfoArgument().gridCacheVersion().equals(locTx.nearXidVersion()))
+                if (infoArg != null && !Objects.equals(infoArg.gridCacheVersion(), locTx.nearXidVersion()))
                     continue;
 
-                if (arg.getXid() != null && !locTx.xid().toString().equals(arg.getXid()))
-                    continue;
-
-                if (arg.getState() != null && locTx.state() != arg.getState())
+                if (arg.xid() != null && !locTx.xid().toString().equals(arg.xid()))
                     continue;
 
                 long duration = U.currentTimeMillis() - locTx.startTime();
 
-                if (arg.getMinDuration() != null && duration < arg.getMinDuration())
+                if (arg.minDuration() != null && duration < arg.minDuration())
                     continue;
 
                 String lb = null;
@@ -251,7 +275,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 TxKillClosure killClo = null;
 
                 // This filter conditions have meaning only for near txs, so we skip dht because it will never match.
-                boolean skip = arg.getMinSize() != null || lbMatch != null;
+                boolean skip = arg.minSize() != null || lbMatch != null;
 
                 if (locTx instanceof GridNearTxLocal) {
                     GridNearTxLocal locTx0 = (GridNearTxLocal)locTx;
@@ -277,7 +301,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                         }
                     }
 
-                    if (arg.getMinSize() != null && size < arg.getMinSize())
+                    if (arg.minSize() != null && size < arg.minSize())
                         continue;
 
                     killClo = NEAR_KILL_CLOSURE;
@@ -323,14 +347,14 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                     killClo = REMOTE_KILL_CLOSURE;
                 }
 
-                TxVerboseInfo verboseInfo = arg.verboseMode() ? createVerboseInfo(ignite, locTx) : null;
+                TxVerboseInfo verboseInfo = infoArg != null ? createVerboseInfo(ignite, locTx) : null;
 
                 infos.add(new VisorTxInfo(locTx.xid(), locTx.startTime(), duration, locTx.isolation(),
                     locTx.concurrency(), locTx.timeout(), lb, mappings, locTx.state(), size,
                     locTx.nearXidVersion().asIgniteUuid(), locTx.masterNodeIds(), locTx.topologyVersionSnapshot(),
                     verboseInfo));
 
-                if (arg.getOperation() == VisorTxOperation.KILL)
+                if (arg.kill())
                     killClo.apply(locTx, tm);
 
                 if (infos.size() == limit)
@@ -338,21 +362,21 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
             }
 
             // If transaction was not found in verbose --tx --info mode, try to fetch it from history.
-            if (arg.verboseMode() && infos.isEmpty()) {
-                Object completed = tm.peekCompletedVersionsHistory(arg.txInfoArgument().gridCacheVersion());
+            if (infoArg != null && infos.isEmpty()) {
+                Object completed = infoArg == null ? null : tm.peekCompletedVersionsHistory(infoArg.gridCacheVersion());
 
                 if (completed != null) {
                     if (Boolean.TRUE.equals(completed))
-                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asIgniteUuid(), COMMITTED));
+                        infos.add(new VisorTxInfo(infoArg.gridCacheVersion().asIgniteUuid(), COMMITTED));
                     else if (Boolean.FALSE.equals(completed))
-                        infos.add(new VisorTxInfo(arg.txInfoArgument().gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
+                        infos.add(new VisorTxInfo(infoArg.gridCacheVersion().asIgniteUuid(), ROLLED_BACK));
                 }
             }
 
             Comparator<VisorTxInfo> comp = TxDurationComparator.INSTANCE;
 
-            if (arg.getSortOrder() != null) {
-                switch (arg.getSortOrder()) {
+            if (arg.order() != null) {
+                switch (arg.order()) {
                     case DURATION:
                         comp = TxDurationComparator.INSTANCE;
 

@@ -50,8 +50,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.commandline.cache.IdleVerify;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommand;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -67,7 +67,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-
 import static java.lang.String.join;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.delete;
@@ -79,6 +78,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHEC
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_BATCH_SIZE;
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
@@ -93,9 +93,6 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
 public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
-
-    /** Option is used for auto confirmation. */
-    protected static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** System out. */
     protected static PrintStream sysOut;
@@ -182,7 +179,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         File logDir = JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory());
 
         // Clean idle_verify log files.
-        for (File f : logDir.listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : logDir.listFiles(n -> n.getName().startsWith(CacheIdleVerifyCommand.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
         GridClientFactory.stopAll(false);

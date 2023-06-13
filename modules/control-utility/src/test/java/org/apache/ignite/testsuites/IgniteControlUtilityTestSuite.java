@@ -76,7 +76,7 @@ import org.junit.runners.Suite;
     BaselineEventsLocalTest.class,
     BaselineEventsRemoteTest.class,
 
-    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class,
+    GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }

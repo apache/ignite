@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
+import org.apache.ignite.internal.management.api.CommandUtilsSelfTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.util.BasicRateLimiterTest;
 import org.apache.ignite.internal.util.DistributedProcessClientAwaitTest;
@@ -153,7 +154,8 @@ import org.junit.runners.Suite;
 
     BasicRateLimiterTest.class,
 
-    HostAndPortRangeTest.class
+    HostAndPortRangeTest.class,
+    CommandUtilsSelfTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }

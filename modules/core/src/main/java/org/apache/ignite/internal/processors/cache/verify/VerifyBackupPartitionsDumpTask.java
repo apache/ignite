@@ -37,11 +37,11 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
+import org.apache.ignite.internal.management.cache.CacheIdleVerifyDumpCommandArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * concurrently updated.
  */
 @GridInternal
-public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdleVerifyTaskArg, String> {
+public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdleVerifyCommandArg, String> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,7 +68,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private final VerifyBackupPartitionsTaskV2 delegate = new VerifyBackupPartitionsTaskV2();
 
     /** */
-    private VisorIdleVerifyDumpTaskArg taskArg;
+    private CacheIdleVerifyDumpCommandArg taskArg;
 
     /** */
     @IgniteInstanceResource
@@ -81,10 +81,10 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        VisorIdleVerifyTaskArg arg
+        CacheIdleVerifyCommandArg arg
     ) throws IgniteException {
-        if (arg instanceof VisorIdleVerifyDumpTaskArg)
-            taskArg = (VisorIdleVerifyDumpTaskArg)arg;
+        if (arg instanceof CacheIdleVerifyDumpCommandArg)
+            taskArg = (CacheIdleVerifyDumpCommandArg)arg;
 
         return delegate.map(subgrid, arg);
     }
@@ -287,7 +287,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
      * @param args idle_verify arguments.
      * @param logConsumer Logger.
      */
-    public static void logParsedArgs(VisorIdleVerifyTaskArg args, Consumer<String> logConsumer) {
+    public static void logParsedArgs(CacheIdleVerifyCommandArg args, Consumer<String> logConsumer) {
         SB options = new SB("The check procedure task was executed with the following args: ");
 
         options
@@ -297,7 +297,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             .a(args.excludeCaches() == null ? "" : String.join(", ", args.excludeCaches()))
             .a("]")
             .a(", cacheFilter=[")
-            .a(args.cacheFilterEnum().toString())
+            .a(args.cacheFilter().toString())
             .a("]\n");
 
         logConsumer.accept(options.toString());

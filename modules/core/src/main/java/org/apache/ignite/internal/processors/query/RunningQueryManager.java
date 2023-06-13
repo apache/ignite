@@ -130,9 +130,6 @@ public class RunningQueryManager {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Current running query info. */
-    private final ThreadLocal<GridRunningQueryInfo> currQryInfo = new ThreadLocal<>();
-
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -276,9 +273,6 @@ public class RunningQueryManager {
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);
 
-        if (ctx.performanceStatistics().enabled())
-            currQryInfo.set(run);
-
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
         run.span().addTag(SQL_QRY_ID, run::globalQueryId);
@@ -405,7 +399,7 @@ public class RunningQueryManager {
                 ctx.performanceStatistics().query(
                     qry.queryType(),
                     qry.query(),
-                    qry.requestId(),
+                    qry.id(),
                     qry.startTime(),
                     System.nanoTime() - qry.startTimeNanos(),
                     !failed);
@@ -413,16 +407,6 @@ public class RunningQueryManager {
         }
         finally {
             qrySpan.end();
-        }
-    }
-
-    /** @param reqId Request ID of query to track. */
-    public void trackRequestId(long reqId) {
-        if (ctx.performanceStatistics().enabled()) {
-            GridRunningQueryInfo info = currQryInfo.get();
-
-            if (info != null)
-                info.requestId(reqId);
         }
     }
 

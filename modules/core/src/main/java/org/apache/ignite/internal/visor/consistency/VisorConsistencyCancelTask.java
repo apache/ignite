@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -32,12 +33,12 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VI
 /**
  * Cancels given consistency repairs on all cluster nodes.
  */
-public class VisorConsistencyCancelTask extends VisorMultiNodeTask<Void, Void, Void> {
+public class VisorConsistencyCancelTask extends VisorMultiNodeTask<NoArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorConsistencyCancelJob job(Void arg) {
+    @Override protected VisorConsistencyCancelJob job(NoArg arg) {
         return new VisorConsistencyCancelJob(arg, debug);
     }
 
@@ -50,7 +51,7 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<Void, Void, V
     /**
      * Job that cancels the tasks.
      */
-    private static class VisorConsistencyCancelJob extends VisorJob<Void, Void> {
+    private static class VisorConsistencyCancelJob extends VisorJob<NoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -63,12 +64,12 @@ public class VisorConsistencyCancelTask extends VisorMultiNodeTask<Void, Void, V
         /**
          * Default constructor.
          */
-        protected VisorConsistencyCancelJob(Void arg, boolean debug) {
+        protected VisorConsistencyCancelJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws IgniteException {
+        @Override protected Void run(NoArg arg) throws IgniteException {
             F.iterator(ignite.context().systemView().view(JOBS_VIEW),
                 ComputeJobView::sessionId,
                 true,
