@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.running;
 
 import org.apache.ignite.internal.util.typedef.F;
 
