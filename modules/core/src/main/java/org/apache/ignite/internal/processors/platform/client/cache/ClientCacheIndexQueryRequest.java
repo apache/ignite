@@ -51,7 +51,10 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
      * @param reader Reader.
      * @param protocolCtx
      */
-    public ClientCacheIndexQueryRequest(BinaryRawReaderEx reader,
+    public ClientCacheIndexQueryRequest(
+        BinaryRawReaderEx reader,
+        ClientProtocolContext protocolCtx
+    ) {
         ClientProtocolContext protocolCtx) {
         super(reader);
 
