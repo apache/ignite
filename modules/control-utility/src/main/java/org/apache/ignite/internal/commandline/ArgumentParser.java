@@ -255,9 +255,7 @@ public class ArgumentParser {
      * @return Arguments bean.
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
-    <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseAndValidate(
-        List<String> raw
-    ) {
+    <A extends IgniteDataTransferObject> ConnectionAndSslParameters<A> parseAndValidate(List<String> raw) {
         List<String> args = new ArrayList<>(raw);
 
         findCommand(args.iterator());
