@@ -1019,7 +1019,8 @@ public class SnapshotRestoreProcess {
                 String cacheOrGrpName = cacheGroupName(dir);
                 int grpId = CU.cacheId(cacheOrGrpName);
 
-                cacheGrpNames.put(grpId, cacheOrGrpName);
+                if (log.isInfoEnabled())
+                    cacheGrpNames.put(grpId, cacheOrGrpName);
 
                 File tmpCacheDir = formatTmpDirName(dir);
                 tmpCacheDir.mkdir();
@@ -1112,7 +1113,7 @@ public class SnapshotRestoreProcess {
 
             try {
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
-                    if (log.isInfoEnabled() && !snpAff.isEmpty()) {
+                    if (log.isInfoEnabled()) {
                         log.info("Trying to request partitions from remote node " +
                             "[reqId=" + reqId +
                             ", snapshot=" + opCtx0.snpName +
@@ -1844,12 +1845,13 @@ public class SnapshotRestoreProcess {
 
     /**
      * @param map Map of partitions and cache groups.
+     * @param cacheGrpNames Map of cache group ids and names.
      * @return String representation.
      */
     private String partitionsMapToString(Map<Integer, Set<Integer>> map, Map<Integer, String> cacheGrpNames) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(e -> String.format("[grpId=%d, grpName=%s]", e.getKey(), cacheGrpNames.get(e.getKey())),
+            .collect(Collectors.toMap(e -> String.format("{grpId=%d, grpName=%s}", e.getKey(), cacheGrpNames.get(e.getKey())),
                 e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
