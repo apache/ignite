@@ -519,7 +519,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             params,
             qryCtx,
             exchangeSvc,
-            (q, f) -> qryReg.unregister(q.id(), f),
+            (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
             queryPlannerTimeout
         );

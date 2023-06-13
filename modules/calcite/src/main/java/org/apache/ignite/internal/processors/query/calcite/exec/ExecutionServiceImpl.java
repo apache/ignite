@@ -749,7 +749,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                     nodeId,
                     null,
                     exchangeSvc,
-                    (q, f) -> qryReg.unregister(q.id(), f),
+                    (q, ex) -> qryReg.unregister(q.id(), ex),
                     log,
                     msg.totalFragmentsCount()
                 )
