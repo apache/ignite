@@ -610,6 +610,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** @param snpName Snapshot name. */
     protected void checkSnapshot(String snpName, String snpPath) {
+        checkSnapshot(snpName, snpPath, onlyPrimary);
+    }
+
+    /** @param snpName Snapshot name. */
+    public static void checkSnapshot(String snpName, String snpPath, boolean onlyPrimary) {
         Map<String, Map<Integer, Integer>> cachesParts = new HashMap<>();
 
         Predicate<Ignite> filter = node -> !node.configuration().isClientMode() &&
