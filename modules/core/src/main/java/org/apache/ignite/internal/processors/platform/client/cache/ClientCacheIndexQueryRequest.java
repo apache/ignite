@@ -55,7 +55,6 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
         BinaryRawReaderEx reader,
         ClientProtocolContext protocolCtx
     ) {
-        ClientProtocolContext protocolCtx) {
         super(reader);
 
         pageSize = reader.readInt();
@@ -65,9 +64,8 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
         int part = reader.readInt();
 
         int limit = 0;
-        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.INDEX_QUERY_LIMIT)) {
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.INDEX_QUERY_LIMIT))
             limit = reader.readInt();
-        }
 
         String valType = reader.readString();
 
