@@ -49,9 +49,7 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.HelpCommand;
 import org.apache.ignite.internal.management.api.LocalCommand;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -85,6 +83,12 @@ public class ArgumentParser {
 
     /** */
     private final IgniteCommandRegistry registry;
+
+    /** */
+    Command<?, ?> root;
+
+    /** */
+    Command<?, ?> cmd;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -256,23 +260,19 @@ public class ArgumentParser {
     ) {
         List<String> args = new ArrayList<>(raw);
 
-        IgniteBiTuple<Command<A, ?>, Command<?, ?>> cmd = command(args.iterator());
+        findCommand(args.iterator());
 
-        IgniteBiTuple<List<CLIArgument<?>>, List<CLIArgument<?>>> cmdArgs = commandArguments(cmd.get1());
-
-        cmdArgs.get2().addAll(common);
-
-        CLIArgumentParser parser = new CLIArgumentParser(cmdArgs.get1(), cmdArgs.get2());
+        CLIArgumentParser parser = createArgumentParser();
 
         parser.parse(args.iterator());
 
-        A arg = argument(
-            cmd.get1().argClass(),
+        A arg = (A)argument(
+            cmd.argClass(),
             (fld, pos) -> parser.get(pos),
             fld -> parser.get(toFormattedFieldName(fld).toLowerCase())
         );
 
-        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.get1().getClass().isAnnotationPresent(IgniteExperimental.class)) {
+        if (!parser.<Boolean>get(CMD_ENABLE_EXPERIMENTAL) && cmd.getClass().isAnnotationPresent(IgniteExperimental.class)) {
             log.warning(
                 String.format("To use experimental command add " + CMD_ENABLE_EXPERIMENTAL + " parameter for %s",
                     UTILITY_NAME)
@@ -281,21 +281,16 @@ public class ArgumentParser {
             throw new IllegalArgumentException("Experimental commands disabled");
         }
 
-        return new ConnectionAndSslParameters<>(cmd.get1(), cmd.get2(), arg, parser);
+        return new ConnectionAndSslParameters<>((Command<A, ?>)cmd, root, arg, parser);
     }
 
     /**
-     * Get command from hierarchical root.
+     * Searches command from hierarchical root.
      *
-     * @param iter Iterator of commands names.
-     * @return Command to execute.
-     * @param <A> Argument type.
+     * @param iter Iterator of CLI arguments.
      */
-    protected <A extends IgniteDataTransferObject> IgniteBiTuple<Command<A, ?>, Command<?, ?>> command(
-        Iterator<String> iter
-    ) {
-        Command<?, ?> root = null;
-        Command<?, ?> cmd = null;
+    protected void findCommand(Iterator<String> iter) {
+        assert cmd == null && root == null;
 
         while (iter.hasNext() && cmd == null) {
             String cmdName = iter.next();
@@ -326,8 +321,7 @@ public class ArgumentParser {
                 delim = CMD_WORDS_DELIM;
             }
 
-            Command<A, ?> cmd1 =
-                (Command<A, ?>)((CommandsRegistry<?, ?>)cmd).command(fromFormattedCommandName(name, delim));
+            Command<?, ?> cmd1 = ((CommandsRegistry<?, ?>)cmd).command(fromFormattedCommandName(name, delim));
 
             if (cmd1 == null)
                 break;
@@ -347,12 +341,12 @@ public class ArgumentParser {
                 "Command " + toFormattedCommandName(cmd.getClass()) + " can't be executed"
             );
         }
-
-        return F.t((Command<A, ?>)cmd, root);
     }
 
     /** */
-    private static IgniteBiTuple<List<CLIArgument<?>>, List<CLIArgument<?>>> commandArguments(Command<?, ?> cmd) {
+    private CLIArgumentParser createArgumentParser() {
+        assert cmd != null;
+
         List<CLIArgument<?>> positionalArgs = new ArrayList<>();
         List<CLIArgument<?>> namedArgs = new ArrayList<>();
 
@@ -392,7 +386,9 @@ public class ArgumentParser {
 
         visitCommandParams(cmd.argClass(), positionalArgCb, namedArgCb, argGrpCb);
 
-        return F.t(positionalArgs, namedArgs);
+        namedArgs.addAll(common);
+
+        return new CLIArgumentParser(positionalArgs, namedArgs);
     }
 
     /**
